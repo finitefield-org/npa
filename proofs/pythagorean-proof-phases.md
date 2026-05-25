@@ -35,7 +35,7 @@ Important constraints:
 
 ### P26 Direct-Law Audit
 
-- Status: Pending
+- Status: Completed
 - Depends on: P25
 - Inputs: `proofs/README.md`, `proofs/Proofs/Ai/Geometry/Pythagorean/source.npa`,
   `proofs/Proofs/Ai/Geometry/AbstractRightTriangle/source.npa`,
@@ -54,6 +54,74 @@ Important constraints:
 - Notes:
   - This phase is deliberately documentation-first so later proof phases can be implemented one at a
     time without changing the final target shape midstream.
+
+#### P26 Audit Result
+
+The remaining direct-law arguments in the post-P25 route are grouped below. A direct-law argument is
+an explicit theorem-shaped argument whose conclusion is already the Pythagorean equality,
+law-of-cosines equality, metric-distance equality, or normalization equality that a later phase must
+derive from smaller checked components. Concrete singleton modules from P10-P15 remain checked
+predecessors, but the replacement target below is the P17-P25 abstract route.
+
+| Area | Current direct-law item | Why it matters | Follow-up |
+| --- | --- | --- | --- |
+| Scalar normalization | `Proofs.Ai.Algebra.AbstractSquareNormalize`: `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term`, `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq`, `sq_add_eq_add_sq_add_two_mul`, `sq_sub_eq_add_sq_sub_two_mul`, `add_sq_eq_zero_iff`, `mul_two_zero_term`, `normalize_add_with_zero_cross_term` | These currently accept a direct scalar rewrite law. The Pythagorean proof needs the cross-term path from `dot = 0` to removing `mul two dot`. | P27 derives the required scalar rewrite lemmas from `RingLawArgs`, square definitions, and equality reasoning. |
+| Inner-product norm normalization | `Proofs.Ai.Vector.AbstractInnerProduct`: `norm_sq_add`, `norm_sq_sub`, `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero`, `parallelogram_law`, `polarization_identity`, `norm_sq_zero_iff`, `norm_sq_nonneg`, `dist_sq_nonneg`, `norm_sq_add_of_perp`, `norm_sq_sub_of_perp` | These currently accept direct norm, dot-zero, or norm-identity laws. The squared theorem needs the perpendicular special case without taking it as a law. | P28 derives the norm expansion and perpendicular special case from `InnerProductLawArgs` and P27 scalar rewrites. |
+| Affine normalization | `Proofs.Ai.Geometry.Affine`: `hypotenuse_vector_eq_sub_legs` delegates to `hypotenuse_vector_eq_sub_legs_law`; `AffineLawArgs` also contains `dist_sq_points_def_law` | The final proof must connect `distSqPoints B C` to the norm of the hypotenuse vector and orient that vector against the two legs. `dist_sq_points_def` itself is definitional, but the law package still exposes the same fact as a direct field. | P29 derives the needed affine orientation and distance-square bridge from `AffineLawArgs` fields that are primitive enough for the chosen route. |
+| Right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle`: `pythagorean_distance_sq_general`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` | `pythagorean_distance_sq_general` is the direct squared Pythagorean law. `law_of_cosines_general` is the intended intermediate identity but is also currently direct. Area and median targets are same-level right-triangle facts and must not be mistaken for prerequisites of the first squared theorem. | P30 builds the right-triangle to perpendicular bridge; P31 replaces the Pythagorean direct law with the derived squared theorem. Area and median remain later peer work. |
+| Metric-distance layer | `Proofs.Ai.Geometry.AbstractMetric`: `MetricSpaceLawArgs` fields `dist_def_law`, `dist_sq_eq_square_dist_law`, `dist_nonneg_law`, `distance_symm_law`, `distance_zero_iff_eq_law`, `pythagorean_distance_law`, `triangle_inequality_law`; theorem targets `dist_sq_eq_square_dist`, `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `pythagorean_distance_general`, and `triangle_inequality` delegate to the matching fields. `dist_def` itself is definitional. | The squared metric-distance theorem currently depends on a direct metric Pythagorean field and a direct `distSqPoints = sq dist` bridge. This should not block completing the squared-distance theorem. | P32 handles the metric bridge after P31 completes the squared-distance proof. |
+| Final public API | `Proofs.Ai.Geometry.Pythagorean`: `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq`, `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization`, `pythagorean_theorem_api_alias` | P25 exposes stable names but still forwards direct theorem-shaped law arguments. `pythagorean_theorem_dependencies` is only a law-package identity and is not a direct theorem law. | P33 refreshes the public theorem names after P31, and after P32 for the metric-distance target. Converse strengthening remains P34. |
+
+The first non-direct-law target is the squared-distance theorem below. It still takes explicit law
+packages, because NPA does not yet have the structure/class layer, but it does not take an argument
+whose conclusion is already the Pythagorean equality.
+
+```text
+theorem pythagorean_distance_sq_from_law_packages.{p,u,v} :
+  forall (Scalar : Sort u),
+  forall (zero : Scalar),
+  forall (one : Scalar),
+  forall (add : Scalar -> Scalar -> Scalar),
+  forall (neg : Scalar -> Scalar),
+  forall (sub : Scalar -> Scalar -> Scalar),
+  forall (mul : Scalar -> Scalar -> Scalar),
+  forall (le_rel : Scalar -> Scalar -> Prop),
+  forall (Vector : Sort v),
+  forall (vzero : Vector),
+  forall (vadd : Vector -> Vector -> Vector),
+  forall (vneg : Vector -> Vector),
+  forall (smul : Scalar -> Vector -> Vector),
+  forall (inner : Vector -> Vector -> Scalar),
+  forall (PointCarrier : Sort p),
+  forall (disp_op : PointCarrier -> PointCarrier -> Vector),
+  @RingLawArgs.{u} Scalar zero one add neg sub mul ->
+  @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul ->
+  @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel
+    Vector vzero vadd vneg smul inner ->
+  @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel
+    Vector vzero vadd vneg smul inner PointCarrier disp_op ->
+  forall (A : PointCarrier),
+  forall (B : PointCarrier),
+  forall (C : PointCarrier),
+  @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C ->
+  @Eq.{u} Scalar
+    (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C)
+    (add
+      (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)
+      (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))
+```
+
+Required imported packages for this target are:
+
+| Package | Required declarations |
+| --- | --- |
+| `Std.Logic.Eq` / `Proofs.Ai.EqReasoning` | equality, transitivity, congruence, substitution, and transport for rewriting |
+| `Proofs.Ai.Algebra.AbstractRing` | `RingLawArgs`, `two`, `sq`, additive/multiplicative ring rewrites |
+| `Proofs.Ai.Algebra.AbstractSquareNormalize` | checked scalar normalization lemmas from P27 |
+| `Proofs.Ai.Vector.AbstractSpace` | `VectorSpaceLawArgs`, `vsub`, vector additive rewrites |
+| `Proofs.Ai.Vector.AbstractInnerProduct` | `InnerProductLawArgs`, `dot`, `normSq`, `PerpVec`, derived norm expansion from P28 |
+| `Proofs.Ai.Geometry.Affine` | `AffineLawArgs`, `disp`, `distSqPoints`, hypotenuse orientation from P29 |
+| `Proofs.Ai.Geometry.AbstractRightTriangle` | `RightTriangle`, `Perp`, right-triangle-to-perpendicular bridge from P30 |
 
 ### P27 Scalar Algebra Derivation Layer
 
