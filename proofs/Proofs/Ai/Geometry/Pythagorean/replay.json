@@ -37,7 +37,7 @@
     {
       "declaration": "pythagorean_converse_sq",
       "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun law => fun A => fun B => fun C => fun h => law A B C h"
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun converse_target => fun A => fun B => fun C => fun h => converse_target A B C h"
     },
     {
       "declaration": "law_of_cosines_right_angle_specialization",

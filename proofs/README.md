@@ -594,9 +594,10 @@ singleton scalar layer with explicit carrier, operation, and law assumptions. P1
 abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
 normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
 inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23 supplies
-the abstract right-triangle theorem-target layer. P24 supplies the abstract metric-distance
-theorem-target layer. P25 supplies the final theorem API names that downstream users can depend on,
-and P31 connects the squared-distance theorem name to the checked law-package derivation.
+the abstract right-triangle theorem layer. P24 supplies the abstract metric-distance theorem layer.
+P25 supplies the final theorem API names that downstream users can depend on, P31 connects the
+squared-distance theorem name to the checked law-package derivation, and P32 connects the squared
+metric-distance theorem name to the checked metric bridge.
 
 Planned contents:
 
@@ -1333,6 +1334,8 @@ norm-addition derivation, and small affine symmetry/reversal bridges in this mod
 now composes P31's squared-distance theorem with P32's metric bridge, so it no longer accepts a
 direct metric Pythagorean law. The converse remains an explicit target until the nondegeneracy and
 angle APIs are strong enough.
+The module axiom report is `["Eq.rec"]`; this is the documented equality-recursion exception
+inherited from imported equality reasoning and transport lemmas, not a geometry or metric axiom.
 `Proofs.Ai.Logic.Iff` is not directly imported here because the current source handoff cannot
 combine that module with the abstract geometry imports without duplicating the imported `Eq`
 declaration.

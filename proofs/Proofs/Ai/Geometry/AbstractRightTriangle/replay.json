@@ -47,7 +47,7 @@
     {
       "declaration": "pythagorean_distance_sq_general",
       "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun law => fun A => fun B => fun C => fun h => law A B C h"
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun pythagorean_sq_target => fun A => fun B => fun C => fun h => pythagorean_sq_target A B C h"
     },
     {
       "declaration": "law_of_cosines_general",
@@ -57,12 +57,12 @@
     {
       "declaration": "right_triangle_area_general",
       "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun area2_op => fun law => fun A => fun B => fun C => fun h => law A B C h"
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun area2_op => fun area_target => fun A => fun B => fun C => fun h => area_target A B C h"
     },
     {
       "declaration": "median_to_hypotenuse_general",
       "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun midpoint_op => fun law => fun M => fun A => fun B => fun C => fun h => fun hm => law M A B C h hm"
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => fun midpoint_op => fun median_target => fun M => fun A => fun B => fun C => fun h => fun hm => median_target M A B C h hm"
     }
   ],
   "acceptance": {

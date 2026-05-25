@@ -3994,10 +3994,10 @@ const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
         name: "pythagorean_distance_sq_general",
         universe_params: &["p", "u", "v"],
         statement: abstract_right_triangle_params!(
-            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+            "forall (pythagorean_sq_target : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
         ),
         proof: abstract_right_triangle_abs!(
-            "fun law => fun A => fun B => fun C => fun h => law A B C h"
+            "fun pythagorean_sq_target => fun A => fun B => fun C => fun h => pythagorean_sq_target A B C h"
         ),
     },
     TheoremArtifact {
@@ -4012,20 +4012,20 @@ const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
         name: "right_triangle_area_general",
         universe_params: &["p", "u", "v"],
         statement: abstract_right_triangle_params!(
-            "forall (area2_op : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Scalar), forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@Area2.{p,u} Scalar PointCarrier area2_op A B C)) (mul (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@Area2.{p,u} Scalar PointCarrier area2_op A B C)) (mul (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+            "forall (area2_op : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Scalar), forall (area_target : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@Area2.{p,u} Scalar PointCarrier area2_op A B C)) (mul (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@Area2.{p,u} Scalar PointCarrier area2_op A B C)) (mul (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
         ),
         proof: abstract_right_triangle_abs!(
-            "fun area2_op => fun law => fun A => fun B => fun C => fun h => law A B C h"
+            "fun area2_op => fun area_target => fun A => fun B => fun C => fun h => area_target A B C h"
         ),
     },
     TheoremArtifact {
         name: "median_to_hypotenuse_general",
         universe_params: &["p", "u", "v"],
         statement: abstract_right_triangle_params!(
-            "forall (midpoint_op : forall (A : PointCarrier), forall (B : PointCarrier), PointCarrier), forall (law : forall (M : PointCarrier), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (hm : @Eq.{p} PointCarrier M (@midpoint.{p} PointCarrier midpoint_op B C)), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A M) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B M)), forall (M : PointCarrier), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (hm : @Eq.{p} PointCarrier M (@midpoint.{p} PointCarrier midpoint_op B C)), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A M) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B M)"
+            "forall (midpoint_op : forall (A : PointCarrier), forall (B : PointCarrier), PointCarrier), forall (median_target : forall (M : PointCarrier), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (hm : @Eq.{p} PointCarrier M (@midpoint.{p} PointCarrier midpoint_op B C)), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A M) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B M)), forall (M : PointCarrier), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (hm : @Eq.{p} PointCarrier M (@midpoint.{p} PointCarrier midpoint_op B C)), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A M) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B M)"
         ),
         proof: abstract_right_triangle_abs!(
-            "fun midpoint_op => fun law => fun M => fun A => fun B => fun C => fun h => fun hm => law M A B C h hm"
+            "fun midpoint_op => fun median_target => fun M => fun A => fun B => fun C => fun h => fun hm => median_target M A B C h hm"
         ),
     },
 ];
@@ -4341,10 +4341,10 @@ const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
         name: "pythagorean_distance_general",
         universe_params: &["p", "u", "v"],
         statement: abstract_metric_params!(
-            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))"
+            "forall (metric_pythagorean_target : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))"
         ),
         proof: abstract_metric_abs!(
-            "fun law => fun A => fun B => fun C => fun h => law A B C h"
+            "fun metric_pythagorean_target => fun A => fun B => fun C => fun h => metric_pythagorean_target A B C h"
         ),
     },
     TheoremArtifact {
@@ -4487,9 +4487,11 @@ const PYTHAGOREAN_THEOREMS: &[TheoremArtifact] = &[
         name: "pythagorean_converse_sq",
         universe_params: &["p", "u", "v"],
         statement: abstract_metric_params!(
-            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C"
+            "forall (converse_target : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C"
         ),
-        proof: abstract_metric_abs!("fun law => fun A => fun B => fun C => fun h => law A B C h"),
+        proof: abstract_metric_abs!(
+            "fun converse_target => fun A => fun B => fun C => fun h => converse_target A B C h"
+        ),
     },
     TheoremArtifact {
         name: "law_of_cosines_right_angle_specialization",

@@ -2,11 +2,11 @@
 
 Source: `proofs/README.md`
 
-This task breakdown starts from the current P25 state. P25 provides checked final theorem names in
-`Proofs.Ai.Geometry.Pythagorean`, but the public theorem currently accepts an explicit Pythagorean
-law argument. The target of this plan is to replace that direct law argument with checked
-derivations from scalar, vector, inner-product, and affine law packages while preserving the
-certificate-first trust boundary.
+This task breakdown started from the P25 state, where
+`Proofs.Ai.Geometry.Pythagorean` provided checked final theorem names but still accepted an explicit
+Pythagorean equality argument. Through P33, the public squared-distance and squared metric-distance
+theorems are backed by checked derivations from scalar, vector, inner-product, affine, right-triangle,
+and metric bridge law packages while preserving the certificate-first trust boundary.
 
 ## Scope
 
@@ -389,7 +389,7 @@ for P34.
 
 ### P33 Final Public Pythagorean API Refresh
 
-- Status: Pending
+- Status: Completed
 - Depends on: P31 for the squared theorem; P32 for the metric-distance theorem
 - Inputs: `Proofs.Ai.Geometry.Pythagorean`, `proofs/README.md`,
   `proofs/manifest.toml`
@@ -411,6 +411,15 @@ for P34.
   - `cargo clippy --workspace --all-targets -- -D warnings`
   - `cargo test --workspace`
   - `rg -n "direct Pythagorean law|theorem-target layer|law : forall .*RightTriangle" proofs/README.md proofs/Proofs/Ai/Geometry/Pythagorean tools/proof-corpus/src/main.rs`
+- Result:
+  - `pythagorean_theorem_sq` remains the stable public squared-distance theorem and delegates to
+    the P31 checked derivation.
+  - `pythagorean_theorem_dist_sq` remains the stable public squared metric-distance theorem and
+    composes the P31 theorem with P32's metric square bridge.
+  - `pythagorean_converse_sq` remains a named future-strengthening target, but README wording keeps
+    it separate from the completed squared and squared-metric theorem claims.
+  - The final module records only the documented equality-recursion exception `["Eq.rec"]`; no
+    geometry, metric, or Pythagorean axiom is introduced.
 
 ### P34 Optional Strengthening: Converse And Unsquared Distance
 
@@ -433,8 +442,7 @@ for P34.
 
 ## Completion Definition
 
-The squared-distance Pythagorean theorem should be considered complete when P31 and the
-squared-distance portion of P33 are done:
+The squared-distance Pythagorean theorem is complete as of P33:
 
 ```text
 pythagorean_theorem_sq
@@ -444,5 +452,5 @@ pythagorean_theorem_sq
   and is documented as completed in `proofs/README.md`.
 ```
 
-The squared metric-distance theorem should be considered complete when P32 and the metric portion
-of P33 are done. The converse and unsquared-distance statements remain separate strengthening work.
+The squared metric-distance theorem is complete as of P33. The converse and unsquared-distance
+statements remain separate strengthening work.
