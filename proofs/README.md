@@ -65,6 +65,13 @@ Current bundles:
   Pythagorean route.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
+Planning documents:
+
+- `pythagorean-proof-phases.md`: P26-P34 plan for the checked abstract Pythagorean route.
+- `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
+- `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
+  polarization, Cauchy-Schwarz, and metric triangle inequality.
+
 ## Expansion Plan
 
 Grow the corpus in small, checkable layers. Each layer should keep source, replay, metadata, and
