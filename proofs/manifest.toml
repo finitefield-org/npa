@@ -363,6 +363,24 @@ theorems = ["dot_comm", "dot_add_left", "dot_add_right", "dot_neg_left", "dot_ne
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Vector.AbstractInnerProductDerive"
+source = "Proofs/Ai/Vector/AbstractInnerProductDerive/source.npa"
+certificate = "Proofs/Ai/Vector/AbstractInnerProductDerive/certificate.npcert"
+meta = "Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json"
+replay = "Proofs/Ai/Vector/AbstractInnerProductDerive/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:3d0748eaf33e6c9b44f9da9567d3c65643592b2190b47b669ae952e75836ab3a"
+certificate_file_sha256 = "sha256:82628c4fdecf22707aabd0cdd4707b6252bde0a6ff52faf35ee791a2f346f5ed"
+export_hash = "sha256:3a61807ebb193a991309971118906e9922bb60326b7f6a71bef92ea6de0d6f7d"
+axiom_report_hash = "sha256:8b18c86892d203059e257789c76a20a76effc1b3217e812184d9798f7c0c29db"
+certificate_hash = "sha256:ab02fa6511953a1f35fc95d6f234f36446552519b551a9743bb8d58009882074"
+imports = ["Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"]
+definitions = []
+theorems = ["norm_sq_add_from_inner_args", "norm_sq_add_of_dot_zero_from_args", "norm_sq_add_of_perp_from_args"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Geometry.Affine"
 source = "Proofs/Ai/Geometry/Affine/source.npa"
 certificate = "Proofs/Ai/Geometry/Affine/certificate.npcert"

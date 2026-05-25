@@ -33,6 +33,8 @@ Current bundles:
   scalar API layers and explicit vector operation/law assumptions.
 - `Proofs/Ai/Vector/AbstractInnerProduct/`: abstract inner-product, squared norm, and vector
   squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
+- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion derivations from
+  `InnerProductLawArgs`, P27 scalar rewrites, and `PerpVec`.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/AbstractRightTriangle/`: abstract perpendicularity, right-triangle, and
@@ -647,6 +649,9 @@ Completed prerequisite:
 - P27 `Proofs.Ai.Algebra.AbstractScalarDerive` supplies checked scalar zero-cross-term derivations
   from `RingLawArgs` and equality transport, without accepting direct theorem-shaped scalar
   normalization law arguments.
+- P28 `Proofs.Ai.Vector.AbstractInnerProductDerive` supplies checked norm expansion and
+  perpendicular special-case derivations from `InnerProductLawArgs`, P27 scalar rewrites, and
+  equality transport, without accepting direct dot-zero or perpendicular norm law arguments.
 
 Post-P25 policy:
 
@@ -672,7 +677,8 @@ EqReasoning
   -> Geometry.RightTriangle -> Geometry.Metric
   -> Logic.Iff
   -> Algebra.AbstractRing -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
-  -> Vector.AbstractSpace -> Vector.AbstractInnerProduct
+  -> Algebra.AbstractScalarDerive
+  -> Vector.AbstractSpace -> Vector.AbstractInnerProduct -> Vector.AbstractInnerProductDerive
   -> Geometry.Affine -> Geometry.AbstractRightTriangle -> Geometry.AbstractMetric
   -> Geometry.Pythagorean
 ```
@@ -1123,6 +1129,23 @@ Theorem targets:
 | `dist_sq_nonneg` | `0 <= distSq A B` after affine distance is connected |
 | `norm_sq_add_of_perp` | `PerpVec u v -> normSq (u + v) = normSq u + normSq v` |
 | `norm_sq_sub_of_perp` | `PerpVec u v -> normSq (u - v) = normSq u + normSq v` |
+
+#### `Proofs.Ai.Vector.AbstractInnerProductDerive`
+
+No new vector or scalar operation definition lives here. This implemented module derives the
+norm-expansion path needed by the abstract Pythagorean route from `InnerProductLawArgs`, the P27
+`Proofs.Ai.Algebra.AbstractScalarDerive` zero-cross-term rewrite, and `Std.Logic.Eq` equality
+transport.
+
+The checked theorem targets record the expected `Eq.rec` dependency. They do not accept
+`norm_sq_add_of_dot_zero_law` or `norm_sq_add_of_perp_law` as direct theorem-shaped arguments; the
+perpendicular theorem accepts `RingLawArgs`, `InnerProductLawArgs`, and `PerpVec`.
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `norm_sq_add_from_inner_args` | projects the primitive `normSq (x + y)` expansion from `InnerProductLawArgs` |
+| `norm_sq_add_of_dot_zero_from_args` | `dot x y = 0 -> normSq (x + y) = normSq x + normSq y` using the P27 scalar rewrite |
+| `norm_sq_add_of_perp_from_args` | `PerpVec x y -> normSq (x + y) = normSq x + normSq y` |
 
 #### `Proofs.Ai.Geometry.Affine`
 

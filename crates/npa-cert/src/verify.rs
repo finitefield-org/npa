@@ -899,18 +899,43 @@ pub(crate) fn add_imports_to_env(env: &mut Env, imports: &[&VerifiedModule]) -> 
     for import in &ordered {
         referenced_builtins.extend(verified_module_referenced_builtin_names(import)?);
     }
+    let imports_export_eq = verified_modules_export_builtin_eq(&ordered)?;
     let imports_export_eq_rec = verified_modules_export_builtin_eq_rec(&ordered)?;
-    add_referenced_builtins_to_env(env, &referenced_builtins)?;
+    let mut pre_import_builtins = referenced_builtins.clone();
+    if imports_export_eq {
+        pre_import_builtins
+            .retain(|name| !matches!(name.as_dotted().as_str(), "Eq" | "Eq.refl" | "Eq.rec"));
+    }
+    add_referenced_builtins_to_env(env, &pre_import_builtins)?;
     for import in ordered {
         for decl in verified_module_to_kernel_decls(import)? {
             add_decl_to_env(env, decl)?;
         }
     }
-    if imports_export_eq_rec && env.decl("Eq.rec").is_none() {
+    let needs_builtin_eq_rec = referenced_builtins
+        .iter()
+        .any(|name| name.as_dotted() == "Eq.rec");
+    if (imports_export_eq_rec || needs_builtin_eq_rec) && env.decl("Eq.rec").is_none() {
         let referenced = BTreeSet::from([Name::from_dotted("Eq"), Name::from_dotted("Eq.rec")]);
         add_referenced_builtins_to_env(env, &referenced)?;
     }
     Ok(())
+}
+
+fn verified_modules_export_builtin_eq(imports: &[&VerifiedModule]) -> Result<bool> {
+    for import in imports {
+        for entry in &import.export_block {
+            let Some(entry_name) = import.name_table.get(entry.name) else {
+                return Err(CertError::DecodeError);
+            };
+            // `Eq` is globally named in the kernel environment. If an import provides it,
+            // load that declaration before adding any builtin `Eq.rec` bridge.
+            if entry.kind == ExportKind::Inductive && entry_name.as_dotted() == "Eq" {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
 }
 
 fn verified_modules_export_builtin_eq_rec(imports: &[&VerifiedModule]) -> Result<bool> {

@@ -32,6 +32,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_ring: &'a VerifiedModule,
     abstract_ordered_field: &'a VerifiedModule,
     abstract_square_normalize: &'a VerifiedModule,
+    abstract_scalar_derive: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
     affine: &'a VerifiedModule,
@@ -429,6 +430,12 @@ const ABSTRACT_INNER_PRODUCT_THEOREMS: &[&str] = &[
     "norm_sq_sub_of_perp",
 ];
 
+const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
+    "norm_sq_add_from_inner_args",
+    "norm_sq_add_of_dot_zero_from_args",
+    "norm_sq_add_of_perp_from_args",
+];
+
 const AFFINE_DEFINITIONS: &[&str] = &[
     "Point",
     "disp",
@@ -775,6 +782,24 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Vector.AbstractInnerProductDerive",
+        source: "Proofs/Ai/Vector/AbstractInnerProductDerive/source.npa",
+        certificate: "Proofs/Ai/Vector/AbstractInnerProductDerive/certificate.npcert",
+        meta: "Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json",
+        replay: "Proofs/Ai/Vector/AbstractInnerProductDerive/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractScalarDerive",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Geometry.Affine",
         source: "Proofs/Ai/Geometry/Affine/source.npa",
         certificate: "Proofs/Ai/Geometry/Affine/certificate.npcert",
@@ -899,6 +924,12 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_ring_import,
         &abstract_ordered_field_import,
     );
+    let abstract_scalar_derive_import = verified_abstract_scalar_derive_import_module(
+        &root,
+        &eq_import,
+        &abstract_ring_import,
+        &abstract_square_normalize_import,
+    );
     let abstract_vector_space_import = verified_abstract_vector_space_import_module(
         &root,
         &eq_import,
@@ -954,6 +985,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_ring: &abstract_ring_import,
         abstract_ordered_field: &abstract_ordered_field_import,
         abstract_square_normalize: &abstract_square_normalize_import,
+        abstract_scalar_derive: &abstract_scalar_derive_import,
         abstract_vector_space: &abstract_vector_space_import,
         abstract_inner_product: &abstract_inner_product_import,
         affine: &affine_import,
@@ -1102,6 +1134,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Algebra.AbstractSquareNormalize" => {
                 session.register_verified_module(verified_imports.abstract_square_normalize.clone())
+            }
+            "Proofs.Ai.Algebra.AbstractScalarDerive" => {
+                session.register_verified_module(verified_imports.abstract_scalar_derive.clone())
             }
             "Proofs.Ai.Vector.AbstractSpace" => {
                 session.register_verified_module(verified_imports.abstract_vector_space.clone())
@@ -1265,6 +1300,21 @@ fn verified_abstract_square_normalize_import_module(
     session.register_verified_module(eq_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractSquareNormalize corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_scalar_derive_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_ring_import: &VerifiedModule,
+    abstract_square_normalize_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractScalarDerive/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(abstract_ring_import.clone());
+    session.register_verified_module(abstract_square_normalize_import.clone());
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractScalarDerive corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_vector_space_import_module(

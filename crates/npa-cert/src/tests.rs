@@ -2427,6 +2427,39 @@ fn current_builtin_eq_rec_can_coexist_with_imported_eq_shape() {
 }
 
 #[test]
+fn imported_builtin_eq_rec_dependency_can_coexist_with_imported_eq_shape() {
+    let eq_cert = build_module_cert(eq_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_eq = verify_module_cert(
+        &encode_module_cert(&eq_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let eq_rec_alias_cert =
+        build_module_cert(eq_rec_alias_module(), std::slice::from_ref(&verified_eq)).unwrap();
+    let verified_eq_rec_alias = verify_module_cert(
+        &encode_module_cert(&eq_rec_alias_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_alias_cert = build_module_cert(
+        use_imported_eq_rec_alias_module(),
+        &[verified_eq.clone(), verified_eq_rec_alias],
+    )
+    .unwrap();
+    verify_module_cert(
+        &encode_module_cert(&use_alias_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
 fn quotient_feature_requires_supported_checker_profile() {
     let cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
     assert_eq!(

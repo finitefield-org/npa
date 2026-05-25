@@ -66,7 +66,7 @@ predecessors, but the replacement target below is the P17-P25 abstract route.
 | Area | Current direct-law item | Why it matters | Follow-up |
 | --- | --- | --- | --- |
 | Scalar normalization | `Proofs.Ai.Algebra.AbstractSquareNormalize`: `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term`, `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq`, `sq_add_eq_add_sq_add_two_mul`, `sq_sub_eq_add_sq_sub_two_mul`, `add_sq_eq_zero_iff`, `mul_two_zero_term`, `normalize_add_with_zero_cross_term` | These currently accept a direct scalar rewrite law. The Pythagorean proof needs the cross-term path from `dot = 0` to removing `mul two dot`. | P27 derives the required scalar rewrite lemmas from `RingLawArgs`, square definitions, and equality reasoning. |
-| Inner-product norm normalization | `Proofs.Ai.Vector.AbstractInnerProduct`: `norm_sq_add`, `norm_sq_sub`, `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero`, `parallelogram_law`, `polarization_identity`, `norm_sq_zero_iff`, `norm_sq_nonneg`, `dist_sq_nonneg`, `norm_sq_add_of_perp`, `norm_sq_sub_of_perp` | These currently accept direct norm, dot-zero, or norm-identity laws. The squared theorem needs the perpendicular special case without taking it as a law. | P28 derives the norm expansion and perpendicular special case from `InnerProductLawArgs` and P27 scalar rewrites. |
+| Inner-product norm normalization | `Proofs.Ai.Vector.AbstractInnerProduct`: `norm_sq_add`, `norm_sq_sub`, `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero`, `parallelogram_law`, `polarization_identity`, `norm_sq_zero_iff`, `norm_sq_nonneg`, `dist_sq_nonneg`, `norm_sq_add_of_perp`, `norm_sq_sub_of_perp`; `Proofs.Ai.Vector.AbstractInnerProductDerive`: `norm_sq_add_from_inner_args`, `norm_sq_add_of_dot_zero_from_args`, `norm_sq_add_of_perp_from_args` | The base module still exposes direct norm, dot-zero, or norm-identity law wrappers. The squared theorem needs the perpendicular special case without taking it as a law. | P28 derives the norm expansion and perpendicular special case from `InnerProductLawArgs` and P27 scalar rewrites in `AbstractInnerProductDerive`. |
 | Affine normalization | `Proofs.Ai.Geometry.Affine`: `hypotenuse_vector_eq_sub_legs` delegates to `hypotenuse_vector_eq_sub_legs_law`; `AffineLawArgs` also contains `dist_sq_points_def_law` | The final proof must connect `distSqPoints B C` to the norm of the hypotenuse vector and orient that vector against the two legs. `dist_sq_points_def` itself is definitional, but the law package still exposes the same fact as a direct field. | P29 derives the needed affine orientation and distance-square bridge from `AffineLawArgs` fields that are primitive enough for the chosen route. |
 | Right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle`: `pythagorean_distance_sq_general`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` | `pythagorean_distance_sq_general` is the direct squared Pythagorean law. `law_of_cosines_general` is the intended intermediate identity but is also currently direct. Area and median targets are same-level right-triangle facts and must not be mistaken for prerequisites of the first squared theorem. | P30 builds the right-triangle to perpendicular bridge; P31 replaces the Pythagorean direct law with the derived squared theorem. Area and median remain later peer work. |
 | Metric-distance layer | `Proofs.Ai.Geometry.AbstractMetric`: `MetricSpaceLawArgs` fields `dist_def_law`, `dist_sq_eq_square_dist_law`, `dist_nonneg_law`, `distance_symm_law`, `distance_zero_iff_eq_law`, `pythagorean_distance_law`, `triangle_inequality_law`; theorem targets `dist_sq_eq_square_dist`, `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `pythagorean_distance_general`, and `triangle_inequality` delegate to the matching fields. `dist_def` itself is definitional. | The squared metric-distance theorem currently depends on a direct metric Pythagorean field and a direct `distSqPoints = sq dist` bridge. This should not block completing the squared-distance theorem. | P32 handles the metric bridge after P31 completes the squared-distance proof. |
@@ -120,7 +120,8 @@ Required imported packages for this target are:
 | `Proofs.Ai.Algebra.AbstractSquareNormalize` | existing square-normalization theorem targets from P19 |
 | `Proofs.Ai.Algebra.AbstractScalarDerive` | checked scalar zero-cross-term derivations from P27 |
 | `Proofs.Ai.Vector.AbstractSpace` | `VectorSpaceLawArgs`, `vsub`, vector additive rewrites |
-| `Proofs.Ai.Vector.AbstractInnerProduct` | `InnerProductLawArgs`, `dot`, `normSq`, `PerpVec`, derived norm expansion from P28 |
+| `Proofs.Ai.Vector.AbstractInnerProduct` | `InnerProductLawArgs`, `dot`, `normSq`, `PerpVec` |
+| `Proofs.Ai.Vector.AbstractInnerProductDerive` | checked P28 norm expansion and perpendicular norm theorem from `InnerProductLawArgs`, `PerpVec`, and P27 scalar rewrites |
 | `Proofs.Ai.Geometry.Affine` | `AffineLawArgs`, `disp`, `distSqPoints`, hypotenuse orientation from P29 |
 | `Proofs.Ai.Geometry.AbstractRightTriangle` | `RightTriangle`, `Perp`, right-triangle-to-perpendicular bridge from P30 |
 
@@ -166,7 +167,7 @@ The cross-term theorem has the required shape
 
 ### P28 Inner-Product Norm Expansion From Laws
 
-- Status: Pending
+- Status: Completed
 - Depends on: P27
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`, `Proofs.Ai.Algebra.AbstractSquareNormalize`,
   `Proofs.Ai.Algebra.AbstractScalarDerive`
@@ -190,6 +191,22 @@ PerpVec x y ->
   - `cargo test -p npa-proof-corpus`
   - Targeted review of the new theorem proof terms for absence of direct theorem-shaped law
     arguments.
+
+#### P28 Result
+
+Implemented `Proofs.Ai.Vector.AbstractInnerProductDerive` as a checked derivation layer over
+`InnerProductLawArgs`, `Proofs.Ai.Algebra.AbstractScalarDerive`, and `Std.Logic.Eq` equality
+transport. It provides:
+
+- `norm_sq_add_from_inner_args`
+- `norm_sq_add_of_dot_zero_from_args`
+- `norm_sq_add_of_perp_from_args`
+
+The perpendicular theorem has the required shape
+`PerpVec x y -> normSq (vadd x y) = add (normSq x) (normSq y)` after the shared scalar/vector
+parameters and law packages. The P28 theorem proof terms do not accept
+`norm_sq_add_of_perp_law` or `norm_sq_add_of_dot_zero_law` as direct arguments; the final step uses
+the P27 `normalize_add_with_zero_cross_term_from_ring_args` theorem to cancel the zero cross term.
 
 ### P29 Affine Hypotenuse Vector Derivation
 
