@@ -175,8 +175,7 @@ Phase 9 Human 完了後の required release completion gate は次です。
 `clippy -D warnings`、workspace 全体の test を通します。release / high-trust の pass/fail は
 checker result と deterministic artifact で決まり、AI sidecar、theorem graph score、
 formalization confidence、SMT solver output は trusted boundary に入りません。
-同じゲートは GitHub Actions の `Phase 9 Regression / phase9-regression`
-として、PR と `main` への push でも実行されます。
+GitHub Actions workflow は削除済みです。このゲートは必要に応じてローカルで実行します。
 
 Phase 8 の release audit fixture gate は次です。
 
@@ -186,7 +185,7 @@ Phase 8 の release audit fixture gate は次です。
 
 このゲートは `cargo test -p npa-checker-ref`、`cargo test -p npa-api independent_checker`、
 標準ライブラリ release audit fixture、`cargo test -p npa-api ai_search` を実行します。
-GitHub Actions では `Phase 8 Release Audit / phase8-release-audit` として走ります。
+GitHub Actions workflow は削除済みです。このゲートは必要に応じてローカルで実行します。
 Phase 8 gate は source-free checker / release audit / AI fast path 境界を確認する狭い gate で、
 Phase 9 Regression は workspace 全体の後続機能まで含む広い回帰 gate です。
 
