@@ -126,7 +126,7 @@ theorem law_of_cosines_sq_from_law_packages.{p,u,v} :
 
 ### LC2 Scalar Correction-Term Normalization
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC1
 - Inputs: `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractScalarDerive`,
   `Proofs.Ai.EqReasoning`
@@ -146,6 +146,19 @@ theorem law_of_cosines_sq_from_law_packages.{p,u,v} :
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "law_of_cosines_scalar_rhs.*law|add_neg_cross_term.*law|mul_two_neg.*law" proofs tools/proof-corpus`
+
+#### LC2 Result
+
+`Proofs.Ai.Algebra.AbstractScalarDerive` now contains checked scalar correction-term lemmas:
+
+| Theorem | Role |
+| --- | --- |
+| `mul_two_neg_from_ring_args` | Derives `mul two (neg x) = neg (mul two x)` from `RingLawArgs` by distributivity, additive cancellation, and `mul_zero`. |
+| `add_neg_cross_term_to_sub_sum_from_ring_args` | Reassociates and commutes `add (add a (neg t)) b`, then folds it to `sub (add a b) t` via `sub_eq_add_neg`. |
+| `law_of_cosines_scalar_rhs_from_ring_args` | Composes the two lemmas to rewrite `add (add a (mul two (neg x))) b` to `sub (add a b) (mul two x)`. |
+
+The proof path takes only `RingLawArgs` as its scalar law package. The module axiom report remains
+the documented equality-transport exception `Eq.rec`.
 
 ### LC3 Inner-Product Additive Cosine Expansion
 

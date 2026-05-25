@@ -373,6 +373,9 @@ const ABSTRACT_SCALAR_DERIVE_THEOREMS: &[&str] = &[
     "mul_two_zero_term_from_ring_args",
     "cancel_double_zero_term_from_ring_args",
     "normalize_add_with_zero_cross_term_from_ring_args",
+    "mul_two_neg_from_ring_args",
+    "add_neg_cross_term_to_sub_sum_from_ring_args",
+    "law_of_cosines_scalar_rhs_from_ring_args",
 ];
 
 const ABSTRACT_VECTOR_SPACE_DEFINITIONS: &[&str] =
