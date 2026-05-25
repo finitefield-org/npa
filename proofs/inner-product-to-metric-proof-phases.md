@@ -302,7 +302,7 @@ by the new scalar proof path.
 
 ### IPM3 Checked Parallelogram Law
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM2
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Algebra.AbstractScalarDerive`
@@ -320,6 +320,22 @@ by the new scalar proof path.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "parallelogram_law_from_inner_args|parallelogram_arg|parallelogram_law_law" proofs/Proofs/Ai/Vector tools/proof-corpus/src/main.rs`
+
+#### IPM3 Result
+
+`Proofs.Ai.Vector.AbstractInnerProductDerive` now includes the checked vector-level
+parallelogram route:
+
+| Theorem | Purpose |
+| --- | --- |
+| `norm_sq_sub_from_inner_args` | Projects the primitive `normSq (x - y)` expansion from `InnerProductLawArgs`. |
+| `parallelogram_law_from_inner_args` | Combines `norm_sq_add_from_inner_args`, `norm_sq_sub_from_inner_args`, and `parallelogram_scalar_rhs_from_ring_args` to derive the parallelogram identity. |
+
+The final theorem uses `Proofs.Ai.EqReasoning` to compose the add/sub norm expansions with the IPM2
+scalar normalization. It does not project `parallelogram_arg` or `parallelogram_law_law`; the
+remaining search hits are the law-package field declarations or unused binders in existing package
+destructuring. The theorem stays in `Proofs.Ai.Vector.AbstractInnerProductDerive` and has no point,
+metric, or square-root dependency.
 
 ### IPM4 Scalar Normalization For Polarization
 

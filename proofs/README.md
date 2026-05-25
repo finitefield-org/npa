@@ -33,8 +33,8 @@ Current bundles:
   scalar API layers and explicit vector operation/law assumptions.
 - `Proofs/Ai/Vector/AbstractInnerProduct/`: abstract inner-product, squared norm, and vector
   squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
-- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion derivations from
-  `InnerProductLawArgs`, P27 scalar rewrites, and `PerpVec`.
+- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion and parallelogram
+  derivations from `InnerProductLawArgs`, scalar rewrites, `EqReasoning`, and `PerpVec`.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/AffineDerive/`: checked affine displacement orientation and point-distance
@@ -1186,17 +1186,21 @@ Theorem targets:
 #### `Proofs.Ai.Vector.AbstractInnerProductDerive`
 
 No new vector or scalar operation definition lives here. This implemented module derives the
-norm-expansion path needed by the abstract Pythagorean route from `InnerProductLawArgs`, the P27
-`Proofs.Ai.Algebra.AbstractScalarDerive` zero-cross-term rewrite, and `Std.Logic.Eq` equality
-transport.
+norm-expansion path needed by the abstract Pythagorean route and the checked parallelogram route
+from `InnerProductLawArgs`, `Proofs.Ai.Algebra.AbstractScalarDerive`, `Proofs.Ai.EqReasoning`, and
+`Std.Logic.Eq` equality transport.
 
 The checked theorem targets record the expected `Eq.rec` dependency. They do not accept
-`norm_sq_add_of_dot_zero_law` or `norm_sq_add_of_perp_law` as direct theorem-shaped arguments; the
-perpendicular theorem accepts `RingLawArgs`, `InnerProductLawArgs`, and `PerpVec`.
+`norm_sq_add_of_dot_zero_law`, `norm_sq_add_of_perp_law`, or `parallelogram_law_law` as direct
+theorem-shaped arguments; the perpendicular theorem accepts `RingLawArgs`, `InnerProductLawArgs`,
+and `PerpVec`, while the parallelogram theorem combines checked add/sub norm expansions with the
+IPM2 scalar normalization.
 
 | Theorem | Shape / purpose |
 | --- | --- |
 | `norm_sq_add_from_inner_args` | projects the primitive `normSq (x + y)` expansion from `InnerProductLawArgs` |
+| `norm_sq_sub_from_inner_args` | projects the primitive `normSq (x - y)` expansion from `InnerProductLawArgs` |
+| `parallelogram_law_from_inner_args` | derives `normSq (x + y) + normSq (x - y) = 2 * normSq x + 2 * normSq y` from checked norm expansions and scalar normalization |
 | `norm_sq_add_of_dot_zero_from_args` | `dot x y = 0 -> normSq (x + y) = normSq x + normSq y` using the P27 scalar rewrite |
 | `norm_sq_add_of_perp_from_args` | `PerpVec x y -> normSq (x + y) = normSq x + normSq y` |
 

@@ -444,6 +444,8 @@ const ABSTRACT_INNER_PRODUCT_THEOREMS: &[&str] = &[
 
 const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
     "norm_sq_add_from_inner_args",
+    "norm_sq_sub_from_inner_args",
+    "parallelogram_law_from_inner_args",
     "dot_neg_left_from_inner_args",
     "norm_sq_neg_from_inner_args",
     "norm_sq_add_of_dot_zero_from_args",
@@ -837,6 +839,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &[
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractScalarDerive",
+            "Proofs.Ai.EqReasoning",
             "Proofs.Ai.Vector.AbstractInnerProduct",
             "Proofs.Ai.Vector.AbstractSpace",
             "Std.Logic.Eq",
@@ -1045,6 +1048,7 @@ fn ai_certificates_match_manifest_and_verify() {
     let abstract_inner_product_derive_import = verified_abstract_inner_product_derive_import_module(
         &root,
         &eq_import,
+        &eq_reasoning_import,
         &abstract_ring_import,
         &abstract_scalar_derive_import,
         &abstract_vector_space_import,
@@ -1495,6 +1499,7 @@ fn verified_abstract_inner_product_import_module(
 fn verified_abstract_inner_product_derive_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
     abstract_ring_import: &VerifiedModule,
     abstract_scalar_derive_import: &VerifiedModule,
     abstract_vector_space_import: &VerifiedModule,
@@ -1504,6 +1509,7 @@ fn verified_abstract_inner_product_derive_import_module(
     let mut session = VerifierSession::new();
     session.register_verified_module(abstract_ring_import.clone());
     session.register_verified_module(abstract_scalar_derive_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
     session.register_verified_module(abstract_inner_product_import.clone());
     session.register_verified_module(abstract_vector_space_import.clone());
     session.register_verified_module(eq_import.clone());
