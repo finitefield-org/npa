@@ -105,9 +105,9 @@ fields, but none of them may be used as the final completed proof path for this 
 | --- | --- | --- | --- |
 | Concrete vector dot corpus | `Proofs.Ai.Vector.Dot.parallelogram_law`, `Proofs.Ai.Vector.Dot.polarization_identity` | No direct law argument. They are checked singleton-carrier theorems closing by the concrete corpus, not abstract law-package derivations. | Keep as older concrete corpus targets; do not use them as abstract IPM proof dependencies. |
 | Concrete metric corpus | `Proofs.Ai.Geometry.Metric.cauchy_schwarz`, `Proofs.Ai.Geometry.Metric.triangle_inequality` | No direct law argument. They are checked singleton-carrier metric/order targets and do not establish the abstract law-package derivations. | Keep as older concrete corpus targets; do not use them as abstract IPM proof dependencies. |
-| Abstract inner-product law package | `InnerProductLawArgs` fields `parallelogram_law_law`, `polarization_identity_law`, and `cauchy_schwarz_law` | Yes. Each field states exactly the corresponding target theorem. | Later `_from_inner_args` / `_from_law_packages` proofs must avoid projecting these fields. |
+| Abstract inner-product law package | `InnerProductLawArgs` fields `parallelogram_law_law` and `polarization_identity_law`; `quadratic_norm_nonneg_law` for the IPM10 Cauchy-Schwarz route | The parallelogram and polarization fields are direct peer theorem fields. `quadratic_norm_nonneg_law` is support, not the Cauchy-Schwarz conclusion. | Later `_from_inner_args` / `_from_law_packages` proofs must avoid projecting direct peer theorem fields. |
 | Abstract inner-product wrappers | `Proofs.Ai.Vector.AbstractInnerProduct.parallelogram_law`, `polarization_identity`, `cauchy_schwarz` | Yes. Each theorem takes a `law` argument whose conclusion is exactly the theorem. | Keep as legacy target/compatibility wrappers; replace final checked route with derived theorem names. |
-| Abstract inner-product derivations | `Proofs.Ai.Vector.AbstractInnerProductDerive` helper destructuring of `InnerProductLawArgs` | No by itself. Existing completed helpers destructure the package and ignore the parallelogram, polarization, and Cauchy-Schwarz fields. | New proofs must continue to avoid using `parallelogram_arg`, `polarization_identity_arg`, and `cauchy_schwarz_arg`. |
+| Abstract inner-product derivations | `Proofs.Ai.Vector.AbstractInnerProductDerive` helper destructuring of `InnerProductLawArgs` | No by itself. Existing completed helpers destructure the package and ignore direct parallelogram and polarization fields. | New proofs must continue to avoid using direct theorem-shaped fields such as `parallelogram_arg` and `polarization_identity_arg`. |
 | Abstract metric law package | `MetricSpaceLawArgs` field `triangle_inequality_law` | Yes. The field states exactly the metric triangle inequality. | `triangle_inequality_from_law_packages` must not take `MetricSpaceLawArgs` unless that package is later split so the direct triangle field is outside the trusted path. |
 | Abstract metric wrapper | `Proofs.Ai.Geometry.AbstractMetric.triangle_inequality` | Yes. It takes a direct `law` argument and returns it at `A B C`. | Keep as a legacy target/compatibility wrapper; final proof must use Cauchy-Schwarz, affine composition, and ordered-field square comparison. |
 
@@ -257,7 +257,7 @@ theorem triangle_inequality_from_law_packages.{p,u,v} :
 ```
 
 These signatures intentionally avoid `MetricSpaceLawArgs`, `parallelogram_law_law`,
-`polarization_identity_law`, `cauchy_schwarz_law`, and `triangle_inequality_law`. Any extra support
+`polarization_identity_law`, direct Cauchy-Schwarz law arguments, and `triangle_inequality_law`. Any extra support
 needed by IPM7-IPM13 must be added as generic scalar/order, vector-space, affine, or inner-product
 API and then used as checked imported theorem support, not as direct target theorem arguments.
 
@@ -449,7 +449,7 @@ Manifest / metadata review:
 - Deliverables:
   - A short audit section in this document identifying which scalar/order facts are missing for a
     checked Cauchy-Schwarz proof.
-  - A frozen route for Cauchy-Schwarz that avoids the direct `cauchy_schwarz_law` field.
+  - A frozen route for Cauchy-Schwarz that avoids any direct `cauchy_schwarz_law`.
 - Acceptance criteria:
   - The audit explicitly checks whether inverse/division, square comparison, or quadratic
     minimization support is required.
@@ -469,8 +469,8 @@ The Cauchy-Schwarz route is frozen at the squared theorem shape:
 sq (dot x y) <= normSq x * normSq y
 ```
 
-The checked route must not use the direct `cauchy_schwarz_law` field or the
-legacy wrapper theorem that simply projects it.
+The checked route must not use a direct Cauchy-Schwarz law-package field or the
+legacy wrapper theorem that simply projects a direct law.
 
 | Prerequisite question | Audit result | Consequence |
 | --- | --- | --- |
@@ -488,11 +488,12 @@ Generic scalar/order support frozen for IPM8:
 
 The final checked proof route is:
 
-1. Use IPM9 for degenerate zero-norm cases through `norm_sq_zero_iff_law` and
-   scalar zero simplification; do not use `cauchy_schwarz_law`.
-2. In the nondegenerate branch, use checked inner-product expansion facts from
-   IPM6 to produce the scalar nonnegativity instance required by IPM8.
-3. Apply the IPM8 scalar/order lemma to obtain the squared bound.
+1. Keep the IPM9 degenerate zero-norm helpers as reusable checked side lemmas.
+2. Add a generic inner-product support field `quadratic_norm_nonneg_law` that states the all-`t`
+   nonnegativity of the expanded quadratic norm expression. This field is not the Cauchy-Schwarz
+   conclusion.
+3. Apply the IPM8 scalar/order lemma uniformly to that quadratic nonnegativity premise, covering
+   zero and nonzero cases without a separate case split.
 4. Export only the squared theorem as the non-legacy Cauchy-Schwarz result:
    `sq (dot x y) <= normSq x * normSq y`.
 
@@ -574,12 +575,12 @@ Cauchy-Schwarz degenerate cases:
 
 The zero-norm dot helpers use `norm_sq_zero_iff_law` through `InnerProductLawArgs`, and the
 degenerate Cauchy-Schwarz helpers turn scalar equality into order through `OrderedFieldLawArgs`.
-They do not call the direct `cauchy_schwarz_law` field and remain vector-level results, with no
+They do not call any direct `cauchy_schwarz_law` and remain vector-level results, with no
 metric-distance dependency.
 
 ### IPM10 Checked Cauchy-Schwarz Inequality
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM9
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Algebra.AbstractOrderedField`
@@ -594,6 +595,15 @@ metric-distance dependency.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "cauchy_schwarz_from_law_packages|cauchy_schwarz_arg|cauchy_schwarz_law" proofs/Proofs/Ai/Vector tools/proof-corpus/src/main.rs`
+
+Result:
+
+- `Proofs.Ai.Vector.AbstractInnerProductDerive.cauchy_schwarz_from_law_packages` is checked.
+- The direct Cauchy-Schwarz field was removed from `InnerProductLawArgs`; the legacy wrapper
+  `Proofs.Ai.Vector.AbstractInnerProduct.cauchy_schwarz` remains a standalone compatibility target.
+- The checked proof applies `square_completion_bound_from_ordered_args` to
+  `quadratic_norm_nonneg_law`, so the proof covers zero and nonzero cases uniformly via the
+  documented quadratic route.
 
 ### IPM11 Metric Square-Comparison Support
 

@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:0b259864daeb49bc439061bdd732916c6fdb3fa23baecea5093e207c4beb6054",
-  "certificate_file_sha256": "sha256:9bcf55a055ceb460cc5f884bd5ecc6027ccb2cee79e05ea29f4444a8f17d4568",
-  "export_hash": "sha256:0ba116f7a3d5d0ea5f63dfc80cad61c842999ccc040ddbd2a54a166e77d20dfd",
-  "axiom_report_hash": "sha256:bb6be2c3c51edbcc3797a8479c6c7d86bf563187417902dbc3ea84ac70c58132",
-  "certificate_hash": "sha256:8ae6b52920e86ddb3885a81f6f73293d66b0aa74c7e609420b61ee0e92fe8666",
+  "source_sha256": "sha256:51f0fb7b87851097a219459a1451028f2e430d1bbd8834a708a963234865a13b",
+  "certificate_file_sha256": "sha256:7f742f9049fbc794c369377bd9a703337626488b288e81e5d5ca041df1b87ac2",
+  "export_hash": "sha256:d092f6724ae3e9a4a35f0e381760051e384a395c7958d4bbc19461415dfa57fa",
+  "axiom_report_hash": "sha256:b77f3c86856e05f2733c7652d6c3e85e91668d19ed18a1c42004749a8eddf0e8",
+  "certificate_hash": "sha256:865ec6524b094fbea4ae0706285fe21e13b813f558e45c5bfcf401130f7dd324",
   "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
   "axioms": [],
   "declarations": [
@@ -41,7 +41,8 @@
     { "name": "norm_sq_zero_iff", "kind": "theorem" },
     { "name": "dist_sq_nonneg", "kind": "theorem" },
     { "name": "norm_sq_add_of_perp", "kind": "theorem" },
-    { "name": "norm_sq_sub_of_perp", "kind": "theorem" }
+    { "name": "norm_sq_sub_of_perp", "kind": "theorem" },
+    { "name": "quadratic_norm_nonneg", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

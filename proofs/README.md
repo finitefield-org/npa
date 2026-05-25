@@ -1177,7 +1177,9 @@ The theorem rows below are the law-package API surface. Rows that take the corre
 return it at requested variables are legacy target/compatibility wrappers, not the completed checked
 derivation paths. The completed checked parallelogram and polarization exports live in
 `Proofs.Ai.Vector.AbstractInnerProductDerive` as `parallelogram_law_from_inner_args` and
-`polarization_identity_from_inner_args`. Cauchy-Schwarz remains a future target at this stage.
+`polarization_identity_from_inner_args`. IPM10 also adds the checked Cauchy-Schwarz route as
+`cauchy_schwarz_from_law_packages`, using generic quadratic nonnegativity support rather than a
+direct Cauchy-Schwarz law-package field.
 
 Theorem targets / compatibility wrappers:
 
@@ -1192,7 +1194,8 @@ Theorem targets / compatibility wrappers:
 | `norm_sq_add`, `norm_sq_sub` | squared norm expansion |
 | `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero` | Pythagorean norm steps under perpendicularity |
 | `norm_sq_nonneg` | positivity target |
-| `cauchy_schwarz` | legacy squared Cauchy-Schwarz target wrapper; the checked route is not completed yet |
+| `quadratic_norm_nonneg` | generic all-`t` quadratic nonnegativity support used by the checked Cauchy-Schwarz route |
+| `cauchy_schwarz` | legacy squared Cauchy-Schwarz target wrapper; the checked route is `cauchy_schwarz_from_law_packages` |
 | `parallelogram_law`, `polarization_identity` | legacy peer theorem target wrappers; completed checked exports are `parallelogram_law_from_inner_args` and `polarization_identity_from_inner_args` |
 | `perp_vec_iff_dot_eq_zero` | iff-shaped equivalence between `PerpVec u v` and `dot u v = 0` |
 | `perp_vec_symm` | vector-level perpendicularity symmetry |
@@ -1208,15 +1211,18 @@ norm-expansion path needed by the abstract Pythagorean route and the checked par
 from `InnerProductLawArgs`, `Proofs.Ai.Algebra.AbstractScalarDerive`, `Proofs.Ai.EqReasoning`, and
 `Std.Logic.Eq` equality transport. IPM9 also adds reusable zero-norm Cauchy-Schwarz degenerate
 helpers, using `OrderedFieldLawArgs` only to turn equality of scalar endpoints into the requested
-order conclusion.
+order conclusion. IPM10 adds the full squared Cauchy-Schwarz theorem by applying
+`square_completion_bound_from_ordered_args` to `InnerProductLawArgs.quadratic_norm_nonneg_law`;
+this uniform quadratic route covers both zero and nonzero cases without projecting a direct
+Cauchy-Schwarz law.
 
 The checked theorem targets record the expected `Eq.rec` dependency. They do not accept
 `norm_sq_add_of_dot_zero_law`, `norm_sq_add_of_perp_law`, `parallelogram_law_law`, or
 `polarization_identity_law` as direct theorem-shaped arguments. The IPM9 degenerate
-Cauchy-Schwarz helpers use positive-definiteness through `norm_sq_zero_iff_law`, but do not call the
-direct `cauchy_schwarz_law` field. The manifest and metadata for this module list the checked
-exports with the expected `Eq.rec` axiom report; they do not list the full
-`cauchy_schwarz_from_law_packages` theorem or any metric triangle inequality theorem yet.
+Cauchy-Schwarz helpers use positive-definiteness through `norm_sq_zero_iff_law`. The IPM10 full
+Cauchy-Schwarz proof uses `quadratic_norm_nonneg_law`, not a direct Cauchy-Schwarz field. The
+manifest and metadata for this module list the checked exports with the expected `Eq.rec` axiom
+report; they do not list any metric triangle inequality theorem yet.
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -1232,6 +1238,7 @@ exports with the expected `Eq.rec` axiom report; they do not list the full
 | `dot_eq_zero_of_norm_sq_zero_right_from_inner_args` | derives `dot x y = 0` from `normSq y = 0` via positive-definiteness |
 | `cauchy_schwarz_zero_left_from_law_packages` | proves the Cauchy-Schwarz inequality when the left norm square is zero, without using the direct Cauchy-Schwarz law |
 | `cauchy_schwarz_zero_right_from_law_packages` | proves the Cauchy-Schwarz inequality when the right norm square is zero, without using the direct Cauchy-Schwarz law |
+| `cauchy_schwarz_from_law_packages` | proves `sq (dot x y) <= normSq x * normSq y` from ordered-field square completion and quadratic inner-product nonnegativity |
 
 #### `Proofs.Ai.Geometry.Affine`
 

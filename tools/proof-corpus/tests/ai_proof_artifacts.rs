@@ -453,6 +453,7 @@ const ABSTRACT_INNER_PRODUCT_THEOREMS: &[&str] = &[
     "dist_sq_nonneg",
     "norm_sq_add_of_perp",
     "norm_sq_sub_of_perp",
+    "quadratic_norm_nonneg",
 ];
 
 const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
@@ -471,6 +472,7 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
     "dot_eq_zero_of_norm_sq_zero_right_from_inner_args",
     "cauchy_schwarz_zero_left_from_law_packages",
     "cauchy_schwarz_zero_right_from_law_packages",
+    "cauchy_schwarz_from_law_packages",
 ];
 
 const AFFINE_DEFINITIONS: &[&str] = &[
