@@ -379,3 +379,21 @@ imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.Abstract
 definitions = ["Perp", "RightTriangle", "AngleRight", "Area2", "FootOnHypotenuse"]
 theorems = ["perp_iff_dot_eq_zero", "perp_symm", "right_triangle_legs_perp", "pythagorean_distance_sq_general", "law_of_cosines_general", "right_triangle_area_general", "median_to_hypotenuse_general"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Geometry.AbstractMetric"
+source = "Proofs/Ai/Geometry/AbstractMetric/source.npa"
+certificate = "Proofs/Ai/Geometry/AbstractMetric/certificate.npcert"
+meta = "Proofs/Ai/Geometry/AbstractMetric/meta.json"
+replay = "Proofs/Ai/Geometry/AbstractMetric/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:3526e66455eda0b60cb02509cbbec048d54a59e2850b49cdd54701115dbe2e38"
+certificate_file_sha256 = "sha256:6cf920c208bbe3e08a490a5f842940565648c7105b00e9c15070ee2e92e4ef63"
+export_hash = "sha256:cb875f98f6867633e5cecdad0311ad89800214fc3af2ed42044235982225bf02"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:5b96133aa3b64d7877dce8d3f7840ef2a52333382a85e243800707ddd974b2b9"
+imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Geometry.AbstractRightTriangle", "Proofs.Ai.Geometry.Affine", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"]
+definitions = ["dist", "MetricSpaceLawArgs", "Ball"]
+theorems = ["dist_def", "dist_sq_eq_square_dist", "dist_nonneg", "distance_symm", "distance_zero_iff_eq", "pythagorean_distance_general", "triangle_inequality"]
+axioms = []

@@ -383,6 +383,28 @@ const ABSTRACT_RIGHT_TRIANGLE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_METRIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.AbstractMetric",
+    source_path: "Proofs/Ai/Geometry/AbstractMetric/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/AbstractMetric/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/AbstractMetric/meta.json",
+    replay_path: "Proofs/Ai/Geometry/AbstractMetric/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.Geometry.AbstractRightTriangle",
+        "Proofs.Ai.Geometry.Affine",
+        "Proofs.Ai.Vector.AbstractInnerProduct",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_METRIC_DEFINITIONS,
+    theorems: ABSTRACT_METRIC_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -591,6 +613,47 @@ macro_rules! abstract_right_triangle_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_metric_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (PointCarrier : Sort p), ",
+            "forall (disp_op : forall (A : PointCarrier), forall (B : PointCarrier), Vector), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_metric_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => ",
             $tail
         )
     };
@@ -3551,6 +3614,114 @@ const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_METRIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "dist",
+        universe_params: &["p", "u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (PointCarrier : Sort p), ",
+            "forall (disp_op : forall (A : PointCarrier), forall (B : PointCarrier), Vector), ",
+            "forall (A : PointCarrier), forall (B : PointCarrier), Scalar"
+        ),
+        value:
+            "fun Scalar => fun sqrt_fn => fun Vector => fun inner => fun PointCarrier => fun disp_op => fun A => fun B => @sqrt.{u} Scalar sqrt_fn (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)",
+    },
+    DefinitionArtifact {
+        name: "MetricSpaceLawArgs",
+        universe_params: &["p", "u", "v"],
+        ty: abstract_metric_params!("Prop"),
+        value: abstract_metric_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (dist_def_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@sqrt.{u} Scalar sqrt_fn (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B))), ",
+            "forall (dist_sq_eq_square_dist_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))), ",
+            "forall (dist_nonneg_law : forall (A : PointCarrier), forall (B : PointCarrier), le_rel zero (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)), ",
+            "forall (distance_symm_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B A)), ",
+            "forall (distance_zero_iff_eq_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), R), R), ",
+            "forall (pythagorean_distance_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), ",
+            "forall (triangle_inequality_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), le_rel (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C) (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C))), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "Ball",
+        universe_params: &["p", "u", "v"],
+        ty: abstract_metric_params!(
+            "forall (center : PointCarrier), forall (radius : Scalar), forall (x : PointCarrier), Prop"
+        ),
+        value: abstract_metric_abs!(
+            "fun center => fun radius => fun x => le_rel (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op center x) radius"
+        ),
+    },
+];
+
+const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dist_def",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@sqrt.{u} Scalar sqrt_fn (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B))"
+        ),
+        proof: abstract_metric_abs!(
+            "fun A => fun B => @Eq.refl.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)"
+        ),
+    },
+    TheoremArtifact {
+        name: "dist_sq_eq_square_dist",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))"
+        ),
+        proof: abstract_metric_abs!("fun law => fun A => fun B => law A B"),
+    },
+    TheoremArtifact {
+        name: "dist_nonneg",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), le_rel zero (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)), forall (A : PointCarrier), forall (B : PointCarrier), le_rel zero (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)"
+        ),
+        proof: abstract_metric_abs!("fun law => fun A => fun B => law A B"),
+    },
+    TheoremArtifact {
+        name: "distance_symm",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B A)), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B A)"
+        ),
+        proof: abstract_metric_abs!("fun law => fun A => fun B => law A B"),
+    },
+    TheoremArtifact {
+        name: "distance_zero_iff_eq",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), R), R), forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), R), R"
+        ),
+        proof: abstract_metric_abs!(
+            "fun law => fun A => fun B => fun (R : Prop) => fun (mk : forall (forward : forall (h : @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), R) => law A B R mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_distance_general",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))"
+        ),
+        proof: abstract_metric_abs!(
+            "fun law => fun A => fun B => fun C => fun h => law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "triangle_inequality",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), le_rel (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C) (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), le_rel (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C) (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C))"
+        ),
+        proof: abstract_metric_abs!("fun law => fun A => fun B => fun C => law A B C"),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -3835,6 +4006,31 @@ fn run() -> Result<(), String> {
         &abstract_right_triangle_imports,
         &abstract_right_triangle_source_interfaces,
     )?;
+    let abstract_metric_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_inner_product.verified_module.clone(),
+        affine.verified_module.clone(),
+        abstract_right_triangle.verified_module.clone(),
+    ];
+    let abstract_metric_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_inner_product.source_interface.clone(),
+        affine.source_interface.clone(),
+        abstract_right_triangle.source_interface.clone(),
+    ];
+    let abstract_metric = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_METRIC_MODULE,
+        &abstract_metric_imports,
+        &abstract_metric_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -3860,6 +4056,7 @@ fn run() -> Result<(), String> {
             abstract_inner_product,
             affine,
             abstract_right_triangle,
+            abstract_metric,
         ])
         .as_bytes(),
     )?;
@@ -4162,6 +4359,16 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Vector.AbstractSpace",
             "Proofs.Ai.Vector.AbstractInnerProduct",
             "Proofs.Ai.Geometry.Affine",
+        ]
+    } else if config.module == ABSTRACT_METRIC_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Geometry.AbstractRightTriangle",
         ]
     } else {
         config.imports

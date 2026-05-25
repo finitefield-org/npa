@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.AbstractMetric",
+  "source": "Proofs/Ai/Geometry/AbstractMetric/source.npa",
+  "certificate": "Proofs/Ai/Geometry/AbstractMetric/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3526e66455eda0b60cb02509cbbec048d54a59e2850b49cdd54701115dbe2e38",
+  "certificate_file_sha256": "sha256:6cf920c208bbe3e08a490a5f842940565648c7105b00e9c15070ee2e92e4ef63",
+  "export_hash": "sha256:cb875f98f6867633e5cecdad0311ad89800214fc3af2ed42044235982225bf02",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:5b96133aa3b64d7877dce8d3f7840ef2a52333382a85e243800707ddd974b2b9",
+  "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Geometry.AbstractRightTriangle", "Proofs.Ai.Geometry.Affine", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "dist", "kind": "def" },
+    { "name": "MetricSpaceLawArgs", "kind": "def" },
+    { "name": "Ball", "kind": "def" },
+    { "name": "dist_def", "kind": "theorem" },
+    { "name": "dist_sq_eq_square_dist", "kind": "theorem" },
+    { "name": "dist_nonneg", "kind": "theorem" },
+    { "name": "distance_symm", "kind": "theorem" },
+    { "name": "distance_zero_iff_eq", "kind": "theorem" },
+    { "name": "pythagorean_distance_general", "kind": "theorem" },
+    { "name": "triangle_inequality", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

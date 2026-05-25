@@ -37,6 +37,8 @@ Current bundles:
   targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/AbstractRightTriangle/`: abstract perpendicularity, right-triangle, and
   squared-distance Pythagorean theorem targets over explicit geometry law assumptions.
+- `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
+  metric-distance theorem targets over explicit metric law assumptions.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -562,7 +564,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P24+: General Euclidean Pythagorean Roadmap
+### P25+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -578,8 +580,8 @@ singleton scalar layer with explicit carrier, operation, and law assumptions. P1
 abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
 normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
 inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23 supplies
-the abstract right-triangle theorem-target layer. P24+ continues the pattern through metric and
-final theorem APIs.
+the abstract right-triangle theorem-target layer. P24 supplies the abstract metric-distance
+theorem-target layer. P25 continues the pattern with the final theorem API.
 
 Planned contents:
 
@@ -629,8 +631,11 @@ Completed prerequisite:
 - P23 `Proofs.Ai.Geometry.AbstractRightTriangle` supplies checked abstract perpendicularity,
   right-triangle, squared-distance Pythagorean, law-of-cosines, area, and median theorem targets
   over explicit geometry law assumptions without adding unchecked Euclidean axioms.
+- P24 `Proofs.Ai.Geometry.AbstractMetric` supplies checked abstract distance, metric law-package,
+  ball API, distance/squared-distance bridge, metric Pythagorean, and triangle-inequality theorem
+  targets over explicit metric law assumptions without adding unchecked metric axioms.
 
-P24+ policy:
+P25 policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -641,7 +646,6 @@ P24+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P24 | `Proofs.Ai.Geometry.AbstractMetric` | abstract `dist` over `sqrt (distSqPoints A B)` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance_general` | `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality` |
 | P25 | `Proofs.Ai.Geometry.Pythagorean` | no new API; final theorem module collecting P16-P24 | `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq` | `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization` |
 
 The intended dependency order is:
@@ -1153,13 +1157,18 @@ Theorem targets:
 
 #### `Proofs.Ai.Geometry.AbstractMetric`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `dist` | abstract distance API, normally `sqrt (distSqPoints A B)` |
-| `MetricSpaceLawArgs` | optional law package for symmetry, nonnegativity, and triangle inequality exports |
-| `Ball` | optional open/closed ball API for later metric-space library growth |
+| `dist` | abstract distance API, defined as `sqrt (distSqPoints A B)` |
+| `MetricSpaceLawArgs` | Church-encoded law package for distance definition, symmetry, nonnegativity, Pythagorean bridge, and triangle inequality exports |
+| `Ball` | closed-ball API, defined through `dist center x <= radius` |
+
+`dist_def` closes by definitional equality. The remaining checked theorem targets take the
+corresponding metric law as an explicit argument and return it at the requested points.
+`distance_zero_iff_eq` uses the same iff-shaped Church encoding as earlier axiom-free geometry
+targets rather than importing `Proofs.Ai.Logic.Iff` directly into this metric layer.
 
 Theorem targets:
 
@@ -1169,14 +1178,9 @@ Theorem targets:
 | `dist_sq_eq_square_dist` | `distSqPoints A B = sq (dist A B)` |
 | `dist_nonneg` | `0 <= dist A B` |
 | `distance_symm` | `dist A B = dist B A` |
-| `distance_zero_iff_eq` | first-class `Iff (dist A B = 0) (A = B)` |
+| `distance_zero_iff_eq` | iff-shaped equivalence between `dist A B = 0` and `A = B` |
 | `pythagorean_distance_general` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
-| `dist_eq_zero_of_eq` | `A = B -> dist A B = 0` |
-| `eq_of_dist_eq_zero` | `dist A B = 0 -> A = B` |
-| `dist_sq_nonneg` | `0 <= distSqPoints A B`, exported for square-root proofs |
-| `dist_eq_sqrt_dist_sq` | alias-style rewrite target for generated proofs |
-| `pythagorean_distance_unsquared` | optional square-root form once the required cancellation lemmas are available |
 
 #### `Proofs.Ai.Geometry.Pythagorean`
 
