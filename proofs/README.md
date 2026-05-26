@@ -113,6 +113,11 @@ Current bundles:
   identity, multiplication, inverse, and quotient conjugation, kernel soundness for the `H/N`
   predicate, law-bundle target aliases for `H/N`, and the `ThirdIsoPhi` kernel-relation quotient
   carrier alias.
+- `Proofs/Ai/Algebra/AbstractGroupCorrespondence/`: AI-facing correspondence theorem route for a
+  normal subgroup `N`, packaging the image map from subgroups `H` with `N <= H` to quotient
+  subgroups of `G/N`, the preimage map from quotient subgroups back to subgroups of `G`, subgroup
+  closure for both maps, containment of `N` in preimages, quotient-side round-trip membership
+  conversions, and subgroup-side `NormalRel` saturation equivalence.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
@@ -135,6 +140,8 @@ Planning documents:
   second-isomorphism route.
 - `third-isomorphism-proof-phases.md`: TI0-TI4 plan for the AI-facing group third-isomorphism
   route.
+- `correspondence-theorem-proof-phases.md`: CT0-CT4 plan for the AI-facing group correspondence
+  theorem route.
 
 ## Completed Inner-Product To Metric Route
 

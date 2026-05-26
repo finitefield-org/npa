@@ -610,6 +610,39 @@ const ABSTRACT_GROUP_THIRD_ISO_THEOREMS: &[&str] = &[
     "third_isomorphism_theorem_evidence",
 ];
 
+const ABSTRACT_GROUP_CORRESPONDENCE_DEFINITIONS: &[&str] = &[
+    "CorrespondenceImagePred",
+    "CorrespondencePreimagePred",
+    "CorrespondenceSaturationPred",
+    "CorrespondenceImageSubgroupMk",
+    "CorrespondencePreimageSubgroupMk",
+    "CorrespondenceImageSubgroupLawArgs",
+    "CorrespondencePreimageSubgroupLawArgs",
+    "CorrespondenceTheoremMk",
+    "CorrespondenceTheoremEvidence",
+];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_THEOREMS: &[&str] = &[
+    "correspondence_group_mul_inv_left_reassoc",
+    "correspondence_subgroup_saturates",
+    "correspondence_image_intro",
+    "correspondence_saturation_intro",
+    "correspondence_saturation_elim",
+    "correspondence_image_elim",
+    "correspondence_image_one",
+    "correspondence_image_mul_closed",
+    "correspondence_image_inv_closed",
+    "correspondence_preimage_one",
+    "correspondence_preimage_mul_closed",
+    "correspondence_preimage_inv_closed",
+    "correspondence_preimage_contains_normal",
+    "correspondence_subgroup_to_preimage_image",
+    "correspondence_subgroup_to_saturation",
+    "correspondence_saturation_to_subgroup",
+    "correspondence_quotient_to_image_preimage",
+    "correspondence_image_preimage_to_quotient",
+];
+
 const ABSTRACT_RING_DEFINITIONS: &[&str] = &["two", "sq", "RingLawArgs"];
 
 const ABSTRACT_RING_THEOREMS: &[&str] = &[
@@ -1418,6 +1451,26 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: ABSTRACT_GROUP_THIRD_ISO_DEFINITIONS,
         theorems: ABSTRACT_GROUP_THIRD_ISO_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+        source: "Proofs/Ai/Algebra/AbstractGroupCorrespondence/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupCorrespondence/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupCorrespondence/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupCorrespondence/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+            "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_CORRESPONDENCE_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_CORRESPONDENCE_THEOREMS,
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
@@ -2947,6 +3000,7 @@ fn supported_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoImage"
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal"
             | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
+            | "Proofs.Ai.Algebra.AbstractGroupCorrespondence"
     ) {
         vec![
             CoreFeature::QuotientV1,
@@ -2976,6 +3030,7 @@ fn expected_core_features(module: &str) -> Vec<CoreFeature> {
         "Proofs.Ai.Algebra.AbstractGroupQuotientHom"
             | "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"
             | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
+            | "Proofs.Ai.Algebra.AbstractGroupCorrespondence"
     ) {
         vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
     } else {

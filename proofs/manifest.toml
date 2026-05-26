@@ -598,6 +598,24 @@ theorems = ["third_iso_rel_lift", "third_iso_hn_intro", "third_iso_hn_elim", "th
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupCorrespondence"
+source = "Proofs/Ai/Algebra/AbstractGroupCorrespondence/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupCorrespondence/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupCorrespondence/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupCorrespondence/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:6285ebddea4f4995d7420899e75edc784e596cd6d59579bb1b02a457cdd751b6"
+certificate_file_sha256 = "sha256:2f659852d42620bdb4cbbac30938d193dccfc20c9dbc0a8c93e8557fc36d01cd"
+export_hash = "sha256:75416951f90eb0d0a7fa6b6d2339535b578277bd5e774e5027ad85d12e63a57b"
+axiom_report_hash = "sha256:e07797c5b79b7dee321ac49eb768367358cd72c9d70bb3fc1c975886e00e2404"
+certificate_hash = "sha256:49e403965be8d364c3eeef303a9c4b3027e0e67b102f6c6db633d9530ff4f711"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup"]
+definitions = ["CorrespondenceImagePred", "CorrespondencePreimagePred", "CorrespondenceSaturationPred", "CorrespondenceImageSubgroupMk", "CorrespondencePreimageSubgroupMk", "CorrespondenceImageSubgroupLawArgs", "CorrespondencePreimageSubgroupLawArgs", "CorrespondenceTheoremMk", "CorrespondenceTheoremEvidence"]
+theorems = ["correspondence_group_mul_inv_left_reassoc", "correspondence_subgroup_saturates", "correspondence_image_intro", "correspondence_saturation_intro", "correspondence_saturation_elim", "correspondence_image_elim", "correspondence_image_one", "correspondence_image_mul_closed", "correspondence_image_inv_closed", "correspondence_preimage_one", "correspondence_preimage_mul_closed", "correspondence_preimage_inv_closed", "correspondence_preimage_contains_normal", "correspondence_subgroup_to_preimage_image", "correspondence_subgroup_to_saturation", "correspondence_saturation_to_subgroup", "correspondence_quotient_to_image_preimage", "correspondence_image_preimage_to_quotient"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractRing"
 source = "Proofs/Ai/Algebra/AbstractRing/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractRing/certificate.npcert"
