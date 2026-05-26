@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+  "source": "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7f10850d8346f35748b12431cf7d7c28330dbb5f06ca6fc62d0e7da4c6ea759c",
+  "certificate_file_sha256": "sha256:fa5521f2655b4877272a55985a1bfa37219f052c58fe9a0deb13efe38aae8249",
+  "export_hash": "sha256:474920dc37a91a499b50591e71ee8c73c3c0f5e68c04857ba672661e2dd40806",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:242fa3ed3a61b0cf982d2b440f79f635a0f8729ae215c5ef9d3aa65aeb63a1c6",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroupSubgroup"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SubgroupLe", "kind": "def" },
+    { "name": "SubgroupEquiv", "kind": "def" },
+    { "name": "NormalContains", "kind": "def" },
+    { "name": "subgroup_le_refl", "kind": "theorem" },
+    { "name": "subgroup_le_trans", "kind": "theorem" },
+    { "name": "subgroup_equiv_intro", "kind": "theorem" },
+    { "name": "subgroup_equiv_left", "kind": "theorem" },
+    { "name": "subgroup_equiv_right", "kind": "theorem" },
+    { "name": "subgroup_equiv_refl", "kind": "theorem" },
+    { "name": "subgroup_equiv_symm", "kind": "theorem" },
+    { "name": "subgroup_equiv_trans", "kind": "theorem" },
+    { "name": "normal_contains_to_subgroup_le", "kind": "theorem" },
+    { "name": "subgroup_le_to_normal_contains", "kind": "theorem" },
+    { "name": "normal_contains_refl", "kind": "theorem" },
+    { "name": "normal_contains_trans", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

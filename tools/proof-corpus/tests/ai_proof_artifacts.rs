@@ -524,6 +524,24 @@ const ABSTRACT_GROUP_SUBGROUP_THEOREMS: &[&str] = &[
     "normal_rel_product_right",
 ];
 
+const ABSTRACT_GROUP_SUBGROUP_ORDER_DEFINITIONS: &[&str] =
+    &["SubgroupLe", "SubgroupEquiv", "NormalContains"];
+
+const ABSTRACT_GROUP_SUBGROUP_ORDER_THEOREMS: &[&str] = &[
+    "subgroup_le_refl",
+    "subgroup_le_trans",
+    "subgroup_equiv_intro",
+    "subgroup_equiv_left",
+    "subgroup_equiv_right",
+    "subgroup_equiv_refl",
+    "subgroup_equiv_symm",
+    "subgroup_equiv_trans",
+    "normal_contains_to_subgroup_le",
+    "subgroup_le_to_normal_contains",
+    "normal_contains_refl",
+    "normal_contains_trans",
+];
+
 const ABSTRACT_GROUP_NORMAL_QUOTIENT_DEFINITIONS: &[&str] =
     &["NormalSetoid", "NormalQuot", "NormalQuotMk"];
 
@@ -1326,6 +1344,23 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: ABSTRACT_GROUP_SUBGROUP_DEFINITIONS,
         theorems: ABSTRACT_GROUP_SUBGROUP_THEOREMS,
         axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+        source: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_SUBGROUP_ORDER_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_SUBGROUP_ORDER_THEOREMS,
+        axioms: &[],
     },
     ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",

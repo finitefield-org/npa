@@ -1,0 +1,87 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SubgroupLe",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun K => forall (x : G), forall (hx : H x), K x"
+    },
+    {
+      "declaration": "SubgroupEquiv",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun K => forall (P : Prop), forall (mk : forall (left : @SubgroupLe.{u} G H K), forall (right : @SubgroupLe.{u} G K H), P), P"
+    },
+    {
+      "declaration": "NormalContains",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun N => fun H => forall (x : G), forall (hn : N x), H x"
+    },
+    {
+      "declaration": "subgroup_le_refl",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun (x : G) => fun (hx : H x) => hx"
+    },
+    {
+      "declaration": "subgroup_le_trans",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun K => fun L => fun hk => fun kl => fun (x : G) => fun (hx : H x) => kl x (hk x hx)"
+    },
+    {
+      "declaration": "subgroup_equiv_intro",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun K => fun hk => fun kh => fun (P : Prop) => fun (mk : forall (left : @SubgroupLe.{u} G H K), forall (right : @SubgroupLe.{u} G K H), P) => mk hk kh"
+    },
+    {
+      "declaration": "subgroup_equiv_left",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun K => fun h_equiv_k => h_equiv_k (@SubgroupLe.{u} G H K) (fun (hk : @SubgroupLe.{u} G H K) => fun (kh : @SubgroupLe.{u} G K H) => hk)"
+    },
+    {
+      "declaration": "subgroup_equiv_right",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun K => fun h_equiv_k => h_equiv_k (@SubgroupLe.{u} G K H) (fun (hk : @SubgroupLe.{u} G H K) => fun (kh : @SubgroupLe.{u} G K H) => kh)"
+    },
+    {
+      "declaration": "subgroup_equiv_refl",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => @subgroup_equiv_intro.{u} G H H (@subgroup_le_refl.{u} G H) (@subgroup_le_refl.{u} G H)"
+    },
+    {
+      "declaration": "subgroup_equiv_symm",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun K => fun h_equiv_k => @subgroup_equiv_intro.{u} G K H (@subgroup_equiv_right.{u} G H K h_equiv_k) (@subgroup_equiv_left.{u} G H K h_equiv_k)"
+    },
+    {
+      "declaration": "subgroup_equiv_trans",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun K => fun L => fun h_equiv_k => fun k_equiv_l => @subgroup_equiv_intro.{u} G H L (@subgroup_le_trans.{u} G H K L (@subgroup_equiv_left.{u} G H K h_equiv_k) (@subgroup_equiv_left.{u} G K L k_equiv_l)) (@subgroup_le_trans.{u} G L K H (@subgroup_equiv_right.{u} G K L k_equiv_l) (@subgroup_equiv_right.{u} G H K h_equiv_k))"
+    },
+    {
+      "declaration": "normal_contains_to_subgroup_le",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun N => fun H => fun contains => contains"
+    },
+    {
+      "declaration": "subgroup_le_to_normal_contains",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun N => fun H => fun le => le"
+    },
+    {
+      "declaration": "normal_contains_refl",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun N => fun (x : G) => fun (hn : N x) => hn"
+    },
+    {
+      "declaration": "normal_contains_trans",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun N => fun H => fun K => fun nh => fun hk => fun (x : G) => fun (hn : N x) => hk x (nh x hn)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/certificate.npcert"
+  }
+}

@@ -100,7 +100,8 @@ The subgroup-side reverse direction uses saturation: a witness `h : H` with `h ~
 
 ## CT4: Final AI-Facing Evidence
 
-Module: `Proofs.Ai.Algebra.AbstractGroupCorrespondence`
+Modules: `Proofs.Ai.Algebra.AbstractGroupCorrespondence` and
+`Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal`
 
 Status: certificate generated.
 
@@ -117,6 +118,95 @@ Completed exports:
 Scope note: this route proves the correspondence as checked predicate and law-package evidence. It
 does not add native subtype carriers, a bundled bijection record, lattice operations, order
 preservation, quotient equality reflection, or a kernel-level subgroup object.
+
+## Next Extension Plan
+
+The current CT0-CT4 route is complete, but downstream theorem proving would benefit from a small
+API layer over the checked components. These extensions should stay outside the kernel trusted
+base: they should be ordinary certificate-backed definitions and theorems in the proof corpus.
+
+### CT5: Predicate Inclusion API
+
+Module: `Proofs.Ai.Algebra.AbstractGroupSubgroupOrder`
+
+Status: certificate generated.
+
+Completed exports:
+
+| Export | Role |
+| --- | --- |
+| `SubgroupLe` | abbreviation for `forall x, H x -> K x` |
+| `SubgroupEquiv` | bidirectional predicate inclusion for subgroup predicates |
+| `NormalContains` | abbreviation for `forall x, N x -> H x` |
+| `subgroup_le_refl` | reflexivity of predicate inclusion |
+| `subgroup_le_trans` | transitivity of predicate inclusion |
+| `subgroup_equiv_intro` | constructor for bidirectional predicate equivalence |
+| `subgroup_equiv_left` | extracts the forward inclusion from predicate equivalence |
+| `subgroup_equiv_right` | extracts the reverse inclusion from predicate equivalence |
+| `subgroup_equiv_refl` | reflexivity of predicate equivalence |
+| `subgroup_equiv_symm` | symmetry of predicate equivalence |
+| `subgroup_equiv_trans` | transitivity of predicate equivalence |
+| `normal_contains_to_subgroup_le` | views `NormalContains N H` as `SubgroupLe N H` |
+| `subgroup_le_to_normal_contains` | views `SubgroupLe N H` as `NormalContains N H` |
+| `normal_contains_refl` | reflexivity of `NormalContains` |
+| `normal_contains_trans` | transitivity of `NormalContains` |
+
+Reason: the current correspondence and isomorphism routes repeat raw `forall x` inclusion
+arguments. Naming these relations will make later order and equivalence theorems shorter and easier
+for AI proof search to target.
+
+### CT6: Correspondence Monotonicity
+
+Suggested module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder`.
+
+Add monotonicity and equivalence-respect theorems for the two correspondence maps:
+
+| Export | Role |
+| --- | --- |
+| `correspondence_image_mono` | if `H <= H'`, then `image(H) <= image(H')` in `G/N` |
+| `correspondence_preimage_mono` | if `K <= K'`, then `preimage(K) <= preimage(K')` in `G` |
+| `correspondence_image_respects_equiv` | equivalent subgroup predicates have equivalent images |
+| `correspondence_preimage_respects_equiv` | equivalent quotient predicates have equivalent preimages |
+
+Reason: these facts are the next step from membership round trips to an order-theoretic
+correspondence. They should be lightweight because they mostly eliminate and reintroduce the
+existing Church-encoded image predicate.
+
+### CT7: Direct Law-Package Theorems
+
+Suggested module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal` or a follow-up final API
+module.
+
+Add direct theorem exports for the law packages already represented by target definitions:
+
+| Export | Role |
+| --- | --- |
+| `correspondence_image_subgroup_law_args` | constructs `CorrespondenceImageSubgroupLawArgs` directly |
+| `correspondence_preimage_subgroup_law_args` | constructs `CorrespondencePreimageSubgroupLawArgs` directly |
+
+Reason: `correspondence_theorem_evidence` is useful as a final certificate-backed package, but
+downstream proofs often need the concrete subgroup law package rather than an evidence wrapper.
+
+### CT8: Order Evidence Wrapper
+
+Suggested module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal`.
+
+Add a final AI-facing evidence wrapper for the order-level form of the theorem:
+
+| Export | Role |
+| --- | --- |
+| `CorrespondenceOrderEvidence` | packages image/preimage monotonicity, round trips, and saturation |
+| `correspondence_order_evidence` | certificate-backed theorem constructing that package |
+
+Reason: this would state the correspondence theorem closer to its standard mathematical form while
+still using predicate-level and certificate-first artifacts.
+
+### Boundary Note
+
+Do not add quotient equality reflection merely to state `preimage(image(H)) = H` directly. The
+current route intentionally proves the subgroup-side reverse direction through `NormalRel`
+saturation. If a later route needs exact quotient-class reflection, it should first document the
+trusted-boundary impact and prefer a certificate-backed theorem over a kernel primitive.
 
 ## Completion Evidence
 

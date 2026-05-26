@@ -454,6 +454,24 @@ theorems = ["subgroup_one", "subgroup_mul_closed", "subgroup_inv_closed", "norma
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder"
+source = "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:7f10850d8346f35748b12431cf7d7c28330dbb5f06ca6fc62d0e7da4c6ea759c"
+certificate_file_sha256 = "sha256:fa5521f2655b4877272a55985a1bfa37219f052c58fe9a0deb13efe38aae8249"
+export_hash = "sha256:474920dc37a91a499b50591e71ee8c73c3c0f5e68c04857ba672661e2dd40806"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:242fa3ed3a61b0cf982d2b440f79f635a0f8729ae215c5ef9d3aa65aeb63a1c6"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroupSubgroup"]
+definitions = ["SubgroupLe", "SubgroupEquiv", "NormalContains"]
+theorems = ["subgroup_le_refl", "subgroup_le_trans", "subgroup_equiv_intro", "subgroup_equiv_left", "subgroup_equiv_right", "subgroup_equiv_refl", "subgroup_equiv_symm", "subgroup_equiv_trans", "normal_contains_to_subgroup_le", "subgroup_le_to_normal_contains", "normal_contains_refl", "normal_contains_trans"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractGroupNormalQuotient"
 source = "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/certificate.npcert"

@@ -458,6 +458,24 @@ const ABSTRACT_GROUP_SUBGROUP_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_GROUP_SUBGROUP_ORDER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_SUBGROUP_ORDER_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_SUBGROUP_ORDER_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_GROUP_NORMAL_QUOTIENT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
     source_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/source.npa",
@@ -5523,6 +5541,236 @@ const ABSTRACT_GROUP_SUBGROUP_THEOREMS: &[TheoremArtifact] = &[
             "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (inv h) z) (mul h n) x hx)) ",
             "hn"
         )),
+    },
+];
+
+const ABSTRACT_GROUP_SUBGROUP_ORDER_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SubgroupLe",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), Prop"
+        ),
+        value: concat!(
+            "fun G => fun H => fun K => ",
+            "forall (x : G), forall (hx : H x), K x"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SubgroupEquiv",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), Prop"
+        ),
+        value: concat!(
+            "fun G => fun H => fun K => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (left : @SubgroupLe.{u} G H K), ",
+            "forall (right : @SubgroupLe.{u} G K H), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormalContains",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (H : forall (x : G), Prop), Prop"
+        ),
+        value: concat!(
+            "fun G => fun N => fun H => ",
+            "forall (x : G), forall (hn : N x), H x"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SUBGROUP_ORDER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "subgroup_le_refl",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "@SubgroupLe.{u} G H H"
+        ),
+        proof: "fun G => fun H => fun (x : G) => fun (hx : H x) => hx",
+    },
+    TheoremArtifact {
+        name: "subgroup_le_trans",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (L : forall (x : G), Prop), ",
+            "forall (hk : @SubgroupLe.{u} G H K), ",
+            "forall (kl : @SubgroupLe.{u} G K L), ",
+            "@SubgroupLe.{u} G H L"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun K => fun L => fun hk => fun kl => ",
+            "fun (x : G) => fun (hx : H x) => kl x (hk x hx)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_equiv_intro",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (hk : @SubgroupLe.{u} G H K), ",
+            "forall (kh : @SubgroupLe.{u} G K H), ",
+            "@SubgroupEquiv.{u} G H K"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun K => fun hk => fun kh => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (left : @SubgroupLe.{u} G H K), forall (right : @SubgroupLe.{u} G K H), P) => ",
+            "mk hk kh"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_equiv_left",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (h_equiv_k : @SubgroupEquiv.{u} G H K), ",
+            "@SubgroupLe.{u} G H K"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun K => fun h_equiv_k => ",
+            "h_equiv_k (@SubgroupLe.{u} G H K) ",
+            "(fun (hk : @SubgroupLe.{u} G H K) => fun (kh : @SubgroupLe.{u} G K H) => hk)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_equiv_right",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (h_equiv_k : @SubgroupEquiv.{u} G H K), ",
+            "@SubgroupLe.{u} G K H"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun K => fun h_equiv_k => ",
+            "h_equiv_k (@SubgroupLe.{u} G K H) ",
+            "(fun (hk : @SubgroupLe.{u} G H K) => fun (kh : @SubgroupLe.{u} G K H) => kh)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_equiv_refl",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "@SubgroupEquiv.{u} G H H"
+        ),
+        proof: concat!(
+            "fun G => fun H => ",
+            "@subgroup_equiv_intro.{u} G H H ",
+            "(@subgroup_le_refl.{u} G H) ",
+            "(@subgroup_le_refl.{u} G H)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_equiv_symm",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (h_equiv_k : @SubgroupEquiv.{u} G H K), ",
+            "@SubgroupEquiv.{u} G K H"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun K => fun h_equiv_k => ",
+            "@subgroup_equiv_intro.{u} G K H ",
+            "(@subgroup_equiv_right.{u} G H K h_equiv_k) ",
+            "(@subgroup_equiv_left.{u} G H K h_equiv_k)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_equiv_trans",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (L : forall (x : G), Prop), ",
+            "forall (h_equiv_k : @SubgroupEquiv.{u} G H K), ",
+            "forall (k_equiv_l : @SubgroupEquiv.{u} G K L), ",
+            "@SubgroupEquiv.{u} G H L"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun K => fun L => fun h_equiv_k => fun k_equiv_l => ",
+            "@subgroup_equiv_intro.{u} G H L ",
+            "(@subgroup_le_trans.{u} G H K L ",
+            "(@subgroup_equiv_left.{u} G H K h_equiv_k) ",
+            "(@subgroup_equiv_left.{u} G K L k_equiv_l)) ",
+            "(@subgroup_le_trans.{u} G L K H ",
+            "(@subgroup_equiv_right.{u} G K L k_equiv_l) ",
+            "(@subgroup_equiv_right.{u} G H K h_equiv_k))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_contains_to_subgroup_le",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (contains : @NormalContains.{u} G N H), ",
+            "@SubgroupLe.{u} G N H"
+        ),
+        proof: "fun G => fun N => fun H => fun contains => contains",
+    },
+    TheoremArtifact {
+        name: "subgroup_le_to_normal_contains",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (le : @SubgroupLe.{u} G N H), ",
+            "@NormalContains.{u} G N H"
+        ),
+        proof: "fun G => fun N => fun H => fun le => le",
+    },
+    TheoremArtifact {
+        name: "normal_contains_refl",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (N : forall (x : G), Prop), ",
+            "@NormalContains.{u} G N N"
+        ),
+        proof: "fun G => fun N => fun (x : G) => fun (hn : N x) => hn",
+    },
+    TheoremArtifact {
+        name: "normal_contains_trans",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (H : forall (x : G), Prop), ",
+            "forall (K : forall (x : G), Prop), ",
+            "forall (nh : @NormalContains.{u} G N H), ",
+            "forall (hk : @NormalContains.{u} G H K), ",
+            "@NormalContains.{u} G N K"
+        ),
+        proof: concat!(
+            "fun G => fun N => fun H => fun K => fun nh => fun hk => ",
+            "fun (x : G) => fun (hn : N x) => hk x (nh x hn)"
+        ),
     },
 ];
 
@@ -12007,6 +12255,24 @@ fn run() -> Result<(), String> {
         &abstract_group_subgroup_imports,
         &abstract_group_subgroup_source_interfaces,
     )?;
+    let abstract_group_subgroup_order_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+    ];
+    let abstract_group_subgroup_order_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+    ];
+    let abstract_group_subgroup_order = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_SUBGROUP_ORDER_MODULE,
+        &abstract_group_subgroup_order_imports,
+        &abstract_group_subgroup_order_source_interfaces,
+    )?;
     let abstract_group_normal_quotient_imports = vec![
         eq_import.clone(),
         abstract_group.verified_module.clone(),
@@ -12552,6 +12818,7 @@ fn run() -> Result<(), String> {
             abstract_group_first_iso_image,
             abstract_group_first_iso,
             abstract_group_subgroup,
+            abstract_group_subgroup_order,
             abstract_group_normal_quotient,
             abstract_group_normal_quotient_mul,
             abstract_group_normal_quotient_group,

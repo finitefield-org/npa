@@ -88,6 +88,9 @@ Current bundles:
   normal conjugation helpers, intersection predicate closure facts, product-subgroup closure
   evidence, normal-relation compatibility facts, and `N h` / `h ~ 1` conversion helpers for the
   second-isomorphism route.
+- `Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/`: predicate-level inclusion and equivalence API
+  for subgroup-style predicates, including reflexivity/transitivity lemmas and `NormalContains`
+  conversions used by later correspondence-order milestones.
 - `Proofs/Ai/Algebra/AbstractGroupNormalQuotient/`: quotient setoid, quotient carrier,
   representative injection, and soundness theorem for quotienting by an arbitrary normal subgroup
   predicate.
