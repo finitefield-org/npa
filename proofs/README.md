@@ -118,6 +118,9 @@ Current bundles:
   subgroups of `G/N`, the preimage map from quotient subgroups back to subgroups of `G`, subgroup
   closure for both maps, containment of `N` in preimages, quotient-side round-trip membership
   conversions, and subgroup-side `NormalRel` saturation equivalence.
+- `Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/`: final correspondence theorem evidence
+  wrapper importing the correspondence route and exporting a certificate-backed theorem that
+  collects the checked closure, containment, round-trip, and saturation components.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets

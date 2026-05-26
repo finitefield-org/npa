@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
+  "source": "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d34c483e22af4dd1f3a70172c67d8bf4dd0114fac3a06c50966f2e819cbbdbc0",
+  "certificate_file_sha256": "sha256:3413f745dce2274463cf84b3640be4b8404673f1adb6851cc3747ff1f746d416",
+  "export_hash": "sha256:a504adad5be31af8fb2074386eec450df5f04384f59befbae41bbf6d0e8ccedd",
+  "axiom_report_hash": "sha256:93df77ff80d6f6d9ca513b599975ec219989d26bf31848da6d2bdce4e72641b3",
+  "certificate_hash": "sha256:597d8458ad6cc40172182b2ca30667bc17f5b2e18c22b95a09a4daaa35c273bc",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupCorrespondence"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "CorrespondenceImageSubgroupEvidence", "kind": "inductive" },
+    { "name": "CorrespondencePreimageSubgroupEvidence", "kind": "inductive" },
+    { "name": "CorrespondenceContainmentEvidence", "kind": "inductive" },
+    { "name": "CorrespondenceSubgroupSaturationEvidence", "kind": "inductive" },
+    { "name": "CorrespondenceQuotientRoundTripEvidence", "kind": "inductive" },
+    { "name": "CorrespondenceTheoremEvidence", "kind": "inductive" },
+    { "name": "correspondence_image_subgroup_evidence", "kind": "theorem" },
+    { "name": "correspondence_preimage_subgroup_evidence", "kind": "theorem" },
+    { "name": "correspondence_containment_evidence", "kind": "theorem" },
+    { "name": "correspondence_subgroup_saturation_evidence", "kind": "theorem" },
+    { "name": "correspondence_quotient_round_trip_evidence", "kind": "theorem" },
+    { "name": "correspondence_theorem_evidence", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -605,14 +605,33 @@ meta = "Proofs/Ai/Algebra/AbstractGroupCorrespondence/meta.json"
 replay = "Proofs/Ai/Algebra/AbstractGroupCorrespondence/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
-source_sha256 = "sha256:6285ebddea4f4995d7420899e75edc784e596cd6d59579bb1b02a457cdd751b6"
-certificate_file_sha256 = "sha256:2f659852d42620bdb4cbbac30938d193dccfc20c9dbc0a8c93e8557fc36d01cd"
-export_hash = "sha256:75416951f90eb0d0a7fa6b6d2339535b578277bd5e774e5027ad85d12e63a57b"
-axiom_report_hash = "sha256:e07797c5b79b7dee321ac49eb768367358cd72c9d70bb3fc1c975886e00e2404"
-certificate_hash = "sha256:49e403965be8d364c3eeef303a9c4b3027e0e67b102f6c6db633d9530ff4f711"
+source_sha256 = "sha256:758957e638d539ddfa75b5a7f782320e9a7d2513884e6368c3bc4ab00306fbea"
+certificate_file_sha256 = "sha256:38b0571477e65f5d4b71190daaea5f794f21839ae5cb94f522ddd0d1e6c70d9d"
+export_hash = "sha256:c5f000c544037c766530531411fa4230faaada5a0d2840ef67411d2d73e76a7f"
+axiom_report_hash = "sha256:a1c7dff2e43196d9ed0f707b49ddcb949d8c3f3c7b3a85369478372380820393"
+certificate_hash = "sha256:e27522869a6949215187b97c6a5acc116e71ab2ea85fd7641012d19678f381aa"
 imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup"]
-definitions = ["CorrespondenceImagePred", "CorrespondencePreimagePred", "CorrespondenceSaturationPred", "CorrespondenceImageSubgroupMk", "CorrespondencePreimageSubgroupMk", "CorrespondenceImageSubgroupLawArgs", "CorrespondencePreimageSubgroupLawArgs", "CorrespondenceTheoremMk", "CorrespondenceTheoremEvidence"]
+definitions = ["CorrespondenceImagePred", "CorrespondencePreimagePred", "CorrespondenceSaturationPred", "CorrespondenceImageSubgroupMk", "CorrespondencePreimageSubgroupMk", "CorrespondenceImageSubgroupLawArgs", "CorrespondencePreimageSubgroupLawArgs", "CorrespondenceTheoremMk"]
 theorems = ["correspondence_group_mul_inv_left_reassoc", "correspondence_subgroup_saturates", "correspondence_image_intro", "correspondence_saturation_intro", "correspondence_saturation_elim", "correspondence_image_elim", "correspondence_image_one", "correspondence_image_mul_closed", "correspondence_image_inv_closed", "correspondence_preimage_one", "correspondence_preimage_mul_closed", "correspondence_preimage_inv_closed", "correspondence_preimage_contains_normal", "correspondence_subgroup_to_preimage_image", "correspondence_subgroup_to_saturation", "correspondence_saturation_to_subgroup", "correspondence_quotient_to_image_preimage", "correspondence_image_preimage_to_quotient"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal"
+source = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d34c483e22af4dd1f3a70172c67d8bf4dd0114fac3a06c50966f2e819cbbdbc0"
+certificate_file_sha256 = "sha256:3413f745dce2274463cf84b3640be4b8404673f1adb6851cc3747ff1f746d416"
+export_hash = "sha256:a504adad5be31af8fb2074386eec450df5f04384f59befbae41bbf6d0e8ccedd"
+axiom_report_hash = "sha256:93df77ff80d6f6d9ca513b599975ec219989d26bf31848da6d2bdce4e72641b3"
+certificate_hash = "sha256:597d8458ad6cc40172182b2ca30667bc17f5b2e18c22b95a09a4daaa35c273bc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupCorrespondence"]
+inductives = ["CorrespondenceImageSubgroupEvidence", "CorrespondencePreimageSubgroupEvidence", "CorrespondenceContainmentEvidence", "CorrespondenceSubgroupSaturationEvidence", "CorrespondenceQuotientRoundTripEvidence", "CorrespondenceTheoremEvidence"]
+definitions = []
+theorems = ["correspondence_image_subgroup_evidence", "correspondence_preimage_subgroup_evidence", "correspondence_containment_evidence", "correspondence_subgroup_saturation_evidence", "correspondence_quotient_round_trip_evidence", "correspondence_theorem_evidence"]
 axioms = ["Eq.rec"]
 
 [[proof_modules]]

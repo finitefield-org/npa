@@ -2468,8 +2468,8 @@ struct TypeChecker<'a> {
 }
 
 impl<'a> TypeChecker<'a> {
-    const WHNF_FUEL: usize = 10_000;
-    const DEFEQ_FUEL: usize = 10_000;
+    const WHNF_FUEL: usize = 100_000;
+    const DEFEQ_FUEL: usize = 100_000;
 
     fn new(
         cert: &'a DecodedModuleCertificate,

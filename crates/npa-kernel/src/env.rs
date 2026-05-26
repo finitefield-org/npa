@@ -45,8 +45,8 @@ struct MutualRecursorResultCheck<'a> {
 }
 
 impl Env {
-    const WHNF_FUEL: usize = 20_000;
-    const DEFEQ_FUEL: usize = 20_000;
+    const WHNF_FUEL: usize = 100_000;
+    const DEFEQ_FUEL: usize = 100_000;
 
     pub fn new() -> Self {
         Self::default()

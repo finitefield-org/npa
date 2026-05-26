@@ -45,6 +45,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_group_second_iso_kernel: &'a VerifiedModule,
     abstract_group_second_iso_image: &'a VerifiedModule,
     abstract_group_second_iso_final: &'a VerifiedModule,
+    abstract_group_correspondence: &'a VerifiedModule,
     abstract_ring: &'a VerifiedModule,
     abstract_ordered_field: &'a VerifiedModule,
     abstract_square_normalize: &'a VerifiedModule,
@@ -122,6 +123,16 @@ struct VerifiedAbstractGroupSecondIsoFinalImports<'a> {
     abstract_group_second_iso_phi: &'a VerifiedModule,
     abstract_group_second_iso_kernel: &'a VerifiedModule,
     abstract_group_second_iso_image: &'a VerifiedModule,
+}
+
+struct VerifiedAbstractGroupCorrespondenceImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    abstract_group: &'a VerifiedModule,
+    abstract_group_subgroup: &'a VerifiedModule,
+    abstract_group_normal_quotient: &'a VerifiedModule,
+    abstract_group_normal_quotient_mul: &'a VerifiedModule,
+    abstract_group_normal_quotient_group: &'a VerifiedModule,
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -619,6 +630,14 @@ const ABSTRACT_GROUP_CORRESPONDENCE_DEFINITIONS: &[&str] = &[
     "CorrespondenceImageSubgroupLawArgs",
     "CorrespondencePreimageSubgroupLawArgs",
     "CorrespondenceTheoremMk",
+];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_INDUCTIVES: &[&str] = &[
+    "CorrespondenceImageSubgroupEvidence",
+    "CorrespondencePreimageSubgroupEvidence",
+    "CorrespondenceContainmentEvidence",
+    "CorrespondenceSubgroupSaturationEvidence",
+    "CorrespondenceQuotientRoundTripEvidence",
     "CorrespondenceTheoremEvidence",
 ];
 
@@ -641,6 +660,15 @@ const ABSTRACT_GROUP_CORRESPONDENCE_THEOREMS: &[&str] = &[
     "correspondence_saturation_to_subgroup",
     "correspondence_quotient_to_image_preimage",
     "correspondence_image_preimage_to_quotient",
+];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS: &[&str] = &[
+    "correspondence_image_subgroup_evidence",
+    "correspondence_preimage_subgroup_evidence",
+    "correspondence_containment_evidence",
+    "correspondence_subgroup_saturation_evidence",
+    "correspondence_quotient_round_trip_evidence",
+    "correspondence_theorem_evidence",
 ];
 
 const ABSTRACT_RING_DEFINITIONS: &[&str] = &["two", "sq", "RingLawArgs"];
@@ -1474,6 +1502,27 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
+        source: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+            "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: ABSTRACT_GROUP_CORRESPONDENCE_INDUCTIVES,
+        definitions: &[],
+        theorems: ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractRing",
         source: "Proofs/Ai/Algebra/AbstractRing/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractRing/certificate.npcert",
@@ -1880,6 +1929,18 @@ fn ai_certificates_match_manifest_and_verify() {
                 abstract_group_second_iso_image: &abstract_group_second_iso_image_import,
             },
         );
+    let abstract_group_correspondence_import = verified_abstract_group_correspondence_import_module(
+        &root,
+        &VerifiedAbstractGroupCorrespondenceImports {
+            eq: &eq_import,
+            eq_reasoning: &eq_reasoning_import,
+            abstract_group: &abstract_group_import,
+            abstract_group_subgroup: &abstract_group_subgroup_import,
+            abstract_group_normal_quotient: &abstract_group_normal_quotient_import,
+            abstract_group_normal_quotient_mul: &abstract_group_normal_quotient_mul_import,
+            abstract_group_normal_quotient_group: &abstract_group_normal_quotient_group_import,
+        },
+    );
     let abstract_ring_import = verified_abstract_ring_import_module(&root, &eq_import);
     let abstract_ordered_field_import =
         verified_abstract_ordered_field_import_module(&root, &eq_import, &abstract_ring_import);
@@ -1989,6 +2050,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_group_second_iso_kernel: &abstract_group_second_iso_kernel_import,
         abstract_group_second_iso_image: &abstract_group_second_iso_image_import,
         abstract_group_second_iso_final: &abstract_group_second_iso_final_import,
+        abstract_group_correspondence: &abstract_group_correspondence_import,
         abstract_ring: &abstract_ring_import,
         abstract_ordered_field: &abstract_ordered_field_import,
         abstract_square_normalize: &abstract_square_normalize_import,
@@ -2188,6 +2250,8 @@ fn register_expected_imports(
                 .register_verified_module(verified_imports.abstract_group_second_iso_image.clone()),
             "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal" => session
                 .register_verified_module(verified_imports.abstract_group_second_iso_final.clone()),
+            "Proofs.Ai.Algebra.AbstractGroupCorrespondence" => session
+                .register_verified_module(verified_imports.abstract_group_correspondence.clone()),
             "Proofs.Ai.Algebra.AbstractRing" => {
                 session.register_verified_module(verified_imports.abstract_ring.clone())
             }
@@ -2593,6 +2657,30 @@ fn verified_abstract_group_second_iso_final_import_module(
             .with_core_feature(CoreFeature::QuotientV3),
     )
     .expect("AbstractGroupSecondIsoFinal corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_correspondence_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractGroupCorrespondenceImports<'_>,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupCorrespondence/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.eq.clone());
+    session.register_verified_module(imports.eq_reasoning.clone());
+    session.register_verified_module(imports.abstract_group.clone());
+    session.register_verified_module(imports.abstract_group_subgroup.clone());
+    session.register_verified_module(imports.abstract_group_normal_quotient.clone());
+    session.register_verified_module(imports.abstract_group_normal_quotient_mul.clone());
+    session.register_verified_module(imports.abstract_group_normal_quotient_group.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal()
+            .with_core_feature(CoreFeature::QuotientV1)
+            .with_core_feature(CoreFeature::QuotientV2)
+            .with_core_feature(CoreFeature::QuotientV3),
+    )
+    .expect("AbstractGroupCorrespondence corpus certificate should verify for downstream imports")
 }
 
 fn verified_ring_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
@@ -3001,6 +3089,7 @@ fn supported_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal"
             | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondence"
+            | "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal"
     ) {
         vec![
             CoreFeature::QuotientV1,

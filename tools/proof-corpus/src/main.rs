@@ -641,6 +641,28 @@ const ABSTRACT_GROUP_CORRESPONDENCE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+    ],
+    inductives: ABSTRACT_GROUP_CORRESPONDENCE_INDUCTIVES,
+    definitions: &[],
+    theorems: ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRing",
     source_path: "Proofs/Ai/Algebra/AbstractRing/source.npa",
@@ -7294,6 +7316,182 @@ const ABSTRACT_GROUP_THIRD_ISO_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const CORRESPONDENCE_IMAGE_SUBGROUP_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (image_one : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal (@NormalQuotOne.{u} G one mul inv N group_args n_normal)), ",
+            "forall (image_mul_closed : forall (a : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (b : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (ha : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal a), forall (hb : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal b), @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal (@NormalQuotMul.{u} G one mul inv N group_args n_normal a b)), ",
+            "forall (image_inv_closed : forall (a : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (ha : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal a), @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal (@NormalQuotInv.{u} G one mul inv N group_args n_normal a)), ",
+            "@CorrespondenceImageSubgroupEvidence.{u} G one mul inv N Hpred group_args n_normal"
+        ),
+    }];
+
+const CORRESPONDENCE_PREIMAGE_SUBGROUP_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "forall (preimage_one : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K one), ",
+            "forall (preimage_mul_closed : forall (a : G), forall (b : G), forall (ha : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K a), forall (hb : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K b), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K (mul a b)), ",
+            "forall (preimage_inv_closed : forall (a : G), forall (ha : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K a), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K (inv a)), ",
+            "@CorrespondencePreimageSubgroupEvidence.{u} G one mul inv N group_args n_normal K k_args"
+        ),
+    }];
+
+const CORRESPONDENCE_CONTAINMENT_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "forall (preimage_contains_normal : forall (x : G), forall (hn : N x), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K x), ",
+            "@CorrespondenceContainmentEvidence.{u} G one mul inv N group_args n_normal K k_args"
+        ),
+    }];
+
+const CORRESPONDENCE_SUBGROUP_SATURATION_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (subgroup_to_preimage_image : forall (x : G), forall (hx : Hpred x), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) x), ",
+            "forall (subgroup_to_saturation : forall (x : G), forall (hx : Hpred x), @CorrespondenceSaturationPred.{u} G one mul inv N Hpred x), ",
+            "forall (saturation_to_subgroup : forall (x : G), forall (hx : @CorrespondenceSaturationPred.{u} G one mul inv N Hpred x), Hpred x), ",
+            "@CorrespondenceSubgroupSaturationEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h"
+        ),
+    }];
+
+const CORRESPONDENCE_QUOTIENT_ROUND_TRIP_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "forall (quotient_to_image_preimage : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (hk : K q), @CorrespondenceImagePred.{u} G one mul inv N (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) group_args n_normal q), ",
+            "forall (image_preimage_to_quotient : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (hk : @CorrespondenceImagePred.{u} G one mul inv N (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) group_args n_normal q), K q), ",
+            "@CorrespondenceQuotientRoundTripEvidence.{u} G one mul inv N group_args n_normal K k_args"
+        ),
+    }];
+
+const CORRESPONDENCE_THEOREM_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "forall (image_evidence : @CorrespondenceImageSubgroupEvidence.{u} G one mul inv N Hpred group_args n_normal), ",
+            "forall (preimage_evidence : @CorrespondencePreimageSubgroupEvidence.{u} G one mul inv N group_args n_normal K k_args), ",
+            "forall (containment_evidence : @CorrespondenceContainmentEvidence.{u} G one mul inv N group_args n_normal K k_args), ",
+            "forall (saturation_evidence : @CorrespondenceSubgroupSaturationEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h), ",
+            "forall (quotient_evidence : @CorrespondenceQuotientRoundTripEvidence.{u} G one mul inv N group_args n_normal K k_args), ",
+            "@CorrespondenceTheoremEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args"
+        ),
+    }];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_INDUCTIVES: &[InductiveArtifact] = &[
+    InductiveArtifact {
+        name: "CorrespondenceImageSubgroupEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), Prop"
+        ),
+        constructors: CORRESPONDENCE_IMAGE_SUBGROUP_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "CorrespondencePreimageSubgroupEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), Prop"
+        ),
+        constructors: CORRESPONDENCE_PREIMAGE_SUBGROUP_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "CorrespondenceContainmentEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), Prop"
+        ),
+        constructors: CORRESPONDENCE_CONTAINMENT_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "CorrespondenceSubgroupSaturationEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), Prop"
+        ),
+        constructors: CORRESPONDENCE_SUBGROUP_SATURATION_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "CorrespondenceQuotientRoundTripEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), Prop"
+        ),
+        constructors: CORRESPONDENCE_QUOTIENT_ROUND_TRIP_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "CorrespondenceTheoremEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), Prop"
+        ),
+        constructors: CORRESPONDENCE_THEOREM_EVIDENCE_CONSTRUCTORS,
+    },
+];
+
 const ABSTRACT_GROUP_CORRESPONDENCE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "CorrespondenceImagePred",
@@ -7466,43 +7664,14 @@ const ABSTRACT_GROUP_CORRESPONDENCE_DEFINITIONS: &[DefinitionArtifact] = &[
         ),
         value: concat!(
             "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun k_args => fun P => ",
-            "forall (image_one : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal (@NormalQuotOne.{u} G one mul inv N group_args n_normal)), ",
-            "forall (image_mul_closed : forall (a : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (b : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (ha : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal a), forall (hb : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal b), @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal (@NormalQuotMul.{u} G one mul inv N group_args n_normal a b)), ",
-            "forall (image_inv_closed : forall (a : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (ha : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal a), @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal (@NormalQuotInv.{u} G one mul inv N group_args n_normal a)), ",
-            "forall (preimage_one : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K one), ",
-            "forall (preimage_mul_closed : forall (a : G), forall (b : G), forall (ha : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K a), forall (hb : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K b), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K (mul a b)), ",
-            "forall (preimage_inv_closed : forall (a : G), forall (ha : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K a), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K (inv a)), ",
+            "forall (image_subgroup : @CorrespondenceImageSubgroupLawArgs.{u} G one mul inv N Hpred group_args n_normal), ",
+            "forall (preimage_subgroup : @CorrespondencePreimageSubgroupLawArgs.{u} G one mul inv N group_args n_normal K), ",
             "forall (preimage_contains_normal : forall (x : G), forall (hn : N x), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K x), ",
             "forall (subgroup_to_preimage_image : forall (x : G), forall (hx : Hpred x), @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) x), ",
             "forall (subgroup_to_saturation : forall (x : G), forall (hx : Hpred x), @CorrespondenceSaturationPred.{u} G one mul inv N Hpred x), ",
             "forall (saturation_to_subgroup : forall (x : G), forall (hx : @CorrespondenceSaturationPred.{u} G one mul inv N Hpred x), Hpred x), ",
             "forall (quotient_to_image_preimage : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (hk : K q), @CorrespondenceImagePred.{u} G one mul inv N (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) group_args n_normal q), ",
             "forall (image_preimage_to_quotient : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), forall (hk : @CorrespondenceImagePred.{u} G one mul inv N (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) group_args n_normal q), K q), ",
-            "P"
-        ),
-    },
-    DefinitionArtifact {
-        name: "CorrespondenceTheoremEvidence",
-        universe_params: &["u"],
-        ty: concat!(
-            "forall (G : Sort succ u), ",
-            "forall (one : G), ",
-            "forall (mul : forall (a : G), forall (b : G), G), ",
-            "forall (inv : forall (a : G), G), ",
-            "forall (N : forall (x : G), Prop), ",
-            "forall (Hpred : forall (x : G), Prop), ",
-            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
-            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
-            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
-            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
-            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
-            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
-            "Prop"
-        ),
-        value: concat!(
-            "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun k_args => ",
-            "forall (P : Prop), ",
-            "forall (mk : @CorrespondenceTheoremMk.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args P), ",
             "P"
         ),
     },
@@ -7883,6 +8052,126 @@ const ABSTRACT_GROUP_CORRESPONDENCE_THEOREMS: &[TheoremArtifact] = &[
             "(fun (h : G) => fun (hh : K (@NormalQuotMk.{u} G one mul inv N group_args n_normal h)) => fun (eq_h : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotMk.{u} G one mul inv N group_args n_normal h) (@NormalQuotMk.{u} G one mul inv N group_args n_normal a)) => ",
             "@eq_subst.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) K (@NormalQuotMk.{u} G one mul inv N group_args n_normal h) (@NormalQuotMk.{u} G one mul inv N group_args n_normal a) ",
             "eq_h hh))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "correspondence_image_subgroup_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "@CorrespondenceImageSubgroupEvidence.{u} G one mul inv N Hpred group_args n_normal"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun group_args => fun n_normal => fun h_args => ",
+            "@CorrespondenceImageSubgroupEvidence.mk.{u} G one mul inv N Hpred group_args n_normal ",
+            "(@correspondence_image_one.{u} G one mul inv N Hpred group_args n_normal h_args) ",
+            "(@correspondence_image_mul_closed.{u} G one mul inv N Hpred group_args n_normal h_args) ",
+            "(@correspondence_image_inv_closed.{u} G one mul inv N Hpred group_args n_normal h_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "correspondence_preimage_subgroup_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "@CorrespondencePreimageSubgroupEvidence.{u} G one mul inv N group_args n_normal K k_args"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun n_normal => fun K => fun k_args => ",
+            "@CorrespondencePreimageSubgroupEvidence.mk.{u} G one mul inv N group_args n_normal K k_args ",
+            "(@correspondence_preimage_one.{u} G one mul inv N group_args n_normal K k_args) ",
+            "(@correspondence_preimage_mul_closed.{u} G one mul inv N group_args n_normal K k_args) ",
+            "(@correspondence_preimage_inv_closed.{u} G one mul inv N group_args n_normal K k_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "correspondence_containment_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "@CorrespondenceContainmentEvidence.{u} G one mul inv N group_args n_normal K k_args"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun n_normal => fun K => fun k_args => ",
+            "@CorrespondenceContainmentEvidence.mk.{u} G one mul inv N group_args n_normal K k_args ",
+            "(@correspondence_preimage_contains_normal.{u} G one mul inv N group_args n_normal K k_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "correspondence_subgroup_saturation_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "@CorrespondenceSubgroupSaturationEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun group_args => fun n_normal => fun h_args => fun n_le_h => ",
+            "@CorrespondenceSubgroupSaturationEvidence.mk.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h ",
+            "(@correspondence_subgroup_to_preimage_image.{u} G one mul inv N Hpred group_args n_normal) ",
+            "(@correspondence_subgroup_to_saturation.{u} G one mul inv N Hpred group_args n_normal) ",
+            "(@correspondence_saturation_to_subgroup.{u} G one mul inv N Hpred group_args h_args n_le_h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "correspondence_quotient_round_trip_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "@CorrespondenceQuotientRoundTripEvidence.{u} G one mul inv N group_args n_normal K k_args"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun n_normal => fun K => fun k_args => ",
+            "@CorrespondenceQuotientRoundTripEvidence.mk.{u} G one mul inv N group_args n_normal K k_args ",
+            "(@correspondence_quotient_to_image_preimage.{u} G one mul inv N group_args n_normal K) ",
+            "(@correspondence_image_preimage_to_quotient.{u} G one mul inv N group_args n_normal K)"
+        ),
+    },
+    TheoremArtifact {
+        name: "correspondence_theorem_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "@CorrespondenceTheoremEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun k_args => ",
+            "@CorrespondenceTheoremEvidence.mk.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args ",
+            "(@correspondence_image_subgroup_evidence.{u} G one mul inv N Hpred group_args n_normal h_args) ",
+            "(@correspondence_preimage_subgroup_evidence.{u} G one mul inv N group_args n_normal K k_args) ",
+            "(@correspondence_containment_evidence.{u} G one mul inv N group_args n_normal K k_args) ",
+            "(@correspondence_subgroup_saturation_evidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h) ",
+            "(@correspondence_quotient_round_trip_evidence.{u} G one mul inv N group_args n_normal K k_args)"
         ),
     },
 ];
@@ -11934,6 +12223,34 @@ fn run() -> Result<(), String> {
         &abstract_group_correspondence_imports,
         &abstract_group_correspondence_source_interfaces,
     )?;
+    let abstract_group_correspondence_final_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_correspondence.verified_module.clone(),
+    ];
+    let abstract_group_correspondence_final_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_correspondence.source_interface.clone(),
+    ];
+    let abstract_group_correspondence_final = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE,
+        &abstract_group_correspondence_final_imports,
+        &abstract_group_correspondence_final_source_interfaces,
+    )?;
     let abstract_ring_imports = vec![eq_import.clone()];
     let abstract_ring_source_interfaces = vec![eq_source_interface.clone()];
     let abstract_ring = build_and_write_module(
@@ -12244,6 +12561,7 @@ fn run() -> Result<(), String> {
             abstract_group_second_iso_final,
             abstract_group_third_iso,
             abstract_group_correspondence,
+            abstract_group_correspondence_final,
             abstract_ring,
             abstract_ordered_field,
             abstract_square_normalize,
@@ -12378,6 +12696,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_SECOND_ISO_FINAL_MODULE.module
         || module == ABSTRACT_GROUP_THIRD_ISO_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_MODULE.module
+        || module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,

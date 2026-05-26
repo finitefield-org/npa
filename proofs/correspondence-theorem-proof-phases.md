@@ -38,7 +38,8 @@ Purpose:
 
 ## CT1: Image And Preimage Predicates
 
-Module: `Proofs.Ai.Algebra.AbstractGroupCorrespondence`
+Modules: `Proofs.Ai.Algebra.AbstractGroupCorrespondence` and
+`Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal`
 
 Status: certificate generated.
 
@@ -107,10 +108,11 @@ Completed exports:
 
 | Export | Role |
 | --- | --- |
-| `CorrespondenceImageSubgroupLawArgs` | target package type for image subgroup closure in `G/N` |
-| `CorrespondencePreimageSubgroupLawArgs` | target package type for preimage subgroup closure in `G` |
-| `CorrespondenceTheoremMk` | constructor target type for collecting the checked correspondence components |
-| `CorrespondenceTheoremEvidence` | final evidence target for closure, containment, quotient-side round trip, and subgroup-side saturation equivalence |
+| `CorrespondenceImageSubgroupLawArgs` | target package type in `AbstractGroupCorrespondence` for image subgroup closure in `G/N` |
+| `CorrespondencePreimageSubgroupLawArgs` | target package type in `AbstractGroupCorrespondence` for preimage subgroup closure in `G` |
+| `CorrespondenceTheoremMk` | Church-style target type in `AbstractGroupCorrespondence` for collecting the checked correspondence components |
+| `CorrespondenceTheoremEvidence` | final evidence inductive in `AbstractGroupCorrespondenceFinal` for closure, containment, quotient-side round trip, and subgroup-side saturation equivalence |
+| `correspondence_theorem_evidence` | certificate-backed final theorem in `AbstractGroupCorrespondenceFinal` collecting the checked correspondence components |
 
 Scope note: this route proves the correspondence as checked predicate and law-package evidence. It
 does not add native subtype carriers, a bundled bijection record, lattice operations, order
@@ -121,6 +123,8 @@ preservation, quotient equality reflection, or a kernel-level subgroup object.
 The CT0-CT4 route is complete when these checks pass:
 
 - generated `.npcert` artifacts for `Proofs.Ai.Algebra.AbstractGroupCorrespondence`
+- generated `.npcert` artifacts for `Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal`
+- `correspondence_theorem_evidence` is exported by that certificate
 - `tools/proof-corpus` manifest entry for the module
 - `cargo run -p npa-proof-corpus`
 - `cargo test -p npa-proof-corpus`
