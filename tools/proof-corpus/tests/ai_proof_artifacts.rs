@@ -689,6 +689,8 @@ const ABSTRACT_GROUP_CORRESPONDENCE_ORDER_THEOREMS: &[&str] = &[
 ];
 
 const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS: &[&str] = &[
+    "correspondence_image_subgroup_law_args",
+    "correspondence_preimage_subgroup_law_args",
     "correspondence_image_subgroup_evidence",
     "correspondence_preimage_subgroup_evidence",
     "correspondence_containment_evidence",

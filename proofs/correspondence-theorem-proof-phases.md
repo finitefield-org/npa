@@ -176,10 +176,11 @@ existing Church-encoded image predicate.
 
 ### CT7: Direct Law-Package Theorems
 
-Suggested module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal` or a follow-up final API
-module.
+Module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal`
 
-Add direct theorem exports for the law packages already represented by target definitions:
+Status: certificate generated.
+
+Completed exports:
 
 | Export | Role |
 | --- | --- |

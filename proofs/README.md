@@ -125,8 +125,9 @@ Current bundles:
   correspondence image and preimage maps, plus equivalence-respect lemmas for subgroup-style
   predicates on `G` and `G/N`.
 - `Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/`: final correspondence theorem evidence
-  wrapper importing the correspondence route and exporting a certificate-backed theorem that
-  collects the checked closure, containment, round-trip, and saturation components.
+  wrapper importing the correspondence route and exporting direct subgroup law-package
+  constructors plus a certificate-backed theorem that collects the checked closure, containment,
+  round-trip, and saturation components.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets

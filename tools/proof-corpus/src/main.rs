@@ -8441,6 +8441,48 @@ const ABSTRACT_GROUP_CORRESPONDENCE_ORDER_THEOREMS: &[TheoremArtifact] = &[
 
 const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
+        name: "correspondence_image_subgroup_law_args",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "@CorrespondenceImageSubgroupLawArgs.{u} G one mul inv N Hpred group_args n_normal"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun group_args => fun n_normal => fun h_args => ",
+            "fun (P : Prop) => ",
+            "fun (mk : @CorrespondenceImageSubgroupMk.{u} G one mul inv N Hpred group_args n_normal P) => ",
+            "mk ",
+            "(@correspondence_image_one.{u} G one mul inv N Hpred group_args n_normal h_args) ",
+            "(@correspondence_image_mul_closed.{u} G one mul inv N Hpred group_args n_normal h_args) ",
+            "(@correspondence_image_inv_closed.{u} G one mul inv N Hpred group_args n_normal h_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "correspondence_preimage_subgroup_law_args",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "@CorrespondencePreimageSubgroupLawArgs.{u} G one mul inv N group_args n_normal K"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun n_normal => fun K => fun k_args => ",
+            "fun (P : Prop) => ",
+            "fun (mk : @CorrespondencePreimageSubgroupMk.{u} G one mul inv N group_args n_normal K P) => ",
+            "mk ",
+            "(@correspondence_preimage_one.{u} G one mul inv N group_args n_normal K k_args) ",
+            "(@correspondence_preimage_mul_closed.{u} G one mul inv N group_args n_normal K k_args) ",
+            "(@correspondence_preimage_inv_closed.{u} G one mul inv N group_args n_normal K k_args)"
+        ),
+    },
+    TheoremArtifact {
         name: "correspondence_image_subgroup_evidence",
         universe_params: &["u"],
         statement: concat!(
@@ -13344,6 +13386,7 @@ fn module_source(config: &ModuleArtifact) -> String {
     }
     if config.module == ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE.module
+        || config.module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
