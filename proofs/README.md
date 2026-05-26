@@ -128,6 +128,9 @@ Current bundles:
   wrapper importing the correspondence route and exporting direct subgroup law-package
   constructors plus a certificate-backed theorem that collects the checked closure, containment,
   round-trip, and saturation components.
+- `Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/`: final order-level correspondence
+  wrapper packaging image/preimage monotonicity and final correspondence evidence for closure,
+  containment, quotient round-trip, and subgroup-side saturation.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
@@ -150,7 +153,7 @@ Planning documents:
   second-isomorphism route.
 - `third-isomorphism-proof-phases.md`: TI0-TI4 plan for the AI-facing group third-isomorphism
   route.
-- `correspondence-theorem-proof-phases.md`: CT0-CT4 plan for the AI-facing group correspondence
+- `correspondence-theorem-proof-phases.md`: CT0-CT8 plan for the AI-facing group correspondence
   theorem route.
 
 ## Completed Inner-Product To Metric Route

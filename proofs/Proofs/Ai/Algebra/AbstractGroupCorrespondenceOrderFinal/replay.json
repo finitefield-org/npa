@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CorrespondenceOrderEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => forall (P : Prop), forall (mk : forall (image_mono_evidence : @SubgroupLe.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred2 group_args n_normal)), forall (preimage_mono_evidence : @SubgroupLe.{succ u} G (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K2)), forall (theorem_evidence : @CorrespondenceTheoremEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args), P), P"
+    },
+    {
+      "declaration": "correspondence_order_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => fun (P : Prop) => fun (mk : forall (image_mono_evidence : @SubgroupLe.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred2 group_args n_normal)), forall (preimage_mono_evidence : @SubgroupLe.{succ u} G (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K2)), forall (theorem_evidence : @CorrespondenceTheoremEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args), P) => mk (@correspondence_image_mono.{u} G one mul inv N Hpred Hpred2 group_args n_normal h_le) (@correspondence_preimage_mono.{u} G one mul inv N group_args n_normal K K2 k_le) (@correspondence_theorem_evidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/certificate.npcert"
+  }
+}

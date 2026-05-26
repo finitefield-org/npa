@@ -192,9 +192,11 @@ downstream proofs often need the concrete subgroup law package rather than an ev
 
 ### CT8: Order Evidence Wrapper
 
-Suggested module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal`.
+Module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal`
 
-Add a final AI-facing evidence wrapper for the order-level form of the theorem:
+Status: certificate generated.
+
+Completed exports:
 
 | Export | Role |
 | --- | --- |

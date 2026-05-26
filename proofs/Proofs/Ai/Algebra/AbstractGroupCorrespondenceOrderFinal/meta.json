@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal",
+  "source": "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2a23e1f4d24fe4c166e8fe24e268b74367e23af5927a7f4116aa60909e6756bd",
+  "certificate_file_sha256": "sha256:ba113ebf540d0ecd38733d6222a2d63b24d322bdaf3a44e426271225c95c16e7",
+  "export_hash": "sha256:edd3c2b48c760ef1388779f6cd04f0b001a0d176ebf0b1cf52910fe558482054",
+  "axiom_report_hash": "sha256:48fad99b017e564eae3a94ad24d12f5a3572af147ee049749faf426445d75ddf",
+  "certificate_hash": "sha256:40a0d254961e9110f7ba3462d544e168a330c810a79f8b971ef649cb33ee2268",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupCorrespondence", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "CorrespondenceOrderEvidence", "kind": "def" },
+    { "name": "correspondence_order_evidence", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

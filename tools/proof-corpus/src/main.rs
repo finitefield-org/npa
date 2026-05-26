@@ -704,6 +704,31 @@ const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE: ModuleArtifact = ModuleArtifac
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrderFinal/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRing",
     source_path: "Proofs/Ai/Algebra/AbstractRing/source.npa",
@@ -7763,6 +7788,30 @@ const ABSTRACT_GROUP_CORRESPONDENCE_INDUCTIVES: &[InductiveArtifact] = &[
     },
 ];
 
+const ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "CorrespondenceOrderEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), forall (Hpred2 : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), forall (K2 : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+            "forall (h_le : @SubgroupLe.{succ u} G Hpred Hpred2), ",
+            "forall (k_le : @SubgroupLe.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) K K2), Prop"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (image_mono_evidence : @SubgroupLe.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred2 group_args n_normal)), ",
+            "forall (preimage_mono_evidence : @SubgroupLe.{succ u} G (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K2)), ",
+            "forall (theorem_evidence : @CorrespondenceTheoremEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args), P), ",
+            "P"
+        ),
+    }];
+
 const ABSTRACT_GROUP_CORRESPONDENCE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "CorrespondenceImagePred",
@@ -8600,6 +8649,33 @@ const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
 ];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_THEOREMS: &[TheoremArtifact] = &[TheoremArtifact {
+    name: "correspondence_order_evidence",
+    universe_params: &["u"],
+    statement: concat!(
+        "forall (G : Sort succ u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), ",
+        "forall (N : forall (x : G), Prop), forall (Hpred : forall (x : G), Prop), forall (Hpred2 : forall (x : G), Prop), ",
+        "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), forall (n_normal : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+        "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+        "forall (K : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), forall (K2 : forall (q : @NormalQuot.{u} G one mul inv N group_args n_normal), Prop), ",
+        "forall (k_args : @SubgroupLawArgs.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotOne.{u} G one mul inv N group_args n_normal) (@NormalQuotMul.{u} G one mul inv N group_args n_normal) (@NormalQuotInv.{u} G one mul inv N group_args n_normal) K), ",
+        "forall (h_le : @SubgroupLe.{succ u} G Hpred Hpred2), ",
+        "forall (k_le : @SubgroupLe.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) K K2), ",
+        "@CorrespondenceOrderEvidence.{u} G one mul inv N Hpred Hpred2 group_args n_normal h_args n_le_h K K2 k_args h_le k_le"
+    ),
+    proof: concat!(
+        "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => ",
+        "fun (P : Prop) => ",
+        "fun (mk : forall (image_mono_evidence : @SubgroupLe.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred2 group_args n_normal)), ",
+        "forall (preimage_mono_evidence : @SubgroupLe.{succ u} G (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K2)), ",
+        "forall (theorem_evidence : @CorrespondenceTheoremEvidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args), P) => ",
+        "mk ",
+        "(@correspondence_image_mono.{u} G one mul inv N Hpred Hpred2 group_args n_normal h_le) ",
+        "(@correspondence_preimage_mono.{u} G one mul inv N group_args n_normal K K2 k_le) ",
+        "(@correspondence_theorem_evidence.{u} G one mul inv N Hpred group_args n_normal h_args n_le_h K k_args)"
+    ),
+}];
 
 const ABSTRACT_RING_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
@@ -12724,6 +12800,40 @@ fn run() -> Result<(), String> {
         &abstract_group_correspondence_final_imports,
         &abstract_group_correspondence_final_source_interfaces,
     )?;
+    let abstract_group_correspondence_order_final_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_subgroup_order.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_correspondence.verified_module.clone(),
+        abstract_group_correspondence_order.verified_module.clone(),
+        abstract_group_correspondence_final.verified_module.clone(),
+    ];
+    let abstract_group_correspondence_order_final_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_subgroup_order.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_correspondence.source_interface.clone(),
+        abstract_group_correspondence_order.source_interface.clone(),
+        abstract_group_correspondence_final.source_interface.clone(),
+    ];
+    let abstract_group_correspondence_order_final = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE,
+        &abstract_group_correspondence_order_final_imports,
+        &abstract_group_correspondence_order_final_source_interfaces,
+    )?;
     let abstract_ring_imports = vec![eq_import.clone()];
     let abstract_ring_source_interfaces = vec![eq_source_interface.clone()];
     let abstract_ring = build_and_write_module(
@@ -13037,6 +13147,7 @@ fn run() -> Result<(), String> {
             abstract_group_correspondence,
             abstract_group_correspondence_order,
             abstract_group_correspondence_final,
+            abstract_group_correspondence_order_final,
             abstract_ring,
             abstract_ordered_field,
             abstract_square_normalize,
@@ -13173,6 +13284,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_CORRESPONDENCE_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
+        || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -13387,6 +13499,7 @@ fn module_source(config: &ModuleArtifact) -> String {
     if config.module == ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
+        || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
