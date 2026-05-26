@@ -107,6 +107,12 @@ Current bundles:
 - `Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/`: final AI-facing second-isomorphism evidence
   bundle, packaging kernel identification with image/product-quotient identification for the
   natural map.
+- `Proofs/Ai/Algebra/AbstractGroupThirdIso/`: AI-facing third-isomorphism route for normal
+  subgroups `N <= H`, defining the canonical map `G/N -> G/H`, representative-level
+  multiplication, identity, and inverse compatibility, surjectivity, decomposed `H/N` closure under
+  identity, multiplication, inverse, and quotient conjugation, kernel soundness for the `H/N`
+  predicate, law-bundle target aliases for `H/N`, and the `ThirdIsoPhi` kernel-relation quotient
+  carrier alias.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
@@ -127,6 +133,8 @@ Planning documents:
 - `first-isomorphism-proof-phases.md`: FI0-FI5 plan for the AI-facing group first-isomorphism route.
 - `second-isomorphism-proof-phases.md`: SI0-SI7 plan for the AI-facing group
   second-isomorphism route.
+- `third-isomorphism-proof-phases.md`: TI0-TI4 plan for the AI-facing group third-isomorphism
+  route.
 
 ## Completed Inner-Product To Metric Route
 

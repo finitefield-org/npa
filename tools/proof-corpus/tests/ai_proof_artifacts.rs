@@ -576,6 +576,40 @@ const ABSTRACT_GROUP_SECOND_ISO_FINAL_THEOREMS: &[&str] = &[
     "second_isomorphism_theorem_evidence",
 ];
 
+const ABSTRACT_GROUP_THIRD_ISO_DEFINITIONS: &[&str] = &[
+    "ThirdIsoGN",
+    "ThirdIsoGNOne",
+    "ThirdIsoGNMul",
+    "ThirdIsoGNInv",
+    "ThirdIsoHNPred",
+    "ThirdIsoHNSubgroupLawArgs",
+    "ThirdIsoHNNormalSubgroupLawArgs",
+    "ThirdIsoPhi",
+    "ThirdIsoPhiKernelQuot",
+    "ThirdIsoKernelPred",
+    "ThirdIsoKernelEvidence",
+    "ThirdIsoTheoremEvidence",
+];
+
+const ABSTRACT_GROUP_THIRD_ISO_THEOREMS: &[&str] = &[
+    "third_iso_hn_one",
+    "third_iso_hn_mul_closed",
+    "third_iso_hn_inv_closed",
+    "third_iso_hn_conj_closed",
+    "third_iso_rel_lift",
+    "third_iso_hn_intro",
+    "third_iso_hn_elim",
+    "third_iso_phi_mk",
+    "third_iso_phi_mul",
+    "third_iso_phi_one",
+    "third_iso_phi_inv",
+    "third_iso_phi_surjective",
+    "third_iso_hn_to_kernel_sound",
+    "third_iso_kernel_intro",
+    "third_iso_kernel_evidence",
+    "third_isomorphism_theorem_evidence",
+];
+
 const ABSTRACT_RING_DEFINITIONS: &[&str] = &["two", "sq", "RingLawArgs"];
 
 const ABSTRACT_RING_THEOREMS: &[&str] = &[
@@ -1363,6 +1397,27 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: ABSTRACT_GROUP_SECOND_ISO_FINAL_DEFINITIONS,
         theorems: ABSTRACT_GROUP_SECOND_ISO_FINAL_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupThirdIso",
+        source: "Proofs/Ai/Algebra/AbstractGroupThirdIso/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupThirdIso/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupThirdIso/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupThirdIso/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_THIRD_ISO_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_THIRD_ISO_THEOREMS,
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
@@ -2891,6 +2946,7 @@ fn supported_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoKernel"
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoImage"
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal"
+            | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
     ) {
         vec![
             CoreFeature::QuotientV1,
@@ -2919,6 +2975,7 @@ fn expected_core_features(module: &str) -> Vec<CoreFeature> {
         module,
         "Proofs.Ai.Algebra.AbstractGroupQuotientHom"
             | "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"
+            | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
     ) {
         vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
     } else {

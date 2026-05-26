@@ -580,6 +580,24 @@ theorems = ["second_iso_kernel_evidence", "second_iso_image_evidence", "second_i
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupThirdIso"
+source = "Proofs/Ai/Algebra/AbstractGroupThirdIso/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupThirdIso/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupThirdIso/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupThirdIso/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:b6a916e915abf98eb4256da9fadbb5ce5143911dc92f37bcab2cc0dca307ed34"
+certificate_file_sha256 = "sha256:57f653c648f5dbb2995dadf5bf7b27eae520d929a6b1259ece495c462a971ddd"
+export_hash = "sha256:f76985158305810227c882d221f2401891dafe496873aa2b4ba58d1b844e4a68"
+axiom_report_hash = "sha256:0108ad64717a722b59da86273c6f6182ab9467621b71e499023718c8ea574f6a"
+certificate_hash = "sha256:7f7f3e78e7dea037823c7054d84f3718dc6f6dbe4b3d5c36dc72f5d747917769"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup"]
+definitions = ["ThirdIsoGN", "ThirdIsoGNOne", "ThirdIsoGNMul", "ThirdIsoGNInv", "ThirdIsoHNPred", "ThirdIsoHNSubgroupLawArgs", "ThirdIsoHNNormalSubgroupLawArgs", "ThirdIsoPhi", "ThirdIsoPhiKernelQuot", "ThirdIsoKernelPred", "ThirdIsoKernelEvidence", "ThirdIsoTheoremEvidence"]
+theorems = ["third_iso_rel_lift", "third_iso_hn_intro", "third_iso_hn_elim", "third_iso_hn_one", "third_iso_hn_mul_closed", "third_iso_hn_inv_closed", "third_iso_hn_conj_closed", "third_iso_phi_mk", "third_iso_phi_mul", "third_iso_phi_one", "third_iso_phi_inv", "third_iso_phi_surjective", "third_iso_hn_to_kernel_sound", "third_iso_kernel_intro", "third_iso_kernel_evidence", "third_isomorphism_theorem_evidence"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractRing"
 source = "Proofs/Ai/Algebra/AbstractRing/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractRing/certificate.npcert"
