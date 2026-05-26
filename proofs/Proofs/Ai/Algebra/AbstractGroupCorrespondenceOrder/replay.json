@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "correspondence_image_mono",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_le => fun (q : @NormalQuot.{u} G one mul inv N group_args n_normal) => fun (hq : @CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal q) => @correspondence_image_elim.{u} G one mul inv N Hpred group_args n_normal q hq (@CorrespondenceImagePred.{u} G one mul inv N Hpred2 group_args n_normal q) (fun (h : G) => fun (hh : Hpred h) => fun (eq_q : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@NormalQuotMk.{u} G one mul inv N group_args n_normal h) q) => @correspondence_image_intro.{u} G one mul inv N Hpred2 group_args n_normal q h (h_le h hh) eq_q)"
+    },
+    {
+      "declaration": "correspondence_preimage_mono",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun n_normal => fun K => fun K2 => fun k_le => fun (x : G) => fun (hx : @CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K x) => k_le (@NormalQuotMk.{u} G one mul inv N group_args n_normal x) hx"
+    },
+    {
+      "declaration": "correspondence_image_respects_equiv",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_equiv => @subgroup_equiv_intro.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred group_args n_normal) (@CorrespondenceImagePred.{u} G one mul inv N Hpred2 group_args n_normal) (@correspondence_image_mono.{u} G one mul inv N Hpred Hpred2 group_args n_normal (@subgroup_equiv_left.{succ u} G Hpred Hpred2 h_equiv)) (@correspondence_image_mono.{u} G one mul inv N Hpred2 Hpred group_args n_normal (@subgroup_equiv_right.{succ u} G Hpred Hpred2 h_equiv))"
+    },
+    {
+      "declaration": "correspondence_preimage_respects_equiv",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun n_normal => fun K => fun K2 => fun k_equiv => @subgroup_equiv_intro.{succ u} G (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K) (@CorrespondencePreimagePred.{u} G one mul inv N group_args n_normal K2) (@correspondence_preimage_mono.{u} G one mul inv N group_args n_normal K K2 (@subgroup_equiv_left.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) K K2 k_equiv)) (@correspondence_preimage_mono.{u} G one mul inv N group_args n_normal K2 K (@subgroup_equiv_right.{succ u} (@NormalQuot.{u} G one mul inv N group_args n_normal) K K2 k_equiv))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/certificate.npcert"
+  }
+}

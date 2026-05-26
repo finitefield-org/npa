@@ -38,6 +38,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_group_quotient_hom: &'a VerifiedModule,
     abstract_group_first_iso_full: &'a VerifiedModule,
     abstract_group_subgroup: &'a VerifiedModule,
+    abstract_group_subgroup_order: &'a VerifiedModule,
     abstract_group_normal_quotient: &'a VerifiedModule,
     abstract_group_normal_quotient_mul: &'a VerifiedModule,
     abstract_group_normal_quotient_group: &'a VerifiedModule,
@@ -678,6 +679,13 @@ const ABSTRACT_GROUP_CORRESPONDENCE_THEOREMS: &[&str] = &[
     "correspondence_saturation_to_subgroup",
     "correspondence_quotient_to_image_preimage",
     "correspondence_image_preimage_to_quotient",
+];
+
+const ABSTRACT_GROUP_CORRESPONDENCE_ORDER_THEOREMS: &[&str] = &[
+    "correspondence_image_mono",
+    "correspondence_preimage_mono",
+    "correspondence_image_respects_equiv",
+    "correspondence_preimage_respects_equiv",
 ];
 
 const ABSTRACT_GROUP_CORRESPONDENCE_FINAL_THEOREMS: &[&str] = &[
@@ -1537,6 +1545,28 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder",
+        source: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+            "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+            "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: ABSTRACT_GROUP_CORRESPONDENCE_ORDER_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
         source: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/certificate.npcert",
@@ -1889,6 +1919,13 @@ fn ai_certificates_match_manifest_and_verify() {
         &eq_reasoning_import,
         &abstract_group_import,
     );
+    let abstract_group_subgroup_order_import = verified_abstract_group_subgroup_order_import_module(
+        &root,
+        &eq_import,
+        &abstract_group_import,
+        &eq_reasoning_import,
+        &abstract_group_subgroup_import,
+    );
     let abstract_group_normal_quotient_import =
         verified_abstract_group_normal_quotient_import_module(
             &root,
@@ -2078,6 +2115,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_group_quotient_hom: &abstract_group_quotient_hom_import,
         abstract_group_first_iso_full: &abstract_group_first_iso_full_import,
         abstract_group_subgroup: &abstract_group_subgroup_import,
+        abstract_group_subgroup_order: &abstract_group_subgroup_order_import,
         abstract_group_normal_quotient: &abstract_group_normal_quotient_import,
         abstract_group_normal_quotient_mul: &abstract_group_normal_quotient_mul_import,
         abstract_group_normal_quotient_group: &abstract_group_normal_quotient_group_import,
@@ -2265,6 +2303,8 @@ fn register_expected_imports(
             "Proofs.Ai.Algebra.AbstractGroupSubgroup" => {
                 session.register_verified_module(verified_imports.abstract_group_subgroup.clone())
             }
+            "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder" => session
+                .register_verified_module(verified_imports.abstract_group_subgroup_order.clone()),
             "Proofs.Ai.Algebra.AbstractGroupNormalQuotient" => session
                 .register_verified_module(verified_imports.abstract_group_normal_quotient.clone()),
             "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul" => session.register_verified_module(
@@ -2516,6 +2556,24 @@ fn verified_abstract_group_subgroup_import_module(
     session.register_verified_module(abstract_group_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractGroupSubgroup corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_subgroup_order_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_group_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_group_subgroup_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupSubgroupOrder/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(abstract_group_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_group_subgroup_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
+        "AbstractGroupSubgroupOrder corpus certificate should verify for downstream imports",
+    )
 }
 
 fn verified_abstract_group_normal_quotient_import_module(
@@ -3124,6 +3182,7 @@ fn supported_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal"
             | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondence"
+            | "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder"
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal"
     ) {
         vec![

@@ -121,6 +121,9 @@ Current bundles:
   subgroups of `G/N`, the preimage map from quotient subgroups back to subgroups of `G`, subgroup
   closure for both maps, containment of `N` in preimages, quotient-side round-trip membership
   conversions, and subgroup-side `NormalRel` saturation equivalence.
+- `Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/`: predicate-order monotonicity for the
+  correspondence image and preimage maps, plus equivalence-respect lemmas for subgroup-style
+  predicates on `G` and `G/N`.
 - `Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/`: final correspondence theorem evidence
   wrapper importing the correspondence route and exporting a certificate-backed theorem that
   collects the checked closure, containment, round-trip, and saturation components.

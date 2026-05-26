@@ -157,9 +157,11 @@ for AI proof search to target.
 
 ### CT6: Correspondence Monotonicity
 
-Suggested module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder`.
+Module: `Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder`
 
-Add monotonicity and equivalence-respect theorems for the two correspondence maps:
+Status: certificate generated.
+
+Completed exports:
 
 | Export | Role |
 | --- | --- |

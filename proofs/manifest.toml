@@ -634,6 +634,24 @@ theorems = ["correspondence_group_mul_inv_left_reassoc", "correspondence_subgrou
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder"
+source = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceOrder/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:a05567d63e7bd6ae522705820c802c8f91044bb1425cae17a93c6181cb629bc7"
+certificate_file_sha256 = "sha256:9a4023430ebad6aa957180468d003d2d16d5a3d068011d30b46860dc15db956b"
+export_hash = "sha256:e8d7668d809035879ec4db3de3235fdbb5ebb719c6b5a888e30867c9c55cdef9"
+axiom_report_hash = "sha256:930e872459fa0a237548e58d011ab133dca95a0d4dce5979f68cb3fe009ce914"
+certificate_hash = "sha256:df7650170f8b8663b7808db663774eb727427993c16fe0ef89006b4cab5e8da5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupCorrespondence"]
+definitions = []
+theorems = ["correspondence_image_mono", "correspondence_preimage_mono", "correspondence_image_respects_equiv", "correspondence_preimage_respects_equiv"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal"
 source = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractGroupCorrespondenceFinal/certificate.npcert"
