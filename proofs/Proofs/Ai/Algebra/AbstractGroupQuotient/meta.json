@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupQuotient",
+  "source": "Proofs/Ai/Algebra/AbstractGroupQuotient/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupQuotient/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a72a0498b88ed9cf0487d309a710ff021647e01ed9b04fe7663caa2cb7dd88e7",
+  "certificate_file_sha256": "sha256:b78bfc8f4bd9108aaf53ba0ddbeffefe23942ebfbe90036d8cb60e37fd0a18aa",
+  "export_hash": "sha256:456e96fbacbb84ec968918cae2b0914f9b851c96f3bdf1fda65be372c247ea48",
+  "axiom_report_hash": "sha256:30155dfd0399b8bb9222cee6aff0c26065a6766282a10f97ef2d27d45d89aa6a",
+  "certificate_hash": "sha256:afd2f61e680e1daa866ebb392f2635ac5dc7477f293f872ec3343c94cac61122",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "KerSetoid", "kind": "def" },
+    { "name": "KerQuot", "kind": "def" },
+    { "name": "KerQuotMk", "kind": "def" },
+    { "name": "KerQuotToH", "kind": "def" },
+    { "name": "ker_quot_sound", "kind": "theorem" },
+    { "name": "ker_quot_to_h_mk", "kind": "theorem" },
+    { "name": "ker_quot_to_h_mul_mk", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

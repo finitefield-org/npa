@@ -901,13 +901,27 @@ pub(crate) fn add_imports_to_env(env: &mut Env, imports: &[&VerifiedModule]) -> 
     }
     let imports_export_eq = verified_modules_export_builtin_eq(&ordered)?;
     let imports_export_eq_rec = verified_modules_export_builtin_eq_rec(&ordered)?;
+    let mut loaded_imports = vec![false; ordered.len()];
+    if imports_export_eq {
+        for (index, import) in ordered.iter().enumerate() {
+            if verified_module_exports_builtin_eq(import)? {
+                for decl in verified_module_to_kernel_decls(import)? {
+                    add_decl_to_env(env, decl)?;
+                }
+                loaded_imports[index] = true;
+            }
+        }
+    }
     let mut pre_import_builtins = referenced_builtins.clone();
     if imports_export_eq {
         pre_import_builtins
             .retain(|name| !matches!(name.as_dotted().as_str(), "Eq" | "Eq.refl" | "Eq.rec"));
     }
     add_referenced_builtins_to_env(env, &pre_import_builtins)?;
-    for import in ordered {
+    for (index, import) in ordered.into_iter().enumerate() {
+        if loaded_imports[index] {
+            continue;
+        }
         for decl in verified_module_to_kernel_decls(import)? {
             add_decl_to_env(env, decl)?;
         }
@@ -924,15 +938,22 @@ pub(crate) fn add_imports_to_env(env: &mut Env, imports: &[&VerifiedModule]) -> 
 
 fn verified_modules_export_builtin_eq(imports: &[&VerifiedModule]) -> Result<bool> {
     for import in imports {
-        for entry in &import.export_block {
-            let Some(entry_name) = import.name_table.get(entry.name) else {
-                return Err(CertError::DecodeError);
-            };
-            // `Eq` is globally named in the kernel environment. If an import provides it,
-            // load that declaration before adding any builtin `Eq.rec` bridge.
-            if entry.kind == ExportKind::Inductive && entry_name.as_dotted() == "Eq" {
-                return Ok(true);
-            }
+        if verified_module_exports_builtin_eq(import)? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn verified_module_exports_builtin_eq(import: &VerifiedModule) -> Result<bool> {
+    for entry in &import.export_block {
+        let Some(entry_name) = import.name_table.get(entry.name) else {
+            return Err(CertError::DecodeError);
+        };
+        // `Eq` is globally named in the kernel environment. If an import provides it,
+        // load that declaration before adding any quotient builtin bridge that depends on it.
+        if entry.kind == ExportKind::Inductive && entry_name.as_dotted() == "Eq" {
+            return Ok(true);
         }
     }
     Ok(false)

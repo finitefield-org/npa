@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupKernel",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "kernel_mul_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun groupH_args => fun hom_args => fun a => fun b => fun ha => fun hb => @eq_trans.{v} H (f (mulG a b)) (mulH (f a) (f b)) oneH (@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a b) (@eq_trans.{v} H (mulH (f a) (f b)) (mulH oneH oneH) oneH (@eq_congr2.{v,v,v} H H H mulH (f a) oneH (f b) oneH ha hb) (@group_one_mul.{v} H oneH mulH invH groupH_args oneH))"
+    },
+    {
+      "declaration": "kernel_inv_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun groupH_args => fun hom_args => fun a => fun ha => @eq_trans.{v} H (f (invG a)) (invH (f a)) oneH (@hom_inv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a) (@eq_trans.{v} H (invH (f a)) (invH oneH) oneH (@eq_congr_arg.{v,v} H H invH (f a) oneH ha) (@eq_trans.{v} H (invH oneH) (mulH (invH oneH) oneH) oneH (@eq_symm.{v} H (mulH (invH oneH) oneH) (invH oneH) (@group_mul_one.{v} H oneH mulH invH groupH_args (invH oneH))) (@group_inv_mul.{v} H oneH mulH invH groupH_args oneH)))"
+    },
+    {
+      "declaration": "kernel_conj_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun groupH_args => fun hom_args => fun g => fun a => fun ha => @eq_trans.{v} H (f (mulG (mulG g a) (invG g))) (mulH (f (mulG g a)) (f (invG g))) oneH (@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (mulG g a) (invG g)) (@eq_trans.{v} H (mulH (f (mulG g a)) (f (invG g))) (mulH (mulH (f g) (f a)) (invH (f g))) oneH (@eq_congr2.{v,v,v} H H H mulH (f (mulG g a)) (mulH (f g) (f a)) (f (invG g)) (invH (f g)) (@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args g a) (@hom_inv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args g)) (@eq_trans.{v} H (mulH (mulH (f g) (f a)) (invH (f g))) (mulH (mulH (f g) oneH) (invH (f g))) oneH (@eq_congr_arg.{v,v} H H (fun (z : H) => mulH (mulH (f g) z) (invH (f g))) (f a) oneH ha) (@eq_trans.{v} H (mulH (mulH (f g) oneH) (invH (f g))) (mulH (f g) (mulH oneH (invH (f g)))) oneH (@group_mul_assoc.{v} H oneH mulH invH groupH_args (f g) oneH (invH (f g))) (@eq_trans.{v} H (mulH (f g) (mulH oneH (invH (f g)))) (mulH (f g) (invH (f g))) oneH (@eq_congr_arg.{v,v} H H (fun (z : H) => mulH (f g) z) (mulH oneH (invH (f g))) (invH (f g)) (@group_one_mul.{v} H oneH mulH invH groupH_args (invH (f g)))) (@group_mul_inv.{v} H oneH mulH invH groupH_args (f g))))))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupKernel/certificate.npcert"
+  }
+}

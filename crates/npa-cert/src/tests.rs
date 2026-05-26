@@ -1,8 +1,9 @@
 use super::*;
 use npa_kernel::{
     eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, nat, nat_inductive, nat_succ, nat_zero,
-    prop, quotient, setoid, type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level,
-    MutualInductiveBlock, RecursorDecl, Reducibility, UniverseConstraint,
+    prop, quotient, quotient_ind_prop_type, quotient_lift2_type, setoid, type0, Binder,
+    ConstructorDecl, Decl, Expr, InductiveDecl, Level, MutualInductiveBlock, RecursorDecl,
+    Reducibility, UniverseConstraint,
 };
 
 fn id_type(a: &str, x: &str) -> Expr {
@@ -570,6 +571,59 @@ fn quotient_builtin_module() -> CoreModule {
                     quotient(u, Expr::bvar(1), setoid_value),
                 ),
             ),
+        }],
+    }
+}
+
+fn quotient_lift2_builtin_module() -> CoreModule {
+    let u = Level::param("u");
+    let v = Level::param("v");
+    CoreModule {
+        name: Name::from_dotted("Test.QuotientLift2Builtin"),
+        declarations: vec![Decl::Def {
+            name: "uses_quotient_lift2".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: quotient_lift2_type(u.clone(), v.clone()),
+            value: Expr::konst("Quotient.lift2", vec![u, v]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn quotient_ind_prop_builtin_module() -> CoreModule {
+    let u = Level::param("u");
+    CoreModule {
+        name: Name::from_dotted("Test.QuotientIndPropBuiltin"),
+        declarations: vec![Decl::Def {
+            name: "uses_quotient_ind_prop".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: quotient_ind_prop_type(u.clone()),
+            value: Expr::konst("Quotient.indProp", vec![u]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn use_imported_quotient_with_imported_eq_module() -> CoreModule {
+    let u = Level::param("u");
+    let carrier = Expr::bvar(0);
+    let setoid_value = Expr::bvar(0);
+    CoreModule {
+        name: Name::from_dotted("Test.UseImportedQuotient"),
+        declarations: vec![Decl::Def {
+            name: "use_imported_quotient".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(Level::succ(u.clone())),
+                Expr::pi(
+                    "s",
+                    setoid(u.clone(), carrier),
+                    quotient(u.clone(), Expr::bvar(1), setoid_value),
+                ),
+            ),
+            value: Expr::konst("uses_quotient", vec![u]),
+            reducibility: Reducibility::Reducible,
         }],
     }
 }
@@ -2483,6 +2537,94 @@ fn quotient_feature_requires_supported_checker_profile() {
         verified.axiom_report().core_features,
         vec![CoreFeature::QuotientV1]
     );
+}
+
+#[test]
+fn quotient_lift2_feature_requires_v2_checker_profile() {
+    let cert = build_module_cert(quotient_lift2_builtin_module(), &[]).unwrap();
+    assert_eq!(
+        cert.axiom_report.core_features,
+        vec![CoreFeature::QuotientV1, CoreFeature::QuotientV2]
+    );
+    assert!(cert.axiom_report.quotients_used());
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let v1_only_policy = AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1);
+    let err = verify_module_cert(&bytes, &mut VerifierSession::new(), &v1_only_policy).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::UnsupportedCoreFeature { feature } if feature == "quotient_v2"
+    ));
+
+    let mut session = VerifierSession::new();
+    let v2_policy = AxiomPolicy::normal()
+        .with_core_feature(CoreFeature::QuotientV1)
+        .with_core_feature(CoreFeature::QuotientV2);
+    let verified = verify_module_cert(&bytes, &mut session, &v2_policy).unwrap();
+    assert_eq!(
+        verified.axiom_report().core_features,
+        vec![CoreFeature::QuotientV1, CoreFeature::QuotientV2]
+    );
+}
+
+#[test]
+fn quotient_ind_prop_feature_requires_v3_checker_profile() {
+    let cert = build_module_cert(quotient_ind_prop_builtin_module(), &[]).unwrap();
+    assert_eq!(
+        cert.axiom_report.core_features,
+        vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
+    );
+    assert!(cert.axiom_report.quotients_used());
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let v1_only_policy = AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1);
+    let err = verify_module_cert(&bytes, &mut VerifierSession::new(), &v1_only_policy).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::UnsupportedCoreFeature { feature } if feature == "quotient_v3"
+    ));
+
+    let mut session = VerifierSession::new();
+    let v3_policy = AxiomPolicy::normal()
+        .with_core_feature(CoreFeature::QuotientV1)
+        .with_core_feature(CoreFeature::QuotientV3);
+    let verified = verify_module_cert(&bytes, &mut session, &v3_policy).unwrap();
+    assert_eq!(
+        verified.axiom_report().core_features,
+        vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
+    );
+}
+
+#[test]
+fn quotient_import_can_coexist_with_imported_eq_shape() {
+    let eq_cert = build_module_cert(eq_module(), &[]).unwrap();
+    let quotient_cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
+    let policy = AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1);
+    let mut session = VerifierSession::new();
+    let verified_eq = verify_module_cert(
+        &encode_module_cert(&eq_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+    let verified_quotient = verify_module_cert(
+        &encode_module_cert(&quotient_cert).unwrap(),
+        &mut session,
+        &policy,
+    )
+    .unwrap();
+
+    let downstream_cert = build_module_cert(
+        use_imported_quotient_with_imported_eq_module(),
+        &[verified_eq, verified_quotient],
+    )
+    .unwrap();
+    verify_module_cert(
+        &encode_module_cert(&downstream_cert).unwrap(),
+        &mut session,
+        &policy,
+    )
+    .unwrap();
 }
 
 #[test]

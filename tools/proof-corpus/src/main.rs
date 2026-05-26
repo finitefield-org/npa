@@ -262,6 +262,185 @@ const IFF_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroup",
+    source_path: "Proofs/Ai/Algebra/AbstractGroup/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroup/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroup/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.EqReasoning"],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_KERNEL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupKernel",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupKernel/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupKernel/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupKernel/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupKernel/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ABSTRACT_GROUP_KERNEL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_IMAGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupImage",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupImage/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupImage/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupImage/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupImage/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_IMAGE_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_IMAGE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_QUOTIENT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupQuotient",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupQuotient/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupQuotient/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupQuotient/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupQuotient/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup"],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_QUOTIENT_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_QUOTIENT_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_QUOTIENT_MUL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_QUOTIENT_MUL_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_QUOTIENT_MUL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_QUOTIENT_GROUP_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_QUOTIENT_GROUP_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_QUOTIENT_HOM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ABSTRACT_GROUP_QUOTIENT_HOM_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_FIRST_ISO_FULL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ABSTRACT_GROUP_FIRST_ISO_FULL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupFirstIsoImage",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+    ],
+    inductives: ABSTRACT_GROUP_FIRST_ISO_IMAGE_INDUCTIVES,
+    definitions: ABSTRACT_GROUP_FIRST_ISO_IMAGE_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_FIRST_ISO_IMAGE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupFirstIso",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupFirstIso/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupFirstIso/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupFirstIso/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupFirstIso/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_FIRST_ISO_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_FIRST_ISO_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRing",
     source_path: "Proofs/Ai/Algebra/AbstractRing/source.npa",
@@ -612,6 +791,62 @@ macro_rules! abstract_vector_space_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_group_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (G : Sort u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_group_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun G => fun one => fun mul => fun inv => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!("fun G => fun one => fun mul => fun inv => ", $tail)
+    };
+}
+
+macro_rules! abstract_group_hom_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (G : Sort u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_group_hom_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => ",
             $tail
         )
     };
@@ -2408,6 +2643,1874 @@ const IFF_THEOREMS: &[TheoremArtifact] = &[
             "forall (P : Prop), forall (Q : Prop), forall (F : forall (X : Prop), Prop), forall (h : @Eq.{1} Prop P Q), Iff (F P) (F Q)",
         proof:
             "fun P => fun Q => fun F => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff (F P) (F R)) (iff_refl (F P)) Q h",
+    },
+];
+
+const ABSTRACT_GROUP_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "GroupLawArgs",
+        universe_params: &["u"],
+        ty: abstract_group_params!("Prop"),
+        value: abstract_group_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (mul_assoc_law : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))), ",
+            "forall (one_mul_law : forall (a : G), @Eq.{u} G (mul one a) a), ",
+            "forall (mul_one_law : forall (a : G), @Eq.{u} G (mul a one) a), ",
+            "forall (inv_mul_law : forall (a : G), @Eq.{u} G (mul (inv a) a) one), ",
+            "forall (mul_inv_law : forall (a : G), @Eq.{u} G (mul a (inv a)) one), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GroupHomLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_group_hom_params!("Prop"),
+        value: abstract_group_hom_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (hom_mul_law : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))), ",
+            "forall (hom_one_law : @Eq.{v} H (f oneG) oneH), ",
+            "forall (hom_inv_law : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "KernelPred",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : Sort v), ",
+            "forall (oneH : H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "Prop"
+        ),
+        value:
+            "fun G => fun H => fun oneH => fun f => fun a => @Eq.{v} H (f a) oneH",
+    },
+    DefinitionArtifact {
+        name: "KerRel",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : Sort v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "forall (b : G), ",
+            "Prop"
+        ),
+        value:
+            "fun G => fun H => fun f => fun a => fun b => @Eq.{v} H (f a) (f b)",
+    },
+];
+
+const ABSTRACT_GROUP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "group_mul_assoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => fun c => ",
+            "group_args (@Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) ",
+            "(fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => ",
+            "fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => ",
+            "fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => ",
+            "fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => ",
+            "mul_assoc_arg a b c)"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_one_mul",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul one a) a"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => ",
+            "group_args (@Eq.{u} G (mul one a) a) ",
+            "(fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => ",
+            "fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => ",
+            "fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => ",
+            "fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => ",
+            "one_mul_arg a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_mul_one",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul a one) a"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => ",
+            "group_args (@Eq.{u} G (mul a one) a) ",
+            "(fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => ",
+            "fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => ",
+            "fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => ",
+            "fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => ",
+            "mul_one_arg a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_inv_mul",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul (inv a) a) one"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => ",
+            "group_args (@Eq.{u} G (mul (inv a) a) one) ",
+            "(fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => ",
+            "fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => ",
+            "fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => ",
+            "fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => ",
+            "inv_mul_arg a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_mul_inv",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul a (inv a)) one"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => ",
+            "group_args (@Eq.{u} G (mul a (inv a)) one) ",
+            "(fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => ",
+            "fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => ",
+            "fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => ",
+            "fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => ",
+            "mul_inv_arg a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "hom_mul",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun hom_args => fun a => fun b => ",
+            "hom_args (@Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) ",
+            "(fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => ",
+            "fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => ",
+            "fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => ",
+            "hom_mul_arg a b)"
+        )),
+    },
+    TheoremArtifact {
+        name: "hom_one",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), @Eq.{v} H (f oneG) oneH"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun hom_args => ",
+            "hom_args (@Eq.{v} H (f oneG) oneH) ",
+            "(fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => ",
+            "fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => ",
+            "fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => ",
+            "hom_one_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "hom_inv",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun hom_args => fun a => ",
+            "hom_args (@Eq.{v} H (f (invG a)) (invH (f a))) ",
+            "(fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => ",
+            "fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => ",
+            "fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => ",
+            "hom_inv_arg a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "kernel_one",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), @KernelPred.{u,v} G H oneH f oneG"
+        ),
+        proof: abstract_group_hom_abs!(
+            "fun hom_args => @hom_one.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_rel_refl",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort u), forall (H : Sort v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "@KerRel.{u,v} G H f a a"
+        ),
+        proof: "fun G => fun H => fun f => fun a => @Eq.refl.{v} H (f a)",
+    },
+    TheoremArtifact {
+        name: "ker_rel_symm",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort u), forall (H : Sort v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), forall (b : G), ",
+            "forall (h : @KerRel.{u,v} G H f a b), ",
+            "@KerRel.{u,v} G H f b a"
+        ),
+        proof:
+            "fun G => fun H => fun f => fun a => fun b => fun h => @eq_symm.{v} H (f a) (f b) h",
+    },
+    TheoremArtifact {
+        name: "ker_rel_trans",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort u), forall (H : Sort v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), forall (b : G), forall (c : G), ",
+            "forall (hab : @KerRel.{u,v} G H f a b), ",
+            "forall (hbc : @KerRel.{u,v} G H f b c), ",
+            "@KerRel.{u,v} G H f a c"
+        ),
+        proof:
+            "fun G => fun H => fun f => fun a => fun b => fun c => fun hab => fun hbc => @eq_trans.{v} H (f a) (f b) (f c) hab hbc",
+    },
+];
+
+const ABSTRACT_GROUP_KERNEL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "kernel_mul_closed",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (groupH_args : @GroupLawArgs.{v} H oneH mulH invH), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (a : G), forall (b : G), forall (ha : @KernelPred.{u,v} G H oneH f a), forall (hb : @KernelPred.{u,v} G H oneH f b), @KernelPred.{u,v} G H oneH f (mulG a b)"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun groupH_args => fun hom_args => fun a => fun b => fun ha => fun hb => ",
+            "@eq_trans.{v} H (f (mulG a b)) (mulH (f a) (f b)) oneH ",
+            "(@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a b) ",
+            "(@eq_trans.{v} H (mulH (f a) (f b)) (mulH oneH oneH) oneH ",
+            "(@eq_congr2.{v,v,v} H H H mulH (f a) oneH (f b) oneH ha hb) ",
+            "(@group_one_mul.{v} H oneH mulH invH groupH_args oneH))"
+        )),
+    },
+    TheoremArtifact {
+        name: "kernel_inv_closed",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (groupH_args : @GroupLawArgs.{v} H oneH mulH invH), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (a : G), forall (ha : @KernelPred.{u,v} G H oneH f a), @KernelPred.{u,v} G H oneH f (invG a)"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun groupH_args => fun hom_args => fun a => fun ha => ",
+            "@eq_trans.{v} H (f (invG a)) (invH (f a)) oneH ",
+            "(@hom_inv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a) ",
+            "(@eq_trans.{v} H (invH (f a)) (invH oneH) oneH ",
+            "(@eq_congr_arg.{v,v} H H invH (f a) oneH ha) ",
+            "(@eq_trans.{v} H (invH oneH) (mulH (invH oneH) oneH) oneH ",
+            "(@eq_symm.{v} H (mulH (invH oneH) oneH) (invH oneH) ",
+            "(@group_mul_one.{v} H oneH mulH invH groupH_args (invH oneH))) ",
+            "(@group_inv_mul.{v} H oneH mulH invH groupH_args oneH)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "kernel_conj_closed",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (groupH_args : @GroupLawArgs.{v} H oneH mulH invH), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (g : G), forall (a : G), forall (ha : @KernelPred.{u,v} G H oneH f a), @KernelPred.{u,v} G H oneH f (mulG (mulG g a) (invG g))"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun groupH_args => fun hom_args => fun g => fun a => fun ha => ",
+            "@eq_trans.{v} H (f (mulG (mulG g a) (invG g))) (mulH (f (mulG g a)) (f (invG g))) oneH ",
+            "(@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (mulG g a) (invG g)) ",
+            "(@eq_trans.{v} H (mulH (f (mulG g a)) (f (invG g))) (mulH (mulH (f g) (f a)) (invH (f g))) oneH ",
+            "(@eq_congr2.{v,v,v} H H H mulH (f (mulG g a)) (mulH (f g) (f a)) (f (invG g)) (invH (f g)) ",
+            "(@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args g a) ",
+            "(@hom_inv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args g)) ",
+            "(@eq_trans.{v} H (mulH (mulH (f g) (f a)) (invH (f g))) (mulH (mulH (f g) oneH) (invH (f g))) oneH ",
+            "(@eq_congr_arg.{v,v} H H (fun (z : H) => mulH (mulH (f g) z) (invH (f g))) (f a) oneH ha) ",
+            "(@eq_trans.{v} H (mulH (mulH (f g) oneH) (invH (f g))) (mulH (f g) (mulH oneH (invH (f g)))) oneH ",
+            "(@group_mul_assoc.{v} H oneH mulH invH groupH_args (f g) oneH (invH (f g))) ",
+            "(@eq_trans.{v} H (mulH (f g) (mulH oneH (invH (f g)))) (mulH (f g) (invH (f g))) oneH ",
+            "(@eq_congr_arg.{v,v} H H (fun (z : H) => mulH (f g) z) (mulH oneH (invH (f g))) (invH (f g)) ",
+            "(@group_one_mul.{v} H oneH mulH invH groupH_args (invH (f g)))) ",
+            "(@group_mul_inv.{v} H oneH mulH invH groupH_args (f g))))))"
+        )),
+    },
+];
+
+const ABSTRACT_GROUP_IMAGE_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "ImagePred",
+    universe_params: &["u", "v"],
+    ty: concat!(
+        "forall (G : Sort u), ",
+        "forall (H : Sort v), ",
+        "forall (f : forall (x : G), H), ",
+        "forall (y : H), ",
+        "Prop"
+    ),
+    value: concat!(
+        "fun G => fun H => fun f => fun y => ",
+        "forall (P : Prop), ",
+        "forall (mk : forall (a : G), forall (h : @Eq.{v} H (f a) y), P), ",
+        "P"
+    ),
+}];
+
+const ABSTRACT_GROUP_IMAGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "image_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : Sort v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "@ImagePred.{u,v} G H f (f a)"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => fun a => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (b : G), forall (h : @Eq.{v} H (f b) (f a)), P) => ",
+            "mk a (@Eq.refl.{v} H (f a))"
+        ),
+    },
+    TheoremArtifact {
+        name: "image_elim",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort u), ",
+            "forall (H : Sort v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (y : H), ",
+            "forall (img : @ImagePred.{u,v} G H f y), ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (a : G), forall (h : @Eq.{v} H (f a) y), P), ",
+            "P"
+        ),
+        proof: "fun G => fun H => fun f => fun y => fun img => fun P => fun mk => img P mk",
+    },
+    TheoremArtifact {
+        name: "image_one",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), @ImagePred.{u,v} G H f oneH"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun hom_args => fun (P : Prop) => ",
+            "fun (mk : forall (a : G), forall (h : @Eq.{v} H (f a) oneH), P) => ",
+            "mk oneG (@hom_one.{u,v} G oneG mulG invG H oneH mulH invH f hom_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "image_mul_closed",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (x : H), forall (y : H), forall (hx : @ImagePred.{u,v} G H f x), forall (hy : @ImagePred.{u,v} G H f y), @ImagePred.{u,v} G H f (mulH x y)"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun hom_args => fun x => fun y => fun hx => fun hy => ",
+            "hx (@ImagePred.{u,v} G H f (mulH x y)) ",
+            "(fun (a : G) => fun (hax : @Eq.{v} H (f a) x) => ",
+            "hy (@ImagePred.{u,v} G H f (mulH x y)) ",
+            "(fun (b : G) => fun (hby : @Eq.{v} H (f b) y) => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (c : G), forall (h : @Eq.{v} H (f c) (mulH x y)), P) => ",
+            "mk (mulG a b) ",
+            "(@eq_trans.{v} H (f (mulG a b)) (mulH (f a) (f b)) (mulH x y) ",
+            "(@hom_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a b) ",
+            "(@eq_congr2.{v,v,v} H H H mulH (f a) x (f b) y hax hby))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "image_inv_closed",
+        universe_params: &["u", "v"],
+        statement: abstract_group_hom_params!(
+            "forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (y : H), forall (hy : @ImagePred.{u,v} G H f y), @ImagePred.{u,v} G H f (invH y)"
+        ),
+        proof: abstract_group_hom_abs!(concat!(
+            "fun hom_args => fun y => fun hy => ",
+            "hy (@ImagePred.{u,v} G H f (invH y)) ",
+            "(fun (a : G) => fun (hay : @Eq.{v} H (f a) y) => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (c : G), forall (h : @Eq.{v} H (f c) (invH y)), P) => ",
+            "mk (invG a) ",
+            "(@eq_trans.{v} H (f (invG a)) (invH (f a)) (invH y) ",
+            "(@hom_inv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a) ",
+            "(@eq_congr_arg.{v,v} H H invH (f a) y hay)))"
+        )),
+    },
+];
+
+const ABSTRACT_GROUP_QUOTIENT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "KerSetoid",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "@Setoid.{u} G"
+        ),
+        value: concat!(
+            "fun G => fun H => fun f => ",
+            "@Setoid.mk.{u} G (@KerRel.{succ u,succ v} G H f) ",
+            "(fun (P : Prop) => ",
+            "fun (mk_equiv : ",
+            "forall (refl_arg : forall (x : G), @KerRel.{succ u,succ v} G H f x x), ",
+            "forall (symm_arg : forall (x : G), forall (y : G), forall (p : @KerRel.{succ u,succ v} G H f x y), @KerRel.{succ u,succ v} G H f y x), ",
+            "forall (trans_arg : forall (x : G), forall (y : G), forall (z : G), forall (p : @KerRel.{succ u,succ v} G H f x y), forall (q : @KerRel.{succ u,succ v} G H f y z), @KerRel.{succ u,succ v} G H f x z), ",
+            "P) => ",
+            "mk_equiv ",
+            "(@ker_rel_refl.{succ u,succ v} G H f) ",
+            "(@ker_rel_symm.{succ u,succ v} G H f) ",
+            "(@ker_rel_trans.{succ u,succ v} G H f))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "KerQuot",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "Sort succ u"
+        ),
+        value:
+            "fun G => fun H => fun f => @Quotient.{u} G (@KerSetoid.{u,v} G H f)",
+    },
+    DefinitionArtifact {
+        name: "KerQuotMk",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "@KerQuot.{u,v} G H f"
+        ),
+        value: concat!(
+            "fun G => fun H => fun f => fun a => ",
+            "@Quotient.mk.{u} G (@KerSetoid.{u,v} G H f) a"
+        ),
+    },
+    DefinitionArtifact {
+        name: "KerQuotToH",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "H"
+        ),
+        value: concat!(
+            "fun G => fun H => fun f => ",
+            "@Quotient.lift.{u,v} G H (@KerSetoid.{u,v} G H f) f ",
+            "(fun (a : G) => fun (b : G) => ",
+            "fun (h : @Setoid.r.{u} G (@KerSetoid.{u,v} G H f) a b) => h)"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_QUOTIENT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ker_quot_sound",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), forall (b : G), ",
+            "forall (h : @KerRel.{succ u,succ v} G H f a b), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMk.{u,v} G H f a) (@KerQuotMk.{u,v} G H f b)"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => fun a => fun b => fun h => ",
+            "@Quotient.sound.{u} G (@KerSetoid.{u,v} G H f) a b h"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_to_h_mk",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "@Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a)"
+        ),
+        proof: "fun G => fun H => fun f => fun a => @Eq.refl.{succ v} H (f a)",
+    },
+    TheoremArtifact {
+        name: "ker_quot_to_h_mul_mk",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (a : G), forall (b : G), ",
+            "@Eq.{succ v} H ",
+            "(@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) ",
+            "(mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b)))"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => ",
+            "fun hom_args => fun a => fun b => ",
+            "@hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a b"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_QUOTIENT_MUL_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "KerQuotMulRep",
+    universe_params: &["u", "v"],
+    ty: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (mulG : forall (a : G), forall (b : G), G), ",
+        "forall (H : Sort succ v), ",
+        "forall (f : forall (x : G), H), ",
+        "forall (a : G), forall (b : G), ",
+        "@KerQuot.{u,v} G H f"
+    ),
+    value: concat!(
+        "fun G => fun mulG => fun H => fun f => fun a => fun b => ",
+        "@KerQuotMk.{u,v} G H f (mulG a b)"
+    ),
+}];
+
+const ABSTRACT_GROUP_QUOTIENT_MUL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ker_quot_mul_rep_compat",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (a : G), forall (a2 : G), ",
+            "forall (b : G), forall (b2 : G), ",
+            "forall (ha : @KerRel.{succ u,succ v} G H f a a2), ",
+            "forall (hb : @KerRel.{succ u,succ v} G H f b b2), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMulRep.{u,v} G mulG H f a b) ",
+            "(@KerQuotMulRep.{u,v} G mulG H f a2 b2)"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => ",
+            "fun hom_args => fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => ",
+            "@ker_quot_sound.{u,v} G H f (mulG a b) (mulG a2 b2) ",
+            "(@eq_trans.{succ v} H (f (mulG a b)) (mulH (f a) (f b)) (f (mulG a2 b2)) ",
+            "(@hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a b) ",
+            "(@eq_trans.{succ v} H (mulH (f a) (f b)) (mulH (f a2) (f b2)) (f (mulG a2 b2)) ",
+            "(@eq_congr2.{succ v,succ v,succ v} H H H mulH (f a) (f a2) (f b) (f b2) ha hb) ",
+            "(@eq_symm.{succ v} H (f (mulG a2 b2)) (mulH (f a2) (f b2)) ",
+            "(@hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a2 b2))))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_QUOTIENT_GROUP_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "KerQuotMul",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q1 : @KerQuot.{u,v} G H f), ",
+            "forall (q2 : @KerQuot.{u,v} G H f), ",
+            "@KerQuot.{u,v} G H f"
+        ),
+        value: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "@Quotient.lift2.{u,u} G (@KerQuot.{u,v} G H f) (@KerSetoid.{u,v} G H f) ",
+            "(@KerQuotMulRep.{u,v} G mulG H f) ",
+            "(fun (a : G) => fun (a2 : G) => fun (b : G) => fun (b2 : G) => ",
+            "fun (ha : @Setoid.r.{u} G (@KerSetoid.{u,v} G H f) a a2) => ",
+            "fun (hb : @Setoid.r.{u} G (@KerSetoid.{u,v} G H f) b b2) => ",
+            "@ker_quot_mul_rep_compat.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a a2 b b2 ha hb)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "KerQuotOne",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "@KerQuot.{u,v} G H f"
+        ),
+        value: concat!(
+            "fun G => fun oneG => fun H => fun f => ",
+            "@KerQuotMk.{u,v} G H f oneG"
+        ),
+    },
+    DefinitionArtifact {
+        name: "KerQuotInv",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "@KerQuot.{u,v} G H f"
+        ),
+        value: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "@Quotient.lift.{u,u} G (@KerQuot.{u,v} G H f) (@KerSetoid.{u,v} G H f) ",
+            "(fun (a : G) => @KerQuotMk.{u,v} G H f (invG a)) ",
+            "(fun (a : G) => fun (b : G) => ",
+            "fun (h : @Setoid.r.{u} G (@KerSetoid.{u,v} G H f) a b) => ",
+            "@ker_quot_sound.{u,v} G H f (invG a) (invG b) ",
+            "(@eq_trans.{succ v} H (f (invG a)) (invH (f a)) (f (invG b)) ",
+            "(@hom_inv.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a) ",
+            "(@eq_trans.{succ v} H (invH (f a)) (invH (f b)) (f (invG b)) ",
+            "(@eq_congr_arg.{succ v,succ v} H H invH (f a) (f b) h) ",
+            "(@eq_symm.{succ v} H (f (invG b)) (invH (f b)) ",
+            "(@hom_inv.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args b)))))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_QUOTIENT_GROUP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ker_quot_mul_mk",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (a : G), forall (b : G), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMk.{u,v} G H f a) (@KerQuotMk.{u,v} G H f b)) ",
+            "(@KerQuotMk.{u,v} G H f (mulG a b))"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => ",
+            "fun hom_args => fun a => fun b => ",
+            "@Eq.refl.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMk.{u,v} G H f (mulG a b))"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_inv_mk",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (a : G), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMk.{u,v} G H f a)) ",
+            "(@KerQuotMk.{u,v} G H f (invG a))"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => ",
+            "fun hom_args => fun a => ",
+            "@Eq.refl.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMk.{u,v} G H f (invG a))"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_mul_assoc",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q1 : @KerQuot.{u,v} G H f), ",
+            "forall (q2 : @KerQuot.{u,v} G H f), ",
+            "forall (q3 : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2) q3) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "q1 (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q2 q3))"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q1 : @KerQuot.{u,v} G H f) => ",
+            "forall (q2 : @KerQuot.{u,v} G H f), forall (q3 : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2) q3) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "q1 (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q2 q3))) ",
+            "(fun (a : G) => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q2 : @KerQuot.{u,v} G H f) => ",
+            "forall (q3 : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMk.{u,v} G H f a) q2) q3) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMk.{u,v} G H f a) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q2 q3))) ",
+            "(fun (b : G) => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q3 : @KerQuot.{u,v} G H f) => ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMk.{u,v} G H f a) (@KerQuotMk.{u,v} G H f b)) q3) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotMk.{u,v} G H f a) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMk.{u,v} G H f b) q3))) ",
+            "(fun (c : G) => ",
+            "@ker_quot_sound.{u,v} G H f (mulG (mulG a b) c) (mulG a (mulG b c)) ",
+            "(@eq_congr_arg.{succ u,succ v} G H f (mulG (mulG a b) c) (mulG a (mulG b c)) ",
+            "(@group_mul_assoc.{succ u} G oneG mulG invG group_args a b c)))))"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_one_mul",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotOne.{u,v} G oneG H f) q) q"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q : @KerQuot.{u,v} G H f) => ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotOne.{u,v} G oneG H f) q) q) ",
+            "(fun (a : G) => ",
+            "@ker_quot_sound.{u,v} G H f (mulG oneG a) a ",
+            "(@eq_congr_arg.{succ u,succ v} G H f (mulG oneG a) a ",
+            "(@group_one_mul.{succ u} G oneG mulG invG group_args a)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_mul_one",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q (@KerQuotOne.{u,v} G oneG H f)) q"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q : @KerQuot.{u,v} G H f) => ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q (@KerQuotOne.{u,v} G oneG H f)) q) ",
+            "(fun (a : G) => ",
+            "@ker_quot_sound.{u,v} G H f (mulG a oneG) a ",
+            "(@eq_congr_arg.{succ u,succ v} G H f (mulG a oneG) a ",
+            "(@group_mul_one.{succ u} G oneG mulG invG group_args a)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_inv_mul",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q) q) ",
+            "(@KerQuotOne.{u,v} G oneG H f)"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q : @KerQuot.{u,v} G H f) => ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q) q) ",
+            "(@KerQuotOne.{u,v} G oneG H f)) ",
+            "(fun (a : G) => ",
+            "@ker_quot_sound.{u,v} G H f (mulG (invG a) a) oneG ",
+            "(@eq_congr_arg.{succ u,succ v} G H f (mulG (invG a) a) oneG ",
+            "(@group_inv_mul.{succ u} G oneG mulG invG group_args a)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "ker_quot_mul_inv",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "q (@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q)) ",
+            "(@KerQuotOne.{u,v} G oneG H f)"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q : @KerQuot.{u,v} G H f) => ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) ",
+            "(@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "q (@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q)) ",
+            "(@KerQuotOne.{u,v} G oneG H f)) ",
+            "(fun (a : G) => ",
+            "@ker_quot_sound.{u,v} G H f (mulG a (invG a)) oneG ",
+            "(@eq_congr_arg.{succ u,succ v} G H f (mulG a (invG a)) oneG ",
+            "(@group_mul_inv.{succ u} G oneG mulG invG group_args a)))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_QUOTIENT_HOM_THEOREMS: &[TheoremArtifact] = &[TheoremArtifact {
+    name: "ker_quot_to_h_mul",
+    universe_params: &["u", "v"],
+    statement: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (oneG : G), ",
+        "forall (mulG : forall (a : G), forall (b : G), G), ",
+        "forall (invG : forall (a : G), G), ",
+        "forall (H : Sort succ v), ",
+        "forall (oneH : H), ",
+        "forall (mulH : forall (a : H), forall (b : H), H), ",
+        "forall (invH : forall (a : H), H), ",
+        "forall (f : forall (x : G), H), ",
+        "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+        "forall (q1 : @KerQuot.{u,v} G H f), ",
+        "forall (q2 : @KerQuot.{u,v} G H f), ",
+        "@Eq.{succ v} H ",
+        "(@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) ",
+        "(mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))"
+    ),
+    proof: concat!(
+        "fun G => fun oneG => fun mulG => fun invG => ",
+        "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+        "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+        "(fun (q1 : @KerQuot.{u,v} G H f) => ",
+        "forall (q2 : @KerQuot.{u,v} G H f), ",
+        "@Eq.{succ v} H ",
+        "(@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) ",
+        "(mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))) ",
+        "(fun (a : G) => ",
+        "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+        "(fun (q2 : @KerQuot.{u,v} G H f) => ",
+        "@Eq.{succ v} H ",
+        "(@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMk.{u,v} G H f a) q2)) ",
+        "(mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f q2))) ",
+        "(fun (b : G) => ",
+        "@hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a b))"
+    ),
+}];
+
+const ABSTRACT_GROUP_FIRST_ISO_FULL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "first_iso_phi_mul",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (q1 : @KerQuot.{u,v} G H f), ",
+            "forall (q2 : @KerQuot.{u,v} G H f), ",
+            "@Eq.{succ v} H ",
+            "(@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) ",
+            "(mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "@ker_quot_to_h_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_phi_injective",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (q1 : @KerQuot.{u,v} G H f), ",
+            "forall (q2 : @KerQuot.{u,v} G H f), ",
+            "forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q1 : @KerQuot.{u,v} G H f) => ",
+            "forall (q2 : @KerQuot.{u,v} G H f), ",
+            "forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2) ",
+            "(fun (a : G) => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q2 : @KerQuot.{u,v} G H f) => ",
+            "forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f q2)), ",
+            "@Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMk.{u,v} G H f a) q2) ",
+            "(fun (b : G) => fun (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))) => ",
+            "@ker_quot_sound.{u,v} G H f a b h))"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_phi_hits_image",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (q : @KerQuot.{u,v} G H f), ",
+            "@ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => ",
+            "@Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) ",
+            "(fun (q : @KerQuot.{u,v} G H f) => ",
+            "@ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)) ",
+            "(fun (a : G) => @image_intro.{succ u,succ v} G H f a)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_phi_surj_image",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (y : H), ",
+            "forall (hy : @ImagePred.{succ u,succ v} G H f y), ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (q : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q) y), P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => fun y => fun hy => fun P => fun mk => ",
+            "@image_elim.{succ u,succ v} G H f y hy P ",
+            "(fun (a : G) => fun (h : @Eq.{succ v} H (f a) y) => ",
+            "mk (@KerQuotMk.{u,v} G H f a) ",
+            "(@eq_trans.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a) y ",
+            "(@ker_quot_to_h_mk.{u,v} G H f a) h))"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_isomorphism_image_facts",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (mul_compat : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) (mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))), ",
+            "forall (injective : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), @Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2), ",
+            "forall (hits_image : forall (q : @KerQuot.{u,v} G H f), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)), ",
+            "forall (surj_image : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), forall (Q : Prop), forall (mk_surj : forall (q : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q) y), Q), Q), ",
+            "P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "fun (P : Prop) => fun mk => ",
+            "mk ",
+            "(@first_iso_phi_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@first_iso_phi_injective.{u,v} G H f) ",
+            "(@first_iso_phi_hits_image.{u,v} G H f) ",
+            "(@first_iso_phi_surj_image.{u,v} G H f)"
+        ),
+    },
+];
+
+const FIRST_ISO_QUOTIENT_ASSOC_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (law : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), forall (q3 : @KerQuot.{u,v} G H f), @Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2) q3) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q2 q3))), ",
+            "@FirstIsoQuotientAssocEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_QUOTIENT_ONE_MUL_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (law : forall (q : @KerQuot.{u,v} G H f), @Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotOne.{u,v} G oneG H f) q) q), ",
+            "@FirstIsoQuotientOneMulEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_QUOTIENT_MUL_ONE_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (law : forall (q : @KerQuot.{u,v} G H f), @Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q (@KerQuotOne.{u,v} G oneG H f)) q), ",
+            "@FirstIsoQuotientMulOneEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_QUOTIENT_INV_MUL_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (law : forall (q : @KerQuot.{u,v} G H f), @Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q) q) (@KerQuotOne.{u,v} G oneG H f)), ",
+            "@FirstIsoQuotientInvMulEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_QUOTIENT_MUL_INV_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (law : forall (q : @KerQuot.{u,v} G H f), @Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q (@KerQuotInv.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q)) (@KerQuotOne.{u,v} G oneG H f)), ",
+            "@FirstIsoQuotientMulInvEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_QUOTIENT_GROUP_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (assoc : @FirstIsoQuotientAssocEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (one_mul : @FirstIsoQuotientOneMulEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (mul_one : @FirstIsoQuotientMulOneEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (inv_mul : @FirstIsoQuotientInvMulEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (mul_inv : @FirstIsoQuotientMulInvEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "@FirstIsoQuotientGroupEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_IMAGE_GROUP_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (one_member : @ImagePred.{succ u,succ v} G H f oneH), ",
+            "forall (mul_closed : forall (x : H), forall (y : H), forall (hx : @ImagePred.{succ u,succ v} G H f x), forall (hy : @ImagePred.{succ u,succ v} G H f y), @ImagePred.{succ u,succ v} G H f (mulH x y)), ",
+            "forall (inv_closed : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), @ImagePred.{succ u,succ v} G H f (invH y)), ",
+            "@FirstIsoImageGroupEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const FIRST_ISO_THEOREM_EVIDENCE_CONSTRUCTORS: &[ConstructorArtifact] =
+    &[ConstructorArtifact {
+        name: "mk",
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (quotient_group : @FirstIsoQuotientGroupEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (image_group : @FirstIsoImageGroupEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (mul_compat : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) (mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))), ",
+            "forall (injective : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), @Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2), ",
+            "forall (hits_image : forall (q : @KerQuot.{u,v} G H f), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)), ",
+            "forall (surj_image : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), forall (Q : Prop), forall (mk_surj : forall (q : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q) y), Q), Q), ",
+            "@FirstIsoTheoremEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+    }];
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_INDUCTIVES: &[InductiveArtifact] = &[
+    InductiveArtifact {
+        name: "FirstIsoQuotientAssocEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_QUOTIENT_ASSOC_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoQuotientOneMulEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_QUOTIENT_ONE_MUL_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoQuotientMulOneEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_QUOTIENT_MUL_ONE_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoQuotientInvMulEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_QUOTIENT_INV_MUL_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoQuotientMulInvEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_QUOTIENT_MUL_INV_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoQuotientGroupEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_QUOTIENT_GROUP_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoImageGroupEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_IMAGE_GROUP_EVIDENCE_CONSTRUCTORS,
+    },
+    InductiveArtifact {
+        name: "FirstIsoTheoremEvidence",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        constructors: FIRST_ISO_THEOREM_EVIDENCE_CONSTRUCTORS,
+    },
+];
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FirstIsoImageGroupFacts",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (one_member : @ImagePred.{succ u,succ v} G H f oneH), ",
+            "forall (mul_closed : forall (x : H), forall (y : H), forall (hx : @ImagePred.{succ u,succ v} G H f x), forall (hy : @ImagePred.{succ u,succ v} G H f y), @ImagePred.{succ u,succ v} G H f (mulH x y)), ",
+            "forall (inv_closed : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), @ImagePred.{succ u,succ v} G H f (invH y)), ",
+            "P), ",
+            "P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FirstIsoImage",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (image_group : @FirstIsoImageGroupFacts.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (mul_compat : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) (mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))), ",
+            "forall (injective : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), @Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2), ",
+            "forall (hits_image : forall (q : @KerQuot.{u,v} G H f), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)), ",
+            "forall (surj_image : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), forall (Q : Prop), forall (mk_surj : forall (q : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q) y), Q), Q), ",
+            "P), ",
+            "P"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "first_iso_quotient_assoc_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoQuotientAssocEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoQuotientAssocEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@ker_quot_mul_assoc.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_quotient_one_mul_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoQuotientOneMulEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoQuotientOneMulEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@ker_quot_one_mul.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_quotient_mul_one_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoQuotientMulOneEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoQuotientMulOneEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@ker_quot_mul_one.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_quotient_inv_mul_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoQuotientInvMulEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoQuotientInvMulEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@ker_quot_inv_mul.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_quotient_mul_inv_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoQuotientMulInvEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoQuotientMulInvEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@ker_quot_mul_inv.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_quotient_group_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoQuotientGroupEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoQuotientGroupEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@first_iso_quotient_assoc_evidence.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args) ",
+            "(@first_iso_quotient_one_mul_evidence.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args) ",
+            "(@first_iso_quotient_mul_one_evidence.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args) ",
+            "(@first_iso_quotient_inv_mul_evidence.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args) ",
+            "(@first_iso_quotient_mul_inv_evidence.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_image_group_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoImageGroupEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "@FirstIsoImageGroupEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@image_one.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@image_mul_closed.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@image_inv_closed.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_image_group_facts",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (one_member : @ImagePred.{succ u,succ v} G H f oneH), ",
+            "forall (mul_closed : forall (x : H), forall (y : H), forall (hx : @ImagePred.{succ u,succ v} G H f x), forall (hy : @ImagePred.{succ u,succ v} G H f y), @ImagePred.{succ u,succ v} G H f (mulH x y)), ",
+            "forall (inv_closed : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), @ImagePred.{succ u,succ v} G H f (invH y)), ",
+            "P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "fun (P : Prop) => fun mk => ",
+            "mk ",
+            "(@image_one.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@image_mul_closed.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@image_inv_closed.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_isomorphism_theorem_evidence",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoTheoremEvidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "@FirstIsoTheoremEvidence.mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args ",
+            "(@first_iso_quotient_group_evidence.{u,v} G oneG mulG invG H oneH mulH invH f group_args hom_args) ",
+            "(@first_iso_image_group_evidence.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@first_iso_phi_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@first_iso_phi_injective.{u,v} G H f) ",
+            "(@first_iso_phi_hits_image.{u,v} G H f) ",
+            "(@first_iso_phi_surj_image.{u,v} G H f)"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_isomorphism_to_image",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G oneG mulG invG), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (image_group : @FirstIsoImageGroupFacts.{u,v} G oneG mulG invG H oneH mulH invH f hom_args), ",
+            "forall (mul_compat : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) (mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))), ",
+            "forall (injective : forall (q1 : @KerQuot.{u,v} G H f), forall (q2 : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), @Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2), ",
+            "forall (hits_image : forall (q : @KerQuot.{u,v} G H f), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)), ",
+            "forall (surj_image : forall (y : H), forall (hy : @ImagePred.{succ u,succ v} G H f y), forall (Q : Prop), forall (mk_surj : forall (q : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q) y), Q), Q), ",
+            "P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun group_args => fun hom_args => ",
+            "fun (P : Prop) => fun mk => ",
+            "mk ",
+            "(@first_iso_image_group_facts.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@first_iso_phi_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@first_iso_phi_injective.{u,v} G H f) ",
+            "(@first_iso_phi_hits_image.{u,v} G H f) ",
+            "(@first_iso_phi_surj_image.{u,v} G H f)"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_FIRST_ISO_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "FirstIsoRepMvp",
+    universe_params: &["u", "v"],
+    ty: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (oneG : G), ",
+        "forall (mulG : forall (a : G), forall (b : G), G), ",
+        "forall (invG : forall (a : G), G), ",
+        "forall (H : Sort succ v), ",
+        "forall (oneH : H), ",
+        "forall (mulH : forall (a : H), forall (b : H), H), ",
+        "forall (invH : forall (a : H), H), ",
+        "forall (f : forall (x : G), H), ",
+        "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+        "Prop"
+    ),
+    value: concat!(
+        "fun G => fun oneG => fun mulG => fun invG => ",
+        "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+        "forall (P : Prop), ",
+        "forall (mk : ",
+        "forall (mk_compute : forall (a : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a)), ",
+        "forall (mul_compat : forall (a : G), forall (b : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) (mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b)))), ",
+        "forall (rep_injective : forall (a : G), forall (b : G), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))), @KerRel.{succ u,succ v} G H f a b), ",
+        "forall (hits_image : forall (a : G), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a))), ",
+        "P), ",
+        "P"
+    ),
+}];
+
+const ABSTRACT_GROUP_FIRST_ISO_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "first_iso_phi_mk",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "@Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a)"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => fun a => ",
+            "@ker_quot_to_h_mk.{u,v} G H f a"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_phi_mul_mk",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "forall (a : G), forall (b : G), ",
+            "@Eq.{succ v} H ",
+            "(@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) ",
+            "(mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b)))"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => ",
+            "fun hom_args => fun a => fun b => ",
+            "@ker_quot_to_h_mul_mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a b"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_iso_rep_injective",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), forall (b : G), ",
+            "forall (h : @Eq.{succ v} H ",
+            "(@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) ",
+            "(@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))), ",
+            "@KerRel.{succ u,succ v} G H f a b"
+        ),
+        proof: "fun G => fun H => fun f => fun a => fun b => fun h => h",
+    },
+    TheoremArtifact {
+        name: "first_iso_rep_hits_image",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (H : Sort succ v), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (a : G), ",
+            "@ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a))"
+        ),
+        proof: concat!(
+            "fun G => fun H => fun f => fun a => ",
+            "@image_intro.{succ u,succ v} G H f a"
+        ),
+    },
+    TheoremArtifact {
+        name: "first_isomorphism_rep_mvp",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (H : Sort succ v), ",
+            "forall (oneH : H), ",
+            "forall (mulH : forall (a : H), forall (b : H), H), ",
+            "forall (invH : forall (a : H), H), ",
+            "forall (f : forall (x : G), H), ",
+            "forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), ",
+            "@FirstIsoRepMvp.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+        ),
+        proof: concat!(
+            "fun G => fun oneG => fun mulG => fun invG => ",
+            "fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => ",
+            "fun (P : Prop) => ",
+            "fun (mk : ",
+            "forall (mk_compute : forall (a : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a)), ",
+            "forall (mul_compat : forall (a : G), forall (b : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) (mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b)))), ",
+            "forall (rep_injective : forall (a : G), forall (b : G), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))), @KerRel.{succ u,succ v} G H f a b), ",
+            "forall (hits_image : forall (a : G), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a))), ",
+            "P) => ",
+            "mk ",
+            "(@first_iso_phi_mk.{u,v} G H f) ",
+            "(@first_iso_phi_mul_mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
+            "(@first_iso_rep_injective.{u,v} G H f) ",
+            "(@first_iso_rep_hits_image.{u,v} G H f)"
+        ),
     },
 ];
 
@@ -6041,6 +8144,191 @@ fn run() -> Result<(), String> {
         &iff_imports,
         &iff_source_interfaces,
     )?;
+    let abstract_group_imports = vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
+    let abstract_group_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+    ];
+    let abstract_group = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_MODULE,
+        &abstract_group_imports,
+        &abstract_group_source_interfaces,
+    )?;
+    let abstract_group_kernel_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+    ];
+    let abstract_group_kernel_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+    ];
+    let abstract_group_kernel = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_KERNEL_MODULE,
+        &abstract_group_kernel_imports,
+        &abstract_group_kernel_source_interfaces,
+    )?;
+    let abstract_group_image_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+    ];
+    let abstract_group_image_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+    ];
+    let abstract_group_image = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_IMAGE_MODULE,
+        &abstract_group_image_imports,
+        &abstract_group_image_source_interfaces,
+    )?;
+    let abstract_group_quotient_imports =
+        vec![eq_import.clone(), abstract_group.verified_module.clone()];
+    let abstract_group_quotient_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+    ];
+    let abstract_group_quotient = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_QUOTIENT_MODULE,
+        &abstract_group_quotient_imports,
+        &abstract_group_quotient_source_interfaces,
+    )?;
+    let abstract_group_quotient_mul_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+    ];
+    let abstract_group_quotient_mul_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+    ];
+    let abstract_group_quotient_mul = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_QUOTIENT_MUL_MODULE,
+        &abstract_group_quotient_mul_imports,
+        &abstract_group_quotient_mul_source_interfaces,
+    )?;
+    let abstract_group_quotient_group_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+    ];
+    let abstract_group_quotient_group_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+    ];
+    let abstract_group_quotient_group = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE,
+        &abstract_group_quotient_group_imports,
+        &abstract_group_quotient_group_source_interfaces,
+    )?;
+    let abstract_group_quotient_hom_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+    ];
+    let abstract_group_quotient_hom_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+    ];
+    let abstract_group_quotient_hom = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_QUOTIENT_HOM_MODULE,
+        &abstract_group_quotient_hom_imports,
+        &abstract_group_quotient_hom_source_interfaces,
+    )?;
+    let abstract_group_first_iso_full_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_quotient_hom.verified_module.clone(),
+    ];
+    let abstract_group_first_iso_full_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_quotient_hom.source_interface.clone(),
+    ];
+    let abstract_group_first_iso_full = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_FIRST_ISO_FULL_MODULE,
+        &abstract_group_first_iso_full_imports,
+        &abstract_group_first_iso_full_source_interfaces,
+    )?;
+    let abstract_group_first_iso_image_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+    ];
+    let abstract_group_first_iso_image_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+    ];
+    let abstract_group_first_iso_image = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_FIRST_ISO_IMAGE_MODULE,
+        &abstract_group_first_iso_image_imports,
+        &abstract_group_first_iso_image_source_interfaces,
+    )?;
+    let abstract_group_first_iso_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+    ];
+    let abstract_group_first_iso_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+    ];
+    let abstract_group_first_iso = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_FIRST_ISO_MODULE,
+        &abstract_group_first_iso_imports,
+        &abstract_group_first_iso_source_interfaces,
+    )?;
     let abstract_ring_imports = vec![eq_import.clone()];
     let abstract_ring_source_interfaces = vec![eq_source_interface.clone()];
     let abstract_ring = build_and_write_module(
@@ -6331,6 +8619,16 @@ fn run() -> Result<(), String> {
             right_triangle,
             metric,
             iff,
+            abstract_group,
+            abstract_group_kernel,
+            abstract_group_image,
+            abstract_group_quotient,
+            abstract_group_quotient_mul,
+            abstract_group_quotient_group,
+            abstract_group_quotient_hom,
+            abstract_group_first_iso_full,
+            abstract_group_first_iso_image,
+            abstract_group_first_iso,
             abstract_ring,
             abstract_ordered_field,
             abstract_square_normalize,
@@ -6358,13 +8656,15 @@ fn build_and_write_module(
     imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
 ) -> Result<GeneratedModule, String> {
     let source = module_source(config);
-    let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces(
+    let axiom_policy = axiom_policy_for_module(config.module);
+    let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
         npa_frontend::FileId(0),
         npa_cert::Name::from_dotted(config.module),
         &source,
         verified_modules,
         imported_source_interfaces,
         &npa_frontend::HumanCompileOptions::default(),
+        &axiom_policy,
     )
     .map_err(|err| format!("failed to compile {}: {err:?}", config.source_path))?;
     let certificate_bytes = npa_cert::encode_module_cert(&output.certificate)
@@ -6374,12 +8674,8 @@ fn build_and_write_module(
     for import in verified_modules {
         session.register_verified_module(import.clone());
     }
-    let verified = npa_cert::verify_module_cert(
-        &certificate_bytes,
-        &mut session,
-        &npa_cert::AxiomPolicy::normal(),
-    )
-    .map_err(|err| format!("generated certificate did not verify: {err:?}"))?;
+    let verified = npa_cert::verify_module_cert(&certificate_bytes, &mut session, &axiom_policy)
+        .map_err(|err| format!("generated certificate did not verify: {err:?}"))?;
     let axioms = verified
         .axiom_report()
         .module_axioms
@@ -6395,6 +8691,15 @@ fn build_and_write_module(
         return Err(format!(
             "generated AI proof corpus module {} has axioms {:?}, expected {:?}",
             config.module, axioms, expected_axioms
+        ));
+    }
+    let expected_features = expected_core_features_for_module(config.module);
+    if verified.axiom_report().core_features != expected_features {
+        return Err(format!(
+            "generated AI proof corpus module {} has core features {:?}, expected {:?}",
+            config.module,
+            verified.axiom_report().core_features,
+            expected_features
         ));
     }
 
@@ -6429,6 +8734,56 @@ fn build_and_write_module(
     )?;
 
     Ok(generated)
+}
+
+fn axiom_policy_for_module(module: &str) -> npa_cert::AxiomPolicy {
+    let mut policy = npa_cert::AxiomPolicy::normal();
+    for feature in supported_core_features_for_module(module) {
+        policy = policy.with_core_feature(feature);
+    }
+    policy
+}
+
+fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature> {
+    if module == ABSTRACT_GROUP_QUOTIENT_MODULE.module
+        || module == ABSTRACT_GROUP_QUOTIENT_MUL_MODULE.module
+        || module == ABSTRACT_GROUP_FIRST_ISO_MODULE.module
+    {
+        vec![npa_cert::CoreFeature::QuotientV1]
+    } else if module == ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE.module
+        || module == ABSTRACT_GROUP_QUOTIENT_HOM_MODULE.module
+        || module == ABSTRACT_GROUP_FIRST_ISO_FULL_MODULE.module
+        || module == ABSTRACT_GROUP_FIRST_ISO_IMAGE_MODULE.module
+    {
+        vec![
+            npa_cert::CoreFeature::QuotientV1,
+            npa_cert::CoreFeature::QuotientV2,
+            npa_cert::CoreFeature::QuotientV3,
+        ]
+    } else {
+        Vec::new()
+    }
+}
+
+fn expected_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature> {
+    if module == ABSTRACT_GROUP_QUOTIENT_MODULE.module {
+        vec![npa_cert::CoreFeature::QuotientV1]
+    } else if module == ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE.module {
+        vec![
+            npa_cert::CoreFeature::QuotientV1,
+            npa_cert::CoreFeature::QuotientV2,
+            npa_cert::CoreFeature::QuotientV3,
+        ]
+    } else if module == ABSTRACT_GROUP_QUOTIENT_HOM_MODULE.module
+        || module == ABSTRACT_GROUP_FIRST_ISO_FULL_MODULE.module
+    {
+        vec![
+            npa_cert::CoreFeature::QuotientV1,
+            npa_cert::CoreFeature::QuotientV3,
+        ]
+    } else {
+        Vec::new()
+    }
 }
 
 fn human_imported_source_interface(

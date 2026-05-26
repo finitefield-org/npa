@@ -287,6 +287,111 @@ pub fn quotient_lift_type(carrier_level: Level, result_level: Level) -> Expr {
     )
 }
 
+pub fn quotient_lift2_type(carrier_level: Level, result_level: Level) -> Expr {
+    let relation_lhs = setoid_relation(
+        carrier_level.clone(),
+        Expr::bvar(7),
+        Expr::bvar(5),
+        Expr::bvar(3),
+        Expr::bvar(2),
+    );
+    let relation_rhs = setoid_relation(
+        carrier_level.clone(),
+        Expr::bvar(8),
+        Expr::bvar(6),
+        Expr::bvar(2),
+        Expr::bvar(1),
+    );
+    let lhs = Expr::apps(Expr::bvar(6), vec![Expr::bvar(5), Expr::bvar(3)]);
+    let rhs = Expr::apps(Expr::bvar(6), vec![Expr::bvar(4), Expr::bvar(2)]);
+    let compatibility_result = eq(Level::succ(result_level.clone()), Expr::bvar(8), lhs, rhs);
+    let compatibility_ty = Expr::pi(
+        "a",
+        Expr::bvar(3),
+        Expr::pi(
+            "a2",
+            Expr::bvar(4),
+            Expr::pi(
+                "b",
+                Expr::bvar(5),
+                Expr::pi(
+                    "b2",
+                    Expr::bvar(6),
+                    Expr::pi(
+                        "ha",
+                        relation_lhs,
+                        Expr::pi("hb", relation_rhs, compatibility_result),
+                    ),
+                ),
+            ),
+        ),
+    );
+    Expr::pi(
+        "A",
+        Expr::sort(Level::succ(carrier_level.clone())),
+        Expr::pi(
+            "B",
+            Expr::sort(Level::succ(result_level)),
+            Expr::pi(
+                "s",
+                setoid(carrier_level.clone(), Expr::bvar(1)),
+                Expr::pi(
+                    "f",
+                    Expr::pi(
+                        "_",
+                        Expr::bvar(2),
+                        Expr::pi("_", Expr::bvar(3), Expr::bvar(3)),
+                    ),
+                    Expr::pi(
+                        "h",
+                        compatibility_ty,
+                        Expr::pi(
+                            "q1",
+                            quotient(carrier_level.clone(), Expr::bvar(4), Expr::bvar(2)),
+                            Expr::pi(
+                                "q2",
+                                quotient(carrier_level, Expr::bvar(5), Expr::bvar(3)),
+                                Expr::bvar(5),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+}
+
+pub fn quotient_ind_prop_type(level: Level) -> Expr {
+    let quotient_for_s = quotient(level.clone(), Expr::bvar(1), Expr::bvar(0));
+    let motive_ty = Expr::pi("_", quotient_for_s, Expr::sort(prop()));
+    let mk_case_result = Expr::app(
+        Expr::bvar(1),
+        quotient_mk(level.clone(), Expr::bvar(3), Expr::bvar(2), Expr::bvar(0)),
+    );
+    let mk_case_ty = Expr::pi("a", Expr::bvar(2), mk_case_result);
+    Expr::pi(
+        "A",
+        Expr::sort(Level::succ(level.clone())),
+        Expr::pi(
+            "s",
+            setoid(level.clone(), Expr::bvar(0)),
+            Expr::pi(
+                "motive",
+                motive_ty,
+                Expr::pi(
+                    "mk_case",
+                    mk_case_ty,
+                    Expr::pi(
+                        "q",
+                        quotient(level, Expr::bvar(3), Expr::bvar(2)),
+                        Expr::app(Expr::bvar(2), Expr::bvar(0)),
+                    ),
+                ),
+            ),
+        ),
+    )
+}
+
 pub fn nat_rec_type(level: Level) -> Expr {
     let motive_ty = Expr::pi("_", nat(), Expr::sort(level.clone()));
     let z_ty = Expr::app(Expr::bvar(0), nat_zero());

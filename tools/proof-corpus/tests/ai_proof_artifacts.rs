@@ -1,6 +1,6 @@
 use npa_cert::{
     build_module_cert, decode_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy,
-    CoreModule, DeclPayload, ExportKind, Name, VerifiedModule, VerifierSession,
+    CoreFeature, CoreModule, DeclPayload, ExportKind, Name, VerifiedModule, VerifierSession,
 };
 use npa_kernel::{Decl, Level};
 use sha2::{Digest, Sha256};
@@ -30,6 +30,13 @@ struct VerifiedCorpusImports<'a> {
     vector_basic: &'a VerifiedModule,
     vector_dot: &'a VerifiedModule,
     right_triangle: &'a VerifiedModule,
+    abstract_group: &'a VerifiedModule,
+    abstract_group_image: &'a VerifiedModule,
+    abstract_group_quotient: &'a VerifiedModule,
+    abstract_group_quotient_mul: &'a VerifiedModule,
+    abstract_group_quotient_group: &'a VerifiedModule,
+    abstract_group_quotient_hom: &'a VerifiedModule,
+    abstract_group_first_iso_full: &'a VerifiedModule,
     abstract_ring: &'a VerifiedModule,
     abstract_ordered_field: &'a VerifiedModule,
     abstract_square_normalize: &'a VerifiedModule,
@@ -63,6 +70,17 @@ struct VerifiedAbstractInnerProductDeriveImports<'a> {
     abstract_scalar_derive: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
+}
+
+struct VerifiedAbstractGroupFirstIsoFullImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    abstract_group: &'a VerifiedModule,
+    abstract_group_image: &'a VerifiedModule,
+    abstract_group_quotient: &'a VerifiedModule,
+    abstract_group_quotient_mul: &'a VerifiedModule,
+    abstract_group_quotient_group: &'a VerifiedModule,
+    abstract_group_quotient_hom: &'a VerifiedModule,
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -298,6 +316,110 @@ const IFF_THEOREMS: &[&str] = &[
     "or_inr",
     "or_elim",
     "iff_congr_arg",
+];
+
+const ABSTRACT_GROUP_DEFINITIONS: &[&str] =
+    &["GroupLawArgs", "GroupHomLawArgs", "KernelPred", "KerRel"];
+
+const ABSTRACT_GROUP_THEOREMS: &[&str] = &[
+    "group_mul_assoc",
+    "group_one_mul",
+    "group_mul_one",
+    "group_inv_mul",
+    "group_mul_inv",
+    "hom_mul",
+    "hom_one",
+    "hom_inv",
+    "kernel_one",
+    "ker_rel_refl",
+    "ker_rel_symm",
+    "ker_rel_trans",
+];
+
+const ABSTRACT_GROUP_KERNEL_THEOREMS: &[&str] = &[
+    "kernel_mul_closed",
+    "kernel_inv_closed",
+    "kernel_conj_closed",
+];
+
+const ABSTRACT_GROUP_IMAGE_DEFINITIONS: &[&str] = &["ImagePred"];
+
+const ABSTRACT_GROUP_IMAGE_THEOREMS: &[&str] = &[
+    "image_intro",
+    "image_elim",
+    "image_one",
+    "image_mul_closed",
+    "image_inv_closed",
+];
+
+const ABSTRACT_GROUP_QUOTIENT_DEFINITIONS: &[&str] =
+    &["KerSetoid", "KerQuot", "KerQuotMk", "KerQuotToH"];
+
+const ABSTRACT_GROUP_QUOTIENT_THEOREMS: &[&str] =
+    &["ker_quot_sound", "ker_quot_to_h_mk", "ker_quot_to_h_mul_mk"];
+
+const ABSTRACT_GROUP_QUOTIENT_MUL_DEFINITIONS: &[&str] = &["KerQuotMulRep"];
+
+const ABSTRACT_GROUP_QUOTIENT_MUL_THEOREMS: &[&str] = &["ker_quot_mul_rep_compat"];
+
+const ABSTRACT_GROUP_QUOTIENT_GROUP_DEFINITIONS: &[&str] =
+    &["KerQuotMul", "KerQuotOne", "KerQuotInv"];
+
+const ABSTRACT_GROUP_QUOTIENT_GROUP_THEOREMS: &[&str] = &[
+    "ker_quot_mul_mk",
+    "ker_quot_inv_mk",
+    "ker_quot_mul_assoc",
+    "ker_quot_one_mul",
+    "ker_quot_mul_one",
+    "ker_quot_inv_mul",
+    "ker_quot_mul_inv",
+];
+
+const ABSTRACT_GROUP_QUOTIENT_HOM_THEOREMS: &[&str] = &["ker_quot_to_h_mul"];
+
+const ABSTRACT_GROUP_FIRST_ISO_FULL_THEOREMS: &[&str] = &[
+    "first_iso_phi_mul",
+    "first_iso_phi_injective",
+    "first_iso_phi_hits_image",
+    "first_iso_phi_surj_image",
+    "first_isomorphism_image_facts",
+];
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_DEFINITIONS: &[&str] =
+    &["FirstIsoImageGroupFacts", "FirstIsoImage"];
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_INDUCTIVES: &[&str] = &[
+    "FirstIsoQuotientAssocEvidence",
+    "FirstIsoQuotientOneMulEvidence",
+    "FirstIsoQuotientMulOneEvidence",
+    "FirstIsoQuotientInvMulEvidence",
+    "FirstIsoQuotientMulInvEvidence",
+    "FirstIsoQuotientGroupEvidence",
+    "FirstIsoImageGroupEvidence",
+    "FirstIsoTheoremEvidence",
+];
+
+const ABSTRACT_GROUP_FIRST_ISO_IMAGE_THEOREMS: &[&str] = &[
+    "first_iso_quotient_assoc_evidence",
+    "first_iso_quotient_one_mul_evidence",
+    "first_iso_quotient_mul_one_evidence",
+    "first_iso_quotient_inv_mul_evidence",
+    "first_iso_quotient_mul_inv_evidence",
+    "first_iso_quotient_group_evidence",
+    "first_iso_image_group_evidence",
+    "first_iso_image_group_facts",
+    "first_isomorphism_theorem_evidence",
+    "first_isomorphism_to_image",
+];
+
+const ABSTRACT_GROUP_FIRST_ISO_DEFINITIONS: &[&str] = &["FirstIsoRepMvp"];
+
+const ABSTRACT_GROUP_FIRST_ISO_THEOREMS: &[&str] = &[
+    "first_iso_phi_mk",
+    "first_iso_phi_mul_mk",
+    "first_iso_rep_injective",
+    "first_iso_rep_hits_image",
+    "first_isomorphism_rep_mvp",
 ];
 
 const ABSTRACT_RING_DEFINITIONS: &[&str] = &["two", "sq", "RingLawArgs"];
@@ -772,6 +894,175 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroup",
+        source: "Proofs/Ai/Algebra/AbstractGroup/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroup/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroup/replay.json",
+        imports: &["Proofs.Ai.EqReasoning", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupKernel",
+        source: "Proofs/Ai/Algebra/AbstractGroupKernel/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupKernel/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupKernel/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupKernel/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: ABSTRACT_GROUP_KERNEL_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupImage",
+        source: "Proofs/Ai/Algebra/AbstractGroupImage/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupImage/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupImage/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupImage/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_IMAGE_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_IMAGE_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        source: "Proofs/Ai/Algebra/AbstractGroupQuotient/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupQuotient/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupQuotient/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupQuotient/replay.json",
+        imports: &["Proofs.Ai.Algebra.AbstractGroup", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_QUOTIENT_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_QUOTIENT_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        source: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupQuotientMul/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_QUOTIENT_MUL_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_QUOTIENT_MUL_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        source: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_QUOTIENT_GROUP_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_QUOTIENT_GROUP_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+        source: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupQuotientHom/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: ABSTRACT_GROUP_QUOTIENT_HOM_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        source: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupImage",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: ABSTRACT_GROUP_FIRST_ISO_FULL_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupFirstIsoImage",
+        source: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+            "Proofs.Ai.Algebra.AbstractGroupImage",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: ABSTRACT_GROUP_FIRST_ISO_IMAGE_INDUCTIVES,
+        definitions: ABSTRACT_GROUP_FIRST_ISO_IMAGE_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_FIRST_ISO_IMAGE_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractGroupFirstIso",
+        source: "Proofs/Ai/Algebra/AbstractGroupFirstIso/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractGroupFirstIso/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractGroupFirstIso/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractGroupFirstIso/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupImage",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_GROUP_FIRST_ISO_DEFINITIONS,
+        theorems: ABSTRACT_GROUP_FIRST_ISO_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractRing",
         source: "Proofs/Ai/Algebra/AbstractRing/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractRing/certificate.npcert",
@@ -1050,6 +1341,53 @@ fn ai_certificates_match_manifest_and_verify() {
         &vector_basic_import,
         &vector_dot_import,
     );
+    let abstract_group_import =
+        verified_abstract_group_import_module(&root, &eq_import, &eq_reasoning_import);
+    let abstract_group_image_import = verified_abstract_group_image_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_group_import,
+    );
+    let abstract_group_quotient_import =
+        verified_abstract_group_quotient_import_module(&root, &eq_import, &abstract_group_import);
+    let abstract_group_quotient_mul_import = verified_abstract_group_quotient_mul_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_group_import,
+        &abstract_group_quotient_import,
+    );
+    let abstract_group_quotient_group_import = verified_abstract_group_quotient_group_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_group_import,
+        &abstract_group_quotient_import,
+        &abstract_group_quotient_mul_import,
+    );
+    let abstract_group_quotient_hom_import = verified_abstract_group_quotient_hom_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_group_import,
+        &abstract_group_quotient_import,
+        &abstract_group_quotient_mul_import,
+        &abstract_group_quotient_group_import,
+    );
+    let abstract_group_first_iso_full_import = verified_abstract_group_first_iso_full_import_module(
+        &root,
+        &VerifiedAbstractGroupFirstIsoFullImports {
+            eq: &eq_import,
+            eq_reasoning: &eq_reasoning_import,
+            abstract_group: &abstract_group_import,
+            abstract_group_image: &abstract_group_image_import,
+            abstract_group_quotient: &abstract_group_quotient_import,
+            abstract_group_quotient_mul: &abstract_group_quotient_mul_import,
+            abstract_group_quotient_group: &abstract_group_quotient_group_import,
+            abstract_group_quotient_hom: &abstract_group_quotient_hom_import,
+        },
+    );
     let abstract_ring_import = verified_abstract_ring_import_module(&root, &eq_import);
     let abstract_ordered_field_import =
         verified_abstract_ordered_field_import_module(&root, &eq_import, &abstract_ring_import);
@@ -1144,6 +1482,13 @@ fn ai_certificates_match_manifest_and_verify() {
         vector_basic: &vector_basic_import,
         vector_dot: &vector_dot_import,
         right_triangle: &right_triangle_import,
+        abstract_group: &abstract_group_import,
+        abstract_group_image: &abstract_group_image_import,
+        abstract_group_quotient: &abstract_group_quotient_import,
+        abstract_group_quotient_mul: &abstract_group_quotient_mul_import,
+        abstract_group_quotient_group: &abstract_group_quotient_group_import,
+        abstract_group_quotient_hom: &abstract_group_quotient_hom_import,
+        abstract_group_first_iso_full: &abstract_group_first_iso_full_import,
         abstract_ring: &abstract_ring_import,
         abstract_ordered_field: &abstract_ordered_field_import,
         abstract_square_normalize: &abstract_square_normalize_import,
@@ -1197,12 +1542,17 @@ fn ai_certificates_match_manifest_and_verify() {
             certificate_hash
         );
         assert_axioms(&decoded, expected.axioms);
+        assert_core_features(&decoded, expected_core_features(expected.module));
         assert_imports(&decoded, expected.imports);
 
         let mut session = VerifierSession::new();
         register_expected_imports(&mut session, expected.imports, &verified_imports);
-        let verified = verify_module_cert(&certificate_bytes, &mut session, &AxiomPolicy::normal())
-            .expect("AI corpus certificate verifies");
+        let verified = verify_module_cert(
+            &certificate_bytes,
+            &mut session,
+            &axiom_policy_for_expected_module(expected.module),
+        )
+        .expect("AI corpus certificate verifies");
         assert_eq!(verified.module(), &Name::from_dotted(expected.module));
         assert_eq!(tagged_hash(verified.export_hash()), export_hash);
         assert_eq!(tagged_hash(verified.certificate_hash()), certificate_hash);
@@ -1213,6 +1563,10 @@ fn ai_certificates_match_manifest_and_verify() {
             .map(|axiom| verified.name_table()[axiom.name].as_dotted())
             .collect::<Vec<_>>();
         assert_eq!(verified_axioms, expected.axioms);
+        assert_eq!(
+            verified.axiom_report().core_features,
+            expected_core_features(expected.module)
+        );
 
         assert_definition_exports(&decoded, expected.definitions);
         assert_inductive_exports(&decoded, expected.inductives);
@@ -1294,6 +1648,23 @@ fn register_expected_imports(
             "Proofs.Ai.Geometry.RightTriangle" => {
                 session.register_verified_module(verified_imports.right_triangle.clone())
             }
+            "Proofs.Ai.Algebra.AbstractGroup" => {
+                session.register_verified_module(verified_imports.abstract_group.clone())
+            }
+            "Proofs.Ai.Algebra.AbstractGroupImage" => {
+                session.register_verified_module(verified_imports.abstract_group_image.clone())
+            }
+            "Proofs.Ai.Algebra.AbstractGroupQuotient" => {
+                session.register_verified_module(verified_imports.abstract_group_quotient.clone())
+            }
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul" => session
+                .register_verified_module(verified_imports.abstract_group_quotient_mul.clone()),
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup" => session
+                .register_verified_module(verified_imports.abstract_group_quotient_group.clone()),
+            "Proofs.Ai.Algebra.AbstractGroupQuotientHom" => session
+                .register_verified_module(verified_imports.abstract_group_quotient_hom.clone()),
+            "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull" => session
+                .register_verified_module(verified_imports.abstract_group_first_iso_full.clone()),
             "Proofs.Ai.Algebra.AbstractRing" => {
                 session.register_verified_module(verified_imports.abstract_ring.clone())
             }
@@ -1363,6 +1734,151 @@ fn verified_eq_reasoning_import_module(root: &Path, eq_import: &VerifiedModule) 
     session.register_verified_module(eq_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("EqReasoning corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroup/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractGroup corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_image_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_group_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupImage/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_group_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractGroupImage corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_quotient_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_group_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupQuotient/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(abstract_group_import.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1),
+    )
+    .expect("AbstractGroupQuotient corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_quotient_mul_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_group_import: &VerifiedModule,
+    abstract_group_quotient_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupQuotientMul/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_group_import.clone());
+    session.register_verified_module(abstract_group_quotient_import.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1),
+    )
+    .expect("AbstractGroupQuotientMul corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_quotient_group_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_group_import: &VerifiedModule,
+    abstract_group_quotient_import: &VerifiedModule,
+    abstract_group_quotient_mul_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupQuotientGroup/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_group_import.clone());
+    session.register_verified_module(abstract_group_quotient_import.clone());
+    session.register_verified_module(abstract_group_quotient_mul_import.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal()
+            .with_core_feature(CoreFeature::QuotientV1)
+            .with_core_feature(CoreFeature::QuotientV2)
+            .with_core_feature(CoreFeature::QuotientV3),
+    )
+    .expect("AbstractGroupQuotientGroup corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_quotient_hom_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_group_import: &VerifiedModule,
+    abstract_group_quotient_import: &VerifiedModule,
+    abstract_group_quotient_mul_import: &VerifiedModule,
+    abstract_group_quotient_group_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupQuotientHom/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_group_import.clone());
+    session.register_verified_module(abstract_group_quotient_import.clone());
+    session.register_verified_module(abstract_group_quotient_mul_import.clone());
+    session.register_verified_module(abstract_group_quotient_group_import.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal()
+            .with_core_feature(CoreFeature::QuotientV1)
+            .with_core_feature(CoreFeature::QuotientV2)
+            .with_core_feature(CoreFeature::QuotientV3),
+    )
+    .expect("AbstractGroupQuotientHom corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_group_first_iso_full_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractGroupFirstIsoFullImports<'_>,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.eq.clone());
+    session.register_verified_module(imports.eq_reasoning.clone());
+    session.register_verified_module(imports.abstract_group.clone());
+    session.register_verified_module(imports.abstract_group_image.clone());
+    session.register_verified_module(imports.abstract_group_quotient.clone());
+    session.register_verified_module(imports.abstract_group_quotient_mul.clone());
+    session.register_verified_module(imports.abstract_group_quotient_group.clone());
+    session.register_verified_module(imports.abstract_group_quotient_hom.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal()
+            .with_core_feature(CoreFeature::QuotientV1)
+            .with_core_feature(CoreFeature::QuotientV2)
+            .with_core_feature(CoreFeature::QuotientV3),
+    )
+    .expect("AbstractGroupFirstIsoFull corpus certificate should verify for downstream imports")
 }
 
 fn verified_ring_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
@@ -1734,6 +2250,63 @@ fn assert_axioms(cert: &npa_cert::ModuleCert, expected: &[&str]) {
         .map(|name| (*name).to_owned())
         .collect::<Vec<_>>();
     assert_eq!(actual, expected);
+}
+
+fn assert_core_features(cert: &npa_cert::ModuleCert, expected: Vec<CoreFeature>) {
+    assert_eq!(cert.axiom_report.core_features, expected);
+}
+
+fn axiom_policy_for_expected_module(module: &str) -> AxiomPolicy {
+    let mut policy = AxiomPolicy::normal();
+    for feature in supported_core_features(module) {
+        policy = policy.with_core_feature(feature);
+    }
+    policy
+}
+
+fn supported_core_features(module: &str) -> Vec<CoreFeature> {
+    if matches!(
+        module,
+        "Proofs.Ai.Algebra.AbstractGroupQuotient"
+            | "Proofs.Ai.Algebra.AbstractGroupFirstIso"
+            | "Proofs.Ai.Algebra.AbstractGroupQuotientMul"
+    ) {
+        vec![CoreFeature::QuotientV1]
+    } else if matches!(
+        module,
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup"
+            | "Proofs.Ai.Algebra.AbstractGroupQuotientHom"
+            | "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"
+            | "Proofs.Ai.Algebra.AbstractGroupFirstIsoImage"
+    ) {
+        vec![
+            CoreFeature::QuotientV1,
+            CoreFeature::QuotientV2,
+            CoreFeature::QuotientV3,
+        ]
+    } else {
+        Vec::new()
+    }
+}
+
+fn expected_core_features(module: &str) -> Vec<CoreFeature> {
+    if module == "Proofs.Ai.Algebra.AbstractGroupQuotient" {
+        vec![CoreFeature::QuotientV1]
+    } else if module == "Proofs.Ai.Algebra.AbstractGroupQuotientGroup" {
+        vec![
+            CoreFeature::QuotientV1,
+            CoreFeature::QuotientV2,
+            CoreFeature::QuotientV3,
+        ]
+    } else if matches!(
+        module,
+        "Proofs.Ai.Algebra.AbstractGroupQuotientHom"
+            | "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"
+    ) {
+        vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
+    } else {
+        Vec::new()
+    }
 }
 
 fn assert_definition_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {

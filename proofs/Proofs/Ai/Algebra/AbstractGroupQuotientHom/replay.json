@@ -1,0 +1,17 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ker_quot_to_h_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => @Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) (fun (q1 : @KerQuot.{u,v} G H f) => forall (q2 : @KerQuot.{u,v} G H f), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args q1 q2)) (mulH (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2))) (fun (a : G) => @Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) (fun (q2 : @KerQuot.{u,v} G H f) => @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args (@KerQuotMk.{u,v} G H f a) q2)) (mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f q2))) (fun (b : G) => @hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a b))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupQuotientHom/certificate.npcert"
+  }
+}

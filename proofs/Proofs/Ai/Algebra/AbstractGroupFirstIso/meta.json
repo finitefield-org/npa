@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupFirstIso",
+  "source": "Proofs/Ai/Algebra/AbstractGroupFirstIso/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupFirstIso/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f3ceb82473fdef6c17c055eb3602b95c324f0ae81c649636b74aadedb6086610",
+  "certificate_file_sha256": "sha256:7edc2cfa90a84e3b7e801cfa75fa64ca8174dc0fcc3e0817d4b322f2779a54ef",
+  "export_hash": "sha256:a68e41d10bf747d6131f7d792f06ea9fe9d231eebd5b61eff5297d31f609cc5e",
+  "axiom_report_hash": "sha256:6b53c11846665e400ccfc86f2382a4694ce0223745eb42ecd283c672a9f65fd5",
+  "certificate_hash": "sha256:4b5f3352a0531784a19eaf794889b4bcbb11901adb7795c99e5d0f866f742dcf",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "FirstIsoRepMvp", "kind": "def" },
+    { "name": "first_iso_phi_mk", "kind": "theorem" },
+    { "name": "first_iso_phi_mul_mk", "kind": "theorem" },
+    { "name": "first_iso_rep_injective", "kind": "theorem" },
+    { "name": "first_iso_rep_hits_image", "kind": "theorem" },
+    { "name": "first_isomorphism_rep_mvp", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

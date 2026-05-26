@@ -1,0 +1,92 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroup",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "GroupLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => forall (P : Prop), forall (mk : forall (mul_assoc_law : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))), forall (one_mul_law : forall (a : G), @Eq.{u} G (mul one a) a), forall (mul_one_law : forall (a : G), @Eq.{u} G (mul a one) a), forall (inv_mul_law : forall (a : G), @Eq.{u} G (mul (inv a) a) one), forall (mul_inv_law : forall (a : G), @Eq.{u} G (mul a (inv a)) one), P), P"
+    },
+    {
+      "declaration": "GroupHomLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => forall (P : Prop), forall (mk : forall (hom_mul_law : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))), forall (hom_one_law : @Eq.{v} H (f oneG) oneH), forall (hom_inv_law : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))), P), P"
+    },
+    {
+      "declaration": "KernelPred",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun oneH => fun f => fun a => @Eq.{v} H (f a) oneH"
+    },
+    {
+      "declaration": "KerRel",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun f => fun a => fun b => @Eq.{v} H (f a) (f b)"
+    },
+    {
+      "declaration": "group_mul_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun a => fun b => fun c => group_args (@Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => mul_assoc_arg a b c)"
+    },
+    {
+      "declaration": "group_one_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul one a) a) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => one_mul_arg a)"
+    },
+    {
+      "declaration": "group_mul_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul a one) a) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => mul_one_arg a)"
+    },
+    {
+      "declaration": "group_inv_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul (inv a) a) one) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => inv_mul_arg a)"
+    },
+    {
+      "declaration": "group_mul_inv",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul a (inv a)) one) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => mul_inv_arg a)"
+    },
+    {
+      "declaration": "hom_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => fun b => hom_args (@Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) (fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => hom_mul_arg a b)"
+    },
+    {
+      "declaration": "hom_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => hom_args (@Eq.{v} H (f oneG) oneH) (fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => hom_one_arg)"
+    },
+    {
+      "declaration": "hom_inv",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => hom_args (@Eq.{v} H (f (invG a)) (invH (f a))) (fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => hom_inv_arg a)"
+    },
+    {
+      "declaration": "kernel_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => @hom_one.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+    },
+    {
+      "declaration": "ker_rel_refl",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => fun a => @Eq.refl.{v} H (f a)"
+    },
+    {
+      "declaration": "ker_rel_symm",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => fun a => fun b => fun h => @eq_symm.{v} H (f a) (f b) h"
+    },
+    {
+      "declaration": "ker_rel_trans",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => fun a => fun b => fun c => fun hab => fun hbc => @eq_trans.{v} H (f a) (f b) (f c) hab hbc"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert"
+  }
+}

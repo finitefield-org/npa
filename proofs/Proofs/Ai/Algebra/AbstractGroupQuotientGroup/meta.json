@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+  "source": "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:13d0829b279b3519e409daadd5866a9c1554a7cdbf3e3765b917085ff313431d",
+  "certificate_file_sha256": "sha256:7040b274c8d09822ac7833262c34c6100eaf090d19d1f01af2f1b56e5697098f",
+  "export_hash": "sha256:4e67aa4b715757c1e8d8b4cef1637464a43fe2a4348c909b893e4f4c1330fa69",
+  "axiom_report_hash": "sha256:35475c48af8ff4a446c4f9b72745aea69e6442d8ee83fe8587a0a88eeec2e307",
+  "certificate_hash": "sha256:a8aa0fcdfe96a4d183eea6c60e8edcedcf78dfa1488e9e29521f9bf97ec553c7",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "KerQuotMul", "kind": "def" },
+    { "name": "KerQuotOne", "kind": "def" },
+    { "name": "KerQuotInv", "kind": "def" },
+    { "name": "ker_quot_mul_mk", "kind": "theorem" },
+    { "name": "ker_quot_inv_mk", "kind": "theorem" },
+    { "name": "ker_quot_mul_assoc", "kind": "theorem" },
+    { "name": "ker_quot_one_mul", "kind": "theorem" },
+    { "name": "ker_quot_mul_one", "kind": "theorem" },
+    { "name": "ker_quot_inv_mul", "kind": "theorem" },
+    { "name": "ker_quot_mul_inv", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,67 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+
+def GroupLawArgs.{u} :
+  forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), Prop :=
+  fun G => fun one => fun mul => fun inv => forall (P : Prop), forall (mk : forall (mul_assoc_law : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))), forall (one_mul_law : forall (a : G), @Eq.{u} G (mul one a) a), forall (mul_one_law : forall (a : G), @Eq.{u} G (mul a one) a), forall (inv_mul_law : forall (a : G), @Eq.{u} G (mul (inv a) a) one), forall (mul_inv_law : forall (a : G), @Eq.{u} G (mul a (inv a)) one), P), P
+
+def GroupHomLawArgs.{u,v} :
+  forall (G : Sort u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), Prop :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => forall (P : Prop), forall (mk : forall (hom_mul_law : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))), forall (hom_one_law : @Eq.{v} H (f oneG) oneH), forall (hom_inv_law : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))), P), P
+
+def KernelPred.{u,v} :
+  forall (G : Sort u), forall (H : Sort v), forall (oneH : H), forall (f : forall (x : G), H), forall (a : G), Prop :=
+  fun G => fun H => fun oneH => fun f => fun a => @Eq.{v} H (f a) oneH
+
+def KerRel.{u,v} :
+  forall (G : Sort u), forall (H : Sort v), forall (f : forall (x : G), H), forall (a : G), forall (b : G), Prop :=
+  fun G => fun H => fun f => fun a => fun b => @Eq.{v} H (f a) (f b)
+
+theorem group_mul_assoc.{u} :
+  forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c)) :=
+  fun G => fun one => fun mul => fun inv => fun group_args => fun a => fun b => fun c => group_args (@Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => mul_assoc_arg a b c)
+
+theorem group_one_mul.{u} :
+  forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul one a) a :=
+  fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul one a) a) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => one_mul_arg a)
+
+theorem group_mul_one.{u} :
+  forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul a one) a :=
+  fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul a one) a) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => mul_one_arg a)
+
+theorem group_inv_mul.{u} :
+  forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul (inv a) a) one :=
+  fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul (inv a) a) one) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => inv_mul_arg a)
+
+theorem group_mul_inv.{u} :
+  forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (mul a (inv a)) one :=
+  fun G => fun one => fun mul => fun inv => fun group_args => fun a => group_args (@Eq.{u} G (mul a (inv a)) one) (fun (mul_assoc_arg : forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul a b) c) (mul a (mul b c))) => fun (one_mul_arg : forall (a : G), @Eq.{u} G (mul one a) a) => fun (mul_one_arg : forall (a : G), @Eq.{u} G (mul a one) a) => fun (inv_mul_arg : forall (a : G), @Eq.{u} G (mul (inv a) a) one) => fun (mul_inv_arg : forall (a : G), @Eq.{u} G (mul a (inv a)) one) => mul_inv_arg a)
+
+theorem hom_mul.{u,v} :
+  forall (G : Sort u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b)) :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => fun b => hom_args (@Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) (fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => hom_mul_arg a b)
+
+theorem hom_one.{u,v} :
+  forall (G : Sort u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), @Eq.{v} H (f oneG) oneH :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => hom_args (@Eq.{v} H (f oneG) oneH) (fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => hom_one_arg)
+
+theorem hom_inv.{u,v} :
+  forall (G : Sort u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a)) :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => hom_args (@Eq.{v} H (f (invG a)) (invH (f a))) (fun (hom_mul_arg : forall (a : G), forall (b : G), @Eq.{v} H (f (mulG a b)) (mulH (f a) (f b))) => fun (hom_one_arg : @Eq.{v} H (f oneG) oneH) => fun (hom_inv_arg : forall (a : G), @Eq.{v} H (f (invG a)) (invH (f a))) => hom_inv_arg a)
+
+theorem kernel_one.{u,v} :
+  forall (G : Sort u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{u,v} G oneG mulG invG H oneH mulH invH f), @KernelPred.{u,v} G H oneH f oneG :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => @hom_one.{u,v} G oneG mulG invG H oneH mulH invH f hom_args
+
+theorem ker_rel_refl.{u,v} :
+  forall (G : Sort u), forall (H : Sort v), forall (f : forall (x : G), H), forall (a : G), @KerRel.{u,v} G H f a a :=
+  fun G => fun H => fun f => fun a => @Eq.refl.{v} H (f a)
+
+theorem ker_rel_symm.{u,v} :
+  forall (G : Sort u), forall (H : Sort v), forall (f : forall (x : G), H), forall (a : G), forall (b : G), forall (h : @KerRel.{u,v} G H f a b), @KerRel.{u,v} G H f b a :=
+  fun G => fun H => fun f => fun a => fun b => fun h => @eq_symm.{v} H (f a) (f b) h
+
+theorem ker_rel_trans.{u,v} :
+  forall (G : Sort u), forall (H : Sort v), forall (f : forall (x : G), H), forall (a : G), forall (b : G), forall (c : G), forall (hab : @KerRel.{u,v} G H f a b), forall (hbc : @KerRel.{u,v} G H f b c), @KerRel.{u,v} G H f a c :=
+  fun G => fun H => fun f => fun a => fun b => fun c => fun hab => fun hbc => @eq_trans.{v} H (f a) (f b) (f c) hab hbc
+

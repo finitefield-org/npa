@@ -28,6 +28,8 @@ const BUILTIN_QUOTIENT: &str = "Quotient";
 const BUILTIN_QUOTIENT_MK: &str = "Quotient.mk";
 const BUILTIN_QUOTIENT_SOUND: &str = "Quotient.sound";
 const BUILTIN_QUOTIENT_LIFT: &str = "Quotient.lift";
+const BUILTIN_QUOTIENT_LIFT2: &str = "Quotient.lift2";
+const BUILTIN_QUOTIENT_IND_PROP: &str = "Quotient.indProp";
 
 pub(crate) fn cert_to_kernel_decls(cert: &ModuleCert) -> Result<Vec<Decl>> {
     cert.declarations
@@ -659,6 +661,8 @@ pub fn builtin_decl_interface_hash(name: &Name) -> Option<Hash> {
         BUILTIN_QUOTIENT_MK => "npa.quotient-v1.builtin.quotient.mk.v1",
         BUILTIN_QUOTIENT_SOUND => "npa.quotient-v1.builtin.quotient.sound.v1",
         BUILTIN_QUOTIENT_LIFT => "npa.quotient-v1.builtin.quotient.lift.v1",
+        BUILTIN_QUOTIENT_LIFT2 => "npa.quotient-v2.builtin.quotient.lift2.v1",
+        BUILTIN_QUOTIENT_IND_PROP => "npa.quotient-v3.builtin.quotient.ind-prop.v1",
         _ => return None,
     };
     Some(hash_with_domain(
@@ -682,13 +686,21 @@ pub(crate) fn reserved_core_primitive_name(name: &Name) -> bool {
             | BUILTIN_QUOTIENT_MK
             | BUILTIN_QUOTIENT_SOUND
             | BUILTIN_QUOTIENT_LIFT
+            | BUILTIN_QUOTIENT_LIFT2
+            | BUILTIN_QUOTIENT_IND_PROP
     )
 }
 
 pub(crate) fn core_features_from_builtins(referenced: &BTreeSet<Name>) -> Vec<CoreFeature> {
     let mut features = BTreeSet::new();
     for name in referenced {
-        if reserved_core_primitive_name(name) {
+        if matches!(name.as_dotted().as_str(), BUILTIN_QUOTIENT_LIFT2) {
+            features.insert(CoreFeature::QuotientV1);
+            features.insert(CoreFeature::QuotientV2);
+        } else if matches!(name.as_dotted().as_str(), BUILTIN_QUOTIENT_IND_PROP) {
+            features.insert(CoreFeature::QuotientV1);
+            features.insert(CoreFeature::QuotientV3);
+        } else if reserved_core_primitive_name(name) {
             features.insert(CoreFeature::QuotientV1);
         }
     }

@@ -74,6 +74,10 @@ pub enum TrustMode {
 pub enum CoreFeature {
     /// Phase 9 quotient primitive interface and `Quotient.lift` computation rule.
     QuotientV1,
+    /// Phase 9 quotient primitive interface extension with `Quotient.lift2`.
+    QuotientV2,
+    /// Phase 9 quotient primitive interface extension with proposition-valued quotient induction.
+    QuotientV3,
 }
 
 impl CoreFeature {
@@ -81,6 +85,8 @@ impl CoreFeature {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::QuotientV1 => "quotient_v1",
+            Self::QuotientV2 => "quotient_v2",
+            Self::QuotientV3 => "quotient_v3",
         }
     }
 
@@ -88,6 +94,8 @@ impl CoreFeature {
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "quotient_v1" => Some(Self::QuotientV1),
+            "quotient_v2" => Some(Self::QuotientV2),
+            "quotient_v3" => Some(Self::QuotientV3),
             _ => None,
         }
     }
@@ -893,6 +901,8 @@ impl AxiomReport {
     /// Returns true when this report requires the quotient_v1 primitive profile.
     pub fn quotients_used(&self) -> bool {
         self.core_features.contains(&CoreFeature::QuotientV1)
+            || self.core_features.contains(&CoreFeature::QuotientV2)
+            || self.core_features.contains(&CoreFeature::QuotientV3)
     }
 }
 

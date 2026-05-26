@@ -5921,7 +5921,13 @@ P1  SMT success profile
 
 P2  Quotient profile expansion
     P9H-12 の QuotientV1Reference opt-in profile は実装済み。
-    ここで残すのは、より大きい quotient hierarchy や external checker deployment を
+    `quotient_v2` では kernel / certificate / reference checker に `Quotient.lift2` を追加し、
+    binary quotient operation を canonical certificate で扱えるようにする。
+    `quotient_v3` では kernel / certificate / reference checker に `Quotient.indProp` を追加し、
+    arbitrary quotient element に対する Prop-valued theorem を代表元へ戻して証明できるようにする。
+    Phase 9 AI の QuotientConstruction candidate profile は引き続き unary `quotient_v1`
+    surface のままであり、`lift2` / `indProp` 用 candidate validation は別 profile として残す。
+    ここでさらに残るのは、より大きい quotient hierarchy や external checker deployment を
     explicit profile として増やす Post-MVP 作業。
 
 P3  Advanced inductive expansion

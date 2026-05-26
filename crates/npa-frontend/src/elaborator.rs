@@ -3574,7 +3574,23 @@ fn add_builtin_decl_for_unknown_constant(
 ) -> Result<bool> {
     if !matches!(
         name,
-        "Nat" | "Nat.zero" | "Nat.succ" | "Nat.rec" | "Eq" | "Eq.refl" | "Eq.rec"
+        "Nat"
+            | "Nat.zero"
+            | "Nat.succ"
+            | "Nat.rec"
+            | "Eq"
+            | "Eq.refl"
+            | "Eq.rec"
+            | "Setoid"
+            | "RelEquiv"
+            | "Setoid.mk"
+            | "Setoid.r"
+            | "Quotient"
+            | "Quotient.mk"
+            | "Quotient.sound"
+            | "Quotient.lift"
+            | "Quotient.lift2"
+            | "Quotient.indProp"
     ) {
         return Ok(false);
     }
@@ -3629,6 +3645,21 @@ fn add_builtin_decls_for_names(
         matches!(name.as_str(), "Eq" | "Eq.refl" | "Eq.rec")
     });
     let needs_eq_rec = names.iter().any(|name| name.as_dotted() == "Eq.rec");
+    let needs_quotient = names.iter().any(|name| {
+        matches!(
+            name.as_dotted().as_str(),
+            "Setoid"
+                | "RelEquiv"
+                | "Setoid.mk"
+                | "Setoid.r"
+                | "Quotient"
+                | "Quotient.mk"
+                | "Quotient.sound"
+                | "Quotient.lift"
+                | "Quotient.lift2"
+                | "Quotient.indProp"
+        )
+    });
 
     if needs_nat && env.decl("Nat").is_none() {
         env.add_inductive(nat_inductive())
@@ -3645,6 +3676,10 @@ fn add_builtin_decls_for_names(
             eq_rec_type(Level::param("u"), Level::param("v")),
         )
         .map_err(|err| builtin_kernel_diagnostic(span, err))?;
+    }
+    if needs_quotient && env.decl("Setoid").is_none() {
+        env.add_quotient_builtins()
+            .map_err(|err| builtin_kernel_diagnostic(span, err))?;
     }
     Ok(())
 }

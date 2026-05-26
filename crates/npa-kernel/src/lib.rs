@@ -10,9 +10,10 @@ pub mod subst;
 
 pub use builtins::{
     eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, eq_type, nat, nat_inductive,
-    nat_rec_type, nat_succ, nat_zero, prop, quotient, quotient_lift_type, quotient_mk,
-    quotient_mk_type, quotient_sound_type, quotient_type, rel_equiv, rel_equiv_type, setoid,
-    setoid_mk_type, setoid_relation, setoid_relation_type, setoid_type, type0,
+    nat_rec_type, nat_succ, nat_zero, prop, quotient, quotient_ind_prop_type, quotient_lift2_type,
+    quotient_lift_type, quotient_mk, quotient_mk_type, quotient_sound_type, quotient_type,
+    rel_equiv, rel_equiv_type, setoid, setoid_mk_type, setoid_relation, setoid_relation_type,
+    setoid_type, type0,
 };
 pub use context::Ctx;
 pub use decl::{
@@ -1639,6 +1640,20 @@ mod tests {
             &quotient_sound_type(u),
         )
         .unwrap();
+        env.check(
+            &Ctx::new(),
+            &[],
+            &Expr::konst("Quotient.lift2", vec![Level::zero(), Level::zero()]),
+            &quotient_lift2_type(Level::zero(), Level::zero()),
+        )
+        .unwrap();
+        env.check(
+            &Ctx::new(),
+            &[],
+            &Expr::konst("Quotient.indProp", vec![Level::zero()]),
+            &quotient_ind_prop_type(Level::zero()),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -1674,6 +1689,82 @@ mod tests {
 
         assert!(env
             .is_defeq(&Ctx::new(), &[], &lifted, &Expr::app(raw, value))
+            .unwrap());
+    }
+
+    #[test]
+    fn quotient_lift2_reduces_only_mk_majors() {
+        let mut env = Env::new();
+        env.add_quotient_builtins().unwrap();
+
+        let u = Level::zero();
+        let v = Level::zero();
+        let carrier = Expr::konst("A", vec![]);
+        let result = Expr::konst("B", vec![]);
+        let setoid_value = Expr::konst("s", vec![]);
+        let raw = Expr::konst("f", vec![]);
+        let compat = Expr::konst("h", vec![]);
+        let lhs_value = Expr::konst("a", vec![]);
+        let rhs_value = Expr::konst("b", vec![]);
+        let lhs_quotient = quotient_mk(
+            u.clone(),
+            carrier.clone(),
+            setoid_value.clone(),
+            lhs_value.clone(),
+        );
+        let rhs_quotient = quotient_mk(
+            u.clone(),
+            carrier.clone(),
+            setoid_value.clone(),
+            rhs_value.clone(),
+        );
+        let lifted = Expr::apps(
+            Expr::konst("Quotient.lift2", vec![u, v]),
+            vec![
+                carrier,
+                result,
+                setoid_value,
+                raw.clone(),
+                compat,
+                lhs_quotient,
+                rhs_quotient,
+            ],
+        );
+        let expected = Expr::apps(raw, vec![lhs_value, rhs_value]);
+
+        assert!(env.is_defeq(&Ctx::new(), &[], &lifted, &expected).unwrap());
+    }
+
+    #[test]
+    fn quotient_ind_prop_reduces_only_mk_major() {
+        let mut env = Env::new();
+        env.add_quotient_builtins().unwrap();
+
+        let u = Level::zero();
+        let carrier = Expr::konst("A", vec![]);
+        let setoid_value = Expr::konst("s", vec![]);
+        let motive = Expr::konst("P", vec![]);
+        let mk_case = Expr::konst("h", vec![]);
+        let value = Expr::konst("a", vec![]);
+        let quotient_value = quotient_mk(
+            u.clone(),
+            carrier.clone(),
+            setoid_value.clone(),
+            value.clone(),
+        );
+        let eliminated = Expr::apps(
+            Expr::konst("Quotient.indProp", vec![u]),
+            vec![
+                carrier,
+                setoid_value,
+                motive,
+                mk_case.clone(),
+                quotient_value,
+            ],
+        );
+
+        assert!(env
+            .is_defeq(&Ctx::new(), &[], &eliminated, &Expr::app(mk_case, value))
             .unwrap());
     }
 

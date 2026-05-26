@@ -571,6 +571,10 @@ pub enum ReferenceTrustMode {
 pub enum ReferenceCoreFeature {
     /// Phase 9 quotient primitive interface and `Quotient.lift` computation rule.
     QuotientV1,
+    /// Phase 9 quotient primitive interface extension with `Quotient.lift2`.
+    QuotientV2,
+    /// Phase 9 quotient primitive interface extension with proposition-valued quotient induction.
+    QuotientV3,
 }
 
 impl ReferenceCoreFeature {
@@ -578,6 +582,8 @@ impl ReferenceCoreFeature {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::QuotientV1 => "quotient_v1",
+            Self::QuotientV2 => "quotient_v2",
+            Self::QuotientV3 => "quotient_v3",
         }
     }
 
@@ -585,6 +591,8 @@ impl ReferenceCoreFeature {
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "quotient_v1" => Some(Self::QuotientV1),
+            "quotient_v2" => Some(Self::QuotientV2),
+            "quotient_v3" => Some(Self::QuotientV3),
             _ => None,
         }
     }
@@ -1045,8 +1053,9 @@ mod tests {
     };
     use npa_kernel::{
         eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, prop, quotient,
-        quotient_mk, setoid, type0, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl,
-        Level, MutualInductiveBlock, Reducibility, UniverseConstraint,
+        quotient_ind_prop_type, quotient_lift2_type, quotient_mk, setoid, type0, Binder,
+        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, MutualInductiveBlock,
+        Reducibility, UniverseConstraint,
     };
     use sha2::{Digest, Sha256};
 
@@ -4332,6 +4341,35 @@ mod tests {
         }
     }
 
+    fn quotient_lift2_builtin_module() -> CoreModule {
+        let u = Level::param("u");
+        let v = Level::param("v");
+        CoreModule {
+            name: Name::from_dotted("Test.ReferenceQuotientLift2"),
+            declarations: vec![Decl::Def {
+                name: "uses_quotient_lift2".to_owned(),
+                universe_params: vec!["u".to_owned(), "v".to_owned()],
+                ty: quotient_lift2_type(u.clone(), v.clone()),
+                value: Expr::konst("Quotient.lift2", vec![u, v]),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
+    fn quotient_ind_prop_builtin_module() -> CoreModule {
+        let u = Level::param("u");
+        CoreModule {
+            name: Name::from_dotted("Test.ReferenceQuotientIndProp"),
+            declarations: vec![Decl::Def {
+                name: "uses_quotient_ind_prop".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: quotient_ind_prop_type(u.clone()),
+                value: Expr::konst("Quotient.indProp", vec![u]),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
     fn quotient_source_free_module() -> CoreModule {
         CoreModule {
             name: Name::from_dotted("Test.ReferenceQuotientSourceFree"),
@@ -4620,6 +4658,60 @@ mod tests {
     }
 
     #[test]
+    fn quotient_lift2_feature_requires_reference_checker_v2_support() {
+        let cert = build_module_cert(quotient_lift2_builtin_module(), &[]).unwrap();
+        let bytes = encode_module_cert(&cert).unwrap();
+        let v1_only_policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![ReferenceCoreFeature::QuotientV1],
+            ..ReferenceCheckerPolicy::default()
+        };
+        let ReferenceCheckResult::Rejected(error) =
+            check_certificate(&bytes, &ReferenceImportStore::default(), &v1_only_policy)
+        else {
+            panic!("quotient_v2 must require explicit checker support");
+        };
+        assert_eq!(error.kind, ReferenceCheckErrorKind::UnsupportedCoreFeature);
+
+        let v2_policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![
+                ReferenceCoreFeature::QuotientV1,
+                ReferenceCoreFeature::QuotientV2,
+            ],
+            ..ReferenceCheckerPolicy::default()
+        };
+        assert!(
+            check_certificate(&bytes, &ReferenceImportStore::default(), &v2_policy).is_checked()
+        );
+    }
+
+    #[test]
+    fn quotient_ind_prop_feature_requires_reference_checker_v3_support() {
+        let cert = build_module_cert(quotient_ind_prop_builtin_module(), &[]).unwrap();
+        let bytes = encode_module_cert(&cert).unwrap();
+        let v1_only_policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![ReferenceCoreFeature::QuotientV1],
+            ..ReferenceCheckerPolicy::default()
+        };
+        let ReferenceCheckResult::Rejected(error) =
+            check_certificate(&bytes, &ReferenceImportStore::default(), &v1_only_policy)
+        else {
+            panic!("quotient_v3 must require explicit checker support");
+        };
+        assert_eq!(error.kind, ReferenceCheckErrorKind::UnsupportedCoreFeature);
+
+        let v3_policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![
+                ReferenceCoreFeature::QuotientV1,
+                ReferenceCoreFeature::QuotientV3,
+            ],
+            ..ReferenceCheckerPolicy::default()
+        };
+        assert!(
+            check_certificate(&bytes, &ReferenceImportStore::default(), &v3_policy).is_checked()
+        );
+    }
+
+    #[test]
     fn quotient_source_free_setoid_lift_example_is_checked() {
         let cert = build_module_cert(quotient_source_free_module(), &[]).unwrap();
         assert!(cert.axiom_report.module_axioms.is_empty());
@@ -4645,6 +4737,8 @@ mod tests {
             "Quotient.mk",
             "Quotient.sound",
             "Quotient.lift",
+            "Quotient.lift2",
+            "Quotient.indProp",
         ] {
             let cert_name = Name::from_dotted(name);
             let reference_name = ReferenceModuleName::from_dotted(name).unwrap();

@@ -2,9 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     builtins::{
-        eq_inductive, eq_rec_type, nat_inductive, quotient_lift_type, quotient_mk_type,
-        quotient_sound_type, quotient_type, rel_equiv_type, setoid_mk_type, setoid_relation_type,
-        setoid_type,
+        eq_inductive, eq_rec_type, nat_inductive, quotient_ind_prop_type, quotient_lift2_type,
+        quotient_lift_type, quotient_mk_type, quotient_sound_type, quotient_type, rel_equiv_type,
+        setoid_mk_type, setoid_relation_type, setoid_type,
     },
     context::Ctx,
     decl::{
@@ -122,6 +122,20 @@ impl Env {
                 "Quotient.lift",
                 vec!["u".to_owned(), "v".to_owned()],
                 quotient_lift_type(Level::param("u"), Level::param("v")),
+            )?;
+        }
+        if self.decl("Quotient.lift2").is_none() {
+            self.add_axiom(
+                "Quotient.lift2",
+                vec!["u".to_owned(), "v".to_owned()],
+                quotient_lift2_type(Level::param("u"), Level::param("v")),
+            )?;
+        }
+        if self.decl("Quotient.indProp").is_none() {
+            self.add_axiom(
+                "Quotient.indProp",
+                vec!["u".to_owned()],
+                quotient_ind_prop_type(Level::param("u")),
             )?;
         }
         Ok(())
@@ -1349,6 +1363,18 @@ impl Env {
                         current = reduced;
                         continue;
                     }
+                    if let Some(reduced) =
+                        self.reduce_quotient_lift2(ctx, delta, &app, fuel, kind)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
+                    if let Some(reduced) =
+                        self.reduce_quotient_ind_prop(ctx, delta, &app, fuel, kind)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
                     return Ok(app);
                 }
                 Expr::Let { value, body, .. } => {
@@ -1562,6 +1588,103 @@ impl Env {
             return Ok(None);
         }
         if mk_args[0] != args[0] || mk_args[1] != args[2] {
+            return Ok(None);
+        }
+
+        Ok(Some(Expr::apps(
+            Expr::app(args[3].clone(), mk_args[2].clone()),
+            rest,
+        )))
+    }
+
+    fn reduce_quotient_lift2(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        fuel: &mut usize,
+        kind: ResourceLimitKind,
+    ) -> Result<Option<Expr>> {
+        let (head, args) = collect_apps(term);
+        let Expr::Const { name, .. } = head else {
+            return Ok(None);
+        };
+        if name != "Quotient.lift2" || args.len() < 7 {
+            return Ok(None);
+        }
+
+        let lhs_quotient_arg = args[5].clone();
+        let rhs_quotient_arg = args[6].clone();
+        let rest = args[7..].to_vec();
+        let lhs_quotient_whnf =
+            self.whnf_with_remaining_fuel(ctx, delta, &lhs_quotient_arg, fuel, kind)?;
+        let rhs_quotient_whnf =
+            self.whnf_with_remaining_fuel(ctx, delta, &rhs_quotient_arg, fuel, kind)?;
+        let (lhs_mk_head, lhs_mk_args) = collect_apps(&lhs_quotient_whnf);
+        let (rhs_mk_head, rhs_mk_args) = collect_apps(&rhs_quotient_whnf);
+        let Expr::Const {
+            name: lhs_mk_name, ..
+        } = lhs_mk_head
+        else {
+            return Ok(None);
+        };
+        let Expr::Const {
+            name: rhs_mk_name, ..
+        } = rhs_mk_head
+        else {
+            return Ok(None);
+        };
+        if lhs_mk_name != "Quotient.mk"
+            || rhs_mk_name != "Quotient.mk"
+            || lhs_mk_args.len() != 3
+            || rhs_mk_args.len() != 3
+        {
+            return Ok(None);
+        }
+        if lhs_mk_args[0] != args[0]
+            || lhs_mk_args[1] != args[2]
+            || rhs_mk_args[0] != args[0]
+            || rhs_mk_args[1] != args[2]
+        {
+            return Ok(None);
+        }
+
+        Ok(Some(Expr::apps(
+            Expr::apps(
+                args[3].clone(),
+                vec![lhs_mk_args[2].clone(), rhs_mk_args[2].clone()],
+            ),
+            rest,
+        )))
+    }
+
+    fn reduce_quotient_ind_prop(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        fuel: &mut usize,
+        kind: ResourceLimitKind,
+    ) -> Result<Option<Expr>> {
+        let (head, args) = collect_apps(term);
+        let Expr::Const { name, .. } = head else {
+            return Ok(None);
+        };
+        if name != "Quotient.indProp" || args.len() < 5 {
+            return Ok(None);
+        }
+
+        let quotient_arg = args[4].clone();
+        let rest = args[5..].to_vec();
+        let quotient_whnf = self.whnf_with_remaining_fuel(ctx, delta, &quotient_arg, fuel, kind)?;
+        let (mk_head, mk_args) = collect_apps(&quotient_whnf);
+        let Expr::Const { name: mk_name, .. } = mk_head else {
+            return Ok(None);
+        };
+        if mk_name != "Quotient.mk" || mk_args.len() != 3 {
+            return Ok(None);
+        }
+        if mk_args[0] != args[0] || mk_args[1] != args[1] {
             return Ok(None);
         }
 

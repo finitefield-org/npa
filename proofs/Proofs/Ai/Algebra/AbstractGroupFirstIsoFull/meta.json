@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+  "source": "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9f758382a0104bc2dde0c3480f6b785086c989d800f8786c8fa68d0d01e89664",
+  "certificate_file_sha256": "sha256:3a79149d2e38657e1ec3ad7bab96373dc43b1097cb7ac49b9272c46652d5c70b",
+  "export_hash": "sha256:aaf83557307aef06abfc3bf75495930d8d4caa84c45f2d164036b68f67041563",
+  "axiom_report_hash": "sha256:9a0ded81408eba6f81619705659e98a0abcbe93475d802786eea2cf85209e352",
+  "certificate_hash": "sha256:5406516c4c3acc4b5181b454cb51a1cc944616d04df565cd021dfc59d905ddee",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupQuotientHom"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "first_iso_phi_mul", "kind": "theorem" },
+    { "name": "first_iso_phi_injective", "kind": "theorem" },
+    { "name": "first_iso_phi_hits_image", "kind": "theorem" },
+    { "name": "first_iso_phi_surj_image", "kind": "theorem" },
+    { "name": "first_isomorphism_image_facts", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

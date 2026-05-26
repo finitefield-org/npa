@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupImage",
+  "source": "Proofs/Ai/Algebra/AbstractGroupImage/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupImage/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8c6f85eb72c6d04a2b5b97448d7aa7f7b331250591be2afe3ce329ed6a171080",
+  "certificate_file_sha256": "sha256:d8e02c71b74c02fb2f147e8aec34a48667e34aee6d0aa2c48ea1a98bb5f5b082",
+  "export_hash": "sha256:0935f963b77bb9ed124d4b38435ad2a9a19f860e1f06de11c1ab8ca3f05cdd0e",
+  "axiom_report_hash": "sha256:0869976f857fbf07454df1db004a649ae3ee9ede0e1429dbf40af6dfaac5bfeb",
+  "certificate_hash": "sha256:b8df01c5fa655c681b7cc85391a161382066816e9f9af5d6d1cde2079ee265dc",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "ImagePred", "kind": "def" },
+    { "name": "image_intro", "kind": "theorem" },
+    { "name": "image_elim", "kind": "theorem" },
+    { "name": "image_one", "kind": "theorem" },
+    { "name": "image_mul_closed", "kind": "theorem" },
+    { "name": "image_inv_closed", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

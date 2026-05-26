@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupKernel",
+  "source": "Proofs/Ai/Algebra/AbstractGroupKernel/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupKernel/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8d11dd74da047650e74282aeea0d7a0ac2aacfc5cb3bae1bf85c12bf5c38fadb",
+  "certificate_file_sha256": "sha256:09c06ccb50e93c37d03812ca27ea6c5aff08f8aeb583f81a9707b040fb6b9c0a",
+  "export_hash": "sha256:5c1a39b0e9f82dc1014e3e63549c71eab3db6383024a87408e4e95e06bc33fbb",
+  "axiom_report_hash": "sha256:39f92e3a74edf201d900d93abeebb9c404ea8c141bfc46761f7e889c9f8cf9f7",
+  "certificate_hash": "sha256:930a2e62a70184bb8b420df18f202de085ae90c8fe2b194b259e3dcb49c80785",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "kernel_mul_closed", "kind": "theorem" },
+    { "name": "kernel_inv_closed", "kind": "theorem" },
+    { "name": "kernel_conj_closed", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

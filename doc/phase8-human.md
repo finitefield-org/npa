@@ -513,6 +513,10 @@ untrusted theorem unfolding
 
 P9H-12 以降、`quotient_v1` を明示的に許可した quotient-capable profile では
 `Setoid.r` projection と `Quotient.lift` computation を fast kernel と reference checker の両方に実装します。
+`quotient_v2` を明示的に許可した profile では、同じ境界で `Quotient.lift2` の binary computation
+rule も実装します。
+`quotient_v3` を明示的に許可した profile では、同じ境界で `Quotient.indProp` の
+proposition-valued induction computation rule も実装します。
 ただし Phase 8 MVP reference profile は引き続き quotient certificate を `UnsupportedCoreFeature` として拒否し、
 AI fast path や通常 verify response の既定 latency には入れません。
 

@@ -55,6 +55,34 @@ Current bundles:
   and vector dot layers.
 - `Proofs/Ai/Logic/Iff/`: first-class logical equivalence, conjunction, disjunction, falsehood, and
   negation theorem targets importing `Std.Logic.Eq`.
+- `Proofs/Ai/Algebra/AbstractGroup/`: abstract group and homomorphism law packages, group-law
+  projections, kernel predicate, kernel relation, and checked kernel-relation equivalence
+  ingredients for the first-isomorphism route.
+- `Proofs/Ai/Algebra/AbstractGroupKernel/`: checked kernel closure under multiplication, inverse,
+  and conjugation for the first-isomorphism route.
+- `Proofs/Ai/Algebra/AbstractGroupImage/`: Church-encoded image membership, image introduction and
+  elimination, and checked image closure under identity, multiplication, and inverse.
+- `Proofs/Ai/Algebra/AbstractGroupQuotient/`: quotient-backed kernel relation setoid, quotient
+  carrier, canonical representative map into `H`, and checked representative computation and
+  multiplication compatibility lemmas.
+- `Proofs/Ai/Algebra/AbstractGroupQuotientMul/`: representative multiplication into the kernel
+  quotient and checked `KerRel` compatibility for changing both representatives.
+- `Proofs/Ai/Algebra/AbstractGroupQuotientGroup/`: quotient-level multiplication, identity,
+  inverse, representative computation, and checked quotient-level associativity, identity, and
+  inverse laws.
+- `Proofs/Ai/Algebra/AbstractGroupQuotientHom/`: quotient induction proof that the canonical map
+  from the kernel quotient to `H` preserves quotient-level multiplication for arbitrary quotient
+  elements.
+- `Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/`: quotient-to-image first-isomorphism facts for
+  arbitrary quotient elements: homomorphism, injectivity, image membership, and surjectivity onto
+  the Church-encoded image predicate.
+- `Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/`: final quotient-to-image bundle for the AI
+  route, adding image closure facts and inductive evidence tokens that package the quotient group
+  laws together with the canonical map as a homomorphic injection whose image is exactly the
+  Church-encoded image predicate.
+- `Proofs/Ai/Algebra/AbstractGroupFirstIso/`: representative-level first-isomorphism MVP bundling
+  quotient representative computation, multiplication compatibility, representative injectivity,
+  and image membership.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
@@ -72,6 +100,7 @@ Planning documents:
 - `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
   polarization, Cauchy-Schwarz, and metric triangle inequality.
+- `first-isomorphism-proof-phases.md`: FI0-FI5 plan for the AI-facing group first-isomorphism route.
 
 ## Completed Inner-Product To Metric Route
 

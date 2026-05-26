@@ -1065,11 +1065,43 @@ Quotient.lift.{u,v}:
   Quotient A s -> B
 ```
 
+`quotient_v2` は `quotient_v1` の primitive を変更せず、binary quotient operation 用の
+opt-in extension として次だけを追加します。
+
+```text
+Quotient.lift2.{u,v}:
+  (A : Type u) -> (B : Type v) -> (s : Setoid A) ->
+  (f : A -> A -> B) ->
+  (forall a a2 b b2,
+    Setoid.r A s a a2 ->
+    Setoid.r A s b b2 ->
+    Eq B (f a b) (f a2 b2)) ->
+  Quotient A s -> Quotient A s -> B
+```
+
+`quotient_v3` は proposition-valued quotient induction のための opt-in extension として次を追加します。
+これは arbitrary quotient element に対する equality proposition を certificate 内で代表元へ戻すために
+使います。
+
+```text
+Quotient.indProp.{u}:
+  (A : Type u) -> (s : Setoid A) ->
+  (motive : Quotient A s -> Prop) ->
+  (mk_case : forall a, motive (Quotient.mk A s a)) ->
+  forall q, motive q
+```
+
 computation rule:
 
 ```text
 Quotient.lift s f h (Quotient.mk s a)
   ↦ f a
+
+Quotient.lift2 s f h (Quotient.mk s a) (Quotient.mk s b)
+  ↦ f a b
+
+Quotient.indProp s P h (Quotient.mk s a)
+  ↦ h a
 ```
 
 この computation rule を kernel conversion に入れるかどうかは慎重に決めます。
@@ -1078,6 +1110,8 @@ Quotient.lift s f h (Quotient.mk s a)
 
 ```text
 - Quotient.lift の computation rule は definitional equality に入れる
+- Quotient.lift2 の computation rule は `quotient_v2` opt-in profile の definitional equality に入れる
+- Quotient.indProp の computation rule は `quotient_v3` opt-in profile の definitional equality に入れる
 - Quotient.sound は proof term として扱う
 - quotient equality を勝手に正規化するような強い計算規則は入れない
 ```
@@ -1097,10 +1131,36 @@ quotient primitive を使う証明では、certificate に primitive feature fla
 }
 ```
 
-checker は、`quotient_v1` をサポートしていなければ拒否します。
+`Quotient.lift2` を使う certificate は `quotient_v2` も併記します。
+
+```json
+{
+  "core_features": [
+    "quotient_v1",
+    "quotient_v2"
+  ],
+  "quotients_used": true
+}
+```
+
+`Quotient.indProp` を使う certificate は `quotient_v3` も併記します。
+
+```json
+{
+  "core_features": [
+    "quotient_v1",
+    "quotient_v3"
+  ],
+  "quotients_used": true
+}
+```
+
+checker は、必要な quotient feature をサポートしていなければ拒否します。
 
 ```text
 UnsupportedCoreFeature: quotient_v1
+UnsupportedCoreFeature: quotient_v2
+UnsupportedCoreFeature: quotient_v3
 ```
 
 実装上は、`core_features` は axiom report hash の入力に含めます。ただし空の feature report は
@@ -1108,8 +1168,9 @@ UnsupportedCoreFeature: quotient_v1
 certificate identity hash は変えません。`quotient_v1` を含む certificate だけ、axiom report hash と
 certificate hash が deterministic に変わります。
 
-`Quotient` / `Quotient.mk` / `Quotient.sound` / `Quotient.lift` および `Setoid` 系 primitive の
-exact name は reserved core primitive です。同名の local axiom として silently allowed にはしません。
+`Quotient` / `Quotient.mk` / `Quotient.sound` / `Quotient.lift` / `Quotient.lift2` /
+`Quotient.indProp` および `Setoid` 系 primitive の exact name は reserved core primitive です。
+同名の local axiom として silently allowed にはしません。
 
 trusted base を広げる理由は、quotient equality を custom axiom 群で表す Option A だと checker 間で
 axiom policy と computation rule が drift しやすいためです。代替案として quotient を Std module の
@@ -1118,12 +1179,19 @@ primitive interface / `Quotient.lift` 計算規則を実装する境界を採用
 この primitive を証明受理条件にできず、canonical certificate の feature report と checker profile だけが
 受理境界です。
 
-P9H-12 では、この境界を `quotient_v1` opt-in として実装します。
+P9H-12 では、この境界を `quotient_v1` opt-in として実装します。第一同型定理の商群積のように
+binary quotient operation を certificate 化する場合は、同じ境界で `quotient_v2` を追加します。
+arbitrary quotient element に対する equality proposition を証明する場合は、同じ境界で `quotient_v3`
+を追加します。代替案は unary `Quotient.lift` と関数外延性で curried operation を作る方法、または
+より一般の dependent quotient eliminator を入れる方法です。ただし前者は別の強い原理を trusted base に
+入れる必要があり、後者は elimination 境界が大きいため、FI5c では Prop-valued induction のみに限定します。
 
 ```text
 - fast kernel と source-free reference checker は `RelEquiv A r` を equivalence witness 型へ展開する
 - `Setoid.r A (Setoid.mk A r h) a b` は `r a b` に WHNF reduction する
 - `Quotient.lift A B s f h (Quotient.mk A s a)` は `f a` に WHNF reduction する
+- `Quotient.lift2 A B s f h (Quotient.mk A s a) (Quotient.mk A s b)` は `f a b` に WHNF reduction する
+- `Quotient.indProp A s P h (Quotient.mk A s a)` は `h a` に WHNF reduction する
 - `Std.Quotient` example certificate は Nat × Nat の `IntPair`、`Setoid`、`Quotient.mk`、
   `Quotient.sound`、`Quotient.lift` を custom axiom / sorry なしで使う
 ```

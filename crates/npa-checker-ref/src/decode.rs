@@ -586,7 +586,13 @@ impl DecodedModuleCertificate {
                     ReferenceCheckReason::UnknownReference,
                 ));
             }
-            if quotient_builtin_name(name_value) {
+            if name_value.dotted() == "Quotient.lift2" {
+                features.insert(ReferenceCoreFeature::QuotientV1);
+                features.insert(ReferenceCoreFeature::QuotientV2);
+            } else if name_value.dotted() == "Quotient.indProp" {
+                features.insert(ReferenceCoreFeature::QuotientV1);
+                features.insert(ReferenceCoreFeature::QuotientV3);
+            } else if quotient_builtin_name(name_value) {
                 features.insert(ReferenceCoreFeature::QuotientV1);
             }
         }
@@ -4094,6 +4100,18 @@ impl<'a> TypeChecker<'a> {
                         current = reduced;
                         continue;
                     }
+                    if let Some(reduced) =
+                        self.reduce_quotient_lift2(ctx, delta, &app, offset, fuel)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
+                    if let Some(reduced) =
+                        self.reduce_quotient_ind_prop(ctx, delta, &app, offset, fuel)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
                     return Ok(app);
                 }
                 ReferenceCoreExpr::Let { value, body, .. } => {
@@ -4360,6 +4378,121 @@ impl<'a> TypeChecker<'a> {
         )))
     }
 
+    fn reduce_quotient_lift2(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let (head, args) = collect_apps(term);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name, .. },
+            ..
+        } = head
+        else {
+            return Ok(None);
+        };
+        if name.dotted() != "Quotient.lift2" || args.len() < 7 {
+            return Ok(None);
+        }
+
+        let lhs_quotient_arg = args[5].clone();
+        let rhs_quotient_arg = args[6].clone();
+        let rest = args[7..].to_vec();
+        let lhs_quotient_whnf = self.whnf_with_fuel(ctx, delta, &lhs_quotient_arg, offset, fuel)?;
+        let rhs_quotient_whnf = self.whnf_with_fuel(ctx, delta, &rhs_quotient_arg, offset, fuel)?;
+        let (lhs_mk_head, lhs_mk_args) = collect_apps(&lhs_quotient_whnf);
+        let (rhs_mk_head, rhs_mk_args) = collect_apps(&rhs_quotient_whnf);
+        let ReferenceCoreExpr::Const {
+            global_ref:
+                ReferenceCoreGlobalRef::Builtin {
+                    name: lhs_mk_name, ..
+                },
+            ..
+        } = lhs_mk_head
+        else {
+            return Ok(None);
+        };
+        let ReferenceCoreExpr::Const {
+            global_ref:
+                ReferenceCoreGlobalRef::Builtin {
+                    name: rhs_mk_name, ..
+                },
+            ..
+        } = rhs_mk_head
+        else {
+            return Ok(None);
+        };
+        if lhs_mk_name.dotted() != "Quotient.mk"
+            || rhs_mk_name.dotted() != "Quotient.mk"
+            || lhs_mk_args.len() != 3
+            || rhs_mk_args.len() != 3
+        {
+            return Ok(None);
+        }
+        if lhs_mk_args[0] != args[0]
+            || lhs_mk_args[1] != args[2]
+            || rhs_mk_args[0] != args[0]
+            || rhs_mk_args[1] != args[2]
+        {
+            return Ok(None);
+        }
+
+        Ok(Some(apps(
+            apps(
+                args[3].clone(),
+                vec![lhs_mk_args[2].clone(), rhs_mk_args[2].clone()],
+            ),
+            rest,
+        )))
+    }
+
+    fn reduce_quotient_ind_prop(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let (head, args) = collect_apps(term);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name, .. },
+            ..
+        } = head
+        else {
+            return Ok(None);
+        };
+        if name.dotted() != "Quotient.indProp" || args.len() < 5 {
+            return Ok(None);
+        }
+
+        let quotient_arg = args[4].clone();
+        let rest = args[5..].to_vec();
+        let quotient_whnf = self.whnf_with_fuel(ctx, delta, &quotient_arg, offset, fuel)?;
+        let (mk_head, mk_args) = collect_apps(&quotient_whnf);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name: mk_name, .. },
+            ..
+        } = mk_head
+        else {
+            return Ok(None);
+        };
+        if mk_name.dotted() != "Quotient.mk" || mk_args.len() != 3 {
+            return Ok(None);
+        }
+        if mk_args[0] != args[0] || mk_args[1] != args[1] {
+            return Ok(None);
+        }
+
+        Ok(Some(apps(
+            ReferenceCoreExpr::App(Box::new(args[3].clone()), Box::new(mk_args[2].clone())),
+            rest,
+        )))
+    }
+
     fn direct_mutual_recursive_index_args(
         &self,
         family_recursors: &BTreeMap<GeneratedKey, ReferenceModuleName>,
@@ -4546,6 +4679,16 @@ fn reference_builtin_signature(
         "Quotient.lift" => TypeSignature {
             universe_params: vec![rname("u"), rname("v")],
             ty: reference_quotient_lift_type(rparam("u"), rparam("v")),
+            value: None,
+        },
+        "Quotient.lift2" => TypeSignature {
+            universe_params: vec![rname("u"), rname("v")],
+            ty: reference_quotient_lift2_type(rparam("u"), rparam("v")),
+            value: None,
+        },
+        "Quotient.indProp" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_quotient_ind_prop_type(rparam("u")),
             value: None,
         },
         _ => return None,
@@ -4806,6 +4949,90 @@ fn reference_quotient_lift_type(
                             reference_quotient(carrier_level, rbvar(4), rbvar(2)),
                             rbvar(4),
                         ),
+                    ),
+                ),
+            ),
+        ),
+    )
+}
+
+fn reference_quotient_lift2_type(
+    carrier_level: ReferenceCoreLevel,
+    result_level: ReferenceCoreLevel,
+) -> ReferenceCoreExpr {
+    let relation_lhs = reference_setoid_relation(
+        carrier_level.clone(),
+        rbvar(7),
+        rbvar(5),
+        rbvar(3),
+        rbvar(2),
+    );
+    let relation_rhs = reference_setoid_relation(
+        carrier_level.clone(),
+        rbvar(8),
+        rbvar(6),
+        rbvar(2),
+        rbvar(1),
+    );
+    let lhs = apps(rbvar(6), vec![rbvar(5), rbvar(3)]);
+    let rhs = apps(rbvar(6), vec![rbvar(4), rbvar(2)]);
+    let compatibility_result = reference_eq(rsucc(result_level.clone()), rbvar(8), lhs, rhs);
+    let compatibility_ty = rpi(
+        rbvar(3),
+        rpi(
+            rbvar(4),
+            rpi(
+                rbvar(5),
+                rpi(
+                    rbvar(6),
+                    rpi(relation_lhs, rpi(relation_rhs, compatibility_result)),
+                ),
+            ),
+        ),
+    );
+    rpi(
+        rsort(rsucc(carrier_level.clone())),
+        rpi(
+            rsort(rsucc(result_level)),
+            rpi(
+                reference_setoid(carrier_level.clone(), rbvar(1)),
+                rpi(
+                    rpi(rbvar(2), rpi(rbvar(3), rbvar(3))),
+                    rpi(
+                        compatibility_ty,
+                        rpi(
+                            reference_quotient(carrier_level.clone(), rbvar(4), rbvar(2)),
+                            rpi(
+                                reference_quotient(carrier_level, rbvar(5), rbvar(3)),
+                                rbvar(5),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+}
+
+fn reference_quotient_ind_prop_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    let quotient_for_s = reference_quotient(level.clone(), rbvar(1), rbvar(0));
+    let motive_ty = rpi(quotient_for_s, rsort(rzero()));
+    let mk_case_result = rapp(
+        rbvar(1),
+        reference_quotient_mk(level.clone(), rbvar(3), rbvar(2), rbvar(0)),
+    );
+    let mk_case_ty = rpi(rbvar(2), mk_case_result);
+    rpi(
+        rsort(rsucc(level.clone())),
+        rpi(
+            reference_setoid(level.clone(), rbvar(0)),
+            rpi(
+                motive_ty,
+                rpi(
+                    mk_case_ty,
+                    rpi(
+                        reference_quotient(level, rbvar(3), rbvar(2)),
+                        rapp(rbvar(2), rbvar(0)),
                     ),
                 ),
             ),
@@ -8601,6 +8828,8 @@ pub(crate) fn builtin_decl_interface_hash(name: &ReferenceModuleName) -> Option<
         "Quotient.mk" => "npa.quotient-v1.builtin.quotient.mk.v1",
         "Quotient.sound" => "npa.quotient-v1.builtin.quotient.sound.v1",
         "Quotient.lift" => "npa.quotient-v1.builtin.quotient.lift.v1",
+        "Quotient.lift2" => "npa.quotient-v2.builtin.quotient.lift2.v1",
+        "Quotient.indProp" => "npa.quotient-v3.builtin.quotient.ind-prop.v1",
         _ => return None,
     };
     Some(hash_with_domain(
@@ -8624,6 +8853,8 @@ fn quotient_builtin_name(name: &ReferenceModuleName) -> bool {
             | "Quotient.mk"
             | "Quotient.sound"
             | "Quotient.lift"
+            | "Quotient.lift2"
+            | "Quotient.indProp"
     )
 }
 

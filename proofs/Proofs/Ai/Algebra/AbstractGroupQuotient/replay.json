@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupQuotient",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "KerSetoid",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun f => @Setoid.mk.{u} G (@KerRel.{succ u,succ v} G H f) (fun (P : Prop) => fun (mk_equiv : forall (refl_arg : forall (x : G), @KerRel.{succ u,succ v} G H f x x), forall (symm_arg : forall (x : G), forall (y : G), forall (p : @KerRel.{succ u,succ v} G H f x y), @KerRel.{succ u,succ v} G H f y x), forall (trans_arg : forall (x : G), forall (y : G), forall (z : G), forall (p : @KerRel.{succ u,succ v} G H f x y), forall (q : @KerRel.{succ u,succ v} G H f y z), @KerRel.{succ u,succ v} G H f x z), P) => mk_equiv (@ker_rel_refl.{succ u,succ v} G H f) (@ker_rel_symm.{succ u,succ v} G H f) (@ker_rel_trans.{succ u,succ v} G H f))"
+    },
+    {
+      "declaration": "KerQuot",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun f => @Quotient.{u} G (@KerSetoid.{u,v} G H f)"
+    },
+    {
+      "declaration": "KerQuotMk",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun f => fun a => @Quotient.mk.{u} G (@KerSetoid.{u,v} G H f) a"
+    },
+    {
+      "declaration": "KerQuotToH",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun H => fun f => @Quotient.lift.{u,v} G H (@KerSetoid.{u,v} G H f) f (fun (a : G) => fun (b : G) => fun (h : @Setoid.r.{u} G (@KerSetoid.{u,v} G H f) a b) => h)"
+    },
+    {
+      "declaration": "ker_quot_sound",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => fun a => fun b => fun h => @Quotient.sound.{u} G (@KerSetoid.{u,v} G H f) a b h"
+    },
+    {
+      "declaration": "ker_quot_to_h_mk",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => fun a => @Eq.refl.{succ v} H (f a)"
+    },
+    {
+      "declaration": "ker_quot_to_h_mul_mk",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => fun b => @hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a b"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupQuotient/certificate.npcert"
+  }
+}

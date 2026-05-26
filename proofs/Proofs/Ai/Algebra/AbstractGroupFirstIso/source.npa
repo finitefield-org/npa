@@ -1,0 +1,29 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.Algebra.AbstractGroupImage
+import Proofs.Ai.Algebra.AbstractGroupQuotient
+
+def FirstIsoRepMvp.{u,v} :
+  forall (G : Sort succ u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort succ v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), Prop :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => forall (P : Prop), forall (mk : forall (mk_compute : forall (a : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a)), forall (mul_compat : forall (a : G), forall (b : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) (mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b)))), forall (rep_injective : forall (a : G), forall (b : G), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))), @KerRel.{succ u,succ v} G H f a b), forall (hits_image : forall (a : G), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a))), P), P
+
+theorem first_iso_phi_mk.{u,v} :
+  forall (G : Sort succ u), forall (H : Sort succ v), forall (f : forall (x : G), H), forall (a : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a) :=
+  fun G => fun H => fun f => fun a => @ker_quot_to_h_mk.{u,v} G H f a
+
+theorem first_iso_phi_mul_mk.{u,v} :
+  forall (G : Sort succ u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort succ v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), forall (a : G), forall (b : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) (mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))) :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => fun b => @ker_quot_to_h_mul_mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args a b
+
+theorem first_iso_rep_injective.{u,v} :
+  forall (G : Sort succ u), forall (H : Sort succ v), forall (f : forall (x : G), H), forall (a : G), forall (b : G), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))), @KerRel.{succ u,succ v} G H f a b :=
+  fun G => fun H => fun f => fun a => fun b => fun h => h
+
+theorem first_iso_rep_hits_image.{u,v} :
+  forall (G : Sort succ u), forall (H : Sort succ v), forall (f : forall (x : G), H), forall (a : G), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) :=
+  fun G => fun H => fun f => fun a => @image_intro.{succ u,succ v} G H f a
+
+theorem first_isomorphism_rep_mvp.{u,v} :
+  forall (G : Sort succ u), forall (oneG : G), forall (mulG : forall (a : G), forall (b : G), G), forall (invG : forall (a : G), G), forall (H : Sort succ v), forall (oneH : H), forall (mulH : forall (a : H), forall (b : H), H), forall (invH : forall (a : H), H), forall (f : forall (x : G), H), forall (hom_args : @GroupHomLawArgs.{succ u,succ v} G oneG mulG invG H oneH mulH invH f), @FirstIsoRepMvp.{u,v} G oneG mulG invG H oneH mulH invH f hom_args :=
+  fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun (P : Prop) => fun (mk : forall (mk_compute : forall (a : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a)), forall (mul_compat : forall (a : G), forall (b : G), @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f (mulG a b))) (mulH (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b)))), forall (rep_injective : forall (a : G), forall (b : G), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))), @KerRel.{succ u,succ v} G H f a b), forall (hits_image : forall (a : G), @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a))), P) => mk (@first_iso_phi_mk.{u,v} G H f) (@first_iso_phi_mul_mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) (@first_iso_rep_injective.{u,v} G H f) (@first_iso_rep_hits_image.{u,v} G H f)
+

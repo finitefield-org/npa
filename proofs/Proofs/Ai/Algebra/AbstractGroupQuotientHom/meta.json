@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+  "source": "Proofs/Ai/Algebra/AbstractGroupQuotientHom/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupQuotientHom/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:157d83c26c44655c5fe6453fd8764dc21ea5043ab68ffd3ed1b88d31ae96717e",
+  "certificate_file_sha256": "sha256:dce69106a22cc7a9701b4c622391d24bfee6423e63523b424af48568e6e75157",
+  "export_hash": "sha256:2a0178a6cd6a9fff1e449bffb7a62e25d4e4a944ceb514083db0bcf5b0229700",
+  "axiom_report_hash": "sha256:b8556fe24d881da2124391b4b0d69d4d22f988483234a12d4f565c15909305e6",
+  "certificate_hash": "sha256:ac581d0d12f436c2f70bceb43b638fb35d6475aa9d3412ec12665551d9081da1",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "ker_quot_to_h_mul", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -255,6 +255,187 @@ theorems = ["iff_refl", "iff_symm", "iff_trans", "iff_mp", "iff_mpr", "and_intro
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroup"
+source = "Proofs/Ai/Algebra/AbstractGroup/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroup/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroup/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:5a3c0e175ef4254e194a92c0c9acbed7725564aed2e5a58938b3b8537761d25e"
+certificate_file_sha256 = "sha256:8454f68e6ef223e0129df8de1a1bcc5d39cd740b9b51a075e09bfdad8232c703"
+export_hash = "sha256:8f45d8f30014a9b0a9a2a22417fe47c28fe0a45ffb0dff59ea03fcc7a3f07258"
+axiom_report_hash = "sha256:969f63d6549d9899637822f264b82e37b20d4ae94a1813528402f82b0deae051"
+certificate_hash = "sha256:40ab05107c3f27569f0c926855a8e6e6cacf0f69fdd2dc60b0093bc3adf77c23"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning"]
+definitions = ["GroupLawArgs", "GroupHomLawArgs", "KernelPred", "KerRel"]
+theorems = ["group_mul_assoc", "group_one_mul", "group_mul_one", "group_inv_mul", "group_mul_inv", "hom_mul", "hom_one", "hom_inv", "kernel_one", "ker_rel_refl", "ker_rel_symm", "ker_rel_trans"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupKernel"
+source = "Proofs/Ai/Algebra/AbstractGroupKernel/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupKernel/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupKernel/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupKernel/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8d11dd74da047650e74282aeea0d7a0ac2aacfc5cb3bae1bf85c12bf5c38fadb"
+certificate_file_sha256 = "sha256:09c06ccb50e93c37d03812ca27ea6c5aff08f8aeb583f81a9707b040fb6b9c0a"
+export_hash = "sha256:5c1a39b0e9f82dc1014e3e63549c71eab3db6383024a87408e4e95e06bc33fbb"
+axiom_report_hash = "sha256:39f92e3a74edf201d900d93abeebb9c404ea8c141bfc46761f7e889c9f8cf9f7"
+certificate_hash = "sha256:930a2e62a70184bb8b420df18f202de085ae90c8fe2b194b259e3dcb49c80785"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup"]
+definitions = []
+theorems = ["kernel_mul_closed", "kernel_inv_closed", "kernel_conj_closed"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupImage"
+source = "Proofs/Ai/Algebra/AbstractGroupImage/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupImage/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupImage/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupImage/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8c6f85eb72c6d04a2b5b97448d7aa7f7b331250591be2afe3ce329ed6a171080"
+certificate_file_sha256 = "sha256:d8e02c71b74c02fb2f147e8aec34a48667e34aee6d0aa2c48ea1a98bb5f5b082"
+export_hash = "sha256:0935f963b77bb9ed124d4b38435ad2a9a19f860e1f06de11c1ab8ca3f05cdd0e"
+axiom_report_hash = "sha256:0869976f857fbf07454df1db004a649ae3ee9ede0e1429dbf40af6dfaac5bfeb"
+certificate_hash = "sha256:b8df01c5fa655c681b7cc85391a161382066816e9f9af5d6d1cde2079ee265dc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup"]
+definitions = ["ImagePred"]
+theorems = ["image_intro", "image_elim", "image_one", "image_mul_closed", "image_inv_closed"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupQuotient"
+source = "Proofs/Ai/Algebra/AbstractGroupQuotient/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupQuotient/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupQuotient/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupQuotient/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:a72a0498b88ed9cf0487d309a710ff021647e01ed9b04fe7663caa2cb7dd88e7"
+certificate_file_sha256 = "sha256:b78bfc8f4bd9108aaf53ba0ddbeffefe23942ebfbe90036d8cb60e37fd0a18aa"
+export_hash = "sha256:456e96fbacbb84ec968918cae2b0914f9b851c96f3bdf1fda65be372c247ea48"
+axiom_report_hash = "sha256:30155dfd0399b8bb9222cee6aff0c26065a6766282a10f97ef2d27d45d89aa6a"
+certificate_hash = "sha256:afd2f61e680e1daa866ebb392f2635ac5dc7477f293f872ec3343c94cac61122"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup"]
+definitions = ["KerSetoid", "KerQuot", "KerQuotMk", "KerQuotToH"]
+theorems = ["ker_quot_sound", "ker_quot_to_h_mk", "ker_quot_to_h_mul_mk"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupQuotientMul"
+source = "Proofs/Ai/Algebra/AbstractGroupQuotientMul/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupQuotientMul/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupQuotientMul/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupQuotientMul/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:38cc86e919557bba343c8a3270fa02656e957858321178f4b907d96e7d81f14a"
+certificate_file_sha256 = "sha256:9198934b14149c5cc62c17639024fc173aec351469f49c2048e0fb0a0a0d59c0"
+export_hash = "sha256:149df869acd227ea5d7476160595d2338e9c00b1fb2f72d5e4ee6fca5e663c55"
+axiom_report_hash = "sha256:5bd7339ac208646efb0ed11ff2499737a45b42195bb28180b5685aed4560bbe3"
+certificate_hash = "sha256:d8a925b796b0d6233a4fab38d86dd86b748d96addf1c8e6ef689fa5e1ec219e4"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient"]
+definitions = ["KerQuotMulRep"]
+theorems = ["ker_quot_mul_rep_compat"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupQuotientGroup"
+source = "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupQuotientGroup/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:13d0829b279b3519e409daadd5866a9c1554a7cdbf3e3765b917085ff313431d"
+certificate_file_sha256 = "sha256:7040b274c8d09822ac7833262c34c6100eaf090d19d1f01af2f1b56e5697098f"
+export_hash = "sha256:4e67aa4b715757c1e8d8b4cef1637464a43fe2a4348c909b893e4f4c1330fa69"
+axiom_report_hash = "sha256:35475c48af8ff4a446c4f9b72745aea69e6442d8ee83fe8587a0a88eeec2e307"
+certificate_hash = "sha256:a8aa0fcdfe96a4d183eea6c60e8edcedcf78dfa1488e9e29521f9bf97ec553c7"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul"]
+definitions = ["KerQuotMul", "KerQuotOne", "KerQuotInv"]
+theorems = ["ker_quot_mul_mk", "ker_quot_inv_mk", "ker_quot_mul_assoc", "ker_quot_one_mul", "ker_quot_mul_one", "ker_quot_inv_mul", "ker_quot_mul_inv"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupQuotientHom"
+source = "Proofs/Ai/Algebra/AbstractGroupQuotientHom/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupQuotientHom/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupQuotientHom/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupQuotientHom/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:157d83c26c44655c5fe6453fd8764dc21ea5043ab68ffd3ed1b88d31ae96717e"
+certificate_file_sha256 = "sha256:dce69106a22cc7a9701b4c622391d24bfee6423e63523b424af48568e6e75157"
+export_hash = "sha256:2a0178a6cd6a9fff1e449bffb7a62e25d4e4a944ceb514083db0bcf5b0229700"
+axiom_report_hash = "sha256:b8556fe24d881da2124391b4b0d69d4d22f988483234a12d4f565c15909305e6"
+certificate_hash = "sha256:ac581d0d12f436c2f70bceb43b638fb35d6475aa9d3412ec12665551d9081da1"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup"]
+definitions = []
+theorems = ["ker_quot_to_h_mul"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"
+source = "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:9f758382a0104bc2dde0c3480f6b785086c989d800f8786c8fa68d0d01e89664"
+certificate_file_sha256 = "sha256:3a79149d2e38657e1ec3ad7bab96373dc43b1097cb7ac49b9272c46652d5c70b"
+export_hash = "sha256:aaf83557307aef06abfc3bf75495930d8d4caa84c45f2d164036b68f67041563"
+axiom_report_hash = "sha256:9a0ded81408eba6f81619705659e98a0abcbe93475d802786eea2cf85209e352"
+certificate_hash = "sha256:5406516c4c3acc4b5181b454cb51a1cc944616d04df565cd021dfc59d905ddee"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupQuotientHom"]
+definitions = []
+theorems = ["first_iso_phi_mul", "first_iso_phi_injective", "first_iso_phi_hits_image", "first_iso_phi_surj_image", "first_isomorphism_image_facts"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupFirstIsoImage"
+source = "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupFirstIsoImage/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:356d7a1e7e1ddf6b67035fc058da15c4ebfa4a9811c9ac77c74d7579c847f823"
+certificate_file_sha256 = "sha256:77559accf01fd5016ee82dbb0f8ac7b167223b3980efbef1629779ddd741adc0"
+export_hash = "sha256:70278f8ad4b92548010b37f06e2ffa2189fe0ed1750f62e74a7b66ccc3da6bef"
+axiom_report_hash = "sha256:d49ad4975ee17563b2f91520c600ae88e4834d89007d2d04e0c47b5f7494f3d4"
+certificate_hash = "sha256:4ea230c8ca70e1dbbb18000337cc955ca95f1662242a7f646521ac1f735b21a0"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"]
+inductives = ["FirstIsoQuotientAssocEvidence", "FirstIsoQuotientOneMulEvidence", "FirstIsoQuotientMulOneEvidence", "FirstIsoQuotientInvMulEvidence", "FirstIsoQuotientMulInvEvidence", "FirstIsoQuotientGroupEvidence", "FirstIsoImageGroupEvidence", "FirstIsoTheoremEvidence"]
+definitions = ["FirstIsoImageGroupFacts", "FirstIsoImage"]
+theorems = ["first_iso_quotient_assoc_evidence", "first_iso_quotient_one_mul_evidence", "first_iso_quotient_mul_one_evidence", "first_iso_quotient_inv_mul_evidence", "first_iso_quotient_mul_inv_evidence", "first_iso_quotient_group_evidence", "first_iso_image_group_evidence", "first_iso_image_group_facts", "first_isomorphism_theorem_evidence", "first_isomorphism_to_image"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractGroupFirstIso"
+source = "Proofs/Ai/Algebra/AbstractGroupFirstIso/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGroupFirstIso/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGroupFirstIso/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGroupFirstIso/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f3ceb82473fdef6c17c055eb3602b95c324f0ae81c649636b74aadedb6086610"
+certificate_file_sha256 = "sha256:7edc2cfa90a84e3b7e801cfa75fa64ca8174dc0fcc3e0817d4b322f2779a54ef"
+export_hash = "sha256:a68e41d10bf747d6131f7d792f06ea9fe9d231eebd5b61eff5297d31f609cc5e"
+axiom_report_hash = "sha256:6b53c11846665e400ccfc86f2382a4694ce0223745eb42ecd283c672a9f65fd5"
+certificate_hash = "sha256:4b5f3352a0531784a19eaf794889b4bcbb11901adb7795c99e5d0f866f742dcf"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient"]
+definitions = ["FirstIsoRepMvp"]
+theorems = ["first_iso_phi_mk", "first_iso_phi_mul_mk", "first_iso_rep_injective", "first_iso_rep_hits_image", "first_isomorphism_rep_mvp"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractRing"
 source = "Proofs/Ai/Algebra/AbstractRing/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractRing/certificate.npcert"

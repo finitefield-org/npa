@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "first_iso_phi_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => @ker_quot_to_h_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args"
+    },
+    {
+      "declaration": "first_iso_phi_injective",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => @Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) (fun (q1 : @KerQuot.{u,v} G H f) => forall (q2 : @KerQuot.{u,v} G H f), forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f q1) (@KerQuotToH.{u,v} G H f q2)), @Eq.{succ u} (@KerQuot.{u,v} G H f) q1 q2) (fun (a : G) => @Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) (fun (q2 : @KerQuot.{u,v} G H f) => forall (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f q2)), @Eq.{succ u} (@KerQuot.{u,v} G H f) (@KerQuotMk.{u,v} G H f a) q2) (fun (b : G) => fun (h : @Eq.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f b))) => @ker_quot_sound.{u,v} G H f a b h))"
+    },
+    {
+      "declaration": "first_iso_phi_hits_image",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => @Quotient.indProp.{u} G (@KerSetoid.{u,v} G H f) (fun (q : @KerQuot.{u,v} G H f) => @ImagePred.{succ u,succ v} G H f (@KerQuotToH.{u,v} G H f q)) (fun (a : G) => @image_intro.{succ u,succ v} G H f a)"
+    },
+    {
+      "declaration": "first_iso_phi_surj_image",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun H => fun f => fun y => fun hy => fun P => fun mk => @image_elim.{succ u,succ v} G H f y hy P (fun (a : G) => fun (h : @Eq.{succ v} H (f a) y) => mk (@KerQuotMk.{u,v} G H f a) (@eq_trans.{succ v} H (@KerQuotToH.{u,v} G H f (@KerQuotMk.{u,v} G H f a)) (f a) y (@ker_quot_to_h_mk.{u,v} G H f a) h))"
+    },
+    {
+      "declaration": "first_isomorphism_image_facts",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun (P : Prop) => fun mk => mk (@first_iso_phi_mul.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) (@first_iso_phi_injective.{u,v} G H f) (@first_iso_phi_hits_image.{u,v} G H f) (@first_iso_phi_surj_image.{u,v} G H f)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert"
+  }
+}

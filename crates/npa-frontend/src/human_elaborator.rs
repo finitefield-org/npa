@@ -769,6 +769,26 @@ pub fn compile_human_source_to_certificate_output_with_source_interfaces(
     imported_source_interfaces: &[HumanImportedSourceInterface],
     options: &HumanCompileOptions,
 ) -> HumanResult<HumanCertificateCompileOutput> {
+    compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
+        file_id,
+        module_name,
+        source,
+        verified_modules,
+        imported_source_interfaces,
+        options,
+        &npa_cert::AxiomPolicy::normal(),
+    )
+}
+
+pub fn compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_modules: &[npa_cert::VerifiedModule],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+    axiom_policy: &npa_cert::AxiomPolicy,
+) -> HumanResult<HumanCertificateCompileOutput> {
     let verified_imports: Vec<_> = verified_modules.iter().map(VerifiedImport::from).collect();
     let parsed =
         parse_human_module_with_source_interfaces(file_id, source, imported_source_interfaces)?;
@@ -810,16 +830,14 @@ pub fn compile_human_source_to_certificate_output_with_source_interfaces(
     for import in &certificate_imports {
         session.register_verified_module(import.clone());
     }
-    npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal()).map_err(
-        |err| {
-            HumanDiagnostic::error(
-                HumanDiagnosticKind::KernelRejected,
-                source_span(file_id, source),
-                format!("certificate certificate verification rejected Human source: {err:?}"),
-            )
-            .with_phase(HumanDiagnosticPhase::CertificateHandoff)
-        },
-    )?;
+    npa_cert::verify_module_cert(&bytes, &mut session, axiom_policy).map_err(|err| {
+        HumanDiagnostic::error(
+            HumanDiagnosticKind::KernelRejected,
+            source_span(file_id, source),
+            format!("certificate certificate verification rejected Human source: {err:?}"),
+        )
+        .with_phase(HumanDiagnosticPhase::CertificateHandoff)
+    })?;
     let source_interface = source_interface_with_certificate_hashes(source_interface, &cert);
     Ok(HumanCertificateCompileOutput {
         certificate: cert,
@@ -6285,6 +6303,21 @@ fn add_human_builtin_decls_for_names(
         matches!(name.as_str(), "Eq" | "Eq.refl" | "Eq.rec")
     });
     let needs_eq_rec = names.iter().any(|name| name.as_dotted() == "Eq.rec");
+    let needs_quotient = names.iter().any(|name| {
+        matches!(
+            name.as_dotted().as_str(),
+            "Setoid"
+                | "RelEquiv"
+                | "Setoid.mk"
+                | "Setoid.r"
+                | "Quotient"
+                | "Quotient.mk"
+                | "Quotient.sound"
+                | "Quotient.lift"
+                | "Quotient.lift2"
+                | "Quotient.indProp"
+        )
+    });
 
     if needs_nat && env.decl("Nat").is_none() {
         env.add_inductive(nat_inductive()).map_err(|err| {
@@ -6305,6 +6338,12 @@ fn add_human_builtin_decls_for_names(
             eq_rec_type(Level::param("u"), Level::param("v")),
         )
         .map_err(|err| {
+            human_kernel_decl_diagnostic(span, err, context)
+                .with_phase(HumanDiagnosticPhase::KernelHandoff)
+        })?;
+    }
+    if needs_quotient && env.decl("Setoid").is_none() {
+        env.add_quotient_builtins().map_err(|err| {
             human_kernel_decl_diagnostic(span, err, context)
                 .with_phase(HumanDiagnosticPhase::KernelHandoff)
         })?;

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "KerQuotMulRep",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun mulG => fun H => fun f => fun a => fun b => @KerQuotMk.{u,v} G H f (mulG a b)"
+    },
+    {
+      "declaration": "ker_quot_mul_rep_compat",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun H => fun oneH => fun mulH => fun invH => fun f => fun hom_args => fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => @ker_quot_sound.{u,v} G H f (mulG a b) (mulG a2 b2) (@eq_trans.{succ v} H (f (mulG a b)) (mulH (f a) (f b)) (f (mulG a2 b2)) (@hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a b) (@eq_trans.{succ v} H (mulH (f a) (f b)) (mulH (f a2) (f b2)) (f (mulG a2 b2)) (@eq_congr2.{succ v,succ v,succ v} H H H mulH (f a) (f a2) (f b) (f b2) ha hb) (@eq_symm.{succ v} H (f (mulG a2 b2)) (mulH (f a2) (f b2)) (@hom_mul.{succ u,succ v} G oneG mulG invG H oneH mulH invH f hom_args a2 b2))))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupQuotientMul/certificate.npcert"
+  }
+}
