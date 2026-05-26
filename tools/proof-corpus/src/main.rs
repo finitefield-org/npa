@@ -441,6 +441,163 @@ const ABSTRACT_GROUP_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_GROUP_SUBGROUP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupSubgroup/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupSubgroup/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupSubgroup/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupSubgroup/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.EqReasoning",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_SUBGROUP_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_SUBGROUP_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_NORMAL_QUOTIENT_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_NORMAL_QUOTIENT_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientMul/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientMul/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientMul/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientMul/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientGroup/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientGroup/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientGroup/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupNormalQuotientGroup/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_SECOND_ISO_PHI_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_SECOND_ISO_PHI_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_SECOND_ISO_PHI_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_SECOND_ISO_KERNEL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupSecondIsoKernel",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoKernel/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoKernel/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoKernel/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoKernel/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_SECOND_ISO_KERNEL_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_SECOND_ISO_KERNEL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_SECOND_ISO_IMAGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupSecondIsoImage",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_SECOND_ISO_IMAGE_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_SECOND_ISO_IMAGE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_GROUP_SECOND_ISO_FINAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal",
+    source_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi",
+        "Proofs.Ai.Algebra.AbstractGroupSecondIsoKernel",
+        "Proofs.Ai.Algebra.AbstractGroupSecondIsoImage",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GROUP_SECOND_ISO_FINAL_DEFINITIONS,
+    theorems: ABSTRACT_GROUP_SECOND_ISO_FINAL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRing",
     source_path: "Proofs/Ai/Algebra/AbstractRing/source.npa",
@@ -2790,6 +2947,288 @@ const ABSTRACT_GROUP_THEOREMS: &[TheoremArtifact] = &[
         )),
     },
     TheoremArtifact {
+        name: "group_left_cancel",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), forall (c : G), forall (h : @Eq.{u} G (mul a b) (mul a c)), @Eq.{u} G b c"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => fun c => fun h => ",
+            "@eq_trans.{u} G b (mul one b) c ",
+            "(@eq_symm.{u} G (mul one b) b (@group_one_mul.{u} G one mul inv group_args b)) ",
+            "(@eq_trans.{u} G (mul one b) (mul (mul (inv a) a) b) c ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z b) one (mul (inv a) a) ",
+            "(@eq_symm.{u} G (mul (inv a) a) one (@group_inv_mul.{u} G one mul inv group_args a))) ",
+            "(@eq_trans.{u} G (mul (mul (inv a) a) b) (mul (inv a) (mul a b)) c ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv a) a b) ",
+            "(@eq_trans.{u} G (mul (inv a) (mul a b)) (mul (inv a) (mul a c)) c ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (inv a) z) (mul a b) (mul a c) h) ",
+            "(@eq_trans.{u} G (mul (inv a) (mul a c)) (mul (mul (inv a) a) c) c ",
+            "(@eq_symm.{u} G (mul (mul (inv a) a) c) (mul (inv a) (mul a c)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv a) a c)) ",
+            "(@eq_trans.{u} G (mul (mul (inv a) a) c) (mul one c) c ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z c) (mul (inv a) a) one ",
+            "(@group_inv_mul.{u} G one mul inv group_args a)) ",
+            "(@group_one_mul.{u} G one mul inv group_args c))))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_inv_inv",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), @Eq.{u} G (inv (inv a)) a"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => ",
+            "@group_left_cancel.{u} G one mul inv group_args (inv a) (inv (inv a)) a ",
+            "(@eq_trans.{u} G (mul (inv a) (inv (inv a))) one (mul (inv a) a) ",
+            "(@group_mul_inv.{u} G one mul inv group_args (inv a)) ",
+            "(@eq_symm.{u} G (mul (inv a) a) one (@group_inv_mul.{u} G one mul inv group_args a)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_inv_mul_left_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), @Eq.{u} G (mul (inv a) (mul a b)) b"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => ",
+            "@eq_trans.{u} G (mul (inv a) (mul a b)) (mul (mul (inv a) a) b) b ",
+            "(@eq_symm.{u} G (mul (mul (inv a) a) b) (mul (inv a) (mul a b)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv a) a b)) ",
+            "(@eq_trans.{u} G (mul (mul (inv a) a) b) (mul one b) b ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z b) (mul (inv a) a) one ",
+            "(@group_inv_mul.{u} G one mul inv group_args a)) ",
+            "(@group_one_mul.{u} G one mul inv group_args b))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_conj_slide",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (k : G), forall (n : G), @Eq.{u} G (mul k (mul (mul (inv k) n) k)) (mul n k)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun k => fun n => ",
+            "@eq_trans.{u} G (mul k (mul (mul (inv k) n) k)) (mul (mul k (mul (inv k) n)) k) (mul n k) ",
+            "(@eq_symm.{u} G (mul (mul k (mul (inv k) n)) k) (mul k (mul (mul (inv k) n) k)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args k (mul (inv k) n) k)) ",
+            "(@eq_trans.{u} G (mul (mul k (mul (inv k) n)) k) (mul (mul (mul k (inv k)) n) k) (mul n k) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z k) (mul k (mul (inv k) n)) (mul (mul k (inv k)) n) ",
+            "(@eq_symm.{u} G (mul (mul k (inv k)) n) (mul k (mul (inv k) n)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args k (inv k) n))) ",
+            "(@eq_trans.{u} G (mul (mul (mul k (inv k)) n) k) (mul (mul one n) k) (mul n k) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul z n) k) (mul k (inv k)) one ",
+            "(@group_mul_inv.{u} G one mul inv group_args k)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z k) (mul one n) n ",
+            "(@group_one_mul.{u} G one mul inv group_args n))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_product_mul_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (h : G), forall (n : G), forall (k : G), forall (m : G), @Eq.{u} G (mul (mul h k) (mul (mul (mul (inv k) n) k) m)) (mul (mul h n) (mul k m))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun h => fun n => fun k => fun m => ",
+            "@eq_trans.{u} G (mul (mul h k) (mul (mul (mul (inv k) n) k) m)) (mul (mul (mul h k) (mul (mul (inv k) n) k)) m) (mul (mul h n) (mul k m)) ",
+            "(@eq_symm.{u} G (mul (mul (mul h k) (mul (mul (inv k) n) k)) m) (mul (mul h k) (mul (mul (mul (inv k) n) k) m)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul h k) (mul (mul (inv k) n) k) m)) ",
+            "(@eq_trans.{u} G (mul (mul (mul h k) (mul (mul (inv k) n) k)) m) (mul (mul h (mul k (mul (mul (inv k) n) k))) m) (mul (mul h n) (mul k m)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z m) (mul (mul h k) (mul (mul (inv k) n) k)) (mul h (mul k (mul (mul (inv k) n) k))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args h k (mul (mul (inv k) n) k))) ",
+            "(@eq_trans.{u} G (mul (mul h (mul k (mul (mul (inv k) n) k))) m) (mul (mul h (mul n k)) m) (mul (mul h n) (mul k m)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul h z) m) (mul k (mul (mul (inv k) n) k)) (mul n k) ",
+            "(@group_conj_slide.{u} G one mul inv group_args k n)) ",
+            "(@eq_trans.{u} G (mul (mul h (mul n k)) m) (mul (mul (mul h n) k) m) (mul (mul h n) (mul k m)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z m) (mul h (mul n k)) (mul (mul h n) k) ",
+            "(@eq_symm.{u} G (mul (mul h n) k) (mul h (mul n k)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args h n k))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul h n) k m))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_mul_inv_rev",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), @Eq.{u} G (mul (inv b) (inv a)) (inv (mul a b))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => ",
+            "@group_left_cancel.{u} G one mul inv group_args (mul a b) (mul (inv b) (inv a)) (inv (mul a b)) ",
+            "(@eq_trans.{u} G (mul (mul a b) (mul (inv b) (inv a))) one (mul (mul a b) (inv (mul a b))) ",
+            "(@eq_trans.{u} G (mul (mul a b) (mul (inv b) (inv a))) (mul (mul (mul a b) (inv b)) (inv a)) one ",
+            "(@eq_symm.{u} G (mul (mul (mul a b) (inv b)) (inv a)) (mul (mul a b) (mul (inv b) (inv a))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul a b) (inv b) (inv a))) ",
+            "(@eq_trans.{u} G (mul (mul (mul a b) (inv b)) (inv a)) (mul (mul a (mul b (inv b))) (inv a)) one ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (inv a)) (mul (mul a b) (inv b)) (mul a (mul b (inv b))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args a b (inv b))) ",
+            "(@eq_trans.{u} G (mul (mul a (mul b (inv b))) (inv a)) (mul (mul a one) (inv a)) one ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul a z) (inv a)) (mul b (inv b)) one ",
+            "(@group_mul_inv.{u} G one mul inv group_args b)) ",
+            "(@eq_trans.{u} G (mul (mul a one) (inv a)) (mul a (inv a)) one ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (inv a)) (mul a one) a ",
+            "(@group_mul_one.{u} G one mul inv group_args a)) ",
+            "(@group_mul_inv.{u} G one mul inv group_args a))))) ",
+            "(@eq_symm.{u} G (mul (mul a b) (inv (mul a b))) one ",
+            "(@group_mul_inv.{u} G one mul inv group_args (mul a b))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_product_inv_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (h : G), forall (n : G), @Eq.{u} G (mul (inv h) (mul (mul h (inv n)) (inv h))) (inv (mul h n))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun h => fun n => ",
+            "@eq_trans.{u} G (mul (inv h) (mul (mul h (inv n)) (inv h))) (mul (mul (inv h) (mul h (inv n))) (inv h)) (inv (mul h n)) ",
+            "(@eq_symm.{u} G (mul (mul (inv h) (mul h (inv n))) (inv h)) (mul (inv h) (mul (mul h (inv n)) (inv h))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv h) (mul h (inv n)) (inv h))) ",
+            "(@eq_trans.{u} G (mul (mul (inv h) (mul h (inv n))) (inv h)) (mul (mul (mul (inv h) h) (inv n)) (inv h)) (inv (mul h n)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (inv h)) (mul (inv h) (mul h (inv n))) (mul (mul (inv h) h) (inv n)) ",
+            "(@eq_symm.{u} G (mul (mul (inv h) h) (inv n)) (mul (inv h) (mul h (inv n))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv h) h (inv n)))) ",
+            "(@eq_trans.{u} G (mul (mul (mul (inv h) h) (inv n)) (inv h)) (mul (mul one (inv n)) (inv h)) (inv (mul h n)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul z (inv n)) (inv h)) (mul (inv h) h) one ",
+            "(@group_inv_mul.{u} G one mul inv group_args h)) ",
+            "(@eq_trans.{u} G (mul (mul one (inv n)) (inv h)) (mul (inv n) (inv h)) (inv (mul h n)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (inv h)) (mul one (inv n)) (inv n) ",
+            "(@group_one_mul.{u} G one mul inv group_args (inv n))) ",
+            "(@group_mul_inv_rev.{u} G one mul inv group_args h n))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_inv_rel_symm_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), @Eq.{u} G (inv (mul (inv a) b)) (mul (inv b) a)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => ",
+            "@eq_trans.{u} G (inv (mul (inv a) b)) (mul (inv b) (inv (inv a))) (mul (inv b) a) ",
+            "(@eq_symm.{u} G (mul (inv b) (inv (inv a))) (inv (mul (inv a) b)) ",
+            "(@group_mul_inv_rev.{u} G one mul inv group_args (inv a) b)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (inv b) z) (inv (inv a)) a ",
+            "(@group_inv_inv.{u} G one mul inv group_args a))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_rel_trans_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), forall (c : G), @Eq.{u} G (mul (mul (inv a) b) (mul (inv b) c)) (mul (inv a) c)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => fun c => ",
+            "@eq_trans.{u} G (mul (mul (inv a) b) (mul (inv b) c)) (mul (mul (mul (inv a) b) (inv b)) c) (mul (inv a) c) ",
+            "(@eq_symm.{u} G (mul (mul (mul (inv a) b) (inv b)) c) (mul (mul (inv a) b) (mul (inv b) c)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul (inv a) b) (inv b) c)) ",
+            "(@eq_trans.{u} G (mul (mul (mul (inv a) b) (inv b)) c) (mul (mul (inv a) (mul b (inv b))) c) (mul (inv a) c) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z c) (mul (mul (inv a) b) (inv b)) (mul (inv a) (mul b (inv b))) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv a) b (inv b))) ",
+            "(@eq_trans.{u} G (mul (mul (inv a) (mul b (inv b))) c) (mul (mul (inv a) one) c) (mul (inv a) c) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul (inv a) z) c) (mul b (inv b)) one ",
+            "(@group_mul_inv.{u} G one mul inv group_args b)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z c) (mul (inv a) one) (inv a) ",
+            "(@group_mul_one.{u} G one mul inv group_args (inv a)))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_rel_mul_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (a2 : G), forall (b : G), forall (b2 : G), @Eq.{u} G (mul (mul (mul (inv b) (mul (inv a) a2)) b) (mul (inv b) b2)) (mul (inv (mul a b)) (mul a2 b2))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun a2 => fun b => fun b2 => ",
+            "@eq_trans.{u} G ",
+            "(mul (mul (mul (inv b) (mul (inv a) a2)) b) (mul (inv b) b2)) ",
+            "(mul (mul (inv b) (mul (inv a) a2)) (mul b (mul (inv b) b2))) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul (inv b) (mul (inv a) a2)) b (mul (inv b) b2)) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul (inv b) (mul (inv a) a2)) (mul b (mul (inv b) b2))) ",
+            "(mul (mul (inv b) (mul (inv a) a2)) (mul (mul b (inv b)) b2)) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul (inv b) (mul (inv a) a2)) z) ",
+            "(mul b (mul (inv b) b2)) (mul (mul b (inv b)) b2) ",
+            "(@eq_symm.{u} G (mul (mul b (inv b)) b2) (mul b (mul (inv b) b2)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args b (inv b) b2))) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul (inv b) (mul (inv a) a2)) (mul (mul b (inv b)) b2)) ",
+            "(mul (mul (inv b) (mul (inv a) a2)) (mul one b2)) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul (inv b) (mul (inv a) a2)) (mul z b2)) ",
+            "(mul b (inv b)) one ",
+            "(@group_mul_inv.{u} G one mul inv group_args b)) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul (inv b) (mul (inv a) a2)) (mul one b2)) ",
+            "(mul (mul (inv b) (mul (inv a) a2)) b2) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul (inv b) (mul (inv a) a2)) z) ",
+            "(mul one b2) b2 ",
+            "(@group_one_mul.{u} G one mul inv group_args b2)) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul (inv b) (mul (inv a) a2)) b2) ",
+            "(mul (mul (mul (inv b) (inv a)) a2) b2) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z b2) ",
+            "(mul (inv b) (mul (inv a) a2)) (mul (mul (inv b) (inv a)) a2) ",
+            "(@eq_symm.{u} G (mul (mul (inv b) (inv a)) a2) (mul (inv b) (mul (inv a) a2)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (inv b) (inv a) a2))) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul (mul (inv b) (inv a)) a2) b2) ",
+            "(mul (mul (inv b) (inv a)) (mul a2 b2)) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul (inv b) (inv a)) a2 b2) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (mul a2 b2)) ",
+            "(mul (inv b) (inv a)) (inv (mul a b)) ",
+            "(@group_mul_inv_rev.{u} G one mul inv group_args a b)))))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "group_rel_inv_reassoc",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (a : G), forall (b : G), @Eq.{u} G (mul (mul a (mul (inv b) a)) (inv a)) (mul (inv (inv a)) (inv b))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun a => fun b => ",
+            "@eq_trans.{u} G ",
+            "(mul (mul a (mul (inv b) a)) (inv a)) ",
+            "(mul (mul (mul a (inv b)) a) (inv a)) ",
+            "(mul (inv (inv a)) (inv b)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (inv a)) ",
+            "(mul a (mul (inv b) a)) (mul (mul a (inv b)) a) ",
+            "(@eq_symm.{u} G (mul (mul a (inv b)) a) (mul a (mul (inv b) a)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args a (inv b) a))) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul (mul a (inv b)) a) (inv a)) ",
+            "(mul (mul a (inv b)) (mul a (inv a))) ",
+            "(mul (inv (inv a)) (inv b)) ",
+            "(@group_mul_assoc.{u} G one mul inv group_args (mul a (inv b)) a (inv a)) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul a (inv b)) (mul a (inv a))) ",
+            "(mul (mul a (inv b)) one) ",
+            "(mul (inv (inv a)) (inv b)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul a (inv b)) z) ",
+            "(mul a (inv a)) one ",
+            "(@group_mul_inv.{u} G one mul inv group_args a)) ",
+            "(@eq_trans.{u} G ",
+            "(mul (mul a (inv b)) one) ",
+            "(mul a (inv b)) ",
+            "(mul (inv (inv a)) (inv b)) ",
+            "(@group_mul_one.{u} G one mul inv group_args (mul a (inv b))) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul z (inv b)) ",
+            "a (inv (inv a)) ",
+            "(@eq_symm.{u} G (inv (inv a)) a ",
+            "(@group_inv_inv.{u} G one mul inv group_args a))))))"
+        )),
+    },
+    TheoremArtifact {
         name: "hom_mul",
         universe_params: &["u", "v"],
         statement: abstract_group_hom_params!(
@@ -4510,6 +4949,1542 @@ const ABSTRACT_GROUP_FIRST_ISO_THEOREMS: &[TheoremArtifact] = &[
             "(@first_iso_phi_mul_mk.{u,v} G oneG mulG invG H oneH mulH invH f hom_args) ",
             "(@first_iso_rep_injective.{u,v} G H f) ",
             "(@first_iso_rep_hits_image.{u,v} G H f)"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SUBGROUP_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SubgroupLawArgs",
+        universe_params: &["u"],
+        ty: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), Prop"
+        ),
+        value: abstract_group_abs!(concat!(
+            "fun S => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (one_mem : S one), ",
+            "forall (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)), ",
+            "forall (inv_closed : forall (a : G), forall (ha : S a), S (inv a)), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NormalSubgroupLawArgs",
+        universe_params: &["u"],
+        ty: abstract_group_params!(
+            "forall (N : forall (x : G), Prop), Prop"
+        ),
+        value: abstract_group_abs!(concat!(
+            "fun N => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (subgroup_laws : @SubgroupLawArgs.{u} G one mul inv N), ",
+            "forall (conj_closed : forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SubgroupInterPred",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (S : forall (x : G), Prop), ",
+            "forall (T : forall (x : G), Prop), ",
+            "forall (x : G), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun S => fun T => fun x => ",
+            "forall (P : Prop), forall (mk : forall (hs : S x), forall (ht : T x), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SubgroupProductPred",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort u), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (S : forall (x : G), Prop), ",
+            "forall (T : forall (x : G), Prop), ",
+            "forall (x : G), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun mul => fun S => fun T => fun x => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (s : G), forall (t : G), forall (hs : S s), forall (ht : T t), forall (h : @Eq.{u} G (mul s t) x), P), ",
+            "P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormalRel",
+        universe_params: &["u"],
+        ty: abstract_group_params!(
+            "forall (N : forall (x : G), Prop), forall (a : G), forall (b : G), Prop"
+        ),
+        value: abstract_group_abs!(concat!(
+            "fun N => fun a => fun b => ",
+            "N (mul (inv a) b)"
+        )),
+    },
+];
+
+const ABSTRACT_GROUP_SUBGROUP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "subgroup_one",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), forall (subgroup_args : @SubgroupLawArgs.{u} G one mul inv S), S one"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun S => fun subgroup_args => ",
+            "subgroup_args (S one) ",
+            "(fun (one_mem : S one) => ",
+            "fun (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)) => ",
+            "fun (inv_closed : forall (a : G), forall (ha : S a), S (inv a)) => ",
+            "one_mem)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_mul_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), forall (subgroup_args : @SubgroupLawArgs.{u} G one mul inv S), forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun S => fun subgroup_args => fun a => fun b => fun ha => fun hb => ",
+            "subgroup_args (S (mul a b)) ",
+            "(fun (one_mem : S one) => ",
+            "fun (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)) => ",
+            "fun (inv_closed : forall (a : G), forall (ha : S a), S (inv a)) => ",
+            "mul_closed a b ha hb)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_inv_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), forall (subgroup_args : @SubgroupLawArgs.{u} G one mul inv S), forall (a : G), forall (ha : S a), S (inv a)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun S => fun subgroup_args => fun a => fun ha => ",
+            "subgroup_args (S (inv a)) ",
+            "(fun (one_mem : S one) => ",
+            "fun (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)) => ",
+            "fun (inv_closed : forall (a : G), forall (ha : S a), S (inv a)) => ",
+            "inv_closed a ha)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_subgroup_laws",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), @SubgroupLawArgs.{u} G one mul inv N"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun N => fun normal_args => ",
+            "normal_args (@SubgroupLawArgs.{u} G one mul inv N) ",
+            "(fun (subgroup_laws : @SubgroupLawArgs.{u} G one mul inv N) => ",
+            "fun (conj_closed : forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))) => ",
+            "subgroup_laws)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_conj_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun N => fun normal_args => fun g => fun n => fun hn => ",
+            "normal_args (N (mul (mul g n) (inv g))) ",
+            "(fun (subgroup_laws : @SubgroupLawArgs.{u} G one mul inv N) => ",
+            "fun (conj_closed : forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))) => ",
+            "conj_closed g n hn)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_inv_conj_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul (inv g) n) g)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun g => fun n => fun hn => ",
+            "@eq_subst.{u} G N (mul (mul (inv g) n) (inv (inv g))) (mul (mul (inv g) n) g) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul (inv g) n) z) (inv (inv g)) g ",
+            "(@group_inv_inv.{u} G one mul inv group_args g)) ",
+            "(@normal_conj_closed.{u} G one mul inv N normal_args (inv g) n hn)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_intro",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), ",
+            "forall (x : G), forall (hs : S x), forall (ht : T x), ",
+            "@SubgroupInterPred.{u} G S T x"
+        ),
+        proof: concat!(
+            "fun G => fun S => fun T => fun x => fun hs => fun ht => ",
+            "fun (P : Prop) => fun (mk : forall (hs : S x), forall (ht : T x), P) => mk hs ht"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_left",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), ",
+            "forall (x : G), forall (h : @SubgroupInterPred.{u} G S T x), S x"
+        ),
+        proof: concat!(
+            "fun G => fun S => fun T => fun x => fun h => ",
+            "h (S x) (fun (hs : S x) => fun (ht : T x) => hs)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_right",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), ",
+            "forall (x : G), forall (h : @SubgroupInterPred.{u} G S T x), T x"
+        ),
+        proof: concat!(
+            "fun G => fun S => fun T => fun x => fun h => ",
+            "h (T x) (fun (hs : S x) => fun (ht : T x) => ht)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_one",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), forall (s_args : @SubgroupLawArgs.{u} G one mul inv S), forall (t_args : @SubgroupLawArgs.{u} G one mul inv T), @SubgroupInterPred.{u} G S T one"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun S => fun T => fun s_args => fun t_args => ",
+            "@subgroup_inter_intro.{u} G S T one ",
+            "(@subgroup_one.{u} G one mul inv S s_args) ",
+            "(@subgroup_one.{u} G one mul inv T t_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_mul_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), forall (s_args : @SubgroupLawArgs.{u} G one mul inv S), forall (t_args : @SubgroupLawArgs.{u} G one mul inv T), forall (a : G), forall (b : G), forall (ha : @SubgroupInterPred.{u} G S T a), forall (hb : @SubgroupInterPred.{u} G S T b), @SubgroupInterPred.{u} G S T (mul a b)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun S => fun T => fun s_args => fun t_args => fun a => fun b => fun ha => fun hb => ",
+            "ha (@SubgroupInterPred.{u} G S T (mul a b)) ",
+            "(fun (haS : S a) => fun (haT : T a) => ",
+            "hb (@SubgroupInterPred.{u} G S T (mul a b)) ",
+            "(fun (hbS : S b) => fun (hbT : T b) => ",
+            "@subgroup_inter_intro.{u} G S T (mul a b) ",
+            "(@subgroup_mul_closed.{u} G one mul inv S s_args a b haS hbS) ",
+            "(@subgroup_mul_closed.{u} G one mul inv T t_args a b haT hbT)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_inv_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), forall (s_args : @SubgroupLawArgs.{u} G one mul inv S), forall (t_args : @SubgroupLawArgs.{u} G one mul inv T), forall (a : G), forall (ha : @SubgroupInterPred.{u} G S T a), @SubgroupInterPred.{u} G S T (inv a)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun S => fun T => fun s_args => fun t_args => fun a => fun ha => ",
+            "ha (@SubgroupInterPred.{u} G S T (inv a)) ",
+            "(fun (haS : S a) => fun (haT : T a) => ",
+            "@subgroup_inter_intro.{u} G S T (inv a) ",
+            "(@subgroup_inv_closed.{u} G one mul inv S s_args a haS) ",
+            "(@subgroup_inv_closed.{u} G one mul inv T t_args a haT))"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_inter_normal_in_left",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (Hpred : forall (x : G), Prop), forall (N : forall (x : G), Prop), forall (h_args : @SubgroupLawArgs.{u} G one mul inv Hpred), forall (n_normal : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (h : G), forall (n : G), forall (hh : Hpred h), forall (hn : @SubgroupInterPred.{u} G Hpred N n), @SubgroupInterPred.{u} G Hpred N (mul (mul h n) (inv h))"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun Hpred => fun N => fun h_args => fun n_normal => fun h => fun n => fun hh => fun hn => ",
+            "hn (@SubgroupInterPred.{u} G Hpred N (mul (mul h n) (inv h))) ",
+            "(fun (hnH : Hpred n) => fun (hnN : N n) => ",
+            "@subgroup_inter_intro.{u} G Hpred N (mul (mul h n) (inv h)) ",
+            "(@subgroup_mul_closed.{u} G one mul inv Hpred h_args (mul h n) (inv h) ",
+            "(@subgroup_mul_closed.{u} G one mul inv Hpred h_args h n hh hnH) ",
+            "(@subgroup_inv_closed.{u} G one mul inv Hpred h_args h hh)) ",
+            "(@normal_conj_closed.{u} G one mul inv N n_normal h n hnN))"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_product_intro",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), ",
+            "forall (x : G), forall (s : G), forall (t : G), ",
+            "forall (hs : S s), forall (ht : T t), forall (h : @Eq.{u} G (mul s t) x), ",
+            "@SubgroupProductPred.{u} G mul S T x"
+        ),
+        proof: concat!(
+            "fun G => fun mul => fun S => fun T => fun x => fun s => fun t => fun hs => fun ht => fun h => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (s : G), forall (t : G), forall (hs : S s), forall (ht : T t), forall (h : @Eq.{u} G (mul s t) x), P) => ",
+            "mk s t hs ht h"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_product_elim",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), ",
+            "forall (x : G), forall (prod : @SubgroupProductPred.{u} G mul S T x), ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (s : G), forall (t : G), forall (hs : S s), forall (ht : T t), forall (h : @Eq.{u} G (mul s t) x), P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun mul => fun S => fun T => fun x => fun prod => fun P => fun mk => ",
+            "prod P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "subgroup_product_one",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (S : forall (x : G), Prop), forall (T : forall (x : G), Prop), forall (s_args : @SubgroupLawArgs.{u} G one mul inv S), forall (t_args : @SubgroupLawArgs.{u} G one mul inv T), @SubgroupProductPred.{u} G mul S T one"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun S => fun T => fun s_args => fun t_args => ",
+            "@subgroup_product_intro.{u} G mul S T one one one ",
+            "(@subgroup_one.{u} G one mul inv S s_args) ",
+            "(@subgroup_one.{u} G one mul inv T t_args) ",
+            "(@group_one_mul.{u} G one mul inv group_args one)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_product_mul_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (Hpred : forall (x : G), Prop), forall (N : forall (x : G), Prop), forall (h_args : @SubgroupLawArgs.{u} G one mul inv Hpred), forall (n_normal : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (x : G), forall (y : G), forall (hx : @SubgroupProductPred.{u} G mul Hpred N x), forall (hy : @SubgroupProductPred.{u} G mul Hpred N y), @SubgroupProductPred.{u} G mul Hpred N (mul x y)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun Hpred => fun N => fun h_args => fun n_normal => fun x => fun y => fun hx => fun hy => ",
+            "hx (@SubgroupProductPred.{u} G mul Hpred N (mul x y)) ",
+            "(fun (h1 : G) => fun (n1 : G) => fun (hh1 : Hpred h1) => fun (hn1 : N n1) => fun (hex : @Eq.{u} G (mul h1 n1) x) => ",
+            "hy (@SubgroupProductPred.{u} G mul Hpred N (mul x y)) ",
+            "(fun (h2 : G) => fun (n2 : G) => fun (hh2 : Hpred h2) => fun (hn2 : N n2) => fun (hey : @Eq.{u} G (mul h2 n2) y) => ",
+            "@subgroup_product_intro.{u} G mul Hpred N (mul x y) (mul h1 h2) (mul (mul (mul (inv h2) n1) h2) n2) ",
+            "(@subgroup_mul_closed.{u} G one mul inv Hpred h_args h1 h2 hh1 hh2) ",
+            "(@subgroup_mul_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N n_normal) (mul (mul (inv h2) n1) h2) n2 ",
+            "(@normal_inv_conj_closed.{u} G one mul inv group_args N n_normal h2 n1 hn1) ",
+            "hn2) ",
+            "(@eq_trans.{u} G (mul (mul h1 h2) (mul (mul (mul (inv h2) n1) h2) n2)) (mul (mul h1 n1) (mul h2 n2)) (mul x y) ",
+            "(@group_product_mul_reassoc.{u} G one mul inv group_args h1 n1 h2 n2) ",
+            "(@eq_congr2.{u,u,u} G G G mul (mul h1 n1) x (mul h2 n2) y hex hey))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_product_inv_closed",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (Hpred : forall (x : G), Prop), forall (N : forall (x : G), Prop), forall (h_args : @SubgroupLawArgs.{u} G one mul inv Hpred), forall (n_normal : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (x : G), forall (hx : @SubgroupProductPred.{u} G mul Hpred N x), @SubgroupProductPred.{u} G mul Hpred N (inv x)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun Hpred => fun N => fun h_args => fun n_normal => fun x => fun hx => ",
+            "hx (@SubgroupProductPred.{u} G mul Hpred N (inv x)) ",
+            "(fun (h : G) => fun (n : G) => fun (hh : Hpred h) => fun (hn : N n) => fun (hex : @Eq.{u} G (mul h n) x) => ",
+            "@subgroup_product_intro.{u} G mul Hpred N (inv x) (inv h) (mul (mul h (inv n)) (inv h)) ",
+            "(@subgroup_inv_closed.{u} G one mul inv Hpred h_args h hh) ",
+            "(@normal_conj_closed.{u} G one mul inv N n_normal h (inv n) ",
+            "(@subgroup_inv_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N n_normal) n hn)) ",
+            "(@eq_trans.{u} G (mul (inv h) (mul (mul h (inv n)) (inv h))) (inv (mul h n)) (inv x) ",
+            "(@group_product_inv_reassoc.{u} G one mul inv group_args h n) ",
+            "(@eq_congr_arg.{u,u} G G inv (mul h n) x hex)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "subgroup_product_laws",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (Hpred : forall (x : G), Prop), forall (N : forall (x : G), Prop), forall (h_args : @SubgroupLawArgs.{u} G one mul inv Hpred), forall (n_normal : @NormalSubgroupLawArgs.{u} G one mul inv N), @SubgroupLawArgs.{u} G one mul inv (@SubgroupProductPred.{u} G mul Hpred N)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun Hpred => fun N => fun h_args => fun n_normal => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (one_mem : @SubgroupProductPred.{u} G mul Hpred N one), forall (mul_closed : forall (a : G), forall (b : G), forall (ha : @SubgroupProductPred.{u} G mul Hpred N a), forall (hb : @SubgroupProductPred.{u} G mul Hpred N b), @SubgroupProductPred.{u} G mul Hpred N (mul a b)), forall (inv_closed : forall (a : G), forall (ha : @SubgroupProductPred.{u} G mul Hpred N a), @SubgroupProductPred.{u} G mul Hpred N (inv a)), P) => ",
+            "mk ",
+            "(@subgroup_product_one.{u} G one mul inv group_args Hpred N h_args (@normal_subgroup_laws.{u} G one mul inv N n_normal)) ",
+            "(@subgroup_product_mul_closed.{u} G one mul inv group_args Hpred N h_args n_normal) ",
+            "(@subgroup_product_inv_closed.{u} G one mul inv group_args Hpred N h_args n_normal)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_refl",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (a : G), @NormalRel.{u} G one mul inv N a a"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun a => ",
+            "@eq_subst.{u} G N one (mul (inv a) a) ",
+            "(@eq_symm.{u} G (mul (inv a) a) one ",
+            "(@group_inv_mul.{u} G one mul inv group_args a)) ",
+            "(@subgroup_one.{u} G one mul inv N ",
+            "(@normal_subgroup_laws.{u} G one mul inv N normal_args))"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_symm",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (a : G), forall (b : G), forall (h : @NormalRel.{u} G one mul inv N a b), @NormalRel.{u} G one mul inv N b a"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun a => fun b => fun h => ",
+            "@eq_subst.{u} G N (inv (mul (inv a) b)) (mul (inv b) a) ",
+            "(@group_inv_rel_symm_reassoc.{u} G one mul inv group_args a b) ",
+            "(@subgroup_inv_closed.{u} G one mul inv N ",
+            "(@normal_subgroup_laws.{u} G one mul inv N normal_args) ",
+            "(mul (inv a) b) h)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_trans",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (a : G), forall (b : G), forall (c : G), forall (hab : @NormalRel.{u} G one mul inv N a b), forall (hbc : @NormalRel.{u} G one mul inv N b c), @NormalRel.{u} G one mul inv N a c"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun a => fun b => fun c => fun hab => fun hbc => ",
+            "@eq_subst.{u} G N (mul (mul (inv a) b) (mul (inv b) c)) (mul (inv a) c) ",
+            "(@group_rel_trans_reassoc.{u} G one mul inv group_args a b c) ",
+            "(@subgroup_mul_closed.{u} G one mul inv N ",
+            "(@normal_subgroup_laws.{u} G one mul inv N normal_args) ",
+            "(mul (inv a) b) (mul (inv b) c) hab hbc)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_of_eq",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (a : G), forall (b : G), forall (h : @Eq.{u} G a b), @NormalRel.{u} G one mul inv N a b"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun a => fun b => fun h => ",
+            "@eq_subst.{u} G (fun (z : G) => @NormalRel.{u} G one mul inv N a z) a b h ",
+            "(@normal_rel_refl.{u} G one mul inv group_args N normal_args a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_mul_compat",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (a : G), forall (a2 : G), forall (b : G), forall (b2 : G), forall (ha : @NormalRel.{u} G one mul inv N a a2), forall (hb : @NormalRel.{u} G one mul inv N b b2), @NormalRel.{u} G one mul inv N (mul a b) (mul a2 b2)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => ",
+            "@eq_subst.{u} G N ",
+            "(mul (mul (mul (inv b) (mul (inv a) a2)) b) (mul (inv b) b2)) ",
+            "(mul (inv (mul a b)) (mul a2 b2)) ",
+            "(@group_rel_mul_reassoc.{u} G one mul inv group_args a a2 b b2) ",
+            "(@subgroup_mul_closed.{u} G one mul inv N ",
+            "(@normal_subgroup_laws.{u} G one mul inv N normal_args) ",
+            "(mul (mul (inv b) (mul (inv a) a2)) b) (mul (inv b) b2) ",
+            "(@normal_inv_conj_closed.{u} G one mul inv group_args N normal_args b (mul (inv a) a2) ha) ",
+            "hb)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_inv_compat",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (a : G), forall (b : G), forall (h : @NormalRel.{u} G one mul inv N a b), @NormalRel.{u} G one mul inv N (inv a) (inv b)"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun a => fun b => fun h => ",
+            "@eq_subst.{u} G N ",
+            "(mul (mul a (mul (inv b) a)) (inv a)) ",
+            "(mul (inv (inv a)) (inv b)) ",
+            "(@group_rel_inv_reassoc.{u} G one mul inv group_args a b) ",
+            "(@normal_conj_closed.{u} G one mul inv N normal_args a (mul (inv b) a) ",
+            "(@normal_rel_symm.{u} G one mul inv group_args N normal_args a b h))"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_one_of_mem",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (h : G), forall (hn : N h), @NormalRel.{u} G one mul inv N h one"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun h => fun hn => ",
+            "@eq_subst.{u} G N (inv h) (mul (inv h) one) ",
+            "(@eq_symm.{u} G (mul (inv h) one) (inv h) ",
+            "(@group_mul_one.{u} G one mul inv group_args (inv h))) ",
+            "(@subgroup_inv_closed.{u} G one mul inv N ",
+            "(@normal_subgroup_laws.{u} G one mul inv N normal_args) h hn)"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_one_to_mem",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (normal_args : @NormalSubgroupLawArgs.{u} G one mul inv N), forall (h : G), forall (hk : @NormalRel.{u} G one mul inv N h one), N h"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun normal_args => fun h => fun hk => ",
+            "@eq_subst.{u} G N (inv (inv h)) h ",
+            "(@group_inv_inv.{u} G one mul inv group_args h) ",
+            "(@subgroup_inv_closed.{u} G one mul inv N ",
+            "(@normal_subgroup_laws.{u} G one mul inv N normal_args) (inv h) ",
+            "(@eq_subst.{u} G N (mul (inv h) one) (inv h) ",
+            "(@group_mul_one.{u} G one mul inv group_args (inv h)) hk))"
+        )),
+    },
+    TheoremArtifact {
+        name: "normal_rel_product_right",
+        universe_params: &["u"],
+        statement: abstract_group_params!(
+            "forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (h : G), forall (n : G), forall (x : G), forall (hn : N n), forall (hx : @Eq.{u} G (mul h n) x), @NormalRel.{u} G one mul inv N h x"
+        ),
+        proof: abstract_group_abs!(concat!(
+            "fun group_args => fun N => fun h => fun n => fun x => fun hn => fun hx => ",
+            "@eq_subst.{u} G N n (mul (inv h) x) ",
+            "(@eq_trans.{u} G n (mul (inv h) (mul h n)) (mul (inv h) x) ",
+            "(@eq_symm.{u} G (mul (inv h) (mul h n)) n ",
+            "(@group_inv_mul_left_reassoc.{u} G one mul inv group_args h n)) ",
+            "(@eq_congr_arg.{u,u} G G (fun (z : G) => mul (inv h) z) (mul h n) x hx)) ",
+            "hn"
+        )),
+    },
+];
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "NormalSetoid",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "@Setoid.{u} G"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Setoid.mk.{u} G (@NormalRel.{succ u} G one mul inv N) ",
+            "(fun (P : Prop) => ",
+            "fun (mk_equiv : ",
+            "forall (refl_arg : forall (x : G), @NormalRel.{succ u} G one mul inv N x x), ",
+            "forall (symm_arg : forall (x : G), forall (y : G), forall (p : @NormalRel.{succ u} G one mul inv N x y), @NormalRel.{succ u} G one mul inv N y x), ",
+            "forall (trans_arg : forall (x : G), forall (y : G), forall (z : G), forall (p : @NormalRel.{succ u} G one mul inv N x y), forall (q : @NormalRel.{succ u} G one mul inv N y z), @NormalRel.{succ u} G one mul inv N x z), ",
+            "P) => ",
+            "mk_equiv ",
+            "(@normal_rel_refl.{succ u} G one mul inv group_args N normal_args) ",
+            "(@normal_rel_symm.{succ u} G one mul inv group_args N normal_args) ",
+            "(@normal_rel_trans.{succ u} G one mul inv group_args N normal_args))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormalQuot",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "Sort succ u"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormalQuotMk",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (a : G), ",
+            "@NormalQuot.{u} G one mul inv N group_args normal_args"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => ",
+            "@Quotient.mk.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_THEOREMS: &[TheoremArtifact] = &[TheoremArtifact {
+    name: "normal_quot_sound",
+    universe_params: &["u"],
+    statement: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (one : G), ",
+        "forall (mul : forall (a : G), forall (b : G), G), ",
+        "forall (inv : forall (a : G), G), ",
+        "forall (N : forall (x : G), Prop), ",
+        "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+        "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+        "forall (a : G), forall (b : G), ",
+        "forall (h : @NormalRel.{succ u} G one mul inv N a b), ",
+        "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+        "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a) ",
+        "(@NormalQuotMk.{u} G one mul inv N group_args normal_args b)"
+    ),
+    proof: concat!(
+        "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun b => fun h => ",
+        "@Quotient.sound.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a b h"
+    ),
+}];
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "NormalQuotMulRep",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (a : G), forall (b : G), ",
+            "@NormalQuot.{u} G one mul inv N group_args normal_args"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun b => ",
+            "@NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b)"
+        ),
+    }];
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_THEOREMS: &[TheoremArtifact] = &[TheoremArtifact {
+    name: "normal_quot_mul_rep_compat",
+    universe_params: &["u"],
+    statement: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (one : G), ",
+        "forall (mul : forall (a : G), forall (b : G), G), ",
+        "forall (inv : forall (a : G), G), ",
+        "forall (N : forall (x : G), Prop), ",
+        "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+        "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+        "forall (a : G), forall (a2 : G), ",
+        "forall (b : G), forall (b2 : G), ",
+        "forall (ha : @NormalRel.{succ u} G one mul inv N a a2), ",
+        "forall (hb : @NormalRel.{succ u} G one mul inv N b b2), ",
+        "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+        "(@NormalQuotMulRep.{u} G one mul inv N group_args normal_args a b) ",
+        "(@NormalQuotMulRep.{u} G one mul inv N group_args normal_args a2 b2)"
+    ),
+    proof: concat!(
+        "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+        "fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => ",
+        "@normal_quot_sound.{u} G one mul inv N group_args normal_args (mul a b) (mul a2 b2) ",
+        "(@normal_rel_mul_compat.{succ u} G one mul inv group_args N normal_args a a2 b b2 ha hb)"
+    ),
+}];
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "NormalQuotMul",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q1 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (q2 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@NormalQuot.{u} G one mul inv N group_args normal_args"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.lift2.{u,u} G (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMulRep.{u} G one mul inv N group_args normal_args) ",
+            "(fun (a : G) => fun (a2 : G) => fun (b : G) => fun (b2 : G) => ",
+            "fun (ha : @Setoid.r.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a a2) => ",
+            "fun (hb : @Setoid.r.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) b b2) => ",
+            "@normal_quot_mul_rep_compat.{u} G one mul inv N group_args normal_args a a2 b b2 ha hb)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormalQuotOne",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "@NormalQuot.{u} G one mul inv N group_args normal_args"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@NormalQuotMk.{u} G one mul inv N group_args normal_args one"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormalQuotInv",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@NormalQuot.{u} G one mul inv N group_args normal_args"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.lift.{u,u} G (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (a : G) => @NormalQuotMk.{u} G one mul inv N group_args normal_args (inv a)) ",
+            "(fun (a : G) => fun (b : G) => ",
+            "fun (h : @Setoid.r.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a b) => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args (inv a) (inv b) ",
+            "(@normal_rel_inv_compat.{succ u} G one mul inv group_args N normal_args a b h))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "normal_quot_mul_mk",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (a : G), forall (b : G), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args b)) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b))"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun b => ",
+            "@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_quot_inv_mk",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (a : G), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotInv.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a)) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args (inv a))"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => ",
+            "@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args (inv a))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_quot_mul_assoc",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q1 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (q2 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args q1 q2) q3) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "q1 (@NormalQuotMul.{u} G one mul inv N group_args normal_args q2 q3))"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q1 : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "forall (q2 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args q1 q2) q3) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "q1 (@NormalQuotMul.{u} G one mul inv N group_args normal_args q2 q3))) ",
+            "(fun (a : G) => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q2 : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "forall (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a) q2) q3) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args q2 q3))) ",
+            "(fun (b : G) => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args b)) q3) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args a) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args b) q3))) ",
+            "(fun (c : G) => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args (mul (mul a b) c) (mul a (mul b c)) ",
+            "(@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul (mul a b) c) (mul a (mul b c)) ",
+            "(@group_mul_assoc.{succ u} G one mul inv group_args a b c)))))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_quot_one_mul",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args) q) q"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args) q) q) ",
+            "(fun (a : G) => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args (mul one a) a ",
+            "(@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul one a) a ",
+            "(@group_one_mul.{succ u} G one mul inv group_args a)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_quot_mul_one",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "q (@NormalQuotOne.{u} G one mul inv N group_args normal_args)) q"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "q (@NormalQuotOne.{u} G one mul inv N group_args normal_args)) q) ",
+            "(fun (a : G) => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args (mul a one) a ",
+            "(@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul a one) a ",
+            "(@group_mul_one.{succ u} G one mul inv group_args a)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_quot_inv_mul",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotInv.{u} G one mul inv N group_args normal_args q) q) ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args)"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@NormalQuotInv.{u} G one mul inv N group_args normal_args q) q) ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args)) ",
+            "(fun (a : G) => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args (mul (inv a) a) one ",
+            "(@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul (inv a) a) one ",
+            "(@group_inv_mul.{succ u} G one mul inv group_args a)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "normal_quot_mul_inv",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "q (@NormalQuotInv.{u} G one mul inv N group_args normal_args q)) ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args)"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => ",
+            "@Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) ",
+            "(fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "q (@NormalQuotInv.{u} G one mul inv N group_args normal_args q)) ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args)) ",
+            "(fun (a : G) => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args (mul a (inv a)) one ",
+            "(@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul a (inv a)) one ",
+            "(@group_mul_inv.{succ u} G one mul inv group_args a)))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SECOND_ISO_PHI_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "SecondIsoPhi",
+    universe_params: &["u"],
+    ty: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (one : G), ",
+        "forall (mul : forall (a : G), forall (b : G), G), ",
+        "forall (inv : forall (a : G), G), ",
+        "forall (N : forall (x : G), Prop), ",
+        "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+        "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+        "forall (Hpred : forall (x : G), Prop), ",
+        "forall (h : G), ",
+        "forall (hh : Hpred h), ",
+        "@NormalQuot.{u} G one mul inv N group_args normal_args"
+    ),
+    value: concat!(
+        "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => ",
+        "@NormalQuotMk.{u} G one mul inv N group_args normal_args h"
+    ),
+}];
+
+const ABSTRACT_GROUP_SECOND_ISO_PHI_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "second_iso_phi_mk",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h : G), ",
+            "forall (hh : Hpred h), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args h)"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => ",
+            "@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_phi_mul",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (a : G), forall (b : G), ",
+            "forall (ha : Hpred a), forall (hb : Hpred b), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMul.{u} G one mul inv N group_args normal_args ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred a ha) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred b hb)) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred (mul a b) ",
+            "(@subgroup_mul_closed.{succ u} G one mul inv Hpred h_args a b ha hb))"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h_args => fun a => fun b => fun ha => fun hb => ",
+            "@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b))"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_phi_one",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred one ",
+            "(@subgroup_one.{succ u} G one mul inv Hpred h_args)) ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args)"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h_args => ",
+            "@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args one)"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_phi_inv",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (h : G), ",
+            "forall (hh : Hpred h), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotInv.{u} G one mul inv N group_args normal_args ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh)) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred (inv h) ",
+            "(@subgroup_inv_closed.{succ u} G one mul inv Hpred h_args h hh))"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h_args => fun h => fun hh => ",
+            "@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args (inv h))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SECOND_ISO_KERNEL_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "SecondIsoKernelPred",
+    universe_params: &["u"],
+    ty: concat!(
+        "forall (G : Sort succ u), ",
+        "forall (one : G), ",
+        "forall (mul : forall (a : G), forall (b : G), G), ",
+        "forall (inv : forall (a : G), G), ",
+        "forall (N : forall (x : G), Prop), ",
+        "forall (h : G), ",
+        "Prop"
+    ),
+    value: concat!(
+        "fun G => fun one => fun mul => fun inv => fun N => fun h => ",
+        "@NormalRel.{succ u} G one mul inv N h one"
+    ),
+}];
+
+const ABSTRACT_GROUP_SECOND_ISO_KERNEL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "second_iso_kernel_sound",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h : G), ",
+            "forall (hh : Hpred h), ",
+            "forall (hk : @SecondIsoKernelPred.{u} G one mul inv N h), ",
+            "@Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) ",
+            "(@NormalQuotOne.{u} G one mul inv N group_args normal_args)"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => fun hk => ",
+            "@normal_quot_sound.{u} G one mul inv N group_args normal_args h one hk"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_kernel_to_inter",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h : G), ",
+            "forall (hh : Hpred h), ",
+            "forall (hk : @SecondIsoKernelPred.{u} G one mul inv N h), ",
+            "@SubgroupInterPred.{succ u} G Hpred N h"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => fun hk => ",
+            "@subgroup_inter_intro.{succ u} G Hpred N h hh ",
+            "(@normal_rel_one_to_mem.{succ u} G one mul inv group_args N normal_args h hk)"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_inter_to_kernel",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h : G), ",
+            "forall (hi : @SubgroupInterPred.{succ u} G Hpred N h), ",
+            "@SecondIsoKernelPred.{u} G one mul inv N h"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hi => ",
+            "@normal_rel_one_of_mem.{succ u} G one mul inv group_args N normal_args h ",
+            "(@subgroup_inter_right.{succ u} G Hpred N h hi)"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SECOND_ISO_IMAGE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SecondIsoImagePred",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (h : G), forall (hh : Hpred h), ",
+            "forall (eq_phi : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) q), P), ",
+            "P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SecondIsoProductQuotPred",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (x : G), ",
+            "forall (hx : @SubgroupProductPred.{succ u} G mul Hpred N x), ",
+            "forall (eq_q : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args x) q), P), ",
+            "P"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SECOND_ISO_IMAGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "second_iso_image_intro",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (h : G), ",
+            "forall (hh : Hpred h), ",
+            "@SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh)"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => ",
+            "fun (P : Prop) => fun (mk : forall (h2 : G), forall (hh2 : Hpred h2), forall (eq_phi : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h2 hh2) (@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh)), P) => ",
+            "mk h hh (@Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh))"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_image_elim",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (img : @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (h : G), forall (hh : Hpred h), forall (eq_phi : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) q), P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => fun img => fun P => fun mk => ",
+            "img P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_product_quot_intro",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (x : G), ",
+            "forall (hx : @SubgroupProductPred.{succ u} G mul Hpred N x), ",
+            "forall (eq_q : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args x) q), ",
+            "@SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => fun x => fun hx => fun eq_q => ",
+            "fun (P : Prop) => fun (mk : forall (x2 : G), forall (hx2 : @SubgroupProductPred.{succ u} G mul Hpred N x2), forall (eq_q2 : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args x2) q), P) => ",
+            "mk x hx eq_q"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_product_quot_elim",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (prod : @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (x : G), forall (hx : @SubgroupProductPred.{succ u} G mul Hpred N x), forall (eq_q : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args x) q), P), ",
+            "P"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => fun prod => fun P => fun mk => ",
+            "prod P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_image_to_product_quot",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (img : @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), ",
+            "@SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => fun img => ",
+            "img (@SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q) ",
+            "(fun (h : G) => fun (hh : Hpred h) => fun (eq_phi : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) q) => ",
+            "@second_iso_product_quot_intro.{u} G one mul inv N group_args normal_args Hpred q h ",
+            "(@subgroup_product_intro.{succ u} G mul Hpred N h h one hh ",
+            "(@subgroup_one.{succ u} G one mul inv N (@normal_subgroup_laws.{succ u} G one mul inv N normal_args)) ",
+            "(@group_mul_one.{succ u} G one mul inv group_args h)) ",
+            "(@eq_trans.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args h) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) q ",
+            "(@eq_symm.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args h) ",
+            "(@second_iso_phi_mk.{u} G one mul inv N group_args normal_args Hpred h hh)) ",
+            "eq_phi))"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_product_quot_to_image",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), ",
+            "forall (prod : @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), ",
+            "@SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun q => fun prod => ",
+            "prod (@SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q) ",
+            "(fun (x : G) => fun (hx : @SubgroupProductPred.{succ u} G mul Hpred N x) => ",
+            "fun (eq_q : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args x) q) => ",
+            "hx (@SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q) ",
+            "(fun (h : G) => fun (n : G) => fun (hh : Hpred h) => fun (hn : N n) => fun (hx_eq : @Eq.{succ u} G (mul h n) x) => ",
+            "fun (P : Prop) => fun (mk : forall (h2 : G), forall (hh2 : Hpred h2), forall (eq_phi : @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h2 hh2) q), P) => mk h hh ",
+            "(@eq_trans.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@SecondIsoPhi.{u} G one mul inv N group_args normal_args Hpred h hh) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args h) q ",
+            "(@second_iso_phi_mk.{u} G one mul inv N group_args normal_args Hpred h hh) ",
+            "(@eq_trans.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args h) ",
+            "(@NormalQuotMk.{u} G one mul inv N group_args normal_args x) q ",
+            "(@normal_quot_sound.{u} G one mul inv N group_args normal_args h x ",
+            "(@normal_rel_product_right.{succ u} G one mul inv group_args N h n x hn hx_eq)) ",
+            "eq_q))))"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SECOND_ISO_FINAL_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SecondIsoKernelEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (to_inter : forall (h : G), forall (hh : Hpred h), forall (hk : @SecondIsoKernelPred.{u} G one mul inv N h), @SubgroupInterPred.{succ u} G Hpred N h), ",
+            "forall (to_kernel : forall (h : G), forall (hi : @SubgroupInterPred.{succ u} G Hpred N h), @SecondIsoKernelPred.{u} G one mul inv N h), ",
+            "P), ",
+            "P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SecondIsoImageEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (image_to_product : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (img : @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), ",
+            "forall (product_to_image : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (prod : @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), ",
+            "P), ",
+            "P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SecondIsoTheoremEvidence",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "Prop"
+        ),
+        value: concat!(
+            "fun G => fun one => fun mul => fun inv => fun Hpred => fun N => fun group_args => fun h_args => fun normal_args => ",
+            "forall (P : Prop), ",
+            "forall (mk : ",
+            "forall (kernel_evidence : @SecondIsoKernelEvidence.{u} G one mul inv N group_args normal_args Hpred), ",
+            "forall (image_evidence : @SecondIsoImageEvidence.{u} G one mul inv N group_args normal_args Hpred), ",
+            "P), ",
+            "P"
+        ),
+    },
+];
+
+const ABSTRACT_GROUP_SECOND_ISO_FINAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "second_iso_kernel_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "@SecondIsoKernelEvidence.{u} G one mul inv N group_args normal_args Hpred"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (to_inter : forall (h : G), forall (hh : Hpred h), forall (hk : @SecondIsoKernelPred.{u} G one mul inv N h), @SubgroupInterPred.{succ u} G Hpred N h), forall (to_kernel : forall (h : G), forall (hi : @SubgroupInterPred.{succ u} G Hpred N h), @SecondIsoKernelPred.{u} G one mul inv N h), P) => ",
+            "mk ",
+            "(@second_iso_kernel_to_inter.{u} G one mul inv N group_args normal_args Hpred) ",
+            "(@second_iso_inter_to_kernel.{u} G one mul inv N group_args normal_args Hpred)"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_iso_image_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "@SecondIsoImageEvidence.{u} G one mul inv N group_args normal_args Hpred"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (image_to_product : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (img : @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), forall (product_to_image : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (prod : @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), P) => ",
+            "mk ",
+            "(@second_iso_image_to_product_quot.{u} G one mul inv N group_args normal_args Hpred) ",
+            "(@second_iso_product_quot_to_image.{u} G one mul inv N group_args normal_args Hpred)"
+        ),
+    },
+    TheoremArtifact {
+        name: "second_isomorphism_theorem_evidence",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort succ u), ",
+            "forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ u} G one mul inv), ",
+            "forall (h_args : @SubgroupLawArgs.{succ u} G one mul inv Hpred), ",
+            "forall (normal_args : @NormalSubgroupLawArgs.{succ u} G one mul inv N), ",
+            "@SecondIsoTheoremEvidence.{u} G one mul inv Hpred N group_args h_args normal_args"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun Hpred => fun N => fun group_args => fun h_args => fun normal_args => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (kernel_evidence : @SecondIsoKernelEvidence.{u} G one mul inv N group_args normal_args Hpred), forall (image_evidence : @SecondIsoImageEvidence.{u} G one mul inv N group_args normal_args Hpred), P) => ",
+            "mk ",
+            "(@second_iso_kernel_evidence.{u} G one mul inv N group_args normal_args Hpred) ",
+            "(@second_iso_image_evidence.{u} G one mul inv N group_args normal_args Hpred)"
         ),
     },
 ];
@@ -8329,6 +10304,184 @@ fn run() -> Result<(), String> {
         &abstract_group_first_iso_imports,
         &abstract_group_first_iso_source_interfaces,
     )?;
+    let abstract_group_subgroup_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+    ];
+    let abstract_group_subgroup_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+    ];
+    let abstract_group_subgroup = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_SUBGROUP_MODULE,
+        &abstract_group_subgroup_imports,
+        &abstract_group_subgroup_source_interfaces,
+    )?;
+    let abstract_group_normal_quotient_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+    ];
+    let abstract_group_normal_quotient_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+    ];
+    let abstract_group_normal_quotient = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_NORMAL_QUOTIENT_MODULE,
+        &abstract_group_normal_quotient_imports,
+        &abstract_group_normal_quotient_source_interfaces,
+    )?;
+    let abstract_group_normal_quotient_mul_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+    ];
+    let abstract_group_normal_quotient_mul_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+    ];
+    let abstract_group_normal_quotient_mul = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_MODULE,
+        &abstract_group_normal_quotient_mul_imports,
+        &abstract_group_normal_quotient_mul_source_interfaces,
+    )?;
+    let abstract_group_normal_quotient_group_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+    ];
+    let abstract_group_normal_quotient_group_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+    ];
+    let abstract_group_normal_quotient_group = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_MODULE,
+        &abstract_group_normal_quotient_group_imports,
+        &abstract_group_normal_quotient_group_source_interfaces,
+    )?;
+    let abstract_group_second_iso_phi_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+    ];
+    let abstract_group_second_iso_phi_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+    ];
+    let abstract_group_second_iso_phi = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_SECOND_ISO_PHI_MODULE,
+        &abstract_group_second_iso_phi_imports,
+        &abstract_group_second_iso_phi_source_interfaces,
+    )?;
+    let abstract_group_second_iso_kernel_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_second_iso_phi.verified_module.clone(),
+    ];
+    let abstract_group_second_iso_kernel_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_second_iso_phi.source_interface.clone(),
+    ];
+    let abstract_group_second_iso_kernel = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_SECOND_ISO_KERNEL_MODULE,
+        &abstract_group_second_iso_kernel_imports,
+        &abstract_group_second_iso_kernel_source_interfaces,
+    )?;
+    let abstract_group_second_iso_image_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_second_iso_phi.verified_module.clone(),
+    ];
+    let abstract_group_second_iso_image_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_second_iso_phi.source_interface.clone(),
+    ];
+    let abstract_group_second_iso_image = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_SECOND_ISO_IMAGE_MODULE,
+        &abstract_group_second_iso_image_imports,
+        &abstract_group_second_iso_image_source_interfaces,
+    )?;
+    let abstract_group_second_iso_final_imports = vec![
+        eq_import.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_second_iso_phi.verified_module.clone(),
+        abstract_group_second_iso_kernel.verified_module.clone(),
+        abstract_group_second_iso_image.verified_module.clone(),
+    ];
+    let abstract_group_second_iso_final_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_second_iso_phi.source_interface.clone(),
+        abstract_group_second_iso_kernel.source_interface.clone(),
+        abstract_group_second_iso_image.source_interface.clone(),
+    ];
+    let abstract_group_second_iso_final = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GROUP_SECOND_ISO_FINAL_MODULE,
+        &abstract_group_second_iso_final_imports,
+        &abstract_group_second_iso_final_source_interfaces,
+    )?;
     let abstract_ring_imports = vec![eq_import.clone()];
     let abstract_ring_source_interfaces = vec![eq_source_interface.clone()];
     let abstract_ring = build_and_write_module(
@@ -8629,6 +10782,14 @@ fn run() -> Result<(), String> {
             abstract_group_first_iso_full,
             abstract_group_first_iso_image,
             abstract_group_first_iso,
+            abstract_group_subgroup,
+            abstract_group_normal_quotient,
+            abstract_group_normal_quotient_mul,
+            abstract_group_normal_quotient_group,
+            abstract_group_second_iso_phi,
+            abstract_group_second_iso_kernel,
+            abstract_group_second_iso_image,
+            abstract_group_second_iso_final,
             abstract_ring,
             abstract_ordered_field,
             abstract_square_normalize,
@@ -8747,6 +10908,8 @@ fn axiom_policy_for_module(module: &str) -> npa_cert::AxiomPolicy {
 fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature> {
     if module == ABSTRACT_GROUP_QUOTIENT_MODULE.module
         || module == ABSTRACT_GROUP_QUOTIENT_MUL_MODULE.module
+        || module == ABSTRACT_GROUP_NORMAL_QUOTIENT_MODULE.module
+        || module == ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_MODULE.module
         || module == ABSTRACT_GROUP_FIRST_ISO_MODULE.module
     {
         vec![npa_cert::CoreFeature::QuotientV1]
@@ -8754,6 +10917,11 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_QUOTIENT_HOM_MODULE.module
         || module == ABSTRACT_GROUP_FIRST_ISO_FULL_MODULE.module
         || module == ABSTRACT_GROUP_FIRST_ISO_IMAGE_MODULE.module
+        || module == ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_MODULE.module
+        || module == ABSTRACT_GROUP_SECOND_ISO_PHI_MODULE.module
+        || module == ABSTRACT_GROUP_SECOND_ISO_KERNEL_MODULE.module
+        || module == ABSTRACT_GROUP_SECOND_ISO_IMAGE_MODULE.module
+        || module == ABSTRACT_GROUP_SECOND_ISO_FINAL_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -8766,9 +10934,13 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
 }
 
 fn expected_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature> {
-    if module == ABSTRACT_GROUP_QUOTIENT_MODULE.module {
+    if module == ABSTRACT_GROUP_QUOTIENT_MODULE.module
+        || module == ABSTRACT_GROUP_NORMAL_QUOTIENT_MODULE.module
+    {
         vec![npa_cert::CoreFeature::QuotientV1]
-    } else if module == ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE.module {
+    } else if module == ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE.module
+        || module == ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_MODULE.module
+    {
         vec![
             npa_cert::CoreFeature::QuotientV1,
             npa_cert::CoreFeature::QuotientV2,

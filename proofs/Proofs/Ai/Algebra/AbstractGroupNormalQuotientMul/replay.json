@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "NormalQuotMulRep",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun b => @NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b)"
+    },
+    {
+      "declaration": "normal_quot_mul_rep_compat",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => @normal_quot_sound.{u} G one mul inv N group_args normal_args (mul a b) (mul a2 b2) (@normal_rel_mul_compat.{succ u} G one mul inv group_args N normal_args a a2 b b2 ha hb)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupNormalQuotientMul/certificate.npcert"
+  }
+}

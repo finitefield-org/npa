@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SecondIsoPhi",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => @NormalQuotMk.{u} G one mul inv N group_args normal_args h"
+    },
+    {
+      "declaration": "second_iso_phi_mk",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => @Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args h)"
+    },
+    {
+      "declaration": "second_iso_phi_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h_args => fun a => fun b => fun ha => fun hb => @Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b))"
+    },
+    {
+      "declaration": "second_iso_phi_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h_args => @Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args one)"
+    },
+    {
+      "declaration": "second_iso_phi_inv",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h_args => fun h => fun hh => @Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args (inv h))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/certificate.npcert"
+  }
+}

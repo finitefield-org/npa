@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSecondIsoImage",
+  "source": "Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bd586d575e033e1cc68f9803e32fe71832a64c1a506f9afde14c61ef599afc44",
+  "certificate_file_sha256": "sha256:55a0d4c6f1c5da18e630cbb19f699f9a720358ed48f95c47f5d71fc620f48956",
+  "export_hash": "sha256:48412f9f4a2c28037d1fd1df932ebdd35bdc57da98f37f28a1b467d337ca45e0",
+  "axiom_report_hash": "sha256:e223c3fab423c0c22975a4f6493b66825b610b147c89f817df22b9119a74a170",
+  "certificate_hash": "sha256:a9e7a72b59b222116800210609e625cda4044bb3d517b9880b405e4400d020ee",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "SecondIsoImagePred", "kind": "def" },
+    { "name": "SecondIsoProductQuotPred", "kind": "def" },
+    { "name": "second_iso_image_intro", "kind": "theorem" },
+    { "name": "second_iso_image_elim", "kind": "theorem" },
+    { "name": "second_iso_product_quot_intro", "kind": "theorem" },
+    { "name": "second_iso_product_quot_elim", "kind": "theorem" },
+    { "name": "second_iso_image_to_product_quot", "kind": "theorem" },
+    { "name": "second_iso_product_quot_to_image", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

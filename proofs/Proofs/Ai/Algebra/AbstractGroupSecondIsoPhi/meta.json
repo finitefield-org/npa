@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSecondIsoPhi",
+  "source": "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2b4bdb19544a4a2249342a6ee00361d01af6c740c4b893f62db76d775ad67ac5",
+  "certificate_file_sha256": "sha256:414199676f78007f2aaf93ae9a57d1dfb14721ccc32bf28f9b7d9fc5741fa3db",
+  "export_hash": "sha256:d94e37947265642c849691c92b1064aa95688992bf0535367df27161385c3984",
+  "axiom_report_hash": "sha256:be1a77ed10a39666141513d10276a53768c73a3c2f624e2abac75c22ae46554f",
+  "certificate_hash": "sha256:e491b3a4a6c32989573f3ef140feb02ae10d5a100af14780b61cd150ed518898",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "SecondIsoPhi", "kind": "def" },
+    { "name": "second_iso_phi_mk", "kind": "theorem" },
+    { "name": "second_iso_phi_mul", "kind": "theorem" },
+    { "name": "second_iso_phi_one", "kind": "theorem" },
+    { "name": "second_iso_phi_inv", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

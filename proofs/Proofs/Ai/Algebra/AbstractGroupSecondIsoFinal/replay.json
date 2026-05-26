@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSecondIsoFinal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SecondIsoKernelEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => forall (P : Prop), forall (mk : forall (to_inter : forall (h : G), forall (hh : Hpred h), forall (hk : @SecondIsoKernelPred.{u} G one mul inv N h), @SubgroupInterPred.{succ u} G Hpred N h), forall (to_kernel : forall (h : G), forall (hi : @SubgroupInterPred.{succ u} G Hpred N h), @SecondIsoKernelPred.{u} G one mul inv N h), P), P"
+    },
+    {
+      "declaration": "SecondIsoImageEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => forall (P : Prop), forall (mk : forall (image_to_product : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (img : @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), forall (product_to_image : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (prod : @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), P), P"
+    },
+    {
+      "declaration": "SecondIsoTheoremEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun Hpred => fun N => fun group_args => fun h_args => fun normal_args => forall (P : Prop), forall (mk : forall (kernel_evidence : @SecondIsoKernelEvidence.{u} G one mul inv N group_args normal_args Hpred), forall (image_evidence : @SecondIsoImageEvidence.{u} G one mul inv N group_args normal_args Hpred), P), P"
+    },
+    {
+      "declaration": "second_iso_kernel_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun (P : Prop) => fun (mk : forall (to_inter : forall (h : G), forall (hh : Hpred h), forall (hk : @SecondIsoKernelPred.{u} G one mul inv N h), @SubgroupInterPred.{succ u} G Hpred N h), forall (to_kernel : forall (h : G), forall (hi : @SubgroupInterPred.{succ u} G Hpred N h), @SecondIsoKernelPred.{u} G one mul inv N h), P) => mk (@second_iso_kernel_to_inter.{u} G one mul inv N group_args normal_args Hpred) (@second_iso_inter_to_kernel.{u} G one mul inv N group_args normal_args Hpred)"
+    },
+    {
+      "declaration": "second_iso_image_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun (P : Prop) => fun (mk : forall (image_to_product : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (img : @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), forall (product_to_image : forall (q : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (prod : @SecondIsoProductQuotPred.{u} G one mul inv N group_args normal_args Hpred q), @SecondIsoImagePred.{u} G one mul inv N group_args normal_args Hpred q), P) => mk (@second_iso_image_to_product_quot.{u} G one mul inv N group_args normal_args Hpred) (@second_iso_product_quot_to_image.{u} G one mul inv N group_args normal_args Hpred)"
+    },
+    {
+      "declaration": "second_isomorphism_theorem_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun Hpred => fun N => fun group_args => fun h_args => fun normal_args => fun (P : Prop) => fun (mk : forall (kernel_evidence : @SecondIsoKernelEvidence.{u} G one mul inv N group_args normal_args Hpred), forall (image_evidence : @SecondIsoImageEvidence.{u} G one mul inv N group_args normal_args Hpred), P) => mk (@second_iso_kernel_evidence.{u} G one mul inv N group_args normal_args Hpred) (@second_iso_image_evidence.{u} G one mul inv N group_args normal_args Hpred)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/certificate.npcert"
+  }
+}

@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:38cc86e919557bba343c8a3270fa02656e957858321178f4b907d96e7d81f14a",
-  "certificate_file_sha256": "sha256:9198934b14149c5cc62c17639024fc173aec351469f49c2048e0fb0a0a0d59c0",
+  "certificate_file_sha256": "sha256:78289f0fb3d0f5d1ac37c4be4f3d2d63543e297f37c420d2217ae9556324562e",
   "export_hash": "sha256:149df869acd227ea5d7476160595d2338e9c00b1fb2f72d5e4ee6fca5e663c55",
   "axiom_report_hash": "sha256:5bd7339ac208646efb0ed11ff2499737a45b42195bb28180b5685aed4560bbe3",
-  "certificate_hash": "sha256:d8a925b796b0d6233a4fab38d86dd86b748d96addf1c8e6ef689fa5e1ec219e4",
+  "certificate_hash": "sha256:a027a793c9f3fc020a9702f89376d72675625bf62776499f0b0f6ca2c69884f1",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient"],
   "axioms": ["Eq.rec"],
   "declarations": [

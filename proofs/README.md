@@ -56,8 +56,9 @@ Current bundles:
 - `Proofs/Ai/Logic/Iff/`: first-class logical equivalence, conjunction, disjunction, falsehood, and
   negation theorem targets importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractGroup/`: abstract group and homomorphism law packages, group-law
-  projections, kernel predicate, kernel relation, and checked kernel-relation equivalence
-  ingredients for the first-isomorphism route.
+  projections, cancellation, double-inverse, product-reassociation, and reverse-inverse lemmas,
+  normal-relation reassociation lemmas, kernel predicate, kernel relation, and checked
+  kernel-relation equivalence ingredients for the first-isomorphism route.
 - `Proofs/Ai/Algebra/AbstractGroupKernel/`: checked kernel closure under multiplication, inverse,
   and conjugation for the first-isomorphism route.
 - `Proofs/Ai/Algebra/AbstractGroupImage/`: Church-encoded image membership, image introduction and
@@ -83,6 +84,29 @@ Current bundles:
 - `Proofs/Ai/Algebra/AbstractGroupFirstIso/`: representative-level first-isomorphism MVP bundling
   quotient representative computation, multiplication compatibility, representative injectivity,
   and image membership.
+- `Proofs/Ai/Algebra/AbstractGroupSubgroup/`: subgroup and normal-subgroup law packages,
+  normal conjugation helpers, intersection predicate closure facts, product-subgroup closure
+  evidence, normal-relation compatibility facts, and `N h` / `h ~ 1` conversion helpers for the
+  second-isomorphism route.
+- `Proofs/Ai/Algebra/AbstractGroupNormalQuotient/`: quotient setoid, quotient carrier,
+  representative injection, and soundness theorem for quotienting by an arbitrary normal subgroup
+  predicate.
+- `Proofs/Ai/Algebra/AbstractGroupNormalQuotientMul/`: representative multiplication and
+  well-definedness for arbitrary normal quotients.
+- `Proofs/Ai/Algebra/AbstractGroupNormalQuotientGroup/`: quotient multiplication, identity,
+  inverse, and group laws for arbitrary normal quotients.
+- `Proofs/Ai/Algebra/AbstractGroupSecondIsoPhi/`: the natural representative map from a
+  subgroup predicate `H` to `G/N`, with representative, multiplication, identity, and inverse
+  compatibility facts.
+- `Proofs/Ai/Algebra/AbstractGroupSecondIsoKernel/`: representative-level kernel predicate for
+  the natural map, quotient-identity soundness, and checked conversions between kernel membership
+  and `H ∩ N`.
+- `Proofs/Ai/Algebra/AbstractGroupSecondIsoImage/`: Church-encoded natural-map image and
+  product-quotient predicates, with checked conversions between image membership and `HN / N`
+  membership.
+- `Proofs/Ai/Algebra/AbstractGroupSecondIsoFinal/`: final AI-facing second-isomorphism evidence
+  bundle, packaging kernel identification with image/product-quotient identification for the
+  natural map.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
@@ -101,6 +125,8 @@ Planning documents:
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
   polarization, Cauchy-Schwarz, and metric triangle inequality.
 - `first-isomorphism-proof-phases.md`: FI0-FI5 plan for the AI-facing group first-isomorphism route.
+- `second-isomorphism-proof-phases.md`: SI0-SI7 plan for the AI-facing group
+  second-isomorphism route.
 
 ## Completed Inner-Product To Metric Route
 

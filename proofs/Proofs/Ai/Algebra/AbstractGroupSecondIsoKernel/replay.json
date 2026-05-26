@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSecondIsoKernel",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SecondIsoKernelPred",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun h => @NormalRel.{succ u} G one mul inv N h one"
+    },
+    {
+      "declaration": "second_iso_kernel_sound",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => fun hk => @normal_quot_sound.{u} G one mul inv N group_args normal_args h one hk"
+    },
+    {
+      "declaration": "second_iso_kernel_to_inter",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hh => fun hk => @subgroup_inter_intro.{succ u} G Hpred N h hh (@normal_rel_one_to_mem.{succ u} G one mul inv group_args N normal_args h hk)"
+    },
+    {
+      "declaration": "second_iso_inter_to_kernel",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun Hpred => fun h => fun hi => @normal_rel_one_of_mem.{succ u} G one mul inv group_args N normal_args h (@subgroup_inter_right.{succ u} G Hpred N h hi)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupSecondIsoKernel/certificate.npcert"
+  }
+}

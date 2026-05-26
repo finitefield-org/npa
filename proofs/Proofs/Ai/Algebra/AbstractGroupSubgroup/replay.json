@@ -1,0 +1,177 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SubgroupLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => forall (P : Prop), forall (mk : forall (one_mem : S one), forall (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)), forall (inv_closed : forall (a : G), forall (ha : S a), S (inv a)), P), P"
+    },
+    {
+      "declaration": "NormalSubgroupLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => forall (P : Prop), forall (mk : forall (subgroup_laws : @SubgroupLawArgs.{u} G one mul inv N), forall (conj_closed : forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))), P), P"
+    },
+    {
+      "declaration": "SubgroupInterPred",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun S => fun T => fun x => forall (P : Prop), forall (mk : forall (hs : S x), forall (ht : T x), P), P"
+    },
+    {
+      "declaration": "SubgroupProductPred",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun mul => fun S => fun T => fun x => forall (P : Prop), forall (mk : forall (s : G), forall (t : G), forall (hs : S s), forall (ht : T t), forall (h : @Eq.{u} G (mul s t) x), P), P"
+    },
+    {
+      "declaration": "NormalRel",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun a => fun b => N (mul (inv a) b)"
+    },
+    {
+      "declaration": "subgroup_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => fun subgroup_args => subgroup_args (S one) (fun (one_mem : S one) => fun (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)) => fun (inv_closed : forall (a : G), forall (ha : S a), S (inv a)) => one_mem)"
+    },
+    {
+      "declaration": "subgroup_mul_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => fun subgroup_args => fun a => fun b => fun ha => fun hb => subgroup_args (S (mul a b)) (fun (one_mem : S one) => fun (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)) => fun (inv_closed : forall (a : G), forall (ha : S a), S (inv a)) => mul_closed a b ha hb)"
+    },
+    {
+      "declaration": "subgroup_inv_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => fun subgroup_args => fun a => fun ha => subgroup_args (S (inv a)) (fun (one_mem : S one) => fun (mul_closed : forall (a : G), forall (b : G), forall (ha : S a), forall (hb : S b), S (mul a b)) => fun (inv_closed : forall (a : G), forall (ha : S a), S (inv a)) => inv_closed a ha)"
+    },
+    {
+      "declaration": "normal_subgroup_laws",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun normal_args => normal_args (@SubgroupLawArgs.{u} G one mul inv N) (fun (subgroup_laws : @SubgroupLawArgs.{u} G one mul inv N) => fun (conj_closed : forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))) => subgroup_laws)"
+    },
+    {
+      "declaration": "normal_conj_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun normal_args => fun g => fun n => fun hn => normal_args (N (mul (mul g n) (inv g))) (fun (subgroup_laws : @SubgroupLawArgs.{u} G one mul inv N) => fun (conj_closed : forall (g : G), forall (n : G), forall (hn : N n), N (mul (mul g n) (inv g))) => conj_closed g n hn)"
+    },
+    {
+      "declaration": "normal_inv_conj_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun g => fun n => fun hn => @eq_subst.{u} G N (mul (mul (inv g) n) (inv (inv g))) (mul (mul (inv g) n) g) (@eq_congr_arg.{u,u} G G (fun (z : G) => mul (mul (inv g) n) z) (inv (inv g)) g (@group_inv_inv.{u} G one mul inv group_args g)) (@normal_conj_closed.{u} G one mul inv N normal_args (inv g) n hn)"
+    },
+    {
+      "declaration": "subgroup_inter_intro",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun S => fun T => fun x => fun hs => fun ht => fun (P : Prop) => fun (mk : forall (hs : S x), forall (ht : T x), P) => mk hs ht"
+    },
+    {
+      "declaration": "subgroup_inter_left",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun S => fun T => fun x => fun h => h (S x) (fun (hs : S x) => fun (ht : T x) => hs)"
+    },
+    {
+      "declaration": "subgroup_inter_right",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun S => fun T => fun x => fun h => h (T x) (fun (hs : S x) => fun (ht : T x) => ht)"
+    },
+    {
+      "declaration": "subgroup_inter_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => fun T => fun s_args => fun t_args => @subgroup_inter_intro.{u} G S T one (@subgroup_one.{u} G one mul inv S s_args) (@subgroup_one.{u} G one mul inv T t_args)"
+    },
+    {
+      "declaration": "subgroup_inter_mul_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => fun T => fun s_args => fun t_args => fun a => fun b => fun ha => fun hb => ha (@SubgroupInterPred.{u} G S T (mul a b)) (fun (haS : S a) => fun (haT : T a) => hb (@SubgroupInterPred.{u} G S T (mul a b)) (fun (hbS : S b) => fun (hbT : T b) => @subgroup_inter_intro.{u} G S T (mul a b) (@subgroup_mul_closed.{u} G one mul inv S s_args a b haS hbS) (@subgroup_mul_closed.{u} G one mul inv T t_args a b haT hbT)))"
+    },
+    {
+      "declaration": "subgroup_inter_inv_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun S => fun T => fun s_args => fun t_args => fun a => fun ha => ha (@SubgroupInterPred.{u} G S T (inv a)) (fun (haS : S a) => fun (haT : T a) => @subgroup_inter_intro.{u} G S T (inv a) (@subgroup_inv_closed.{u} G one mul inv S s_args a haS) (@subgroup_inv_closed.{u} G one mul inv T t_args a haT))"
+    },
+    {
+      "declaration": "subgroup_inter_normal_in_left",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun Hpred => fun N => fun h_args => fun n_normal => fun h => fun n => fun hh => fun hn => hn (@SubgroupInterPred.{u} G Hpred N (mul (mul h n) (inv h))) (fun (hnH : Hpred n) => fun (hnN : N n) => @subgroup_inter_intro.{u} G Hpred N (mul (mul h n) (inv h)) (@subgroup_mul_closed.{u} G one mul inv Hpred h_args (mul h n) (inv h) (@subgroup_mul_closed.{u} G one mul inv Hpred h_args h n hh hnH) (@subgroup_inv_closed.{u} G one mul inv Hpred h_args h hh)) (@normal_conj_closed.{u} G one mul inv N n_normal h n hnN))"
+    },
+    {
+      "declaration": "subgroup_product_intro",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun mul => fun S => fun T => fun x => fun s => fun t => fun hs => fun ht => fun h => fun (P : Prop) => fun (mk : forall (s : G), forall (t : G), forall (hs : S s), forall (ht : T t), forall (h : @Eq.{u} G (mul s t) x), P) => mk s t hs ht h"
+    },
+    {
+      "declaration": "subgroup_product_elim",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun mul => fun S => fun T => fun x => fun prod => fun P => fun mk => prod P mk"
+    },
+    {
+      "declaration": "subgroup_product_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun S => fun T => fun s_args => fun t_args => @subgroup_product_intro.{u} G mul S T one one one (@subgroup_one.{u} G one mul inv S s_args) (@subgroup_one.{u} G one mul inv T t_args) (@group_one_mul.{u} G one mul inv group_args one)"
+    },
+    {
+      "declaration": "subgroup_product_mul_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun Hpred => fun N => fun h_args => fun n_normal => fun x => fun y => fun hx => fun hy => hx (@SubgroupProductPred.{u} G mul Hpred N (mul x y)) (fun (h1 : G) => fun (n1 : G) => fun (hh1 : Hpred h1) => fun (hn1 : N n1) => fun (hex : @Eq.{u} G (mul h1 n1) x) => hy (@SubgroupProductPred.{u} G mul Hpred N (mul x y)) (fun (h2 : G) => fun (n2 : G) => fun (hh2 : Hpred h2) => fun (hn2 : N n2) => fun (hey : @Eq.{u} G (mul h2 n2) y) => @subgroup_product_intro.{u} G mul Hpred N (mul x y) (mul h1 h2) (mul (mul (mul (inv h2) n1) h2) n2) (@subgroup_mul_closed.{u} G one mul inv Hpred h_args h1 h2 hh1 hh2) (@subgroup_mul_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N n_normal) (mul (mul (inv h2) n1) h2) n2 (@normal_inv_conj_closed.{u} G one mul inv group_args N n_normal h2 n1 hn1) hn2) (@eq_trans.{u} G (mul (mul h1 h2) (mul (mul (mul (inv h2) n1) h2) n2)) (mul (mul h1 n1) (mul h2 n2)) (mul x y) (@group_product_mul_reassoc.{u} G one mul inv group_args h1 n1 h2 n2) (@eq_congr2.{u,u,u} G G G mul (mul h1 n1) x (mul h2 n2) y hex hey))))"
+    },
+    {
+      "declaration": "subgroup_product_inv_closed",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun Hpred => fun N => fun h_args => fun n_normal => fun x => fun hx => hx (@SubgroupProductPred.{u} G mul Hpred N (inv x)) (fun (h : G) => fun (n : G) => fun (hh : Hpred h) => fun (hn : N n) => fun (hex : @Eq.{u} G (mul h n) x) => @subgroup_product_intro.{u} G mul Hpred N (inv x) (inv h) (mul (mul h (inv n)) (inv h)) (@subgroup_inv_closed.{u} G one mul inv Hpred h_args h hh) (@normal_conj_closed.{u} G one mul inv N n_normal h (inv n) (@subgroup_inv_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N n_normal) n hn)) (@eq_trans.{u} G (mul (inv h) (mul (mul h (inv n)) (inv h))) (inv (mul h n)) (inv x) (@group_product_inv_reassoc.{u} G one mul inv group_args h n) (@eq_congr_arg.{u,u} G G inv (mul h n) x hex)))"
+    },
+    {
+      "declaration": "subgroup_product_laws",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun Hpred => fun N => fun h_args => fun n_normal => fun (P : Prop) => fun (mk : forall (one_mem : @SubgroupProductPred.{u} G mul Hpred N one), forall (mul_closed : forall (a : G), forall (b : G), forall (ha : @SubgroupProductPred.{u} G mul Hpred N a), forall (hb : @SubgroupProductPred.{u} G mul Hpred N b), @SubgroupProductPred.{u} G mul Hpred N (mul a b)), forall (inv_closed : forall (a : G), forall (ha : @SubgroupProductPred.{u} G mul Hpred N a), @SubgroupProductPred.{u} G mul Hpred N (inv a)), P) => mk (@subgroup_product_one.{u} G one mul inv group_args Hpred N h_args (@normal_subgroup_laws.{u} G one mul inv N n_normal)) (@subgroup_product_mul_closed.{u} G one mul inv group_args Hpred N h_args n_normal) (@subgroup_product_inv_closed.{u} G one mul inv group_args Hpred N h_args n_normal)"
+    },
+    {
+      "declaration": "normal_rel_refl",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun a => @eq_subst.{u} G N one (mul (inv a) a) (@eq_symm.{u} G (mul (inv a) a) one (@group_inv_mul.{u} G one mul inv group_args a)) (@subgroup_one.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N normal_args))"
+    },
+    {
+      "declaration": "normal_rel_symm",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun a => fun b => fun h => @eq_subst.{u} G N (inv (mul (inv a) b)) (mul (inv b) a) (@group_inv_rel_symm_reassoc.{u} G one mul inv group_args a b) (@subgroup_inv_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N normal_args) (mul (inv a) b) h)"
+    },
+    {
+      "declaration": "normal_rel_trans",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun a => fun b => fun c => fun hab => fun hbc => @eq_subst.{u} G N (mul (mul (inv a) b) (mul (inv b) c)) (mul (inv a) c) (@group_rel_trans_reassoc.{u} G one mul inv group_args a b c) (@subgroup_mul_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N normal_args) (mul (inv a) b) (mul (inv b) c) hab hbc)"
+    },
+    {
+      "declaration": "normal_rel_of_eq",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun a => fun b => fun h => @eq_subst.{u} G (fun (z : G) => @NormalRel.{u} G one mul inv N a z) a b h (@normal_rel_refl.{u} G one mul inv group_args N normal_args a)"
+    },
+    {
+      "declaration": "normal_rel_mul_compat",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => @eq_subst.{u} G N (mul (mul (mul (inv b) (mul (inv a) a2)) b) (mul (inv b) b2)) (mul (inv (mul a b)) (mul a2 b2)) (@group_rel_mul_reassoc.{u} G one mul inv group_args a a2 b b2) (@subgroup_mul_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N normal_args) (mul (mul (inv b) (mul (inv a) a2)) b) (mul (inv b) b2) (@normal_inv_conj_closed.{u} G one mul inv group_args N normal_args b (mul (inv a) a2) ha) hb)"
+    },
+    {
+      "declaration": "normal_rel_inv_compat",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun a => fun b => fun h => @eq_subst.{u} G N (mul (mul a (mul (inv b) a)) (inv a)) (mul (inv (inv a)) (inv b)) (@group_rel_inv_reassoc.{u} G one mul inv group_args a b) (@normal_conj_closed.{u} G one mul inv N normal_args a (mul (inv b) a) (@normal_rel_symm.{u} G one mul inv group_args N normal_args a b h))"
+    },
+    {
+      "declaration": "normal_rel_one_of_mem",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun h => fun hn => @eq_subst.{u} G N (inv h) (mul (inv h) one) (@eq_symm.{u} G (mul (inv h) one) (inv h) (@group_mul_one.{u} G one mul inv group_args (inv h))) (@subgroup_inv_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N normal_args) h hn)"
+    },
+    {
+      "declaration": "normal_rel_one_to_mem",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun normal_args => fun h => fun hk => @eq_subst.{u} G N (inv (inv h)) h (@group_inv_inv.{u} G one mul inv group_args h) (@subgroup_inv_closed.{u} G one mul inv N (@normal_subgroup_laws.{u} G one mul inv N normal_args) (inv h) (@eq_subst.{u} G N (mul (inv h) one) (inv h) (@group_mul_one.{u} G one mul inv group_args (inv h)) hk))"
+    },
+    {
+      "declaration": "normal_rel_product_right",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun h => fun n => fun x => fun hn => fun hx => @eq_subst.{u} G N n (mul (inv h) x) (@eq_trans.{u} G n (mul (inv h) (mul h n)) (mul (inv h) x) (@eq_symm.{u} G (mul (inv h) (mul h n)) n (@group_inv_mul_left_reassoc.{u} G one mul inv group_args h n)) (@eq_congr_arg.{u,u} G G (fun (z : G) => mul (inv h) z) (mul h n) x hx)) hn"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupSubgroup/certificate.npcert"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+  "source": "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:60d6124f409e4a90b8961c3f88fcdc711a2d0fc8c3c1dd97b2230e27e6470d26",
+  "certificate_file_sha256": "sha256:39ad344763f3148f110d29e29ce6be7b7d9da057dcd7f0e168118301cf1b35e4",
+  "export_hash": "sha256:cbd62585f53d70c8a734c0940bcec5edbd592837eba293a7ab5528e45db75164",
+  "axiom_report_hash": "sha256:9fdeea3b7c832309cc77d8a52df14c8bdf8c3cc2ade0673e86e2d27b1d6f089e",
+  "certificate_hash": "sha256:dd888b01bad33171ae12757ca2c80fbf3809f7a20fabefc1bd89f65cdae2a11f",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "NormalSetoid", "kind": "def" },
+    { "name": "NormalQuot", "kind": "def" },
+    { "name": "NormalQuotMk", "kind": "def" },
+    { "name": "normal_quot_sound", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:356d7a1e7e1ddf6b67035fc058da15c4ebfa4a9811c9ac77c74d7579c847f823",
-  "certificate_file_sha256": "sha256:77559accf01fd5016ee82dbb0f8ac7b167223b3980efbef1629779ddd741adc0",
+  "certificate_file_sha256": "sha256:5efc0f8a1861b251604608ebcf58dbf132989e8e52c5aef901a46e9ff35d7c0f",
   "export_hash": "sha256:70278f8ad4b92548010b37f06e2ffa2189fe0ed1750f62e74a7b66ccc3da6bef",
   "axiom_report_hash": "sha256:d49ad4975ee17563b2f91520c600ae88e4834d89007d2d04e0c47b5f7494f3d4",
-  "certificate_hash": "sha256:4ea230c8ca70e1dbbb18000337cc955ca95f1662242a7f646521ac1f735b21a0",
+  "certificate_hash": "sha256:1bf626d2b839260590e44fe1700ac91a9f479d2e9471a1fb3cb814c8e107b09f",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"],
   "axioms": ["Eq.rec"],
   "declarations": [

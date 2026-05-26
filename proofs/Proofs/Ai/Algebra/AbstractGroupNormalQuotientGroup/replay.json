@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "NormalQuotMul",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.lift2.{u,u} G (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalSetoid.{u} G one mul inv N group_args normal_args) (@NormalQuotMulRep.{u} G one mul inv N group_args normal_args) (fun (a : G) => fun (a2 : G) => fun (b : G) => fun (b2 : G) => fun (ha : @Setoid.r.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a a2) => fun (hb : @Setoid.r.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) b b2) => @normal_quot_mul_rep_compat.{u} G one mul inv N group_args normal_args a a2 b b2 ha hb)"
+    },
+    {
+      "declaration": "NormalQuotOne",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @NormalQuotMk.{u} G one mul inv N group_args normal_args one"
+    },
+    {
+      "declaration": "NormalQuotInv",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.lift.{u,u} G (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (a : G) => @NormalQuotMk.{u} G one mul inv N group_args normal_args (inv a)) (fun (a : G) => fun (b : G) => fun (h : @Setoid.r.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a b) => @normal_quot_sound.{u} G one mul inv N group_args normal_args (inv a) (inv b) (@normal_rel_inv_compat.{succ u} G one mul inv group_args N normal_args a b h))"
+    },
+    {
+      "declaration": "normal_quot_mul_mk",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun b => @Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args (mul a b))"
+    },
+    {
+      "declaration": "normal_quot_inv_mk",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => @Eq.refl.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMk.{u} G one mul inv N group_args normal_args (inv a))"
+    },
+    {
+      "declaration": "normal_quot_mul_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q1 : @NormalQuot.{u} G one mul inv N group_args normal_args) => forall (q2 : @NormalQuot.{u} G one mul inv N group_args normal_args), forall (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args), @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMul.{u} G one mul inv N group_args normal_args q1 q2) q3) (@NormalQuotMul.{u} G one mul inv N group_args normal_args q1 (@NormalQuotMul.{u} G one mul inv N group_args normal_args q2 q3))) (fun (a : G) => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q2 : @NormalQuot.{u} G one mul inv N group_args normal_args) => forall (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args), @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMk.{u} G one mul inv N group_args normal_args a) q2) q3) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMk.{u} G one mul inv N group_args normal_args a) (@NormalQuotMul.{u} G one mul inv N group_args normal_args q2 q3))) (fun (b : G) => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q3 : @NormalQuot.{u} G one mul inv N group_args normal_args) => @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMk.{u} G one mul inv N group_args normal_args a) (@NormalQuotMk.{u} G one mul inv N group_args normal_args b)) q3) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMk.{u} G one mul inv N group_args normal_args a) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotMk.{u} G one mul inv N group_args normal_args b) q3))) (fun (c : G) => @normal_quot_sound.{u} G one mul inv N group_args normal_args (mul (mul a b) c) (mul a (mul b c)) (@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul (mul a b) c) (mul a (mul b c)) (@group_mul_assoc.{succ u} G one mul inv group_args a b c)))))"
+    },
+    {
+      "declaration": "normal_quot_one_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotOne.{u} G one mul inv N group_args normal_args) q) q) (fun (a : G) => @normal_quot_sound.{u} G one mul inv N group_args normal_args (mul one a) a (@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul one a) a (@group_one_mul.{succ u} G one mul inv group_args a)))"
+    },
+    {
+      "declaration": "normal_quot_mul_one",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args q (@NormalQuotOne.{u} G one mul inv N group_args normal_args)) q) (fun (a : G) => @normal_quot_sound.{u} G one mul inv N group_args normal_args (mul a one) a (@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul a one) a (@group_mul_one.{succ u} G one mul inv group_args a)))"
+    },
+    {
+      "declaration": "normal_quot_inv_mul",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args (@NormalQuotInv.{u} G one mul inv N group_args normal_args q) q) (@NormalQuotOne.{u} G one mul inv N group_args normal_args)) (fun (a : G) => @normal_quot_sound.{u} G one mul inv N group_args normal_args (mul (inv a) a) one (@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul (inv a) a) one (@group_inv_mul.{succ u} G one mul inv group_args a)))"
+    },
+    {
+      "declaration": "normal_quot_mul_inv",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.indProp.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) (fun (q : @NormalQuot.{u} G one mul inv N group_args normal_args) => @Eq.{succ u} (@NormalQuot.{u} G one mul inv N group_args normal_args) (@NormalQuotMul.{u} G one mul inv N group_args normal_args q (@NormalQuotInv.{u} G one mul inv N group_args normal_args q)) (@NormalQuotOne.{u} G one mul inv N group_args normal_args)) (fun (a : G) => @normal_quot_sound.{u} G one mul inv N group_args normal_args (mul a (inv a)) one (@normal_rel_of_eq.{succ u} G one mul inv group_args N normal_args (mul a (inv a)) one (@group_mul_inv.{succ u} G one mul inv group_args a)))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupNormalQuotientGroup/certificate.npcert"
+  }
+}

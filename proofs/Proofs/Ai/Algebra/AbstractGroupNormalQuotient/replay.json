@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "NormalSetoid",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Setoid.mk.{u} G (@NormalRel.{succ u} G one mul inv N) (fun (P : Prop) => fun (mk_equiv : forall (refl_arg : forall (x : G), @NormalRel.{succ u} G one mul inv N x x), forall (symm_arg : forall (x : G), forall (y : G), forall (p : @NormalRel.{succ u} G one mul inv N x y), @NormalRel.{succ u} G one mul inv N y x), forall (trans_arg : forall (x : G), forall (y : G), forall (z : G), forall (p : @NormalRel.{succ u} G one mul inv N x y), forall (q : @NormalRel.{succ u} G one mul inv N y z), @NormalRel.{succ u} G one mul inv N x z), P) => mk_equiv (@normal_rel_refl.{succ u} G one mul inv group_args N normal_args) (@normal_rel_symm.{succ u} G one mul inv group_args N normal_args) (@normal_rel_trans.{succ u} G one mul inv group_args N normal_args))"
+    },
+    {
+      "declaration": "NormalQuot",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => @Quotient.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args)"
+    },
+    {
+      "declaration": "NormalQuotMk",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => @Quotient.mk.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a"
+    },
+    {
+      "declaration": "normal_quot_sound",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun N => fun group_args => fun normal_args => fun a => fun b => fun h => @Quotient.sound.{u} G (@NormalSetoid.{u} G one mul inv N group_args normal_args) a b h"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGroupNormalQuotient/certificate.npcert"
+  }
+}
