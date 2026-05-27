@@ -181,6 +181,26 @@ const ABSTRACT_LINEAR_MAP_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_DERIVATIVE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractDerivative",
+    source_path: "Proofs/Ai/Analysis/AbstractDerivative/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractDerivative/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractDerivative/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractDerivative/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractLinearMap",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_DERIVATIVE_DEFINITIONS,
+    theorems: ABSTRACT_DERIVATIVE_THEOREMS,
+    expected_axioms: &[],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1465,6 +1485,275 @@ macro_rules! abstract_block_triangular_abs {
     };
 }
 
+macro_rules! abstract_two_normed_spaces_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_two_normed_spaces_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_derivative_target_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_two_normed_spaces_params!(concat!(
+            "forall (f : forall (x : X), Y), ",
+            "forall (point : X), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_two_normed_spaces_params!(concat!(
+            "forall (f : forall (x : X), Y), ",
+            "forall (point : X), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_derivative_target_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_two_normed_spaces_abs!(concat!("fun f => fun point => ", $($tail)+))
+    };
+    ($tail:literal) => {
+        abstract_two_normed_spaces_abs!(concat!("fun f => fun point => ", $tail))
+    };
+}
+
+macro_rules! abstract_derivative_map_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_derivative_target_params!(concat!(
+            "forall (df : forall (h : X), Y), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_derivative_target_params!(concat!(
+            "forall (df : forall (h : X), Y), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_derivative_map_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_derivative_target_abs!(concat!("fun df => ", $($tail)+))
+    };
+    ($tail:literal) => {
+        abstract_derivative_target_abs!(concat!("fun df => ", $tail))
+    };
+}
+
+macro_rules! abstract_derivative_at_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_derivative_map_params!(concat!(
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Y), Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_derivative_map_params!(concat!(
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Y), Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_derivative_at_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_derivative_map_abs!(concat!(
+            "fun bound => fun remainder_small => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_derivative_map_abs!(concat!(
+            "fun bound => fun remainder_small => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_pair_derivative_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Z : Sort z), ",
+            "forall (zzero : Z), ",
+            "forall (zadd : forall (x : Z), forall (y : Z), Z), ",
+            "forall (zneg : forall (z : Z), Z), ",
+            "forall (zsmul : forall (a : Scalar), forall (z : Z), Z), ",
+            "forall (znorm : forall (z : Z), Scalar), ",
+            "forall (Product : Sort p), ",
+            "forall (pzero : Product), ",
+            "forall (padd : forall (x : Product), forall (y : Product), Product), ",
+            "forall (pneg : forall (x : Product), Product), ",
+            "forall (psmul : forall (a : Scalar), forall (x : Product), Product), ",
+            "forall (pnorm : forall (x : Product), Scalar), ",
+            "forall (pair : forall (y : Y), forall (z : Z), Product), ",
+            "forall (fst : forall (point : Product), Y), ",
+            "forall (snd : forall (point : Product), Z), ",
+            "forall (f : forall (x : X), Y), ",
+            "forall (g : forall (x : X), Z), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        abstract_pair_derivative_params!(concat!($tail))
+    };
+}
+
+macro_rules! abstract_pair_derivative_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun Product => fun pzero => fun padd => fun pneg => fun psmul => fun pnorm => fun pair => fun fst => fun snd => fun f => fun g => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        abstract_pair_derivative_abs!(concat!($tail))
+    };
+}
+
+macro_rules! abstract_partial_derivative_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Z : Sort z), ",
+            "forall (zzero : Z), ",
+            "forall (zadd : forall (x : Z), forall (y : Z), Z), ",
+            "forall (zneg : forall (z : Z), Z), ",
+            "forall (zsmul : forall (a : Scalar), forall (z : Z), Z), ",
+            "forall (znorm : forall (z : Z), Scalar), ",
+            "forall (Product : Sort p), ",
+            "forall (pzero : Product), ",
+            "forall (padd : forall (x : Product), forall (y : Product), Product), ",
+            "forall (pneg : forall (x : Product), Product), ",
+            "forall (psmul : forall (a : Scalar), forall (x : Product), Product), ",
+            "forall (pnorm : forall (x : Product), Scalar), ",
+            "forall (pair : forall (x : X), forall (y : Y), Product), ",
+            "forall (fst : forall (point : Product), X), ",
+            "forall (snd : forall (point : Product), Y), ",
+            "forall (F : forall (point : Product), Z), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        abstract_partial_derivative_params!(concat!($tail))
+    };
+}
+
+macro_rules! abstract_partial_derivative_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun Product => fun pzero => fun padd => fun pneg => fun psmul => fun pnorm => fun pair => fun fst => fun snd => fun F => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        abstract_partial_derivative_abs!(concat!($tail))
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -1803,6 +2092,22 @@ macro_rules! block_triangular_args_elim {
             "(fun (b_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm) => ",
             "fun (block_left_inverse_arg : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => ",
             "fun (block_right_inverse_arg : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! frechet_derivative_at_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df) => ",
+            "fun (bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound) => ",
+            "fun (remainder_arg : forall (h : X), remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)) => ",
             $($tail)+,
             ")"
         )
@@ -3504,6 +3809,467 @@ const ABSTRACT_LINEAR_MAP_THEOREMS: &[TheoremArtifact] = &[
                 "(@Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point)",
                 "block_right_inverse_arg point"
             )
+        )),
+    },
+];
+
+const ABSTRACT_DERIVATIVE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FrechetRemainder",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_derivative_map_params!("forall (h : X), Y"),
+        value: abstract_derivative_map_abs!(
+            "fun h => @vsub.{w} Y yadd yneg (f (xadd point h)) (yadd (f point) (df h))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FrechetDerivativeAt",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_derivative_at_params!("Prop"),
+        value: abstract_derivative_at_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df), ",
+            "forall (operator_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound), ",
+            "forall (remainder_law : forall (h : X), remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FrechetDifferentiableAt",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_derivative_target_params!("Prop"),
+        value: abstract_derivative_target_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (df : forall (h : X), Y), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Y), Prop), ",
+            "forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FrechetDifferentiableOn",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_two_normed_spaces_params!(
+            "forall (f : forall (x : X), Y), forall (domain : forall (x : X), Prop), Prop"
+        ),
+        value: abstract_two_normed_spaces_abs!(
+            "fun f => fun domain => forall (x : X), forall (hx : domain x), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f x"
+        ),
+    },
+    DefinitionArtifact {
+        name: "DerivativeUniqueArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_derivative_target_params!("Prop"),
+        value: abstract_derivative_target_abs!(concat!(
+            "forall (df_left : forall (h : X), Y), ",
+            "forall (bound_left : Scalar), ",
+            "forall (remainder_left : forall (r : Y), Prop), ",
+            "forall (df_right : forall (h : X), Y), ",
+            "forall (bound_right : Scalar), ",
+            "forall (remainder_right : forall (r : Y), Prop), ",
+            "forall (left_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df_left bound_left remainder_left), ",
+            "forall (right_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df_right bound_right remainder_right), ",
+            "forall (h : X), @Eq.{w} Y (df_left h) (df_right h)"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ConstMap",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_two_normed_spaces_params!("forall (value : Y), forall (x : X), Y"),
+        value: abstract_two_normed_spaces_abs!("fun value => fun x => value"),
+    },
+    DefinitionArtifact {
+        name: "ZeroMap",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_two_normed_spaces_params!("forall (h : X), Y"),
+        value: abstract_two_normed_spaces_abs!("fun h => yzero"),
+    },
+    DefinitionArtifact {
+        name: "PairMap",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_pair_derivative_params!("forall (point : X), Product"),
+        value: abstract_pair_derivative_abs!("fun point => pair (f point) (g point)"),
+    },
+    DefinitionArtifact {
+        name: "PartialXMap",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_partial_derivative_params!("forall (base_y : Y), forall (x : X), Z"),
+        value: abstract_partial_derivative_abs!("fun base_y => fun x => F (pair x base_y)"),
+    },
+    DefinitionArtifact {
+        name: "PartialYMap",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_partial_derivative_params!("forall (base_x : X), forall (y : Y), Z"),
+        value: abstract_partial_derivative_abs!("fun base_x => fun y => F (pair base_x y)"),
+    },
+    DefinitionArtifact {
+        name: "PartialXDerivativeMap",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_partial_derivative_params!(
+            "forall (dF : forall (h : Product), Z), forall (h : X), Z"
+        ),
+        value: abstract_partial_derivative_abs!("fun dF => fun h => dF (pair h yzero)"),
+    },
+    DefinitionArtifact {
+        name: "PartialYDerivativeMap",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_partial_derivative_params!(
+            "forall (dF : forall (h : Product), Z), forall (h : Y), Z"
+        ),
+        value: abstract_partial_derivative_abs!("fun dF => fun h => dF (pair xzero h)"),
+    },
+    DefinitionArtifact {
+        name: "DerivativeConstRuleArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_two_normed_spaces_params!("Prop"),
+        value: abstract_two_normed_spaces_abs!(concat!(
+            "forall (point : X), ",
+            "forall (value : Y), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Y), Prop), ",
+            "@FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (@ConstMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm value) point (@ZeroMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm) bound remainder_small"
+        )),
+    },
+    DefinitionArtifact {
+        name: "DerivativeIdRuleArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_normed_space_params!("Prop"),
+        value: abstract_normed_space_abs!(concat!(
+            "forall (point : Vector), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Vector), Prop), ",
+            "@FrechetDerivativeAt.{u,v,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm Vector vzero vadd vneg smul norm (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm) point (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm) bound remainder_small"
+        )),
+    },
+    DefinitionArtifact {
+        name: "DerivativeFstRuleArgs",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!("Prop"),
+        value: abstract_product_space_abs!(concat!(
+            "forall (point : Product), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : X), Prop), ",
+            "@FrechetDerivativeAt.{u,p,v} Scalar zero one add neg sub mul le_rel Product (@ProductZero.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) X xzero xadd xneg xsmul xnorm fst point fst bound remainder_small"
+        )),
+    },
+    DefinitionArtifact {
+        name: "DerivativeSndRuleArgs",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!("Prop"),
+        value: abstract_product_space_abs!(concat!(
+            "forall (point : Product), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Y), Prop), ",
+            "@FrechetDerivativeAt.{u,p,w} Scalar zero one add neg sub mul le_rel Product (@ProductZero.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) Y yzero yadd yneg ysmul ynorm snd point snd bound remainder_small"
+        )),
+    },
+    DefinitionArtifact {
+        name: "DerivativePairRuleArgs",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_pair_derivative_params!("Prop"),
+        value: abstract_pair_derivative_abs!(concat!(
+            "forall (point : X), ",
+            "forall (df : forall (h : X), Y), ",
+            "forall (dg : forall (h : X), Z), ",
+            "forall (f_bound : Scalar), forall (f_remainder : forall (r : Y), Prop), ",
+            "forall (g_bound : Scalar), forall (g_remainder : forall (r : Z), Prop), ",
+            "forall (pair_bound : Scalar), forall (pair_remainder : forall (r : Product), Prop), ",
+            "forall (f_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df f_bound f_remainder), ",
+            "forall (g_at : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm g point dg g_bound g_remainder), ",
+            "@FrechetDerivativeAt.{u,v,p} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Product pzero padd pneg psmul pnorm (@PairMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd f g) point (@PairMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd df dg) pair_bound pair_remainder"
+        )),
+    },
+    DefinitionArtifact {
+        name: "DerivativeCompRuleArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: abstract_linear_comp_params!("Prop"),
+        value: abstract_linear_comp_abs!(concat!(
+            "forall (point : X), ",
+            "forall (df : forall (h : X), Y), ",
+            "forall (dg : forall (h : Y), Z), ",
+            "forall (f_bound : Scalar), forall (f_remainder : forall (r : Y), Prop), ",
+            "forall (g_bound : Scalar), forall (g_remainder : forall (r : Z), Prop), ",
+            "forall (comp_bound : Scalar), forall (comp_remainder : forall (r : Z), Prop), ",
+            "forall (f_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df f_bound f_remainder), ",
+            "forall (g_at : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm g (f point) dg g_bound g_remainder), ",
+            "@FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g) point (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm df dg) comp_bound comp_remainder"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PartialDerivativeRuleArgs",
+        universe_params: &["p", "u", "v", "w", "z"],
+        ty: abstract_partial_derivative_params!("Prop"),
+        value: abstract_partial_derivative_abs!(concat!(
+            "forall (base_x : X), forall (base_y : Y), ",
+            "forall (dF : forall (h : Product), Z), ",
+            "forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), ",
+            "forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), ",
+            "forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), ",
+            "forall (F_at : @FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel Product pzero padd pneg psmul pnorm Z zzero zadd zneg zsmul znorm F (pair base_x base_y) dF F_bound F_remainder), ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (partial_x_at : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y) base_x (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_x_bound partial_x_remainder), ",
+            "forall (partial_y_at : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x) base_y (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_y_bound partial_y_remainder), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_DERIVATIVE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "frechet_remainder_def",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_map_params!(
+            "forall (h : X), @Eq.{w} Y (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h) (@vsub.{w} Y yadd yneg (f (xadd point h)) (yadd (f point) (df h)))"
+        ),
+        proof: abstract_derivative_map_abs!(
+            "fun h => @Eq.refl.{w} Y (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "frechet_derivative_at_intro",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_at_params!(
+            "forall (linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df), forall (operator_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound), forall (remainder_law : forall (h : X), remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)), @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small"
+        ),
+        proof: abstract_derivative_at_abs!(
+            "fun linear_law => fun operator_bound_law => fun remainder_law => fun (P : Prop) => fun (mk : forall (linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df), forall (operator_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound), forall (remainder_law : forall (h : X), remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)), P) => mk linear_law operator_bound_law remainder_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frechet_derivative_linear_from_at",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_at_params!(
+            "forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df"
+        ),
+        proof: abstract_derivative_at_abs!(concat!(
+            "fun derivative_at => ",
+            frechet_derivative_at_elim!(
+                "derivative_at",
+                "(@LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df)",
+                "linear_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "frechet_derivative_bound_from_at",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_at_params!(
+            "forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound"
+        ),
+        proof: abstract_derivative_at_abs!(concat!(
+            "fun derivative_at => ",
+            frechet_derivative_at_elim!(
+                "derivative_at",
+                "(@OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound)",
+                "bound_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "frechet_derivative_remainder_from_at",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_at_params!(
+            "forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), forall (h : X), remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)"
+        ),
+        proof: abstract_derivative_at_abs!(concat!(
+            "fun derivative_at => fun h => ",
+            frechet_derivative_at_elim!(
+                "derivative_at",
+                "(remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h))",
+                "remainder_arg h"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "frechet_differentiable_at_intro",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_target_params!(
+            "forall (df : forall (h : X), Y), forall (bound : Scalar), forall (remainder_small : forall (r : Y), Prop), forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point"
+        ),
+        proof: abstract_derivative_target_abs!(
+            "fun df => fun bound => fun remainder_small => fun derivative_at => fun (P : Prop) => fun (mk : forall (df : forall (h : X), Y), forall (bound : Scalar), forall (remainder_small : forall (r : Y), Prop), forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), P) => mk df bound remainder_small derivative_at"
+        ),
+    },
+    TheoremArtifact {
+        name: "frechet_differentiable_at_elim",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_target_params!(
+            "forall (diff_at : @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point), forall (P : Prop), forall (mk : forall (df : forall (h : X), Y), forall (bound : Scalar), forall (remainder_small : forall (r : Y), Prop), forall (derivative_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df bound remainder_small), P), P"
+        ),
+        proof: abstract_derivative_target_abs!("fun diff_at => fun P => fun mk => diff_at P mk"),
+    },
+    TheoremArtifact {
+        name: "frechet_differentiable_on_apply",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_two_normed_spaces_params!(
+            "forall (f : forall (x : X), Y), forall (domain : forall (x : X), Prop), forall (diff_on : @FrechetDifferentiableOn.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f domain), forall (x : X), forall (hx : domain x), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f x"
+        ),
+        proof: abstract_two_normed_spaces_abs!("fun f => fun domain => fun diff_on => fun x => fun hx => diff_on x hx"),
+    },
+    TheoremArtifact {
+        name: "derivative_unique_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_derivative_target_params!(
+            "forall (unique_args : @DerivativeUniqueArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point), forall (df_left : forall (h : X), Y), forall (bound_left : Scalar), forall (remainder_left : forall (r : Y), Prop), forall (df_right : forall (h : X), Y), forall (bound_right : Scalar), forall (remainder_right : forall (r : Y), Prop), forall (left_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df_left bound_left remainder_left), forall (right_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df_right bound_right remainder_right), forall (h : X), @Eq.{w} Y (df_left h) (df_right h)"
+        ),
+        proof: abstract_derivative_target_abs!(
+            "fun unique_args => fun df_left => fun bound_left => fun remainder_left => fun df_right => fun bound_right => fun remainder_right => fun left_at => fun right_at => fun h => unique_args df_left bound_left remainder_left df_right bound_right remainder_right left_at right_at h"
+        ),
+    },
+    TheoremArtifact {
+        name: "const_map_def",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_two_normed_spaces_params!(
+            "forall (value : Y), forall (x : X), @Eq.{w} Y (@ConstMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm value x) value"
+        ),
+        proof: abstract_two_normed_spaces_abs!(
+            "fun value => fun x => @Eq.refl.{w} Y (@ConstMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm value x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "zero_map_def",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_two_normed_spaces_params!(
+            "forall (h : X), @Eq.{w} Y (@ZeroMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm h) yzero"
+        ),
+        proof: abstract_two_normed_spaces_abs!(
+            "fun h => @Eq.refl.{w} Y (@ZeroMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "pair_map_def",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_pair_derivative_params!(
+            "forall (point : X), @Eq.{p} Product (@PairMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd f g point) (pair (f point) (g point))"
+        ),
+        proof: abstract_pair_derivative_abs!(
+            "fun point => @Eq.refl.{p} Product (@PairMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd f g point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "derivative_const_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_two_normed_spaces_params!(
+            "forall (args : @DerivativeConstRuleArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm), forall (point : X), forall (value : Y), forall (bound : Scalar), forall (remainder_small : forall (r : Y), Prop), @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (@ConstMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm value) point (@ZeroMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm) bound remainder_small"
+        ),
+        proof: abstract_two_normed_spaces_abs!(
+            "fun args => fun point => fun value => fun bound => fun remainder_small => args point value bound remainder_small"
+        ),
+    },
+    TheoremArtifact {
+        name: "derivative_id_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (args : @DerivativeIdRuleArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (point : Vector), forall (bound : Scalar), forall (remainder_small : forall (r : Vector), Prop), @FrechetDerivativeAt.{u,v,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm Vector vzero vadd vneg smul norm (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm) point (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm) bound remainder_small"
+        ),
+        proof: abstract_normed_space_abs!(
+            "fun args => fun point => fun bound => fun remainder_small => args point bound remainder_small"
+        ),
+    },
+    TheoremArtifact {
+        name: "derivative_fst_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (args : @DerivativeFstRuleArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (point : Product), forall (bound : Scalar), forall (remainder_small : forall (r : X), Prop), @FrechetDerivativeAt.{u,p,v} Scalar zero one add neg sub mul le_rel Product (@ProductZero.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) X xzero xadd xneg xsmul xnorm fst point fst bound remainder_small"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun args => fun point => fun bound => fun remainder_small => args point bound remainder_small"
+        ),
+    },
+    TheoremArtifact {
+        name: "derivative_snd_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (args : @DerivativeSndRuleArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (point : Product), forall (bound : Scalar), forall (remainder_small : forall (r : Y), Prop), @FrechetDerivativeAt.{u,p,w} Scalar zero one add neg sub mul le_rel Product (@ProductZero.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) Y yzero yadd yneg ysmul ynorm snd point snd bound remainder_small"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun args => fun point => fun bound => fun remainder_small => args point bound remainder_small"
+        ),
+    },
+    TheoremArtifact {
+        name: "derivative_pair_from_args",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_pair_derivative_params!(
+            "forall (args : @DerivativePairRuleArgs.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd f g), forall (point : X), forall (df : forall (h : X), Y), forall (dg : forall (h : X), Z), forall (f_bound : Scalar), forall (f_remainder : forall (r : Y), Prop), forall (g_bound : Scalar), forall (g_remainder : forall (r : Z), Prop), forall (pair_bound : Scalar), forall (pair_remainder : forall (r : Product), Prop), forall (f_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df f_bound f_remainder), forall (g_at : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm g point dg g_bound g_remainder), @FrechetDerivativeAt.{u,v,p} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Product pzero padd pneg psmul pnorm (@PairMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd f g) point (@PairMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd df dg) pair_bound pair_remainder"
+        ),
+        proof: abstract_pair_derivative_abs!(
+            "fun args => fun point => fun df => fun dg => fun f_bound => fun f_remainder => fun g_bound => fun g_remainder => fun pair_bound => fun pair_remainder => fun f_at => fun g_at => args point df dg f_bound f_remainder g_bound g_remainder pair_bound pair_remainder f_at g_at"
+        ),
+    },
+    TheoremArtifact {
+        name: "derivative_comp_from_args",
+        universe_params: &["u", "v", "w", "z"],
+        statement: abstract_linear_comp_params!(
+            "forall (args : @DerivativeCompRuleArgs.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g), forall (point : X), forall (df : forall (h : X), Y), forall (dg : forall (h : Y), Z), forall (f_bound : Scalar), forall (f_remainder : forall (r : Y), Prop), forall (g_bound : Scalar), forall (g_remainder : forall (r : Z), Prop), forall (comp_bound : Scalar), forall (comp_remainder : forall (r : Z), Prop), forall (f_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df f_bound f_remainder), forall (g_at : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm g (f point) dg g_bound g_remainder), @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g) point (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm df dg) comp_bound comp_remainder"
+        ),
+        proof: abstract_linear_comp_abs!(
+            "fun args => fun point => fun df => fun dg => fun f_bound => fun f_remainder => fun g_bound => fun g_remainder => fun comp_bound => fun comp_remainder => fun f_at => fun g_at => args point df dg f_bound f_remainder g_bound g_remainder comp_bound comp_remainder f_at g_at"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_x_map_def",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_partial_derivative_params!(
+            "forall (base_y : Y), forall (x : X), @Eq.{z} Z (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y x) (F (pair x base_y))"
+        ),
+        proof: abstract_partial_derivative_abs!(
+            "fun base_y => fun x => @Eq.refl.{z} Z (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_y_map_def",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_partial_derivative_params!(
+            "forall (base_x : X), forall (y : Y), @Eq.{z} Z (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x y) (F (pair base_x y))"
+        ),
+        proof: abstract_partial_derivative_abs!(
+            "fun base_x => fun y => @Eq.refl.{z} Z (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_x_derivative_map_def",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_partial_derivative_params!(
+            "forall (dF : forall (h : Product), Z), forall (h : X), @Eq.{z} Z (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF h) (dF (pair h yzero))"
+        ),
+        proof: abstract_partial_derivative_abs!(
+            "fun dF => fun h => @Eq.refl.{z} Z (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_y_derivative_map_def",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_partial_derivative_params!(
+            "forall (dF : forall (h : Product), Z), forall (h : Y), @Eq.{z} Z (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF h) (dF (pair xzero h))"
+        ),
+        proof: abstract_partial_derivative_abs!(
+            "fun dF => fun h => @Eq.refl.{z} Z (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_x_derivative_from_args",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_partial_derivative_params!(
+            "forall (args : @PartialDerivativeRuleArgs.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F), forall (base_x : X), forall (base_y : Y), forall (dF : forall (h : Product), Z), forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), forall (F_at : @FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel Product pzero padd pneg psmul pnorm Z zzero zadd zneg zsmul znorm F (pair base_x base_y) dF F_bound F_remainder), @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y) base_x (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_x_bound partial_x_remainder"
+        ),
+        proof: abstract_partial_derivative_abs!(concat!(
+            "fun args => fun base_x => fun base_y => fun dF => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun F_at => ",
+            "args base_x base_y dF F_bound F_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder F_at ",
+            "(@FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y) base_x (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_x_bound partial_x_remainder) ",
+            "(fun (partial_x_at : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y) base_x (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_x_bound partial_x_remainder) => ",
+            "fun (partial_y_at : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x) base_y (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_y_bound partial_y_remainder) => partial_x_at)"
+        )),
+    },
+    TheoremArtifact {
+        name: "partial_y_derivative_from_args",
+        universe_params: &["p", "u", "v", "w", "z"],
+        statement: abstract_partial_derivative_params!(
+            "forall (args : @PartialDerivativeRuleArgs.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F), forall (base_x : X), forall (base_y : Y), forall (dF : forall (h : Product), Z), forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), forall (F_at : @FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel Product pzero padd pneg psmul pnorm Z zzero zadd zneg zsmul znorm F (pair base_x base_y) dF F_bound F_remainder), @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x) base_y (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_y_bound partial_y_remainder"
+        ),
+        proof: abstract_partial_derivative_abs!(concat!(
+            "fun args => fun base_x => fun base_y => fun dF => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun F_at => ",
+            "args base_x base_y dF F_bound F_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder F_at ",
+            "(@FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x) base_y (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_y_bound partial_y_remainder) ",
+            "(fun (partial_x_at : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y) base_x (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_x_bound partial_x_remainder) => ",
+            "fun (partial_y_at : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x) base_y (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_y_bound partial_y_remainder) => partial_y_at)"
         )),
     },
 ];
@@ -14509,6 +15275,28 @@ fn run() -> Result<(), String> {
         &abstract_linear_map_imports,
         &abstract_linear_map_source_interfaces,
     )?;
+    let abstract_derivative_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_linear_map.verified_module.clone(),
+    ];
+    let abstract_derivative_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_linear_map.source_interface.clone(),
+    ];
+    let abstract_derivative = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_DERIVATIVE_MODULE,
+        &abstract_derivative_imports,
+        &abstract_derivative_source_interfaces,
+    )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -14765,6 +15553,7 @@ fn run() -> Result<(), String> {
             abstract_vector_space,
             abstract_normed_space,
             abstract_linear_map,
+            abstract_derivative,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,

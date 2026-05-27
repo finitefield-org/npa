@@ -833,6 +833,24 @@ theorems = ["operator_norm_bound_apply", "linear_map_zero_from_args", "linear_ma
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Analysis.AbstractDerivative"
+source = "Proofs/Ai/Analysis/AbstractDerivative/source.npa"
+certificate = "Proofs/Ai/Analysis/AbstractDerivative/certificate.npcert"
+meta = "Proofs/Ai/Analysis/AbstractDerivative/meta.json"
+replay = "Proofs/Ai/Analysis/AbstractDerivative/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:5aec52426cda6d9af5183fe03eea8a9342eda521d2d5556f60ad96c8a0bee4ce"
+certificate_file_sha256 = "sha256:252f8006ae9d3968d7934d3d22d186bc38b8ac3556db88bb05d2d1d178884472"
+export_hash = "sha256:e2da8694bde95902399b6d05e3c2246e3b0f5b96cf97617f1bb0e19c4d5d1bc8"
+axiom_report_hash = "sha256:aacbe01532a99d075e6a5943c920c51381fff510fd7e56959ab34351a9b96090"
+certificate_hash = "sha256:fe97196f2d75d631d693285516377088aba597f2c2d686bdc9b45b2e878c90c6"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap"]
+definitions = ["FrechetRemainder", "FrechetDerivativeAt", "FrechetDifferentiableAt", "FrechetDifferentiableOn", "DerivativeUniqueArgs", "ConstMap", "ZeroMap", "PairMap", "PartialXMap", "PartialYMap", "PartialXDerivativeMap", "PartialYDerivativeMap", "DerivativeConstRuleArgs", "DerivativeIdRuleArgs", "DerivativeFstRuleArgs", "DerivativeSndRuleArgs", "DerivativePairRuleArgs", "DerivativeCompRuleArgs", "PartialDerivativeRuleArgs"]
+theorems = ["frechet_remainder_def", "frechet_derivative_at_intro", "frechet_derivative_linear_from_at", "frechet_derivative_bound_from_at", "frechet_derivative_remainder_from_at", "frechet_differentiable_at_intro", "frechet_differentiable_at_elim", "frechet_differentiable_on_apply", "derivative_unique_from_args", "const_map_def", "zero_map_def", "pair_map_def", "derivative_const_from_args", "derivative_id_from_args", "derivative_fst_from_args", "derivative_snd_from_args", "derivative_pair_from_args", "derivative_comp_from_args", "partial_x_map_def", "partial_y_map_def", "partial_x_derivative_map_def", "partial_y_derivative_map_def", "partial_x_derivative_from_args", "partial_y_derivative_from_args"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Vector.AbstractInnerProduct"
 source = "Proofs/Ai/Vector/AbstractInnerProduct/source.npa"
 certificate = "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert"

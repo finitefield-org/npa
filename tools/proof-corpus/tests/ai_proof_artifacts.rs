@@ -56,6 +56,8 @@ struct VerifiedCorpusImports<'a> {
     abstract_vector_space: &'a VerifiedModule,
     abstract_normed_space: &'a VerifiedModule,
     abstract_linear_map: &'a VerifiedModule,
+    abstract_metric_topology: &'a VerifiedModule,
+    abstract_derivative: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
     abstract_inner_product_derive: &'a VerifiedModule,
     affine: &'a VerifiedModule,
@@ -979,6 +981,55 @@ const ABSTRACT_LINEAR_MAP_THEOREMS: &[&str] = &[
     "block_triangular_right_inverse_from_args",
 ];
 
+const ABSTRACT_DERIVATIVE_DEFINITIONS: &[&str] = &[
+    "FrechetRemainder",
+    "FrechetDerivativeAt",
+    "FrechetDifferentiableAt",
+    "FrechetDifferentiableOn",
+    "DerivativeUniqueArgs",
+    "ConstMap",
+    "ZeroMap",
+    "PairMap",
+    "PartialXMap",
+    "PartialYMap",
+    "PartialXDerivativeMap",
+    "PartialYDerivativeMap",
+    "DerivativeConstRuleArgs",
+    "DerivativeIdRuleArgs",
+    "DerivativeFstRuleArgs",
+    "DerivativeSndRuleArgs",
+    "DerivativePairRuleArgs",
+    "DerivativeCompRuleArgs",
+    "PartialDerivativeRuleArgs",
+];
+
+const ABSTRACT_DERIVATIVE_THEOREMS: &[&str] = &[
+    "frechet_remainder_def",
+    "frechet_derivative_at_intro",
+    "frechet_derivative_linear_from_at",
+    "frechet_derivative_bound_from_at",
+    "frechet_derivative_remainder_from_at",
+    "frechet_differentiable_at_intro",
+    "frechet_differentiable_at_elim",
+    "frechet_differentiable_on_apply",
+    "derivative_unique_from_args",
+    "const_map_def",
+    "zero_map_def",
+    "pair_map_def",
+    "derivative_const_from_args",
+    "derivative_id_from_args",
+    "derivative_fst_from_args",
+    "derivative_snd_from_args",
+    "derivative_pair_from_args",
+    "derivative_comp_from_args",
+    "partial_x_map_def",
+    "partial_y_map_def",
+    "partial_x_derivative_map_def",
+    "partial_y_derivative_map_def",
+    "partial_x_derivative_from_args",
+    "partial_y_derivative_from_args",
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
     &["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"];
 
@@ -1883,6 +1934,25 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractDerivative",
+        source: "Proofs/Ai/Analysis/AbstractDerivative/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractDerivative/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractDerivative/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractDerivative/replay.json",
+        imports: &[
+            "Proofs.Ai.Analysis.AbstractLinearMap",
+            "Proofs.Ai.Analysis.AbstractMetricTopology",
+            "Proofs.Ai.Analysis.AbstractNormedSpace",
+            "Proofs.Ai.EqReasoning",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_DERIVATIVE_DEFINITIONS,
+        theorems: ABSTRACT_DERIVATIVE_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractInnerProduct",
         source: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
         certificate: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
@@ -2263,6 +2333,8 @@ fn ai_certificates_match_manifest_and_verify() {
                 abstract_group_correspondence: &abstract_group_correspondence_import,
             },
         );
+    let abstract_metric_topology_import =
+        verified_abstract_metric_topology_import_module(&root, &eq_import, &eq_reasoning_import);
     let abstract_ring_import = verified_abstract_ring_import_module(&root, &eq_import);
     let abstract_ordered_field_import =
         verified_abstract_ordered_field_import_module(&root, &eq_import, &abstract_ring_import);
@@ -2298,6 +2370,15 @@ fn ai_certificates_match_manifest_and_verify() {
         &eq_reasoning_import,
         &abstract_vector_space_import,
         &abstract_normed_space_import,
+    );
+    let abstract_derivative_import = verified_abstract_derivative_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_metric_topology_import,
+        &abstract_vector_space_import,
+        &abstract_normed_space_import,
+        &abstract_linear_map_import,
     );
     let abstract_inner_product_import = verified_abstract_inner_product_import_module(
         &root,
@@ -2396,6 +2477,8 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_vector_space: &abstract_vector_space_import,
         abstract_normed_space: &abstract_normed_space_import,
         abstract_linear_map: &abstract_linear_map_import,
+        abstract_metric_topology: &abstract_metric_topology_import,
+        abstract_derivative: &abstract_derivative_import,
         abstract_inner_product: &abstract_inner_product_import,
         abstract_inner_product_derive: &abstract_inner_product_derive_import,
         affine: &affine_import,
@@ -2614,6 +2697,9 @@ fn register_expected_imports(
             "Proofs.Ai.Algebra.AbstractScalarDerive" => {
                 session.register_verified_module(verified_imports.abstract_scalar_derive.clone())
             }
+            "Proofs.Ai.Analysis.AbstractMetricTopology" => {
+                session.register_verified_module(verified_imports.abstract_metric_topology.clone())
+            }
             "Proofs.Ai.Vector.AbstractSpace" => {
                 session.register_verified_module(verified_imports.abstract_vector_space.clone())
             }
@@ -2622,6 +2708,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Analysis.AbstractLinearMap" => {
                 session.register_verified_module(verified_imports.abstract_linear_map.clone())
+            }
+            "Proofs.Ai.Analysis.AbstractDerivative" => {
+                session.register_verified_module(verified_imports.abstract_derivative.clone())
             }
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
@@ -3268,6 +3357,19 @@ fn verified_abstract_vector_space_import_module(
         .expect("AbstractSpace corpus certificate should verify for downstream imports")
 }
 
+fn verified_abstract_metric_topology_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractMetricTopology/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractMetricTopology corpus certificate should verify for downstream imports")
+}
+
 fn verified_abstract_normed_space_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
@@ -3298,6 +3400,27 @@ fn verified_abstract_linear_map_import_module(
     session.register_verified_module(abstract_normed_space_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractLinearMap corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_derivative_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_metric_topology_import: &VerifiedModule,
+    abstract_vector_space_import: &VerifiedModule,
+    abstract_normed_space_import: &VerifiedModule,
+    abstract_linear_map_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractDerivative/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_metric_topology_import.clone());
+    session.register_verified_module(abstract_vector_space_import.clone());
+    session.register_verified_module(abstract_normed_space_import.clone());
+    session.register_verified_module(abstract_linear_map_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractDerivative corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_inner_product_import_module(

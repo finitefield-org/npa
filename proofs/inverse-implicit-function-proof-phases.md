@@ -176,13 +176,43 @@ is invertible when `B` is invertible.
 
 ### IIF4: Frechet Derivative Calculus
 
-- Status: Planned.
+- Status: Foundational certificate generated for the explicit-law derivative, differentiability,
+  uniqueness, calculus-rule, and partial-derivative API in
+  `Proofs.Ai.Analysis.AbstractDerivative`.
 - Deliverables:
   - Define Frechet differentiability at a point and on a neighborhood.
   - Prove derivative uniqueness.
   - Prove derivative rules for constants, identity, projections, pairing, composition, and product
     maps.
   - Prove partial derivative packaging for maps out of a product.
+- Completed exports:
+  - Definitions: `FrechetRemainder`, `FrechetDerivativeAt`, `FrechetDifferentiableAt`,
+    `FrechetDifferentiableOn`, `DerivativeUniqueArgs`, `ConstMap`, `ZeroMap`, `PairMap`,
+    `PartialXMap`, `PartialYMap`, `PartialXDerivativeMap`, `PartialYDerivativeMap`,
+    `DerivativeConstRuleArgs`, `DerivativeIdRuleArgs`, `DerivativeFstRuleArgs`,
+    `DerivativeSndRuleArgs`, `DerivativePairRuleArgs`, `DerivativeCompRuleArgs`,
+    `PartialDerivativeRuleArgs`.
+  - Theorems: `frechet_remainder_def`, `frechet_derivative_at_intro`,
+    `frechet_derivative_linear_from_at`, `frechet_derivative_bound_from_at`,
+    `frechet_derivative_remainder_from_at`, `frechet_differentiable_at_intro`,
+    `frechet_differentiable_at_elim`, `frechet_differentiable_on_apply`,
+    `derivative_unique_from_args`, `const_map_def`, `zero_map_def`, `pair_map_def`,
+    `derivative_const_from_args`, `derivative_id_from_args`, `derivative_fst_from_args`,
+    `derivative_snd_from_args`, `derivative_pair_from_args`, `derivative_comp_from_args`,
+    `partial_x_map_def`, `partial_y_map_def`, `partial_x_derivative_map_def`,
+    `partial_y_derivative_map_def`, `partial_x_derivative_from_args`,
+    `partial_y_derivative_from_args`.
+- Boundary note:
+  - `FrechetDerivativeAt` records bounded linearity and an explicit remainder-smallness predicate
+    over the definitional remainder; the small-o content is ordinary law evidence, not a kernel
+    primitive.
+  - Uniqueness and calculus rules are exported as explicit rule packages and projection theorems.
+    The current API covers constants, identity, projections, pairing, composition, and partial
+    derivative extraction; richer product-map estimates can refine these packages later without
+    changing the trusted boundary.
+- Remaining refinement:
+  - Add a dedicated product-map derivative rule package once IIF7 fixes the exact product-map
+    shape needed for `Phi`.
 - Needed later for:
   - computing `D Phi(a,b)` and deriving the formula for `Dg`.
 

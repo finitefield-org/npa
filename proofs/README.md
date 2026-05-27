@@ -25,6 +25,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractLinearMap/`: bounded linear map, operator-norm bound, linear
   isomorphism, identity/composition/inverse, and block-triangular map API for the inverse/implicit
   function route.
+- `Proofs/Ai/Analysis/AbstractDerivative/`: Frechet derivative, differentiability, derivative
+  uniqueness, calculus-rule evidence, pairing/projection, composition, and partial-derivative API
+  for the inverse/implicit function route.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
