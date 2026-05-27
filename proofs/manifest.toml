@@ -851,6 +851,24 @@ theorems = ["frechet_remainder_def", "frechet_derivative_at_intro", "frechet_der
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Analysis.AbstractFixedPoint"
+source = "Proofs/Ai/Analysis/AbstractFixedPoint/source.npa"
+certificate = "Proofs/Ai/Analysis/AbstractFixedPoint/certificate.npcert"
+meta = "Proofs/Ai/Analysis/AbstractFixedPoint/meta.json"
+replay = "Proofs/Ai/Analysis/AbstractFixedPoint/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:58c71947705da5f7afd0cdfdd74b5f30b4feba9d0895b039ede4bf6ccb88e1e9"
+certificate_file_sha256 = "sha256:a3408d90281935c8d282957ba9eab1ee181297b751bafbff4683ee6f8191fd39"
+export_hash = "sha256:109e22398f17c8d23e5fff44199f6460944e9ae9eabadb4b23c4961ee169b185"
+axiom_report_hash = "sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12"
+certificate_hash = "sha256:bebfe83d397757e2ce3e6764f72286449f329c304ff1176c382e4248b8ceacfd"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace"]
+definitions = ["CauchySeq", "ConvergesTo", "CompleteMetricArgs", "SelfMapOn", "ContractiveOn", "FixedPoint", "FixedPointStability", "FixedPointEvidence", "FixedPointResult", "BanachFixedPointArgs"]
+theorems = ["cauchy_seq_intro", "cauchy_seq_apply", "converges_to_intro", "converges_to_apply", "complete_metric_limit_from_args", "self_map_on_apply", "contractive_on_apply", "fixed_point_def", "fixed_point_stability_apply", "fixed_point_evidence_intro", "fixed_point_evidence_elim", "fixed_point_mem_from_evidence", "fixed_point_eq_from_evidence", "fixed_point_unique_from_evidence", "fixed_point_stability_from_evidence", "fixed_point_result_intro", "fixed_point_result_elim", "banach_fixed_point_from_args"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Vector.AbstractInnerProduct"
 source = "Proofs/Ai/Vector/AbstractInnerProduct/source.npa"
 certificate = "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert"

@@ -28,6 +28,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractDerivative/`: Frechet derivative, differentiability, derivative
   uniqueness, calculus-rule evidence, pairing/projection, composition, and partial-derivative API
   for the inverse/implicit function route.
+- `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
+  fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
+  inverse/implicit function route.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing

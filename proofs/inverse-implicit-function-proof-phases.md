@@ -218,11 +218,29 @@ is invertible when `B` is invertible.
 
 ### IIF5: Contraction Mapping Theorem
 
-- Status: Planned.
+- Status: Foundational certificate generated for the explicit-law completeness, contraction, fixed
+  point, uniqueness, local-stability, and Banach fixed-point result API in
+  `Proofs.Ai.Analysis.AbstractFixedPoint`.
 - Deliverables:
   - Define complete metric/normed-space package.
   - Prove Banach fixed point theorem with uniqueness and local stability.
   - Provide a certificate-backed theorem usable by the inverse-function theorem proof.
+- Completed exports:
+  - Definitions: `CauchySeq`, `ConvergesTo`, `CompleteMetricArgs`, `SelfMapOn`,
+    `ContractiveOn`, `FixedPoint`, `FixedPointStability`, `FixedPointEvidence`,
+    `FixedPointResult`, `BanachFixedPointArgs`.
+  - Theorems: `cauchy_seq_intro`, `cauchy_seq_apply`, `converges_to_intro`,
+    `converges_to_apply`, `complete_metric_limit_from_args`, `self_map_on_apply`,
+    `contractive_on_apply`, `fixed_point_def`, `fixed_point_stability_apply`,
+    `fixed_point_evidence_intro`, `fixed_point_evidence_elim`, `fixed_point_mem_from_evidence`,
+    `fixed_point_eq_from_evidence`, `fixed_point_unique_from_evidence`,
+    `fixed_point_stability_from_evidence`, `fixed_point_result_intro`,
+    `fixed_point_result_elim`, `banach_fixed_point_from_args`.
+- Boundary note:
+  - Completeness, strict contraction, and the Banach fixed-point conclusion are ordinary explicit
+    law evidence. The kernel only checks the package definitions, projections, and theorem terms.
+  - `FixedPointResult` packages existence through a Church-encoded fixed point and
+    `FixedPointEvidence`; local stability is represented through the existing `LocalPred` API.
 - Needed later for:
   - constructing local inverse candidates by Newton/contraction estimates.
 

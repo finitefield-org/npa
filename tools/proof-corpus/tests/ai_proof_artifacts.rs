@@ -58,6 +58,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_linear_map: &'a VerifiedModule,
     abstract_metric_topology: &'a VerifiedModule,
     abstract_derivative: &'a VerifiedModule,
+    abstract_fixed_point: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
     abstract_inner_product_derive: &'a VerifiedModule,
     affine: &'a VerifiedModule,
@@ -1030,6 +1031,40 @@ const ABSTRACT_DERIVATIVE_THEOREMS: &[&str] = &[
     "partial_y_derivative_from_args",
 ];
 
+const ABSTRACT_FIXED_POINT_DEFINITIONS: &[&str] = &[
+    "CauchySeq",
+    "ConvergesTo",
+    "CompleteMetricArgs",
+    "SelfMapOn",
+    "ContractiveOn",
+    "FixedPoint",
+    "FixedPointStability",
+    "FixedPointEvidence",
+    "FixedPointResult",
+    "BanachFixedPointArgs",
+];
+
+const ABSTRACT_FIXED_POINT_THEOREMS: &[&str] = &[
+    "cauchy_seq_intro",
+    "cauchy_seq_apply",
+    "converges_to_intro",
+    "converges_to_apply",
+    "complete_metric_limit_from_args",
+    "self_map_on_apply",
+    "contractive_on_apply",
+    "fixed_point_def",
+    "fixed_point_stability_apply",
+    "fixed_point_evidence_intro",
+    "fixed_point_evidence_elim",
+    "fixed_point_mem_from_evidence",
+    "fixed_point_eq_from_evidence",
+    "fixed_point_unique_from_evidence",
+    "fixed_point_stability_from_evidence",
+    "fixed_point_result_intro",
+    "fixed_point_result_elim",
+    "banach_fixed_point_from_args",
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
     &["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"];
 
@@ -1953,6 +1988,23 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractFixedPoint",
+        source: "Proofs/Ai/Analysis/AbstractFixedPoint/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractFixedPoint/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractFixedPoint/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractFixedPoint/replay.json",
+        imports: &[
+            "Proofs.Ai.Analysis.AbstractMetricTopology",
+            "Proofs.Ai.Analysis.AbstractNormedSpace",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_FIXED_POINT_DEFINITIONS,
+        theorems: ABSTRACT_FIXED_POINT_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractInnerProduct",
         source: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
         certificate: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
@@ -2380,6 +2432,13 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_normed_space_import,
         &abstract_linear_map_import,
     );
+    let abstract_fixed_point_import = verified_abstract_fixed_point_import_module(
+        &root,
+        &eq_import,
+        &abstract_metric_topology_import,
+        &abstract_vector_space_import,
+        &abstract_normed_space_import,
+    );
     let abstract_inner_product_import = verified_abstract_inner_product_import_module(
         &root,
         &eq_import,
@@ -2479,6 +2538,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_linear_map: &abstract_linear_map_import,
         abstract_metric_topology: &abstract_metric_topology_import,
         abstract_derivative: &abstract_derivative_import,
+        abstract_fixed_point: &abstract_fixed_point_import,
         abstract_inner_product: &abstract_inner_product_import,
         abstract_inner_product_derive: &abstract_inner_product_derive_import,
         affine: &affine_import,
@@ -2711,6 +2771,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Analysis.AbstractDerivative" => {
                 session.register_verified_module(verified_imports.abstract_derivative.clone())
+            }
+            "Proofs.Ai.Analysis.AbstractFixedPoint" => {
+                session.register_verified_module(verified_imports.abstract_fixed_point.clone())
             }
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
@@ -3421,6 +3484,23 @@ fn verified_abstract_derivative_import_module(
     session.register_verified_module(abstract_linear_map_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractDerivative corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_fixed_point_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_metric_topology_import: &VerifiedModule,
+    abstract_vector_space_import: &VerifiedModule,
+    abstract_normed_space_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractFixedPoint/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(abstract_metric_topology_import.clone());
+    session.register_verified_module(abstract_vector_space_import.clone());
+    session.register_verified_module(abstract_normed_space_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractFixedPoint corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_inner_product_import_module(

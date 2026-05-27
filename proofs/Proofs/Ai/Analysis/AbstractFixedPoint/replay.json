@@ -1,0 +1,152 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.AbstractFixedPoint",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CauchySeq",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun CauchySmall => fun Sequence => fun seq => forall (eps : Scalar), CauchySmall Sequence seq eps"
+    },
+    {
+      "declaration": "ConvergesTo",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun ConvergesSmall => fun Sequence => fun seq => fun limit => forall (eps : Scalar), ConvergesSmall Sequence seq limit eps"
+    },
+    {
+      "declaration": "CompleteMetricArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun CauchySmall => fun ConvergesSmall => forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (cauchy : @CauchySeq.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall Sequence seq), forall (P : Prop), forall (choose : forall (limit : Vector), forall (converges : @ConvergesTo.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ConvergesSmall Sequence seq limit), P), P"
+    },
+    {
+      "declaration": "SelfMapOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => forall (x : Vector), forall (hx : domain x), domain (T x)"
+    },
+    {
+      "declaration": "ContractiveOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun k => forall (x : Vector), forall (y : Vector), forall (hx : domain x), forall (hy : domain y), le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (T x) (T y)) (mul k (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y))"
+    },
+    {
+      "declaration": "FixedPoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => @Eq.{v} Vector (T fixed) fixed"
+    },
+    {
+      "declaration": "FixedPointStability",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun stable => @LocalPred.{v} Vector domain stable"
+    },
+    {
+      "declaration": "FixedPointEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => forall (P : Prop), forall (mk : forall (point_mem_law : domain fixed), forall (fixed_law : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed), forall (unique_law : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed), forall (stable_law : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), P), P"
+    },
+    {
+      "declaration": "FixedPointResult",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun stable => forall (P : Prop), forall (mk : forall (fixed : Vector), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), P), P"
+    },
+    {
+      "declaration": "BanachFixedPointArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall), forall (strict_k : Prop), forall (strict_k_holds : strict_k), forall (self_map : @SelfMapOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T), forall (contractive : @ContractiveOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T k), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable"
+    },
+    {
+      "declaration": "cauchy_seq_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun CauchySmall => fun Sequence => fun seq => fun h => h"
+    },
+    {
+      "declaration": "cauchy_seq_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun CauchySmall => fun Sequence => fun seq => fun cauchy => fun eps => cauchy eps"
+    },
+    {
+      "declaration": "converges_to_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun ConvergesSmall => fun Sequence => fun seq => fun limit => fun h => h"
+    },
+    {
+      "declaration": "converges_to_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun ConvergesSmall => fun Sequence => fun seq => fun limit => fun converges => fun eps => converges eps"
+    },
+    {
+      "declaration": "complete_metric_limit_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun CauchySmall => fun ConvergesSmall => fun complete_args => fun Sequence => fun seq => fun cauchy => fun P => fun choose => complete_args Sequence seq cauchy P choose"
+    },
+    {
+      "declaration": "self_map_on_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun self_map => fun x => fun hx => self_map x hx"
+    },
+    {
+      "declaration": "contractive_on_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun k => fun contractive => fun x => fun y => fun hx => fun hy => contractive x y hx hy"
+    },
+    {
+      "declaration": "fixed_point_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => @Eq.refl.{1} Prop (@FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed)"
+    },
+    {
+      "declaration": "fixed_point_stability_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun stable => fun stability => fun x => fun hx => stability x hx"
+    },
+    {
+      "declaration": "fixed_point_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => fun point_mem_law => fun fixed_law => fun unique_law => fun stable_law => fun (P : Prop) => fun (mk : forall (point_mem_law : domain fixed), forall (fixed_law : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed), forall (unique_law : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed), forall (stable_law : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), P) => mk point_mem_law fixed_law unique_law stable_law"
+    },
+    {
+      "declaration": "fixed_point_evidence_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => fun evidence => fun P => fun mk => evidence P mk"
+    },
+    {
+      "declaration": "fixed_point_mem_from_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => fun evidence => evidence (domain fixed) (fun (point_mem_arg : domain fixed) => fun (fixed_eq_arg : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) => fun (unique_arg : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed) => fun (stable_arg : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) => point_mem_arg)"
+    },
+    {
+      "declaration": "fixed_point_eq_from_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => fun evidence => evidence (@FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) (fun (point_mem_arg : domain fixed) => fun (fixed_eq_arg : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) => fun (unique_arg : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed) => fun (stable_arg : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) => fixed_eq_arg)"
+    },
+    {
+      "declaration": "fixed_point_unique_from_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => fun evidence => fun other => fun other_mem => fun other_fixed => evidence (@Eq.{v} Vector other fixed) (fun (point_mem_arg : domain fixed) => fun (fixed_eq_arg : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) => fun (unique_arg : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed) => fun (stable_arg : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) => unique_arg other other_mem other_fixed)"
+    },
+    {
+      "declaration": "fixed_point_stability_from_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun fixed => fun stable => fun evidence => evidence (@FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) (fun (point_mem_arg : domain fixed) => fun (fixed_eq_arg : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) => fun (unique_arg : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed) => fun (stable_arg : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) => stable_arg)"
+    },
+    {
+      "declaration": "fixed_point_result_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun stable => fun fixed => fun evidence => fun (P : Prop) => fun (mk : forall (fixed : Vector), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), P) => mk fixed evidence"
+    },
+    {
+      "declaration": "fixed_point_result_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun stable => fun result => fun P => fun mk => result P mk"
+    },
+    {
+      "declaration": "banach_fixed_point_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun args => fun complete_args => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => args complete_args strict_k strict_k_holds self_map contractive"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/AbstractFixedPoint/certificate.npcert"
+  }
+}

@@ -201,6 +201,24 @@ const ABSTRACT_DERIVATIVE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIXED_POINT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractFixedPoint",
+    source_path: "Proofs/Ai/Analysis/AbstractFixedPoint/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractFixedPoint/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractFixedPoint/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractFixedPoint/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIXED_POINT_DEFINITIONS,
+    theorems: ABSTRACT_FIXED_POINT_THEOREMS,
+    expected_axioms: &[],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1153,6 +1171,25 @@ macro_rules! abstract_vector_space_abs {
 }
 
 macro_rules! abstract_normed_space_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (norm : forall (x : Vector), Scalar), ",
+            $($tail)+
+        )
+    };
     ($tail:literal) => {
         concat!(
             "forall (Scalar : Sort u), ",
@@ -1754,6 +1791,86 @@ macro_rules! abstract_partial_derivative_abs {
     };
 }
 
+macro_rules! abstract_complete_metric_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_normed_space_params!(concat!($($tail)+))
+    };
+    ($tail:literal) => {
+        abstract_normed_space_params!($tail)
+    };
+}
+
+macro_rules! abstract_complete_metric_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_normed_space_abs!(concat!($($tail)+))
+    };
+    ($tail:literal) => {
+        abstract_normed_space_abs!($tail)
+    };
+}
+
+macro_rules! abstract_fixed_point_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_normed_space_params!(concat!(
+            "forall (domain : forall (x : Vector), Prop), ",
+            "forall (T : forall (x : Vector), Vector), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_normed_space_params!(concat!(
+            "forall (domain : forall (x : Vector), Prop), ",
+            "forall (T : forall (x : Vector), Vector), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_fixed_point_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_normed_space_abs!(concat!("fun domain => fun T => ", $($tail)+))
+    };
+    ($tail:literal) => {
+        abstract_normed_space_abs!(concat!("fun domain => fun T => ", $tail))
+    };
+}
+
+macro_rules! abstract_banach_fixed_point_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_fixed_point_params!(concat!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), ",
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), ",
+            "forall (k : Scalar), ",
+            "forall (stable : forall (x : Vector), Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_fixed_point_params!(concat!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), ",
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), ",
+            "forall (k : Scalar), ",
+            "forall (stable : forall (x : Vector), Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_banach_fixed_point_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_fixed_point_abs!(concat!(
+            "fun CauchySmall => fun ConvergesSmall => fun k => fun stable => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_fixed_point_abs!(concat!(
+            "fun CauchySmall => fun ConvergesSmall => fun k => fun stable => ",
+            $tail
+        ))
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -2108,6 +2225,23 @@ macro_rules! frechet_derivative_at_elim {
             "(fun (linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df) => ",
             "fun (bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df bound) => ",
             "fun (remainder_arg : forall (h : X), remainder_small (@FrechetRemainder.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df h)) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! fixed_point_evidence_elim {
+    ($evidence:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $evidence,
+            " ",
+            $target,
+            " ",
+            "(fun (point_mem_arg : domain fixed) => ",
+            "fun (fixed_eq_arg : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) => ",
+            "fun (unique_arg : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed) => ",
+            "fun (stable_arg : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) => ",
             $($tail)+,
             ")"
         )
@@ -4271,6 +4405,315 @@ const ABSTRACT_DERIVATIVE_THEOREMS: &[TheoremArtifact] = &[
             "(fun (partial_x_at : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_y) base_x (@PartialXDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_x_bound partial_x_remainder) => ",
             "fun (partial_y_at : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F base_x) base_y (@PartialYDerivativeMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm Product pzero padd pneg psmul pnorm pair fst snd F dF) partial_y_bound partial_y_remainder) => partial_y_at)"
         )),
+    },
+];
+
+const ABSTRACT_FIXED_POINT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "CauchySeq",
+        universe_params: &["s", "u", "v"],
+        ty: abstract_complete_metric_params!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), Prop"
+        ),
+        value: abstract_complete_metric_abs!(
+            "fun CauchySmall => fun Sequence => fun seq => forall (eps : Scalar), CauchySmall Sequence seq eps"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ConvergesTo",
+        universe_params: &["s", "u", "v"],
+        ty: abstract_complete_metric_params!(
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), Prop"
+        ),
+        value: abstract_complete_metric_abs!(
+            "fun ConvergesSmall => fun Sequence => fun seq => fun limit => forall (eps : Scalar), ConvergesSmall Sequence seq limit eps"
+        ),
+    },
+    DefinitionArtifact {
+        name: "CompleteMetricArgs",
+        universe_params: &["s", "u", "v"],
+        ty: abstract_complete_metric_params!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), Prop"
+        ),
+        value: abstract_complete_metric_abs!(concat!(
+            "fun CauchySmall => fun ConvergesSmall => ",
+            "forall (Sequence : Sort s), ",
+            "forall (seq : forall (n : Sequence), Vector), ",
+            "forall (cauchy : @CauchySeq.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall Sequence seq), ",
+            "forall (P : Prop), ",
+            "forall (choose : forall (limit : Vector), forall (converges : @ConvergesTo.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ConvergesSmall Sequence seq limit), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SelfMapOn",
+        universe_params: &["u", "v"],
+        ty: abstract_fixed_point_params!("Prop"),
+        value: abstract_fixed_point_abs!(
+            "forall (x : Vector), forall (hx : domain x), domain (T x)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ContractiveOn",
+        universe_params: &["u", "v"],
+        ty: abstract_fixed_point_params!("forall (k : Scalar), Prop"),
+        value: abstract_fixed_point_abs!(concat!(
+            "fun k => forall (x : Vector), forall (y : Vector), ",
+            "forall (hx : domain x), forall (hy : domain y), ",
+            "le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (T x) (T y)) ",
+            "(mul k (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y))"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FixedPoint",
+        universe_params: &["u", "v"],
+        ty: abstract_fixed_point_params!("forall (fixed : Vector), Prop"),
+        value: abstract_fixed_point_abs!("fun fixed => @Eq.{v} Vector (T fixed) fixed"),
+    },
+    DefinitionArtifact {
+        name: "FixedPointStability",
+        universe_params: &["u", "v"],
+        ty: abstract_fixed_point_params!("forall (stable : forall (x : Vector), Prop), Prop"),
+        value: abstract_fixed_point_abs!(
+            "fun stable => @LocalPred.{v} Vector domain stable"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FixedPointEvidence",
+        universe_params: &["u", "v"],
+        ty: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), Prop"
+        ),
+        value: abstract_fixed_point_abs!(concat!(
+            "fun fixed => fun stable => forall (P : Prop), forall (mk : ",
+            "forall (point_mem_law : domain fixed), ",
+            "forall (fixed_law : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed), ",
+            "forall (unique_law : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed), ",
+            "forall (stable_law : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FixedPointResult",
+        universe_params: &["u", "v"],
+        ty: abstract_fixed_point_params!("forall (stable : forall (x : Vector), Prop), Prop"),
+        value: abstract_fixed_point_abs!(concat!(
+            "fun stable => forall (P : Prop), forall (mk : ",
+            "forall (fixed : Vector), ",
+            "forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "BanachFixedPointArgs",
+        universe_params: &["s", "u", "v"],
+        ty: abstract_banach_fixed_point_params!("Prop"),
+        value: abstract_banach_fixed_point_abs!(concat!(
+            "forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall), ",
+            "forall (strict_k : Prop), ",
+            "forall (strict_k_holds : strict_k), ",
+            "forall (self_map : @SelfMapOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T), ",
+            "forall (contractive : @ContractiveOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T k), ",
+            "@FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable"
+        )),
+    },
+];
+
+const ABSTRACT_FIXED_POINT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "cauchy_seq_intro",
+        universe_params: &["s", "u", "v"],
+        statement: abstract_complete_metric_params!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (h : forall (eps : Scalar), CauchySmall Sequence seq eps), @CauchySeq.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall Sequence seq"
+        ),
+        proof: abstract_complete_metric_abs!(
+            "fun CauchySmall => fun Sequence => fun seq => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "cauchy_seq_apply",
+        universe_params: &["s", "u", "v"],
+        statement: abstract_complete_metric_params!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (cauchy : @CauchySeq.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall Sequence seq), forall (eps : Scalar), CauchySmall Sequence seq eps"
+        ),
+        proof: abstract_complete_metric_abs!(
+            "fun CauchySmall => fun Sequence => fun seq => fun cauchy => fun eps => cauchy eps"
+        ),
+    },
+    TheoremArtifact {
+        name: "converges_to_intro",
+        universe_params: &["s", "u", "v"],
+        statement: abstract_complete_metric_params!(
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (h : forall (eps : Scalar), ConvergesSmall Sequence seq limit eps), @ConvergesTo.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ConvergesSmall Sequence seq limit"
+        ),
+        proof: abstract_complete_metric_abs!(
+            "fun ConvergesSmall => fun Sequence => fun seq => fun limit => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "converges_to_apply",
+        universe_params: &["s", "u", "v"],
+        statement: abstract_complete_metric_params!(
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (converges : @ConvergesTo.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ConvergesSmall Sequence seq limit), forall (eps : Scalar), ConvergesSmall Sequence seq limit eps"
+        ),
+        proof: abstract_complete_metric_abs!(
+            "fun ConvergesSmall => fun Sequence => fun seq => fun limit => fun converges => fun eps => converges eps"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_metric_limit_from_args",
+        universe_params: &["s", "u", "v"],
+        statement: abstract_complete_metric_params!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall), forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (cauchy : @CauchySeq.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall Sequence seq), forall (P : Prop), forall (choose : forall (limit : Vector), forall (converges : @ConvergesTo.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ConvergesSmall Sequence seq limit), P), P"
+        ),
+        proof: abstract_complete_metric_abs!(
+            "fun CauchySmall => fun ConvergesSmall => fun complete_args => fun Sequence => fun seq => fun cauchy => fun P => fun choose => complete_args Sequence seq cauchy P choose"
+        ),
+    },
+    TheoremArtifact {
+        name: "self_map_on_apply",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (self_map : @SelfMapOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T), forall (x : Vector), forall (hx : domain x), domain (T x)"
+        ),
+        proof: abstract_fixed_point_abs!("fun self_map => fun x => fun hx => self_map x hx"),
+    },
+    TheoremArtifact {
+        name: "contractive_on_apply",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (k : Scalar), forall (contractive : @ContractiveOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T k), forall (x : Vector), forall (y : Vector), forall (hx : domain x), forall (hy : domain y), le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (T x) (T y)) (mul k (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y))"
+        ),
+        proof: abstract_fixed_point_abs!(
+            "fun k => fun contractive => fun x => fun y => fun hx => fun hy => contractive x y hx hy"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_def",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), @Eq.{1} Prop (@FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) (@Eq.{v} Vector (T fixed) fixed)"
+        ),
+        proof: abstract_fixed_point_abs!(
+            "fun fixed => @Eq.refl.{1} Prop (@FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed)"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_stability_apply",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (stable : forall (x : Vector), Prop), forall (stability : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), forall (x : Vector), forall (hx : domain x), stable x"
+        ),
+        proof: abstract_fixed_point_abs!(
+            "fun stable => fun stability => fun x => fun hx => stability x hx"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_evidence_intro",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), forall (point_mem_law : domain fixed), forall (fixed_law : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed), forall (unique_law : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed), forall (stable_law : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable"
+        ),
+        proof: abstract_fixed_point_abs!(concat!(
+            "fun fixed => fun stable => fun point_mem_law => fun fixed_law => fun unique_law => fun stable_law => fun (P : Prop) => fun (mk : ",
+            "forall (point_mem_law : domain fixed), ",
+            "forall (fixed_law : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed), ",
+            "forall (unique_law : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed), ",
+            "forall (stable_law : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), P) => mk point_mem_law fixed_law unique_law stable_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_point_evidence_elim",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), forall (P : Prop), forall (mk : forall (point_mem_law : domain fixed), forall (fixed_law : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed), forall (unique_law : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed), forall (stable_law : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), P), P"
+        ),
+        proof: abstract_fixed_point_abs!(
+            "fun fixed => fun stable => fun evidence => fun P => fun mk => evidence P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_mem_from_evidence",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), domain fixed"
+        ),
+        proof: abstract_fixed_point_abs!(concat!(
+            "fun fixed => fun stable => fun evidence => ",
+            fixed_point_evidence_elim!("evidence", "(domain fixed)", "point_mem_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_point_eq_from_evidence",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed"
+        ),
+        proof: abstract_fixed_point_abs!(concat!(
+            "fun fixed => fun stable => fun evidence => ",
+            fixed_point_evidence_elim!(
+                "evidence",
+                "(@FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed)",
+                "fixed_eq_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_point_unique_from_evidence",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed"
+        ),
+        proof: abstract_fixed_point_abs!(concat!(
+            "fun fixed => fun stable => fun evidence => fun other => fun other_mem => fun other_fixed => ",
+            fixed_point_evidence_elim!(
+                "evidence",
+                "(@Eq.{v} Vector other fixed)",
+                "unique_arg other other_mem other_fixed"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_point_stability_from_evidence",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (fixed : Vector), forall (stable : forall (x : Vector), Prop), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable"
+        ),
+        proof: abstract_fixed_point_abs!(concat!(
+            "fun fixed => fun stable => fun evidence => ",
+            fixed_point_evidence_elim!(
+                "evidence",
+                "(@FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable)",
+                "stable_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_point_result_intro",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (stable : forall (x : Vector), Prop), forall (fixed : Vector), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable"
+        ),
+        proof: abstract_fixed_point_abs!(
+            "fun stable => fun fixed => fun evidence => fun (P : Prop) => fun (mk : forall (fixed : Vector), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), P) => mk fixed evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_result_elim",
+        universe_params: &["u", "v"],
+        statement: abstract_fixed_point_params!(
+            "forall (stable : forall (x : Vector), Prop), forall (result : @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable), forall (P : Prop), forall (mk : forall (fixed : Vector), forall (evidence : @FixedPointEvidence.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed stable), P), P"
+        ),
+        proof: abstract_fixed_point_abs!(
+            "fun stable => fun result => fun P => fun mk => result P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "banach_fixed_point_from_args",
+        universe_params: &["s", "u", "v"],
+        statement: abstract_banach_fixed_point_params!(
+            "forall (args : @BanachFixedPointArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable), forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall), forall (strict_k : Prop), forall (strict_k_holds : strict_k), forall (self_map : @SelfMapOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T), forall (contractive : @ContractiveOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T k), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable"
+        ),
+        proof: abstract_banach_fixed_point_abs!(
+            "fun args => fun complete_args => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => args complete_args strict_k strict_k_holds self_map contractive"
+        ),
     },
 ];
 
@@ -15297,6 +15740,24 @@ fn run() -> Result<(), String> {
         &abstract_derivative_imports,
         &abstract_derivative_source_interfaces,
     )?;
+    let abstract_fixed_point_imports = vec![
+        eq_import.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+    ];
+    let abstract_fixed_point_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+    ];
+    let abstract_fixed_point = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIXED_POINT_MODULE,
+        &abstract_fixed_point_imports,
+        &abstract_fixed_point_source_interfaces,
+    )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -15554,6 +16015,7 @@ fn run() -> Result<(), String> {
             abstract_normed_space,
             abstract_linear_map,
             abstract_derivative,
+            abstract_fixed_point,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,
