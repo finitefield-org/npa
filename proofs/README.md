@@ -39,7 +39,7 @@ Current bundles:
   the implicit-function route.
 - `Proofs/Ai/Analysis/AbstractImplicitFunction/`: extraction of the local implicit function from
   explicit local inverse laws for `Phi`, with value membership, zero equation, and local uniqueness
-  projections.
+  projections plus the basic public implicit-function theorem evidence wrapper.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing

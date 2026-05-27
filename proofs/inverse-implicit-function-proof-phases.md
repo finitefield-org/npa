@@ -353,7 +353,9 @@ Dg(x) = - (D_y F(x, g(x)))^{-1} o D_x F(x, g(x)).
 
 ### IIF10: Final Evidence Wrapper
 
-- Status: Planned.
+- Status: Basic existence/zero/local-uniqueness certificate generated in
+  `Proofs.Ai.Analysis.AbstractImplicitFunction`; differentiability and derivative formula remain
+  the separate IIF9 strengthening.
 - Deliverables:
   - Add `ImplicitFunctionTheoremEvidence` or a Church-encoded package collecting:
     - existence of `g`,
@@ -362,6 +364,17 @@ Dg(x) = - (D_y F(x, g(x)))^{-1} o D_x F(x, g(x)).
     - optional differentiability and derivative formula.
   - Add `implicit_function_theorem` as the public certificate-backed theorem.
   - Update `proofs/manifest.toml`, metadata, replay, and generator tests.
+- Completed exports:
+  - Definition: `ImplicitFunctionTheoremEvidence`.
+  - Theorems: `implicit_function_theorem_args_from_evidence`,
+    `implicit_function_theorem_target_mem_from_evidence`,
+    `implicit_function_theorem_value_mem_from_evidence`,
+    `implicit_function_theorem_zero_from_evidence`,
+    `implicit_function_theorem_unique_from_evidence`, `implicit_function_theorem`.
+- Boundary note:
+  - The public theorem packages the concrete `ImplicitFunction` extracted in IIF8 and exposes only
+    certificate-backed target membership, value membership, zero equation, and local uniqueness.
+    No derivative formula is smuggled into the basic theorem.
 - Verification:
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`

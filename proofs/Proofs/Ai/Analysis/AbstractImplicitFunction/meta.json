@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Analysis/AbstractImplicitFunction/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:8958f2d4f443df3957c15245edc67c8e6f128dce8df4e36afd3b2f9fb0d36c6b",
-  "certificate_file_sha256": "sha256:4aa121705655c7f1eb26c8fadcb406fd105dc345ac8e234a21fe63582fcb1d38",
-  "export_hash": "sha256:77c4663e53efc86601114c706968d6d016c1e7c4f9939d709628d999749bf18e",
-  "axiom_report_hash": "sha256:bd74eab331756203c3e19eb769689092b92757b4e584be1246ab686be1e3f779",
-  "certificate_hash": "sha256:5885ec2b8b9320b35e7273a26728d8d4cca616f8754522738b3ea1a1bb2c1ec4",
+  "source_sha256": "sha256:3f1812df0bf2914aa1e74a1472df199a754804d2e58d5794dd95ce665eda6b84",
+  "certificate_file_sha256": "sha256:eba6d0233cc75f9ae6de660dd42d81c593425827567589cdaf097d5d73c9cad6",
+  "export_hash": "sha256:6f2bd6e6771f44f4e67dec0d3160fdeeeb72ef39315a78b4cde61ca9e82d4096",
+  "axiom_report_hash": "sha256:344c797f10edb9210e63a70a87583371e245c9a102c14aa94048bbd03ec12197",
+  "certificate_hash": "sha256:d25c90f2ca1d084547b82e3cd1f76232ad3e960cef77766c52b93d121f2968b7",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractImplicitPhi"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -18,6 +18,7 @@
     { "name": "ImplicitGraphPoint", "kind": "def" },
     { "name": "ImplicitPhiLocalInverseLaws", "kind": "def" },
     { "name": "ImplicitFunctionExtractionArgs", "kind": "def" },
+    { "name": "ImplicitFunctionTheoremEvidence", "kind": "def" },
     { "name": "implicit_target_point_def", "kind": "theorem" },
     { "name": "implicit_function_def", "kind": "theorem" },
     { "name": "implicit_graph_point_def", "kind": "theorem" },
@@ -25,7 +26,13 @@
     { "name": "implicit_extraction_target_mem_from_args", "kind": "theorem" },
     { "name": "implicit_function_value_mem_from_args", "kind": "theorem" },
     { "name": "implicit_function_zero_from_args", "kind": "theorem" },
-    { "name": "implicit_function_unique_from_args", "kind": "theorem" }
+    { "name": "implicit_function_unique_from_args", "kind": "theorem" },
+    { "name": "implicit_function_theorem_args_from_evidence", "kind": "theorem" },
+    { "name": "implicit_function_theorem_target_mem_from_evidence", "kind": "theorem" },
+    { "name": "implicit_function_theorem_value_mem_from_evidence", "kind": "theorem" },
+    { "name": "implicit_function_theorem_zero_from_evidence", "kind": "theorem" },
+    { "name": "implicit_function_theorem_unique_from_evidence", "kind": "theorem" },
+    { "name": "implicit_function_theorem", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

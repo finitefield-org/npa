@@ -1154,6 +1154,7 @@ const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[&str] = &[
     "ImplicitGraphPoint",
     "ImplicitPhiLocalInverseLaws",
     "ImplicitFunctionExtractionArgs",
+    "ImplicitFunctionTheoremEvidence",
 ];
 
 const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[&str] = &[
@@ -1165,6 +1166,12 @@ const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[&str] = &[
     "implicit_function_value_mem_from_args",
     "implicit_function_zero_from_args",
     "implicit_function_unique_from_args",
+    "implicit_function_theorem_args_from_evidence",
+    "implicit_function_theorem_target_mem_from_evidence",
+    "implicit_function_theorem_value_mem_from_evidence",
+    "implicit_function_theorem_zero_from_evidence",
+    "implicit_function_theorem_unique_from_evidence",
+    "implicit_function_theorem",
 ];
 
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =

@@ -2166,6 +2166,95 @@ macro_rules! implicit_function_extraction_args_app {
     };
 }
 
+macro_rules! implicit_function_theorem_evidence_app {
+    () => {
+        concat!(
+            "@ImplicitFunctionTheoremEvidence.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_function_theorem_evidence_mk_ty {
+    ($result:literal) => {
+        concat!(
+            "forall (extraction_args_law : ",
+            implicit_function_extraction_args_app!(),
+            "), ",
+            "forall (target_mem_law : forall (x : X), forall (hx : x_domain x), xz_domain (",
+            implicit_target_point_app!("x"),
+            ")), ",
+            "forall (value_mem_law : forall (x : X), forall (hx : x_domain x), y_domain (",
+            implicit_function_app!("x"),
+            ")), ",
+            "forall (zero_law : forall (x : X), forall (hx : x_domain x), @Eq.{z} Z (F (",
+            implicit_graph_point_app!("x"),
+            ")) zzero), ",
+            "forall (unique_law : forall (x : X), forall (hx : x_domain x), forall (y : Y), forall (candidate_mem : xy_domain (pairXY x y)), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{w} Y y (",
+            implicit_function_app!("x"),
+            ")), ",
+            $result
+        )
+    };
+}
+
+macro_rules! implicit_extraction_target_mem_from_args_app {
+    ($args:literal, $x:literal, $hx:literal) => {
+        concat!(
+            "@implicit_extraction_target_mem_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx
+        )
+    };
+}
+
+macro_rules! implicit_function_value_mem_from_args_app {
+    ($args:literal, $x:literal, $hx:literal) => {
+        concat!(
+            "@implicit_function_value_mem_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx
+        )
+    };
+}
+
+macro_rules! implicit_function_zero_from_args_app {
+    ($args:literal, $x:literal, $hx:literal) => {
+        concat!(
+            "@implicit_function_zero_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx
+        )
+    };
+}
+
+macro_rules! implicit_function_unique_from_args_app {
+    ($args:literal, $x:literal, $hx:literal, $y:literal, $candidate_mem:literal, $zero_eq:literal) => {
+        concat!(
+            "@implicit_function_unique_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx,
+            " ",
+            $y,
+            " ",
+            $candidate_mem,
+            " ",
+            $zero_eq
+        )
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -2651,6 +2740,35 @@ macro_rules! implicit_function_extraction_args_elim {
             implicit_target_point_app!("x"),
             ")) => ",
             "fun (snd_pair_arg : forall (x : X), forall (y : Y), @Eq.{w} Y (sndXY (pairXY x y)) y) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_function_theorem_evidence_elim {
+    ($evidence:literal, $target:expr, $($tail:tt)+) => {
+        concat!(
+            $evidence,
+            " ",
+            "(",
+            $target,
+            ") ",
+            "(fun (extraction_args_arg : ",
+            implicit_function_extraction_args_app!(),
+            ") => ",
+            "fun (target_mem_arg : forall (x : X), forall (hx : x_domain x), xz_domain (",
+            implicit_target_point_app!("x"),
+            ")) => ",
+            "fun (value_mem_arg : forall (x : X), forall (hx : x_domain x), y_domain (",
+            implicit_function_app!("x"),
+            ")) => ",
+            "fun (zero_arg : forall (x : X), forall (hx : x_domain x), @Eq.{z} Z (F (",
+            implicit_graph_point_app!("x"),
+            ")) zzero) => ",
+            "fun (unique_arg : forall (x : X), forall (hx : x_domain x), forall (y : Y), forall (candidate_mem : xy_domain (pairXY x y)), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{w} Y y (",
+            implicit_function_app!("x"),
+            ")) => ",
             $($tail)+,
             ")"
         )
@@ -5709,6 +5827,16 @@ const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (snd_pair_law : forall (x : X), forall (y : Y), @Eq.{w} Y (sndXY (pairXY x y)) y), P), P"
         )),
     },
+    DefinitionArtifact {
+        name: "ImplicitFunctionTheoremEvidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!("Prop"),
+        value: abstract_implicit_function_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            implicit_function_theorem_evidence_mk_ty!("P"),
+            "), P"
+        )),
+    },
 ];
 
 const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
@@ -5886,6 +6014,134 @@ const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
                     )
                 )
             )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_theorem_args_from_evidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_theorem_evidence_app!(),
+            "), ",
+            implicit_function_extraction_args_app!()
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun evidence => ",
+            implicit_function_theorem_evidence_elim!(
+                "evidence",
+                implicit_function_extraction_args_app!(),
+                "extraction_args_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_theorem_target_mem_from_evidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_theorem_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), xz_domain (",
+            implicit_target_point_app!("x"),
+            ")"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun evidence => fun x => fun hx => ",
+            implicit_function_theorem_evidence_elim!(
+                "evidence",
+                "xz_domain (@ImplicitTargetPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x)",
+                "target_mem_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_theorem_value_mem_from_evidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_theorem_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), y_domain (",
+            implicit_function_app!("x"),
+            ")"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun evidence => fun x => fun hx => ",
+            implicit_function_theorem_evidence_elim!(
+                "evidence",
+                "y_domain (@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)",
+                "value_mem_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_theorem_zero_from_evidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_theorem_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), @Eq.{z} Z (F (",
+            implicit_graph_point_app!("x"),
+            ")) zzero"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun evidence => fun x => fun hx => ",
+            implicit_function_theorem_evidence_elim!(
+                "evidence",
+                "@Eq.{z} Z (F (@ImplicitGraphPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)) zzero",
+                "zero_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_theorem_unique_from_evidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_theorem_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), forall (y : Y), forall (candidate_mem : xy_domain (pairXY x y)), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{w} Y y (",
+            implicit_function_app!("x"),
+            ")"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun evidence => fun x => fun hx => fun y => fun candidate_mem => fun zero_eq => ",
+            implicit_function_theorem_evidence_elim!(
+                "evidence",
+                "@Eq.{w} Y y (@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)",
+                "unique_arg x hx y candidate_mem zero_eq"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_theorem",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (args : ",
+            implicit_function_extraction_args_app!(),
+            "), ",
+            implicit_function_theorem_evidence_app!()
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun args => fun (P : Prop) => fun (mk : ",
+            implicit_function_theorem_evidence_mk_ty!("P"),
+            ") => mk args ",
+            "(fun (x : X) => fun (hx : x_domain x) => ",
+            implicit_extraction_target_mem_from_args_app!("args", "x", "hx"),
+            ") ",
+            "(fun (x : X) => fun (hx : x_domain x) => ",
+            implicit_function_value_mem_from_args_app!("args", "x", "hx"),
+            ") ",
+            "(fun (x : X) => fun (hx : x_domain x) => ",
+            implicit_function_zero_from_args_app!("args", "x", "hx"),
+            ") ",
+            "(fun (x : X) => fun (hx : x_domain x) => fun (y : Y) => fun (candidate_mem : xy_domain (pairXY x y)) => fun (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero) => ",
+            implicit_function_unique_from_args_app!(
+                "args",
+                "x",
+                "hx",
+                "y",
+                "candidate_mem",
+                "zero_eq"
+            ),
+            ")"
         )),
     },
 ];
