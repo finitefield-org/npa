@@ -133,6 +133,19 @@ const EQ_REASONING_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_METRIC_TOPOLOGY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractMetricTopology",
+    source_path: "Proofs/Ai/Analysis/AbstractMetricTopology/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractMetricTopology/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractMetricTopology/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractMetricTopology/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.EqReasoning"],
+    inductives: &[],
+    definitions: ABSTRACT_METRIC_TOPOLOGY_DEFINITIONS,
+    theorems: ABSTRACT_METRIC_TOPOLOGY_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1942,6 +1955,138 @@ const EQ_REASONING_THEOREMS: &[TheoremArtifact] = &[
             "forall (A : Sort u), forall (w : A), forall (x : A), forall (y : A), forall (z : A), forall (hwx : @Eq.{u} A w x), forall (hxy : @Eq.{u} A x y), forall (hyz : @Eq.{u} A y z), @Eq.{u} A w z",
         proof:
             "fun A => fun w => fun x => fun y => fun z => fun hwx => fun hxy => fun hyz => @eq_trans.{u} A w y z (@eq_trans.{u} A w x y hwx hxy) hyz",
+    },
+];
+
+const ABSTRACT_METRIC_TOPOLOGY_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "MetricBall",
+        universe_params: &["u", "v"],
+        ty: "forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (center : X), forall (radius : R), forall (x : X), Prop",
+        value: "fun X => fun R => fun dist => fun lt => fun center => fun radius => fun x => lt (dist center x) radius",
+    },
+    DefinitionArtifact {
+        name: "Neighborhood",
+        universe_params: &["u"],
+        ty: "forall (X : Sort u), forall (center : X), forall (domain : forall (x : X), Prop), Prop",
+        value: "fun X => fun center => fun domain => domain center",
+    },
+    DefinitionArtifact {
+        name: "LocalMem",
+        universe_params: &["u"],
+        ty: "forall (X : Sort u), forall (domain : forall (x : X), Prop), forall (x : X), Prop",
+        value: "fun X => fun domain => fun x => domain x",
+    },
+    DefinitionArtifact {
+        name: "LocalPred",
+        universe_params: &["u"],
+        ty: "forall (X : Sort u), forall (domain : forall (x : X), Prop), forall (P : forall (x : X), Prop), Prop",
+        value: "fun X => fun domain => fun P => forall (x : X), forall (hx : domain x), P x",
+    },
+    DefinitionArtifact {
+        name: "LocalEq",
+        universe_params: &["u", "v"],
+        ty: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), Prop",
+        value: "fun X => fun Y => fun domain => fun f => fun g => forall (x : X), forall (hx : domain x), @Eq.{v} Y (f x) (g x)",
+    },
+    DefinitionArtifact {
+        name: "LocalUnique",
+        universe_params: &["u", "v"],
+        ty: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (predicate : forall (x : X), forall (y : Y), Prop), forall (candidate : forall (x : X), Y), Prop",
+        value: "fun X => fun Y => fun domain => fun predicate => fun candidate => forall (other : forall (x : X), Y), forall (other_sol : forall (x : X), forall (hx : domain x), predicate x (other x)), forall (candidate_sol : forall (x : X), forall (hx : domain x), predicate x (candidate x)), @LocalEq.{u,v} X Y domain other candidate",
+    },
+];
+
+const ABSTRACT_METRIC_TOPOLOGY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "metric_ball_intro",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (center : X), forall (radius : R), forall (x : X), forall (h : lt (dist center x) radius), @MetricBall.{u,v} X R dist lt center radius x",
+        proof: "fun X => fun R => fun dist => fun lt => fun center => fun radius => fun x => fun h => h",
+    },
+    TheoremArtifact {
+        name: "metric_ball_elim",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (center : X), forall (radius : R), forall (x : X), forall (h : @MetricBall.{u,v} X R dist lt center radius x), lt (dist center x) radius",
+        proof: "fun X => fun R => fun dist => fun lt => fun center => fun radius => fun x => fun h => h",
+    },
+    TheoremArtifact {
+        name: "neighborhood_intro",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (center : X), forall (domain : forall (x : X), Prop), forall (h : domain center), @Neighborhood.{u} X center domain",
+        proof: "fun X => fun center => fun domain => fun h => h",
+    },
+    TheoremArtifact {
+        name: "neighborhood_center",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (center : X), forall (domain : forall (x : X), Prop), forall (h : @Neighborhood.{u} X center domain), domain center",
+        proof: "fun X => fun center => fun domain => fun h => h",
+    },
+    TheoremArtifact {
+        name: "neighborhood_shrink",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (center : X), forall (larger : forall (x : X), Prop), forall (smaller : forall (x : X), Prop), forall (sub : forall (x : X), forall (hx : smaller x), larger x), forall (h : @Neighborhood.{u} X center smaller), @Neighborhood.{u} X center larger",
+        proof: "fun X => fun center => fun larger => fun smaller => fun sub => fun h => sub center h",
+    },
+    TheoremArtifact {
+        name: "local_mem_intro",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (domain : forall (x : X), Prop), forall (x : X), forall (h : domain x), @LocalMem.{u} X domain x",
+        proof: "fun X => fun domain => fun x => fun h => h",
+    },
+    TheoremArtifact {
+        name: "local_mem_elim",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (domain : forall (x : X), Prop), forall (x : X), forall (h : @LocalMem.{u} X domain x), domain x",
+        proof: "fun X => fun domain => fun x => fun h => h",
+    },
+    TheoremArtifact {
+        name: "local_pred_intro",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (domain : forall (x : X), Prop), forall (P : forall (x : X), Prop), forall (h : forall (x : X), forall (hx : domain x), P x), @LocalPred.{u} X domain P",
+        proof: "fun X => fun domain => fun P => fun h => h",
+    },
+    TheoremArtifact {
+        name: "local_pred_apply",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (domain : forall (x : X), Prop), forall (P : forall (x : X), Prop), forall (local : @LocalPred.{u} X domain P), forall (x : X), forall (hx : domain x), P x",
+        proof: "fun X => fun domain => fun P => fun local => fun x => fun hx => local x hx",
+    },
+    TheoremArtifact {
+        name: "local_pred_shrink",
+        universe_params: &["u"],
+        statement: "forall (X : Sort u), forall (larger : forall (x : X), Prop), forall (smaller : forall (x : X), Prop), forall (P : forall (x : X), Prop), forall (sub : forall (x : X), forall (hx : smaller x), larger x), forall (local : @LocalPred.{u} X larger P), @LocalPred.{u} X smaller P",
+        proof: "fun X => fun larger => fun smaller => fun P => fun sub => fun local => fun (x : X) => fun (hx : smaller x) => local x (sub x hx)",
+    },
+    TheoremArtifact {
+        name: "metric_ball_mono",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (center : X), forall (r1 : R), forall (r2 : R), forall (h_le : forall (x : X), forall (hx : @MetricBall.{u,v} X R dist lt center r1 x), @MetricBall.{u,v} X R dist lt center r2 x), @LocalPred.{u} X (@MetricBall.{u,v} X R dist lt center r1) (@MetricBall.{u,v} X R dist lt center r2)",
+        proof: "fun X => fun R => fun dist => fun lt => fun center => fun r1 => fun r2 => fun h_le => fun (x : X) => fun (hx : @MetricBall.{u,v} X R dist lt center r1 x) => h_le x hx",
+    },
+    TheoremArtifact {
+        name: "local_eq_refl",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (f : forall (x : X), Y), @LocalEq.{u,v} X Y domain f f",
+        proof: "fun X => fun Y => fun domain => fun f => fun (x : X) => fun (hx : domain x) => @Eq.refl.{v} Y (f x)",
+    },
+    TheoremArtifact {
+        name: "local_eq_symm",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), forall (h : @LocalEq.{u,v} X Y domain f g), @LocalEq.{u,v} X Y domain g f",
+        proof: "fun X => fun Y => fun domain => fun f => fun g => fun h => fun (x : X) => fun (hx : domain x) => @eq_symm.{v} Y (f x) (g x) (h x hx)",
+    },
+    TheoremArtifact {
+        name: "local_eq_trans",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), forall (k : forall (x : X), Y), forall (hfg : @LocalEq.{u,v} X Y domain f g), forall (hgk : @LocalEq.{u,v} X Y domain g k), @LocalEq.{u,v} X Y domain f k",
+        proof: "fun X => fun Y => fun domain => fun f => fun g => fun k => fun hfg => fun hgk => fun (x : X) => fun (hx : domain x) => @eq_trans.{v} Y (f x) (g x) (k x) (hfg x hx) (hgk x hx)",
+    },
+    TheoremArtifact {
+        name: "local_unique_apply",
+        universe_params: &["u", "v"],
+        statement: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (predicate : forall (x : X), forall (y : Y), Prop), forall (candidate : forall (x : X), Y), forall (uniq : @LocalUnique.{u,v} X Y domain predicate candidate), forall (other : forall (x : X), Y), forall (other_sol : forall (x : X), forall (hx : domain x), predicate x (other x)), forall (candidate_sol : forall (x : X), forall (hx : domain x), predicate x (candidate x)), @LocalEq.{u,v} X Y domain other candidate",
+        proof: "fun X => fun Y => fun domain => fun predicate => fun candidate => fun uniq => fun other => fun other_sol => fun candidate_sol => uniq other other_sol candidate_sol",
     },
 ];
 
@@ -12195,6 +12340,18 @@ fn run() -> Result<(), String> {
         &eq_reasoning_imports,
         &eq_reasoning_source_interfaces,
     )?;
+    let abstract_metric_topology_imports =
+        vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
+    let abstract_metric_topology_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+    ];
+    let abstract_metric_topology = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_METRIC_TOPOLOGY_MODULE,
+        &abstract_metric_topology_imports,
+        &abstract_metric_topology_source_interfaces,
+    )?;
     let ring = build_and_write_module(
         &proof_root,
         &RING_MODULE,
@@ -13116,6 +13273,7 @@ fn run() -> Result<(), String> {
             prop,
             reduction,
             eq_reasoning,
+            abstract_metric_topology,
             ring,
             square,
             ordered_field,

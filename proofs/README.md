@@ -16,6 +16,9 @@ Current bundles:
 - `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/EqReasoning/`: equality reasoning module importing `Std.Logic.Eq` and using the
   expected builtin `Eq.rec` axiom interface.
+- `Proofs/Ai/Analysis/AbstractMetricTopology/`: predicate-level metric ball, neighborhood, local
+  membership, local predicate, local equality, and local uniqueness API for the inverse/implicit
+  function route.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing

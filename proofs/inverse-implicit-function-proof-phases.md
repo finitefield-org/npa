@@ -62,7 +62,7 @@ The exact module names can be adjusted to fit the corpus, but the intended layer
 
 | Module | Role |
 | --- | --- |
-| `Proofs.Ai.Analysis.AbstractMetricTopology` | balls, neighborhoods, open sets, local predicates |
+| `Proofs.Ai.Analysis.AbstractMetricTopology` | metric balls, neighborhoods, local membership, local predicates/equality/uniqueness |
 | `Proofs.Ai.Analysis.AbstractNormedSpace` | normed additive/vector-space laws and product norms |
 | `Proofs.Ai.Analysis.AbstractLinearMap` | bounded linear maps, operator norm, linear isomorphisms |
 | `Proofs.Ai.Analysis.AbstractDerivative` | Frechet derivative and calculus rules |
@@ -74,12 +74,17 @@ The exact module names can be adjusted to fit the corpus, but the intended layer
 
 ### IIF0: Target Shape And Direct-Law Audit
 
-- Status: Planned.
+- Status: Initial audit recorded.
 - Deliverables:
   - Freeze the target theorem statement for `implicit_function_theorem`.
   - Identify any existing or planned wrappers that already assume the implicit-function conclusion.
   - Decide whether the first theorem is over Banach spaces or over finite-dimensional Euclidean
     spaces with an explicit completeness package.
+- Current audit result:
+  - Before starting IIF1, the proof corpus had no `Proofs.Ai.Analysis.*` modules and no existing
+    implicit-function wrapper.
+  - The preferred first route remains Banach-style with explicit completeness and law packages;
+    the finite-dimensional route remains the fallback if the completeness API is not ready.
 - Acceptance criteria:
   - The target exposes all assumptions explicitly: base point, zero equation, differentiability
     neighborhood, invertibility of `D_y F(a,b)`, and quantitative radius/Lipschitz bounds.
@@ -87,10 +92,18 @@ The exact module names can be adjusted to fit the corpus, but the intended layer
 
 ### IIF1: Local Topology API
 
-- Status: Planned.
+- Status: Certificate generated for the predicate-level local topology API in
+  `Proofs.Ai.Analysis.AbstractMetricTopology`.
 - Deliverables:
   - Define balls, neighborhoods, local membership, local uniqueness, and local equality.
   - Prove basic ball monotonicity and neighborhood shrink lemmas.
+- Completed exports:
+  - Definitions: `MetricBall`, `Neighborhood`, `LocalMem`, `LocalPred`, `LocalEq`,
+    `LocalUnique`.
+  - Theorems: `metric_ball_intro`, `metric_ball_elim`, `neighborhood_intro`,
+    `neighborhood_center`, `neighborhood_shrink`, `local_mem_intro`, `local_mem_elim`,
+    `local_pred_intro`, `local_pred_apply`, `local_pred_shrink`, `metric_ball_mono`,
+    `local_eq_refl`, `local_eq_symm`, `local_eq_trans`, `local_unique_apply`.
 - Needed later for:
   - expressing the domains on which the local inverse and implicit function are valid.
 

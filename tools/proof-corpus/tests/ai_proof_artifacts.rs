@@ -246,6 +246,33 @@ const EQ_REASONING_THEOREMS: &[&str] = &[
     "eq_calc3",
 ];
 
+const ABSTRACT_METRIC_TOPOLOGY_DEFINITIONS: &[&str] = &[
+    "MetricBall",
+    "Neighborhood",
+    "LocalMem",
+    "LocalPred",
+    "LocalEq",
+    "LocalUnique",
+];
+
+const ABSTRACT_METRIC_TOPOLOGY_THEOREMS: &[&str] = &[
+    "metric_ball_intro",
+    "metric_ball_elim",
+    "neighborhood_intro",
+    "neighborhood_center",
+    "neighborhood_shrink",
+    "local_mem_intro",
+    "local_mem_elim",
+    "local_pred_intro",
+    "local_pred_apply",
+    "local_pred_shrink",
+    "metric_ball_mono",
+    "local_eq_refl",
+    "local_eq_symm",
+    "local_eq_trans",
+    "local_unique_apply",
+];
+
 const RING_INDUCTIVES: &[&str] = &["RingElem"];
 
 const RING_DEFINITIONS: &[&str] = &["zero", "one", "add", "neg", "sub", "mul"];
@@ -1078,6 +1105,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: &[],
         theorems: EQ_REASONING_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractMetricTopology",
+        source: "Proofs/Ai/Analysis/AbstractMetricTopology/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractMetricTopology/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractMetricTopology/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractMetricTopology/replay.json",
+        imports: &["Proofs.Ai.EqReasoning", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_METRIC_TOPOLOGY_DEFINITIONS,
+        theorems: ABSTRACT_METRIC_TOPOLOGY_THEOREMS,
         axioms: &["Eq.rec"],
     },
     ExpectedModule {

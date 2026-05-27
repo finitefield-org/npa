@@ -109,6 +109,24 @@ theorems = ["eq_symm", "eq_trans", "eq_congr_arg", "eq_congr_fun", "eq_congr2", 
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Analysis.AbstractMetricTopology"
+source = "Proofs/Ai/Analysis/AbstractMetricTopology/source.npa"
+certificate = "Proofs/Ai/Analysis/AbstractMetricTopology/certificate.npcert"
+meta = "Proofs/Ai/Analysis/AbstractMetricTopology/meta.json"
+replay = "Proofs/Ai/Analysis/AbstractMetricTopology/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:905fa70ef967459e417adea05e26a087b54c0fe8786b84f919a793410770fc4f"
+certificate_file_sha256 = "sha256:6d213ecc22a282ae10dbcd837e5437ad9d57b82c2a52d970ff9b13d1472877d6"
+export_hash = "sha256:afcdfd97b33939bea200e4d1e83374ea0a632b3d2e31a32d2f2d198f678352a8"
+axiom_report_hash = "sha256:6821508440c560fb4a20c6b8dde9b28116f41a1733e43c2dd5163cd66c37b969"
+certificate_hash = "sha256:f4ca8c631d94109fa7b6e0258a9813ed9695462c3ab193d9292544931d8f35fd"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning"]
+definitions = ["MetricBall", "Neighborhood", "LocalMem", "LocalPred", "LocalEq", "LocalUnique"]
+theorems = ["metric_ball_intro", "metric_ball_elim", "neighborhood_intro", "neighborhood_center", "neighborhood_shrink", "local_mem_intro", "local_mem_elim", "local_pred_intro", "local_pred_apply", "local_pred_shrink", "metric_ball_mono", "local_eq_refl", "local_eq_symm", "local_eq_trans", "local_unique_apply"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.Ring"
 source = "Proofs/Ai/Algebra/Ring/source.npa"
 certificate = "Proofs/Ai/Algebra/Ring/certificate.npcert"
