@@ -887,6 +887,50 @@ const ABSTRACT_VECTOR_SPACE_THEOREMS: &[&str] = &[
     "linear_comb3_ext",
 ];
 
+const ABSTRACT_NORMED_SPACE_DEFINITIONS: &[&str] = &[
+    "NormDist",
+    "NormedSpaceLawArgs",
+    "ProductZero",
+    "ProductAdd",
+    "ProductNeg",
+    "ProductSmul",
+    "ProductSub",
+    "ProductNorm",
+    "ProductDist",
+    "ProductNormEstimateArgs",
+];
+
+const ABSTRACT_NORMED_SPACE_THEOREMS: &[&str] = &[
+    "norm_dist_def",
+    "norm_nonneg_from_args",
+    "norm_zero_from_args",
+    "norm_triangle_from_args",
+    "norm_neg_from_args",
+    "norm_dist_self_from_args",
+    "norm_dist_symm_from_args",
+    "norm_dist_triangle_from_args",
+    "product_zero_def",
+    "product_add_def",
+    "product_neg_def",
+    "product_smul_def",
+    "product_sub_def",
+    "product_norm_def",
+    "product_dist_def",
+    "product_fst_pair_from_args",
+    "product_snd_pair_from_args",
+    "product_pair_eta_from_args",
+    "product_add_fst_from_pair_law",
+    "product_add_snd_from_pair_law",
+    "product_smul_fst_from_pair_law",
+    "product_smul_snd_from_pair_law",
+    "product_norm_pair_eq_from_pair_laws",
+    "product_norm_fst_le_from_args",
+    "product_norm_snd_le_from_args",
+    "product_norm_pair_le_add_from_args",
+    "product_norm_add_le_from_args",
+    "product_dist_pair_le_add_from_args",
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
     &["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"];
 
@@ -1756,6 +1800,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: ABSTRACT_VECTOR_SPACE_DEFINITIONS,
         theorems: ABSTRACT_VECTOR_SPACE_THEOREMS,
         axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractNormedSpace",
+        source: "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractNormedSpace/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractNormedSpace/replay.json",
+        imports: &[
+            "Proofs.Ai.EqReasoning",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_NORMED_SPACE_DEFINITIONS,
+        theorems: ABSTRACT_NORMED_SPACE_THEOREMS,
+        axioms: &["Eq.rec"],
     },
     ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractInnerProduct",

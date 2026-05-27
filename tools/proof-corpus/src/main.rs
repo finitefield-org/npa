@@ -146,6 +146,23 @@ const ABSTRACT_METRIC_TOPOLOGY_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_NORMED_SPACE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractNormedSpace",
+    source_path: "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractNormedSpace/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractNormedSpace/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Vector.AbstractSpace",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_NORMED_SPACE_DEFINITIONS,
+    theorems: ABSTRACT_NORMED_SPACE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1097,6 +1114,90 @@ macro_rules! abstract_vector_space_abs {
     };
 }
 
+macro_rules! abstract_normed_space_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (norm : forall (x : Vector), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_normed_space_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_product_space_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (a : X), forall (b : X), X), ",
+            "forall (xneg : forall (a : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (a : Y), forall (b : Y), Y), ",
+            "forall (yneg : forall (a : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Product : Sort p), ",
+            "forall (pair : forall (x : X), forall (y : Y), Product), ",
+            "forall (fst : forall (point : Product), X), ",
+            "forall (snd : forall (point : Product), Y), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_product_space_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Product => fun pair => fun fst => fun snd => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Product => fun pair => fun fst => fun snd => ",
+            $tail
+        )
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -1329,6 +1430,45 @@ macro_rules! vector_args_elim {
             "fun (sub_add_sub_cancel_left_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg z y)) (@vsub.{v} Vector vadd vneg x y)) => ",
             "fun (linear_comb2_ext_arg : forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), @Eq.{v} Vector (@linear_comb2.{u,v} Scalar Vector vadd smul a x b y) (vadd (smul a x) (smul b y))) => ",
             "fun (linear_comb3_ext_arg : forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), forall (c : Scalar), forall (z : Vector), @Eq.{v} Vector (@linear_comb3.{u,v} Scalar Vector vadd smul a x b y c z) (vadd (vadd (smul a x) (smul b y)) (smul c z))) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! normed_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "norm_args ",
+            $target,
+            " ",
+            "(fun (norm_nonneg_arg : forall (x : Vector), le_rel zero (norm x)) => ",
+            "fun (norm_zero_arg : @Eq.{u} Scalar (norm vzero) zero) => ",
+            "fun (norm_triangle_arg : forall (x : Vector), forall (y : Vector), le_rel (norm (vadd x y)) (add (norm x) (norm y))) => ",
+            "fun (norm_neg_arg : forall (x : Vector), @Eq.{u} Scalar (norm (vneg x)) (norm x)) => ",
+            "fun (norm_dist_self_arg : forall (x : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x x) zero) => ",
+            "fun (norm_dist_symm_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y x)) => ",
+            "fun (norm_dist_triangle_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x z) (add (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y z))) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! product_norm_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "product_args ",
+            $target,
+            " ",
+            "(fun (fst_pair_arg : forall (x : X), forall (y : Y), @Eq.{v} X (fst (pair x y)) x) => ",
+            "fun (snd_pair_arg : forall (x : X), forall (y : Y), @Eq.{w} Y (snd (pair x y)) y) => ",
+            "fun (pair_eta_arg : forall (point : Product), @Eq.{p} Product (pair (fst point) (snd point)) point) => ",
+            "fun (product_norm_fst_le_arg : forall (point : Product), le_rel (xnorm (fst point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)) => ",
+            "fun (product_norm_snd_le_arg : forall (point : Product), le_rel (ynorm (snd point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)) => ",
+            "fun (product_norm_pair_le_add_arg : forall (x : X), forall (y : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm x) bx), forall (hy : le_rel (ynorm y) bound_y), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x y)) (add bx bound_y)) => ",
+            "fun (product_norm_add_le_arg : forall (left : Product), forall (right : Product), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (add (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right))) => ",
+            "fun (product_dist_pair_le_add_arg : forall (x1 : X), forall (x2 : X), forall (y1 : Y), forall (y2 : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm (@vsub.{v} X xadd xneg x2 x1)) bx), forall (hy : le_rel (ynorm (@vsub.{w} Y yadd yneg y2 y1)) bound_y), le_rel (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x1 y1) (pair x2 y2)) (add bx bound_y)) => ",
             $($tail)+,
             ")"
         )
@@ -2087,6 +2227,441 @@ const ABSTRACT_METRIC_TOPOLOGY_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &["u", "v"],
         statement: "forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (predicate : forall (x : X), forall (y : Y), Prop), forall (candidate : forall (x : X), Y), forall (uniq : @LocalUnique.{u,v} X Y domain predicate candidate), forall (other : forall (x : X), Y), forall (other_sol : forall (x : X), forall (hx : domain x), predicate x (other x)), forall (candidate_sol : forall (x : X), forall (hx : domain x), predicate x (candidate x)), @LocalEq.{u,v} X Y domain other candidate",
         proof: "fun X => fun Y => fun domain => fun predicate => fun candidate => fun uniq => fun other => fun other_sol => fun candidate_sol => uniq other other_sol candidate_sol",
+    },
+];
+
+const ABSTRACT_NORMED_SPACE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "NormDist",
+        universe_params: &["u", "v"],
+        ty: abstract_normed_space_params!("forall (x : Vector), forall (y : Vector), Scalar"),
+        value: abstract_normed_space_abs!(
+            "fun x => fun y => norm (@vsub.{v} Vector vadd vneg y x)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NormedSpaceLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_normed_space_params!("Prop"),
+        value: abstract_normed_space_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (norm_nonneg_law : forall (x : Vector), le_rel zero (norm x)), ",
+            "forall (norm_zero_law : @Eq.{u} Scalar (norm vzero) zero), ",
+            "forall (norm_triangle_law : forall (x : Vector), forall (y : Vector), le_rel (norm (vadd x y)) (add (norm x) (norm y))), ",
+            "forall (norm_neg_law : forall (x : Vector), @Eq.{u} Scalar (norm (vneg x)) (norm x)), ",
+            "forall (norm_dist_self_law : forall (x : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x x) zero), ",
+            "forall (norm_dist_symm_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y x)), ",
+            "forall (norm_dist_triangle_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x z) (add (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y z))), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ProductZero",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!("Product"),
+        value: abstract_product_space_abs!("pair xzero yzero"),
+    },
+    DefinitionArtifact {
+        name: "ProductAdd",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!(
+            "forall (left : Product), forall (right : Product), Product"
+        ),
+        value: abstract_product_space_abs!(
+            "fun left => fun right => pair (xadd (fst left) (fst right)) (yadd (snd left) (snd right))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ProductNeg",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!("forall (point : Product), Product"),
+        value: abstract_product_space_abs!(
+            "fun point => pair (xneg (fst point)) (yneg (snd point))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ProductSmul",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!(
+            "forall (a : Scalar), forall (point : Product), Product"
+        ),
+        value: abstract_product_space_abs!(
+            "fun a => fun point => pair (xsmul a (fst point)) (ysmul a (snd point))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ProductSub",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!(
+            "forall (left : Product), forall (right : Product), Product"
+        ),
+        value: abstract_product_space_abs!(
+            "fun left => fun right => @ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ProductNorm",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!("forall (point : Product), Scalar"),
+        value: abstract_product_space_abs!(
+            "fun point => add (xnorm (fst point)) (ynorm (snd point))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ProductDist",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!(
+            "forall (left : Product), forall (right : Product), Scalar"
+        ),
+        value: abstract_product_space_abs!(
+            "fun left => fun right => @ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductSub.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right left)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ProductNormEstimateArgs",
+        universe_params: &["p", "u", "v", "w"],
+        ty: abstract_product_space_params!("Prop"),
+        value: abstract_product_space_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (fst_pair_law : forall (x : X), forall (y : Y), @Eq.{v} X (fst (pair x y)) x), ",
+            "forall (snd_pair_law : forall (x : X), forall (y : Y), @Eq.{w} Y (snd (pair x y)) y), ",
+            "forall (pair_eta_law : forall (point : Product), @Eq.{p} Product (pair (fst point) (snd point)) point), ",
+            "forall (product_norm_fst_le_law : forall (point : Product), le_rel (xnorm (fst point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)), ",
+            "forall (product_norm_snd_le_law : forall (point : Product), le_rel (ynorm (snd point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)), ",
+            "forall (product_norm_pair_le_add_law : forall (x : X), forall (y : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm x) bx), forall (hy : le_rel (ynorm y) bound_y), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x y)) (add bx bound_y)), ",
+            "forall (product_norm_add_le_law : forall (left : Product), forall (right : Product), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (add (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right))), ",
+            "forall (product_dist_pair_le_add_law : forall (x1 : X), forall (x2 : X), forall (y1 : Y), forall (y2 : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm (@vsub.{v} X xadd xneg x2 x1)) bx), forall (hy : le_rel (ynorm (@vsub.{w} Y yadd yneg y2 y1)) bound_y), le_rel (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x1 y1) (pair x2 y2)) (add bx bound_y)), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_NORMED_SPACE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "norm_dist_def",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (norm (@vsub.{v} Vector vadd vneg y x))"
+        ),
+        proof: abstract_normed_space_abs!(
+            "fun x => fun y => @Eq.refl.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "norm_nonneg_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (x : Vector), le_rel zero (norm x)"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => fun x => ",
+            normed_args_elim!("(le_rel zero (norm x))", "norm_nonneg_arg x")
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_zero_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), @Eq.{u} Scalar (norm vzero) zero"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => ",
+            normed_args_elim!("(@Eq.{u} Scalar (norm vzero) zero)", "norm_zero_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_triangle_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (x : Vector), forall (y : Vector), le_rel (norm (vadd x y)) (add (norm x) (norm y))"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => fun x => fun y => ",
+            normed_args_elim!(
+                "(le_rel (norm (vadd x y)) (add (norm x) (norm y)))",
+                "norm_triangle_arg x y"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_neg_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (x : Vector), @Eq.{u} Scalar (norm (vneg x)) (norm x)"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => fun x => ",
+            normed_args_elim!(
+                "(@Eq.{u} Scalar (norm (vneg x)) (norm x))",
+                "norm_neg_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_dist_self_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (x : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x x) zero"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => fun x => ",
+            normed_args_elim!(
+                "(@Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x x) zero)",
+                "norm_dist_self_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_dist_symm_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y x)"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => fun x => fun y => ",
+            normed_args_elim!(
+                "(@Eq.{u} Scalar (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y x))",
+                "norm_dist_symm_arg x y"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_dist_triangle_from_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (norm_args : @NormedSpaceLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm), forall (x : Vector), forall (y : Vector), forall (z : Vector), le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x z) (add (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y z))"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun norm_args => fun x => fun y => fun z => ",
+            normed_args_elim!(
+                "(le_rel (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x z) (add (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x y) (@NormDist.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y z)))",
+                "norm_dist_triangle_arg x y z"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "product_zero_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "@Eq.{p} Product (@ProductZero.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd) (pair xzero yzero)"
+        ),
+        proof: abstract_product_space_abs!(
+            "@Eq.refl.{p} Product (@ProductZero.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_add_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (left : Product), forall (right : Product), @Eq.{p} Product (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right) (pair (xadd (fst left) (fst right)) (yadd (snd left) (snd right)))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun left => fun right => @Eq.refl.{p} Product (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_neg_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (point : Product), @Eq.{p} Product (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point) (pair (xneg (fst point)) (yneg (snd point)))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun point => @Eq.refl.{p} Product (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_smul_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (a : Scalar), forall (point : Product), @Eq.{p} Product (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd a point) (pair (xsmul a (fst point)) (ysmul a (snd point)))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun a => fun point => @Eq.refl.{p} Product (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd a point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_sub_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (left : Product), forall (right : Product), @Eq.{p} Product (@ProductSub.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right) (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left (@ProductNeg.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun left => fun right => @Eq.refl.{p} Product (@ProductSub.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_norm_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (point : Product), @Eq.{u} Scalar (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point) (add (xnorm (fst point)) (ynorm (snd point)))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun point => @Eq.refl.{u} Scalar (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_dist_def",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (left : Product), forall (right : Product), @Eq.{u} Scalar (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductSub.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right left))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun left => fun right => @Eq.refl.{u} Scalar (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_fst_pair_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (x : X), forall (y : Y), @Eq.{v} X (fst (pair x y)) x"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun x => fun y => ",
+            product_norm_args_elim!("(@Eq.{v} X (fst (pair x y)) x)", "fst_pair_arg x y")
+        )),
+    },
+    TheoremArtifact {
+        name: "product_snd_pair_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (x : X), forall (y : Y), @Eq.{w} Y (snd (pair x y)) y"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun x => fun y => ",
+            product_norm_args_elim!("(@Eq.{w} Y (snd (pair x y)) y)", "snd_pair_arg x y")
+        )),
+    },
+    TheoremArtifact {
+        name: "product_pair_eta_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (point : Product), @Eq.{p} Product (pair (fst point) (snd point)) point"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun point => ",
+            product_norm_args_elim!(
+                "(@Eq.{p} Product (pair (fst point) (snd point)) point)",
+                "pair_eta_arg point"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "product_add_fst_from_pair_law",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (fst_pair_law : forall (x : X), forall (y : Y), @Eq.{v} X (fst (pair x y)) x), forall (left : Product), forall (right : Product), @Eq.{v} X (fst (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (xadd (fst left) (fst right))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun fst_pair_law => fun left => fun right => fst_pair_law (xadd (fst left) (fst right)) (yadd (snd left) (snd right))"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_add_snd_from_pair_law",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (snd_pair_law : forall (x : X), forall (y : Y), @Eq.{w} Y (snd (pair x y)) y), forall (left : Product), forall (right : Product), @Eq.{w} Y (snd (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (yadd (snd left) (snd right))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun snd_pair_law => fun left => fun right => snd_pair_law (xadd (fst left) (fst right)) (yadd (snd left) (snd right))"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_smul_fst_from_pair_law",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (fst_pair_law : forall (x : X), forall (y : Y), @Eq.{v} X (fst (pair x y)) x), forall (a : Scalar), forall (point : Product), @Eq.{v} X (fst (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd a point)) (xsmul a (fst point))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun fst_pair_law => fun a => fun point => fst_pair_law (xsmul a (fst point)) (ysmul a (snd point))"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_smul_snd_from_pair_law",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (snd_pair_law : forall (x : X), forall (y : Y), @Eq.{w} Y (snd (pair x y)) y), forall (a : Scalar), forall (point : Product), @Eq.{w} Y (snd (@ProductSmul.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd a point)) (ysmul a (snd point))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun snd_pair_law => fun a => fun point => snd_pair_law (xsmul a (fst point)) (ysmul a (snd point))"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_norm_pair_eq_from_pair_laws",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (fst_pair_law : forall (x : X), forall (y : Y), @Eq.{v} X (fst (pair x y)) x), forall (snd_pair_law : forall (x : X), forall (y : Y), @Eq.{w} Y (snd (pair x y)) y), forall (x : X), forall (y : Y), @Eq.{u} Scalar (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x y)) (add (xnorm x) (ynorm y))"
+        ),
+        proof: abstract_product_space_abs!(
+            "fun fst_pair_law => fun snd_pair_law => fun x => fun y => @eq_congr2.{u,u,u} Scalar Scalar Scalar add (xnorm (fst (pair x y))) (xnorm x) (ynorm (snd (pair x y))) (ynorm y) (@eq_congr_arg.{v,u} X Scalar xnorm (fst (pair x y)) x (fst_pair_law x y)) (@eq_congr_arg.{w,u} Y Scalar ynorm (snd (pair x y)) y (snd_pair_law x y))"
+        ),
+    },
+    TheoremArtifact {
+        name: "product_norm_fst_le_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (point : Product), le_rel (xnorm (fst point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun point => ",
+            product_norm_args_elim!(
+                "(le_rel (xnorm (fst point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point))",
+                "product_norm_fst_le_arg point"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "product_norm_snd_le_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (point : Product), le_rel (ynorm (snd point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point)"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun point => ",
+            product_norm_args_elim!(
+                "(le_rel (ynorm (snd point)) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd point))",
+                "product_norm_snd_le_arg point"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "product_norm_pair_le_add_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (x : X), forall (y : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm x) bx), forall (hy : le_rel (ynorm y) bound_y), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x y)) (add bx bound_y)"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun x => fun y => fun bx => fun bound_y => fun hx => fun hy => ",
+            product_norm_args_elim!(
+                "(le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x y)) (add bx bound_y))",
+                "product_norm_pair_le_add_arg x y bx bound_y hx hy"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "product_norm_add_le_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (left : Product), forall (right : Product), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (add (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right))"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun left => fun right => ",
+            product_norm_args_elim!(
+                "(le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (add (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right)))",
+                "product_norm_add_le_arg left right"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "product_dist_pair_le_add_from_args",
+        universe_params: &["p", "u", "v", "w"],
+        statement: abstract_product_space_params!(
+            "forall (product_args : @ProductNormEstimateArgs.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd), forall (x1 : X), forall (x2 : X), forall (y1 : Y), forall (y2 : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm (@vsub.{v} X xadd xneg x2 x1)) bx), forall (hy : le_rel (ynorm (@vsub.{w} Y yadd yneg y2 y1)) bound_y), le_rel (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x1 y1) (pair x2 y2)) (add bx bound_y)"
+        ),
+        proof: abstract_product_space_abs!(concat!(
+            "fun product_args => fun x1 => fun x2 => fun y1 => fun y2 => fun bx => fun bound_y => fun hx => fun hy => ",
+            product_norm_args_elim!(
+                "(le_rel (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x1 y1) (pair x2 y2)) (add bx bound_y))",
+                "product_dist_pair_le_add_arg x1 x2 y1 y2 bx bound_y hx hy"
+            )
+        )),
     },
 ];
 
@@ -13057,6 +13632,22 @@ fn run() -> Result<(), String> {
         &abstract_vector_space_imports,
         &abstract_vector_space_source_interfaces,
     )?;
+    let abstract_normed_space_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+    ];
+    let abstract_normed_space_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+    ];
+    let abstract_normed_space = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_NORMED_SPACE_MODULE,
+        &abstract_normed_space_imports,
+        &abstract_normed_space_source_interfaces,
+    )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -13311,6 +13902,7 @@ fn run() -> Result<(), String> {
             abstract_square_normalize,
             abstract_scalar_derive,
             abstract_vector_space,
+            abstract_normed_space,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,

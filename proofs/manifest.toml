@@ -797,6 +797,24 @@ theorems = ["vec_sub_def", "vec_add_assoc", "vec_add_comm", "vec_add_zero", "vec
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Analysis.AbstractNormedSpace"
+source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
+certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"
+meta = "Proofs/Ai/Analysis/AbstractNormedSpace/meta.json"
+replay = "Proofs/Ai/Analysis/AbstractNormedSpace/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e19b892341ea2d8c318a19e16fa4347c328b3b9aa111ab3a75f4ef72c018f359"
+certificate_file_sha256 = "sha256:b22cab5fed2e7d7cbead5b276cbad83e2dd7cfcf243cda99eaa0c6b6aa4545a0"
+export_hash = "sha256:9ba4bceb63822a367a670c83b85d18478c16eff046a8d3ef1801451e259294d8"
+axiom_report_hash = "sha256:4ffc0ac83684ca65d83296a7fb4b8104c1099ad79204df7e4efd1f430359d3c0"
+certificate_hash = "sha256:bffd653157060243f880baadf316dcc6fa80ff588d90fb13945621339f2fcc99"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace"]
+definitions = ["NormDist", "NormedSpaceLawArgs", "ProductZero", "ProductAdd", "ProductNeg", "ProductSmul", "ProductSub", "ProductNorm", "ProductDist", "ProductNormEstimateArgs"]
+theorems = ["norm_dist_def", "norm_nonneg_from_args", "norm_zero_from_args", "norm_triangle_from_args", "norm_neg_from_args", "norm_dist_self_from_args", "norm_dist_symm_from_args", "norm_dist_triangle_from_args", "product_zero_def", "product_add_def", "product_neg_def", "product_smul_def", "product_sub_def", "product_norm_def", "product_dist_def", "product_fst_pair_from_args", "product_snd_pair_from_args", "product_pair_eta_from_args", "product_add_fst_from_pair_law", "product_add_snd_from_pair_law", "product_smul_fst_from_pair_law", "product_smul_snd_from_pair_law", "product_norm_pair_eq_from_pair_laws", "product_norm_fst_le_from_args", "product_norm_snd_le_from_args", "product_norm_pair_le_add_from_args", "product_norm_add_le_from_args", "product_dist_pair_le_add_from_args"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Vector.AbstractInnerProduct"
 source = "Proofs/Ai/Vector/AbstractInnerProduct/source.npa"
 certificate = "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert"
