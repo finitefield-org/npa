@@ -138,7 +138,8 @@ The exact module names can be adjusted to fit the corpus, but the intended layer
 
 ### IIF3: Linear Isomorphism And Operator Norm API
 
-- Status: Planned.
+- Status: Certificate generated for the explicit-law linear-map, operator-bound, linear-isomorphism,
+  and block-triangular inverse API in `Proofs.Ai.Analysis.AbstractLinearMap`.
 - Deliverables:
   - Define bounded linear maps and linear isomorphism evidence.
   - Prove composition, identity, inverse, and operator-norm bound lemmas.
@@ -150,6 +151,26 @@ The exact module names can be adjusted to fit the corpus, but the intended layer
 
 is invertible when `B` is invertible.
 
+- Completed exports:
+  - Definitions: `OperatorNormBound`, `LinearMapLawArgs`, `BoundedLinearMapArgs`,
+    `LinearIsoArgs`, `LinearId`, `LinearComp`, `LinearInv`, `BlockTriangularMap`,
+    `BlockTriangularInverse`, `BlockTriangularIsoArgs`.
+  - Theorems: `operator_norm_bound_apply`, `linear_map_zero_from_args`,
+    `linear_map_add_from_args`, `linear_map_neg_from_args`, `linear_map_smul_from_args`,
+    `bounded_linear_map_linear_from_args`, `bounded_linear_map_bound_from_args`,
+    `bounded_linear_map_bound_apply`, `linear_iso_forward_linear_from_args`,
+    `linear_iso_inverse_linear_from_args`, `linear_iso_forward_bound_from_args`,
+    `linear_iso_inverse_bound_from_args`, `linear_iso_left_inverse_from_args`,
+    `linear_iso_right_inverse_from_args`, `linear_id_def`, `linear_id_zero`, `linear_id_add`,
+    `linear_id_neg`, `linear_id_smul`, `linear_id_law_args`, `linear_comp_def`,
+    `linear_comp_law_args`, `linear_inv_def`, `linear_inv_left_inverse_from_iso`,
+    `linear_inv_right_inverse_from_iso`, `block_triangular_map_def`,
+    `block_triangular_inverse_def`, `block_triangular_b_iso_from_args`,
+    `block_triangular_left_inverse_from_args`, `block_triangular_right_inverse_from_args`.
+- Boundary note:
+  - The identity and composition linear-law constructors are checked proof terms.
+  - Operator-norm estimates, inverse laws, and block-triangular cancellation facts are packaged as
+    explicit law evidence, not trusted kernel facts.
 - Needed later for:
   - proving that `D Phi(a,b)` is invertible from the invertibility of `D_y F(a,b)`.
 

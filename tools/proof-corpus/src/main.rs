@@ -163,6 +163,24 @@ const ABSTRACT_NORMED_SPACE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_LINEAR_MAP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractLinearMap",
+    source_path: "Proofs/Ai/Analysis/AbstractLinearMap/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractLinearMap/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractLinearMap/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractLinearMap/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_LINEAR_MAP_DEFINITIONS,
+    theorems: ABSTRACT_LINEAR_MAP_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1198,6 +1216,255 @@ macro_rules! abstract_product_space_abs {
     };
 }
 
+macro_rules! abstract_linear_map_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (f : forall (x : X), Y), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (f : forall (x : X), Y), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_linear_map_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_linear_iso_params {
+    ($tail:literal) => {
+        abstract_linear_map_params!(concat!(
+            "forall (inv : forall (y : Y), X), ",
+            "forall (op_norm : Scalar), ",
+            "forall (inv_op_norm : Scalar), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_linear_iso_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_linear_map_abs!(concat!(
+            "fun inv => fun op_norm => fun inv_op_norm => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_linear_map_abs!(concat!(
+            "fun inv => fun op_norm => fun inv_op_norm => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_linear_comp_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Z : Sort z), ",
+            "forall (zzero : Z), ",
+            "forall (zadd : forall (x : Z), forall (y : Z), Z), ",
+            "forall (zneg : forall (z : Z), Z), ",
+            "forall (zsmul : forall (a : Scalar), forall (z : Z), Z), ",
+            "forall (znorm : forall (z : Z), Scalar), ",
+            "forall (f : forall (x : X), Y), ",
+            "forall (g : forall (y : Y), Z), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_linear_comp_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun f => fun g => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun f => fun g => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_block_triangular_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Z : Sort z), ",
+            "forall (zzero : Z), ",
+            "forall (zadd : forall (x : Z), forall (y : Z), Z), ",
+            "forall (zneg : forall (z : Z), Z), ",
+            "forall (zsmul : forall (a : Scalar), forall (z : Z), Z), ",
+            "forall (znorm : forall (z : Z), Scalar), ",
+            "forall (XY : Sort p), ",
+            "forall (pairXY : forall (x : X), forall (y : Y), XY), ",
+            "forall (fstXY : forall (point : XY), X), ",
+            "forall (sndXY : forall (point : XY), Y), ",
+            "forall (XZ : Sort q), ",
+            "forall (pairXZ : forall (x : X), forall (z : Z), XZ), ",
+            "forall (fstXZ : forall (point : XZ), X), ",
+            "forall (sndXZ : forall (point : XZ), Z), ",
+            "forall (A : forall (x : X), Z), ",
+            "forall (B : forall (y : Y), Z), ",
+            "forall (Binv : forall (z : Z), Y), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Z : Sort z), ",
+            "forall (zzero : Z), ",
+            "forall (zadd : forall (x : Z), forall (y : Z), Z), ",
+            "forall (zneg : forall (z : Z), Z), ",
+            "forall (zsmul : forall (a : Scalar), forall (z : Z), Z), ",
+            "forall (znorm : forall (z : Z), Scalar), ",
+            "forall (XY : Sort p), ",
+            "forall (pairXY : forall (x : X), forall (y : Y), XY), ",
+            "forall (fstXY : forall (point : XY), X), ",
+            "forall (sndXY : forall (point : XY), Y), ",
+            "forall (XZ : Sort q), ",
+            "forall (pairXZ : forall (x : X), forall (z : Z), XZ), ",
+            "forall (fstXZ : forall (point : XZ), X), ",
+            "forall (sndXZ : forall (point : XZ), Z), ",
+            "forall (A : forall (x : X), Z), ",
+            "forall (B : forall (y : Y), Z), ",
+            "forall (Binv : forall (z : Z), Y), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_block_triangular_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => ",
+            $tail
+        )
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -1469,6 +1736,73 @@ macro_rules! product_norm_args_elim {
             "fun (product_norm_pair_le_add_arg : forall (x : X), forall (y : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm x) bx), forall (hy : le_rel (ynorm y) bound_y), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x y)) (add bx bound_y)) => ",
             "fun (product_norm_add_le_arg : forall (left : Product), forall (right : Product), le_rel (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (@ProductAdd.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left right)) (add (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd left) (@ProductNorm.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd right))) => ",
             "fun (product_dist_pair_le_add_arg : forall (x1 : X), forall (x2 : X), forall (y1 : Y), forall (y2 : Y), forall (bx : Scalar), forall (bound_y : Scalar), forall (hx : le_rel (xnorm (@vsub.{v} X xadd xneg x2 x1)) bx), forall (hy : le_rel (ynorm (@vsub.{w} Y yadd yneg y2 y1)) bound_y), le_rel (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x1 y1) (pair x2 y2)) (add bx bound_y)) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! linear_map_args_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (map_zero_arg : @Eq.{w} Y (f xzero) yzero) => ",
+            "fun (map_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => ",
+            "fun (map_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => ",
+            "fun (map_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! bounded_linear_map_args_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => ",
+            "fun (bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! linear_iso_args_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => ",
+            "fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => ",
+            "fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => ",
+            "fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => ",
+            "fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => ",
+            "fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! block_triangular_args_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (b_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm) => ",
+            "fun (block_left_inverse_arg : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => ",
+            "fun (block_right_inverse_arg : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => ",
             $($tail)+,
             ")"
         )
@@ -2660,6 +2994,515 @@ const ABSTRACT_NORMED_SPACE_THEOREMS: &[TheoremArtifact] = &[
             product_norm_args_elim!(
                 "(le_rel (@ProductDist.{p,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Product pair fst snd (pair x1 y1) (pair x2 y2)) (add bx bound_y))",
                 "product_dist_pair_le_add_arg x1 x2 y1 y2 bx bound_y hx hy"
+            )
+        )),
+    },
+];
+
+const ABSTRACT_LINEAR_MAP_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "OperatorNormBound",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_linear_map_params!("forall (bound : Scalar), Prop"),
+        value: abstract_linear_map_abs!(
+            "fun bound => forall (x : X), le_rel (ynorm (f x)) (mul bound (xnorm x))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "LinearMapLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_linear_map_params!("Prop"),
+        value: abstract_linear_map_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (map_zero_law : @Eq.{w} Y (f xzero) yzero), ",
+            "forall (map_add_law : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))), ",
+            "forall (map_neg_law : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))), ",
+            "forall (map_smul_law : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "BoundedLinearMapArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_linear_map_params!("forall (bound : Scalar), Prop"),
+        value: abstract_linear_map_abs!(concat!(
+            "fun bound => forall (P : Prop), forall (mk : ",
+            "forall (linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), ",
+            "forall (operator_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearIsoArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_linear_iso_params!("Prop"),
+        value: abstract_linear_iso_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (forward_linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), ",
+            "forall (inverse_linear_law : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv), ",
+            "forall (forward_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm), ",
+            "forall (inverse_bound_law : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm), ",
+            "forall (left_inverse_law : forall (x : X), @Eq.{v} X (inv (f x)) x), ",
+            "forall (right_inverse_law : forall (y : Y), @Eq.{w} Y (f (inv y)) y), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearId",
+        universe_params: &["u", "v"],
+        ty: abstract_normed_space_params!("forall (x : Vector), Vector"),
+        value: abstract_normed_space_abs!("fun x => x"),
+    },
+    DefinitionArtifact {
+        name: "LinearComp",
+        universe_params: &["u", "v", "w", "z"],
+        ty: abstract_linear_comp_params!("forall (x : X), Z"),
+        value: abstract_linear_comp_abs!("fun x => g (f x)"),
+    },
+    DefinitionArtifact {
+        name: "LinearInv",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_linear_iso_params!("forall (y : Y), X"),
+        value: abstract_linear_iso_abs!("inv"),
+    },
+    DefinitionArtifact {
+        name: "BlockTriangularMap",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_block_triangular_params!("forall (point : XY), XZ"),
+        value: abstract_block_triangular_abs!(
+            "fun point => pairXZ (fstXY point) (zadd (A (fstXY point)) (B (sndXY point)))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "BlockTriangularInverse",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_block_triangular_params!("forall (point : XZ), XY"),
+        value: abstract_block_triangular_abs!(
+            "fun point => pairXY (fstXZ point) (Binv (@vsub.{z} Z zadd zneg (sndXZ point) (A (fstXZ point))))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "BlockTriangularIsoArgs",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_block_triangular_params!(concat!(
+            "forall (b_op_norm : Scalar), forall (b_inv_op_norm : Scalar), ",
+            "forall (b_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm), Prop"
+        )),
+        value: abstract_block_triangular_abs!(concat!(
+            "fun b_op_norm => fun b_inv_op_norm => fun b_iso => forall (P : Prop), forall (mk : ",
+            "forall (b_iso_law : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm), ",
+            "forall (block_left_inverse_law : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point), ",
+            "forall (block_right_inverse_law : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_LINEAR_MAP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "operator_norm_bound_apply",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (bound : Scalar), forall (op_bound : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound), forall (x : X), le_rel (ynorm (f x)) (mul bound (xnorm x))"
+        ),
+        proof: abstract_linear_map_abs!("fun bound => fun op_bound => fun x => op_bound x"),
+    },
+    TheoremArtifact {
+        name: "linear_map_zero_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (linear_args : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), @Eq.{w} Y (f xzero) yzero"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun linear_args => ",
+            linear_map_args_elim!("linear_args", "(@Eq.{w} Y (f xzero) yzero)", "map_zero_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_add_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (linear_args : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun linear_args => fun x => fun y => ",
+            linear_map_args_elim!(
+                "linear_args",
+                "(@Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y)))",
+                "map_add_arg x y"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_neg_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (linear_args : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun linear_args => fun x => ",
+            linear_map_args_elim!(
+                "linear_args",
+                "(@Eq.{w} Y (f (xneg x)) (yneg (f x)))",
+                "map_neg_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_smul_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (linear_args : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun linear_args => fun a => fun x => ",
+            linear_map_args_elim!(
+                "linear_args",
+                "(@Eq.{w} Y (f (xsmul a x)) (ysmul a (f x)))",
+                "map_smul_arg a x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "bounded_linear_map_linear_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (bound : Scalar), forall (bounded_args : @BoundedLinearMapArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound), @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun bound => fun bounded_args => ",
+            bounded_linear_map_args_elim!(
+                "bounded_args",
+                "(@LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f)",
+                "linear_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "bounded_linear_map_bound_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (bound : Scalar), forall (bounded_args : @BoundedLinearMapArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound), @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun bound => fun bounded_args => ",
+            bounded_linear_map_args_elim!(
+                "bounded_args",
+                "(@OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound)",
+                "bound_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "bounded_linear_map_bound_apply",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_map_params!(
+            "forall (bound : Scalar), forall (bounded_args : @BoundedLinearMapArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound), forall (x : X), le_rel (ynorm (f x)) (mul bound (xnorm x))"
+        ),
+        proof: abstract_linear_map_abs!(concat!(
+            "fun bound => fun bounded_args => fun x => ",
+            bounded_linear_map_args_elim!(
+                "bounded_args",
+                "(le_rel (ynorm (f x)) (mul bound (xnorm x)))",
+                "bound_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_iso_forward_linear_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f)",
+                "forward_linear_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_iso_inverse_linear_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv)",
+                "inverse_linear_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_iso_forward_bound_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm)",
+                "forward_bound_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_iso_inverse_bound_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm)",
+                "inverse_bound_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_iso_left_inverse_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), forall (x : X), @Eq.{v} X (inv (f x)) x"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => fun x => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@Eq.{v} X (inv (f x)) x)",
+                "left_inverse_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_iso_right_inverse_from_args",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), forall (y : Y), @Eq.{w} Y (f (inv y)) y"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => fun y => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@Eq.{w} Y (f (inv y)) y)",
+                "right_inverse_arg y"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_id_def",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x) x"
+        ),
+        proof: abstract_normed_space_abs!(
+            "fun x => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_id_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "@Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm vzero) vzero"
+        ),
+        proof: abstract_normed_space_abs!(
+            "@Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm vzero)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_id_add",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vadd x y)) (vadd (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x) (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y))"
+        ),
+        proof: abstract_normed_space_abs!(
+            "fun x => fun y => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vadd x y))"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_id_neg",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vneg x)) (vneg (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x))"
+        ),
+        proof: abstract_normed_space_abs!(
+            "fun x => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vneg x))"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_id_smul",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (smul a x)) (smul a (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x))"
+        ),
+        proof: abstract_normed_space_abs!(
+            "fun a => fun x => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (smul a x))"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_id_law_args",
+        universe_params: &["u", "v"],
+        statement: abstract_normed_space_params!(
+            "@LinearMapLawArgs.{u,v,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm Vector vzero vadd vneg smul norm (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm)"
+        ),
+        proof: abstract_normed_space_abs!(concat!(
+            "fun (P : Prop) => fun (mk : ",
+            "forall (map_zero_law : @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm vzero) vzero), ",
+            "forall (map_add_law : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vadd x y)) (vadd (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x) (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y))), ",
+            "forall (map_neg_law : forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vneg x)) (vneg (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x))), ",
+            "forall (map_smul_law : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (smul a x)) (smul a (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x))), P) => mk ",
+            "(@Eq.refl.{v} Vector vzero) ",
+            "(fun (x : Vector) => fun (y : Vector) => @Eq.refl.{v} Vector (vadd x y)) ",
+            "(fun (x : Vector) => @Eq.refl.{v} Vector (vneg x)) ",
+            "(fun (a : Scalar) => fun (x : Vector) => @Eq.refl.{v} Vector (smul a x))"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_comp_def",
+        universe_params: &["u", "v", "w", "z"],
+        statement: abstract_linear_comp_params!(
+            "forall (x : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x) (g (f x))"
+        ),
+        proof: abstract_linear_comp_abs!(
+            "fun x => @Eq.refl.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_comp_law_args",
+        universe_params: &["u", "v", "w", "z"],
+        statement: abstract_linear_comp_params!(
+            "forall (f_linear : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), forall (g_linear : @LinearMapLawArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm g), @LinearMapLawArgs.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g)"
+        ),
+        proof: abstract_linear_comp_abs!(concat!(
+            "fun f_linear => fun g_linear => fun (P : Prop) => fun (mk : ",
+            "forall (map_zero_law : @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g xzero) zzero), ",
+            "forall (map_add_law : forall (x : X), forall (y : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g (xadd x y)) (zadd (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x) (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g y))), ",
+            "forall (map_neg_law : forall (x : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g (xneg x)) (zneg (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x))), ",
+            "forall (map_smul_law : forall (a : Scalar), forall (x : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g (xsmul a x)) (zsmul a (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x))), P) => ",
+            "f_linear P ",
+            "(fun (f_zero_arg : @Eq.{w} Y (f xzero) yzero) => ",
+            "fun (f_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => ",
+            "fun (f_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => ",
+            "fun (f_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => ",
+            "g_linear P ",
+            "(fun (g_zero_arg : @Eq.{z} Z (g yzero) zzero) => ",
+            "fun (g_add_arg : forall (x : Y), forall (y : Y), @Eq.{z} Z (g (yadd x y)) (zadd (g x) (g y))) => ",
+            "fun (g_neg_arg : forall (x : Y), @Eq.{z} Z (g (yneg x)) (zneg (g x))) => ",
+            "fun (g_smul_arg : forall (a : Scalar), forall (x : Y), @Eq.{z} Z (g (ysmul a x)) (zsmul a (g x))) => ",
+            "mk ",
+            "(@eq_trans.{z} Z (g (f xzero)) (g yzero) zzero (@eq_congr_arg.{w,z} Y Z g (f xzero) yzero f_zero_arg) g_zero_arg) ",
+            "(fun (x : X) => fun (y : X) => @eq_trans.{z} Z (g (f (xadd x y))) (g (yadd (f x) (f y))) (zadd (g (f x)) (g (f y))) (@eq_congr_arg.{w,z} Y Z g (f (xadd x y)) (yadd (f x) (f y)) (f_add_arg x y)) (g_add_arg (f x) (f y))) ",
+            "(fun (x : X) => @eq_trans.{z} Z (g (f (xneg x))) (g (yneg (f x))) (zneg (g (f x))) (@eq_congr_arg.{w,z} Y Z g (f (xneg x)) (yneg (f x)) (f_neg_arg x)) (g_neg_arg (f x))) ",
+            "(fun (a : Scalar) => fun (x : X) => @eq_trans.{z} Z (g (f (xsmul a x))) (g (ysmul a (f x))) (zsmul a (g (f x))) (@eq_congr_arg.{w,z} Y Z g (f (xsmul a x)) (ysmul a (f x)) (f_smul_arg a x)) (g_smul_arg a (f x)))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_inv_def",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (y : Y), @Eq.{v} X (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm y) (inv y)"
+        ),
+        proof: abstract_linear_iso_abs!(
+            "fun y => @Eq.refl.{v} X (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_inv_left_inverse_from_iso",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), forall (x : X), @Eq.{v} X (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm (f x)) x"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => fun x => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@Eq.{v} X (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm (f x)) x)",
+                "left_inverse_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_inv_right_inverse_from_iso",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_linear_iso_params!(
+            "forall (iso_args : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm), forall (y : Y), @Eq.{w} Y (f (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm y)) y"
+        ),
+        proof: abstract_linear_iso_abs!(concat!(
+            "fun iso_args => fun y => ",
+            linear_iso_args_elim!(
+                "iso_args",
+                "(@Eq.{w} Y (f (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm y)) y)",
+                "right_inverse_arg y"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "block_triangular_map_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_block_triangular_params!(
+            "forall (point : XY), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point) (pairXZ (fstXY point) (zadd (A (fstXY point)) (B (sndXY point))))"
+        ),
+        proof: abstract_block_triangular_abs!(
+            "fun point => @Eq.refl.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "block_triangular_inverse_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_block_triangular_params!(
+            "forall (point : XZ), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point) (pairXY (fstXZ point) (Binv (@vsub.{z} Z zadd zneg (sndXZ point) (A (fstXZ point)))))"
+        ),
+        proof: abstract_block_triangular_abs!(
+            "fun point => @Eq.refl.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "block_triangular_b_iso_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_block_triangular_params!(
+            "forall (b_op_norm : Scalar), forall (b_inv_op_norm : Scalar), forall (b_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm), forall (block_args : @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv b_op_norm b_inv_op_norm b_iso), @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm"
+        ),
+        proof: abstract_block_triangular_abs!(concat!(
+            "fun b_op_norm => fun b_inv_op_norm => fun b_iso => fun block_args => ",
+            block_triangular_args_elim!(
+                "block_args",
+                "(@LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm)",
+                "b_iso_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "block_triangular_left_inverse_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_block_triangular_params!(
+            "forall (b_op_norm : Scalar), forall (b_inv_op_norm : Scalar), forall (b_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm), forall (block_args : @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv b_op_norm b_inv_op_norm b_iso), forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point"
+        ),
+        proof: abstract_block_triangular_abs!(concat!(
+            "fun b_op_norm => fun b_inv_op_norm => fun b_iso => fun block_args => fun point => ",
+            block_triangular_args_elim!(
+                "block_args",
+                "(@Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point)",
+                "block_left_inverse_arg point"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "block_triangular_right_inverse_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_block_triangular_params!(
+            "forall (b_op_norm : Scalar), forall (b_inv_op_norm : Scalar), forall (b_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm), forall (block_args : @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv b_op_norm b_inv_op_norm b_iso), forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point"
+        ),
+        proof: abstract_block_triangular_abs!(concat!(
+            "fun b_op_norm => fun b_inv_op_norm => fun b_iso => fun block_args => fun point => ",
+            block_triangular_args_elim!(
+                "block_args",
+                "(@Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point)",
+                "block_right_inverse_arg point"
             )
         )),
     },
@@ -13648,6 +14491,24 @@ fn run() -> Result<(), String> {
         &abstract_normed_space_imports,
         &abstract_normed_space_source_interfaces,
     )?;
+    let abstract_linear_map_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+    ];
+    let abstract_linear_map_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+    ];
+    let abstract_linear_map = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_LINEAR_MAP_MODULE,
+        &abstract_linear_map_imports,
+        &abstract_linear_map_source_interfaces,
+    )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -13903,6 +14764,7 @@ fn run() -> Result<(), String> {
             abstract_scalar_derive,
             abstract_vector_space,
             abstract_normed_space,
+            abstract_linear_map,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,

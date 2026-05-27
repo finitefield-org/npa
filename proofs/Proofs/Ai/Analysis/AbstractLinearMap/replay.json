@@ -1,0 +1,212 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.AbstractLinearMap",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OperatorNormBound",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun bound => forall (x : X), le_rel (ynorm (f x)) (mul bound (xnorm x))"
+    },
+    {
+      "declaration": "LinearMapLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => forall (P : Prop), forall (mk : forall (map_zero_law : @Eq.{w} Y (f xzero) yzero), forall (map_add_law : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))), forall (map_neg_law : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))), forall (map_smul_law : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))), P), P"
+    },
+    {
+      "declaration": "BoundedLinearMapArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun bound => forall (P : Prop), forall (mk : forall (linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), forall (operator_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound), P), P"
+    },
+    {
+      "declaration": "LinearIsoArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => forall (P : Prop), forall (mk : forall (forward_linear_law : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f), forall (inverse_linear_law : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv), forall (forward_bound_law : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm), forall (inverse_bound_law : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm), forall (left_inverse_law : forall (x : X), @Eq.{v} X (inv (f x)) x), forall (right_inverse_law : forall (y : Y), @Eq.{w} Y (f (inv y)) y), P), P"
+    },
+    {
+      "declaration": "LinearId",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun x => x"
+    },
+    {
+      "declaration": "LinearComp",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun f => fun g => fun x => g (f x)"
+    },
+    {
+      "declaration": "LinearInv",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => inv"
+    },
+    {
+      "declaration": "BlockTriangularMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun point => pairXZ (fstXY point) (zadd (A (fstXY point)) (B (sndXY point)))"
+    },
+    {
+      "declaration": "BlockTriangularInverse",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun point => pairXY (fstXZ point) (Binv (@vsub.{z} Z zadd zneg (sndXZ point) (A (fstXZ point))))"
+    },
+    {
+      "declaration": "BlockTriangularIsoArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun b_op_norm => fun b_inv_op_norm => fun b_iso => forall (P : Prop), forall (mk : forall (b_iso_law : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm), forall (block_left_inverse_law : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point), forall (block_right_inverse_law : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point), P), P"
+    },
+    {
+      "declaration": "operator_norm_bound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun bound => fun op_bound => fun x => op_bound x"
+    },
+    {
+      "declaration": "linear_map_zero_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun linear_args => linear_args (@Eq.{w} Y (f xzero) yzero) (fun (map_zero_arg : @Eq.{w} Y (f xzero) yzero) => fun (map_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => fun (map_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => fun (map_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => map_zero_arg)"
+    },
+    {
+      "declaration": "linear_map_add_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun linear_args => fun x => fun y => linear_args (@Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) (fun (map_zero_arg : @Eq.{w} Y (f xzero) yzero) => fun (map_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => fun (map_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => fun (map_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => map_add_arg x y)"
+    },
+    {
+      "declaration": "linear_map_neg_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun linear_args => fun x => linear_args (@Eq.{w} Y (f (xneg x)) (yneg (f x))) (fun (map_zero_arg : @Eq.{w} Y (f xzero) yzero) => fun (map_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => fun (map_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => fun (map_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => map_neg_arg x)"
+    },
+    {
+      "declaration": "linear_map_smul_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun linear_args => fun a => fun x => linear_args (@Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) (fun (map_zero_arg : @Eq.{w} Y (f xzero) yzero) => fun (map_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => fun (map_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => fun (map_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => map_smul_arg a x)"
+    },
+    {
+      "declaration": "bounded_linear_map_linear_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun bound => fun bounded_args => bounded_args (@LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) (fun (linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound) => linear_arg)"
+    },
+    {
+      "declaration": "bounded_linear_map_bound_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun bound => fun bounded_args => bounded_args (@OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound) (fun (linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound) => bound_arg)"
+    },
+    {
+      "declaration": "bounded_linear_map_bound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun bound => fun bounded_args => fun x => bounded_args (le_rel (ynorm (f x)) (mul bound (xnorm x))) (fun (linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f bound) => bound_arg x)"
+    },
+    {
+      "declaration": "linear_iso_forward_linear_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => iso_args (@LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => forward_linear_arg)"
+    },
+    {
+      "declaration": "linear_iso_inverse_linear_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => iso_args (@LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => inverse_linear_arg)"
+    },
+    {
+      "declaration": "linear_iso_forward_bound_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => iso_args (@OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => forward_bound_arg)"
+    },
+    {
+      "declaration": "linear_iso_inverse_bound_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => iso_args (@OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => inverse_bound_arg)"
+    },
+    {
+      "declaration": "linear_iso_left_inverse_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => fun x => iso_args (@Eq.{v} X (inv (f x)) x) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => left_inverse_arg x)"
+    },
+    {
+      "declaration": "linear_iso_right_inverse_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => fun y => iso_args (@Eq.{w} Y (f (inv y)) y) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => right_inverse_arg y)"
+    },
+    {
+      "declaration": "linear_id_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun x => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x)"
+    },
+    {
+      "declaration": "linear_id_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm vzero)"
+    },
+    {
+      "declaration": "linear_id_add",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun x => fun y => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vadd x y))"
+    },
+    {
+      "declaration": "linear_id_neg",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun x => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vneg x))"
+    },
+    {
+      "declaration": "linear_id_smul",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun a => fun x => @Eq.refl.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (smul a x))"
+    },
+    {
+      "declaration": "linear_id_law_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun (P : Prop) => fun (mk : forall (map_zero_law : @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm vzero) vzero), forall (map_add_law : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vadd x y)) (vadd (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x) (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm y))), forall (map_neg_law : forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (vneg x)) (vneg (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x))), forall (map_smul_law : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm (smul a x)) (smul a (@LinearId.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm x))), P) => mk (@Eq.refl.{v} Vector vzero) (fun (x : Vector) => fun (y : Vector) => @Eq.refl.{v} Vector (vadd x y)) (fun (x : Vector) => @Eq.refl.{v} Vector (vneg x)) (fun (a : Scalar) => fun (x : Vector) => @Eq.refl.{v} Vector (smul a x))"
+    },
+    {
+      "declaration": "linear_comp_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun f => fun g => fun x => @Eq.refl.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x)"
+    },
+    {
+      "declaration": "linear_comp_law_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun f => fun g => fun f_linear => fun g_linear => fun (P : Prop) => fun (mk : forall (map_zero_law : @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g xzero) zzero), forall (map_add_law : forall (x : X), forall (y : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g (xadd x y)) (zadd (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x) (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g y))), forall (map_neg_law : forall (x : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g (xneg x)) (zneg (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x))), forall (map_smul_law : forall (a : Scalar), forall (x : X), @Eq.{z} Z (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g (xsmul a x)) (zsmul a (@LinearComp.{u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm f g x))), P) => f_linear P (fun (f_zero_arg : @Eq.{w} Y (f xzero) yzero) => fun (f_add_arg : forall (x : X), forall (y : X), @Eq.{w} Y (f (xadd x y)) (yadd (f x) (f y))) => fun (f_neg_arg : forall (x : X), @Eq.{w} Y (f (xneg x)) (yneg (f x))) => fun (f_smul_arg : forall (a : Scalar), forall (x : X), @Eq.{w} Y (f (xsmul a x)) (ysmul a (f x))) => g_linear P (fun (g_zero_arg : @Eq.{z} Z (g yzero) zzero) => fun (g_add_arg : forall (x : Y), forall (y : Y), @Eq.{z} Z (g (yadd x y)) (zadd (g x) (g y))) => fun (g_neg_arg : forall (x : Y), @Eq.{z} Z (g (yneg x)) (zneg (g x))) => fun (g_smul_arg : forall (a : Scalar), forall (x : Y), @Eq.{z} Z (g (ysmul a x)) (zsmul a (g x))) => mk (@eq_trans.{z} Z (g (f xzero)) (g yzero) zzero (@eq_congr_arg.{w,z} Y Z g (f xzero) yzero f_zero_arg) g_zero_arg) (fun (x : X) => fun (y : X) => @eq_trans.{z} Z (g (f (xadd x y))) (g (yadd (f x) (f y))) (zadd (g (f x)) (g (f y))) (@eq_congr_arg.{w,z} Y Z g (f (xadd x y)) (yadd (f x) (f y)) (f_add_arg x y)) (g_add_arg (f x) (f y))) (fun (x : X) => @eq_trans.{z} Z (g (f (xneg x))) (g (yneg (f x))) (zneg (g (f x))) (@eq_congr_arg.{w,z} Y Z g (f (xneg x)) (yneg (f x)) (f_neg_arg x)) (g_neg_arg (f x))) (fun (a : Scalar) => fun (x : X) => @eq_trans.{z} Z (g (f (xsmul a x))) (g (ysmul a (f x))) (zsmul a (g (f x))) (@eq_congr_arg.{w,z} Y Z g (f (xsmul a x)) (ysmul a (f x)) (f_smul_arg a x)) (g_smul_arg a (f x)))))"
+    },
+    {
+      "declaration": "linear_inv_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun y => @Eq.refl.{v} X (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm y)"
+    },
+    {
+      "declaration": "linear_inv_left_inverse_from_iso",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => fun x => iso_args (@Eq.{v} X (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm (f x)) x) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => left_inverse_arg x)"
+    },
+    {
+      "declaration": "linear_inv_right_inverse_from_iso",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun f => fun inv => fun op_norm => fun inv_op_norm => fun iso_args => fun y => iso_args (@Eq.{w} Y (f (@LinearInv.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f inv op_norm inv_op_norm y)) y) (fun (forward_linear_arg : @LinearMapLawArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f) => fun (inverse_linear_arg : @LinearMapLawArgs.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv) => fun (forward_bound_arg : @OperatorNormBound.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f op_norm) => fun (inverse_bound_arg : @OperatorNormBound.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inv inv_op_norm) => fun (left_inverse_arg : forall (x : X), @Eq.{v} X (inv (f x)) x) => fun (right_inverse_arg : forall (y : Y), @Eq.{w} Y (f (inv y)) y) => right_inverse_arg y)"
+    },
+    {
+      "declaration": "block_triangular_map_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun point => @Eq.refl.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)"
+    },
+    {
+      "declaration": "block_triangular_inverse_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun point => @Eq.refl.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)"
+    },
+    {
+      "declaration": "block_triangular_b_iso_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun b_op_norm => fun b_inv_op_norm => fun b_iso => fun block_args => block_args (@LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm) (fun (b_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm) => fun (block_left_inverse_arg : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => fun (block_right_inverse_arg : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => b_iso_arg)"
+    },
+    {
+      "declaration": "block_triangular_left_inverse_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun b_op_norm => fun b_inv_op_norm => fun b_iso => fun block_args => fun point => block_args (@Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) (fun (b_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm) => fun (block_left_inverse_arg : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => fun (block_right_inverse_arg : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => block_left_inverse_arg point)"
+    },
+    {
+      "declaration": "block_triangular_right_inverse_from_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun pairXZ => fun fstXZ => fun sndXZ => fun A => fun B => fun Binv => fun b_op_norm => fun b_inv_op_norm => fun b_iso => fun block_args => fun point => block_args (@Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) (fun (b_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm B Binv b_op_norm b_inv_op_norm) => fun (block_left_inverse_arg : forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => fun (block_right_inverse_arg : forall (point : XZ), @Eq.{q} XZ (@BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ A B Binv point)) point) => block_right_inverse_arg point)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/AbstractLinearMap/certificate.npcert"
+  }
+}

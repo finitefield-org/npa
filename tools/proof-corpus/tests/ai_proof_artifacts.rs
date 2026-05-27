@@ -54,6 +54,8 @@ struct VerifiedCorpusImports<'a> {
     abstract_square_normalize: &'a VerifiedModule,
     abstract_scalar_derive: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
+    abstract_normed_space: &'a VerifiedModule,
+    abstract_linear_map: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
     abstract_inner_product_derive: &'a VerifiedModule,
     affine: &'a VerifiedModule,
@@ -929,6 +931,52 @@ const ABSTRACT_NORMED_SPACE_THEOREMS: &[&str] = &[
     "product_norm_pair_le_add_from_args",
     "product_norm_add_le_from_args",
     "product_dist_pair_le_add_from_args",
+];
+
+const ABSTRACT_LINEAR_MAP_DEFINITIONS: &[&str] = &[
+    "OperatorNormBound",
+    "LinearMapLawArgs",
+    "BoundedLinearMapArgs",
+    "LinearIsoArgs",
+    "LinearId",
+    "LinearComp",
+    "LinearInv",
+    "BlockTriangularMap",
+    "BlockTriangularInverse",
+    "BlockTriangularIsoArgs",
+];
+
+const ABSTRACT_LINEAR_MAP_THEOREMS: &[&str] = &[
+    "operator_norm_bound_apply",
+    "linear_map_zero_from_args",
+    "linear_map_add_from_args",
+    "linear_map_neg_from_args",
+    "linear_map_smul_from_args",
+    "bounded_linear_map_linear_from_args",
+    "bounded_linear_map_bound_from_args",
+    "bounded_linear_map_bound_apply",
+    "linear_iso_forward_linear_from_args",
+    "linear_iso_inverse_linear_from_args",
+    "linear_iso_forward_bound_from_args",
+    "linear_iso_inverse_bound_from_args",
+    "linear_iso_left_inverse_from_args",
+    "linear_iso_right_inverse_from_args",
+    "linear_id_def",
+    "linear_id_zero",
+    "linear_id_add",
+    "linear_id_neg",
+    "linear_id_smul",
+    "linear_id_law_args",
+    "linear_comp_def",
+    "linear_comp_law_args",
+    "linear_inv_def",
+    "linear_inv_left_inverse_from_iso",
+    "linear_inv_right_inverse_from_iso",
+    "block_triangular_map_def",
+    "block_triangular_inverse_def",
+    "block_triangular_b_iso_from_args",
+    "block_triangular_left_inverse_from_args",
+    "block_triangular_right_inverse_from_args",
 ];
 
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
@@ -1818,6 +1866,23 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractLinearMap",
+        source: "Proofs/Ai/Analysis/AbstractLinearMap/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractLinearMap/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractLinearMap/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractLinearMap/replay.json",
+        imports: &[
+            "Proofs.Ai.Analysis.AbstractNormedSpace",
+            "Proofs.Ai.EqReasoning",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_LINEAR_MAP_DEFINITIONS,
+        theorems: ABSTRACT_LINEAR_MAP_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractInnerProduct",
         source: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
         certificate: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
@@ -2221,6 +2286,19 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_ordered_field_import,
         &abstract_square_normalize_import,
     );
+    let abstract_normed_space_import = verified_abstract_normed_space_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_vector_space_import,
+    );
+    let abstract_linear_map_import = verified_abstract_linear_map_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &abstract_vector_space_import,
+        &abstract_normed_space_import,
+    );
     let abstract_inner_product_import = verified_abstract_inner_product_import_module(
         &root,
         &eq_import,
@@ -2316,6 +2394,8 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_square_normalize: &abstract_square_normalize_import,
         abstract_scalar_derive: &abstract_scalar_derive_import,
         abstract_vector_space: &abstract_vector_space_import,
+        abstract_normed_space: &abstract_normed_space_import,
+        abstract_linear_map: &abstract_linear_map_import,
         abstract_inner_product: &abstract_inner_product_import,
         abstract_inner_product_derive: &abstract_inner_product_derive_import,
         affine: &affine_import,
@@ -2536,6 +2616,12 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Vector.AbstractSpace" => {
                 session.register_verified_module(verified_imports.abstract_vector_space.clone())
+            }
+            "Proofs.Ai.Analysis.AbstractNormedSpace" => {
+                session.register_verified_module(verified_imports.abstract_normed_space.clone())
+            }
+            "Proofs.Ai.Analysis.AbstractLinearMap" => {
+                session.register_verified_module(verified_imports.abstract_linear_map.clone())
             }
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
@@ -3180,6 +3266,38 @@ fn verified_abstract_vector_space_import_module(
     session.register_verified_module(eq_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractSpace corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_normed_space_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_vector_space_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_vector_space_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractNormedSpace corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_linear_map_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    abstract_vector_space_import: &VerifiedModule,
+    abstract_normed_space_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractLinearMap/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    session.register_verified_module(abstract_vector_space_import.clone());
+    session.register_verified_module(abstract_normed_space_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractLinearMap corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_inner_product_import_module(

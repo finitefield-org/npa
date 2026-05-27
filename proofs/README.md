@@ -22,6 +22,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractNormedSpace/`: explicit-law normed-space distance, product
   operation, product norm, projection/pairing, and product norm estimate API for the
   inverse/implicit function route.
+- `Proofs/Ai/Analysis/AbstractLinearMap/`: bounded linear map, operator-norm bound, linear
+  isomorphism, identity/composition/inverse, and block-triangular map API for the inverse/implicit
+  function route.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
