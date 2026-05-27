@@ -260,6 +260,27 @@ const ABSTRACT_IMPLICIT_PHI_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_IMPLICIT_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractImplicitFunction",
+    source_path: "Proofs/Ai/Analysis/AbstractImplicitFunction/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractImplicitFunction/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractImplicitFunction/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractImplicitFunction/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractLinearMap",
+        "Proofs.Ai.Analysis.AbstractDerivative",
+        "Proofs.Ai.Analysis.AbstractImplicitPhi",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS,
+    theorems: ABSTRACT_IMPLICIT_FUNCTION_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -2062,6 +2083,89 @@ macro_rules! abstract_implicit_phi_abs {
     };
 }
 
+macro_rules! abstract_implicit_function_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_implicit_phi_params!(concat!(
+            "forall (x_domain : forall (x : X), Prop), ",
+            "forall (y_domain : forall (y : Y), Prop), ",
+            "forall (xy_domain : forall (point : XY), Prop), ",
+            "forall (xz_domain : forall (target : XZ), Prop), ",
+            "forall (phi_inv : forall (target : XZ), XY), ",
+            "forall (dPhi : forall (h : XY), XZ), ",
+            "forall (dPhi_inv : forall (target : XZ), XY), ",
+            "forall (op_norm : Scalar), ",
+            "forall (inv_op_norm : Scalar), ",
+            "forall (inverse_bound : Scalar), ",
+            "forall (inverse_remainder : forall (r : XY), Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_implicit_function_params!(concat!($tail))
+    };
+}
+
+macro_rules! abstract_implicit_function_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_implicit_phi_abs!(concat!(
+            "fun x_domain => fun y_domain => fun xy_domain => fun xz_domain => fun phi_inv => fun dPhi => fun dPhi_inv => fun op_norm => fun inv_op_norm => fun inverse_bound => fun inverse_remainder => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_implicit_function_abs!(concat!($tail))
+    };
+}
+
+macro_rules! implicit_phi_map_app {
+    () => {
+        "@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y"
+    };
+}
+
+macro_rules! implicit_target_point_app {
+    ($x:literal) => {
+        concat!(
+            "@ImplicitTargetPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y ",
+            $x
+        )
+    };
+}
+
+macro_rules! implicit_function_app {
+    ($x:literal) => {
+        concat!(
+            "@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $x
+        )
+    };
+}
+
+macro_rules! implicit_graph_point_app {
+    ($x:literal) => {
+        concat!(
+            "@ImplicitGraphPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $x
+        )
+    };
+}
+
+macro_rules! implicit_phi_local_inverse_laws_app {
+    () => {
+        concat!(
+            "@ImplicitPhiLocalInverseLaws.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_function_extraction_args_app {
+    () => {
+        concat!(
+            "@ImplicitFunctionExtractionArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder"
+        )
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -2488,6 +2592,65 @@ macro_rules! implicit_phi_iso_args_elim {
             "(fun (dy_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm) => ",
             "fun (block_args_arg : @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso) => ",
             "fun (phi_linear_iso_arg : @LinearIsoArgs.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv) phi_op_norm phi_inv_op_norm) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_phi_local_inverse_laws_elim {
+    ($laws:literal, $target:expr, $($tail:tt)+) => {
+        concat!(
+            $laws,
+            " ",
+            "(",
+            $target,
+            ") ",
+            "(fun (inverse_maps_arg : forall (target : XZ), forall (target_mem : xz_domain target), xy_domain (phi_inv target)) => ",
+            "fun (left_inverse_arg : forall (target : XZ), forall (target_mem : xz_domain target), @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " (phi_inv target)) target) => ",
+            "fun (unique_phi_arg : forall (point : XY), forall (target : XZ), forall (point_mem : xy_domain point), forall (target_mem : xz_domain target), forall (image_eq : @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " point) target), @Eq.{p} XY point (phi_inv target)) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_function_extraction_args_elim {
+    ($args:literal, $target:expr, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            "(",
+            $target,
+            ") ",
+            "(fun (local_inverse_arg : ",
+            implicit_phi_local_inverse_laws_app!(),
+            ") => ",
+            "fun (target_mem_arg : forall (x : X), forall (hx : x_domain x), xz_domain (",
+            implicit_target_point_app!("x"),
+            ")) => ",
+            "fun (value_mem_projection_arg : forall (point : XY), forall (point_mem : xy_domain point), y_domain (sndXY point)) => ",
+            "fun (zero_projection_arg : forall (x : X), forall (hx : x_domain x), forall (target_mem : xz_domain (",
+            implicit_target_point_app!("x"),
+            ")), forall (left_inverse_eq : @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " (phi_inv (",
+            implicit_target_point_app!("x"),
+            "))) (",
+            implicit_target_point_app!("x"),
+            ")), @Eq.{z} Z (F (",
+            implicit_graph_point_app!("x"),
+            ")) zzero) => ",
+            "fun (zero_to_phi_image_arg : forall (x : X), forall (y : Y), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " (pairXY x y)) (",
+            implicit_target_point_app!("x"),
+            ")) => ",
+            "fun (snd_pair_arg : forall (x : X), forall (y : Y), @Eq.{w} Y (sndXY (pairXY x y)) y) => ",
             $($tail)+,
             ")"
         )
@@ -5467,6 +5630,261 @@ const ABSTRACT_IMPLICIT_PHI_THEOREMS: &[TheoremArtifact] = &[
                 "args",
                 "(@Eq.{q} XZ (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv point)) point)",
                 "@block_triangular_right_inverse_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso block_args_arg point"
+            )
+        )),
+    },
+];
+
+const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "ImplicitTargetPoint",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_phi_params!("forall (x : X), XZ"),
+        value: abstract_implicit_phi_abs!("fun x => pairXZ x zzero"),
+    },
+    DefinitionArtifact {
+        name: "ImplicitFunction",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!("forall (x : X), Y"),
+        value: abstract_implicit_function_abs!(concat!(
+            "fun x => sndXY (phi_inv (",
+            implicit_target_point_app!("x"),
+            "))"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ImplicitGraphPoint",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!("forall (x : X), XY"),
+        value: abstract_implicit_function_abs!(concat!(
+            "fun x => pairXY x (",
+            implicit_function_app!("x"),
+            ")"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ImplicitPhiLocalInverseLaws",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!("Prop"),
+        value: abstract_implicit_function_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (inverse_maps_law : forall (target : XZ), forall (target_mem : xz_domain target), xy_domain (phi_inv target)), ",
+            "forall (left_inverse_law : forall (target : XZ), forall (target_mem : xz_domain target), @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " (phi_inv target)) target), ",
+            "forall (unique_phi_law : forall (point : XY), forall (target : XZ), forall (point_mem : xy_domain point), forall (target_mem : xz_domain target), forall (image_eq : @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " point) target), @Eq.{p} XY point (phi_inv target)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ImplicitFunctionExtractionArgs",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!("Prop"),
+        value: abstract_implicit_function_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (local_inverse_law : ",
+            implicit_phi_local_inverse_laws_app!(),
+            "), ",
+            "forall (target_mem_law : forall (x : X), forall (hx : x_domain x), xz_domain (",
+            implicit_target_point_app!("x"),
+            ")), ",
+            "forall (value_mem_projection_law : forall (point : XY), forall (point_mem : xy_domain point), y_domain (sndXY point)), ",
+            "forall (zero_projection_law : forall (x : X), forall (hx : x_domain x), forall (target_mem : xz_domain (",
+            implicit_target_point_app!("x"),
+            ")), forall (left_inverse_eq : @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " (phi_inv (",
+            implicit_target_point_app!("x"),
+            "))) (",
+            implicit_target_point_app!("x"),
+            ")), @Eq.{z} Z (F (",
+            implicit_graph_point_app!("x"),
+            ")) zzero), ",
+            "forall (zero_to_phi_image_law : forall (x : X), forall (y : Y), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{q} XZ (",
+            implicit_phi_map_app!(),
+            " (pairXY x y)) (",
+            implicit_target_point_app!("x"),
+            ")), ",
+            "forall (snd_pair_law : forall (x : X), forall (y : Y), @Eq.{w} Y (sndXY (pairXY x y)) y), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "implicit_target_point_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(concat!(
+            "forall (x : X), @Eq.{q} XZ (",
+            implicit_target_point_app!("x"),
+            ") (pairXZ x zzero)"
+        )),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun x => @Eq.refl.{q} XZ (",
+            implicit_target_point_app!("x"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (x : X), @Eq.{w} Y (",
+            implicit_function_app!("x"),
+            ") (sndXY (phi_inv (",
+            implicit_target_point_app!("x"),
+            ")))"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun x => @Eq.refl.{w} Y (",
+            implicit_function_app!("x"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_graph_point_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (x : X), @Eq.{p} XY (",
+            implicit_graph_point_app!("x"),
+            ") (pairXY x (",
+            implicit_function_app!("x"),
+            "))"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun x => @Eq.refl.{p} XY (",
+            implicit_graph_point_app!("x"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_extraction_local_inverse_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (args : ",
+            implicit_function_extraction_args_app!(),
+            "), ",
+            implicit_phi_local_inverse_laws_app!()
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun args => ",
+            implicit_function_extraction_args_elim!(
+                "args",
+                implicit_phi_local_inverse_laws_app!(),
+                "local_inverse_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_extraction_target_mem_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (args : ",
+            implicit_function_extraction_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), xz_domain (",
+            implicit_target_point_app!("x"),
+            ")"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_extraction_args_elim!(
+                "args",
+                "xz_domain (@ImplicitTargetPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x)",
+                "target_mem_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_value_mem_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (args : ",
+            implicit_function_extraction_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), y_domain (",
+            implicit_function_app!("x"),
+            ")"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_extraction_args_elim!(
+                "args",
+                "y_domain (@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)",
+                concat!(
+                    implicit_phi_local_inverse_laws_elim!(
+                        "local_inverse_arg",
+                        "y_domain (@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)",
+                        concat!(
+                            "value_mem_projection_arg (phi_inv (",
+                            implicit_target_point_app!("x"),
+                            ")) (inverse_maps_arg (",
+                            implicit_target_point_app!("x"),
+                            ") (target_mem_arg x hx))"
+                        )
+                    )
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_zero_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (args : ",
+            implicit_function_extraction_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), @Eq.{z} Z (F (",
+            implicit_graph_point_app!("x"),
+            ")) zzero"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_extraction_args_elim!(
+                "args",
+                "@Eq.{z} Z (F (@ImplicitGraphPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)) zzero",
+                concat!(
+                    implicit_phi_local_inverse_laws_elim!(
+                        "local_inverse_arg",
+                        "@Eq.{z} Z (F (@ImplicitGraphPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)) zzero",
+                        concat!(
+                            "zero_projection_arg x hx (target_mem_arg x hx) (left_inverse_arg (",
+                            implicit_target_point_app!("x"),
+                            ") (target_mem_arg x hx))"
+                        )
+                    )
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_unique_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (args : ",
+            implicit_function_extraction_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), forall (y : Y), forall (candidate_mem : xy_domain (pairXY x y)), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{w} Y y (",
+            implicit_function_app!("x"),
+            ")"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun args => fun x => fun hx => fun y => fun candidate_mem => fun zero_eq => ",
+            implicit_function_extraction_args_elim!(
+                "args",
+                "@Eq.{w} Y y (@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)",
+                concat!(
+                    implicit_phi_local_inverse_laws_elim!(
+                        "local_inverse_arg",
+                        "@Eq.{w} Y y (@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder x)",
+                        concat!(
+                            "@eq_trans.{w} Y y (sndXY (pairXY x y)) (",
+                            implicit_function_app!("x"),
+                            ") (@eq_symm.{w} Y (sndXY (pairXY x y)) y (snd_pair_arg x y)) (@eq_congr_arg.{p,w} XY Y sndXY (pairXY x y) (phi_inv (",
+                            implicit_target_point_app!("x"),
+                            ")) (unique_phi_arg (pairXY x y) (",
+                            implicit_target_point_app!("x"),
+                            ") candidate_mem (target_mem_arg x hx) (zero_to_phi_image_arg x y zero_eq)))"
+                        )
+                    )
+                )
             )
         )),
     },
@@ -16442,11 +16860,13 @@ fn run() -> Result<(), String> {
     let abstract_normed_space_imports = vec![
         eq_import.clone(),
         eq_reasoning.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
         abstract_vector_space.verified_module.clone(),
     ];
     let abstract_normed_space_source_interfaces = vec![
         eq_source_interface.clone(),
         eq_reasoning.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
         abstract_vector_space.source_interface.clone(),
     ];
     let abstract_normed_space = build_and_write_module(
@@ -16558,6 +16978,30 @@ fn run() -> Result<(), String> {
         &ABSTRACT_IMPLICIT_PHI_MODULE,
         &abstract_implicit_phi_imports,
         &abstract_implicit_phi_source_interfaces,
+    )?;
+    let abstract_implicit_function_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_linear_map.verified_module.clone(),
+        abstract_derivative.verified_module.clone(),
+        abstract_implicit_phi.verified_module.clone(),
+    ];
+    let abstract_implicit_function_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_linear_map.source_interface.clone(),
+        abstract_derivative.source_interface.clone(),
+        abstract_implicit_phi.source_interface.clone(),
+    ];
+    let abstract_implicit_function = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_IMPLICIT_FUNCTION_MODULE,
+        &abstract_implicit_function_imports,
+        &abstract_implicit_function_source_interfaces,
     )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
@@ -16819,6 +17263,7 @@ fn run() -> Result<(), String> {
             abstract_fixed_point,
             abstract_inverse_function,
             abstract_implicit_phi,
+            abstract_implicit_function,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,

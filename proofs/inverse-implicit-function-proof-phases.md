@@ -314,13 +314,25 @@ is invertible when `B` is invertible.
 
 ### IIF8: Extract The Implicit Function
 
-- Status: Planned.
+- Status: Foundational certificate generated for extracting the local implicit function from the
+  local inverse of `Phi` in `Proofs.Ai.Analysis.AbstractImplicitFunction`.
 - Deliverables:
   - From the local inverse of `Phi`, define `g(x)` as the second projection of
     `Phi^{-1}(x,0)`.
   - Prove local membership `g(x) : V`.
   - Prove the zero equation `F(x,g(x)) = 0`.
   - Prove uniqueness: if `F(x,y)=0` and `y` is in the chosen local neighborhood, then `y = g(x)`.
+- Completed exports:
+  - Definitions: `ImplicitTargetPoint`, `ImplicitFunction`, `ImplicitGraphPoint`,
+    `ImplicitPhiLocalInverseLaws`, `ImplicitFunctionExtractionArgs`.
+  - Theorems: `implicit_target_point_def`, `implicit_function_def`,
+    `implicit_graph_point_def`, `implicit_extraction_local_inverse_from_args`,
+    `implicit_extraction_target_mem_from_args`, `implicit_function_value_mem_from_args`,
+    `implicit_function_zero_from_args`, `implicit_function_unique_from_args`.
+- Boundary note:
+  - The extraction uses explicit local inverse laws for `Phi` plus projection and zero-to-image
+    laws.  Product-coordinate facts and local uniqueness remain ordinary proof evidence, not
+    trusted kernel rules.
 - Acceptance criteria:
   - The theorem states local, not global, uniqueness.
   - Neighborhood shrink steps are explicit certificate-backed lemmas, not informal side conditions.

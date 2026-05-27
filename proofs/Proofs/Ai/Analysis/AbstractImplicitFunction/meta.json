@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.AbstractImplicitFunction",
+  "source": "Proofs/Ai/Analysis/AbstractImplicitFunction/source.npa",
+  "certificate": "Proofs/Ai/Analysis/AbstractImplicitFunction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8958f2d4f443df3957c15245edc67c8e6f128dce8df4e36afd3b2f9fb0d36c6b",
+  "certificate_file_sha256": "sha256:4aa121705655c7f1eb26c8fadcb406fd105dc345ac8e234a21fe63582fcb1d38",
+  "export_hash": "sha256:77c4663e53efc86601114c706968d6d016c1e7c4f9939d709628d999749bf18e",
+  "axiom_report_hash": "sha256:bd74eab331756203c3e19eb769689092b92757b4e584be1246ab686be1e3f779",
+  "certificate_hash": "sha256:5885ec2b8b9320b35e7273a26728d8d4cca616f8754522738b3ea1a1bb2c1ec4",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractImplicitPhi"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "ImplicitTargetPoint", "kind": "def" },
+    { "name": "ImplicitFunction", "kind": "def" },
+    { "name": "ImplicitGraphPoint", "kind": "def" },
+    { "name": "ImplicitPhiLocalInverseLaws", "kind": "def" },
+    { "name": "ImplicitFunctionExtractionArgs", "kind": "def" },
+    { "name": "implicit_target_point_def", "kind": "theorem" },
+    { "name": "implicit_function_def", "kind": "theorem" },
+    { "name": "implicit_graph_point_def", "kind": "theorem" },
+    { "name": "implicit_extraction_local_inverse_from_args", "kind": "theorem" },
+    { "name": "implicit_extraction_target_mem_from_args", "kind": "theorem" },
+    { "name": "implicit_function_value_mem_from_args", "kind": "theorem" },
+    { "name": "implicit_function_zero_from_args", "kind": "theorem" },
+    { "name": "implicit_function_unique_from_args", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

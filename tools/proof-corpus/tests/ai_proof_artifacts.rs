@@ -61,6 +61,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_fixed_point: &'a VerifiedModule,
     abstract_inverse_function: &'a VerifiedModule,
     abstract_implicit_phi: &'a VerifiedModule,
+    abstract_implicit_function: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
     abstract_inner_product_derive: &'a VerifiedModule,
     affine: &'a VerifiedModule,
@@ -108,6 +109,16 @@ struct VerifiedAbstractImplicitPhiImports<'a> {
     abstract_normed_space: &'a VerifiedModule,
     abstract_linear_map: &'a VerifiedModule,
     abstract_derivative: &'a VerifiedModule,
+}
+
+struct VerifiedAbstractImplicitFunctionImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    abstract_vector_space: &'a VerifiedModule,
+    abstract_normed_space: &'a VerifiedModule,
+    abstract_linear_map: &'a VerifiedModule,
+    abstract_derivative: &'a VerifiedModule,
+    abstract_implicit_phi: &'a VerifiedModule,
 }
 
 struct VerifiedAbstractGroupFirstIsoFullImports<'a> {
@@ -1137,6 +1148,25 @@ const ABSTRACT_IMPLICIT_PHI_THEOREMS: &[&str] = &[
     "implicit_phi_block_right_inverse_from_args",
 ];
 
+const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[&str] = &[
+    "ImplicitTargetPoint",
+    "ImplicitFunction",
+    "ImplicitGraphPoint",
+    "ImplicitPhiLocalInverseLaws",
+    "ImplicitFunctionExtractionArgs",
+];
+
+const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[&str] = &[
+    "implicit_target_point_def",
+    "implicit_function_def",
+    "implicit_graph_point_def",
+    "implicit_extraction_local_inverse_from_args",
+    "implicit_extraction_target_mem_from_args",
+    "implicit_function_value_mem_from_args",
+    "implicit_function_zero_from_args",
+    "implicit_function_unique_from_args",
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
     &["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"];
 
@@ -2116,6 +2146,26 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractImplicitFunction",
+        source: "Proofs/Ai/Analysis/AbstractImplicitFunction/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractImplicitFunction/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractImplicitFunction/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractImplicitFunction/replay.json",
+        imports: &[
+            "Proofs.Ai.Analysis.AbstractDerivative",
+            "Proofs.Ai.Analysis.AbstractImplicitPhi",
+            "Proofs.Ai.Analysis.AbstractLinearMap",
+            "Proofs.Ai.Analysis.AbstractNormedSpace",
+            "Proofs.Ai.EqReasoning",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS,
+        theorems: ABSTRACT_IMPLICIT_FUNCTION_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractInnerProduct",
         source: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
         certificate: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
@@ -2573,6 +2623,18 @@ fn ai_certificates_match_manifest_and_verify() {
             abstract_derivative: &abstract_derivative_import,
         },
     );
+    let abstract_implicit_function_import = verified_abstract_implicit_function_import_module(
+        &root,
+        &VerifiedAbstractImplicitFunctionImports {
+            eq: &eq_import,
+            eq_reasoning: &eq_reasoning_import,
+            abstract_vector_space: &abstract_vector_space_import,
+            abstract_normed_space: &abstract_normed_space_import,
+            abstract_linear_map: &abstract_linear_map_import,
+            abstract_derivative: &abstract_derivative_import,
+            abstract_implicit_phi: &abstract_implicit_phi_import,
+        },
+    );
     let abstract_inner_product_import = verified_abstract_inner_product_import_module(
         &root,
         &eq_import,
@@ -2675,6 +2737,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_fixed_point: &abstract_fixed_point_import,
         abstract_inverse_function: &abstract_inverse_function_import,
         abstract_implicit_phi: &abstract_implicit_phi_import,
+        abstract_implicit_function: &abstract_implicit_function_import,
         abstract_inner_product: &abstract_inner_product_import,
         abstract_inner_product_derive: &abstract_inner_product_derive_import,
         affine: &affine_import,
@@ -2917,6 +2980,8 @@ fn register_expected_imports(
             "Proofs.Ai.Analysis.AbstractImplicitPhi" => {
                 session.register_verified_module(verified_imports.abstract_implicit_phi.clone())
             }
+            "Proofs.Ai.Analysis.AbstractImplicitFunction" => session
+                .register_verified_module(verified_imports.abstract_implicit_function.clone()),
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
             }
@@ -3676,6 +3741,23 @@ fn verified_abstract_implicit_phi_import_module(
     session.register_verified_module(imports.abstract_derivative.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractImplicitPhi corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_implicit_function_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractImplicitFunctionImports<'_>,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractImplicitFunction/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.eq.clone());
+    session.register_verified_module(imports.eq_reasoning.clone());
+    session.register_verified_module(imports.abstract_vector_space.clone());
+    session.register_verified_module(imports.abstract_normed_space.clone());
+    session.register_verified_module(imports.abstract_linear_map.clone());
+    session.register_verified_module(imports.abstract_derivative.clone());
+    session.register_verified_module(imports.abstract_implicit_phi.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractImplicitFunction corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_inner_product_import_module(

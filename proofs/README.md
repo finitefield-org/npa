@@ -37,6 +37,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractImplicitPhi/`: auxiliary `Phi(x,y)=(x,F(x,y))` definitions,
   base-point equation, derivative law package, and block-triangular linear-isomorphism bridge for
   the implicit-function route.
+- `Proofs/Ai/Analysis/AbstractImplicitFunction/`: extraction of the local implicit function from
+  explicit local inverse laws for `Phi`, with value membership, zero equation, and local uniqueness
+  projections.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
