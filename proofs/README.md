@@ -31,6 +31,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
+- `Proofs/Ai/Analysis/AbstractInverseFunction/`: residual/Newton-map definitions, local inverse
+  evidence/result packaging, uniqueness/differentiability projections, and quantitative inverse
+  function theorem API for the implicit-function route.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing

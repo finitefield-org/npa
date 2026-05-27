@@ -219,6 +219,27 @@ const ABSTRACT_FIXED_POINT_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_INVERSE_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractInverseFunction",
+    source_path: "Proofs/Ai/Analysis/AbstractInverseFunction/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractInverseFunction/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractInverseFunction/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractLinearMap",
+        "Proofs.Ai.Analysis.AbstractDerivative",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_INVERSE_FUNCTION_DEFINITIONS,
+    theorems: ABSTRACT_INVERSE_FUNCTION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1871,6 +1892,86 @@ macro_rules! abstract_banach_fixed_point_abs {
     };
 }
 
+macro_rules! abstract_inverse_function_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_derivative_map_params!(concat!(
+            "forall (df_inv : forall (y : Y), X), ",
+            "forall (op_norm : Scalar), ",
+            "forall (inv_op_norm : Scalar), ",
+            "forall (x_domain : forall (x : X), Prop), ",
+            "forall (y_domain : forall (y : Y), Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_derivative_map_params!(concat!(
+            "forall (df_inv : forall (y : Y), X), ",
+            "forall (op_norm : Scalar), ",
+            "forall (inv_op_norm : Scalar), ",
+            "forall (x_domain : forall (x : X), Prop), ",
+            "forall (y_domain : forall (y : Y), Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_inverse_function_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_derivative_map_abs!(concat!(
+            "fun df_inv => fun op_norm => fun inv_op_norm => fun x_domain => fun y_domain => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_derivative_map_abs!(concat!(
+            "fun df_inv => fun op_norm => fun inv_op_norm => fun x_domain => fun y_domain => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_quantitative_inverse_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_inverse_function_params!(concat!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), X), forall (eps : Scalar), Prop), ",
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), X), forall (limit : X), forall (eps : Scalar), Prop), ",
+            "forall (f_bound : Scalar), ",
+            "forall (f_remainder : forall (r : Y), Prop), ",
+            "forall (radius : Scalar), ",
+            "forall (lipschitz : Scalar), ",
+            "forall (smallness_bounds : Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_inverse_function_params!(concat!(
+            "forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), X), forall (eps : Scalar), Prop), ",
+            "forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), X), forall (limit : X), forall (eps : Scalar), Prop), ",
+            "forall (f_bound : Scalar), ",
+            "forall (f_remainder : forall (r : Y), Prop), ",
+            "forall (radius : Scalar), ",
+            "forall (lipschitz : Scalar), ",
+            "forall (smallness_bounds : Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! abstract_quantitative_inverse_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_inverse_function_abs!(concat!(
+            "fun CauchySmall => fun ConvergesSmall => fun f_bound => fun f_remainder => fun radius => fun lipschitz => fun smallness_bounds => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_inverse_function_abs!(concat!(
+            "fun CauchySmall => fun ConvergesSmall => fun f_bound => fun f_remainder => fun radius => fun lipschitz => fun smallness_bounds => ",
+            $tail
+        ))
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -2242,6 +2343,28 @@ macro_rules! fixed_point_evidence_elim {
             "fun (fixed_eq_arg : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T fixed) => ",
             "fun (unique_arg : forall (other : Vector), forall (other_mem : domain other), forall (other_fixed : @FixedPoint.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T other), @Eq.{v} Vector other fixed) => ",
             "fun (stable_arg : @FixedPointStability.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! local_inverse_evidence_elim {
+    ($evidence:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $evidence,
+            " ",
+            $target,
+            " ",
+            "(fun (base_mem_arg : x_domain point) => ",
+            "fun (image_mem_arg : y_domain (f point)) => ",
+            "fun (inverse_maps_arg : forall (target : Y), forall (target_mem : y_domain target), x_domain (inverse target)) => ",
+            "fun (left_inverse_arg : forall (target : Y), forall (target_mem : y_domain target), @Eq.{w} Y (f (inverse target)) target) => ",
+            "fun (right_inverse_arg : forall (x : X), forall (x_mem : x_domain x), @Eq.{v} X (inverse (f x)) x) => ",
+            "fun (unique_arg : forall (x : X), forall (target : Y), forall (x_mem : x_domain x), forall (target_mem : y_domain target), forall (image_eq : @Eq.{w} Y (f x) target), @Eq.{v} X x (inverse target)) => ",
+            "fun (fixed_point_arg : forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain) => ",
+            "fun (inverse_derivative_arg : @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder) => ",
+            "fun (linear_iso_arg : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm) => ",
             $($tail)+,
             ")"
         )
@@ -4713,6 +4836,271 @@ const ABSTRACT_FIXED_POINT_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: abstract_banach_fixed_point_abs!(
             "fun args => fun complete_args => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => args complete_args strict_k strict_k_holds self_map contractive"
+        ),
+    },
+];
+
+const ABSTRACT_INVERSE_FUNCTION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "InverseResidual",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_inverse_function_params!("forall (target : Y), forall (x : X), Y"),
+        value: abstract_inverse_function_abs!(
+            "fun target => fun x => @vsub.{w} Y yadd yneg (f x) target"
+        ),
+    },
+    DefinitionArtifact {
+        name: "InverseNewtonMap",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_inverse_function_params!("forall (target : Y), forall (x : X), X"),
+        value: abstract_inverse_function_abs!(
+            "fun target => fun x => xadd x (xneg (df_inv (@InverseResidual.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target x)))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "LocalInverseEvidence",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), Prop"
+        ),
+        value: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => forall (P : Prop), forall (mk : ",
+            "forall (base_mem_law : x_domain point), ",
+            "forall (image_mem_law : y_domain (f point)), ",
+            "forall (inverse_maps_law : forall (target : Y), forall (target_mem : y_domain target), x_domain (inverse target)), ",
+            "forall (left_inverse_law : forall (target : Y), forall (target_mem : y_domain target), @Eq.{w} Y (f (inverse target)) target), ",
+            "forall (right_inverse_law : forall (x : X), forall (x_mem : x_domain x), @Eq.{v} X (inverse (f x)) x), ",
+            "forall (unique_law : forall (x : X), forall (target : Y), forall (x_mem : x_domain x), forall (target_mem : y_domain target), forall (image_eq : @Eq.{w} Y (f x) target), @Eq.{v} X x (inverse target)), ",
+            "forall (fixed_point_law : forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain), ",
+            "forall (inverse_derivative_law : @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder), ",
+            "forall (linear_iso_law : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LocalInverseResult",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_inverse_function_params!("Prop"),
+        value: abstract_inverse_function_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (inverse : forall (y : Y), X), ",
+            "forall (inverse_bound : Scalar), ",
+            "forall (inverse_remainder : forall (r : X), Prop), ",
+            "forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "QuantitativeInverseFunctionArgs",
+        universe_params: &["s", "u", "v", "w"],
+        ty: abstract_quantitative_inverse_params!("Prop"),
+        value: abstract_quantitative_inverse_abs!(concat!(
+            "forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm CauchySmall ConvergesSmall), ",
+            "forall (f_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df f_bound f_remainder), ",
+            "forall (f_diff_on : @FrechetDifferentiableOn.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f x_domain), ",
+            "forall (linear_iso : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm), ",
+            "forall (smallness_bounds_holds : smallness_bounds), ",
+            "@LocalInverseResult.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain"
+        )),
+    },
+];
+
+const ABSTRACT_INVERSE_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "inverse_residual_def",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (target : Y), forall (x : X), @Eq.{w} Y (@InverseResidual.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target x) (@vsub.{w} Y yadd yneg (f x) target)"
+        ),
+        proof: abstract_inverse_function_abs!(
+            "fun target => fun x => @Eq.refl.{w} Y (@InverseResidual.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "inverse_newton_map_def",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (target : Y), forall (x : X), @Eq.{v} X (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target x) (xadd x (xneg (df_inv (@InverseResidual.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target x))))"
+        ),
+        proof: abstract_inverse_function_abs!(
+            "fun target => fun x => @Eq.refl.{v} X (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_inverse_evidence_intro",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(concat!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), ",
+            "forall (base_mem_law : x_domain point), ",
+            "forall (image_mem_law : y_domain (f point)), ",
+            "forall (inverse_maps_law : forall (target : Y), forall (target_mem : y_domain target), x_domain (inverse target)), ",
+            "forall (left_inverse_law : forall (target : Y), forall (target_mem : y_domain target), @Eq.{w} Y (f (inverse target)) target), ",
+            "forall (right_inverse_law : forall (x : X), forall (x_mem : x_domain x), @Eq.{v} X (inverse (f x)) x), ",
+            "forall (unique_law : forall (x : X), forall (target : Y), forall (x_mem : x_domain x), forall (target_mem : y_domain target), forall (image_eq : @Eq.{w} Y (f x) target), @Eq.{v} X x (inverse target)), ",
+            "forall (fixed_point_law : forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain), ",
+            "forall (inverse_derivative_law : @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder), ",
+            "forall (linear_iso_law : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm), ",
+            "@LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder"
+        )),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun base_mem_law => fun image_mem_law => fun inverse_maps_law => fun left_inverse_law => fun right_inverse_law => fun unique_law => fun fixed_point_law => fun inverse_derivative_law => fun linear_iso_law => fun (P : Prop) => fun (mk : ",
+            "forall (base_mem_law : x_domain point), ",
+            "forall (image_mem_law : y_domain (f point)), ",
+            "forall (inverse_maps_law : forall (target : Y), forall (target_mem : y_domain target), x_domain (inverse target)), ",
+            "forall (left_inverse_law : forall (target : Y), forall (target_mem : y_domain target), @Eq.{w} Y (f (inverse target)) target), ",
+            "forall (right_inverse_law : forall (x : X), forall (x_mem : x_domain x), @Eq.{v} X (inverse (f x)) x), ",
+            "forall (unique_law : forall (x : X), forall (target : Y), forall (x_mem : x_domain x), forall (target_mem : y_domain target), forall (image_eq : @Eq.{w} Y (f x) target), @Eq.{v} X x (inverse target)), ",
+            "forall (fixed_point_law : forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain), ",
+            "forall (inverse_derivative_law : @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder), ",
+            "forall (linear_iso_law : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm), P) => mk base_mem_law image_mem_law inverse_maps_law left_inverse_law right_inverse_law unique_law fixed_point_law inverse_derivative_law linear_iso_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_evidence_elim",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(concat!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), ",
+            "forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (base_mem_law : x_domain point), ",
+            "forall (image_mem_law : y_domain (f point)), ",
+            "forall (inverse_maps_law : forall (target : Y), forall (target_mem : y_domain target), x_domain (inverse target)), ",
+            "forall (left_inverse_law : forall (target : Y), forall (target_mem : y_domain target), @Eq.{w} Y (f (inverse target)) target), ",
+            "forall (right_inverse_law : forall (x : X), forall (x_mem : x_domain x), @Eq.{v} X (inverse (f x)) x), ",
+            "forall (unique_law : forall (x : X), forall (target : Y), forall (x_mem : x_domain x), forall (target_mem : y_domain target), forall (image_eq : @Eq.{w} Y (f x) target), @Eq.{v} X x (inverse target)), ",
+            "forall (fixed_point_law : forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain), ",
+            "forall (inverse_derivative_law : @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder), ",
+            "forall (linear_iso_law : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm), P), P"
+        )),
+        proof: abstract_inverse_function_abs!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun P => fun mk => evidence P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_inverse_base_mem_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), x_domain point"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => ",
+            local_inverse_evidence_elim!("evidence", "(x_domain point)", "base_mem_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_image_mem_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), y_domain (f point)"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => ",
+            local_inverse_evidence_elim!("evidence", "(y_domain (f point))", "image_mem_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_maps_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), forall (target : Y), forall (target_mem : y_domain target), x_domain (inverse target)"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun target => fun target_mem => ",
+            local_inverse_evidence_elim!("evidence", "(x_domain (inverse target))", "inverse_maps_arg target target_mem")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_left_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), forall (target : Y), forall (target_mem : y_domain target), @Eq.{w} Y (f (inverse target)) target"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun target => fun target_mem => ",
+            local_inverse_evidence_elim!("evidence", "(@Eq.{w} Y (f (inverse target)) target)", "left_inverse_arg target target_mem")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_right_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), forall (x : X), forall (x_mem : x_domain x), @Eq.{v} X (inverse (f x)) x"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun x => fun x_mem => ",
+            local_inverse_evidence_elim!("evidence", "(@Eq.{v} X (inverse (f x)) x)", "right_inverse_arg x x_mem")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_unique_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), forall (x : X), forall (target : Y), forall (x_mem : x_domain x), forall (target_mem : y_domain target), forall (image_eq : @Eq.{w} Y (f x) target), @Eq.{v} X x (inverse target)"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun x => fun target => fun x_mem => fun target_mem => fun image_eq => ",
+            local_inverse_evidence_elim!("evidence", "(@Eq.{v} X x (inverse target))", "unique_arg x target x_mem target_mem image_eq")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_fixed_point_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun target => fun target_mem => ",
+            local_inverse_evidence_elim!("evidence", "(@FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain)", "fixed_point_arg target target_mem")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_derivative_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => ",
+            local_inverse_evidence_elim!("evidence", "(@FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder)", "inverse_derivative_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_linear_iso_from_evidence",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm"
+        ),
+        proof: abstract_inverse_function_abs!(concat!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => ",
+            local_inverse_evidence_elim!("evidence", "(@LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm)", "linear_iso_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "local_inverse_result_intro",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), @LocalInverseResult.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain"
+        ),
+        proof: abstract_inverse_function_abs!(
+            "fun inverse => fun inverse_bound => fun inverse_remainder => fun evidence => fun (P : Prop) => fun (mk : forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), P) => mk inverse inverse_bound inverse_remainder evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_inverse_result_elim",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_inverse_function_params!(
+            "forall (result : @LocalInverseResult.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain), forall (P : Prop), forall (mk : forall (inverse : forall (y : Y), X), forall (inverse_bound : Scalar), forall (inverse_remainder : forall (r : X), Prop), forall (evidence : @LocalInverseEvidence.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain inverse inverse_bound inverse_remainder), P), P"
+        ),
+        proof: abstract_inverse_function_abs!(
+            "fun result => fun P => fun mk => result P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "quantitative_inverse_function_from_args",
+        universe_params: &["s", "u", "v", "w"],
+        statement: abstract_quantitative_inverse_params!(
+            "forall (args : @QuantitativeInverseFunctionArgs.{s,u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain CauchySmall ConvergesSmall f_bound f_remainder radius lipschitz smallness_bounds), forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm CauchySmall ConvergesSmall), forall (f_at : @FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df f_bound f_remainder), forall (f_diff_on : @FrechetDifferentiableOn.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f x_domain), forall (linear_iso : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm), forall (smallness_bounds_holds : smallness_bounds), @LocalInverseResult.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain"
+        ),
+        proof: abstract_quantitative_inverse_abs!(
+            "fun args => fun complete_args => fun f_at => fun f_diff_on => fun linear_iso => fun smallness_bounds_holds => args complete_args f_at f_diff_on linear_iso smallness_bounds_holds"
         ),
     },
 ];
@@ -15758,6 +16146,30 @@ fn run() -> Result<(), String> {
         &abstract_fixed_point_imports,
         &abstract_fixed_point_source_interfaces,
     )?;
+    let abstract_inverse_function_imports = vec![
+        eq_import.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_linear_map.verified_module.clone(),
+        abstract_derivative.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+    ];
+    let abstract_inverse_function_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_linear_map.source_interface.clone(),
+        abstract_derivative.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+    ];
+    let abstract_inverse_function = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_INVERSE_FUNCTION_MODULE,
+        &abstract_inverse_function_imports,
+        &abstract_inverse_function_source_interfaces,
+    )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -16016,6 +16428,7 @@ fn run() -> Result<(), String> {
             abstract_linear_map,
             abstract_derivative,
             abstract_fixed_point,
+            abstract_inverse_function,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,

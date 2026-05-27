@@ -246,12 +246,34 @@ is invertible when `B` is invertible.
 
 ### IIF6: Quantitative Inverse Function Theorem
 
-- Status: Planned.
+- Status: Foundational certificate generated for the explicit-law residual/Newton-map, local
+  inverse evidence/result, uniqueness, fixed-point bridge, inverse differentiability, and
+  quantitative inverse-function result API in `Proofs.Ai.Analysis.AbstractInverseFunction`.
 - Deliverables:
   - Prove a quantitative inverse function theorem from IIF3-IIF5.
   - Export both:
     - local inverse existence and uniqueness,
     - differentiability of the local inverse and derivative formula.
+- Completed exports:
+  - Definitions: `InverseResidual`, `InverseNewtonMap`, `LocalInverseEvidence`,
+    `LocalInverseResult`, `QuantitativeInverseFunctionArgs`.
+  - Theorems: `inverse_residual_def`, `inverse_newton_map_def`,
+    `local_inverse_evidence_intro`, `local_inverse_evidence_elim`,
+    `local_inverse_base_mem_from_evidence`, `local_inverse_image_mem_from_evidence`,
+    `local_inverse_maps_from_evidence`, `local_inverse_left_from_evidence`,
+    `local_inverse_right_from_evidence`, `local_inverse_unique_from_evidence`,
+    `local_inverse_fixed_point_from_evidence`, `local_inverse_derivative_from_evidence`,
+    `local_inverse_linear_iso_from_evidence`, `local_inverse_result_intro`,
+    `local_inverse_result_elim`, `quantitative_inverse_function_from_args`.
+- Boundary note:
+  - The local inverse is packaged through `LocalInverseResult`, so the quantitative theorem does not
+    take a completed inverse function as an input.
+  - Analytic estimates, completeness, contraction construction, and the quantitative bounds remain
+    explicit law evidence. The kernel checks only the package definitions, projections, and theorem
+    terms.
+  - `InverseNewtonMap` records the Newton-style fixed-point map
+    `x |-> x - df_inv (f x - target)`, and `LocalInverseEvidence` links each target to a
+    `FixedPointResult` for that map.
 - Acceptance criteria:
   - The theorem takes explicit radius and Lipschitz/smallness hypotheses.
   - The proof does not assume an inverse function as input.

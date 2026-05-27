@@ -59,6 +59,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_metric_topology: &'a VerifiedModule,
     abstract_derivative: &'a VerifiedModule,
     abstract_fixed_point: &'a VerifiedModule,
+    abstract_inverse_function: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
     abstract_inner_product_derive: &'a VerifiedModule,
     affine: &'a VerifiedModule,
@@ -87,6 +88,16 @@ struct VerifiedAbstractInnerProductDeriveImports<'a> {
     abstract_scalar_derive: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
+}
+
+struct VerifiedAbstractInverseFunctionImports<'a> {
+    eq: &'a VerifiedModule,
+    abstract_metric_topology: &'a VerifiedModule,
+    abstract_vector_space: &'a VerifiedModule,
+    abstract_normed_space: &'a VerifiedModule,
+    abstract_linear_map: &'a VerifiedModule,
+    abstract_derivative: &'a VerifiedModule,
+    abstract_fixed_point: &'a VerifiedModule,
 }
 
 struct VerifiedAbstractGroupFirstIsoFullImports<'a> {
@@ -1065,6 +1076,33 @@ const ABSTRACT_FIXED_POINT_THEOREMS: &[&str] = &[
     "banach_fixed_point_from_args",
 ];
 
+const ABSTRACT_INVERSE_FUNCTION_DEFINITIONS: &[&str] = &[
+    "InverseResidual",
+    "InverseNewtonMap",
+    "LocalInverseEvidence",
+    "LocalInverseResult",
+    "QuantitativeInverseFunctionArgs",
+];
+
+const ABSTRACT_INVERSE_FUNCTION_THEOREMS: &[&str] = &[
+    "inverse_residual_def",
+    "inverse_newton_map_def",
+    "local_inverse_evidence_intro",
+    "local_inverse_evidence_elim",
+    "local_inverse_base_mem_from_evidence",
+    "local_inverse_image_mem_from_evidence",
+    "local_inverse_maps_from_evidence",
+    "local_inverse_left_from_evidence",
+    "local_inverse_right_from_evidence",
+    "local_inverse_unique_from_evidence",
+    "local_inverse_fixed_point_from_evidence",
+    "local_inverse_derivative_from_evidence",
+    "local_inverse_linear_iso_from_evidence",
+    "local_inverse_result_intro",
+    "local_inverse_result_elim",
+    "quantitative_inverse_function_from_args",
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
     &["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"];
 
@@ -2005,6 +2043,26 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Analysis.AbstractInverseFunction",
+        source: "Proofs/Ai/Analysis/AbstractInverseFunction/source.npa",
+        certificate: "Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert",
+        meta: "Proofs/Ai/Analysis/AbstractInverseFunction/meta.json",
+        replay: "Proofs/Ai/Analysis/AbstractInverseFunction/replay.json",
+        imports: &[
+            "Proofs.Ai.Analysis.AbstractDerivative",
+            "Proofs.Ai.Analysis.AbstractFixedPoint",
+            "Proofs.Ai.Analysis.AbstractLinearMap",
+            "Proofs.Ai.Analysis.AbstractMetricTopology",
+            "Proofs.Ai.Analysis.AbstractNormedSpace",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_INVERSE_FUNCTION_DEFINITIONS,
+        theorems: ABSTRACT_INVERSE_FUNCTION_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractInnerProduct",
         source: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
         certificate: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
@@ -2439,6 +2497,18 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_vector_space_import,
         &abstract_normed_space_import,
     );
+    let abstract_inverse_function_import = verified_abstract_inverse_function_import_module(
+        &root,
+        &VerifiedAbstractInverseFunctionImports {
+            eq: &eq_import,
+            abstract_metric_topology: &abstract_metric_topology_import,
+            abstract_vector_space: &abstract_vector_space_import,
+            abstract_normed_space: &abstract_normed_space_import,
+            abstract_linear_map: &abstract_linear_map_import,
+            abstract_derivative: &abstract_derivative_import,
+            abstract_fixed_point: &abstract_fixed_point_import,
+        },
+    );
     let abstract_inner_product_import = verified_abstract_inner_product_import_module(
         &root,
         &eq_import,
@@ -2539,6 +2609,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_metric_topology: &abstract_metric_topology_import,
         abstract_derivative: &abstract_derivative_import,
         abstract_fixed_point: &abstract_fixed_point_import,
+        abstract_inverse_function: &abstract_inverse_function_import,
         abstract_inner_product: &abstract_inner_product_import,
         abstract_inner_product_derive: &abstract_inner_product_derive_import,
         affine: &affine_import,
@@ -2774,6 +2845,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Analysis.AbstractFixedPoint" => {
                 session.register_verified_module(verified_imports.abstract_fixed_point.clone())
+            }
+            "Proofs.Ai.Analysis.AbstractInverseFunction" => {
+                session.register_verified_module(verified_imports.abstract_inverse_function.clone())
             }
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
@@ -3501,6 +3575,23 @@ fn verified_abstract_fixed_point_import_module(
     session.register_verified_module(abstract_normed_space_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractFixedPoint corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_inverse_function_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractInverseFunctionImports<'_>,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.eq.clone());
+    session.register_verified_module(imports.abstract_metric_topology.clone());
+    session.register_verified_module(imports.abstract_vector_space.clone());
+    session.register_verified_module(imports.abstract_normed_space.clone());
+    session.register_verified_module(imports.abstract_linear_map.clone());
+    session.register_verified_module(imports.abstract_derivative.clone());
+    session.register_verified_module(imports.abstract_fixed_point.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractInverseFunction corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_inner_product_import_module(
