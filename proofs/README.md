@@ -155,6 +155,8 @@ Planning documents:
   route.
 - `correspondence-theorem-proof-phases.md`: CT0-CT8 plan for the AI-facing group correspondence
   theorem route.
+- `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
+  implicit-function theorem route.
 
 ## Completed Inner-Product To Metric Route
 
