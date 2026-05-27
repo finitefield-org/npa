@@ -68,6 +68,7 @@ The exact module names can be adjusted to fit the corpus, but the intended layer
 | `Proofs.Ai.Analysis.AbstractDerivative` | Frechet derivative and calculus rules |
 | `Proofs.Ai.Analysis.AbstractFixedPoint` | contraction mapping theorem |
 | `Proofs.Ai.Analysis.AbstractInverseFunction` | quantitative inverse function theorem |
+| `Proofs.Ai.Analysis.AbstractImplicitPhi` | auxiliary `Phi(x,y)=(x,F(x,y))` map and block derivative bridge |
 | `Proofs.Ai.Analysis.AbstractImplicitFunction` | implicit function theorem evidence and final theorem |
 
 ## Milestones
@@ -281,12 +282,33 @@ is invertible when `B` is invertible.
 
 ### IIF7: Build The Auxiliary Map `Phi`
 
-- Status: Planned.
+- Status: Foundational certificate generated for the auxiliary `Phi` construction, base-point
+  equation, derivative law package, and block-triangular linear-isomorphism bridge in
+  `Proofs.Ai.Analysis.AbstractImplicitPhi`.
 - Deliverables:
   - Define `Phi(x,y) = (x, F(x,y))`.
   - Prove `Phi(a,b) = (a,0)` from `F(a,b)=0`.
   - Compute `D Phi(a,b)` using product derivative rules.
   - Prove `D Phi(a,b)` is a linear isomorphism when `D_y F(a,b)` is.
+- Completed exports:
+  - Definitions: `ImplicitPhiCoord`, `ImplicitPhi`, `ImplicitPhiDerivativeMap`,
+    `ImplicitPhiDerivativeArgs`, `ImplicitPhiIsoArgs`.
+  - Theorems: `implicit_phi_coord_def`, `implicit_phi_def`,
+    `implicit_phi_coord_base_value_from_zero`, `implicit_phi_derivative_map_def`,
+    `implicit_phi_full_derivative_from_args`, `implicit_phi_partial_x_from_args`,
+    `implicit_phi_partial_y_from_args`, `implicit_phi_derivative_from_args`,
+    `implicit_phi_dy_iso_from_args`, `implicit_phi_block_triangular_args_from_args`,
+    `implicit_phi_linear_iso_from_args`, `implicit_phi_block_left_inverse_from_args`,
+    `implicit_phi_block_right_inverse_from_args`.
+- Boundary note:
+  - The block derivative computation and estimates are explicit law evidence in
+    `ImplicitPhiDerivativeArgs`; they are not kernel primitives.
+  - The invertibility bridge records both `D_y F(a,b)` as a `LinearIsoArgs` package and the
+    block-triangular inverse package needed to treat `D Phi(a,b)` as a linear isomorphism.  The
+    full linearity and operator-bound evidence for `D Phi(a,b)` remains explicit in
+    `ImplicitPhiIsoArgs`.
+  - The only expected axiom reported by this module is `Eq.rec`, used through the equality
+    congruence proof turning `F(a,b)=0` into `Phi(a,b)=(a,0)`.
 - Needed later for:
   - applying IIF6 to obtain a local inverse for `Phi`.
 

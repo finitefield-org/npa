@@ -240,6 +240,26 @@ const ABSTRACT_INVERSE_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_IMPLICIT_PHI_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.AbstractImplicitPhi",
+    source_path: "Proofs/Ai/Analysis/AbstractImplicitPhi/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/AbstractImplicitPhi/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/AbstractImplicitPhi/meta.json",
+    replay_path: "Proofs/Ai/Analysis/AbstractImplicitPhi/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractLinearMap",
+        "Proofs.Ai.Analysis.AbstractDerivative",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_IMPLICIT_PHI_DEFINITIONS,
+    theorems: ABSTRACT_IMPLICIT_PHI_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const RING_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.Ring",
     source_path: "Proofs/Ai/Algebra/Ring/source.npa",
@@ -1972,6 +1992,76 @@ macro_rules! abstract_quantitative_inverse_abs {
     };
 }
 
+macro_rules! abstract_implicit_phi_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (X : Sort v), ",
+            "forall (xzero : X), ",
+            "forall (xadd : forall (x : X), forall (y : X), X), ",
+            "forall (xneg : forall (x : X), X), ",
+            "forall (xsmul : forall (a : Scalar), forall (x : X), X), ",
+            "forall (xnorm : forall (x : X), Scalar), ",
+            "forall (Y : Sort w), ",
+            "forall (yzero : Y), ",
+            "forall (yadd : forall (x : Y), forall (y : Y), Y), ",
+            "forall (yneg : forall (y : Y), Y), ",
+            "forall (ysmul : forall (a : Scalar), forall (y : Y), Y), ",
+            "forall (ynorm : forall (y : Y), Scalar), ",
+            "forall (Z : Sort z), ",
+            "forall (zzero : Z), ",
+            "forall (zadd : forall (x : Z), forall (y : Z), Z), ",
+            "forall (zneg : forall (z : Z), Z), ",
+            "forall (zsmul : forall (a : Scalar), forall (z : Z), Z), ",
+            "forall (znorm : forall (z : Z), Scalar), ",
+            "forall (XY : Sort p), ",
+            "forall (xyzero : XY), ",
+            "forall (xyadd : forall (x : XY), forall (y : XY), XY), ",
+            "forall (xyneg : forall (x : XY), XY), ",
+            "forall (xysmul : forall (a : Scalar), forall (x : XY), XY), ",
+            "forall (xynorm : forall (x : XY), Scalar), ",
+            "forall (pairXY : forall (x : X), forall (y : Y), XY), ",
+            "forall (fstXY : forall (point : XY), X), ",
+            "forall (sndXY : forall (point : XY), Y), ",
+            "forall (XZ : Sort q), ",
+            "forall (xzzero : XZ), ",
+            "forall (xzadd : forall (x : XZ), forall (y : XZ), XZ), ",
+            "forall (xzneg : forall (x : XZ), XZ), ",
+            "forall (xzsmul : forall (a : Scalar), forall (x : XZ), XZ), ",
+            "forall (xznorm : forall (x : XZ), Scalar), ",
+            "forall (pairXZ : forall (x : X), forall (z : Z), XZ), ",
+            "forall (fstXZ : forall (point : XZ), X), ",
+            "forall (sndXZ : forall (point : XZ), Z), ",
+            "forall (F : forall (point : XY), Z), ",
+            "forall (base_x : X), ",
+            "forall (base_y : Y), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        abstract_implicit_phi_params!(concat!($tail))
+    };
+}
+
+macro_rules! abstract_implicit_phi_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun X => fun xzero => fun xadd => fun xneg => fun xsmul => fun xnorm => fun Y => fun yzero => fun yadd => fun yneg => fun ysmul => fun ynorm => fun Z => fun zzero => fun zadd => fun zneg => fun zsmul => fun znorm => fun XY => fun xyzero => fun xyadd => fun xyneg => fun xysmul => fun xynorm => fun pairXY => fun fstXY => fun sndXY => fun XZ => fun xzzero => fun xzadd => fun xzneg => fun xzsmul => fun xznorm => fun pairXZ => fun fstXZ => fun sndXZ => fun F => fun base_x => fun base_y => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        abstract_implicit_phi_abs!(concat!($tail))
+    };
+}
+
 macro_rules! abstract_group_params {
     ($tail:literal) => {
         concat!(
@@ -2365,6 +2455,39 @@ macro_rules! local_inverse_evidence_elim {
             "fun (fixed_point_arg : forall (target : Y), forall (target_mem : y_domain target), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm x_domain (@InverseNewtonMap.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm f point df df_inv op_norm inv_op_norm x_domain y_domain target) x_domain) => ",
             "fun (inverse_derivative_arg : @FrechetDerivativeAt.{u,w,v} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm X xzero xadd xneg xsmul xnorm inverse (f point) df_inv inverse_bound inverse_remainder) => ",
             "fun (linear_iso_arg : @LinearIsoArgs.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm df df_inv op_norm inv_op_norm) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_phi_derivative_args_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (F_at_arg : @FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm Z zzero zadd zneg zsmul znorm F (pairXY base_x base_y) dF F_bound F_remainder) => ",
+            "fun (partial_x_arg : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_y) base_x dFx partial_x_bound partial_x_remainder) => ",
+            "fun (partial_y_arg : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_x) base_y dFy partial_y_bound partial_y_remainder) => ",
+            "fun (phi_at_arg : @FrechetDerivativeAt.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y) (pairXY base_x base_y) (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) phi_bound phi_remainder) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_phi_iso_args_elim {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            $target,
+            " ",
+            "(fun (dy_iso_arg : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm) => ",
+            "fun (block_args_arg : @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso) => ",
+            "fun (phi_linear_iso_arg : @LinearIsoArgs.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv) phi_op_norm phi_inv_op_norm) => ",
             $($tail)+,
             ")"
         )
@@ -5102,6 +5225,250 @@ const ABSTRACT_INVERSE_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
         proof: abstract_quantitative_inverse_abs!(
             "fun args => fun complete_args => fun f_at => fun f_diff_on => fun linear_iso => fun smallness_bounds_holds => args complete_args f_at f_diff_on linear_iso smallness_bounds_holds"
         ),
+    },
+];
+
+const ABSTRACT_IMPLICIT_PHI_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "ImplicitPhiCoord",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_phi_params!("forall (x : X), forall (y : Y), XZ"),
+        value: abstract_implicit_phi_abs!("fun x => fun y => pairXZ x (F (pairXY x y))"),
+    },
+    DefinitionArtifact {
+        name: "ImplicitPhi",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_phi_params!("forall (point : XY), XZ"),
+        value: abstract_implicit_phi_abs!(
+            "fun point => @ImplicitPhiCoord.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y (fstXY point) (sndXY point)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ImplicitPhiDerivativeMap",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (h : XY), XZ"
+        ),
+        value: abstract_implicit_phi_abs!(
+            "fun dFx => fun dFy => fun dFy_inv => @BlockTriangularMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ImplicitPhiDerivativeArgs",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_phi_params!(concat!(
+            "forall (dF : forall (h : XY), Z), ",
+            "forall (dFx : forall (h : X), Z), ",
+            "forall (dFy : forall (h : Y), Z), ",
+            "forall (dFy_inv : forall (z : Z), Y), ",
+            "forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), ",
+            "forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), ",
+            "forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), ",
+            "forall (phi_bound : Scalar), forall (phi_remainder : forall (r : XZ), Prop), Prop"
+        )),
+        value: abstract_implicit_phi_abs!(concat!(
+            "fun dF => fun dFx => fun dFy => fun dFy_inv => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun phi_bound => fun phi_remainder => forall (P : Prop), forall (mk : ",
+            "forall (F_at_law : @FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm Z zzero zadd zneg zsmul znorm F (pairXY base_x base_y) dF F_bound F_remainder), ",
+            "forall (partial_x_law : @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_y) base_x dFx partial_x_bound partial_x_remainder), ",
+            "forall (partial_y_law : @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_x) base_y dFy partial_y_bound partial_y_remainder), ",
+            "forall (phi_at_law : @FrechetDerivativeAt.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y) (pairXY base_x base_y) (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) phi_bound phi_remainder), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ImplicitPhiIsoArgs",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_phi_params!(concat!(
+            "forall (dFx : forall (h : X), Z), ",
+            "forall (dFy : forall (h : Y), Z), ",
+            "forall (dFy_inv : forall (z : Z), Y), ",
+            "forall (dy_op_norm : Scalar), forall (dy_inv_op_norm : Scalar), ",
+            "forall (phi_op_norm : Scalar), forall (phi_inv_op_norm : Scalar), ",
+            "forall (dy_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), Prop"
+        )),
+        value: abstract_implicit_phi_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dy_op_norm => fun dy_inv_op_norm => fun phi_op_norm => fun phi_inv_op_norm => fun dy_iso => forall (P : Prop), forall (mk : ",
+            "forall (dy_iso_law : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), ",
+            "forall (block_args_law : @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso), ",
+            "forall (phi_linear_iso_law : @LinearIsoArgs.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv) phi_op_norm phi_inv_op_norm), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_IMPLICIT_PHI_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "implicit_phi_coord_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (x : X), forall (y : Y), @Eq.{q} XZ (@ImplicitPhiCoord.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x y) (pairXZ x (F (pairXY x y)))"
+        ),
+        proof: abstract_implicit_phi_abs!(
+            "fun x => fun y => @Eq.refl.{q} XZ (@ImplicitPhiCoord.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (point : XY), @Eq.{q} XZ (@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y point) (pairXZ (fstXY point) (F (pairXY (fstXY point) (sndXY point))))"
+        ),
+        proof: abstract_implicit_phi_abs!(
+            "fun point => @Eq.refl.{q} XZ (@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y point)"
+        ),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_coord_base_value_from_zero",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (zero_law : @Eq.{z} Z (F (pairXY base_x base_y)) zzero), @Eq.{q} XZ (@ImplicitPhiCoord.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y base_x base_y) (pairXZ base_x zzero)"
+        ),
+        proof: abstract_implicit_phi_abs!(
+            "fun zero_law => @eq_congr_arg.{z,q} Z XZ (fun (value : Z) => pairXZ base_x value) (F (pairXY base_x base_y)) zzero zero_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_derivative_map_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (h : XY), @Eq.{q} XZ (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv h) (pairXZ (fstXY h) (zadd (dFx (fstXY h)) (dFy (sndXY h))))"
+        ),
+        proof: abstract_implicit_phi_abs!(
+            "fun dFx => fun dFy => fun dFy_inv => fun h => @Eq.refl.{q} XZ (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_full_derivative_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dF : forall (h : XY), Z), forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), forall (phi_bound : Scalar), forall (phi_remainder : forall (r : XZ), Prop), forall (args : @ImplicitPhiDerivativeArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dF dFx dFy dFy_inv F_bound F_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder phi_bound phi_remainder), @FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm Z zzero zadd zneg zsmul znorm F (pairXY base_x base_y) dF F_bound F_remainder"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dF => fun dFx => fun dFy => fun dFy_inv => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun phi_bound => fun phi_remainder => fun args => ",
+            implicit_phi_derivative_args_elim!(
+                "args",
+                "(@FrechetDerivativeAt.{u,p,z} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm Z zzero zadd zneg zsmul znorm F (pairXY base_x base_y) dF F_bound F_remainder)",
+                "F_at_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_partial_x_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dF : forall (h : XY), Z), forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), forall (phi_bound : Scalar), forall (phi_remainder : forall (r : XZ), Prop), forall (args : @ImplicitPhiDerivativeArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dF dFx dFy dFy_inv F_bound F_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder phi_bound phi_remainder), @FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_y) base_x dFx partial_x_bound partial_x_remainder"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dF => fun dFx => fun dFy => fun dFy_inv => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun phi_bound => fun phi_remainder => fun args => ",
+            implicit_phi_derivative_args_elim!(
+                "args",
+                "(@FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_y) base_x dFx partial_x_bound partial_x_remainder)",
+                "partial_x_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_partial_y_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dF : forall (h : XY), Z), forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), forall (phi_bound : Scalar), forall (phi_remainder : forall (r : XZ), Prop), forall (args : @ImplicitPhiDerivativeArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dF dFx dFy dFy_inv F_bound F_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder phi_bound phi_remainder), @FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_x) base_y dFy partial_y_bound partial_y_remainder"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dF => fun dFx => fun dFy => fun dFy_inv => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun phi_bound => fun phi_remainder => fun args => ",
+            implicit_phi_derivative_args_elim!(
+                "args",
+                "(@FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F base_x) base_y dFy partial_y_bound partial_y_remainder)",
+                "partial_y_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_derivative_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dF : forall (h : XY), Z), forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (F_bound : Scalar), forall (F_remainder : forall (r : Z), Prop), forall (partial_x_bound : Scalar), forall (partial_x_remainder : forall (r : Z), Prop), forall (partial_y_bound : Scalar), forall (partial_y_remainder : forall (r : Z), Prop), forall (phi_bound : Scalar), forall (phi_remainder : forall (r : XZ), Prop), forall (args : @ImplicitPhiDerivativeArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dF dFx dFy dFy_inv F_bound F_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder phi_bound phi_remainder), @FrechetDerivativeAt.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y) (pairXY base_x base_y) (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) phi_bound phi_remainder"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dF => fun dFx => fun dFy => fun dFy_inv => fun F_bound => fun F_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun phi_bound => fun phi_remainder => fun args => ",
+            implicit_phi_derivative_args_elim!(
+                "args",
+                "(@FrechetDerivativeAt.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhi.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y) (pairXY base_x base_y) (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) phi_bound phi_remainder)",
+                "phi_at_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_dy_iso_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (dy_op_norm : Scalar), forall (dy_inv_op_norm : Scalar), forall (phi_op_norm : Scalar), forall (phi_inv_op_norm : Scalar), forall (dy_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), forall (args : @ImplicitPhiIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv dy_op_norm dy_inv_op_norm phi_op_norm phi_inv_op_norm dy_iso), @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dy_op_norm => fun dy_inv_op_norm => fun phi_op_norm => fun phi_inv_op_norm => fun dy_iso => fun args => ",
+            implicit_phi_iso_args_elim!(
+                "args",
+                "(@LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm)",
+                "dy_iso_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_block_triangular_args_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (dy_op_norm : Scalar), forall (dy_inv_op_norm : Scalar), forall (phi_op_norm : Scalar), forall (phi_inv_op_norm : Scalar), forall (dy_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), forall (args : @ImplicitPhiIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv dy_op_norm dy_inv_op_norm phi_op_norm phi_inv_op_norm dy_iso), @BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dy_op_norm => fun dy_inv_op_norm => fun phi_op_norm => fun phi_inv_op_norm => fun dy_iso => fun args => ",
+            implicit_phi_iso_args_elim!(
+                "args",
+                "(@BlockTriangularIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso)",
+                "block_args_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_linear_iso_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (dy_op_norm : Scalar), forall (dy_inv_op_norm : Scalar), forall (phi_op_norm : Scalar), forall (phi_inv_op_norm : Scalar), forall (dy_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), forall (args : @ImplicitPhiIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv dy_op_norm dy_inv_op_norm phi_op_norm phi_inv_op_norm dy_iso), @LinearIsoArgs.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv) phi_op_norm phi_inv_op_norm"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dy_op_norm => fun dy_inv_op_norm => fun phi_op_norm => fun phi_inv_op_norm => fun dy_iso => fun args => ",
+            implicit_phi_iso_args_elim!(
+                "args",
+                "(@LinearIsoArgs.{u,p,q} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm XZ xzzero xzadd xzneg xzsmul xznorm (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv) (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv) phi_op_norm phi_inv_op_norm)",
+                "phi_linear_iso_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_block_left_inverse_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (dy_op_norm : Scalar), forall (dy_inv_op_norm : Scalar), forall (phi_op_norm : Scalar), forall (phi_inv_op_norm : Scalar), forall (dy_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), forall (args : @ImplicitPhiIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv dy_op_norm dy_inv_op_norm phi_op_norm phi_inv_op_norm dy_iso), forall (point : XY), @Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv point)) point"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dy_op_norm => fun dy_inv_op_norm => fun phi_op_norm => fun phi_inv_op_norm => fun dy_iso => fun args => fun point => ",
+            implicit_phi_iso_args_elim!(
+                "args",
+                "(@Eq.{p} XY (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv point)) point)",
+                "@block_triangular_left_inverse_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso block_args_arg point"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_phi_block_right_inverse_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_phi_params!(
+            "forall (dFx : forall (h : X), Z), forall (dFy : forall (h : Y), Z), forall (dFy_inv : forall (z : Z), Y), forall (dy_op_norm : Scalar), forall (dy_inv_op_norm : Scalar), forall (phi_op_norm : Scalar), forall (phi_inv_op_norm : Scalar), forall (dy_iso : @LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm dFy dFy_inv dy_op_norm dy_inv_op_norm), forall (args : @ImplicitPhiIsoArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv dy_op_norm dy_inv_op_norm phi_op_norm phi_inv_op_norm dy_iso), forall (point : XZ), @Eq.{q} XZ (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv point)) point"
+        ),
+        proof: abstract_implicit_phi_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dy_op_norm => fun dy_inv_op_norm => fun phi_op_norm => fun phi_inv_op_norm => fun dy_iso => fun args => fun point => ",
+            implicit_phi_iso_args_elim!(
+                "args",
+                "(@Eq.{q} XZ (@ImplicitPhiDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y dFx dFy dFy_inv (@BlockTriangularInverse.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv point)) point)",
+                "@block_triangular_right_inverse_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY pairXY fstXY sndXY XZ pairXZ fstXZ sndXZ dFx dFy dFy_inv dy_op_norm dy_inv_op_norm dy_iso block_args_arg point"
+            )
+        )),
     },
 ];
 
@@ -16170,6 +16537,28 @@ fn run() -> Result<(), String> {
         &abstract_inverse_function_imports,
         &abstract_inverse_function_source_interfaces,
     )?;
+    let abstract_implicit_phi_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_linear_map.verified_module.clone(),
+        abstract_derivative.verified_module.clone(),
+    ];
+    let abstract_implicit_phi_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_linear_map.source_interface.clone(),
+        abstract_derivative.source_interface.clone(),
+    ];
+    let abstract_implicit_phi = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_IMPLICIT_PHI_MODULE,
+        &abstract_implicit_phi_imports,
+        &abstract_implicit_phi_source_interfaces,
+    )?;
     let abstract_inner_product_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -16429,6 +16818,7 @@ fn run() -> Result<(), String> {
             abstract_derivative,
             abstract_fixed_point,
             abstract_inverse_function,
+            abstract_implicit_phi,
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,
