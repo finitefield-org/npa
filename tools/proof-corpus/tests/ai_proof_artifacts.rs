@@ -1152,26 +1152,50 @@ const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[&str] = &[
     "ImplicitTargetPoint",
     "ImplicitFunction",
     "ImplicitGraphPoint",
+    "ImplicitTargetDerivativeMap",
+    "ImplicitFunctionDerivativeChainMap",
+    "ImplicitFunctionDerivativeFormulaMap",
     "ImplicitPhiLocalInverseLaws",
     "ImplicitFunctionExtractionArgs",
+    "ImplicitFunctionDerivativeArgs",
     "ImplicitFunctionTheoremEvidence",
+    "ImplicitFunctionDerivativeEvidence",
 ];
 
 const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[&str] = &[
     "implicit_target_point_def",
     "implicit_function_def",
     "implicit_graph_point_def",
+    "implicit_target_derivative_map_def",
+    "implicit_function_derivative_chain_map_def",
+    "implicit_function_derivative_formula_map_def",
     "implicit_extraction_local_inverse_from_args",
     "implicit_extraction_target_mem_from_args",
     "implicit_function_value_mem_from_args",
     "implicit_function_zero_from_args",
     "implicit_function_unique_from_args",
+    "implicit_function_derivative_extraction_args_from_args",
+    "implicit_function_target_derivative_from_args",
+    "implicit_function_partial_x_from_derivative_args",
+    "implicit_function_partial_y_from_derivative_args",
+    "implicit_function_dy_iso_from_derivative_args",
+    "implicit_function_phi_inverse_derivative_from_args",
+    "implicit_function_snd_projection_derivative_from_args",
+    "implicit_function_derivative_from_args",
+    "implicit_function_differentiable_from_args",
+    "implicit_function_derivative_formula_from_args",
     "implicit_function_theorem_args_from_evidence",
     "implicit_function_theorem_target_mem_from_evidence",
     "implicit_function_theorem_value_mem_from_evidence",
     "implicit_function_theorem_zero_from_evidence",
     "implicit_function_theorem_unique_from_evidence",
     "implicit_function_theorem",
+    "implicit_function_derivative_evidence_args",
+    "implicit_function_derivative_evidence_basic",
+    "implicit_function_derivative_evidence_differentiable",
+    "implicit_function_derivative_evidence_derivative",
+    "implicit_function_derivative_evidence_formula",
+    "implicit_function_derivative_theorem",
 ];
 
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
@@ -2344,8 +2368,20 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
     },
 ];
 
+const AI_PROOF_ARTIFACT_TEST_STACK_BYTES: usize = 64 * 1024 * 1024;
+
 #[test]
 fn ai_certificates_match_manifest_and_verify() {
+    std::thread::Builder::new()
+        .name("ai_certificates_match_manifest_and_verify".to_owned())
+        .stack_size(AI_PROOF_ARTIFACT_TEST_STACK_BYTES)
+        .spawn(ai_certificates_match_manifest_and_verify_on_large_stack)
+        .expect("AI proof artifact verification thread should spawn")
+        .join()
+        .expect("AI proof artifact verification thread should not panic");
+}
+
+fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let root = corpus_root();
     let manifest = read_to_string(root.join("manifest.toml"));
     assert_eq!(

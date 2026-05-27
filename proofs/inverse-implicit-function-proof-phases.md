@@ -339,7 +339,7 @@ is invertible when `B` is invertible.
 
 ### IIF9: Differentiability And Derivative Formula For `g`
 
-- Status: Planned.
+- Status: Certificate generated in `Proofs.Ai.Analysis.AbstractImplicitFunction`.
 - Deliverables:
   - Prove differentiability of `g` from differentiability of the local inverse and projections.
   - Prove the derivative formula
@@ -350,12 +350,40 @@ Dg(x) = - (D_y F(x, g(x)))^{-1} o D_x F(x, g(x)).
 
   - Package the formula as a separate theorem so the basic existence/uniqueness theorem can land
     first if the derivative formula requires more linear algebra.
+- Completed exports:
+  - Definitions: `ImplicitTargetDerivativeMap`, `ImplicitFunctionDerivativeChainMap`,
+    `ImplicitFunctionDerivativeFormulaMap`, `ImplicitFunctionDerivativeArgs`,
+    `ImplicitFunctionDerivativeEvidence`.
+  - Theorems: `implicit_target_derivative_map_def`,
+    `implicit_function_derivative_chain_map_def`,
+    `implicit_function_derivative_formula_map_def`,
+    `implicit_function_derivative_extraction_args_from_args`,
+    `implicit_function_target_derivative_from_args`,
+    `implicit_function_partial_x_from_derivative_args`,
+    `implicit_function_partial_y_from_derivative_args`,
+    `implicit_function_dy_iso_from_derivative_args`,
+    `implicit_function_phi_inverse_derivative_from_args`,
+    `implicit_function_snd_projection_derivative_from_args`,
+    `implicit_function_derivative_from_args`,
+    `implicit_function_differentiable_from_args`,
+    `implicit_function_derivative_formula_from_args`,
+    `implicit_function_derivative_evidence_args`,
+    `implicit_function_derivative_evidence_basic`,
+    `implicit_function_derivative_evidence_differentiable`,
+    `implicit_function_derivative_evidence_derivative`,
+    `implicit_function_derivative_evidence_formula`,
+    `implicit_function_derivative_theorem`.
+- Boundary note:
+  - The differentiability theorem exposes the chain derivative obtained from the target map,
+    local inverse of `Phi`, and second projection.  The formula theorem separately certifies its
+    pointwise equality with `h |-> - (D_y F(x, g(x)))^{-1} (D_x F(x, g(x)) h)`.
+  - The partial derivatives, local inverse derivative, projection derivative, and invertibility of
+    `D_y F(x, g(x))` remain explicit law evidence in `ImplicitFunctionDerivativeArgs`; none of
+    these analytic facts is added as a kernel primitive.
 
 ### IIF10: Final Evidence Wrapper
 
-- Status: Basic existence/zero/local-uniqueness certificate generated in
-  `Proofs.Ai.Analysis.AbstractImplicitFunction`; differentiability and derivative formula remain
-  the separate IIF9 strengthening.
+- Status: Certificate generated in `Proofs.Ai.Analysis.AbstractImplicitFunction`.
 - Deliverables:
   - Add `ImplicitFunctionTheoremEvidence` or a Church-encoded package collecting:
     - existence of `g`,
@@ -374,7 +402,8 @@ Dg(x) = - (D_y F(x, g(x)))^{-1} o D_x F(x, g(x)).
 - Boundary note:
   - The public theorem packages the concrete `ImplicitFunction` extracted in IIF8 and exposes only
     certificate-backed target membership, value membership, zero equation, and local uniqueness.
-    No derivative formula is smuggled into the basic theorem.
+    No derivative formula is smuggled into the basic theorem; the strengthened derivative evidence
+    remains the separate `ImplicitFunctionDerivativeEvidence` package from IIF9.
 - Verification:
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`

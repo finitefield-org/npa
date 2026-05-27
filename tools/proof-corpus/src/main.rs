@@ -2150,6 +2150,99 @@ macro_rules! implicit_graph_point_app {
     };
 }
 
+macro_rules! implicit_target_point_fun_app {
+    () => {
+        concat!(
+            "@ImplicitTargetPoint.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y"
+        )
+    };
+}
+
+macro_rules! implicit_function_fun_app {
+    () => {
+        concat!(
+            "@ImplicitFunction.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_target_derivative_map_fun_app {
+    () => {
+        concat!(
+            "@ImplicitTargetDerivativeMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_target_derivative_map_app {
+    ($h:literal) => {
+        concat!(implicit_target_derivative_map_fun_app!(), " ", $h)
+    };
+}
+
+macro_rules! implicit_function_derivative_chain_map_fun_app {
+    ($d_phi_inv_at:literal, $x:literal) => {
+        concat!(
+            "@ImplicitFunctionDerivativeChainMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $d_phi_inv_at,
+            " ",
+            $x
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_chain_map_app {
+    ($d_phi_inv_at:literal, $x:literal, $h:literal) => {
+        concat!(
+            implicit_function_derivative_chain_map_fun_app!($d_phi_inv_at, $x),
+            " ",
+            $h
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_formula_map_fun_app {
+    ($d_fx:literal, $d_fy_inv:literal, $x:literal) => {
+        concat!(
+            "@ImplicitFunctionDerivativeFormulaMap.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            $d_fx,
+            " ",
+            $d_fy_inv,
+            " ",
+            $x
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_formula_map_app {
+    ($d_fx:literal, $d_fy_inv:literal, $x:literal, $h:literal) => {
+        concat!(
+            implicit_function_derivative_formula_map_fun_app!($d_fx, $d_fy_inv, $x),
+            " ",
+            $h
+        )
+    };
+}
+
+macro_rules! implicit_partial_x_map_at_implicit_app {
+    ($x:literal) => {
+        concat!(
+            "@PartialXMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F (",
+            implicit_function_app!($x),
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_partial_y_map_at_implicit_app {
+    ($x:literal) => {
+        concat!(
+            "@PartialYMap.{p,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY F ",
+            $x
+        )
+    };
+}
+
 macro_rules! implicit_phi_local_inverse_laws_app {
     () => {
         concat!(
@@ -2251,6 +2344,226 @@ macro_rules! implicit_function_unique_from_args_app {
             $candidate_mem,
             " ",
             $zero_eq
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_implicit_function_params!(concat!(
+            "forall (dFx : forall (x : X), forall (h : X), Z), ",
+            "forall (dFy : forall (x : X), forall (h : Y), Z), ",
+            "forall (dFy_inv : forall (x : X), forall (z : Z), Y), ",
+            "forall (dPhi_inv_at : forall (x : X), forall (target : XZ), XY), ",
+            "forall (target_bound : Scalar), ",
+            "forall (target_remainder : forall (r : XZ), Prop), ",
+            "forall (partial_x_bound : Scalar), ",
+            "forall (partial_x_remainder : forall (r : Z), Prop), ",
+            "forall (partial_y_bound : Scalar), ",
+            "forall (partial_y_remainder : forall (r : Z), Prop), ",
+            "forall (dy_op_norm : Scalar), ",
+            "forall (dy_inv_op_norm : Scalar), ",
+            "forall (phi_inverse_bound : Scalar), ",
+            "forall (phi_inverse_remainder : forall (r : XY), Prop), ",
+            "forall (snd_bound : Scalar), ",
+            "forall (snd_remainder : forall (r : Y), Prop), ",
+            "forall (chain_bound : Scalar), ",
+            "forall (chain_remainder : forall (r : Y), Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        implicit_function_derivative_params!(concat!($tail))
+    };
+}
+
+macro_rules! implicit_function_derivative_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_implicit_function_abs!(concat!(
+            "fun dFx => fun dFy => fun dFy_inv => fun dPhi_inv_at => fun target_bound => fun target_remainder => fun partial_x_bound => fun partial_x_remainder => fun partial_y_bound => fun partial_y_remainder => fun dy_op_norm => fun dy_inv_op_norm => fun phi_inverse_bound => fun phi_inverse_remainder => fun snd_bound => fun snd_remainder => fun chain_bound => fun chain_remainder => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        implicit_function_derivative_abs!(concat!($tail))
+    };
+}
+
+macro_rules! implicit_target_derivative_at_ty {
+    ($x:literal) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,v,q} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm XZ xzzero xzadd xzneg xzsmul xznorm (",
+            implicit_target_point_fun_app!(),
+            ") ",
+            $x,
+            " (",
+            implicit_target_derivative_map_fun_app!(),
+            ") target_bound target_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_partial_x_derivative_at_ty {
+    ($x:literal) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,v,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Z zzero zadd zneg zsmul znorm (",
+            implicit_partial_x_map_at_implicit_app!($x),
+            ") ",
+            $x,
+            " (dFx ",
+            $x,
+            ") partial_x_bound partial_x_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_partial_y_derivative_at_ty {
+    ($x:literal) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (",
+            implicit_partial_y_map_at_implicit_app!($x),
+            ") (",
+            implicit_function_app!($x),
+            ") (dFy ",
+            $x,
+            ") partial_y_bound partial_y_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_dy_iso_ty {
+    ($x:literal) => {
+        concat!(
+            "@LinearIsoArgs.{u,w,z} Scalar zero one add neg sub mul le_rel Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm (dFy ",
+            $x,
+            ") (dFy_inv ",
+            $x,
+            ") dy_op_norm dy_inv_op_norm"
+        )
+    };
+}
+
+macro_rules! implicit_phi_inverse_derivative_at_ty {
+    ($x:literal) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,q,p} Scalar zero one add neg sub mul le_rel XZ xzzero xzadd xzneg xzsmul xznorm XY xyzero xyadd xyneg xysmul xynorm phi_inv (",
+            implicit_target_point_app!($x),
+            ") (dPhi_inv_at ",
+            $x,
+            ") phi_inverse_bound phi_inverse_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_snd_projection_derivative_at_ty {
+    ($x:literal) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,p,w} Scalar zero one add neg sub mul le_rel XY xyzero xyadd xyneg xysmul xynorm Y yzero yadd yneg ysmul ynorm sndXY (phi_inv (",
+            implicit_target_point_app!($x),
+            ")) sndXY snd_bound snd_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_chain_derivative_at_ty {
+    ($x:literal) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+            implicit_function_fun_app!(),
+            ") ",
+            $x,
+            " (",
+            implicit_function_derivative_chain_map_fun_app!("dPhi_inv_at", $x),
+            ") chain_bound chain_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_derivative_formula_eq_ty {
+    ($x:literal, $h:literal) => {
+        concat!(
+            "@Eq.{w} Y (",
+            implicit_function_derivative_chain_map_app!("dPhi_inv_at", $x, $h),
+            ") (",
+            implicit_function_derivative_formula_map_app!("dFx", "dFy_inv", $x, $h),
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_args_app {
+    () => {
+        concat!(
+            "@ImplicitFunctionDerivativeArgs.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder dFx dFy dFy_inv dPhi_inv_at target_bound target_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder dy_op_norm dy_inv_op_norm phi_inverse_bound phi_inverse_remainder snd_bound snd_remainder chain_bound chain_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_evidence_app {
+    () => {
+        concat!(
+            "@ImplicitFunctionDerivativeEvidence.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder dFx dFy dFy_inv dPhi_inv_at target_bound target_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder dy_op_norm dy_inv_op_norm phi_inverse_bound phi_inverse_remainder snd_bound snd_remainder chain_bound chain_remainder"
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_from_args_app {
+    ($args:literal, $x:literal, $hx:literal) => {
+        concat!(
+            "@implicit_function_derivative_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder dFx dFy dFy_inv dPhi_inv_at target_bound target_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder dy_op_norm dy_inv_op_norm phi_inverse_bound phi_inverse_remainder snd_bound snd_remainder chain_bound chain_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx
+        )
+    };
+}
+
+macro_rules! implicit_function_differentiable_from_args_app {
+    ($args:literal, $x:literal, $hx:literal) => {
+        concat!(
+            "@implicit_function_differentiable_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder dFx dFy dFy_inv dPhi_inv_at target_bound target_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder dy_op_norm dy_inv_op_norm phi_inverse_bound phi_inverse_remainder snd_bound snd_remainder chain_bound chain_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_formula_from_args_app {
+    ($args:literal, $x:literal, $hx:literal, $h:literal) => {
+        concat!(
+            "@implicit_function_derivative_formula_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder dFx dFy dFy_inv dPhi_inv_at target_bound target_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder dy_op_norm dy_inv_op_norm phi_inverse_bound phi_inverse_remainder snd_bound snd_remainder chain_bound chain_remainder ",
+            $args,
+            " ",
+            $x,
+            " ",
+            $hx,
+            " ",
+            $h
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_extraction_args_from_args_app {
+    ($args:literal) => {
+        concat!(
+            "@implicit_function_derivative_extraction_args_from_args.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder dFx dFy dFy_inv dPhi_inv_at target_bound target_remainder partial_x_bound partial_x_remainder partial_y_bound partial_y_remainder dy_op_norm dy_inv_op_norm phi_inverse_bound phi_inverse_remainder snd_bound snd_remainder chain_bound chain_remainder ",
+            $args
+        )
+    };
+}
+
+macro_rules! implicit_function_theorem_app {
+    ($args:expr) => {
+        concat!(
+            "@implicit_function_theorem.{p,q,u,v,w,z} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm Z zzero zadd zneg zsmul znorm XY xyzero xyadd xyneg xysmul xynorm pairXY fstXY sndXY XZ xzzero xzadd xzneg xzsmul xznorm pairXZ fstXZ sndXZ F base_x base_y x_domain y_domain xy_domain xz_domain phi_inv dPhi dPhi_inv op_norm inv_op_norm inverse_bound inverse_remainder ",
+            "(",
+            $args,
+            ")"
         )
     };
 }
@@ -2769,6 +3082,134 @@ macro_rules! implicit_function_theorem_evidence_elim {
             "fun (unique_arg : forall (x : X), forall (hx : x_domain x), forall (y : Y), forall (candidate_mem : xy_domain (pairXY x y)), forall (zero_eq : @Eq.{z} Z (F (pairXY x y)) zzero), @Eq.{w} Y y (",
             implicit_function_app!("x"),
             ")) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_args_mk_ty {
+    ($result:literal) => {
+        concat!(
+            "forall (extraction_args_law : ",
+            implicit_function_extraction_args_app!(),
+            "), ",
+            "forall (target_derivative_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_target_derivative_at_ty!("x"),
+            "), ",
+            "forall (partial_x_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_partial_x_derivative_at_ty!("x"),
+            "), ",
+            "forall (partial_y_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_partial_y_derivative_at_ty!("x"),
+            "), ",
+            "forall (dy_iso_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_dy_iso_ty!("x"),
+            "), ",
+            "forall (phi_inverse_derivative_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_phi_inverse_derivative_at_ty!("x"),
+            "), ",
+            "forall (snd_projection_derivative_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_snd_projection_derivative_at_ty!("x"),
+            "), ",
+            "forall (chain_derivative_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_chain_derivative_at_ty!("x"),
+            "), ",
+            "forall (formula_law : forall (x : X), forall (hx : x_domain x), forall (h : X), ",
+            implicit_derivative_formula_eq_ty!("x", "h"),
+            "), ",
+            $result
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_evidence_mk_ty {
+    ($result:literal) => {
+        concat!(
+            "forall (derivative_args_law : ",
+            implicit_function_derivative_args_app!(),
+            "), ",
+            "forall (basic_evidence_law : ",
+            implicit_function_theorem_evidence_app!(),
+            "), ",
+            "forall (differentiability_law : forall (x : X), forall (hx : x_domain x), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+            implicit_function_fun_app!(),
+            ") x), ",
+            "forall (derivative_law : forall (x : X), forall (hx : x_domain x), ",
+            implicit_chain_derivative_at_ty!("x"),
+            "), ",
+            "forall (formula_law : forall (x : X), forall (hx : x_domain x), forall (h : X), ",
+            implicit_derivative_formula_eq_ty!("x", "h"),
+            "), ",
+            $result
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_args_elim {
+    ($args:literal, $target:expr, $($tail:tt)+) => {
+        concat!(
+            $args,
+            " ",
+            "(",
+            $target,
+            ") ",
+            "(fun (extraction_args_arg : ",
+            implicit_function_extraction_args_app!(),
+            ") => ",
+            "fun (target_derivative_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_target_derivative_at_ty!("x"),
+            ") => ",
+            "fun (partial_x_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_partial_x_derivative_at_ty!("x"),
+            ") => ",
+            "fun (partial_y_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_partial_y_derivative_at_ty!("x"),
+            ") => ",
+            "fun (dy_iso_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_dy_iso_ty!("x"),
+            ") => ",
+            "fun (phi_inverse_derivative_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_phi_inverse_derivative_at_ty!("x"),
+            ") => ",
+            "fun (snd_projection_derivative_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_snd_projection_derivative_at_ty!("x"),
+            ") => ",
+            "fun (chain_derivative_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_chain_derivative_at_ty!("x"),
+            ") => ",
+            "fun (formula_arg : forall (x : X), forall (hx : x_domain x), forall (h : X), ",
+            implicit_derivative_formula_eq_ty!("x", "h"),
+            ") => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! implicit_function_derivative_evidence_elim {
+    ($evidence:literal, $target:expr, $($tail:tt)+) => {
+        concat!(
+            $evidence,
+            " ",
+            "(",
+            $target,
+            ") ",
+            "(fun (derivative_args_arg : ",
+            implicit_function_derivative_args_app!(),
+            ") => ",
+            "fun (basic_evidence_arg : ",
+            implicit_function_theorem_evidence_app!(),
+            ") => ",
+            "fun (differentiability_arg : forall (x : X), forall (hx : x_domain x), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+            implicit_function_fun_app!(),
+            ") x) => ",
+            "fun (derivative_arg : forall (x : X), forall (hx : x_domain x), ",
+            implicit_chain_derivative_at_ty!("x"),
+            ") => ",
+            "fun (formula_arg : forall (x : X), forall (hx : x_domain x), forall (h : X), ",
+            implicit_derivative_formula_eq_ty!("x", "h"),
+            ") => ",
             $($tail)+,
             ")"
         )
@@ -5781,6 +6222,34 @@ const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "ImplicitTargetDerivativeMap",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!("forall (h : X), XZ"),
+        value: abstract_implicit_function_abs!("fun h => pairXZ h zzero"),
+    },
+    DefinitionArtifact {
+        name: "ImplicitFunctionDerivativeChainMap",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!(
+            "forall (dPhi_inv_at : forall (x : X), forall (target : XZ), XY), forall (x : X), forall (h : X), Y"
+        ),
+        value: abstract_implicit_function_abs!(concat!(
+            "fun dPhi_inv_at => fun x => fun h => sndXY (dPhi_inv_at x (",
+            implicit_target_derivative_map_app!("h"),
+            "))"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ImplicitFunctionDerivativeFormulaMap",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: abstract_implicit_function_params!(
+            "forall (dFx : forall (x : X), forall (h : X), Z), forall (dFy_inv : forall (x : X), forall (z : Z), Y), forall (x : X), forall (h : X), Y"
+        ),
+        value: abstract_implicit_function_abs!(
+            "fun dFx => fun dFy_inv => fun x => fun h => yneg (dFy_inv x (dFx x h))"
+        ),
+    },
+    DefinitionArtifact {
         name: "ImplicitPhiLocalInverseLaws",
         universe_params: &["p", "q", "u", "v", "w", "z"],
         ty: abstract_implicit_function_params!("Prop"),
@@ -5828,12 +6297,32 @@ const ABSTRACT_IMPLICIT_FUNCTION_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "ImplicitFunctionDerivativeArgs",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: implicit_function_derivative_params!("Prop"),
+        value: implicit_function_derivative_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            implicit_function_derivative_args_mk_ty!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
         name: "ImplicitFunctionTheoremEvidence",
         universe_params: &["p", "q", "u", "v", "w", "z"],
         ty: abstract_implicit_function_params!("Prop"),
         value: abstract_implicit_function_abs!(concat!(
             "forall (P : Prop), forall (mk : ",
             implicit_function_theorem_evidence_mk_ty!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ImplicitFunctionDerivativeEvidence",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        ty: implicit_function_derivative_params!("Prop"),
+        value: implicit_function_derivative_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            implicit_function_derivative_evidence_mk_ty!("P"),
             "), P"
         )),
     },
@@ -5883,6 +6372,50 @@ const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
         proof: abstract_implicit_function_abs!(concat!(
             "fun x => @Eq.refl.{p} XY (",
             implicit_graph_point_app!("x"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_target_derivative_map_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (h : X), @Eq.{q} XZ (",
+            implicit_target_derivative_map_app!("h"),
+            ") (pairXZ h zzero)"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun h => @Eq.refl.{q} XZ (",
+            implicit_target_derivative_map_app!("h"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_chain_map_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (dPhi_inv_at : forall (x : X), forall (target : XZ), XY), forall (x : X), forall (h : X), @Eq.{w} Y (",
+            implicit_function_derivative_chain_map_app!("dPhi_inv_at", "x", "h"),
+            ") (sndXY (dPhi_inv_at x (",
+            implicit_target_derivative_map_app!("h"),
+            ")))"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun dPhi_inv_at => fun x => fun h => @Eq.refl.{w} Y (",
+            implicit_function_derivative_chain_map_app!("dPhi_inv_at", "x", "h"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_formula_map_def",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: abstract_implicit_function_params!(concat!(
+            "forall (dFx : forall (x : X), forall (h : X), Z), forall (dFy_inv : forall (x : X), forall (z : Z), Y), forall (x : X), forall (h : X), @Eq.{w} Y (",
+            implicit_function_derivative_formula_map_app!("dFx", "dFy_inv", "x", "h"),
+            ") (yneg (dFy_inv x (dFx x h)))"
+        )),
+        proof: abstract_implicit_function_abs!(concat!(
+            "fun dFx => fun dFy_inv => fun x => fun h => @Eq.refl.{w} Y (",
+            implicit_function_derivative_formula_map_app!("dFx", "dFy_inv", "x", "h"),
             ")"
         )),
     },
@@ -6017,6 +6550,188 @@ const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
         )),
     },
     TheoremArtifact {
+        name: "implicit_function_derivative_extraction_args_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), ",
+            implicit_function_extraction_args_app!()
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_function_extraction_args_app!(),
+                "extraction_args_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_target_derivative_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_target_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_target_derivative_at_ty!("x"),
+                "target_derivative_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_partial_x_from_derivative_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_partial_x_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_partial_x_derivative_at_ty!("x"),
+                "partial_x_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_partial_y_from_derivative_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_partial_y_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_partial_y_derivative_at_ty!("x"),
+                "partial_y_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_dy_iso_from_derivative_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_dy_iso_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_dy_iso_ty!("x"),
+                "dy_iso_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_phi_inverse_derivative_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_phi_inverse_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_phi_inverse_derivative_at_ty!("x"),
+                "phi_inverse_derivative_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_snd_projection_derivative_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_snd_projection_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_snd_projection_derivative_at_ty!("x"),
+                "snd_projection_derivative_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_chain_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_chain_derivative_at_ty!("x"),
+                "chain_derivative_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_differentiable_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+            implicit_function_fun_app!(),
+            ") x"
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => @frechet_differentiable_at_intro.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+            implicit_function_fun_app!(),
+            ") x (",
+            implicit_function_derivative_chain_map_fun_app!("dPhi_inv_at", "x"),
+            ") chain_bound chain_remainder (",
+            implicit_function_derivative_from_args_app!("args", "x", "hx"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_formula_from_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), forall (x : X), forall (hx : x_domain x), forall (h : X), ",
+            implicit_derivative_formula_eq_ty!("x", "h")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun x => fun hx => fun h => ",
+            implicit_function_derivative_args_elim!(
+                "args",
+                implicit_derivative_formula_eq_ty!("x", "h"),
+                "formula_arg x hx h"
+            )
+        )),
+    },
+    TheoremArtifact {
         name: "implicit_function_theorem_args_from_evidence",
         universe_params: &["p", "q", "u", "v", "w", "z"],
         statement: abstract_implicit_function_params!(concat!(
@@ -6141,6 +6856,127 @@ const ABSTRACT_IMPLICIT_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
                 "candidate_mem",
                 "zero_eq"
             ),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_evidence_args",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_derivative_evidence_app!(),
+            "), ",
+            implicit_function_derivative_args_app!()
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun evidence => ",
+            implicit_function_derivative_evidence_elim!(
+                "evidence",
+                implicit_function_derivative_args_app!(),
+                "derivative_args_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_evidence_basic",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_derivative_evidence_app!(),
+            "), ",
+            implicit_function_theorem_evidence_app!()
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun evidence => ",
+            implicit_function_derivative_evidence_elim!(
+                "evidence",
+                implicit_function_theorem_evidence_app!(),
+                "basic_evidence_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_evidence_differentiable",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_derivative_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), @FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+            implicit_function_fun_app!(),
+            ") x"
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun evidence => fun x => fun hx => ",
+            implicit_function_derivative_evidence_elim!(
+                "evidence",
+                concat!(
+                    "@FrechetDifferentiableAt.{u,v,w} Scalar zero one add neg sub mul le_rel X xzero xadd xneg xsmul xnorm Y yzero yadd yneg ysmul ynorm (",
+                    implicit_function_fun_app!(),
+                    ") x"
+                ),
+                "differentiability_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_evidence_derivative",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_derivative_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), ",
+            implicit_chain_derivative_at_ty!("x")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun evidence => fun x => fun hx => ",
+            implicit_function_derivative_evidence_elim!(
+                "evidence",
+                implicit_chain_derivative_at_ty!("x"),
+                "derivative_arg x hx"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_evidence_formula",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (evidence : ",
+            implicit_function_derivative_evidence_app!(),
+            "), forall (x : X), forall (hx : x_domain x), forall (h : X), ",
+            implicit_derivative_formula_eq_ty!("x", "h")
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun evidence => fun x => fun hx => fun h => ",
+            implicit_function_derivative_evidence_elim!(
+                "evidence",
+                implicit_derivative_formula_eq_ty!("x", "h"),
+                "formula_arg x hx h"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "implicit_function_derivative_theorem",
+        universe_params: &["p", "q", "u", "v", "w", "z"],
+        statement: implicit_function_derivative_params!(concat!(
+            "forall (args : ",
+            implicit_function_derivative_args_app!(),
+            "), ",
+            implicit_function_derivative_evidence_app!()
+        )),
+        proof: implicit_function_derivative_abs!(concat!(
+            "fun args => fun (P : Prop) => fun (mk : ",
+            implicit_function_derivative_evidence_mk_ty!("P"),
+            ") => mk args (",
+            implicit_function_theorem_app!(implicit_function_derivative_extraction_args_from_args_app!("args")),
+            ") ",
+            "(fun (x : X) => fun (hx : x_domain x) => ",
+            implicit_function_differentiable_from_args_app!("args", "x", "hx"),
+            ") ",
+            "(fun (x : X) => fun (hx : x_domain x) => ",
+            implicit_function_derivative_from_args_app!("args", "x", "hx"),
+            ") ",
+            "(fun (x : X) => fun (hx : x_domain x) => fun (h : X) => ",
+            implicit_function_derivative_formula_from_args_app!("args", "x", "hx", "h"),
             ")"
         )),
     },
