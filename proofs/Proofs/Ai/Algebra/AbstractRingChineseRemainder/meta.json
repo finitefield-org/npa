@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+  "source": "Proofs/Ai/Algebra/AbstractRingChineseRemainder/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractRingChineseRemainder/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9122ca60598d34ed661b0ec9d8b87cfd1d39d3e1e2c22d0334e99362d4a0844e",
+  "certificate_file_sha256": "sha256:a19f43f6d68312fc07384aee18f725e9388ee2a54cd324395adb64b2577951c0",
+  "export_hash": "sha256:b60589726ed65d621b4cd00bb74d286ba2ac024a76b34607e4ede2f61e719a5a",
+  "axiom_report_hash": "sha256:ef7d0eaa598be1de31fe3519ebceaa3a49511caf9ca312a771ba4e7272eaffdb",
+  "certificate_hash": "sha256:386d87ebbdd3fffc3e1c8789744856886a49a8831cf620c6d360d0c8e984f130",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractRingFirstIso"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "RingCrtPairMap", "kind": "def" },
+    { "name": "RingCrtCombine", "kind": "def" },
+    { "name": "RingCrtIntersectionPred", "kind": "def" },
+    { "name": "RingChineseRemainder", "kind": "def" },
+    { "name": "ring_crt_intersection_intro", "kind": "theorem" },
+    { "name": "ring_crt_intersection_left", "kind": "theorem" },
+    { "name": "ring_crt_intersection_right", "kind": "theorem" },
+    { "name": "ring_crt_pair_hom_laws", "kind": "theorem" },
+    { "name": "ring_crt_kernel_to_intersection", "kind": "theorem" },
+    { "name": "ring_crt_intersection_to_kernel", "kind": "theorem" },
+    { "name": "ring_crt_pair_surjective", "kind": "theorem" },
+    { "name": "ring_chinese_remainder_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

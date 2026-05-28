@@ -50,6 +50,9 @@ struct VerifiedCorpusImports<'a> {
     abstract_group_correspondence_order: &'a VerifiedModule,
     abstract_group_correspondence_final: &'a VerifiedModule,
     abstract_ring: &'a VerifiedModule,
+    abstract_ring_first_iso_base: &'a VerifiedModule,
+    abstract_ring_first_iso: &'a VerifiedModule,
+    abstract_hilbert_basis_theorem: &'a VerifiedModule,
     abstract_ordered_field: &'a VerifiedModule,
     abstract_square_normalize: &'a VerifiedModule,
     abstract_scalar_derive: &'a VerifiedModule,
@@ -90,6 +93,19 @@ struct VerifiedAbstractInnerProductDeriveImports<'a> {
     abstract_scalar_derive: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
+}
+
+struct VerifiedAbstractRingFirstIsoImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    abstract_ring: &'a VerifiedModule,
+    abstract_group: &'a VerifiedModule,
+    abstract_group_image: &'a VerifiedModule,
+    abstract_group_quotient: &'a VerifiedModule,
+    abstract_group_quotient_mul: &'a VerifiedModule,
+    abstract_group_quotient_group: &'a VerifiedModule,
+    abstract_group_first_iso_full: &'a VerifiedModule,
+    abstract_ring_first_iso_base: &'a VerifiedModule,
 }
 
 struct VerifiedAbstractInverseFunctionImports<'a> {
@@ -196,6 +212,17 @@ struct VerifiedAbstractGroupCorrespondenceFinalImports<'a> {
     abstract_group_normal_quotient_mul: &'a VerifiedModule,
     abstract_group_normal_quotient_group: &'a VerifiedModule,
     abstract_group_correspondence: &'a VerifiedModule,
+}
+
+struct VerifiedAbstractRingFirstIsoBaseImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    abstract_ring: &'a VerifiedModule,
+    abstract_group: &'a VerifiedModule,
+    abstract_group_image: &'a VerifiedModule,
+    abstract_group_quotient: &'a VerifiedModule,
+    abstract_group_quotient_mul: &'a VerifiedModule,
+    abstract_group_quotient_group: &'a VerifiedModule,
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -822,6 +849,191 @@ const ABSTRACT_RING_THEOREMS: &[&str] = &[
     "sub_add_cancel",
     "add_sub_cancel",
     "sub_add_sub_cancel",
+];
+
+const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[&str] = &[
+    "RingHomLawArgs",
+    "RingImagePred",
+    "RingKerQuot",
+    "RingKerQuotMk",
+    "RingKerQuotToS",
+    "RingKerQuotAdd",
+    "RingKerQuotZero",
+    "RingKerQuotNeg",
+    "RingKerQuotMulRep",
+];
+
+const ABSTRACT_RING_FIRST_ISO_BASE_THEOREMS: &[&str] = &[
+    "ring_hom_zero",
+    "ring_hom_one",
+    "ring_hom_add",
+    "ring_hom_neg",
+    "ring_hom_mul",
+    "ring_as_additive_group_laws",
+    "ring_hom_as_additive_group_hom",
+    "ring_ker_quot_mul_rep_compat",
+    "ring_image_intro",
+    "ring_image_zero",
+    "ring_image_one",
+    "ring_image_add_closed",
+    "ring_image_neg_closed",
+    "ring_image_mul_closed",
+];
+
+const ABSTRACT_RING_FIRST_ISO_DEFINITIONS: &[&str] =
+    &["RingKerQuotMul", "RingKerQuotOne", "RingFirstIso"];
+
+const ABSTRACT_RING_FIRST_ISO_THEOREMS: &[&str] = &[
+    "ring_ker_quot_mul_mk",
+    "ring_first_iso_phi_zero",
+    "ring_first_iso_phi_one",
+    "ring_first_iso_phi_add",
+    "ring_first_iso_phi_mul",
+    "ring_first_iso_phi_injective",
+    "ring_first_iso_phi_hits_image",
+    "ring_first_iso_phi_surj_image",
+    "ring_first_isomorphism_to_image",
+];
+
+const ABSTRACT_RING_CHINESE_REMAINDER_DEFINITIONS: &[&str] = &[
+    "RingCrtPairMap",
+    "RingCrtCombine",
+    "RingCrtIntersectionPred",
+    "RingChineseRemainder",
+];
+
+const ABSTRACT_RING_CHINESE_REMAINDER_THEOREMS: &[&str] = &[
+    "ring_crt_intersection_intro",
+    "ring_crt_intersection_left",
+    "ring_crt_intersection_right",
+    "ring_crt_pair_hom_laws",
+    "ring_crt_kernel_to_intersection",
+    "ring_crt_intersection_to_kernel",
+    "ring_crt_pair_surjective",
+    "ring_chinese_remainder_theorem",
+];
+
+const ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS: &[&str] = &[
+    "UfdFalse",
+    "UfdNot",
+    "UfdOr",
+    "Divides",
+    "Unit",
+    "Associate",
+    "Nonzero",
+    "Nonunit",
+    "PrimeElement",
+    "IrreducibleElement",
+    "IntegralDomainLawArgs",
+    "FactorizationPred",
+    "PrimeFactorizationPred",
+    "UniqueFactorizationDomainLawArgs",
+    "UfdPrimeFactorizationTheorem",
+];
+
+const ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS: &[&str] = &[
+    "ufd_or_inl",
+    "ufd_or_inr",
+    "divides_intro",
+    "divides_elim",
+    "unit_intro",
+    "associate_intro",
+    "integral_domain_law_args_intro",
+    "factorization_pred_intro",
+    "prime_factorization_pred_intro",
+    "prime_factorization_to_factorization",
+    "prime_factorization_all_prime",
+    "ufd_domain_laws",
+    "ufd_factorization_exists",
+    "ufd_factorization_unique",
+    "ufd_irreducible_factors_prime",
+    "ufd_prime_factorization_exists",
+    "ufd_prime_factorization_unique",
+    "ufd_prime_factorization_theorem",
+];
+
+const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[&str] = &[
+    "HbtFalse",
+    "HbtNot",
+    "IdealLawArgs",
+    "FiniteIdealGeneratingSet",
+    "FinitelyGeneratedIdeal",
+    "NoetherianRingArgs",
+    "PolynomialExtensionLawArgs",
+    "HilbertBasisConstructionArgs",
+    "HilbertBasisTheorem",
+];
+
+const ABSTRACT_HILBERT_BASIS_THEOREM_THEOREMS: &[&str] = &[
+    "ideal_law_args_intro",
+    "finite_ideal_generating_set_intro",
+    "finitely_generated_ideal_intro",
+    "noetherian_ring_args_intro",
+    "noetherian_ring_laws",
+    "noetherian_ideal_finitely_generated",
+    "polynomial_extension_law_args_intro",
+    "polynomial_extension_ring_laws",
+    "hilbert_basis_construction_args_intro",
+    "hilbert_basis_ideal_finitely_generated",
+    "hilbert_basis_polynomial_noetherian",
+    "hilbert_basis_theorem",
+];
+
+const ABSTRACT_HILBERT_NULLSTELLENSATZ_DEFINITIONS: &[&str] = &[
+    "HnsFalse",
+    "HnsNot",
+    "IdealExtEq",
+    "AlgebraicallyClosedFieldArgs",
+    "ProperIdeal",
+    "ZeroSet",
+    "HasCommonZero",
+    "VanishingIdeal",
+    "RadicalMember",
+    "PolynomialEvaluationLawArgs",
+    "WeakNullstellensatz",
+    "StrongNullstellensatz",
+    "NullstellensatzConstructionArgs",
+    "HilbertNullstellensatzTheorem",
+];
+
+const ABSTRACT_HILBERT_NULLSTELLENSATZ_THEOREMS: &[&str] = &[
+    "ideal_ext_eq_intro",
+    "radical_member_intro",
+    "polynomial_evaluation_law_args_intro",
+    "polynomial_evaluation_field_laws",
+    "polynomial_evaluation_noetherian",
+    "nullstellensatz_construction_args_intro",
+    "weak_nullstellensatz_from_construction",
+    "strong_nullstellensatz_from_construction",
+    "hilbert_nullstellensatz_theorem",
+];
+
+const ABSTRACT_KRULL_THEOREM_DEFINITIONS: &[&str] = &[
+    "KrlFalse",
+    "KrlNot",
+    "IdealLe",
+    "ProperIdeal",
+    "MaximalIdeal",
+    "MaximalIdealOver",
+    "KrullConstructionArgs",
+    "KrullTheorem",
+];
+
+const ABSTRACT_KRULL_THEOREM_THEOREMS: &[&str] = &[
+    "ideal_le_refl",
+    "ideal_le_trans",
+    "maximal_ideal_intro",
+    "maximal_ideal_laws",
+    "maximal_ideal_proper",
+    "maximal_ideal_of_proper_overideal_le",
+    "maximal_ideal_over_intro",
+    "maximal_ideal_over_contains",
+    "maximal_ideal_over_maximal",
+    "krull_construction_args_intro",
+    "krull_maximal_ideal_exists",
+    "krull_maximal_ideal_contains",
+    "krull_maximal_ideal_is_maximal",
+    "krull_theorem",
 ];
 
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[&str] = &[
@@ -2007,6 +2219,130 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        source: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupImage",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS,
+        theorems: ABSTRACT_RING_FIRST_ISO_BASE_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        source: "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractRingFirstIso/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractRingFirstIso/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractRingFirstIso/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+            "Proofs.Ai.Algebra.AbstractGroupImage",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_RING_FIRST_ISO_DEFINITIONS,
+        theorems: ABSTRACT_RING_FIRST_ISO_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        source: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractGroup",
+            "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+            "Proofs.Ai.Algebra.AbstractGroupImage",
+            "Proofs.Ai.Algebra.AbstractGroupQuotient",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+            "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractRingFirstIso",
+            "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_RING_CHINESE_REMAINDER_DEFINITIONS,
+        theorems: ABSTRACT_RING_CHINESE_REMAINDER_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+        source: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/replay.json",
+        imports: &["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS,
+        theorems: ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        source: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/replay.json",
+        imports: &["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS,
+        theorems: ABSTRACT_HILBERT_BASIS_THEOREM_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        source: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_HILBERT_NULLSTELLENSATZ_DEFINITIONS,
+        theorems: ABSTRACT_HILBERT_NULLSTELLENSATZ_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        source: "Proofs/Ai/Algebra/AbstractKrullTheorem/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractKrullTheorem/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractKrullTheorem/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractKrullTheorem/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_KRULL_THEOREM_DEFINITIONS,
+        theorems: ABSTRACT_KRULL_THEOREM_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractOrderedField",
         source: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert",
@@ -2592,6 +2928,40 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let abstract_metric_topology_import =
         verified_abstract_metric_topology_import_module(&root, &eq_import, &eq_reasoning_import);
     let abstract_ring_import = verified_abstract_ring_import_module(&root, &eq_import);
+    let abstract_hilbert_basis_theorem_import =
+        verified_abstract_hilbert_basis_theorem_import_module(
+            &root,
+            &eq_import,
+            &abstract_ring_import,
+        );
+    let abstract_ring_first_iso_base_import = verified_abstract_ring_first_iso_base_import_module(
+        &root,
+        &VerifiedAbstractRingFirstIsoBaseImports {
+            eq: &eq_import,
+            eq_reasoning: &eq_reasoning_import,
+            abstract_ring: &abstract_ring_import,
+            abstract_group: &abstract_group_import,
+            abstract_group_image: &abstract_group_image_import,
+            abstract_group_quotient: &abstract_group_quotient_import,
+            abstract_group_quotient_mul: &abstract_group_quotient_mul_import,
+            abstract_group_quotient_group: &abstract_group_quotient_group_import,
+        },
+    );
+    let abstract_ring_first_iso_import = verified_abstract_ring_first_iso_import_module(
+        &root,
+        &VerifiedAbstractRingFirstIsoImports {
+            eq: &eq_import,
+            eq_reasoning: &eq_reasoning_import,
+            abstract_ring: &abstract_ring_import,
+            abstract_group: &abstract_group_import,
+            abstract_group_image: &abstract_group_image_import,
+            abstract_group_quotient: &abstract_group_quotient_import,
+            abstract_group_quotient_mul: &abstract_group_quotient_mul_import,
+            abstract_group_quotient_group: &abstract_group_quotient_group_import,
+            abstract_group_first_iso_full: &abstract_group_first_iso_full_import,
+            abstract_ring_first_iso_base: &abstract_ring_first_iso_base_import,
+        },
+    );
     let abstract_ordered_field_import =
         verified_abstract_ordered_field_import_module(&root, &eq_import, &abstract_ring_import);
     let abstract_square_normalize_import = verified_abstract_square_normalize_import_module(
@@ -2769,6 +3139,9 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         abstract_group_correspondence_order: &abstract_group_correspondence_order_import,
         abstract_group_correspondence_final: &abstract_group_correspondence_final_import,
         abstract_ring: &abstract_ring_import,
+        abstract_ring_first_iso_base: &abstract_ring_first_iso_base_import,
+        abstract_ring_first_iso: &abstract_ring_first_iso_import,
+        abstract_hilbert_basis_theorem: &abstract_hilbert_basis_theorem_import,
         abstract_ordered_field: &abstract_ordered_field_import,
         abstract_square_normalize: &abstract_square_normalize_import,
         abstract_scalar_derive: &abstract_scalar_derive_import,
@@ -2990,6 +3363,13 @@ fn register_expected_imports(
             "Proofs.Ai.Algebra.AbstractRing" => {
                 session.register_verified_module(verified_imports.abstract_ring.clone())
             }
+            "Proofs.Ai.Algebra.AbstractRingFirstIsoBase" => session
+                .register_verified_module(verified_imports.abstract_ring_first_iso_base.clone()),
+            "Proofs.Ai.Algebra.AbstractRingFirstIso" => {
+                session.register_verified_module(verified_imports.abstract_ring_first_iso.clone())
+            }
+            "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem" => session
+                .register_verified_module(verified_imports.abstract_hilbert_basis_theorem.clone()),
             "Proofs.Ai.Algebra.AbstractOrderedField" => {
                 session.register_verified_module(verified_imports.abstract_ordered_field.clone())
             }
@@ -3608,6 +3988,72 @@ fn verified_abstract_ring_import_module(root: &Path, eq_import: &VerifiedModule)
         .expect("AbstractRing corpus certificate should verify for downstream imports")
 }
 
+fn verified_abstract_ring_first_iso_base_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractRingFirstIsoBaseImports<'_>,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractRingFirstIsoBase/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.eq.clone());
+    session.register_verified_module(imports.eq_reasoning.clone());
+    session.register_verified_module(imports.abstract_ring.clone());
+    session.register_verified_module(imports.abstract_group.clone());
+    session.register_verified_module(imports.abstract_group_image.clone());
+    session.register_verified_module(imports.abstract_group_quotient.clone());
+    session.register_verified_module(imports.abstract_group_quotient_mul.clone());
+    session.register_verified_module(imports.abstract_group_quotient_group.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal()
+            .with_core_feature(CoreFeature::QuotientV1)
+            .with_core_feature(CoreFeature::QuotientV2)
+            .with_core_feature(CoreFeature::QuotientV3),
+    )
+    .expect("AbstractRingFirstIsoBase corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_ring_first_iso_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractRingFirstIsoImports<'_>,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractRingFirstIso/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.eq.clone());
+    session.register_verified_module(imports.eq_reasoning.clone());
+    session.register_verified_module(imports.abstract_ring.clone());
+    session.register_verified_module(imports.abstract_group.clone());
+    session.register_verified_module(imports.abstract_group_image.clone());
+    session.register_verified_module(imports.abstract_group_quotient.clone());
+    session.register_verified_module(imports.abstract_group_quotient_mul.clone());
+    session.register_verified_module(imports.abstract_group_quotient_group.clone());
+    session.register_verified_module(imports.abstract_group_first_iso_full.clone());
+    session.register_verified_module(imports.abstract_ring_first_iso_base.clone());
+    verify_module_cert(
+        &bytes,
+        &mut session,
+        &AxiomPolicy::normal()
+            .with_core_feature(CoreFeature::QuotientV1)
+            .with_core_feature(CoreFeature::QuotientV2)
+            .with_core_feature(CoreFeature::QuotientV3),
+    )
+    .expect("AbstractRingFirstIso corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_hilbert_basis_theorem_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_ring_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(abstract_ring_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
+        "AbstractHilbertBasisTheorem corpus certificate should verify for downstream imports",
+    )
+}
+
 fn verified_abstract_ordered_field_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
@@ -4058,6 +4504,9 @@ fn supported_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder"
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal"
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal"
+            | "Proofs.Ai.Algebra.AbstractRingFirstIsoBase"
+            | "Proofs.Ai.Algebra.AbstractRingFirstIso"
+            | "Proofs.Ai.Algebra.AbstractRingChineseRemainder"
     ) {
         vec![
             CoreFeature::QuotientV1,
@@ -4088,8 +4537,17 @@ fn expected_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull"
             | "Proofs.Ai.Algebra.AbstractGroupThirdIso"
             | "Proofs.Ai.Algebra.AbstractGroupCorrespondence"
+            | "Proofs.Ai.Algebra.AbstractRingFirstIso"
     ) {
-        vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
+        if module == "Proofs.Ai.Algebra.AbstractRingFirstIso" {
+            vec![
+                CoreFeature::QuotientV1,
+                CoreFeature::QuotientV2,
+                CoreFeature::QuotientV3,
+            ]
+        } else {
+            vec![CoreFeature::QuotientV1, CoreFeature::QuotientV3]
+        }
     } else {
         Vec::new()
     }
