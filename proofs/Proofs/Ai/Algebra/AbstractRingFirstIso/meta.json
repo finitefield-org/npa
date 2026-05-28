@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractRingFirstIso",
+  "source": "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractRingFirstIso/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5f421b8c2d4d6ddd976e145e866ea5b9d284cb19da112c6f507ad3a31b10b3e8",
+  "certificate_file_sha256": "sha256:09925484dec6d1f5d460fe915e10e2d2496fd4c874eb85d1a523301c5e61b01e",
+  "export_hash": "sha256:9ef53bef360e0e274a73ca9ba975f66eed4296483446e0ff633520a02fab9447",
+  "axiom_report_hash": "sha256:f39c6826ea5fd04328e88ce53f46ee3da7422779015b92583cdcef2697007f68",
+  "certificate_hash": "sha256:2a894bb9720c4af15b2a52f48255b29a3fbd352bf2b487e810134f210bfff9e2",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "RingKerQuotMul", "kind": "def" },
+    { "name": "RingKerQuotOne", "kind": "def" },
+    { "name": "RingFirstIso", "kind": "def" },
+    { "name": "ring_ker_quot_mul_mk", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_zero", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_one", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_add", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_mul", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_injective", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_hits_image", "kind": "theorem" },
+    { "name": "ring_first_iso_phi_surj_image", "kind": "theorem" },
+    { "name": "ring_first_isomorphism_to_image", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

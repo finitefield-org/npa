@@ -890,6 +890,137 @@ const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_RING_FIRST_ISO_BASE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+    source_path: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS,
+    theorems: ABSTRACT_RING_FIRST_ISO_BASE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_RING_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractRingFirstIso",
+    source_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_RING_FIRST_ISO_DEFINITIONS,
+    theorems: ABSTRACT_RING_FIRST_ISO_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_RING_CHINESE_REMAINDER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+    source_path: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractRingChineseRemainder/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_RING_CHINESE_REMAINDER_DEFINITIONS,
+    theorems: ABSTRACT_RING_CHINESE_REMAINDER_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+    source_path: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"],
+    inductives: &[],
+    definitions: ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS,
+    theorems: ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_HILBERT_BASIS_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+    source_path: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"],
+    inductives: &[],
+    definitions: ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS,
+    theorems: ABSTRACT_HILBERT_BASIS_THEOREM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+    source_path: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_HILBERT_NULLSTELLENSATZ_DEFINITIONS,
+    theorems: ABSTRACT_HILBERT_NULLSTELLENSATZ_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_KRULL_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractKrullTheorem",
+    source_path: "Proofs/Ai/Algebra/AbstractKrullTheorem/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractKrullTheorem/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractKrullTheorem/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractKrullTheorem/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_KRULL_THEOREM_DEFINITIONS,
+    theorems: ABSTRACT_KRULL_THEOREM_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractOrderedField",
     source_path: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
@@ -13975,6 +14106,924 @@ const ABSTRACT_RING_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "RingHomLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingImagePred",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuot",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotMk",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotToS",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotAdd",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotZero",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotNeg",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotMulRep",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_RING_FIRST_ISO_BASE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ring_hom_zero",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_hom_one",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_hom_add",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_hom_neg",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_hom_mul",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_as_additive_group_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_hom_as_additive_group_hom",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_ker_quot_mul_rep_compat",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_image_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_image_zero",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_image_one",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_image_add_closed",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_image_neg_closed",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_image_mul_closed",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_RING_FIRST_ISO_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "RingKerQuotMul",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingKerQuotOne",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingFirstIso",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_RING_FIRST_ISO_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ring_ker_quot_mul_mk",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_zero",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_one",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_add",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_mul",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_injective",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_hits_image",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_iso_phi_surj_image",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_first_isomorphism_to_image",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_RING_CHINESE_REMAINDER_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "RingCrtPairMap",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingCrtCombine",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingCrtIntersectionPred",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RingChineseRemainder",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_RING_CHINESE_REMAINDER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ring_crt_intersection_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_crt_intersection_left",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_crt_intersection_right",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_crt_pair_hom_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_crt_kernel_to_intersection",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_crt_intersection_to_kernel",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_crt_pair_surjective",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ring_chinese_remainder_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "UfdFalse",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "UfdNot",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "UfdOr",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "Divides",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "Unit",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "Associate",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "Nonzero",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "Nonunit",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "PrimeElement",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "IrreducibleElement",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "IntegralDomainLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "FactorizationPred",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "PrimeFactorizationPred",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "UniqueFactorizationDomainLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "UfdPrimeFactorizationTheorem",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ufd_or_inl",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_or_inr",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "divides_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "divides_elim",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unit_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "associate_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "integral_domain_law_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "factorization_pred_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "prime_factorization_pred_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "prime_factorization_to_factorization",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "prime_factorization_all_prime",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_domain_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_factorization_exists",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_factorization_unique",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_irreducible_factors_prime",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_prime_factorization_exists",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_prime_factorization_unique",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ufd_prime_factorization_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "HbtFalse",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HbtNot",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "IdealLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "FiniteIdealGeneratingSet",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "FinitelyGeneratedIdeal",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "NoetherianRingArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "PolynomialExtensionLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HilbertBasisConstructionArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HilbertBasisTheorem",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_HILBERT_BASIS_THEOREM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ideal_law_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "finite_ideal_generating_set_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "finitely_generated_ideal_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "noetherian_ring_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "noetherian_ring_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "noetherian_ideal_finitely_generated",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "polynomial_extension_law_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "polynomial_extension_ring_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_basis_construction_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_basis_ideal_finitely_generated",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_basis_polynomial_noetherian",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_basis_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_HILBERT_NULLSTELLENSATZ_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "HnsFalse",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HnsNot",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "IdealExtEq",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "AlgebraicallyClosedFieldArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "ProperIdeal",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "ZeroSet",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HasCommonZero",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "VanishingIdeal",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RadicalMember",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "PolynomialEvaluationLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "WeakNullstellensatz",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "StrongNullstellensatz",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "NullstellensatzConstructionArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HilbertNullstellensatzTheorem",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_HILBERT_NULLSTELLENSATZ_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ideal_ext_eq_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "radical_member_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "polynomial_evaluation_law_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "polynomial_evaluation_field_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "polynomial_evaluation_noetherian",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "nullstellensatz_construction_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "weak_nullstellensatz_from_construction",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "strong_nullstellensatz_from_construction",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_nullstellensatz_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_KRULL_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "KrlFalse",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "KrlNot",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "IdealLe",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "ProperIdeal",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MaximalIdeal",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MaximalIdealOver",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "KrullConstructionArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "KrullTheorem",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_KRULL_THEOREM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ideal_le_refl",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "ideal_le_trans",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_laws",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_proper",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_of_proper_overideal_le",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_over_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_over_contains",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "maximal_ideal_over_maximal",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "krull_construction_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "krull_maximal_ideal_exists",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "krull_maximal_ideal_contains",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "krull_maximal_ideal_is_maximal",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "krull_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "le",
@@ -17891,6 +18940,150 @@ fn run() -> Result<(), String> {
         &abstract_ring_imports,
         &abstract_ring_source_interfaces,
     )?;
+    let abstract_ring_first_iso_base_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+    ];
+    let abstract_ring_first_iso_base_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+    ];
+    let abstract_ring_first_iso_base = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
+        &abstract_ring_first_iso_base_imports,
+        &abstract_ring_first_iso_base_source_interfaces,
+    )?;
+    let abstract_ring_first_iso_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+    ];
+    let abstract_ring_first_iso_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+    ];
+    let abstract_ring_first_iso = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_RING_FIRST_ISO_MODULE,
+        &abstract_ring_first_iso_imports,
+        &abstract_ring_first_iso_source_interfaces,
+    )?;
+    let abstract_ring_chinese_remainder_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+    ];
+    let abstract_ring_chinese_remainder_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+    ];
+    let abstract_ring_chinese_remainder = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
+        &abstract_ring_chinese_remainder_imports,
+        &abstract_ring_chinese_remainder_source_interfaces,
+    )?;
+    let abstract_ufd_prime_factorization_imports =
+        vec![eq_import.clone(), abstract_ring.verified_module.clone()];
+    let abstract_ufd_prime_factorization_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+    ];
+    let abstract_ufd_prime_factorization = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
+        &abstract_ufd_prime_factorization_imports,
+        &abstract_ufd_prime_factorization_source_interfaces,
+    )?;
+    let abstract_hilbert_basis_theorem_imports =
+        vec![eq_import.clone(), abstract_ring.verified_module.clone()];
+    let abstract_hilbert_basis_theorem_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+    ];
+    let abstract_hilbert_basis_theorem = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
+        &abstract_hilbert_basis_theorem_imports,
+        &abstract_hilbert_basis_theorem_source_interfaces,
+    )?;
+    let abstract_hilbert_nullstellensatz_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+    ];
+    let abstract_hilbert_nullstellensatz_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+    ];
+    let abstract_hilbert_nullstellensatz = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
+        &abstract_hilbert_nullstellensatz_imports,
+        &abstract_hilbert_nullstellensatz_source_interfaces,
+    )?;
+    let abstract_krull_theorem_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+    ];
+    let abstract_krull_theorem_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+    ];
+    let abstract_krull_theorem = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_KRULL_THEOREM_MODULE,
+        &abstract_krull_theorem_imports,
+        &abstract_krull_theorem_source_interfaces,
+    )?;
     let abstract_ordered_field_imports =
         vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_ordered_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
@@ -18345,6 +19538,13 @@ fn run() -> Result<(), String> {
             abstract_group_correspondence_final,
             abstract_group_correspondence_order_final,
             abstract_ring,
+            abstract_ring_first_iso_base,
+            abstract_ring_first_iso,
+            abstract_ring_chinese_remainder,
+            abstract_ufd_prime_factorization,
+            abstract_hilbert_basis_theorem,
+            abstract_hilbert_nullstellensatz,
+            abstract_krull_theorem,
             abstract_ordered_field,
             abstract_square_normalize,
             abstract_scalar_derive,
@@ -18377,7 +19577,12 @@ fn build_and_write_module(
     verified_modules: &[npa_cert::VerifiedModule],
     imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
 ) -> Result<GeneratedModule, String> {
-    let source = module_source(config);
+    let source = if uses_checked_in_source(config.module) {
+        fs::read_to_string(proof_root.join(config.source_path))
+            .map_err(|err| format!("failed to read {}: {err}", config.source_path))?
+    } else {
+        module_source(config)
+    };
     let axiom_policy = axiom_policy_for_module(config.module);
     let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
         npa_frontend::FileId(0),
@@ -18452,10 +19657,20 @@ fn build_and_write_module(
     )?;
     write(
         proof_root.join(config.replay_path),
-        replay_json(config).as_bytes(),
+        replay_json(config, &source).as_bytes(),
     )?;
 
     Ok(generated)
+}
+
+fn uses_checked_in_source(module: &str) -> bool {
+    module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
+        || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
+        || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
+        || module == ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE.module
+        || module == ABSTRACT_HILBERT_BASIS_THEOREM_MODULE.module
+        || module == ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE.module
+        || module == ABSTRACT_KRULL_THEOREM_MODULE.module
 }
 
 fn axiom_policy_for_module(module: &str) -> npa_cert::AxiomPolicy {
@@ -18488,6 +19703,9 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
+        || module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
+        || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
+        || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -18506,6 +19724,7 @@ fn expected_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature>
         vec![npa_cert::CoreFeature::QuotientV1]
     } else if module == ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE.module
         || module == ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_MODULE.module
+        || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -18954,23 +20173,31 @@ fn meta_json(module: &GeneratedModule) -> String {
     )
 }
 
-fn replay_json(config: &ModuleArtifact) -> String {
-    let inductive_steps = config.inductives.iter().map(|inductive| {
-        let term = inductive_replay_term(inductive);
-        replay_step_json(inductive.name, "inductive_decl", &term)
-    });
-    let definition_steps = config.definitions.iter().map(|definition| {
-        replay_step_json(definition.name, "explicit_def_value", definition.value)
-    });
-    let theorem_steps = config
-        .theorems
-        .iter()
-        .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
-    let steps = inductive_steps
-        .chain(definition_steps)
-        .chain(theorem_steps)
-        .collect::<Vec<_>>()
-        .join(",\n");
+fn replay_json(config: &ModuleArtifact, source: &str) -> String {
+    let steps = if uses_checked_in_source(config.module) {
+        source_replay_steps(source)
+            .into_iter()
+            .map(|(name, kind, term)| replay_step_json(&name, kind, &term))
+            .collect::<Vec<_>>()
+            .join(",\n")
+    } else {
+        let inductive_steps = config.inductives.iter().map(|inductive| {
+            let term = inductive_replay_term(inductive);
+            replay_step_json(inductive.name, "inductive_decl", &term)
+        });
+        let definition_steps = config.definitions.iter().map(|definition| {
+            replay_step_json(definition.name, "explicit_def_value", definition.value)
+        });
+        let theorem_steps = config
+            .theorems
+            .iter()
+            .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
+        inductive_steps
+            .chain(definition_steps)
+            .chain(theorem_steps)
+            .collect::<Vec<_>>()
+            .join(",\n")
+    };
     format!(
         "\
 {{
@@ -19016,8 +20243,60 @@ fn replay_step_json(declaration: &str, source_kind: &str, term: &str) -> String 
       \"source_kind\": \"{}\",
       \"term\": \"{}\"
     }}",
-        declaration, source_kind, term
+        json_escape(declaration),
+        json_escape(source_kind),
+        json_escape(term)
     )
+}
+
+fn source_replay_steps(source: &str) -> Vec<(String, &'static str, String)> {
+    let lines = source.lines().collect::<Vec<_>>();
+    let mut starts = Vec::new();
+    for (idx, line) in lines.iter().enumerate() {
+        if line.starts_with("inductive ")
+            || line.starts_with("def ")
+            || line.starts_with("theorem ")
+        {
+            starts.push(idx);
+        }
+    }
+
+    let mut steps = Vec::new();
+    for (pos, start) in starts.iter().enumerate() {
+        let end = starts.get(pos + 1).copied().unwrap_or(lines.len());
+        let header = lines[*start];
+        let (prefix, kind) = if header.starts_with("inductive ") {
+            ("inductive ", "inductive_decl")
+        } else if header.starts_with("def ") {
+            ("def ", "explicit_def_source")
+        } else {
+            ("theorem ", "explicit_term_source")
+        };
+        let name = header[prefix.len()..]
+            .split(['.', ' ', ':'])
+            .next()
+            .unwrap_or("")
+            .to_owned();
+        let term = lines[*start..end].join("\n").trim_end().to_owned();
+        steps.push((name, kind, term));
+    }
+    steps
+}
+
+fn json_escape(input: &str) -> String {
+    let mut escaped = String::with_capacity(input.len());
+    for ch in input.chars() {
+        match ch {
+            '"' => escaped.push_str("\\\""),
+            '\\' => escaped.push_str("\\\\"),
+            '\n' => escaped.push_str("\\n"),
+            '\r' => escaped.push_str("\\r"),
+            '\t' => escaped.push_str("\\t"),
+            ch if ch.is_control() => escaped.push_str(&format!("\\u{:04x}", ch as u32)),
+            ch => escaped.push(ch),
+        }
+    }
+    escaped
 }
 
 fn quoted_items(items: &[&str]) -> String {

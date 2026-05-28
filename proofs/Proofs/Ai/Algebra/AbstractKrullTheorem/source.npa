@@ -1,0 +1,91 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractHilbertBasisTheorem
+
+def KrlFalse :
+  Prop :=
+  forall (P : Prop), P
+
+def KrlNot :
+  forall (P : Prop), Prop :=
+  fun P => forall (p : P), KrlFalse
+
+def IdealLe.{u} :
+  forall (R : Sort u), forall (I : forall (x : R), Prop), forall (J : forall (x : R), Prop), Prop :=
+  fun R => fun I => fun J => forall (x : R), forall (h : I x), J x
+
+def ProperIdeal.{u} :
+  forall (R : Sort u), forall (one : R), forall (I : forall (x : R), Prop), Prop :=
+  fun R => fun one => fun I => KrlNot (I one)
+
+def MaximalIdeal.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (M : forall (x : R), Prop), Prop :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun M => forall (Q : Prop), forall (mk : forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul M), forall (proper : @ProperIdeal.{u} R one M), forall (maximal : forall (J : forall (x : R), Prop), forall (J_laws : @IdealLawArgs.{u} R zero add neg mul J), forall (contains : @IdealLe.{u} R M J), forall (J_proper : @ProperIdeal.{u} R one J), @IdealLe.{u} R J M), Q), Q
+
+def MaximalIdealOver.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (I : forall (x : R), Prop), forall (M : forall (x : R), Prop), Prop :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun I => fun M => forall (Q : Prop), forall (mk : forall (contains : @IdealLe.{u} R I M), forall (maximal : @MaximalIdeal.{u} R zero one add neg mul M), Q), Q
+
+def KrullConstructionArgs.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), Prop :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => forall (Q : Prop), forall (mk : forall (proper_ideal_maximal_over : forall (I : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I), forall (proper : @ProperIdeal.{u} R one I), forall (S : Prop), forall (choose : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), S), S), Q), Q
+
+def KrullTheorem.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), forall (construction : @KrullConstructionArgs.{u} R zero one add neg sub mul ring_laws), Prop :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => fun construction => forall (Q : Prop), forall (mk : forall (ring_laws_out : @RingLawArgs.{u} R zero one add neg sub mul), forall (proper_ideal_maximal_over : forall (I : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I), forall (proper : @ProperIdeal.{u} R one I), forall (S : Prop), forall (choose : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), S), S), Q), Q
+
+theorem ideal_le_refl.{u} :
+  forall (R : Sort u), forall (I : forall (x : R), Prop), @IdealLe.{u} R I I :=
+  fun (R : Sort u) => fun (I : forall (x : R), Prop) => fun (x : R) => fun (h : I x) => h
+
+theorem ideal_le_trans.{u} :
+  forall (R : Sort u), forall (I : forall (x : R), Prop), forall (J : forall (x : R), Prop), forall (K : forall (x : R), Prop), forall (hij : @IdealLe.{u} R I J), forall (hjk : @IdealLe.{u} R J K), @IdealLe.{u} R I K :=
+  fun (R : Sort u) => fun (I : forall (x : R), Prop) => fun (J : forall (x : R), Prop) => fun (K : forall (x : R), Prop) => fun (hij : @IdealLe.{u} R I J) => fun (hjk : @IdealLe.{u} R J K) => fun (x : R) => fun (h : I x) => hjk x (hij x h)
+
+theorem maximal_ideal_intro.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (M : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul M), forall (proper : @ProperIdeal.{u} R one M), forall (maximal : forall (J : forall (x : R), Prop), forall (J_laws : @IdealLawArgs.{u} R zero add neg mul J), forall (contains : @IdealLe.{u} R M J), forall (J_proper : @ProperIdeal.{u} R one J), @IdealLe.{u} R J M), @MaximalIdeal.{u} R zero one add neg mul M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun M => fun ideal_laws => fun proper => fun maximal => fun (Q : Prop) => fun (mk : forall (ideal_laws_arg : @IdealLawArgs.{u} R zero add neg mul M), forall (proper_arg : @ProperIdeal.{u} R one M), forall (maximal_arg : forall (J : forall (x : R), Prop), forall (J_laws : @IdealLawArgs.{u} R zero add neg mul J), forall (contains : @IdealLe.{u} R M J), forall (J_proper : @ProperIdeal.{u} R one J), @IdealLe.{u} R J M), Q) => mk ideal_laws proper maximal
+
+theorem maximal_ideal_laws.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (M : forall (x : R), Prop), forall (maximal_ideal : @MaximalIdeal.{u} R zero one add neg mul M), @IdealLawArgs.{u} R zero add neg mul M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun M => fun maximal_ideal => maximal_ideal (@IdealLawArgs.{u} R zero add neg mul M) (fun (ideal_laws : @IdealLawArgs.{u} R zero add neg mul M) => fun (proper : @ProperIdeal.{u} R one M) => fun (maximal : forall (J : forall (x : R), Prop), forall (J_laws : @IdealLawArgs.{u} R zero add neg mul J), forall (contains : @IdealLe.{u} R M J), forall (J_proper : @ProperIdeal.{u} R one J), @IdealLe.{u} R J M) => ideal_laws)
+
+theorem maximal_ideal_proper.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (M : forall (x : R), Prop), forall (maximal_ideal : @MaximalIdeal.{u} R zero one add neg mul M), @ProperIdeal.{u} R one M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun M => fun maximal_ideal => maximal_ideal (@ProperIdeal.{u} R one M) (fun (ideal_laws : @IdealLawArgs.{u} R zero add neg mul M) => fun (proper : @ProperIdeal.{u} R one M) => fun (maximal : forall (J : forall (x : R), Prop), forall (J_laws : @IdealLawArgs.{u} R zero add neg mul J), forall (contains : @IdealLe.{u} R M J), forall (J_proper : @ProperIdeal.{u} R one J), @IdealLe.{u} R J M) => proper)
+
+theorem maximal_ideal_of_proper_overideal_le.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (M : forall (x : R), Prop), forall (maximal_ideal : @MaximalIdeal.{u} R zero one add neg mul M), forall (J : forall (x : R), Prop), forall (J_laws : @IdealLawArgs.{u} R zero add neg mul J), forall (contains : @IdealLe.{u} R M J), forall (J_proper : @ProperIdeal.{u} R one J), @IdealLe.{u} R J M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun M => fun maximal_ideal => fun J => fun J_laws => fun contains => fun J_proper => maximal_ideal (@IdealLe.{u} R J M) (fun (ideal_laws : @IdealLawArgs.{u} R zero add neg mul M) => fun (proper : @ProperIdeal.{u} R one M) => fun (maximal : forall (J_arg : forall (x : R), Prop), forall (J_laws_arg : @IdealLawArgs.{u} R zero add neg mul J_arg), forall (contains_arg : @IdealLe.{u} R M J_arg), forall (J_proper_arg : @ProperIdeal.{u} R one J_arg), @IdealLe.{u} R J_arg M) => maximal J J_laws contains J_proper)
+
+theorem maximal_ideal_over_intro.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (I : forall (x : R), Prop), forall (M : forall (x : R), Prop), forall (contains : @IdealLe.{u} R I M), forall (maximal : @MaximalIdeal.{u} R zero one add neg mul M), @MaximalIdealOver.{u} R zero one add neg mul I M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun I => fun M => fun contains => fun maximal => fun (Q : Prop) => fun (mk : forall (contains_arg : @IdealLe.{u} R I M), forall (maximal_arg : @MaximalIdeal.{u} R zero one add neg mul M), Q) => mk contains maximal
+
+theorem maximal_ideal_over_contains.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (I : forall (x : R), Prop), forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), @IdealLe.{u} R I M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun I => fun M => fun over => over (@IdealLe.{u} R I M) (fun (contains : @IdealLe.{u} R I M) => fun (maximal : @MaximalIdeal.{u} R zero one add neg mul M) => contains)
+
+theorem maximal_ideal_over_maximal.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (I : forall (x : R), Prop), forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), @MaximalIdeal.{u} R zero one add neg mul M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun mul => fun I => fun M => fun over => over (@MaximalIdeal.{u} R zero one add neg mul M) (fun (contains : @IdealLe.{u} R I M) => fun (maximal : @MaximalIdeal.{u} R zero one add neg mul M) => maximal)
+
+theorem krull_construction_args_intro.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), forall (proper_ideal_maximal_over : forall (I : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I), forall (proper : @ProperIdeal.{u} R one I), forall (S : Prop), forall (choose : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), S), S), @KrullConstructionArgs.{u} R zero one add neg sub mul ring_laws :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => fun proper_ideal_maximal_over => fun (Q : Prop) => fun (mk : forall (proper_ideal_maximal_over_arg : forall (I : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I), forall (proper : @ProperIdeal.{u} R one I), forall (S : Prop), forall (choose : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), S), S), Q) => mk proper_ideal_maximal_over
+
+theorem krull_maximal_ideal_exists.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), forall (construction : @KrullConstructionArgs.{u} R zero one add neg sub mul ring_laws), forall (I : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I), forall (proper : @ProperIdeal.{u} R one I), forall (S : Prop), forall (choose : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), S), S :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => fun construction => fun I => fun ideal_laws => fun proper => fun S => fun choose => construction S (fun (proper_ideal_maximal_over : forall (I_arg : forall (x : R), Prop), forall (ideal_laws_arg : @IdealLawArgs.{u} R zero add neg mul I_arg), forall (proper_arg : @ProperIdeal.{u} R one I_arg), forall (S_arg : Prop), forall (choose_arg : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I_arg M), S_arg), S_arg) => proper_ideal_maximal_over I ideal_laws proper S choose)
+
+theorem krull_maximal_ideal_contains.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), forall (construction : @KrullConstructionArgs.{u} R zero one add neg sub mul ring_laws), forall (I : forall (x : R), Prop), forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), @IdealLe.{u} R I M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => fun construction => fun I => fun M => fun over => @maximal_ideal_over_contains.{u} R zero one add neg mul I M over
+
+theorem krull_maximal_ideal_is_maximal.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), forall (construction : @KrullConstructionArgs.{u} R zero one add neg sub mul ring_laws), forall (I : forall (x : R), Prop), forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), @MaximalIdeal.{u} R zero one add neg mul M :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => fun construction => fun I => fun M => fun over => @maximal_ideal_over_maximal.{u} R zero one add neg mul I M over
+
+theorem krull_theorem.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (ring_laws : @RingLawArgs.{u} R zero one add neg sub mul), forall (construction : @KrullConstructionArgs.{u} R zero one add neg sub mul ring_laws), @KrullTheorem.{u} R zero one add neg sub mul ring_laws construction :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ring_laws => fun construction => fun (Q : Prop) => fun (mk : forall (ring_laws_out : @RingLawArgs.{u} R zero one add neg sub mul), forall (proper_ideal_maximal_over : forall (I : forall (x : R), Prop), forall (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I), forall (proper : @ProperIdeal.{u} R one I), forall (S : Prop), forall (choose : forall (M : forall (x : R), Prop), forall (over : @MaximalIdealOver.{u} R zero one add neg mul I M), S), S), Q) => mk ring_laws (fun (I : forall (x : R), Prop) => fun (ideal_laws : @IdealLawArgs.{u} R zero add neg mul I) => fun (proper : @ProperIdeal.{u} R one I) => @krull_maximal_ideal_exists.{u} R zero one add neg sub mul ring_laws construction I ideal_laws proper)

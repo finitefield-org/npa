@@ -158,6 +158,27 @@ Current bundles:
   containment, quotient round-trip, and subgroup-side saturation.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
+- `Proofs/Ai/Algebra/AbstractRingFirstIsoBase/`: ring homomorphism law package, additive-group
+  bridge, image closure, and kernel quotient multiplication well-definedness for the ring first
+  isomorphism route.
+- `Proofs/Ai/Algebra/AbstractRingFirstIso/`: certificate-backed ring first isomorphism theorem
+  bundle for the canonical map from the kernel quotient to the Church-encoded image, preserving
+  zero, one, addition, and multiplication with injectivity and image-surjectivity.
+- `Proofs/Ai/Algebra/AbstractRingChineseRemainder/`: certificate-backed ring Chinese remainder
+  theorem route for the map `R -> R/I x R/J`, identifying its kernel with the intersection
+  predicate and using comaximal combine laws to show the image is the full product.
+- `Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/`: certificate-backed UFD prime
+  factorization package over an abstract factorization carrier, deriving prime-factor existence
+  and uniqueness from the UFD law package without adding unchecked kernel axioms.
+- `Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/`: certificate-backed Hilbert basis theorem
+  package over abstract ideals, finite generating families, and a polynomial-extension leading
+  coefficient construction, deriving Noetherianity of `R[X]` from Noetherianity of `R`.
+- `Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/`: certificate-backed Hilbert
+  Nullstellensatz package over abstract affine points, polynomial evaluation, vanishing ideals,
+  and radical membership evidence.
+- `Proofs/Ai/Algebra/AbstractKrullTheorem/`: certificate-backed Krull maximal ideal theorem
+  package: every proper ideal is contained in a maximal ideal, with Zorn-style existence kept as
+  explicit construction evidence outside the trusted core.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
   over explicit carrier, operation, relation, function, and law assumptions.
 - `Proofs/Ai/Algebra/AbstractSquareNormalize/`: abstract square-normalization theorem targets over
@@ -855,7 +876,11 @@ EqReasoning
   -> Vector.Basic -> Vector.Dot
   -> Geometry.RightTriangle -> Geometry.Metric
   -> Logic.Iff
-  -> Algebra.AbstractRing -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
+  -> Algebra.AbstractRing -> Algebra.AbstractUfdPrimeFactorization
+  -> Algebra.AbstractHilbertBasisTheorem
+  -> Algebra.AbstractHilbertNullstellensatz
+  -> Algebra.AbstractKrullTheorem
+  -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
   -> Algebra.AbstractScalarDerive
   -> Vector.AbstractSpace -> Vector.AbstractInnerProduct -> Vector.AbstractInnerProductDerive
   -> Geometry.Affine -> Geometry.AffineDerive
@@ -1153,6 +1178,81 @@ Theorem targets:
 | `sub_zero`, `zero_sub` | subtraction by zero and from zero |
 | `sub_add_cancel`, `add_sub_cancel` | basic subtraction/addition cancellation lemmas |
 | `sub_add_sub_cancel` | `(a - c) - (b - c) = a - b`, scalar analogue of vector displacement cancellation |
+
+#### `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Divides`, `Unit`, `Associate` | Church-encoded divisibility, unit, and associate evidence over explicit multiplication |
+| `PrimeElement`, `IrreducibleElement` | local element predicates for prime and irreducible behavior |
+| `IntegralDomainLawArgs` | integral-domain package extending `RingLawArgs` with `0 != 1` and no zero divisors |
+| `FactorizationPred`, `PrimeFactorizationPred` | abstract factorization evidence for an element and its prime-factor refinement |
+| `UniqueFactorizationDomainLawArgs` | UFD law package: domain laws, irreducible-factor existence, uniqueness up to the supplied equivalence, and the bridge from irreducible factors to prime factors |
+| `UfdPrimeFactorizationTheorem` | bundled theorem shape exposing prime-factor existence, uniqueness, all-prime projection, and erasure back to irreducible factorization |
+
+The factorization object is intentionally abstract because this corpus does not yet define a
+canonical list or multiset API. The checked theorem `ufd_prime_factorization_theorem` projects a
+UFD law package into a prime-factorization theorem package, so the trusted boundary remains the
+canonical certificate and the small checker.
+
+#### `Proofs.Ai.Algebra.AbstractHilbertBasisTheorem`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `IdealLawArgs` | ideal closure package over explicit zero, addition, negation, and multiplication |
+| `FiniteIdealGeneratingSet`, `FinitelyGeneratedIdeal` | abstract finite generating-family evidence for an ideal |
+| `NoetherianRingArgs` | package saying every ideal of the explicit ring is finitely generated |
+| `PolynomialExtensionLawArgs` | polynomial-extension law package with polynomial ring laws and constant embedding laws |
+| `HilbertBasisConstructionArgs` | leading-coefficient ideal and generator-lifting construction used by the Hilbert basis argument |
+| `HilbertBasisTheorem` | bundled theorem exposing base Noetherianity, polynomial ring laws, and Noetherianity of `R[X]` |
+
+The corpus does not yet have canonical polynomial syntax, finite sets, or multiset/list-backed
+generating families. This module therefore keeps those objects abstract and certificate-checks the
+logical Hilbert-basis extraction: from a Noetherian base ring and a leading-coefficient
+construction for polynomial ideals, `hilbert_basis_theorem` returns a checked proof that the
+polynomial ring is Noetherian.
+
+#### `Proofs.Ai.Algebra.AbstractHilbertNullstellensatz`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `AlgebraicallyClosedFieldArgs` | algebraically closed field law package over an explicit carrier and ring operations |
+| `ZeroSet`, `HasCommonZero` | common-zero predicate and existence package for an ideal of abstract polynomials |
+| `VanishingIdeal` | predicate of polynomials vanishing on every point of `V(I)` |
+| `RadicalMember` | abstract positive-power witness package for membership in `sqrt(I)` |
+| `PolynomialEvaluationLawArgs` | evaluation law package combining algebraic-closed-field laws, polynomial Noetherianity, and evaluation compatibility |
+| `WeakNullstellensatz`, `StrongNullstellensatz` | weak common-zero and strong `I(V(I)) = sqrt(I)` theorem shapes |
+| `NullstellensatzConstructionArgs` | construction package for weak common-zero existence and the two radical/vanishing inclusions |
+| `HilbertNullstellensatzTheorem` | bundled theorem exposing field laws, polynomial Noetherianity, weak Nullstellensatz, and strong Nullstellensatz |
+
+The corpus still keeps polynomial syntax, affine-space coordinates, and concrete radical powers
+outside the trusted core. `hilbert_nullstellensatz_theorem` certificate-checks the extraction from
+explicit evaluation laws and a construction package to both the weak proper-ideal common-zero
+statement and the strong ideal equality `I(V(I)) = sqrt(I)` encoded by mutual predicate inclusion.
+
+#### `Proofs.Ai.Algebra.AbstractKrullTheorem`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `IdealLe` | predicate inclusion between two ideals |
+| `ProperIdeal` | properness as non-membership of `1` |
+| `MaximalIdeal` | ideal law package, properness, and maximality among proper overideals |
+| `MaximalIdealOver` | package saying a maximal ideal contains a given ideal |
+| `KrullConstructionArgs` | abstract Zorn-style construction evidence producing a maximal ideal over any proper ideal |
+| `KrullTheorem` | bundled theorem exposing the ring laws and the maximal-overideal existence statement |
+
+This module formalizes the common maximal ideal form of Krull's theorem: every proper ideal in a
+unital commutative ring is contained in a maximal ideal. Because the corpus has no set-theoretic
+chain/Zorn API yet, the Zorn argument is an explicit non-trusted construction package; the checked
+certificate verifies only the logical extraction from that construction to the public theorem.
 
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
