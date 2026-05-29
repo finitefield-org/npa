@@ -1,6 +1,7 @@
-# NPA
+# Nano Proof Auditor (NPA)
+### ~ A High-Throughput Verification Environment for AI Provers ~
 
-NPA は **Neuro-symbolic Proof Assistant** の実験的な設計・実装リポジトリです。
+NPA は **Nano Proof Auditor** の実験的な設計・実装リポジトリです。
 
 目標は Lean や Rocq から学びつつ、AI 時代向けに最初から設計された
 **proof certificate first** な依存型証明支援系を作ることです。
