@@ -260,6 +260,32 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
     pinned external certificates listed in `proofs/npa-package.toml`.
   - `npa.package.lock.v0.1` is distinct from `npa.independent-checker.import_lock_manifest.v1`; the latter is derived per checker run.
   - Do not add full external checker as required in this milestone; keep `npa-checker-ext` target integration.
+  - `proofs/generated/package-lock.json` is derived package metadata, not proof
+    evidence. Accepted proof evidence remains canonical `.npcert` bytes plus
+    the selected checker verdict. The lock records package graph identity,
+    certificate paths, certificate file hashes, export hashes, certificate
+    hashes, direct imports, and axiom report hashes; it must not introduce
+    source, replay, meta, theorem index, AI trace, registry, network, or solver
+    data as checker inputs.
+  - CLR-03 library entry points for later CLI work are
+    `npa_package::build_package_lock_from_package_root`,
+    `npa_package::build_package_lock_from_artifacts`,
+    `npa_package::parse_package_lock_json`,
+    `npa_api::verify_package_fast_source_free`,
+    `npa_api::verify_package_reference_source_free`,
+    `npa_api::materialize_package_phase8_import_locks`, and
+    `npa_api::materialize_package_phase8_requests`.
+  - Library verification examples are `cargo test -p npa-api package_fast_verifier`,
+    `cargo test -p npa-api package_reference_verifier`,
+    `cargo test -p npa-api package_phase8_import_lock_adapter`,
+    `cargo test -p npa-api package_phase8_request_materialization`,
+    `cargo test -p npa-proof-corpus package_fast_source_free`, and
+    `cargo test -p npa-proof-corpus package_reference_source_free`.
+  - Raw `npa-checker-ref` CLI import scanning is not enough for high-trust
+    package graph verification by itself. High-trust package verification also
+    requires the CLR-03 manifest and package-lock validation, pinned import
+    identity, dependency-topological order, checker policy mapping, and
+    same-checker provenance for imports accepted earlier in the package run.
 
 ### CLR-04 Implement Package Build, Verify, And Hash Check Commands
 
@@ -300,6 +326,19 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `npa-cli` is the Cargo package name fixed by CLR-00; the installed binary is `npa`.
   - Avoid silently rewriting artifacts in check mode.
   - `--changed`, `--all`, and `--checker external` are outside CLR-04 unless a later milestone explicitly adds them.
+  - `package verify-certs` should wrap the CLR-03 lock builder, lock parser,
+    fast/reference source-free verifiers, and Phase 8 materializers rather than
+    reimplement package graph traversal, checker policy mapping, or request
+    adapter semantics.
+  - `verify-certs --checker reference` should use `npa-checker-ref` as the
+    per-module reference verdict engine through the CLR-03 package verifier
+    path; raw `npa-checker-ref` CLI import scanning is not sufficient by itself
+    for high-trust package graph verification.
+  - CLR-04 package verification commands must keep registry lookup, network
+    fetch, dependency solving, binary caches, and `latest` version resolution
+    outside verification. `build-certs` may read source and replay helper data,
+    but source-free verification must consume package metadata and certificate
+    artifacts only.
 
 ### CLR-05 Generate Deterministic Axiom Report And Theorem Index Artifacts
 

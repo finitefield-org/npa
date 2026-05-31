@@ -191,6 +191,10 @@ Current bundles:
 - `npa-package.toml`: CLR-02 `npa.package.v0.1` fixture for package-level tooling. CLR-03
   source-free checker import locks should be derived from this fixture, not from
   `manifest.toml` or `tools/proof-corpus` Rust constants.
+- `generated/package-lock.json`: CLR-03 `npa.package.lock.v0.1` fixture derived from
+  `npa-package.toml` and checked-in certificate bytes. It is package metadata, not proof
+  evidence; accepted proof evidence remains canonical `.npcert` bytes plus the selected checker
+  verdict.
 
 Package fixture handoff data for CLR-03:
 
@@ -205,6 +209,25 @@ Package fixture handoff data for CLR-03:
 - CLR-03 source-free verification should read certificates through these package-relative paths;
   source, replay, meta, theorem index, AI traces, registry lookup, and `latest` version resolution
   are not checker inputs.
+- `proofs/generated/package-lock.json` records package graph identity, certificate paths,
+  certificate file hashes, export hashes, certificate hashes, direct imports, and axiom report
+  hashes. It must not be treated as source-free proof evidence or augmented with source, replay,
+  meta, theorem index, AI trace, registry, network, or package solver data.
+- Fast and reference source-free library verification examples are
+  `cargo test -p npa-api package_fast_verifier`,
+  `cargo test -p npa-api package_reference_verifier`,
+  `cargo test -p npa-proof-corpus package_fast_source_free`, and
+  `cargo test -p npa-proof-corpus package_reference_source_free`.
+- CLR-04 `npa package verify-certs` should wrap
+  `npa_package::build_package_lock_from_package_root`,
+  `npa_package::parse_package_lock_json`, `npa_api::verify_package_fast_source_free`,
+  `npa_api::verify_package_reference_source_free`,
+  `npa_api::materialize_package_phase8_import_locks`, and
+  `npa_api::materialize_package_phase8_requests`; it should not redefine graph traversal or
+  checker policy mapping.
+- Raw `npa-checker-ref` CLI import scanning is not enough for high-trust package graph verification
+  by itself. Package verification also needs the CLR-03 package lock, pinned import identity,
+  dependency-topological order, and imports accepted earlier by the same checker run.
 - Current package fixture checks are `cargo test -p npa-proof-corpus package_fixture`,
   `cargo test -p npa-proof-corpus package_manifest_parity`, and
   `cargo test -p npa-proof-corpus package_fixture_hashes`.
