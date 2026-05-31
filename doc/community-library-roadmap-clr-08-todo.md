@@ -234,8 +234,8 @@ Still unsupported unless a later milestone explicitly adds them:
 --sign
 ```
 
-Full-package operation remains the default scope. Do not copy the stale
-`--all` examples from the source roadmap into the implemented command contract.
+Full-package operation remains the default scope. Do not copy stale `--all`
+examples from older design drafts into the implemented command contract.
 
 ### High-Trust Package Command
 
@@ -702,9 +702,9 @@ Fix: The detailed spec splits policy/runner work from package CLI, release
 artifact, and CI work. Individual tasks name dependencies on CLR-04, CLR-05,
 CLR-06, and CLR-07 where needed.
 
-Finding: The source roadmap contains stale release examples using `--all`,
-while CLR-04 and CLR-07 intentionally keep full-package operation as the
-default and reject `--all`.
+Finding: Earlier source roadmap drafts contained stale release examples using
+`--all`, while CLR-04 and CLR-07 intentionally keep full-package operation as
+the default and reject `--all`.
 Fix: CLR-08 enables only `--checker external` and explicitly keeps `--all`,
 `--changed`, `--registry`, `--network`, and `--latest` unsupported.
 

@@ -789,9 +789,9 @@ not only human text.
 Fix: The specification adds `npa.package.command_result.v0.1`, diagnostic
 categories, reason codes, and exit-code mapping.
 
-Finding: Current source roadmap mentions `--changed`, `--all`, and external
-checker mode, but the parent CLR-04 milestone only requires full-package fast
-and reference verification.
+Finding: Earlier source roadmap drafts mentioned `--changed`, `--all`, and
+external checker mode, but the parent CLR-04 milestone only requires
+full-package fast and reference verification.
 Fix: CLR-04 explicitly rejects `--changed`, `--all`, and `--checker external`
 as unsupported; later CI/external-checker milestones can add them.
 

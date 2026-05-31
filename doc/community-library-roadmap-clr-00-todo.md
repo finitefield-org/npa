@@ -148,9 +148,9 @@ allowed_axioms = ["Eq.rec"]
 module = "Std.Logic.Eq"
 package = "npa-std"
 version = "0.1.0"
-export_hash = "sha256:..."
-certificate_hash = "sha256:..."
 certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+# export_hash and certificate_hash are required exact SHA-256 values
+# generated from the imported certificate artifact.
 
 [[modules]]
 module = "Proofs.Ai.Basic"
@@ -161,11 +161,10 @@ replay = "Proofs/Ai/Basic/replay.json"
 producer_profile = "human-surface-explicit-term"
 
 imports = []
-expected_source_hash = "sha256:..."
-expected_certificate_file_hash = "sha256:..."
-expected_export_hash = "sha256:..."
-expected_axiom_report_hash = "sha256:..."
-expected_certificate_hash = "sha256:..."
+# expected_source_hash, expected_certificate_file_hash,
+# expected_export_hash, expected_axiom_report_hash, and
+# expected_certificate_hash are required exact SHA-256 values
+# generated from package artifacts.
 
 inductives = []
 definitions = []

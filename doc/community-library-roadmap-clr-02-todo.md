@@ -159,17 +159,17 @@ external Std module:
 module = "Std.Logic.Eq"
 package = "npa-std"
 version = "0.1.0"
-export_hash = "sha256:..."
-certificate_hash = "sha256:..."
 certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+# export_hash and certificate_hash are required exact SHA-256 values
+# generated from the canonical imported certificate artifact.
 
 [[imports]]
 module = "Std.Nat.Basic"
 package = "npa-std"
 version = "0.1.0"
-export_hash = "sha256:..."
-certificate_hash = "sha256:..."
 certificate = "vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+# export_hash and certificate_hash are required exact SHA-256 values
+# generated from the canonical imported certificate artifact.
 ```
 
 The hashes come from the canonical certificates produced by the existing

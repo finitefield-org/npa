@@ -551,8 +551,9 @@ fresh-checkout CI expectations
 Review pass 1 findings and fixes:
 
 ```text
-Finding: The source roadmap mentions `--changed`, `--all`, and external checker
-in CI examples, but CLR-04 and CLR-05 deliberately do not implement those flags.
+Finding: Earlier source roadmap drafts mentioned `--changed`, `--all`, and
+external checker in CI examples, but CLR-04 and CLR-05 deliberately do not
+implement those flags.
 Fix: CLR-07 base templates use only supported package flags. PR mode performs
 full-package verification as a conservative fallback until changed-module
 selection is implemented.
