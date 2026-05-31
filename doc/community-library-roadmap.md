@@ -260,6 +260,7 @@ replay = "Proofs/Ai/Basic/replay.json"
 producer_profile = "human-surface-explicit-term"
 
 imports = []
+# expected_source_hash, expected_certificate_file_hash,
 # expected_export_hash, expected_certificate_hash, and
 # expected_axiom_report_hash are required exact SHA-256 values
 # in a real manifest.

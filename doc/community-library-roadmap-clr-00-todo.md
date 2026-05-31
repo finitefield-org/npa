@@ -131,7 +131,13 @@ tool is retired or rewritten.
 
 ### Target Manifest Shape
 
-External theorem libraries use `npa-package.toml` at the package root:
+External theorem libraries use `npa-package.toml` at the package root. CLR-02 will
+materialize the in-repo proof corpus fixture at `proofs/npa-package.toml`; the example
+below is the target shape for the current `Proofs.Ai.Basic` module using the checked-in
+legacy manifest's actual hash values.
+The complete `proofs/npa-package.toml` created in CLR-02 repeats this `[[modules]]`
+shape for every current `[[proof_modules]]` entry and adds hash-pinned top-level
+`[[imports]]` entries for external modules such as `Std.Logic.Eq` and `Std.Nat.Basic`.
 
 ```toml
 schema = "npa.package.v0.1"
@@ -148,14 +154,6 @@ checker_profile = "npa.checker.reference.v0.1"
 allow_custom_axioms = false
 allowed_axioms = ["Eq.rec"]
 
-[[imports]]
-module = "Std.Logic.Eq"
-package = "npa-std"
-version = "0.1.0"
-certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert"
-# export_hash and certificate_hash are required exact SHA-256 values
-# generated from the imported certificate artifact.
-
 [[modules]]
 module = "Proofs.Ai.Basic"
 source = "Proofs/Ai/Basic/source.npa"
@@ -165,83 +163,173 @@ replay = "Proofs/Ai/Basic/replay.json"
 producer_profile = "human-surface-explicit-term"
 
 imports = []
-# expected_source_hash, expected_certificate_file_hash,
-# expected_export_hash, expected_axiom_report_hash, and
-# expected_certificate_hash are required exact SHA-256 values
-# generated from package artifacts.
+expected_source_hash = "sha256:28330ae585898b77be110adcdd53fe50e7f141a54113f12e6af9143fa4fcf54e"
+expected_certificate_file_hash = "sha256:464a0d224b8667e4870888522454782231cd2cdd9049e6fa930cbefa62c18ffc"
+expected_export_hash = "sha256:3341d28e9d1d9dd875138399ab1bd7aa6e2727449cb87fe03c73b220c4b231c0"
+expected_axiom_report_hash = "sha256:fed11e73accfbfb0dfc28b4f510e151fa33d8af82d58fdb23b92567e04e59e40"
+expected_certificate_hash = "sha256:69cb8c64c6ce722209e27820cd790af6d325c98478b3599ae796ee03df528b13"
 
 inductives = []
 definitions = []
-theorems = ["id"]
+theorems = [
+  "id",
+  "const_left",
+  "const_right",
+  "apply_fn",
+  "compose",
+  "flip",
+  "duplicate",
+  "prop_id",
+  "modus_ponens",
+  "imp_trans",
+  "compose_assoc",
+  "apply_twice",
+  "ignore_middle",
+  "select_middle",
+  "select_last",
+  "imp_swap",
+  "imp_compose",
+  "imp_ignore",
+  "imp_duplicate",
+  "higher_apply",
+]
 axioms = []
 ```
 
 ### Required, Optional, Forbidden, And Generated Fields
 
-Top-level required fields:
+Top-level required fields in `npa.package.v0.1`:
 
-```text
-schema
-package
-version
-core_spec
-kernel_profile
-certificate_format
-checker_profile
-policy
-modules
-```
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `schema` | string | Must equal `npa.package.v0.1`. |
+| `package` | string | Package identity, using package-name grammar fixed in CLR-01. |
+| `version` | string | Exact package version string; no implicit latest resolution. |
+| `core_spec` | string | Core spec profile, e.g. `npa.core.v0.1`. |
+| `kernel_profile` | string | Kernel compatibility profile, e.g. `npa.kernel.v0.1`. |
+| `certificate_format` | string | Certificate format, e.g. `npa.certificate.canonical.v0.1`. |
+| `checker_profile` | string | Required checker profile, e.g. `npa.checker.reference.v0.1`. |
+| `policy` | table | Package axiom policy object. |
+| `modules` | non-empty array of tables | Local module entries. |
 
 Top-level optional fields:
 
-```text
-license
-repository
-description
-imports
-```
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `license` | string | Package license expression. |
+| `repository` | string | Informational source repository URL. |
+| `description` | string | Informational package description. |
+| `imports` | array of tables | Hash-pinned external package/module imports. |
 
-Module required fields:
-
-```text
-module
-source
-certificate
-imports
-expected_source_hash
-expected_certificate_file_hash
-expected_export_hash
-expected_axiom_report_hash
-expected_certificate_hash
-```
-
-Module optional fields:
-
-```text
-meta
-replay
-producer_profile
-inductives
-definitions
-theorems
-axioms
-tags
-```
-
-Forbidden in `npa.package.v0.1`:
+Top-level forbidden fields:
 
 ```text
 trusted_status
 verified_by_certificate
 checker_result
+checker_results
 registry_url
 latest
 generated_at
 ```
 
-Unknown fields in the top-level object, `[policy]`, `[[imports]]`, and `[[modules]]`
-are rejected in `npa.package.v0.1`. Forward-compatible extension fields require a
-new schema version.
+Policy object required fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `allow_custom_axioms` | bool | Whether axioms outside `allowed_axioms` may appear. |
+| `allowed_axioms` | array of strings | Exact axiom names permitted by package policy. |
+
+Policy object optional fields in `npa.package.v0.1`:
+
+```text
+none
+```
+
+Package import `[[imports]]` required fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `module` | string | External module name. |
+| `package` | string | External package name. |
+| `version` | string | Exact external package version. |
+| `certificate` | string | Package-relative path to vendored external certificate. |
+| `export_hash` | hash string | Exact canonical export hash for the external module. |
+| `certificate_hash` | hash string | Exact canonical certificate hash for high-trust identity. |
+
+Package import optional fields in `npa.package.v0.1`:
+
+```text
+none
+```
+
+Module required fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `module` | string | Local module name. |
+| `source` | string | Package-relative source path. |
+| `certificate` | string | Package-relative certificate path. |
+| `imports` | array of strings | Direct module imports, resolved by CLR-00-05 rules. |
+| `expected_source_hash` | hash string | SHA-256 of source file bytes. |
+| `expected_certificate_file_hash` | hash string | SHA-256 of certificate file bytes. |
+| `expected_export_hash` | hash string | Canonical export hash from the certificate. |
+| `expected_axiom_report_hash` | hash string | Canonical axiom report hash from the certificate. |
+| `expected_certificate_hash` | hash string | Canonical certificate hash from the certificate. |
+
+Module optional fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `meta` | string | Optional untrusted metadata path. |
+| `replay` | string | Optional untrusted replay path. |
+| `producer_profile` | string | Optional producer profile metadata. |
+| `inductives` | array of strings | Optional declaration summary. |
+| `definitions` | array of strings | Optional declaration summary. |
+| `theorems` | array of strings | Optional declaration summary. |
+| `axioms` | array of strings | Optional declaration summary checked against policy. |
+| `tags` | array of strings | Optional search/docs metadata. |
+
+Module forbidden fields:
+
+```text
+trusted_status
+verified_by_certificate
+checker_result
+checker_results
+registry_url
+latest
+generated_at
+source_sha256
+certificate_file_sha256
+export_hash
+axiom_report_hash
+certificate_hash
+```
+
+The legacy fields `source_sha256`, `certificate_file_sha256`, `export_hash`,
+`axiom_report_hash`, and `certificate_hash` are forbidden inside `[[modules]]`
+because the target manifest uses the `expected_*` names there. The plain
+`export_hash` and `certificate_hash` names remain valid only inside top-level
+`[[imports]]`, where they describe external module identity.
+
+Forbidden in every `npa.package.v0.1` object:
+
+```text
+trusted_status
+verified_by_certificate
+checker_result
+checker_results
+registry_url
+latest
+generated_at
+```
+
+Unknown fields in the top-level object, `[policy]`, each `[[imports]]` object, and
+each `[[modules]]` object are rejected in `npa.package.v0.1`. There is no `x-*`,
+`extra`, or `metadata` escape hatch in v0.1. Forward-compatible extension fields
+require a new schema version. Duplicate keys are rejected by parsing or validation
+before package graph checks begin.
 
 Generated artifacts, not manifest input:
 
@@ -396,7 +484,7 @@ axiom_report_hash when available
 
 ### CLR-00-03 Specify `npa.package.v0.1` Manifest Field Contract
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-02
 - Inputs:
   - `doc/community-library-roadmap.md` section 5.1
@@ -419,6 +507,10 @@ axiom_report_hash when available
   - `git diff --check`
 - Notes:
   - The target manifest is package input. Generated status belongs in checker or publish artifacts.
+  - Implemented by expanding the field contract into top-level, policy, import, and
+    module object fields; adding the current `Proofs.Ai.Basic` fixture shape with
+    `expected_source_hash` and `expected_certificate_file_hash`; and forbidding
+    legacy checker/status fields from manifest input.
 
 ### CLR-00-04 Specify Legacy Manifest Mapping
 
