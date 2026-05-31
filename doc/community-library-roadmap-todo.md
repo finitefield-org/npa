@@ -77,12 +77,12 @@ scripts/phase9-regression.sh
   local gates; GitHub Actions workflow is currently removed
 ```
 
-Open question:
+Resolved CLR-00 decision:
 
 ```text
-The design uses `npa package ...` as the command contract but still calls the binary name tentative.
-CLR-00 must fix whether the implementation target is a new `npa` CLI, `npa-package`, or another
-workspace binary. Later milestones should use that fixed command name consistently.
+The contributor-facing command contract is `npa package ...`.
+The Cargo implementation target is package `npa-cli`, installed binary `npa`.
+The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 ```
 
 ---
@@ -117,6 +117,7 @@ workspace binary. Later milestones should use that fixed command name consistent
   - `rg -n "npa package|npa-package|npa\\.package|npa-ai-proof-corpus" doc/community-library-roadmap.md doc/community-library-roadmap-todo.md README.md`
   - `git diff --check`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-00-todo.md`.
   - Keep this milestone documentation-focused unless a binary crate name is needed to unblock CLR-01.
   - Do not introduce registry network behavior.
 
@@ -236,13 +237,13 @@ workspace binary. Later milestones should use that fixed command name consistent
   - `check-hashes` fails on stale checked-in artifacts.
   - Running the commands on the current proof corpus reproduces existing hashes.
 - Verification:
-  - `cargo run -p PACKAGE_CLI_CRATE -- package check --root proofs`
-  - `cargo run -p PACKAGE_CLI_CRATE -- package build-certs --root proofs --check`
-  - `cargo run -p PACKAGE_CLI_CRATE -- package verify-certs --root proofs --checker reference`
-  - `cargo run -p PACKAGE_CLI_CRATE -- package check-hashes --root proofs`
+  - `cargo run -p npa-cli -- package check --root proofs`
+  - `cargo run -p npa-cli -- package build-certs --root proofs --check`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker reference`
+  - `cargo run -p npa-cli -- package check-hashes --root proofs`
   - `cargo test --workspace package_cli`
 - Notes:
-  - Replace `PACKAGE_CLI_CRATE` with the command target fixed by CLR-00.
+  - `npa-cli` is the Cargo package name fixed by CLR-00; the installed binary is `npa`.
   - Avoid silently rewriting artifacts in check mode.
 
 ### CLR-05 Generate Deterministic Axiom Report And Theorem Index Artifacts
@@ -270,8 +271,8 @@ workspace binary. Later milestones should use that fixed command name consistent
   - The theorem index includes module, theorem name, statement/interface hash, certificate hash, export hash, modes/tags if available, and axiom dependencies.
   - Generated artifacts do not become checker input.
 - Verification:
-  - `cargo run -p PACKAGE_CLI_CRATE -- package axiom-report --root proofs --check`
-  - `cargo run -p PACKAGE_CLI_CRATE -- package index --root proofs --check`
+  - `cargo run -p npa-cli -- package axiom-report --root proofs --check`
+  - `cargo run -p npa-cli -- package index --root proofs --check`
   - `cargo test --workspace axiom_report`
   - `cargo test --workspace theorem_index`
 - Notes:
@@ -300,7 +301,7 @@ workspace binary. Later milestones should use that fixed command name consistent
   - The publish plan fails when generated metadata disagrees with package hashes or checker results.
   - The schema explicitly distinguishes package registry metadata from independent checker binary registry metadata.
 - Verification:
-  - `cargo run -p PACKAGE_CLI_CRATE -- package publish-plan --root proofs --check`
+  - `cargo run -p npa-cli -- package publish-plan --root proofs --check`
   - `cargo test --workspace publish_plan`
   - `rg -n "npa.registry.module.v0.1|independent-checker.checker_binary_registry" doc crates`
 - Notes:
@@ -432,8 +433,8 @@ Initial review against `doc/community-library-roadmap.md`, README, Phase 8 docs,
 F1: The source design's M2 mixed build, verify, hash check, and source-free graph semantics.
     Resolution: split into CLR-03 and CLR-04, with import lock/source-free graph verification before CLI command completion.
 
-F2: The design used a tentative CLI name while command examples assumed `npa package`.
-    Resolution: CLR-00 makes CLI binary/command naming a required early decision.
+F2: The design originally did not fix the Cargo package that owns `npa package`.
+    Resolution: CLR-00 fixes `npa-cli` as the Cargo package and `npa` as the installed binary.
 
 F3: Registry metadata could be confused with the independent checker binary registry in Phase 8 docs.
     Resolution: CLR-06 requires explicit distinction between module registry metadata and checker binary registry metadata.

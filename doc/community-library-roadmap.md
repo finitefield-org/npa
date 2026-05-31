@@ -299,7 +299,9 @@ manifest の役割:
 ## 5.2 package CLI
 
 この `npa` リポジトリ側に、外部 repo から使える CLI を用意します。
-名前は仮に `npa` または `npa-package` とします。
+CLR-00 で、contributor-facing command は installed binary `npa`、Cargo package は
+`npa-cli` に固定します。repo 内の検証では `cargo run -p npa-cli -- package ...` を使い、
+外部 contributor 向け docs では `npa package ...` を使います。
 
 必要な command:
 
