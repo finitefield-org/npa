@@ -10,3 +10,6 @@ npa-cert = { path = "../../crates/npa-cert" }
 npa-frontend = { path = "../../crates/npa-frontend" }
 npa-kernel = { path = "../../crates/npa-kernel" }
 sha2 = "0.10"
+
+[dev-dependencies]
+toml = "0.8"

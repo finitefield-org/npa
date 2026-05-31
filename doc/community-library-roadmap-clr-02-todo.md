@@ -258,7 +258,7 @@ package fixture.
 
 ### CLR-02-01 Audit Current Corpus Imports And Axioms
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01
 - Inputs:
   - `proofs/manifest.toml`
@@ -280,6 +280,21 @@ package fixture.
   - `cargo test -p npa-proof-corpus`
 - Notes:
   - Keep the audit focused on package fixture identity. Do not redesign the standard library here.
+  - Completed audit source: `tools/proof-corpus/tests/manifest_package_audit.rs` reads
+    `proofs/manifest.toml` as TOML and does not use `ExpectedModule` constants
+    or `tools/proof-corpus/src/main.rs` module constants to classify imports.
+  - Current manifest-derived classification:
+    - local proof modules: 66
+    - local import references: 261
+    - external import references: 66
+    - external modules: `Std.Logic.Eq` used by 63 modules and `Std.Nat.Basic`
+      used by 3 modules
+    - unknown imports outside local modules and planned top-level Std imports: none
+  - Current manifest-derived axiom policy:
+    - unique declared axioms: `Eq.rec`
+    - modules declaring `Eq.rec`: 39
+    - package policy allowlist for the current corpus remains exactly
+      `["Eq.rec"]`
 
 ### CLR-02-02 Add Deterministic External Std Import Artifact Generation
 

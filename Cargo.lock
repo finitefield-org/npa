@@ -149,6 +149,7 @@ dependencies = [
  "npa-frontend",
  "npa-kernel",
  "sha2",
+ "toml",
 ]
 
 [[package]]
