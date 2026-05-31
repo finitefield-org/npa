@@ -637,7 +637,7 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
 
 ### CLR-00-06 Define Validator Error And Test Surface For CLR-01
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-03, CLR-00-05
 - Inputs:
   - manifest field contract from CLR-00-03
@@ -655,7 +655,10 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
   - `rg -n "schema failure|domain failure|duplicate|import cycle|hash grammar|axiom policy" doc/community-library-roadmap-clr-00-todo.md`
   - `git diff --check`
 - Notes:
-  - Suggested fixture roots: `tests/fixtures/package/valid` and `tests/fixtures/package/invalid`.
+  - Suggested fixture roots: `crates/npa-package/tests/fixtures/package/valid` and
+    `crates/npa-package/tests/fixtures/package/invalid`.
+  - Implemented by defining CLR-01 validator cases, enum-like structured error
+    categories, deterministic validation order, and concrete fixture names below.
 
 ### CLR-00-07 Update Parent Roadmap Commands
 
@@ -702,42 +705,134 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
 
 ---
 
-## CLR-01 Validator Cases Implied By CLR-00
+## CLR-01 Validator Test Surface Implied By CLR-00
 
-CLR-01 should at least cover:
+CLR-01 should implement validator tests before or alongside parser implementation.
+The test suite should use fixture files under:
+
+```text
+crates/npa-package/tests/fixtures/package/valid
+crates/npa-package/tests/fixtures/package/invalid
+```
+
+Valid fixture names:
+
+```text
+valid/minimal/npa-package.toml
+  minimal package with one local module, no external imports, empty axiom list
+
+valid/proof-corpus-basic/npa-package.toml
+  current `Proofs.Ai.Basic` target shape from CLR-00-03
+
+valid/proof-corpus-with-std-imports/npa-package.toml
+  proof-corpus-shaped package with top-level `Std.Logic.Eq` and `Std.Nat.Basic`
+  imports and local modules that reference them
+
+valid/same-package-imports/npa-package.toml
+  local module importing another local module by concise module string
+```
+
+Invalid fixture names and expected primary error:
+
+| Fixture | Expected kind | Expected reason |
+| --- | --- | --- |
+| `invalid/schema/wrong-schema/npa-package.toml` | `UnsupportedVersion` | `unsupported_schema_version` |
+| `invalid/schema/missing-top-level-field/npa-package.toml` | `Schema` | `missing_required_field` |
+| `invalid/schema/missing-module-field/npa-package.toml` | `Schema` | `missing_required_field` |
+| `invalid/schema/unknown-top-level-field/npa-package.toml` | `Schema` | `unknown_field` |
+| `invalid/schema/unknown-policy-field/npa-package.toml` | `Schema` | `unknown_field` |
+| `invalid/schema/unknown-import-field/npa-package.toml` | `Schema` | `unknown_field` |
+| `invalid/schema/unknown-module-field/npa-package.toml` | `Schema` | `unknown_field` |
+| `invalid/schema/forbidden-trusted-status/npa-package.toml` | `Schema` | `forbidden_field` |
+| `invalid/domain/package-name/npa-package.toml` | `Domain` | `invalid_package_name` |
+| `invalid/domain/module-name/npa-package.toml` | `Domain` | `invalid_module_name` |
+| `invalid/hash/bad-expected-export-hash/npa-package.toml` | `Hash` | `invalid_hash_format` |
+| `invalid/hash/bad-certificate-file-hash/npa-package.toml` | `Hash` | `invalid_hash_format` |
+| `invalid/path/absolute-source-path/npa-package.toml` | `Path` | `absolute_path_forbidden` |
+| `invalid/path/source-escapes-root/npa-package.toml` | `Path` | `path_escapes_package_root` |
+| `invalid/duplicate/module-name/npa-package.toml` | `Duplicate` | `duplicate_module` |
+| `invalid/duplicate/external-import-module/npa-package.toml` | `Duplicate` | `duplicate_external_import` |
+| `invalid/graph/local-external-collision/npa-package.toml` | `Graph` | `local_external_module_collision` |
+| `invalid/graph/unknown-import/npa-package.toml` | `Graph` | `unknown_import` |
+| `invalid/graph/import-cycle/npa-package.toml` | `Graph` | `import_cycle` |
+| `invalid/policy/axiom-policy-violation/npa-package.toml` | `Policy` | `axiom_policy_violation` |
+
+Structured error shape:
+
+```text
+PackageManifestError {
+  kind: PackageManifestErrorKind,
+  reason: PackageManifestErrorReason,
+  path: PackageManifestPath,
+  expected: Option<String>,
+  actual: Option<String>,
+}
+
+PackageManifestErrorKind:
+  Schema
+  UnsupportedVersion
+  Domain
+  Path
+  Duplicate
+  Graph
+  Hash
+  Policy
+```
+
+The `kind` and `reason` values are the test oracle. Human display text is derived
+from this structure and must not be the only assertion surface.
+
+Validator cases CLR-01 must cover:
 
 ```text
 - valid minimal package manifest
 - valid current proof-corpus package fixture
-- wrong schema
+- valid same-package import using concise `modules[].imports` strings
+- valid external import using hash-pinned top-level `[[imports]]`
+- wrong schema / unsupported schema version
 - missing required top-level field
+- missing required policy field
+- missing required import field
 - missing required module field
 - forbidden `trusted_status`
+- forbidden checker verdict or registry fetch field
 - unknown top-level, policy, import, and module fields are rejected
+- duplicate top-level keys when the TOML parser exposes them
 - duplicate module name
 - duplicate external import module
 - local/external module name collision
 - unknown module-level import
 - import cycle among local modules
-- invalid hash grammar
+- invalid package name grammar
+- invalid module name grammar
+- invalid hash grammar for every hash field family
 - path escaping package root
 - absolute path rejection unless explicitly allowed by future policy
-- expected hash mismatch surfaced as check-hashes failure, not manifest parse failure
 - module axiom list violating package axiom policy
+- expected hash mismatch surfaced as check-hashes failure, not manifest parse failure
 ```
 
-Suggested structured error families:
+Deterministic validation order for golden assertions:
 
 ```text
-Schema
-Domain
-Duplicate
-Path
-Graph
-Hash
-Policy
-UnsupportedVersion
+1. Parse TOML and reject duplicate keys if the parser reports them.
+2. Validate root object schema field and schema version.
+3. Validate closed-world fields and required fields in this object order:
+   top-level, policy, imports in source order, modules in source order.
+4. Validate scalar domain grammar in the same object order:
+   package/version/profile strings, module names, hash grammar, path grammar.
+5. Validate duplicate local modules, duplicate external imports, then local/external
+   module name collisions.
+6. Resolve module imports in module source order, then import list order.
+7. Validate local import graph cycles with deterministic DFS over module source order.
+8. Validate axiom policy after the module graph is known.
 ```
+
+This order means a fixture with both a schema failure and a domain failure reports the
+schema failure. A fixture with both duplicate module name and import cycle reports the
+duplicate first. A fixture with both invalid hash grammar and hash value mismatch
+reports invalid hash grammar; artifact hash mismatch belongs to `npa package
+check-hashes`, not to manifest validation.
 
 ---
 
