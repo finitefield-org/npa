@@ -235,13 +235,16 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Status: Pending
 - Depends on: CLR-03
 - Inputs:
+  - `doc/community-library-roadmap-clr-04-todo.md`
   - package model from CLR-01
   - proof corpus package fixture from CLR-02
   - source-free verification from CLR-03
   - `npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy`
 - Code or documentation areas:
-  - package CLI binary selected in CLR-00
-  - command tests
+  - `crates/npa-cli`
+  - CLI command parser and structured diagnostics
+  - package root filesystem loader
+  - package command tests
   - README / roadmap command examples if command naming changes
 - Deliverables:
   - `package check` for manifest / graph / policy validation.
@@ -259,10 +262,13 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `cargo run -p npa-cli -- package build-certs --root proofs --check`
   - `cargo run -p npa-cli -- package verify-certs --root proofs --checker reference`
   - `cargo run -p npa-cli -- package check-hashes --root proofs`
+  - `cargo test -p npa-cli package_cli`
   - `cargo test --workspace package_cli`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-04-todo.md`.
   - `npa-cli` is the Cargo package name fixed by CLR-00; the installed binary is `npa`.
   - Avoid silently rewriting artifacts in check mode.
+  - `--changed`, `--all`, and `--checker external` are outside CLR-04 unless a later milestone explicitly adds them.
 
 ### CLR-05 Generate Deterministic Axiom Report And Theorem Index Artifacts
 
