@@ -792,7 +792,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-11 Close CLR-01 Integration Readiness
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-01, CLR-01-02, CLR-01-03, CLR-01-04, CLR-01-05, CLR-01-06, CLR-01-07, CLR-01-08, CLR-01-09, CLR-01-10
 - Inputs:
   - completed `npa-package` crate
@@ -820,6 +820,27 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test --workspace package_manifest`
 - Notes:
   - Full workspace tests are appropriate if implementation touches workspace dependencies or shared types.
+  - CLR-02 can start. CLR-01 now provides the reusable `npa-package` crate,
+    public `npa.package.v0.1` data model, structured parser / validator,
+    deterministic graph validation, axiom-policy checks, report API, fixture
+    suite, and implementer-facing crate docs.
+  - The validator accepts the proof-corpus-equivalent fixture at
+    `crates/npa-package/tests/fixtures/package/valid/proof-corpus-equivalent/npa-package.toml`.
+    That fixture covers local imports, hash-pinned `Std.Logic.Eq` and
+    `Std.Nat.Basic` imports, expected source / certificate / export / axiom
+    report / certificate hashes, declaration summaries, and the `Eq.rec`
+    package policy without claiming to replace `proofs/manifest.toml`.
+  - Trusted base is unchanged: `npa-package` remains an untrusted metadata
+    parser / validator; it performs no source or certificate file reads, no
+    checker execution, no registry or network resolution, and no proof
+    acceptance. `npa-kernel`, `npa-cert`, and `npa-checker-ref` do not depend on
+    `npa-package`.
+  - CLR-02 follow-up: generate the full checked-in `proofs/npa-package.toml`
+    fixture from the existing proof corpus, keep `proofs/manifest.toml` as the
+    legacy `npa-ai-proof-corpus-v0.1` artifact, materialize deterministic
+    vendored Std certificate paths / hashes, and add proof-corpus tests that
+    compare the full module list and artifact summaries against the existing
+    corpus.
 
 ---
 

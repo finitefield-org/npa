@@ -128,7 +128,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-01 Implement `npa.package.v0.1` Data Model And Validator
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00
 - Inputs:
   - Target schema from CLR-00
@@ -158,6 +158,22 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Detailed breakdown: `doc/community-library-roadmap-clr-01-todo.md`.
   - Prefer structured parsing over ad hoc string scanning.
   - The validator lives in `crates/npa-package` and must not depend on `npa-api`.
+  - Completed by `crates/npa-package`: it exposes the `npa.package.v0.1` manifest
+    data model, structured TOML parser, closed-object validation, hash / path /
+    name grammar checks, duplicate checks, import graph validation, axiom
+    policy validation, deterministic structured errors, report API, fixtures,
+    and crate docs for `npa-package.toml` implementers.
+  - Parent acceptance is closed: invalid manifests fail before any certificate
+    build, unknown fields and duplicate keys are rejected, module imports
+    resolve only to local modules or hash-pinned top-level imports, and the
+    proof-corpus-equivalent fixture validates without replacing
+    `proofs/manifest.toml`.
+  - Trusted base remains unchanged. `npa-package` is untrusted metadata tooling;
+    `npa-kernel`, `npa-cert`, and `npa-checker-ref` do not depend on it.
+  - CLR-02 can start from this contract. Remaining work belongs there: generate
+    the full `proofs/npa-package.toml`, preserve `proofs/manifest.toml` as the
+    legacy corpus manifest, and add proof-corpus tests for the complete checked
+    artifact set.
 
 ### CLR-02 Represent The Existing Proof Corpus As A Package Fixture
 
