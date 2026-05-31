@@ -269,6 +269,30 @@ impl PackageManifestError {
         )
     }
 
+    /// Build an unknown module import error.
+    pub fn unknown_import(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Graph,
+            path,
+            Some("imports".to_owned()),
+            PackageManifestErrorReason::UnknownImport,
+            Some("local module or hash-pinned top-level external import".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a local module import cycle error.
+    pub fn import_cycle(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Graph,
+            path,
+            Some("imports".to_owned()),
+            PackageManifestErrorReason::ImportCycle,
+            Some("acyclic local module graph".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
     fn duplicate(
         path: impl Into<String>,
         field: impl Into<String>,

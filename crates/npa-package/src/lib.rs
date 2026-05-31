@@ -17,6 +17,9 @@ pub mod schema;
 pub mod validate;
 
 pub use error::{PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason};
+pub use graph::{
+    resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,
+};
 pub use hash::{parse_package_hash, PackageHash, PackageHashBytes};
 pub use manifest::{
     parse_manifest_str, PackageExternalImport, PackageManifest, PackageModule, PackagePolicy,

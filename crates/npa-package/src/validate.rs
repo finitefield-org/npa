@@ -6,6 +6,7 @@ use npa_cert::Name;
 
 use crate::{
     error::{PackageManifestError, PackageManifestResult},
+    graph::{resolve_package_graph, PackageGraph},
     manifest::{
         parse_manifest_str, PackageExternalImport, PackageManifest, PackageModule, PackagePolicy,
         PackageVersion,
@@ -32,12 +33,14 @@ pub struct PackageManifestValidationOptions {
 
 /// A package manifest that has passed validation implemented so far.
 ///
-/// CLR-01 grows this value in phases. At CLR-01-05 it means closed-object
-/// parsing, scalar domain checks, and duplicate checks have succeeded; graph
-/// and axiom-policy validation are added by later milestones.
+/// CLR-01 grows this value in phases. At CLR-01-06 it means closed-object
+/// parsing, scalar domain checks, duplicate checks, import resolution, and
+/// local graph validation have succeeded; axiom-policy validation is added by
+/// a later milestone.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidatedPackageManifest {
     manifest: PackageManifest,
+    graph: PackageGraph,
 }
 
 impl ValidatedPackageManifest {
@@ -46,9 +49,19 @@ impl ValidatedPackageManifest {
         &self.manifest
     }
 
+    /// Return resolved import graph metadata.
+    pub fn graph(&self) -> &PackageGraph {
+        &self.graph
+    }
+
     /// Consume the wrapper and return the manifest metadata.
     pub fn into_manifest(self) -> PackageManifest {
         self.manifest
+    }
+
+    /// Consume the wrapper and return manifest metadata plus graph metadata.
+    pub fn into_parts(self) -> (PackageManifest, PackageGraph) {
+        (self.manifest, self.graph)
     }
 }
 
@@ -74,7 +87,8 @@ pub fn validate_manifest_with_options(
     validate_fixed_schema_and_profiles(&manifest)?;
     validate_scalar_domains(&manifest)?;
     validate_duplicate_domains(&manifest)?;
-    Ok(ValidatedPackageManifest { manifest })
+    let graph = resolve_package_graph(&manifest)?;
+    Ok(ValidatedPackageManifest { manifest, graph })
 }
 
 /// Validate the `MAJOR.MINOR.PATCH` package version grammar.

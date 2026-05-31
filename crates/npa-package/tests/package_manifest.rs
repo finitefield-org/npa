@@ -1,9 +1,14 @@
 use npa_package::{
-    parse_and_validate_manifest_str, parse_manifest_str, PackageManifestError,
-    PackageManifestErrorKind, PackageManifestErrorReason, PACKAGE_MANIFEST_SCHEMA,
+    parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash, PackageManifestError,
+    PackageManifestErrorKind, PackageManifestErrorReason, ResolvedModuleImportKind,
+    PACKAGE_MANIFEST_SCHEMA,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+const ONE_HASH: &str = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+const TWO_HASH: &str = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
+const THREE_HASH: &str = "sha256:3333333333333333333333333333333333333333333333333333333333333333";
+const FOUR_HASH: &str = "sha256:4444444444444444444444444444444444444444444444444444444444444444";
 
 fn valid_manifest() -> String {
     format!(
@@ -97,18 +102,29 @@ checker_profile = "npa.checker.reference.v0.1"
 }
 
 fn module_block(module: &str, source: &str, certificate: &str) -> String {
+    module_block_with_imports_and_hashes(module, source, certificate, "[]", ZERO_HASH, ZERO_HASH)
+}
+
+fn module_block_with_imports_and_hashes(
+    module: &str,
+    source: &str,
+    certificate: &str,
+    imports: &str,
+    expected_export_hash: &str,
+    expected_certificate_hash: &str,
+) -> String {
     format!(
         r#"
 [[modules]]
 module = "{module}"
 source = "{source}"
 certificate = "{certificate}"
-imports = []
+imports = {imports}
 expected_source_hash = "{ZERO_HASH}"
 expected_certificate_file_hash = "{ZERO_HASH}"
-expected_export_hash = "{ZERO_HASH}"
+expected_export_hash = "{expected_export_hash}"
 expected_axiom_report_hash = "{ZERO_HASH}"
-expected_certificate_hash = "{ZERO_HASH}"
+expected_certificate_hash = "{expected_certificate_hash}"
 inductives = []
 definitions = []
 theorems = ["other"]
@@ -762,4 +778,182 @@ fn package_manifest_duplicates_checks_optional_artifact_paths_only_when_present(
         );
 
     parse_and_validate_manifest_str(&source_without_optional_paths).unwrap();
+}
+
+#[test]
+fn package_manifest_import_resolution_resolves_local_and_external_imports() {
+    let source = valid_manifest()
+        .replacen(
+            &format!(r#"export_hash = "{ZERO_HASH}""#),
+            &format!(r#"export_hash = "{THREE_HASH}""#),
+            1,
+        )
+        .replacen(
+            &format!(r#"certificate_hash = "{ZERO_HASH}""#),
+            &format!(r#"certificate_hash = "{FOUR_HASH}""#),
+            1,
+        )
+        .replace(
+            r#"imports = ["Std.Logic.Eq"]"#,
+            r#"imports = ["Proofs.Ai.Dependency", "Std.Logic.Eq"]"#,
+        )
+        + &module_block_with_imports_and_hashes(
+            "Proofs.Ai.Dependency",
+            "Proofs/Ai/Dependency/source.npa",
+            "Proofs/Ai/Dependency/certificate.npcert",
+            "[]",
+            ONE_HASH,
+            TWO_HASH,
+        );
+
+    let manifest = parse_and_validate_manifest_str(&source).unwrap();
+    let graph = manifest.graph();
+
+    assert_eq!(graph.resolved_module_imports.len(), 2);
+    assert_eq!(
+        graph.resolved_module_imports[0][0].kind,
+        ResolvedModuleImportKind::Local { module_index: 1 }
+    );
+    assert_eq!(
+        graph.resolved_module_imports[0][0].export_hash,
+        parse_package_hash(ONE_HASH, "test.local_export").unwrap()
+    );
+    assert_eq!(
+        graph.resolved_module_imports[0][0].certificate_hash,
+        parse_package_hash(TWO_HASH, "test.local_certificate").unwrap()
+    );
+    assert_eq!(
+        graph.resolved_module_imports[0][1].kind,
+        ResolvedModuleImportKind::External { import_index: 0 }
+    );
+    assert_eq!(
+        graph.resolved_module_imports[0][1].export_hash,
+        parse_package_hash(THREE_HASH, "test.external_export").unwrap()
+    );
+    assert_eq!(
+        graph.resolved_module_imports[0][1].certificate_hash,
+        parse_package_hash(FOUR_HASH, "test.external_certificate").unwrap()
+    );
+    assert_eq!(graph.topological_order, vec![1, 0]);
+}
+
+#[test]
+fn package_manifest_import_resolution_rejects_module_name_only_external_import() {
+    let source = valid_manifest().replace(
+        r#"imports = ["Std.Logic.Eq"]"#,
+        r#"imports = ["Std.Logic.Missing"]"#,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Graph,
+        PackageManifestErrorReason::UnknownImport,
+        "modules[0].imports[0]",
+        Some("imports"),
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("local module or hash-pinned top-level external import"),
+        Some("Std.Logic.Missing"),
+    );
+}
+
+#[test]
+fn package_manifest_import_resolution_rejects_unpinned_external_before_graph() {
+    let source = valid_manifest().replacen(
+        &format!(
+            r#"export_hash = "{ZERO_HASH}"
+"#
+        ),
+        "",
+        1,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Schema,
+        PackageManifestErrorReason::MissingField,
+        "imports[0]",
+        Some("export_hash"),
+    );
+}
+
+#[test]
+fn package_manifest_import_resolution_orders_independent_modules_by_source_order() {
+    let modules = module_block(
+        "Proofs.Zeta",
+        "Proofs/Zeta/source.npa",
+        "Proofs/Zeta/certificate.npcert",
+    ) + &module_block(
+        "Proofs.Alpha",
+        "Proofs/Alpha/source.npa",
+        "Proofs/Alpha/certificate.npcert",
+    );
+    let source = manifest_with_root_entries(
+        &modules,
+        r#"[policy]
+allow_custom_axioms = false
+allowed_axioms = ["Eq.rec"]"#,
+    );
+
+    let manifest = parse_and_validate_manifest_str(&source).unwrap();
+
+    assert_eq!(manifest.graph().topological_order, vec![0, 1]);
+}
+
+#[test]
+fn package_manifest_import_cycles_rejects_self_cycle() {
+    let source = valid_manifest().replace(
+        r#"imports = ["Std.Logic.Eq"]"#,
+        r#"imports = ["Proofs.Ai.Basic"]"#,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Graph,
+        PackageManifestErrorReason::ImportCycle,
+        "modules[0].imports[0]",
+        Some("imports"),
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("acyclic local module graph"),
+        Some("Proofs.Ai.Basic"),
+    );
+}
+
+#[test]
+fn package_manifest_import_cycles_rejects_multi_module_cycle_with_stable_path() {
+    let source = valid_manifest().replace(
+        r#"imports = ["Std.Logic.Eq"]"#,
+        r#"imports = ["Proofs.Ai.Dependency"]"#,
+    ) + &module_block_with_imports_and_hashes(
+        "Proofs.Ai.Dependency",
+        "Proofs/Ai/Dependency/source.npa",
+        "Proofs/Ai/Dependency/certificate.npcert",
+        r#"["Proofs.Ai.Basic"]"#,
+        ONE_HASH,
+        TWO_HASH,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Graph,
+        PackageManifestErrorReason::ImportCycle,
+        "modules[1].imports[0]",
+        Some("imports"),
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("acyclic local module graph"),
+        Some("Proofs.Ai.Basic"),
+    );
 }

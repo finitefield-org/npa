@@ -636,7 +636,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-06 Implement Import Resolution And Graph Validation
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-05
 - Inputs:
   - CLR-00 import semantics
@@ -663,6 +663,9 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test -p npa-package package_manifest_import_cycles`
 - Notes:
   - This task builds graph metadata only. It does not construct Phase 8 checker requests.
+  - Implemented by adding package graph metadata, local/external import
+    classification, hash identity selection, unknown import rejection, local
+    cycle detection, and deterministic topological order tests.
 
 ### CLR-01-07 Implement Package Axiom Policy Validation
 
