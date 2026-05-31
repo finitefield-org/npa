@@ -6,6 +6,7 @@ use toml::Value;
 
 const LEGACY_MANIFEST_SCHEMA: &str = "npa-ai-proof-corpus-v0.1";
 const PACKAGE_MANIFEST_DISPLAY_PATH: &str = "proofs/npa-package.toml";
+const PACKAGE_LOCK_DISPLAY_PATH: &str = "proofs/generated/package-lock.json";
 const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
 const PROOF_CORPUS_VERSION: &str = "0.1.0";
 const PROOF_CORPUS_LICENSE: &str = "MIT";
@@ -175,6 +176,43 @@ fn package_fixture_hashes_match_checked_in_artifacts() {
             "external import certificate hash mismatch for {module_name}"
         );
     }
+}
+
+#[test]
+fn package_lock_fixture_matches_builder_output() {
+    let root = corpus_root();
+    let source = read_to_string(root.join("npa-package.toml"));
+    let validated = npa_package::parse_and_validate_manifest_str(&source)
+        .expect("package fixture validates before lock fixture build");
+    let lock = npa_package::build_package_lock_from_package_root(
+        &validated,
+        &root,
+        npa_package::PackagePath::new("npa-package.toml"),
+    )
+    .unwrap_or_else(|error| panic!("package lock fixture should build: {error:?}"));
+    let canonical = lock
+        .canonical_json()
+        .expect("package lock fixture serializes canonically");
+    let checked_in = read_to_string(root.join("generated/package-lock.json"));
+
+    assert_eq!(
+        checked_in, canonical,
+        "{PACKAGE_LOCK_DISPLAY_PATH} must match deterministic package lock builder output"
+    );
+
+    let parsed = npa_package::parse_package_lock_json(&checked_in)
+        .unwrap_or_else(|error| panic!("{PACKAGE_LOCK_DISPLAY_PATH} should parse: {error:?}"));
+    assert_eq!(parsed, lock);
+    assert_eq!(parsed.schema, npa_package::PACKAGE_LOCK_SCHEMA);
+    assert_eq!(parsed.package.as_str(), PROOF_CORPUS_PACKAGE);
+    assert_eq!(parsed.version.as_str(), PROOF_CORPUS_VERSION);
+    assert!(parsed.entries.iter().any(|entry| {
+        entry.module.as_dotted() == "Proofs.Ai.Eq"
+            && entry
+                .imports
+                .iter()
+                .any(|import| import.module.as_dotted() == "Std.Logic.Eq")
+    }));
 }
 
 #[test]

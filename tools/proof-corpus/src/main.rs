@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 const MANIFEST_PATH: &str = "manifest.toml";
 const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
+const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
 const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
 const PROOF_CORPUS_VERSION: &str = "0.1.0";
 const PROOF_CORPUS_LICENSE: &str = "MIT";
@@ -18281,6 +18282,20 @@ fn main() {
 }
 
 fn run() -> Result<(), String> {
+    let mut args = std::env::args().skip(1);
+    match (args.next().as_deref(), args.next()) {
+        (None, None) => run_full(),
+        (Some("--package-lock-only"), None) => {
+            let repo_root = repo_root()?;
+            let proof_root = repo_root.join("proofs");
+            write_package_lock_fixture(&proof_root)
+        }
+        (Some(arg), _) => Err(format!("unknown npa-proof-corpus argument: {arg}")),
+        (None, Some(_)) => unreachable!("second CLI argument cannot exist without first"),
+    }
+}
+
+fn run_full() -> Result<(), String> {
     let repo_root = repo_root()?;
     let proof_root = repo_root.join("proofs");
     fs::create_dir_all(&proof_root)
@@ -19615,6 +19630,31 @@ fn run() -> Result<(), String> {
     write(
         proof_root.join(PACKAGE_MANIFEST_PATH),
         package_manifest.as_bytes(),
+    )?;
+    write_package_lock_fixture(&proof_root)?;
+
+    Ok(())
+}
+
+fn write_package_lock_fixture(proof_root: &Path) -> Result<(), String> {
+    let package_manifest = fs::read_to_string(proof_root.join(PACKAGE_MANIFEST_PATH))
+        .map_err(|err| format!("failed to read {PACKAGE_MANIFEST_PATH}: {err}"))?;
+    let validated_package_manifest =
+        npa_package::parse_and_validate_manifest_str(&package_manifest).map_err(|err| {
+            format!("generated {PACKAGE_MANIFEST_PATH} did not validate before lock build: {err:?}")
+        })?;
+    let package_lock = npa_package::build_package_lock_from_package_root(
+        &validated_package_manifest,
+        proof_root,
+        npa_package::PackagePath::new(PACKAGE_MANIFEST_PATH),
+    )
+    .map_err(|err| format!("generated {PACKAGE_LOCK_PATH} did not build: {err:?}"))?;
+    let package_lock_json = package_lock.canonical_json().map_err(|err| {
+        format!("generated {PACKAGE_LOCK_PATH} did not serialize canonically: {err:?}")
+    })?;
+    write(
+        proof_root.join(PACKAGE_LOCK_PATH),
+        package_lock_json.as_bytes(),
     )?;
 
     Ok(())

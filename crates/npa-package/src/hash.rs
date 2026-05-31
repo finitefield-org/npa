@@ -1,6 +1,7 @@
 //! Package hash type adapters.
 
 use crate::error::{PackageManifestError, PackageManifestResult};
+use sha2::{Digest, Sha256};
 
 /// SHA-256 digest type shared with canonical certificate artifacts.
 pub type PackageHashBytes = npa_cert::Hash;
@@ -34,6 +35,14 @@ impl From<PackageHashBytes> for PackageHash {
     fn from(digest: PackageHashBytes) -> Self {
         Self::new(digest)
     }
+}
+
+/// Compute the exact SHA-256 package file hash for an artifact byte sequence.
+pub fn package_file_hash(bytes: &[u8]) -> PackageHash {
+    let digest = Sha256::digest(bytes);
+    let mut hash = [0_u8; 32];
+    hash.copy_from_slice(&digest);
+    PackageHash::new(hash)
 }
 
 /// Parse a manifest hash string as `sha256:<64 lowercase hex>`.

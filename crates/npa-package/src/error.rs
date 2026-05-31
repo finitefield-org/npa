@@ -703,6 +703,143 @@ impl PackageLockError {
         )
     }
 
+    /// Build a missing certificate artifact error.
+    pub fn certificate_missing(path: impl Into<String>, expected: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::ArtifactIo,
+            path,
+            Some("certificate".to_owned()),
+            PackageLockErrorReason::CertificateMissing,
+            Some(expected.into()),
+            None,
+        )
+    }
+
+    /// Build an artifact read error.
+    pub fn artifact_read_failed(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::ArtifactIo,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::ArtifactReadFailed,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a certificate decode error.
+    pub fn certificate_decode_failed(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateDecode,
+            path,
+            Some("certificate".to_owned()),
+            PackageLockErrorReason::CertificateDecodeFailed,
+            Some("decodable npa module certificate".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a certificate module identity mismatch error.
+    pub fn certificate_module_mismatch(
+        path: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateIdentity,
+            path,
+            Some("module".to_owned()),
+            PackageLockErrorReason::CertificateModuleMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a certificate file hash mismatch error.
+    pub fn certificate_file_hash_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateIdentity,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::CertificateFileHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an export hash mismatch error.
+    pub fn export_hash_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateIdentity,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::ExportHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an axiom report hash mismatch error.
+    pub fn axiom_report_hash_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateIdentity,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::AxiomReportHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a certificate hash mismatch error.
+    pub fn certificate_hash_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateIdentity,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::CertificateHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a missing high-trust import certificate hash error.
+    pub fn import_certificate_hash_missing(path: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::CertificateIdentity,
+            path,
+            Some("certificate_hash".to_owned()),
+            PackageLockErrorReason::ImportCertificateHashMissing,
+            Some("present high-trust import certificate hash".to_owned()),
+            None,
+        )
+    }
+
     fn duplicate(
         path: impl Into<String>,
         field: impl Into<String>,
@@ -765,6 +902,12 @@ pub enum PackageLockErrorKind {
     Path,
     /// Hash grammar validation failure.
     Hash,
+    /// Required package artifact bytes could not be read.
+    ArtifactIo,
+    /// Certificate bytes could not be decoded syntactically.
+    CertificateDecode,
+    /// Decoded certificate identity does not match the validated package manifest.
+    CertificateIdentity,
 }
 
 /// Stable package lock error reason code.
@@ -804,6 +947,24 @@ pub enum PackageLockErrorReason {
     ExternalFieldRequired,
     /// Local entries must not carry package or version.
     LocalFieldForbidden,
+    /// A required certificate artifact is absent.
+    CertificateMissing,
+    /// A package artifact could not be read.
+    ArtifactReadFailed,
+    /// Certificate bytes do not decode as an NPA module certificate.
+    CertificateDecodeFailed,
+    /// Certificate module name differs from the package manifest identity.
+    CertificateModuleMismatch,
+    /// Certificate file SHA-256 differs from the package manifest identity.
+    CertificateFileHashMismatch,
+    /// Certificate export hash differs from the package manifest identity.
+    ExportHashMismatch,
+    /// Certificate axiom report hash differs from the package manifest identity.
+    AxiomReportHashMismatch,
+    /// Certificate canonical hash differs from the package manifest identity.
+    CertificateHashMismatch,
+    /// A direct import lacks the high-trust certificate hash required by package locks.
+    ImportCertificateHashMissing,
 }
 
 impl PackageLockErrorReason {
@@ -827,6 +988,15 @@ impl PackageLockErrorReason {
             Self::DuplicateImport => "duplicate_import",
             Self::ExternalFieldRequired => "external_field_required",
             Self::LocalFieldForbidden => "local_field_forbidden",
+            Self::CertificateMissing => "certificate_missing",
+            Self::ArtifactReadFailed => "artifact_read_failed",
+            Self::CertificateDecodeFailed => "certificate_decode_failed",
+            Self::CertificateModuleMismatch => "certificate_module_mismatch",
+            Self::CertificateFileHashMismatch => "certificate_file_hash_mismatch",
+            Self::ExportHashMismatch => "export_hash_mismatch",
+            Self::AxiomReportHashMismatch => "axiom_report_hash_mismatch",
+            Self::CertificateHashMismatch => "certificate_hash_mismatch",
+            Self::ImportCertificateHashMissing => "import_certificate_hash_missing",
         }
     }
 }

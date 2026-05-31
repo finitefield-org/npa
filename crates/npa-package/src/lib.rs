@@ -14,8 +14,9 @@
 //! certificate files for proof acceptance; later CLI commands may compare file
 //! hashes or invoke checkers, but those results are separate generated
 //! artifacts.
-//! CLR-03 package locks are also orchestration artifacts: `npa-package` parses
-//! and serializes their canonical JSON identity data, but proof acceptance still
+//! CLR-03 package locks are also orchestration artifacts: `npa-package` can
+//! build, parse, and serialize their canonical JSON identity data from a
+//! validated manifest plus certificate bytes, but proof acceptance still
 //! depends on canonical certificate bytes and checker verdicts.
 //!
 //! CLI implementers should use the structured error API instead of parsing
@@ -107,9 +108,12 @@ pub use error::{
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,
 };
-pub use hash::{format_package_hash, parse_package_hash, PackageHash, PackageHashBytes};
+pub use hash::{
+    format_package_hash, package_file_hash, parse_package_hash, PackageHash, PackageHashBytes,
+};
 pub use lock::{
-    parse_package_lock_json, validate_package_lock_manifest, PackageLockEntry,
+    build_package_lock_from_artifacts, build_package_lock_from_package_root,
+    parse_package_lock_json, validate_package_lock_manifest, PackageLockArtifact, PackageLockEntry,
     PackageLockEntryOrigin, PackageLockImport, PackageLockManifest, PackageLockManifestReference,
 };
 pub use manifest::{

@@ -1,9 +1,15 @@
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+
 use npa_cert::Name;
 use npa_package::{
-    parse_package_hash, parse_package_lock_json, PackageHash, PackageId, PackageLockEntry,
-    PackageLockEntryOrigin, PackageLockError, PackageLockErrorKind, PackageLockErrorReason,
-    PackageLockImport, PackageLockManifest, PackageLockManifestReference, PackagePath,
-    PackageVersion, PACKAGE_LOCK_SCHEMA,
+    build_package_lock_from_artifacts, build_package_lock_from_package_root, package_file_hash,
+    parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash,
+    parse_package_lock_json, validate_manifest, PackageHash, PackageId, PackageLockArtifact,
+    PackageLockEntry, PackageLockEntryOrigin, PackageLockError, PackageLockErrorKind,
+    PackageLockErrorReason, PackageLockImport, PackageLockManifest, PackageLockManifestReference,
+    PackagePath, PackageVersion, ValidatedPackageManifest, PACKAGE_LOCK_SCHEMA,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
@@ -152,6 +158,98 @@ fn assert_lock_error(
     assert_eq!(error.reason_code.as_str(), reason.as_str());
     assert_eq!(error.path, path);
     assert_eq!(error.field.as_deref(), field);
+}
+
+fn repo_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(Path::parent)
+        .expect("npa-package crate lives under crates/")
+        .to_path_buf()
+}
+
+fn proofs_root() -> PathBuf {
+    repo_root().join("proofs")
+}
+
+fn read(path: PathBuf) -> Vec<u8> {
+    fs::read(&path).unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
+}
+
+fn proof_manifest_bytes() -> Vec<u8> {
+    read(proofs_root().join("npa-package.toml"))
+}
+
+fn proof_manifest_source() -> String {
+    String::from_utf8(proof_manifest_bytes()).expect("proof manifest is UTF-8")
+}
+
+fn validated_proof_manifest() -> ValidatedPackageManifest {
+    parse_and_validate_manifest_str(&proof_manifest_source())
+        .expect("proof package manifest should validate")
+}
+
+fn proof_certificate_artifacts(
+    validated: &ValidatedPackageManifest,
+) -> BTreeMap<PackagePath, Vec<u8>> {
+    let root = proofs_root();
+    let manifest = validated.manifest();
+    let mut artifacts = BTreeMap::new();
+    for module in &manifest.modules {
+        artifacts.insert(
+            module.certificate.clone(),
+            read(root.join(module.certificate.as_str())),
+        );
+    }
+    for import in manifest.imports.as_deref().unwrap_or(&[]) {
+        artifacts.insert(
+            import.certificate.clone(),
+            read(root.join(import.certificate.as_str())),
+        );
+    }
+    artifacts
+}
+
+fn package_lock_artifacts(
+    artifacts: &BTreeMap<PackagePath, Vec<u8>>,
+) -> Vec<PackageLockArtifact<'_>> {
+    artifacts
+        .iter()
+        .map(|(path, bytes)| PackageLockArtifact {
+            path: path.clone(),
+            bytes: bytes.as_slice(),
+        })
+        .collect()
+}
+
+fn build_proof_lock_from_artifacts(
+    validated: &ValidatedPackageManifest,
+    artifacts: &BTreeMap<PackagePath, Vec<u8>>,
+) -> Result<PackageLockManifest, PackageLockError> {
+    build_package_lock_from_artifacts(
+        validated,
+        PackagePath::new("npa-package.toml"),
+        &proof_manifest_bytes(),
+        package_lock_artifacts(artifacts),
+    )
+}
+
+fn tampered_certificate_hash(bytes: &[u8]) -> Vec<u8> {
+    let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
+    cert.hashes.certificate_hash[0] ^= 0x01;
+    npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
+}
+
+fn tampered_export_hash(bytes: &[u8]) -> Vec<u8> {
+    let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
+    cert.hashes.export_hash[0] ^= 0x01;
+    npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
+}
+
+fn tampered_module_name(bytes: &[u8], module: &str) -> Vec<u8> {
+    let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
+    cert.header.module = Name::from_dotted(module);
+    npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
 }
 
 #[test]
@@ -420,4 +518,247 @@ fn package_lock_schema_rejects_local_package_identity_fields() {
         "entries[0].package",
         Some("package"),
     );
+}
+
+#[test]
+fn package_lock_builder_builds_source_free_lock_from_certificate_bytes() {
+    let validated = validated_proof_manifest();
+    let artifacts = proof_certificate_artifacts(&validated);
+
+    let lock = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap();
+    let manifest = validated.manifest();
+
+    assert_eq!(lock.schema, PACKAGE_LOCK_SCHEMA);
+    assert_eq!(lock.package, manifest.package);
+    assert_eq!(lock.version, manifest.version);
+    assert_eq!(lock.manifest.path.as_str(), "npa-package.toml");
+    assert_eq!(
+        lock.manifest.file_hash,
+        package_file_hash(&proof_manifest_bytes())
+    );
+    assert_eq!(
+        lock.entries.len(),
+        manifest.modules.len() + manifest.imports.as_deref().unwrap_or(&[]).len()
+    );
+
+    let eq_entry = lock
+        .entries
+        .iter()
+        .find(|entry| entry.module.as_dotted() == "Proofs.Ai.Eq")
+        .expect("lock should contain local Eq entry");
+    let eq_module = manifest
+        .modules
+        .iter()
+        .find(|module| module.module.as_dotted() == "Proofs.Ai.Eq")
+        .expect("manifest should contain local Eq module");
+    assert_eq!(eq_entry.origin, PackageLockEntryOrigin::Local);
+    assert_eq!(
+        eq_entry.certificate_file_hash,
+        eq_module.expected_certificate_file_hash
+    );
+    assert_eq!(eq_entry.export_hash, eq_module.expected_export_hash);
+    assert_eq!(
+        eq_entry.axiom_report_hash,
+        eq_module.expected_axiom_report_hash
+    );
+    assert_eq!(
+        eq_entry.certificate_hash,
+        eq_module.expected_certificate_hash
+    );
+    assert_eq!(
+        eq_entry
+            .imports
+            .iter()
+            .map(|import| import.module.as_dotted())
+            .collect::<Vec<_>>(),
+        vec!["Std.Logic.Eq", "Std.Nat.Basic"]
+    );
+
+    let std_eq_entry = lock
+        .entries
+        .iter()
+        .find(|entry| entry.module.as_dotted() == "Std.Logic.Eq")
+        .expect("lock should contain vendored Std.Logic.Eq entry");
+    let std_eq_import = manifest
+        .imports
+        .as_deref()
+        .unwrap()
+        .iter()
+        .find(|import| import.module.as_dotted() == "Std.Logic.Eq")
+        .expect("manifest should contain Std.Logic.Eq import");
+    assert_eq!(std_eq_entry.origin, PackageLockEntryOrigin::External);
+    assert_eq!(
+        std_eq_entry.package.as_ref().unwrap().as_str(),
+        std_eq_import.package.as_str()
+    );
+    assert_eq!(
+        std_eq_entry.version.as_ref().unwrap().as_str(),
+        std_eq_import.version.as_str()
+    );
+    assert_eq!(std_eq_entry.imports, Vec::new());
+    assert_eq!(std_eq_entry.export_hash, std_eq_import.export_hash);
+    assert_eq!(
+        std_eq_entry.certificate_hash,
+        std_eq_import.certificate_hash
+    );
+
+    let canonical = lock.canonical_json().unwrap();
+    assert_eq!(parse_package_lock_json(&canonical).unwrap(), lock);
+}
+
+#[test]
+fn package_lock_builder_missing_certificate_file_fails_before_decode() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    manifest.modules[0].certificate = PackagePath::new("missing/certificate.npcert");
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_package_lock_from_package_root(
+        &validated,
+        proofs_root(),
+        PackagePath::new("npa-package.toml"),
+    )
+    .unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::ArtifactIo,
+        PackageLockErrorReason::CertificateMissing,
+        "modules[0].certificate",
+        Some("certificate"),
+    );
+}
+
+#[test]
+fn package_lock_builder_rejects_invalid_manifest_path_before_filesystem_read() {
+    let validated = validated_proof_manifest();
+
+    let error = build_package_lock_from_package_root(
+        &validated,
+        proofs_root(),
+        PackagePath::new("../npa-package.toml"),
+    )
+    .unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::Path,
+        PackageLockErrorReason::InvalidPath,
+        "manifest.path",
+        None,
+    );
+}
+
+#[test]
+fn package_lock_builder_stale_local_certificate_file_hash_is_rejected_before_decode() {
+    let validated = validated_proof_manifest();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let manifest = validated.manifest();
+    let first_path = manifest.modules[0].certificate.clone();
+    let second_path = manifest.modules[1].certificate.clone();
+    let stale_bytes = artifacts.get(&second_path).unwrap().clone();
+    artifacts.insert(first_path, stale_bytes);
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::CertificateIdentity,
+        PackageLockErrorReason::CertificateFileHashMismatch,
+        "modules[0].expected_certificate_file_hash",
+        Some("expected_certificate_file_hash"),
+    );
+}
+
+#[test]
+fn package_lock_builder_stale_local_canonical_certificate_hash_is_rejected() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let mut artifacts = proof_certificate_artifacts(&validate_manifest(manifest.clone()).unwrap());
+    let certificate_path = manifest.modules[0].certificate.clone();
+    let tampered = tampered_certificate_hash(artifacts.get(&certificate_path).unwrap());
+    manifest.modules[0].expected_certificate_file_hash = package_file_hash(&tampered);
+    artifacts.insert(certificate_path, tampered);
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::CertificateIdentity,
+        PackageLockErrorReason::CertificateHashMismatch,
+        "modules[0].expected_certificate_hash",
+        Some("expected_certificate_hash"),
+    );
+}
+
+#[test]
+fn package_lock_builder_stale_external_certificate_module_is_rejected() {
+    let validated = validated_proof_manifest();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let import = &validated.manifest().imports.as_deref().unwrap()[0];
+    let tampered = tampered_module_name(
+        artifacts.get(&import.certificate).unwrap(),
+        "Std.Logic.NotEq",
+    );
+    artifacts.insert(import.certificate.clone(), tampered);
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::CertificateIdentity,
+        PackageLockErrorReason::CertificateModuleMismatch,
+        "imports[0].certificate",
+        Some("module"),
+    );
+}
+
+#[test]
+fn package_lock_builder_stale_external_export_hash_is_rejected() {
+    let validated = validated_proof_manifest();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let import = &validated.manifest().imports.as_deref().unwrap()[0];
+    let tampered = tampered_export_hash(artifacts.get(&import.certificate).unwrap());
+    artifacts.insert(import.certificate.clone(), tampered);
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::CertificateIdentity,
+        PackageLockErrorReason::ExportHashMismatch,
+        "imports[0].export_hash",
+        Some("export_hash"),
+    );
+}
+
+#[test]
+fn package_lock_builder_stale_external_certificate_hash_is_rejected() {
+    let validated = validated_proof_manifest();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let import = &validated.manifest().imports.as_deref().unwrap()[0];
+    let tampered = tampered_certificate_hash(artifacts.get(&import.certificate).unwrap());
+    artifacts.insert(import.certificate.clone(), tampered);
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::CertificateIdentity,
+        PackageLockErrorReason::CertificateHashMismatch,
+        "imports[0].certificate_hash",
+        Some("certificate_hash"),
+    );
+}
+
+#[test]
+fn package_lock_builder_ignores_source_replay_and_meta_paths() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let original_validated = validate_manifest(manifest.clone()).unwrap();
+    let artifacts = proof_certificate_artifacts(&original_validated);
+    manifest.modules[0].source = PackagePath::new("missing/source/ignored.npa");
+    manifest.modules[0].meta = Some(PackagePath::new("missing/meta/ignored.json"));
+    manifest.modules[0].replay = Some(PackagePath::new("missing/replay/ignored.json"));
+    let validated = validate_manifest(manifest).unwrap();
+
+    build_proof_lock_from_artifacts(&validated, &artifacts).unwrap();
 }

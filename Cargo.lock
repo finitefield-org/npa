@@ -138,6 +138,7 @@ name = "npa-package"
 version = "0.1.0"
 dependencies = [
  "npa-cert",
+ "sha2",
  "toml",
 ]
 

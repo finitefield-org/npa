@@ -4,19 +4,23 @@
 //! certificate identities for package graph verification, but it is not proof
 //! evidence by itself.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs, io,
+    path::Path,
+};
 
 use npa_cert::Name;
 
 use crate::{
     error::{PackageLockError, PackageLockResult},
-    hash::{format_package_hash, parse_package_hash, PackageHash},
+    hash::{format_package_hash, package_file_hash, parse_package_hash, PackageHash},
     json::{parse_json, JsonMember, JsonValue},
-    manifest::PackageVersion,
+    manifest::{PackageExternalImport, PackageModule, PackageVersion},
     name::{validate_package_id, PackageId},
     path::{validate_package_path, PackagePath},
     schema::PACKAGE_LOCK_SCHEMA,
-    validate::validate_package_version,
+    validate::{validate_package_version, ValidatedPackageManifest},
 };
 
 /// Generated `npa.package.lock.v0.1` package lock artifact.
@@ -112,6 +116,375 @@ pub struct PackageLockImport {
     pub export_hash: PackageHash,
     /// Imported module certificate hash.
     pub certificate_hash: PackageHash,
+}
+
+/// Certificate artifact bytes provided to the package lock builder.
+#[derive(Clone, Debug)]
+pub struct PackageLockArtifact<'a> {
+    /// Package-relative certificate path.
+    pub path: PackagePath,
+    /// Exact certificate file bytes at [`Self::path`].
+    pub bytes: &'a [u8],
+}
+
+/// Build a package lock from a validated manifest and explicit certificate bytes.
+///
+/// This builder reads no source, replay, metadata, theorem-index, or AI trace
+/// paths. The manifest bytes are used only to record their exact file hash, and
+/// each certificate artifact is decoded only far enough to extract module,
+/// import, export, axiom-report, and certificate identity hashes.
+pub fn build_package_lock_from_artifacts<'a>(
+    validated: &ValidatedPackageManifest,
+    manifest_path: PackagePath,
+    manifest_bytes: &[u8],
+    artifacts: impl IntoIterator<Item = PackageLockArtifact<'a>>,
+) -> PackageLockResult<PackageLockManifest> {
+    validate_lock_path(&manifest_path, "manifest.path")?;
+    let manifest = validated.manifest();
+    let artifact_bytes = artifact_byte_map(artifacts)?;
+    let mut entries = Vec::new();
+
+    for (index, module) in manifest.modules.iter().enumerate() {
+        let certificate_path = format!("modules[{index}].certificate");
+        let bytes =
+            certificate_artifact_bytes(&artifact_bytes, &module.certificate, &certificate_path)?;
+        entries.push(local_lock_entry(index, module, bytes)?);
+    }
+
+    for (index, import) in manifest
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .enumerate()
+    {
+        let certificate_path = format!("imports[{index}].certificate");
+        let bytes =
+            certificate_artifact_bytes(&artifact_bytes, &import.certificate, &certificate_path)?;
+        entries.push(external_lock_entry(index, import, bytes)?);
+    }
+
+    let lock = PackageLockManifest {
+        schema: PACKAGE_LOCK_SCHEMA.to_owned(),
+        package: manifest.package.clone(),
+        version: manifest.version.clone(),
+        manifest: PackageLockManifestReference {
+            path: manifest_path,
+            file_hash: package_file_hash(manifest_bytes),
+        },
+        entries,
+    };
+    validate_package_lock_manifest(&lock)?;
+    Ok(normalized_package_lock(&lock))
+}
+
+/// Build a package lock by reading only the manifest file and certificate files under a package root.
+pub fn build_package_lock_from_package_root(
+    validated: &ValidatedPackageManifest,
+    package_root: impl AsRef<Path>,
+    manifest_path: PackagePath,
+) -> PackageLockResult<PackageLockManifest> {
+    let package_root = package_root.as_ref();
+    validate_lock_path(&manifest_path, "manifest.path")?;
+    let manifest_bytes =
+        read_package_artifact(package_root, &manifest_path, "manifest.path", "manifest")?;
+    let mut certificate_buffers = Vec::<(PackagePath, Vec<u8>)>::new();
+    let manifest = validated.manifest();
+
+    for (index, module) in manifest.modules.iter().enumerate() {
+        let path = format!("modules[{index}].certificate");
+        let bytes = read_certificate_artifact(package_root, &module.certificate, &path)?;
+        certificate_buffers.push((module.certificate.clone(), bytes));
+    }
+
+    for (index, import) in manifest
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .enumerate()
+    {
+        let path = format!("imports[{index}].certificate");
+        let bytes = read_certificate_artifact(package_root, &import.certificate, &path)?;
+        certificate_buffers.push((import.certificate.clone(), bytes));
+    }
+
+    let artifacts = certificate_buffers
+        .iter()
+        .map(|(path, bytes)| PackageLockArtifact {
+            path: path.clone(),
+            bytes: bytes.as_slice(),
+        });
+    build_package_lock_from_artifacts(validated, manifest_path, &manifest_bytes, artifacts)
+}
+
+fn artifact_byte_map<'a>(
+    artifacts: impl IntoIterator<Item = PackageLockArtifact<'a>>,
+) -> PackageLockResult<BTreeMap<PackagePath, &'a [u8]>> {
+    let mut artifact_bytes = BTreeMap::new();
+    for artifact in artifacts {
+        if artifact_bytes
+            .insert(artifact.path.clone(), artifact.bytes)
+            .is_some()
+        {
+            return Err(PackageLockError::duplicate_certificate_path(
+                "artifacts",
+                artifact.path.as_str(),
+            ));
+        }
+    }
+    Ok(artifact_bytes)
+}
+
+fn certificate_artifact_bytes<'a>(
+    artifacts: &BTreeMap<PackagePath, &'a [u8]>,
+    path: &PackagePath,
+    error_path: &str,
+) -> PackageLockResult<&'a [u8]> {
+    artifacts
+        .get(path)
+        .copied()
+        .ok_or_else(|| PackageLockError::certificate_missing(error_path, path.as_str()))
+}
+
+fn read_certificate_artifact(
+    package_root: &Path,
+    path: &PackagePath,
+    error_path: &str,
+) -> PackageLockResult<Vec<u8>> {
+    match fs::read(package_root.join(path.as_str())) {
+        Ok(bytes) => Ok(bytes),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Err(
+            PackageLockError::certificate_missing(error_path, path.as_str()),
+        ),
+        Err(error) => Err(PackageLockError::artifact_read_failed(
+            error_path,
+            "certificate",
+            path.as_str(),
+            error.to_string(),
+        )),
+    }
+}
+
+fn read_package_artifact(
+    package_root: &Path,
+    path: &PackagePath,
+    error_path: &str,
+    field: &str,
+) -> PackageLockResult<Vec<u8>> {
+    fs::read(package_root.join(path.as_str())).map_err(|error| {
+        PackageLockError::artifact_read_failed(error_path, field, path.as_str(), error.to_string())
+    })
+}
+
+fn local_lock_entry(
+    index: usize,
+    module: &PackageModule,
+    certificate_bytes: &[u8],
+) -> PackageLockResult<PackageLockEntry> {
+    let base_path = format!("modules[{index}]");
+    let certificate_file_hash = package_file_hash(certificate_bytes);
+    check_certificate_file_hash(
+        format!("{base_path}.expected_certificate_file_hash"),
+        "expected_certificate_file_hash",
+        module.expected_certificate_file_hash,
+        certificate_file_hash,
+    )?;
+
+    let cert = decode_lock_certificate(certificate_bytes, format!("{base_path}.certificate"))?;
+    check_certificate_module(
+        format!("{base_path}.certificate"),
+        &module.module,
+        &cert.header.module,
+    )?;
+    check_export_hash(
+        format!("{base_path}.expected_export_hash"),
+        "expected_export_hash",
+        module.expected_export_hash,
+        PackageHash::from(cert.hashes.export_hash),
+    )?;
+    check_axiom_report_hash(
+        format!("{base_path}.expected_axiom_report_hash"),
+        "expected_axiom_report_hash",
+        module.expected_axiom_report_hash,
+        PackageHash::from(cert.hashes.axiom_report_hash),
+    )?;
+    check_certificate_hash(
+        format!("{base_path}.expected_certificate_hash"),
+        "expected_certificate_hash",
+        module.expected_certificate_hash,
+        PackageHash::from(cert.hashes.certificate_hash),
+    )?;
+
+    Ok(PackageLockEntry {
+        module: module.module.clone(),
+        origin: PackageLockEntryOrigin::Local,
+        certificate: module.certificate.clone(),
+        certificate_file_hash,
+        export_hash: PackageHash::from(cert.hashes.export_hash),
+        axiom_report_hash: PackageHash::from(cert.hashes.axiom_report_hash),
+        certificate_hash: PackageHash::from(cert.hashes.certificate_hash),
+        imports: lock_imports(&cert.imports, &format!("{base_path}.certificate.imports"))?,
+        package: None,
+        version: None,
+    })
+}
+
+fn external_lock_entry(
+    index: usize,
+    import: &PackageExternalImport,
+    certificate_bytes: &[u8],
+) -> PackageLockResult<PackageLockEntry> {
+    let base_path = format!("imports[{index}]");
+    let certificate_file_hash = package_file_hash(certificate_bytes);
+    let cert = decode_lock_certificate(certificate_bytes, format!("{base_path}.certificate"))?;
+    check_certificate_module(
+        format!("{base_path}.certificate"),
+        &import.module,
+        &cert.header.module,
+    )?;
+    check_export_hash(
+        format!("{base_path}.export_hash"),
+        "export_hash",
+        import.export_hash,
+        PackageHash::from(cert.hashes.export_hash),
+    )?;
+    check_certificate_hash(
+        format!("{base_path}.certificate_hash"),
+        "certificate_hash",
+        import.certificate_hash,
+        PackageHash::from(cert.hashes.certificate_hash),
+    )?;
+
+    Ok(PackageLockEntry {
+        module: import.module.clone(),
+        origin: PackageLockEntryOrigin::External,
+        certificate: import.certificate.clone(),
+        certificate_file_hash,
+        export_hash: PackageHash::from(cert.hashes.export_hash),
+        axiom_report_hash: PackageHash::from(cert.hashes.axiom_report_hash),
+        certificate_hash: PackageHash::from(cert.hashes.certificate_hash),
+        imports: lock_imports(&cert.imports, &format!("{base_path}.certificate.imports"))?,
+        package: Some(import.package.clone()),
+        version: Some(import.version.clone()),
+    })
+}
+
+fn decode_lock_certificate(
+    certificate_bytes: &[u8],
+    path: impl Into<String>,
+) -> PackageLockResult<npa_cert::ModuleCert> {
+    npa_cert::decode_module_cert(certificate_bytes)
+        .map_err(|error| PackageLockError::certificate_decode_failed(path, format!("{error:?}")))
+}
+
+fn lock_imports(
+    imports: &[npa_cert::ImportEntry],
+    path: &str,
+) -> PackageLockResult<Vec<PackageLockImport>> {
+    imports
+        .iter()
+        .enumerate()
+        .map(|(index, import)| {
+            Ok(PackageLockImport {
+                module: import.module.clone(),
+                export_hash: PackageHash::from(import.export_hash),
+                certificate_hash: PackageHash::from(import.certificate_hash.ok_or_else(|| {
+                    PackageLockError::import_certificate_hash_missing(format!(
+                        "{path}[{index}].certificate_hash"
+                    ))
+                })?),
+            })
+        })
+        .collect()
+}
+
+fn check_certificate_module(
+    path: impl Into<String>,
+    expected: &Name,
+    actual: &Name,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::certificate_module_mismatch(
+            path,
+            expected.as_dotted(),
+            actual.as_dotted(),
+        ))
+    }
+}
+
+fn check_certificate_file_hash(
+    path: impl Into<String>,
+    field: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::certificate_file_hash_mismatch(
+            path,
+            field,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
+}
+
+fn check_export_hash(
+    path: impl Into<String>,
+    field: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::export_hash_mismatch(
+            path,
+            field,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
+}
+
+fn check_axiom_report_hash(
+    path: impl Into<String>,
+    field: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::axiom_report_hash_mismatch(
+            path,
+            field,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
+}
+
+fn check_certificate_hash(
+    path: impl Into<String>,
+    field: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::certificate_hash_mismatch(
+            path,
+            field,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
 }
 
 /// Parse and validate a package lock from JSON.
