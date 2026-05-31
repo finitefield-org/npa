@@ -383,7 +383,7 @@ package fixture.
 
 ### CLR-02-04 Validate The Package Fixture With `npa-package`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-03
 - Inputs:
   - `proofs/npa-package.toml`
@@ -406,6 +406,9 @@ package fixture.
   - `rg -n "parse_and_validate_manifest_str|proofs/npa-package.toml|trusted_status" tools/proof-corpus/tests crates/npa-package/tests`
 - Notes:
   - Prefer keeping full-corpus fixture tests in `npa-proof-corpus`; keep `npa-package` unit fixtures small unless shared coverage is useful.
+  - Implemented in `tools/proof-corpus/tests/manifest_package_audit.rs` as `package_fixture_validates_with_npa_package`.
+  - The test reads `proofs/npa-package.toml`, validates it through `npa_package::parse_and_validate_manifest_str`, and reports validation failures with the structured `npa-package` error value.
+  - The test asserts CLR-00 schema, package identity, profile constants, license, policy, and absence of legacy/generated trust or registry fields.
 
 ### CLR-02-05 Add Legacy Manifest Versus Package Fixture Parity Tests
 

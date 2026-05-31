@@ -4,8 +4,20 @@ use std::path::{Path, PathBuf};
 use toml::Value;
 
 const LEGACY_MANIFEST_SCHEMA: &str = "npa-ai-proof-corpus-v0.1";
+const PACKAGE_MANIFEST_DISPLAY_PATH: &str = "proofs/npa-package.toml";
+const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
+const PROOF_CORPUS_VERSION: &str = "0.1.0";
+const PROOF_CORPUS_LICENSE: &str = "MIT";
 const PLANNED_PACKAGE_EXTERNAL_IMPORTS: &[&str] = &["Std.Logic.Eq", "Std.Nat.Basic"];
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
+const PACKAGE_FIXTURE_FORBIDDEN_FIELDS: &[&str] = &[
+    "trusted_status",
+    "verified_by_certificate",
+    "checker_result",
+    "registry_url",
+    "latest",
+    "generated_at",
+];
 const VENDORED_STD_IMPORT_ARTIFACTS: &[(&str, &str)] = &[
     (
         "Std.Logic.Eq",
@@ -16,6 +28,47 @@ const VENDORED_STD_IMPORT_ARTIFACTS: &[(&str, &str)] = &[
         "vendor/npa-std/Std/Nat/Basic/certificate.npcert",
     ),
 ];
+
+#[test]
+fn package_fixture_validates_with_npa_package() {
+    let source = read_to_string(corpus_root().join("npa-package.toml"));
+    for forbidden in PACKAGE_FIXTURE_FORBIDDEN_FIELDS {
+        assert!(
+            !source.contains(forbidden),
+            "{PACKAGE_MANIFEST_DISPLAY_PATH} must not contain forbidden package field or legacy trust token {forbidden}"
+        );
+    }
+
+    let validated = npa_package::parse_and_validate_manifest_str(&source).unwrap_or_else(|error| {
+        panic!("{PACKAGE_MANIFEST_DISPLAY_PATH} should validate with npa-package: {error:?}")
+    });
+    let manifest = validated.manifest();
+
+    assert_eq!(manifest.schema, npa_package::PACKAGE_MANIFEST_SCHEMA);
+    assert_eq!(manifest.package.as_str(), PROOF_CORPUS_PACKAGE);
+    assert_eq!(manifest.version.as_str(), PROOF_CORPUS_VERSION);
+    assert_eq!(manifest.license.as_deref(), Some(PROOF_CORPUS_LICENSE));
+    assert_eq!(manifest.core_spec, npa_package::CORE_SPEC_V0_1);
+    assert_eq!(manifest.kernel_profile, npa_package::KERNEL_PROFILE_V0_1);
+    assert_eq!(
+        manifest.certificate_format,
+        npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1
+    );
+    assert_eq!(
+        manifest.checker_profile,
+        npa_package::CHECKER_PROFILE_REFERENCE_V0_1
+    );
+    assert!(!manifest.policy.allow_custom_axioms);
+    assert_eq!(
+        manifest
+            .policy
+            .allowed_axioms
+            .iter()
+            .map(|axiom| axiom.as_dotted())
+            .collect::<Vec<_>>(),
+        PACKAGE_POLICY_ALLOWED_AXIOMS
+    );
+}
 
 #[test]
 fn legacy_manifest_imports_and_axioms_are_package_ready() {
