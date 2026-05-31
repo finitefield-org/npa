@@ -122,6 +122,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "npa-cli"
+version = "0.1.0"
+
+[[package]]
 name = "npa-frontend"
 version = "0.1.0"
 dependencies = [

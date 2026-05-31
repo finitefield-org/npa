@@ -1,0 +1,9 @@
+#![deny(missing_docs)]
+
+//! Contributor-facing NPA command-line parsing.
+//!
+//! The CLI crate is an untrusted orchestration layer. CLR-04 starts with
+//! argument parsing only; later milestones add package loading and command
+//! execution behind the parsed command model.
+
+pub mod args;
