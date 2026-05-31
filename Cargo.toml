@@ -2,6 +2,7 @@
 members = [
     "crates/npa-kernel",
     "crates/npa-cert",
+    "crates/npa-package",
     "crates/npa-checker-ref",
     "crates/npa-frontend",
     "crates/npa-api",

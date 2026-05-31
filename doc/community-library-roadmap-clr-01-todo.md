@@ -479,7 +479,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-01 Create `npa-package` Crate Skeleton
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00
 - Inputs:
   - root `Cargo.toml`
@@ -505,6 +505,8 @@ both local imports and external imports. The full corpus package fixture is stil
   - `rg -n "npa-package" Cargo.toml crates/*/Cargo.toml`
 - Notes:
   - Keep this crate free of filesystem, network, plugin, AI, and checker execution behavior.
+  - Implemented by adding the workspace crate, initial module layout, `npa-cert`
+    and structured TOML parser dependencies, and a parser-smoke unit test.
 
 ### CLR-01-02 Define Schema Constants And Public Raw Types
 
