@@ -510,7 +510,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-02 Define Schema Constants And Public Raw Types
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-01
 - Inputs:
   - CLR-00 schema names
@@ -534,6 +534,8 @@ both local imports and external imports. The full corpus package fixture is stil
   - `rg -n "PACKAGE_MANIFEST_SCHEMA|PACKAGE_LOCK_SCHEMA|trusted_status|PackageManifest|PackageModule" crates/npa-package/src`
 - Notes:
   - Do not expose stringly typed hash values after validation; store parsed digests.
+  - Implemented by exposing CLR-00 schema/profile constants, accepted manifest input
+    structs, package id/version/hash/path newtypes, and schema/type smoke tests.
 
 ### CLR-01-03 Implement Structured TOML Parse And Closed-Object Extraction
 
