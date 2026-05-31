@@ -763,7 +763,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-10 Document `npa-package.toml` For Implementers
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-09
 - Inputs:
   - public API and fixture behavior from earlier CLR-01 tasks
@@ -785,6 +785,10 @@ both local imports and external imports. The full corpus package fixture is stil
   - `rg -n "trusted base|registry|structured error|npa.package.v0.1" crates/npa-package doc/community-library-roadmap-clr-01-todo.md`
 - Notes:
   - Keep user-facing package CLI docs for CLR-04 and CI docs for CLR-07.
+  - Implemented by expanding the `npa-package` crate-level docs with a minimal
+    `npa.package.v0.1` manifest doctest, trusted-boundary notes, metadata-only
+    validator behavior, registry/network prohibition, and guidance for CLI
+    implementers to consume structured errors instead of display text.
 
 ### CLR-01-11 Close CLR-01 Integration Readiness
 
