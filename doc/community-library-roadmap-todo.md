@@ -118,6 +118,9 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `git diff --check`
 - Notes:
   - Detailed breakdown: `doc/community-library-roadmap-clr-00-todo.md`.
+  - Command references are normalized by CLR-00-07: repository verification uses
+    `cargo run -p npa-cli -- package ...`, while contributor-facing examples use
+    installed `npa package ...`.
   - Keep this milestone documentation-focused unless a binary crate name is needed to unblock CLR-01.
   - Do not introduce registry network behavior.
 

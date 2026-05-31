@@ -662,7 +662,7 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
 
 ### CLR-00-07 Update Parent Roadmap Commands
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-01
 - Inputs:
   - `doc/community-library-roadmap-todo.md`
@@ -680,6 +680,10 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
   - `git diff --check`
 - Notes:
   - The source roadmap may keep historical prose saying the old name was tentative only if a nearby note records the final decision.
+  - Implemented by confirming the parent task doc references this detailed CLR-00
+    breakdown, repository verification examples use `cargo run -p npa-cli -- package ...`,
+    and contributor-facing examples remain `npa package ...`.
+  - No unresolved command-name placeholder remains in the community roadmap task docs.
 
 ### CLR-00-08 Close CLR-00 Readiness Review
 
