@@ -125,6 +125,7 @@ dependencies = [
 name = "npa-cli"
 version = "0.1.0"
 dependencies = [
+ "npa-api",
  "npa-cert",
  "npa-frontend",
  "npa-package",

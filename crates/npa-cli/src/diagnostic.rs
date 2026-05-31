@@ -173,6 +173,23 @@ impl CommandDiagnostic {
         }
     }
 
+    /// Build an informational diagnostic with the given category and reason code.
+    pub fn info(kind: DiagnosticKind, reason_code: impl Into<String>) -> Self {
+        Self {
+            kind,
+            reason_code: reason_code.into(),
+            severity: DiagnosticSeverity::Info,
+            module: None,
+            path: None,
+            field: None,
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: None,
+            actual_value: None,
+            checker: None,
+        }
+    }
+
     /// Attach a package-relative path or manifest path.
     pub fn with_path(mut self, path: impl Into<String>) -> Self {
         self.path = Some(path.into());
@@ -200,6 +217,12 @@ impl CommandDiagnostic {
     /// Attach an actual value.
     pub fn with_actual_value(mut self, actual_value: impl Into<String>) -> Self {
         self.actual_value = Some(actual_value.into());
+        self
+    }
+
+    /// Attach the checker implementation that produced or owns the result.
+    pub fn with_checker(mut self, checker: impl Into<String>) -> Self {
+        self.checker = Some(checker.into());
         self
     }
 

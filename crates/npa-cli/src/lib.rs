@@ -13,3 +13,4 @@ pub mod package;
 pub mod package_build;
 pub mod package_check;
 pub mod package_hashes;
+pub mod package_verify;
