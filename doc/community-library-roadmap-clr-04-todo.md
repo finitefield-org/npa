@@ -35,7 +35,7 @@ certificates, and checking artifact hashes.
 - `npa package publish-plan`
 - changed-module or reverse-dependency selection
 - external checker binary as a required pass condition
-- registry lookup, dependency solving, network fetch, binary cache, or latest-version resolution
+- external package discovery or resolution, network access, binary cache, or implicit version selection
 - source-free verifier implementation internals already owned by CLR-03
 - theorem index or publish metadata generation
 - automatically rewriting expected hashes in `npa-package.toml`
@@ -49,8 +49,8 @@ source files, replay helpers, certificates, and generated metadata according to
 the selected command, but it never becomes proof evidence.
 
 `verify-certs --checker reference` must remain source-free and must not read
-source, replay, meta, theorem index, AI trace, registry, or package solver
-state. The kernel, `npa-cert`, and `npa-checker-ref` must not depend on
+source, replay, meta, theorem index, AI trace, or out-of-package state.
+The kernel, `npa-cert`, and `npa-checker-ref` must not depend on
 `npa-cli`.
 ```
 
@@ -486,7 +486,7 @@ commands.
 
 ### CLR-04-01 Create `npa-cli` Crate And Package Command Parser
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-03
 - Inputs:
   - `doc/community-library-roadmap-clr-00-todo.md`
@@ -520,7 +520,7 @@ commands.
 
 ### CLR-04-02 Implement Shared Package Root Loader And Diagnostics
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-01
 - Inputs:
   - CLR-01 manifest parser and validator
@@ -551,7 +551,7 @@ commands.
 
 ### CLR-04-03 Implement `package check`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-02
 - Inputs:
   - `npa-package` manifest validation API
@@ -579,7 +579,7 @@ commands.
 
 ### CLR-04-04 Implement `package check-hashes`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-02, CLR-04-03
 - Inputs:
   - CLR-03 package lock builder
@@ -612,7 +612,7 @@ commands.
 
 ### CLR-04-05 Implement `package build-certs --check`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-02, CLR-04-03, CLR-04-04
 - Inputs:
   - `npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy`
@@ -645,7 +645,7 @@ commands.
 
 ### CLR-04-06 Implement `package build-certs` Write Mode
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-05
 - Inputs:
   - in-memory build output from CLR-04-05
@@ -674,7 +674,7 @@ commands.
 
 ### CLR-04-07 Implement `package verify-certs`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-02, CLR-04-04
 - Inputs:
   - CLR-03 package verifier API
@@ -708,7 +708,7 @@ commands.
 
 ### CLR-04-08 Add End-To-End CLI Regression Fixtures
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-03, CLR-04-04, CLR-04-05, CLR-04-06, CLR-04-07
 - Inputs:
   - proof-corpus package fixture from CLR-02
@@ -739,7 +739,7 @@ commands.
 
 ### CLR-04-09 Update Documentation And CLR-05 Handoff
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04-08
 - Inputs:
   - `doc/community-library-roadmap-todo.md`

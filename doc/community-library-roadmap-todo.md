@@ -289,7 +289,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-04 Implement Package Build, Verify, And Hash Check Commands
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-03
 - Inputs:
   - `doc/community-library-roadmap-clr-04-todo.md`
@@ -326,19 +326,29 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `npa-cli` is the Cargo package name fixed by CLR-00; the installed binary is `npa`.
   - Avoid silently rewriting artifacts in check mode.
   - `--changed`, `--all`, and `--checker external` are outside CLR-04 unless a later milestone explicitly adds them.
-  - `package verify-certs` should wrap the CLR-03 lock builder, lock parser,
+  - `package verify-certs` wraps the CLR-03 lock builder, lock parser,
     fast/reference source-free verifiers, and Phase 8 materializers rather than
-    reimplement package graph traversal, checker policy mapping, or request
+    reimplementing package graph traversal, checker policy mapping, or request
     adapter semantics.
-  - `verify-certs --checker reference` should use `npa-checker-ref` as the
-    per-module reference verdict engine through the CLR-03 package verifier
-    path; raw `npa-checker-ref` CLI import scanning is not sufficient by itself
-    for high-trust package graph verification.
-  - CLR-04 package verification commands must keep registry lookup, network
-    fetch, dependency solving, binary caches, and `latest` version resolution
-    outside verification. `build-certs` may read source and replay helper data,
-    but source-free verification must consume package metadata and certificate
-    artifacts only.
+  - `verify-certs --checker reference` uses `npa-checker-ref` as the per-module
+    reference verdict engine through the CLR-03 package verifier path; raw
+    `npa-checker-ref` CLI import scanning is not sufficient by itself for
+    high-trust package graph verification.
+  - CLR-04 package verification commands are local package-root operations.
+    `build-certs` may read source and replay helper data, but source-free
+    verification must consume package metadata and certificate artifacts only.
+  - Completed by `crates/npa-cli`: it implements `package check`,
+    `package build-certs` check/write mode, `package verify-certs` reference and
+    fast modes, `package check-hashes`, common root loading, deterministic JSON
+    diagnostics, exit-code mapping, and end-to-end proof-corpus CLI regression
+    fixtures.
+  - Contributor-facing examples use installed `npa package ...`; repository
+    verification examples use `cargo run -p npa-cli -- package ...`.
+  - CLI diagnostics, package locks, and generated package metadata are not proof
+    evidence. Accepted proof evidence remains canonical `.npcert` bytes plus the
+    selected source-free checker / kernel verifier verdict.
+  - CLR-05 owns `npa package axiom-report` and `npa package index`; CLR-06 owns
+    `npa package publish-plan`.
 
 ### CLR-05 Generate Deterministic Axiom Report And Theorem Index Artifacts
 

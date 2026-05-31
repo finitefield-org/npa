@@ -64,10 +64,10 @@ canonical certificate を検査します。
 公開後に theorem library を別リポジトリとして育てるための package / CI / registry への移行計画は
 `doc/community-library-roadmap.md` にまとめています。
 
-## Package CLI 決定
+## Package CLI
 
 外部 theorem library 用の contributor-facing command は、インストール済み binary `npa`
-の `package` サブコマンドに固定します。
+の `package` サブコマンドです。CLR-04 時点で実装済みの基本 gate は次です。
 
 ```sh
 npa package check --root .
@@ -76,18 +76,42 @@ npa package verify-certs --root . --checker reference
 npa package check-hashes --root .
 ```
 
-このリポジトリ内での開発・検証では、将来の Cargo package `npa-cli` から同じ command family を
-実行します。`npa-cli` が提供する installed binary name は `npa` です。
+このリポジトリ内での開発・検証では、Cargo package `npa-cli` から同じ command family を
+実行します。`npa-cli` が提供する installed binary name は `npa` です。CLR-04 の
+repository verification examples は次です。
 
 ```sh
 cargo run -p npa-cli -- package check --root proofs
+cargo run -p npa-cli -- package build-certs --root proofs --check
 cargo run -p npa-cli -- package verify-certs --root proofs --checker reference
+cargo run -p npa-cli -- package check-hashes --root proofs
 ```
 
-package manifest と validation helper は将来の `crates/npa-package` に置きます。
-Cargo package name は `npa-package`、library crate name は `npa_package` です。
-`crates/npa-package` は CLR-01 の実装対象、`crates/npa-cli` は後続の package CLI 実装対象であり、
-CLR-00-01 ではまだ workspace member として追加しません。
+source-reading boundary は command ごとに違います。
+
+```text
+package check
+  `npa-package.toml` の schema / graph / policy を検査する metadata gate。
+
+package build-certs
+  local module の `source.npa` と必要な replay/helper data を読んで certificate を再生成する。
+  `--check` は差分検査のみで、checked-in artifact を書き換えない。
+
+package check-hashes
+  manifest が pin する source / certificate / generated lock hash と checked-in bytes を比較する。
+
+package verify-certs
+  source-free verification path。`generated/package-lock.json` と certificate artifacts を読み、
+  `.npa` source、replay、meta、theorem index、AI trace、out-of-package state は checker input にしない。
+```
+
+CLI output、package lock、diagnostics は CI / review 用の deterministic metadata であり、
+proof evidence ではありません。証明の受理根拠は canonical `.npcert` bytes と、
+選択された source-free checker / kernel verifier の deterministic verdict です。
+
+`npa package axiom-report` と `npa package index` は CLR-05、`npa package publish-plan` は
+CLR-06 の担当です。CLR-04 の package commands は explicit local package root だけを対象にし、
+network access や binary cache lookup を行いません。
 
 `npa-kernel`、`npa-cert`、`npa-checker-ref` は package CLI の責務を持ちません。
 package command の filesystem access、registry metadata handling、CI orchestration は

@@ -336,13 +336,18 @@ CLR-00 で、contributor-facing command は installed binary `npa`、Cargo packa
 `npa-cli` に固定します。repo 内の検証では `cargo run -p npa-cli -- package ...` を使い、
 外部 contributor 向け docs では `npa package ...` を使います。
 
-必要な command:
+CLR-04 で実装済みの基本 command:
 
 ```sh
 npa package check
 npa package build-certs
 npa package verify-certs
 npa package check-hashes
+```
+
+後続 milestone の command:
+
+```sh
 npa package axiom-report
 npa package index
 npa package publish-plan
@@ -352,32 +357,40 @@ npa package publish-plan
 
 ```text
 npa package check
-  manifest schema、module graph、import lock、path、policy を検査する
+  manifest schema、module graph、path、policy を検査する metadata gate。
 
 npa package build-certs
-  source.npa から certificate.npcert を再生成する
-  replay.json は使ってよいが、trusted input にはしない
+  source.npa から certificate.npcert を再生成する。
+  replay.json / helper data は読んでよいが、trusted input にはしない。
+  --check は差分検査のみで checked-in artifact を書き換えない。
 
 npa package verify-certs
-  certificate.npcert を source なしで検査する
-  fast verifier と reference checker の両方を実行できるようにする
+  generated/package-lock.json と certificate artifacts から source-free に検査する。
+  .npa source、replay、meta、theorem index、AI trace、out-of-package state は
+  checker input にしない。
+  fast verifier と reference checker の両方を実行できるが、fast result は
+  reference checker verdict として扱わない。
 
 npa package check-hashes
   expected_export_hash / expected_certificate_hash / expected_axiom_report_hash と
-  実際の artifact を比較する
+  実際の artifact を比較する。expected_source_hash と certificate file hash も
+  checked-in bytes に対して検査する。
 
 npa package axiom-report
-  package 全体と module ごとの axiom report を生成する
+  CLR-05。package 全体と module ごとの axiom report を生成する。
 
 npa package index
-  theorem search / documentation / registry 用の theorem index を生成する
+  CLR-05。theorem search / documentation / future registry metadata 用の theorem index を生成する。
 
 npa package publish-plan
-  registry に送る metadata と artifact list を出す
+  CLR-06。publish metadata と artifact list を出す。
 ```
 
-CLI は package repo の source を読んでよいですが、checker verdict の根拠は `.npcert` に限定します。
-kernel crate に filesystem、network、registry lookup を入れてはいけません。
+CLI は非信頼 orchestration layer です。CLI output、diagnostics、package lock、generated
+metadata は review / CI 用の deterministic metadata であり、proof evidence ではありません。
+証明受理の根拠は canonical `.npcert` と kernel / source-free checker verdict に限定します。
+kernel crate に filesystem、network、registry lookup を入れてはいけません。CLR-04 commands は
+explicit local package root だけを対象にし、network access や binary cache lookup を行いません。
 
 ## 5.3 CI contract
 
@@ -389,12 +402,11 @@ npa package check --root . --json
 npa package build-certs --root . --check --json
 npa package check-hashes --root . --json
 npa package verify-certs --root . --checker reference --json
-npa package axiom-report --root . --check --json
-npa package index --root . --check --json
 ```
 
-release mode でも full-package を明示 root で検査します。CLR-06 完了後は
-`publish-plan --check` も release artifact の freshness gate に含めます。
+CLR-05 完了後に `axiom-report --check` と `index --check` を追加します。release mode でも
+full-package を明示 root で検査します。CLR-06 完了後は `publish-plan --check` も release
+artifact の freshness gate に含めます。
 
 ```sh
 npa package check --root . --json
@@ -402,6 +414,11 @@ npa package build-certs --root . --check --json
 npa package check-hashes --root . --json
 npa package verify-certs --root . --checker fast --json
 npa package verify-certs --root . --checker reference --json
+```
+
+CLR-05/CLR-06 後の release gate extension:
+
+```sh
 npa package axiom-report --root . --check --json
 npa package index --root . --check --json
 npa package publish-plan --root . --check --json
@@ -541,6 +558,7 @@ M2: generic package build / verify CLI
   -> CLR-03, CLR-04
      import lock、source-free package graph verification、
      `npa package check/build-certs/verify-certs/check-hashes`。
+     CLR-04 の詳細 breakdown は `doc/community-library-roadmap-clr-04-todo.md`。
 
 M3: deterministic public artifacts and CI template
   -> CLR-05, CLR-07
@@ -580,9 +598,9 @@ reference-checker-only release として進められます。
 3. npa package build-certs --root . --check --json を実行する
 4. npa package check-hashes --root . --json を実行する
 5. npa package verify-certs --root . --checker reference --json を実行する
-6. npa package axiom-report --root . --check --json を実行する
-7. npa package index --root . --check --json を実行する
-8. release 前には npa package publish-plan --root . --check --json を実行する
+6. CLR-05 後は npa package axiom-report --root . --check --json を実行する
+7. CLR-05 後は npa package index --root . --check --json を実行する
+8. CLR-06 後、release 前には npa package publish-plan --root . --check --json を実行する
 9. source / certificate / replay / meta / generated artifact の必要な差分を commit する
 10. PR を出す
 11. CI が同じ package command を fresh checkout で検査する
