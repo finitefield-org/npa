@@ -10,3 +10,4 @@ pub mod args;
 pub mod diagnostic;
 pub mod fs;
 pub mod package;
+pub mod package_check;

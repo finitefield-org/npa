@@ -8,6 +8,7 @@ use npa_package::{parse_and_validate_manifest_str, PackagePath, ValidatedPackage
 use crate::args::PackageCommand;
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{artifact_io_error, join_package_path, render_package_path, render_package_root};
+use crate::package_check::run_package_check;
 
 /// Package-relative manifest path used by CLR-04 package commands.
 pub const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
@@ -94,10 +95,7 @@ pub fn load_package_root(
 /// Run a package command implemented so far in CLR-04.
 pub fn run_package_command(command: PackageCommand) -> CommandResult {
     match command {
-        PackageCommand::Check(options) => match load_package_root(&options.root, "package check") {
-            Ok(loaded) => CommandResult::passed("package check", loaded.root_display),
-            Err(result) => result,
-        },
+        PackageCommand::Check(options) => run_package_check(options),
         other => {
             let common = other.common_options();
             let diagnostic =
