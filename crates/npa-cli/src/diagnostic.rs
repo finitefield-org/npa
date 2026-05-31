@@ -179,6 +179,12 @@ impl CommandDiagnostic {
         self
     }
 
+    /// Attach a module name.
+    pub fn with_module(mut self, module: impl Into<String>) -> Self {
+        self.module = Some(module.into());
+        self
+    }
+
     /// Attach a field name.
     pub fn with_field(mut self, field: impl Into<String>) -> Self {
         self.field = Some(field.into());
@@ -276,6 +282,9 @@ impl CommandDiagnostic {
         );
         if let Some(path) = &self.path {
             message.push_str(&format!(" path={path}"));
+        }
+        if let Some(module) = &self.module {
+            message.push_str(&format!(" module={module}"));
         }
         if let Some(field) = &self.field {
             message.push_str(&format!(" field={field}"));

@@ -10,7 +10,6 @@ name = "npa"
 path = "src/main.rs"
 
 [dependencies]
-npa-package = { path = "../npa-package" }
-
-[dev-dependencies]
 npa-cert = { path = "../npa-cert" }
+npa-frontend = { path = "../npa-frontend" }
+npa-package = { path = "../npa-package" }

@@ -8,6 +8,7 @@ use npa_package::{parse_and_validate_manifest_str, PackagePath, ValidatedPackage
 use crate::args::PackageCommand;
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{artifact_io_error, join_package_path, render_package_path, render_package_root};
+use crate::package_build::run_package_build_certs;
 use crate::package_check::run_package_check;
 use crate::package_hashes::run_package_check_hashes;
 
@@ -97,6 +98,7 @@ pub fn load_package_root(
 pub fn run_package_command(command: PackageCommand) -> CommandResult {
     match command {
         PackageCommand::Check(options) => run_package_check(options),
+        PackageCommand::BuildCerts(options) => run_package_build_certs(options),
         PackageCommand::CheckHashes(options) => run_package_check_hashes(options),
         other => {
             let common = other.common_options();

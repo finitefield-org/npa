@@ -10,5 +10,6 @@ pub mod args;
 pub mod diagnostic;
 pub mod fs;
 pub mod package;
+pub mod package_build;
 pub mod package_check;
 pub mod package_hashes;
