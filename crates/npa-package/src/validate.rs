@@ -33,10 +33,9 @@ pub struct PackageManifestValidationOptions {
 
 /// A package manifest that has passed validation implemented so far.
 ///
-/// CLR-01 grows this value in phases. At CLR-01-06 it means closed-object
+/// CLR-01 grows this value in phases. At CLR-01-07 it means closed-object
 /// parsing, scalar domain checks, duplicate checks, import resolution, and
-/// local graph validation have succeeded; axiom-policy validation is added by
-/// a later milestone.
+/// local graph validation, and package axiom-policy validation have succeeded.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidatedPackageManifest {
     manifest: PackageManifest,
@@ -88,6 +87,7 @@ pub fn validate_manifest_with_options(
     validate_scalar_domains(&manifest)?;
     validate_duplicate_domains(&manifest)?;
     let graph = resolve_package_graph(&manifest)?;
+    validate_axiom_policy(&manifest)?;
     Ok(ValidatedPackageManifest { manifest, graph })
 }
 
@@ -384,6 +384,56 @@ fn module_artifact_paths(module: &PackageModule) -> Vec<(&'static str, &PackageP
         paths.push(("replay", replay));
     }
     paths
+}
+
+fn validate_axiom_policy(manifest: &PackageManifest) -> PackageManifestResult<()> {
+    for (index, axiom) in manifest.policy.allowed_axioms.iter().enumerate() {
+        if is_sorry_axiom(axiom) {
+            return Err(PackageManifestError::disallowed_axiom(
+                format!("policy.allowed_axioms[{index}]"),
+                "allowed_axioms",
+                "non-sorry axiom",
+                axiom.as_dotted(),
+            ));
+        }
+    }
+
+    let allowed_axioms = manifest
+        .policy
+        .allowed_axioms
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    for (module_index, module) in manifest.modules.iter().enumerate() {
+        let Some(axioms) = &module.axioms else {
+            continue;
+        };
+        for (axiom_index, axiom) in axioms.iter().enumerate() {
+            let path = format!("modules[{module_index}].axioms[{axiom_index}]");
+            if is_sorry_axiom(axiom) {
+                return Err(PackageManifestError::disallowed_axiom(
+                    path,
+                    "axioms",
+                    "non-sorry axiom",
+                    axiom.as_dotted(),
+                ));
+            }
+            if !manifest.policy.allow_custom_axioms && !allowed_axioms.contains(axiom) {
+                return Err(PackageManifestError::disallowed_axiom(
+                    path,
+                    "axioms",
+                    "allowed axiom or allow_custom_axioms = true",
+                    axiom.as_dotted(),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn is_sorry_axiom(axiom: &Name) -> bool {
+    axiom.as_dotted().contains("sorry")
 }
 
 fn is_valid_package_version(value: &str) -> bool {

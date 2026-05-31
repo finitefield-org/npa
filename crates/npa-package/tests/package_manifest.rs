@@ -957,3 +957,127 @@ fn package_manifest_import_cycles_rejects_multi_module_cycle_with_stable_path() 
         Some("Proofs.Ai.Basic"),
     );
 }
+
+#[test]
+fn package_manifest_axiom_policy_accepts_listed_module_axioms() {
+    let source = valid_manifest().replace("axioms = []", r#"axioms = ["Eq.rec"]"#);
+
+    let manifest = parse_and_validate_manifest_str(&source).unwrap();
+
+    assert_eq!(
+        manifest.manifest().modules[0].axioms.as_ref().unwrap()[0].as_dotted(),
+        "Eq.rec"
+    );
+}
+
+#[test]
+fn package_manifest_axiom_policy_rejects_unlisted_axioms_when_custom_axioms_are_disabled() {
+    let source = valid_manifest().replace("axioms = []", r#"axioms = ["Classical.choice"]"#);
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Policy,
+        PackageManifestErrorReason::DisallowedAxiom,
+        "modules[0].axioms[0]",
+        Some("axioms"),
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("allowed axiom or allow_custom_axioms = true"),
+        Some("Classical.choice"),
+    );
+}
+
+#[test]
+fn package_manifest_axiom_policy_accepts_recorded_custom_axioms_when_enabled() {
+    let source = valid_manifest()
+        .replace("allow_custom_axioms = false", "allow_custom_axioms = true")
+        .replace("axioms = []", r#"axioms = ["Classical.choice"]"#);
+
+    let manifest = parse_and_validate_manifest_str(&source).unwrap();
+
+    assert!(manifest.manifest().policy.allow_custom_axioms);
+    assert_eq!(
+        manifest.manifest().modules[0].axioms.as_ref().unwrap()[0].as_dotted(),
+        "Classical.choice"
+    );
+}
+
+#[test]
+fn package_manifest_axiom_policy_rejects_sorry_even_when_custom_axioms_are_enabled() {
+    let source = valid_manifest()
+        .replace("allow_custom_axioms = false", "allow_custom_axioms = true")
+        .replace("axioms = []", r#"axioms = ["sorry.synthetic"]"#);
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Policy,
+        PackageManifestErrorReason::DisallowedAxiom,
+        "modules[0].axioms[0]",
+        Some("axioms"),
+    );
+    assert_manifest_error_values(&error, Some("non-sorry axiom"), Some("sorry.synthetic"));
+}
+
+#[test]
+fn package_manifest_axiom_policy_rejects_sorry_allowed_axioms() {
+    let source = valid_manifest().replace(
+        r#"allowed_axioms = ["Eq.rec"]"#,
+        r#"allowed_axioms = ["Eq.rec", "synthetic.sorry.Proof"]"#,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Policy,
+        PackageManifestErrorReason::DisallowedAxiom,
+        "policy.allowed_axioms[1]",
+        Some("allowed_axioms"),
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("non-sorry axiom"),
+        Some("synthetic.sorry.Proof"),
+    );
+}
+
+#[test]
+fn package_manifest_axiom_policy_rejects_duplicate_allowed_axioms_before_policy() {
+    let source = valid_manifest().replace(
+        r#"allowed_axioms = ["Eq.rec"]"#,
+        r#"allowed_axioms = ["Eq.rec", "Eq.rec"]"#,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateAxiom,
+        "policy.allowed_axioms[1]",
+        Some("axiom"),
+    );
+}
+
+#[test]
+fn package_manifest_axiom_policy_rejects_allowed_axiom_name_grammar_before_policy() {
+    let source = valid_manifest().replace(
+        r#"allowed_axioms = ["Eq.rec"]"#,
+        r#"allowed_axioms = ["Eq..rec"]"#,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidAxiomName,
+        "policy.allowed_axioms[0]",
+        None,
+    );
+}

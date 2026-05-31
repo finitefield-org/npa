@@ -669,8 +669,8 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-07 Implement Package Axiom Policy Validation
 
-- Status: Pending
-- Depends on: CLR-01-04, CLR-01-05
+- Status: Completed
+- Depends on: CLR-01-04, CLR-01-05, CLR-01-06
 - Inputs:
   - CLR-00 policy fields
   - current proof-corpus modules that use `Eq.rec`
@@ -692,6 +692,10 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test -p npa-package package_manifest_axiom_policy`
 - Notes:
   - CLR-01 checks declared manifest summaries. Generated axiom report comparison is CLR-05.
+  - Implemented by adding the package axiom policy pass after graph validation:
+    listed axioms are accepted when custom axioms are disabled, recorded custom
+    axioms are accepted only when enabled, and any `sorry`-shaped axiom summary
+    is rejected regardless of policy setting.
 
 ### CLR-01-08 Implement Validation Report And Error Tests
 

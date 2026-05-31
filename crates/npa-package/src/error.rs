@@ -293,6 +293,23 @@ impl PackageManifestError {
         )
     }
 
+    /// Build a package axiom policy error.
+    pub fn disallowed_axiom(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Policy,
+            path,
+            Some(field.into()),
+            PackageManifestErrorReason::DisallowedAxiom,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
     fn duplicate(
         path: impl Into<String>,
         field: impl Into<String>,
