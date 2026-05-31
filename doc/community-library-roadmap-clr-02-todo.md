@@ -469,7 +469,7 @@ package fixture.
 
 ### CLR-02-07 Preserve Generator Determinism
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-06
 - Inputs:
   - `tools/proof-corpus/src/main.rs`
@@ -494,6 +494,9 @@ package fixture.
   - `cargo test -p npa-proof-corpus`
 - Notes:
   - If local generation rewrites artifacts because of an intentional format change, commit the generated output in the same implementation milestone.
+  - Verified that `cargo run -p npa-proof-corpus` completes without changing checked-in generated artifacts; `git diff --exit-code -- proofs tools/proof-corpus` is clean immediately after regeneration.
+  - The determinism check covers both legacy `proofs/manifest.toml` and package `proofs/npa-package.toml`: rerun the generator, then diff `proofs/` and `tools/proof-corpus` before accepting manifest or artifact changes.
+  - Neither generated manifest records runtime/environment metadata such as timestamps, host/user names, working directories, absolute paths, registry URLs, or `latest` version selectors.
 
 ### CLR-02-08 Document CLR-03 Handoff Data
 
