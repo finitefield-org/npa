@@ -64,6 +64,36 @@ canonical certificate を検査します。
 公開後に theorem library を別リポジトリとして育てるための package / CI / registry への移行計画は
 `doc/community-library-roadmap.md` にまとめています。
 
+## Package CLI 決定
+
+外部 theorem library 用の contributor-facing command は、インストール済み binary `npa`
+の `package` サブコマンドに固定します。
+
+```sh
+npa package check --root .
+npa package build-certs --root . --check
+npa package verify-certs --root . --checker reference
+npa package check-hashes --root .
+```
+
+このリポジトリ内での開発・検証では、将来の Cargo package `npa-cli` から同じ command family を
+実行します。`npa-cli` が提供する installed binary name は `npa` です。
+
+```sh
+cargo run -p npa-cli -- package check --root proofs
+cargo run -p npa-cli -- package verify-certs --root proofs --checker reference
+```
+
+package manifest と validation helper は将来の `crates/npa-package` に置きます。
+Cargo package name は `npa-package`、library crate name は `npa_package` です。
+`crates/npa-package` は CLR-01 の実装対象、`crates/npa-cli` は後続の package CLI 実装対象であり、
+CLR-00-01 ではまだ workspace member として追加しません。
+
+`npa-kernel`、`npa-cert`、`npa-checker-ref` は package CLI の責務を持ちません。
+package command の filesystem access、registry metadata handling、CI orchestration は
+非信頼層に閉じ、trusted base は canonical certificate、Rust kernel verdict、
+source-free checker verdict のままにします。
+
 ## リポジトリ構成
 
 ```text

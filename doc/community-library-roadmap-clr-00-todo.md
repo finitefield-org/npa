@@ -339,7 +339,7 @@ axiom_report_hash when available
 
 ### CLR-00-01 Record CLI And Crate Topology Decision
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `doc/community-library-roadmap-todo.md` CLR-00
@@ -359,6 +359,9 @@ axiom_report_hash when available
   - `git diff --check`
 - Notes:
   - This task is documentation-only unless a later implementation milestone starts the crates.
+  - Implemented by documenting the `npa` binary, `npa-cli` Cargo package, future
+    `crates/npa-package` library crate, and trusted-boundary placement in `README.md`.
+  - No workspace members are added by CLR-00-01.
 
 ### CLR-00-02 Define Schema Constant Names And Artifact Boundaries
 
