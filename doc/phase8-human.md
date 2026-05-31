@@ -15,11 +15,11 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
 - この文書は Phase 8 Human Profile の最終ターゲット設計を記述する
 - 現リポジトリで実装済みなのは crates/npa-checker-ref の standalone reference checker binary、
   crates/npa-api の Phase 8 checker audit automation library substrate、
-  Phase 8 Release Audit fixture workflow である
+  Phase 8 Release Audit fixture gate である
 - standalone external checker binary、verified_high_trust artifact、
   full independent checker comparison CI はまだこの文書の integration target として扱う
-- 既存 GitHub Actions の Phase 9 Regression は Phase 9 完了後の回帰ゲートであり、
-  Phase 8 Release Audit fixture workflow の代替ではない
+- 現リポジトリでは GitHub Actions workflow は削除済みであり、
+  Phase 9 Regression script は Phase 8 Release Audit fixture gate の代替ではない
 - Phase 8 の automation が crates/npa-api に存在しても、trusted boundary は
   canonical certificate と checker result にあり、audit automation 自体は trusted base ではない
 ```
@@ -1468,18 +1468,21 @@ PR の同期必須 benchmark は fast kernel、Machine API、theorem index build
 reference / external checker benchmark は background または cached audit result として扱います。
 これらの performance gate は regression gate / release policy であり、proof acceptance boundary ではありません。
 
-現リポジトリの workflow 名は次です。
+現リポジトリのローカル gate は次です。
 
 ```text
-Phase 8 Release Audit / phase8-release-audit:
+scripts/phase8-release-audit.sh:
   scripts/phase8-release-audit.sh を実行する。source-free reference checker binary、
   independent checker audit substrate、standard-library release audit fixture、
   AI fast path boundary を固定する。
 
-Phase 9 Regression / phase9-regression:
+scripts/phase9-regression.sh:
   scripts/phase9-regression.sh を実行する。Phase 9 fixture、fmt、clippy、
   workspace 全体の regression を固定する。
 ```
+
+GitHub Actions workflow は現リポジトリでは削除済みです。
+外部 theorem library 用 CI は、package contract 固定後の integration scope として扱います。
 
 Phase 8 Release Audit は release audit fixture の狭い gate です。
 Phase 9 Regression は後続 phase を含む広い回帰 gate であり、full external checker release audit の代替ではありません。
@@ -1906,7 +1909,7 @@ Phase 8 が完了したと言える条件と、現リポジトリで固定して
 | release profile の full independent check 要件が固定されている | `IndependentCheckerTrustMode::Release.ci_commands()` / `ci_pass_requirements()` と P8H-14 release/high-trust tests、`./scripts/phase8-release-audit.sh` |
 | Phase 8 audit が AI candidate hot path の通常 latency を増やさない | `cargo test -p npa-api ai_search` と Phase 8 Release Audit の step 4 |
 
-現リポジトリの `Phase 8 Release Audit / phase8-release-audit` は fixture gate です。
+現リポジトリの `scripts/phase8-release-audit.sh` は fixture gate です。
 standalone `npa-checker-ext` binary と full external-checker release audit CI は target integration として残ります。
 AI sidecar は diagnostic / metadata であり、Phase 8 完了条件や release blocker の根拠には含めません。
 

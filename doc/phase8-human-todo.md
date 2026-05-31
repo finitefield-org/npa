@@ -759,8 +759,8 @@ benchmark policy は proof acceptance boundary ではない。性能結果は re
 
 - [x] README、`doc/phase8-human.md`、`doc/phase8-ai.md` の実装済み境界を更新する。
 - [x] standalone checker binary、external checker runner、CI audit の command examples を実コマンドに合わせる。
-- [x] Phase 8 completion criteria を test / script / CI workflow 名に紐づける。
-- [x] Phase 9 regression と Phase 8 release audit CI の役割差分を文書化する。
+- [x] Phase 8 completion criteria を test / local script gate に紐づける。
+- [x] Phase 9 regression と Phase 8 release audit fixture gate の役割差分を文書化する。
 - [x] release / high-trust audit artifact の保存場所と generated artifact policy を明記する。
 
 受け入れ条件:
