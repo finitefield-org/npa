@@ -727,7 +727,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-09 Add Valid And Invalid Manifest Fixtures
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-08
 - Inputs:
   - CLR-00 manifest example
@@ -751,6 +751,15 @@ both local imports and external imports. The full corpus package fixture is stil
   - `rg -n "trusted_status|verified_by_certificate|registry_url|latest|generated_at" crates/npa-package/tests/fixtures/package`
 - Notes:
   - The full checked-in `proofs/npa-package.toml` fixture remains CLR-02.
+  - Implemented by adding fixture-backed package manifest tests for valid
+    minimal, external-import, local-import, proof-corpus-shaped, and hash-value
+    mismatch scenarios plus invalid fixtures for the CLR-00 schema, domain,
+    hash, path, duplicate, graph, and policy validator cases.
+  - Fixture expectations follow the implemented CLR-01 pass ordering: forbidden
+    status, checker verdict, registry, and latest-version fields are closed
+    schema `unknown_field` failures, local/external collisions remain
+    `Duplicate` failures from CLR-01-05, and absolute / escaping paths share
+    the lexical `InvalidPath` reason.
 
 ### CLR-01-10 Document `npa-package.toml` For Implementers
 

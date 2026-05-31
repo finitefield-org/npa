@@ -1,3 +1,5 @@
+use std::{fs, path::Path};
+
 use npa_package::{
     parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash,
     validate_manifest_report, validate_manifest_source_report, PackageManifestError,
@@ -10,6 +12,300 @@ const ONE_HASH: &str = "sha256:1111111111111111111111111111111111111111111111111
 const TWO_HASH: &str = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
 const THREE_HASH: &str = "sha256:3333333333333333333333333333333333333333333333333333333333333333";
 const FOUR_HASH: &str = "sha256:4444444444444444444444444444444444444444444444444444444444444444";
+
+const VALID_PACKAGE_FIXTURES: &[&str] = &[
+    "valid/minimal/npa-package.toml",
+    "valid/with-external-import/npa-package.toml",
+    "valid/proof-corpus-basic/npa-package.toml",
+    "valid/proof-corpus-with-std-imports/npa-package.toml",
+    "valid/same-package-imports/npa-package.toml",
+    "valid/proof-corpus-equivalent/npa-package.toml",
+    "valid/hash-value-mismatch-not-manifest-failure/npa-package.toml",
+];
+
+#[derive(Clone, Copy)]
+struct InvalidPackageFixture {
+    path: &'static str,
+    kind: PackageManifestErrorKind,
+    reason: PackageManifestErrorReason,
+    error_path: &'static str,
+    field: Option<&'static str>,
+    expected: Option<&'static str>,
+    actual: Option<&'static str>,
+}
+
+const INVALID_PACKAGE_FIXTURES: &[InvalidPackageFixture] = &[
+    InvalidPackageFixture {
+        path: "invalid/schema/wrong-schema/npa-package.toml",
+        kind: PackageManifestErrorKind::UnsupportedVersion,
+        reason: PackageManifestErrorReason::UnsupportedSchema,
+        error_path: "schema",
+        field: Some("schema"),
+        expected: Some("npa.package.v0.1"),
+        actual: Some("npa.package.v0.2"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/missing-top-level-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::MissingField,
+        error_path: "$",
+        field: Some("package"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/missing-policy-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::MissingField,
+        error_path: "policy",
+        field: Some("allowed_axioms"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/missing-import-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::MissingField,
+        error_path: "imports[0]",
+        field: Some("export_hash"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/missing-module-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::MissingField,
+        error_path: "modules[0]",
+        field: Some("certificate"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/unknown-top-level-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "$",
+        field: Some("unexpected_top_level"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/unknown-policy-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "policy",
+        field: Some("unknown_policy_field"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/unknown-import-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "imports[0]",
+        field: Some("latest"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/unknown-module-field/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "modules[0]",
+        field: Some("unexpected_module_field"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/forbidden-trusted-status/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "$",
+        field: Some("trusted_status"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/forbidden-checker-verdict/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "modules[0]",
+        field: Some("checker_verdict"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/forbidden-registry-fetch/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::UnknownField,
+        error_path: "$",
+        field: Some("registry_url"),
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/schema/duplicate-top-level-key/npa-package.toml",
+        kind: PackageManifestErrorKind::Schema,
+        reason: PackageManifestErrorReason::DuplicateField,
+        error_path: "$",
+        field: None,
+        expected: None,
+        actual: None,
+    },
+    InvalidPackageFixture {
+        path: "invalid/domain/package-name/npa-package.toml",
+        kind: PackageManifestErrorKind::Domain,
+        reason: PackageManifestErrorReason::InvalidPackageId,
+        error_path: "package",
+        field: None,
+        expected: Some("lowercase ASCII package id"),
+        actual: Some("Npa.Bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/domain/module-name/npa-package.toml",
+        kind: PackageManifestErrorKind::Domain,
+        reason: PackageManifestErrorReason::InvalidModuleName,
+        error_path: "modules[0].module",
+        field: None,
+        expected: Some("canonical dotted name"),
+        actual: Some("Fixture..Bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-expected-source-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "modules[0].expected_source_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-certificate-file-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "modules[0].expected_certificate_file_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-expected-export-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "modules[0].expected_export_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-expected-axiom-report-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "modules[0].expected_axiom_report_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-expected-certificate-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "modules[0].expected_certificate_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-import-export-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "imports[0].export_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/hash/bad-import-certificate-hash/npa-package.toml",
+        kind: PackageManifestErrorKind::Hash,
+        reason: PackageManifestErrorReason::InvalidHashFormat,
+        error_path: "imports[0].certificate_hash",
+        field: None,
+        expected: Some("sha256:<64 lowercase hex>"),
+        actual: Some("sha256:bad"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/path/absolute-source-path/npa-package.toml",
+        kind: PackageManifestErrorKind::Path,
+        reason: PackageManifestErrorReason::InvalidPath,
+        error_path: "modules[0].source",
+        field: None,
+        expected: Some("lexical package-relative path"),
+        actual: Some("/Fixture/Minimal/source.npa"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/path/source-escapes-root/npa-package.toml",
+        kind: PackageManifestErrorKind::Path,
+        reason: PackageManifestErrorReason::InvalidPath,
+        error_path: "modules[0].source",
+        field: None,
+        expected: Some("lexical package-relative path"),
+        actual: Some("../Fixture/Minimal/source.npa"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/duplicate/module-name/npa-package.toml",
+        kind: PackageManifestErrorKind::Duplicate,
+        reason: PackageManifestErrorReason::DuplicateModule,
+        error_path: "modules[1].module",
+        field: Some("module"),
+        expected: Some("unique value"),
+        actual: Some("Fixture.Duplicate"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/duplicate/external-import-module/npa-package.toml",
+        kind: PackageManifestErrorKind::Duplicate,
+        reason: PackageManifestErrorReason::DuplicateExternalImport,
+        error_path: "imports[1].module",
+        field: Some("module"),
+        expected: Some("unique value"),
+        actual: Some("Std.Logic.Eq"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/graph/local-external-collision/npa-package.toml",
+        kind: PackageManifestErrorKind::Duplicate,
+        reason: PackageManifestErrorReason::LocalExternalModuleCollision,
+        error_path: "modules[0].module",
+        field: Some("module"),
+        expected: Some("unique value"),
+        actual: Some("Std.Logic.Eq"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/graph/unknown-import/npa-package.toml",
+        kind: PackageManifestErrorKind::Graph,
+        reason: PackageManifestErrorReason::UnknownImport,
+        error_path: "modules[0].imports[0]",
+        field: Some("imports"),
+        expected: Some("local module or hash-pinned top-level external import"),
+        actual: Some("Std.Logic.Missing"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/graph/import-cycle/npa-package.toml",
+        kind: PackageManifestErrorKind::Graph,
+        reason: PackageManifestErrorReason::ImportCycle,
+        error_path: "modules[1].imports[0]",
+        field: Some("imports"),
+        expected: Some("acyclic local module graph"),
+        actual: Some("Fixture.Cycle.A"),
+    },
+    InvalidPackageFixture {
+        path: "invalid/policy/axiom-policy-violation/npa-package.toml",
+        kind: PackageManifestErrorKind::Policy,
+        reason: PackageManifestErrorReason::DisallowedAxiom,
+        error_path: "modules[0].axioms[0]",
+        field: Some("axioms"),
+        expected: Some("allowed axiom or allow_custom_axioms = true"),
+        actual: Some("Classical.choice"),
+    },
+];
 
 fn valid_manifest() -> String {
     format!(
@@ -79,6 +375,53 @@ fn assert_manifest_error_values(
 ) {
     assert_eq!(error.expected_value.as_deref(), expected);
     assert_eq!(error.actual_value.as_deref(), actual);
+}
+
+fn package_fixture_source(relative_path: &str) -> String {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/package")
+        .join(relative_path);
+    fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
+}
+
+fn all_package_fixture_paths() -> Vec<String> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/package");
+    let mut paths = Vec::new();
+    collect_package_fixture_paths(&root, &root, &mut paths);
+    paths.sort();
+    paths
+}
+
+fn collect_package_fixture_paths(root: &Path, directory: &Path, paths: &mut Vec<String>) {
+    for entry in fs::read_dir(directory)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", directory.display()))
+    {
+        let entry = entry.unwrap_or_else(|error| {
+            panic!(
+                "failed to read fixture entry under {}: {error}",
+                directory.display()
+            )
+        });
+        let path = entry.path();
+        if path.is_dir() {
+            collect_package_fixture_paths(root, &path, paths);
+        } else if path.file_name().and_then(|name| name.to_str()) == Some("npa-package.toml") {
+            let relative = path
+                .strip_prefix(root)
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "failed to relativize {} against {}: {error}",
+                        path.display(),
+                        root.display()
+                    )
+                })
+                .to_str()
+                .unwrap_or_else(|| panic!("fixture path is not utf-8: {}", path.display()))
+                .replace('\\', "/");
+            paths.push(relative);
+        }
+    }
 }
 
 fn validation_error(source: String) -> PackageManifestError {
@@ -154,6 +497,119 @@ export_hash = "{ZERO_HASH}"
 certificate_hash = "{ZERO_HASH}"
 "#
     )
+}
+
+#[test]
+fn package_manifest_fixtures_expectations_cover_every_fixture_file() {
+    let mut expected = VALID_PACKAGE_FIXTURES
+        .iter()
+        .copied()
+        .chain(INVALID_PACKAGE_FIXTURES.iter().map(|fixture| fixture.path))
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    expected.sort();
+
+    assert_eq!(all_package_fixture_paths(), expected);
+}
+
+#[test]
+fn package_manifest_fixtures_accept_valid_fixture_files() {
+    for fixture in VALID_PACKAGE_FIXTURES {
+        let source = package_fixture_source(fixture);
+        let report = validate_manifest_source_report(&source);
+        assert!(
+            report.is_valid(),
+            "{fixture}: unexpected fixture validation errors: {:?}",
+            report.errors()
+        );
+    }
+}
+
+#[test]
+fn package_manifest_fixtures_reject_invalid_fixture_files_with_structured_errors() {
+    for fixture in INVALID_PACKAGE_FIXTURES {
+        let source = package_fixture_source(fixture.path);
+        let error = match parse_and_validate_manifest_str(&source) {
+            Ok(_) => panic!("{} unexpectedly validated", fixture.path),
+            Err(error) => error,
+        };
+
+        assert_manifest_error(
+            &error,
+            fixture.kind,
+            fixture.reason,
+            fixture.error_path,
+            fixture.field,
+        );
+        if fixture.expected.is_some() || fixture.actual.is_some() {
+            assert_manifest_error_values(&error, fixture.expected, fixture.actual);
+        }
+    }
+}
+
+#[test]
+fn package_manifest_fixtures_proof_corpus_equivalent_covers_required_shape() {
+    let source = package_fixture_source("valid/proof-corpus-equivalent/npa-package.toml");
+    assert!(source.contains("not a replacement for proofs/manifest.toml"));
+
+    let validated = parse_and_validate_manifest_str(&source).unwrap();
+    let manifest = validated.manifest();
+    let imports = manifest.imports.as_ref().unwrap();
+    assert_eq!(imports.len(), 2);
+    assert_eq!(imports[0].module.as_dotted(), "Std.Logic.Eq");
+    assert_eq!(imports[1].module.as_dotted(), "Std.Nat.Basic");
+    assert_eq!(manifest.policy.allowed_axioms[0].as_dotted(), "Eq.rec");
+
+    let basic = manifest
+        .modules
+        .iter()
+        .find(|module| module.module.as_dotted() == "Proofs.Ai.Basic")
+        .unwrap();
+    assert_eq!(basic.source.as_str(), "Proofs/Ai/Basic/source.npa");
+    assert_ne!(
+        basic.expected_source_hash,
+        basic.expected_certificate_file_hash
+    );
+    assert!(!basic.theorems.as_ref().unwrap().is_empty());
+
+    let eq_reasoning_index = manifest
+        .modules
+        .iter()
+        .position(|module| module.module.as_dotted() == "Proofs.Ai.EqReasoning")
+        .unwrap();
+    let eq_reasoning = &manifest.modules[eq_reasoning_index];
+    assert_eq!(
+        eq_reasoning.axioms.as_ref().unwrap()[0].as_dotted(),
+        "Eq.rec"
+    );
+    assert_eq!(eq_reasoning.imports[0].as_dotted(), "Std.Logic.Eq");
+    assert_eq!(eq_reasoning.imports[1].as_dotted(), "Proofs.Ai.Basic");
+
+    let resolved = &validated.graph().resolved_module_imports[eq_reasoning_index];
+    assert_eq!(
+        resolved[0].kind,
+        ResolvedModuleImportKind::External { import_index: 0 }
+    );
+    assert_eq!(
+        resolved[1].kind,
+        ResolvedModuleImportKind::Local { module_index: 0 }
+    );
+}
+
+#[test]
+fn package_manifest_fixtures_accept_hash_values_without_checking_artifact_bytes() {
+    let source =
+        package_fixture_source("valid/hash-value-mismatch-not-manifest-failure/npa-package.toml");
+    let validated = parse_and_validate_manifest_str(&source).unwrap();
+
+    assert_eq!(
+        validated.manifest().modules[0].source.as_str(),
+        "Missing/Source/source.npa"
+    );
+    assert_eq!(
+        validated.manifest().modules[0].certificate.as_str(),
+        "Missing/Source/certificate.npcert"
+    );
 }
 
 #[test]
