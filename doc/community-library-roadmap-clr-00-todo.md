@@ -351,35 +351,73 @@ is stale or inconsistent, but it cannot make an unchecked certificate accepted.
 
 ### Legacy Field Mapping
 
+Compatibility decision:
+
+```text
+`proofs/manifest.toml` remains a checked-in legacy proof-corpus artifact with
+schema `npa-ai-proof-corpus-v0.1`.
+
+CLR-02 adds `proofs/npa-package.toml` beside it. The new file is the package fixture
+used by package commands and uses schema `npa.package.v0.1`.
+
+Do not migrate `proofs/manifest.toml` in place during CLR-02. Keep it until
+`tools/proof-corpus` is retired or rewritten to emit only the package manifest.
+```
+
 Mapping from `proofs/manifest.toml` to `npa.package.v0.1`:
 
-| Legacy field | Target field | Notes |
-| --- | --- | --- |
-| `schema` | `schema` | Change from `npa-ai-proof-corpus-v0.1` to `npa.package.v0.1`. |
-| missing | `package` | Use `npa-proof-corpus` for the in-repo fixture. |
-| missing | `version` | Use `0.1.0` until release tagging is introduced. |
-| missing | `core_spec` | Use `npa.core.v0.1`. |
-| missing | `kernel_profile` | Use `npa.kernel.v0.1`. |
-| missing | `certificate_format` | Use `npa.certificate.canonical.v0.1`. |
-| missing | `checker_profile` | Use `npa.checker.reference.v0.1`. |
-| `[[proof_modules]]` | `[[modules]]` | Rename table family. |
-| `module` | `module` | Preserve dotted module name. |
-| `source` | `source` | Preserve package-relative path. |
-| `certificate` | `certificate` | Preserve package-relative path. |
-| `meta` | `meta` | Optional untrusted metadata path. |
-| `replay` | `replay` | Optional untrusted replay path. |
-| `producer_profile` | `producer_profile` | Optional build helper metadata. |
-| `trusted_status` | forbidden | Checker verdict belongs in generated result artifacts. |
-| `source_sha256` | `expected_source_hash` | Required hash check input. |
-| `certificate_file_sha256` | `expected_certificate_file_hash` | Required byte-level artifact check. |
-| `export_hash` | `expected_export_hash` | Required canonical export identity check. |
-| `axiom_report_hash` | `expected_axiom_report_hash` | Required axiom report identity check. |
-| `certificate_hash` | `expected_certificate_hash` | Required high-trust certificate identity check. |
-| `imports` | `modules[].imports` plus top-level `[[imports]]` for external modules | Local imports may resolve to `[[modules]]`; external imports must resolve to hash-pinned top-level imports. |
-| `inductives` | `inductives` | Optional declaration summary. |
-| `definitions` | `definitions` | Optional declaration summary. |
-| `theorems` | `theorems` | Optional declaration summary. |
-| `axioms` | `axioms` | Optional declaration summary checked against policy and generated axiom report. |
+| Legacy field | Target field or artifact | Classification | Notes |
+| --- | --- | --- | --- |
+| `schema` | `schema` | target | Change from `npa-ai-proof-corpus-v0.1` to `npa.package.v0.1`. |
+| missing | `package` | generated fixture default | Use `npa-proof-corpus` for the in-repo fixture until release metadata exists. |
+| missing | `version` | generated fixture default | Use `0.1.0` until release tagging is introduced. |
+| missing | `license` | generated fixture default | Use workspace license `MIT` for the in-repo fixture. |
+| missing | `core_spec` | generated fixture default | Use `npa.core.v0.1`. |
+| missing | `kernel_profile` | generated fixture default | Use `npa.kernel.v0.1`. |
+| missing | `certificate_format` | generated fixture default | Use `npa.certificate.canonical.v0.1`. |
+| missing | `checker_profile` | generated fixture default | Use `npa.checker.reference.v0.1`. |
+| missing | `[policy]` | generated fixture default | Use `allow_custom_axioms = false` and `allowed_axioms = ["Eq.rec"]` for the current corpus. |
+| missing | `[[imports]]` | generated from module imports plus external artifacts | Add one hash-pinned top-level entry for each external module name used by `modules[].imports`, such as `Std.Logic.Eq` and `Std.Nat.Basic`. |
+| `[[proof_modules]]` | `[[modules]]` | target | Rename table family without reordering modules unless CLR-02 explicitly chooses deterministic sorting. |
+| `module` | `modules[].module` | target | Preserve dotted module name exactly. |
+| `source` | `modules[].source` | target | Preserve package-relative source path exactly. |
+| `certificate` | `modules[].certificate` | target | Preserve package-relative certificate path exactly. |
+| `meta` | `modules[].meta` | target optional | Preserve optional untrusted metadata path when present. |
+| `replay` | `modules[].replay` | target optional | Preserve optional untrusted replay path when present. |
+| `producer_profile` | `modules[].producer_profile` | target optional | Preserve optional build-helper metadata. |
+| `trusted_status` | generated checker result artifact only | forbidden in package manifest | `verified_by_certificate` is a legacy status string, not proof evidence. Package manifest must reject it. |
+| `source_sha256` | `modules[].expected_source_hash` | target renamed field | Required source file byte hash check input. |
+| `certificate_file_sha256` | `modules[].expected_certificate_file_hash` | target renamed field | Required certificate file byte hash check input. |
+| `export_hash` | `modules[].expected_export_hash` | target renamed field | Required canonical export identity check. |
+| `axiom_report_hash` | `modules[].expected_axiom_report_hash` | target renamed field | Required axiom report identity check. |
+| `certificate_hash` | `modules[].expected_certificate_hash` | target renamed field | Required high-trust certificate identity check. |
+| `imports` | `modules[].imports` plus top-level `[[imports]]` for external modules | target plus generated external import metadata | Preserve the module string list. Local names resolve to `[[modules]]`; external names require hash-pinned top-level import entries. |
+| absent `inductives` | omitted `modules[].inductives` or `[]` | target optional default | Treat absence as an empty declaration summary. |
+| `inductives` | `modules[].inductives` | target optional | Preserve declaration summary exactly when present. |
+| `definitions` | `modules[].definitions` | target optional | Preserve declaration summary exactly. |
+| `theorems` | `modules[].theorems` | target optional | Preserve declaration summary exactly. |
+| `axioms` | `modules[].axioms` | target optional | Preserve declaration summary exactly and check against `[policy]` and generated axiom report. |
+
+Generated or derived artifacts from the mapping:
+
+```text
+proofs/npa-package.toml
+  package fixture generated from the legacy manifest plus fixed CLR-00 defaults
+
+proofs/vendor/npa-std/**
+  external Std import certificates introduced by CLR-02, not present in the legacy manifest
+
+proofs/generated/package-lock.json
+  generated later from `npa-package.toml`, not an input to the manifest mapping
+
+checker result JSON / release audit bundle / verified_high_trust artifact
+  generated status and audit outputs; never copied into `npa-package.toml`
+```
+
+The mapping must be data-driven from checked-in artifacts. CLR-02 may read
+`proofs/manifest.toml`, current proof files, certificate files, and vendored external
+import artifacts, but the resulting `proofs/npa-package.toml` must not require reading
+Rust constants from `tools/proof-corpus/src/main.rs` at package validation time.
 
 ### Import Semantics
 
@@ -514,7 +552,7 @@ axiom_report_hash when available
 
 ### CLR-00-04 Specify Legacy Manifest Mapping
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-03
 - Inputs:
   - `proofs/manifest.toml`
@@ -533,6 +571,9 @@ axiom_report_hash when available
   - `git diff --check`
 - Notes:
   - CLR-02 will use this mapping to build the proof-corpus package fixture.
+  - Implemented by classifying each legacy proof-corpus manifest field as target,
+    generated/defaulted, or forbidden, and by recording that `proofs/manifest.toml`
+    remains beside the future `proofs/npa-package.toml` fixture.
 
 ### CLR-00-05 Specify Import Resolution Semantics
 
