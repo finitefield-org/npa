@@ -687,7 +687,7 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
 
 ### CLR-00-08 Close CLR-00 Readiness Review
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-01, CLR-00-02, CLR-00-03, CLR-00-04, CLR-00-05, CLR-00-06, CLR-00-07
 - Inputs:
   - this task document
@@ -706,6 +706,46 @@ replay, theorem index, registry metadata, or AI sidecars to justify an import.
   - `rg -n "npa package|npa-cli|npa\\.package\\.v0\\.1|npa.package.lock.v0.1|trusted_status|registry lookup" doc/community-library-roadmap-clr-00-todo.md doc/community-library-roadmap-todo.md`
 - Notes:
   - Deferred decisions include external checker high-trust enforcement, dependency solving, registry server behavior, and binary cache behavior.
+  - Implemented by the CLR-00 readiness review below.
+
+---
+
+## CLR-00 Readiness Review
+
+CLR-01 can start without additional product decisions. CLR-00 now fixes the package
+command contract, Cargo package / binary placement, schema names, legacy manifest
+mapping, manifest field contract, import resolution semantics, validator error surface,
+and parent roadmap command references.
+
+No open finding remains for:
+
+```text
+- CLI name: contributor-facing commands use installed `npa package ...`.
+- Crate placement: package CLI orchestration belongs to `crates/npa-cli`; manifest
+  data model and validation helpers belong to `crates/npa-package`.
+- Schema names: public package artifacts use `npa.package.*` and remain distinct from
+  `npa.independent-checker.*` schemas.
+- Field names: `npa.package.v0.1` required, optional, forbidden, and generated fields
+  are fixed; `trusted_status` and checker verdict fields are forbidden in package manifests.
+- Import semantics: module-level import strings resolve only to local modules or
+  hash-pinned top-level external imports; registry lookup and implicit latest resolution
+  are forbidden.
+```
+
+Deferred decisions are not blockers for CLR-01:
+
+```text
+- external checker high-trust enforcement details belong to CLR-08;
+- package dependency solving belongs after the fixed manifest and lock model;
+- registry server behavior belongs outside CLR-00 and after publish metadata exists;
+- binary cache behavior is out of scope until deterministic package artifacts exist;
+- network fetch and implicit latest-version resolution remain forbidden for CLR-01.
+```
+
+Trusted base remains unchanged. `npa-package` and `npa-cli` are untrusted package
+tooling layers. The kernel, certificate verifier, and source-free checker must not
+gain filesystem, network, registry lookup, plugin loading, AI calls, or package-manager
+behavior from this roadmap.
 
 ---
 

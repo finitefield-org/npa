@@ -91,7 +91,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-00 Fix Package CLI And Schema Decisions
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `doc/community-library-roadmap.md`
@@ -121,6 +121,8 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Command references are normalized by CLR-00-07: repository verification uses
     `cargo run -p npa-cli -- package ...`, while contributor-facing examples use
     installed `npa package ...`.
+  - Readiness is closed by CLR-00-08; CLR-01 can start without additional product
+    decisions.
   - Keep this milestone documentation-focused unless a binary crate name is needed to unblock CLR-01.
   - Do not introduce registry network behavior.
 
