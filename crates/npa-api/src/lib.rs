@@ -455,11 +455,14 @@ pub use json::{
     JsonValue, JsonValueKind,
 };
 pub use package_verifier::{
+    materialize_package_phase8_import_locks, materialize_package_phase8_requests,
     verify_package_fast_source_free, verify_package_reference_source_free,
     PackageCertificateArtifact, PackageModuleVerificationResult, PackageModuleVerificationStatus,
-    PackageVerificationCheckerError, PackageVerificationError, PackageVerificationErrorKind,
-    PackageVerificationErrorReason, PackageVerificationMode, PackageVerificationReport,
-    PackageVerificationResult, PackageVerificationStatus, PackageVerificationVerdictSource,
+    PackagePhase8ImportLockMaterialization, PackagePhase8RequestMaterialization,
+    PackagePhase8RequestMaterializationReport, PackageVerificationCheckerError,
+    PackageVerificationError, PackageVerificationErrorKind, PackageVerificationErrorReason,
+    PackageVerificationMode, PackageVerificationReport, PackageVerificationResult,
+    PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,

@@ -11,10 +11,20 @@ use npa_checker_ref::{
     ReferenceTrustMode,
 };
 use npa_package::{
-    format_package_hash, package_file_hash, validate_package_lock_against_manifest_graph,
-    PackageHash, PackageLockEntry, PackageLockManifest, PackageLockResolvedImport, PackagePath,
-    ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
+    build_package_lock_graph, format_package_hash, package_file_hash,
+    validate_package_lock_against_manifest_graph, PackageHash, PackageLockEntry,
+    PackageLockManifest, PackageLockResolvedImport, PackagePath, ValidatedPackageManifest,
+    CHECKER_PROFILE_REFERENCE_V0_1,
 };
+
+use crate::independent_checker::{
+    independent_checker_file_hash, independent_checker_request_materialize,
+    parse_independent_checker_import_lock_manifest, IndependentCheckerCommandError,
+    IndependentCheckerImportLockCertificate, IndependentCheckerImportLockEntry,
+    IndependentCheckerImportLockManifest, IndependentCheckerMachineCheckRequest,
+    IndependentCheckerRequestStoreManifest, IndependentCheckerRunnerPolicy,
+};
+use crate::types::{machine_api_name_canonical_bytes, parse_module_name_wire};
 
 /// Result type for source-free package verification.
 pub type PackageVerificationResult<T> = Result<T, PackageVerificationError>;
@@ -149,6 +159,53 @@ pub struct PackageModuleVerificationResult {
     pub certificate_hash: PackageHash,
     /// Deterministic failure details for failed or skipped modules.
     pub error: Option<PackageVerificationError>,
+}
+
+/// Per-module Phase 8 import lock derived from a package lock entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePhase8ImportLockMaterialization {
+    /// Module this import lock verifies.
+    pub module: Name,
+    /// Deterministic package-relative path for the generated import lock JSON.
+    pub path: String,
+    /// Phase 8 import lock manifest containing only direct imports.
+    pub manifest: IndependentCheckerImportLockManifest,
+    /// Exact file hash of [`Self::manifest`] canonical JSON.
+    pub manifest_hash: npa_cert::Hash,
+}
+
+/// Per-module Phase 8 machine-check request derived from a package lock entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePhase8RequestMaterialization {
+    /// Module this request verifies.
+    pub module: Name,
+    /// Phase 8 checker profile used for this request.
+    pub checker_profile: String,
+    /// Deterministic package-relative path for the generated import lock JSON.
+    pub import_lock_path: String,
+    /// Phase 8 import lock manifest containing only direct imports.
+    pub import_lock_manifest: IndependentCheckerImportLockManifest,
+    /// Exact file hash of [`Self::import_lock_manifest`] canonical JSON.
+    pub import_lock_manifest_hash: npa_cert::Hash,
+    /// Deterministic package-relative path for the generated request JSON.
+    pub request_path: String,
+    /// Materialized Phase 8 machine-check request.
+    pub request: IndependentCheckerMachineCheckRequest,
+    /// Exact file hash of [`Self::request`] canonical JSON.
+    pub request_file_hash: npa_cert::Hash,
+}
+
+/// Package-level Phase 8 machine-check request materialization result.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePhase8RequestMaterializationReport {
+    /// Per-module requests in package-lock topological order.
+    pub modules: Vec<PackagePhase8RequestMaterialization>,
+    /// Final request-store manifest after adding every generated request.
+    pub request_store: IndependentCheckerRequestStoreManifest,
+    /// Exact file hash of [`Self::request_store`] canonical JSON.
+    pub request_store_file_hash: npa_cert::Hash,
+    /// Whether the request store needs to be written or replaced.
+    pub request_store_rewrite_required: bool,
 }
 
 /// Structured source-free package verification error.
@@ -361,6 +418,49 @@ impl PackageVerificationError {
         )
     }
 
+    fn phase8_import_lock_invalid(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageVerificationErrorKind::Phase8Adapter,
+            path,
+            Some("imports.manifest".to_owned()),
+            PackageVerificationErrorReason::Phase8ImportLockMaterializationFailed,
+            Some("valid independent checker import lock manifest".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    fn phase8_request_materialization_failed(
+        path: impl Into<String>,
+        source: IndependentCheckerCommandError,
+    ) -> Self {
+        let expected_value = source
+            .expected_value
+            .map(|value| value.to_string())
+            .or_else(|| {
+                source
+                    .expected_hash
+                    .as_deref()
+                    .map(|hash| format_package_hash(&PackageHash::from(*hash)))
+            });
+        let actual_value = source
+            .actual_value
+            .map(|value| value.to_string())
+            .or_else(|| {
+                source
+                    .actual_hash
+                    .as_deref()
+                    .map(|hash| format_package_hash(&PackageHash::from(*hash)))
+            });
+        Self::new(
+            PackageVerificationErrorKind::Phase8Adapter,
+            path,
+            source.field.as_deref().map(str::to_owned),
+            PackageVerificationErrorReason::Phase8RequestMaterializationFailed,
+            expected_value,
+            actual_value,
+        )
+    }
+
     fn earlier_module_failed(path: impl Into<String>, actual: impl Into<String>) -> Self {
         Self::new(
             PackageVerificationErrorKind::Dependency,
@@ -447,6 +547,8 @@ pub enum PackageVerificationErrorKind {
     Kernel,
     /// Independent reference checker verification failed.
     ReferenceChecker,
+    /// Phase 8 import-lock or request adapter materialization failed.
+    Phase8Adapter,
     /// Verification was skipped because an earlier lock entry failed.
     Dependency,
 }
@@ -482,6 +584,10 @@ pub enum PackageVerificationErrorReason {
     KernelVerificationFailed,
     /// Certificate was rejected by the independent reference checker.
     ReferenceCheckerRejected,
+    /// Phase 8 import lock could not be materialized from package data.
+    Phase8ImportLockMaterializationFailed,
+    /// Phase 8 machine-check request could not be materialized from package data.
+    Phase8RequestMaterializationFailed,
     /// Module was skipped because an earlier topological dependency failed.
     EarlierModuleFailed,
 }
@@ -504,6 +610,12 @@ impl PackageVerificationErrorReason {
             Self::UnsupportedCoreFeature => "unsupported_core_feature",
             Self::KernelVerificationFailed => "kernel_verification_failed",
             Self::ReferenceCheckerRejected => "reference_checker_rejected",
+            Self::Phase8ImportLockMaterializationFailed => {
+                "independent_checker_import_lock_materialization_failed"
+            }
+            Self::Phase8RequestMaterializationFailed => {
+                "independent_checker_request_materialization_failed"
+            }
             Self::EarlierModuleFailed => "earlier_module_failed",
         }
     }
@@ -673,6 +785,270 @@ pub fn verify_package_reference_source_free<'a>(
         topological_order: graph.topological_order,
         modules: results,
     })
+}
+
+/// Materialize one Phase 8 import lock per package-lock entry.
+///
+/// Each generated import lock contains exactly the module's direct certificate
+/// imports from the package lock. No source, replay, metadata, theorem-index,
+/// AI trace, registry, or solver data is introduced.
+pub fn materialize_package_phase8_import_locks(
+    lock: &PackageLockManifest,
+    checker_profile: &str,
+) -> PackageVerificationResult<Vec<PackagePhase8ImportLockMaterialization>> {
+    let graph = build_package_lock_graph(lock)
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let entries = canonical_lock_entries(lock);
+    let entries_by_module = entries
+        .iter()
+        .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+        .collect::<BTreeMap<_, _>>();
+    let mut materialized = Vec::with_capacity(graph.topological_order.len());
+
+    for module in &graph.topological_order {
+        let (entry_index, entry) = entries_by_module
+            .get(module)
+            .expect("lock graph order only contains lock entries");
+        let import_lock = materialize_phase8_import_lock_for_entry(
+            lock,
+            *entry_index,
+            entry,
+            &graph.resolved_entry_imports[*entry_index],
+            &entries,
+            checker_profile,
+        )?;
+        materialized.push(import_lock);
+    }
+
+    Ok(materialized)
+}
+
+/// Materialize Phase 8 machine-check requests for every package-lock entry.
+///
+/// This derives per-module direct-import locks from the package lock and then
+/// delegates request construction to the existing Phase 8 request materializer,
+/// preserving request-hash recomputation and request-store behavior.
+pub fn materialize_package_phase8_requests<'a>(
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    policy: &IndependentCheckerRunnerPolicy,
+    checker_profile: &str,
+    existing_store: Option<&IndependentCheckerRequestStoreManifest>,
+) -> PackageVerificationResult<PackagePhase8RequestMaterializationReport> {
+    let graph = build_package_lock_graph(lock)
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let artifact_bytes = artifact_byte_map(artifacts)?;
+    let entries = canonical_lock_entries(lock);
+    let entries_by_module = entries
+        .iter()
+        .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+        .collect::<BTreeMap<_, _>>();
+    let mut current_store =
+        existing_store
+            .cloned()
+            .unwrap_or(IndependentCheckerRequestStoreManifest {
+                requests: Vec::new(),
+            });
+    let mut request_store_file_hash =
+        independent_checker_file_hash(current_store.canonical_json().as_bytes());
+    let mut request_store_rewrite_required = false;
+    let mut modules = Vec::with_capacity(graph.topological_order.len());
+
+    for module in &graph.topological_order {
+        let (entry_index, entry) = entries_by_module
+            .get(module)
+            .expect("lock graph order only contains lock entries");
+        let bytes = artifact_bytes
+            .get(&entry.certificate)
+            .copied()
+            .ok_or_else(|| {
+                PackageVerificationError::certificate_artifact_missing(
+                    format!("entries[{entry_index}].certificate"),
+                    entry.certificate.as_str(),
+                )
+            })?;
+        let actual_file_hash = package_file_hash(bytes);
+        if entry.certificate_file_hash != actual_file_hash {
+            return Err(PackageVerificationError::certificate_file_hash_mismatch(
+                format!("entries[{entry_index}].certificate_file_hash"),
+                entry.certificate_file_hash,
+                actual_file_hash,
+            ));
+        }
+
+        let import_lock = materialize_phase8_import_lock_for_entry(
+            lock,
+            *entry_index,
+            entry,
+            &graph.resolved_entry_imports[*entry_index],
+            &entries,
+            checker_profile,
+        )?;
+        let import_lock_json = import_lock.manifest.canonical_json();
+        let request_id = package_phase8_request_id(lock, &entry.module, checker_profile);
+        let request_path = package_phase8_request_path(lock, &entry.module, checker_profile);
+        let materialized = independent_checker_request_materialize(
+            policy,
+            entry.module.as_dotted(),
+            entry.certificate.as_str(),
+            bytes,
+            &import_lock.path,
+            import_lock_json.as_bytes(),
+            import_lock.manifest_hash,
+            checker_profile,
+            &request_id,
+            &request_path,
+            Some(&current_store),
+        )
+        .map_err(|error| {
+            PackageVerificationError::phase8_request_materialization_failed(
+                format!("entries[{entry_index}].independent_checker_request"),
+                error,
+            )
+        })?;
+
+        let actual_certificate_hash =
+            PackageHash::from(materialized.request.certificate.expected_certificate_hash);
+        if actual_certificate_hash != entry.certificate_hash {
+            return Err(PackageVerificationError::certificate_hash_mismatch(
+                format!("entries[{entry_index}].certificate_hash"),
+                entry.certificate_hash,
+                actual_certificate_hash,
+            ));
+        }
+
+        request_store_rewrite_required |= materialized.request_store_rewrite_required;
+        current_store = materialized.request_store.clone();
+        request_store_file_hash = materialized.request_store_file_hash;
+        modules.push(PackagePhase8RequestMaterialization {
+            module: entry.module.clone(),
+            checker_profile: checker_profile.to_owned(),
+            import_lock_path: import_lock.path,
+            import_lock_manifest: import_lock.manifest,
+            import_lock_manifest_hash: import_lock.manifest_hash,
+            request_path,
+            request: materialized.request,
+            request_file_hash: materialized.request_file_hash,
+        });
+    }
+
+    Ok(PackagePhase8RequestMaterializationReport {
+        modules,
+        request_store: current_store,
+        request_store_file_hash,
+        request_store_rewrite_required,
+    })
+}
+
+fn materialize_phase8_import_lock_for_entry(
+    lock: &PackageLockManifest,
+    entry_index: usize,
+    entry: &PackageLockEntry,
+    resolved_imports: &[PackageLockResolvedImport],
+    entries: &[(usize, &PackageLockEntry)],
+    checker_profile: &str,
+) -> PackageVerificationResult<PackagePhase8ImportLockMaterialization> {
+    let mut imports = resolved_imports
+        .iter()
+        .map(|import| {
+            let import_entry = entries
+                .get(import.entry_index)
+                .map(|(_, entry)| *entry)
+                .expect("resolved import index points into canonical lock entries");
+            IndependentCheckerImportLockEntry {
+                module: import.module.as_dotted(),
+                export_hash: import.export_hash.into_bytes(),
+                certificate: IndependentCheckerImportLockCertificate {
+                    path: import_entry.certificate.as_str().to_owned(),
+                    file_hash: import_entry.certificate_file_hash.into_bytes(),
+                    certificate_hash: import.certificate_hash.into_bytes(),
+                },
+            }
+        })
+        .collect::<Vec<_>>();
+    imports.sort_by(|left, right| {
+        phase8_import_lock_module_sort_key(&left.module)
+            .cmp(&phase8_import_lock_module_sort_key(&right.module))
+            .then_with(|| left.certificate.path.cmp(&right.certificate.path))
+            .then_with(|| {
+                left.certificate
+                    .certificate_hash
+                    .cmp(&right.certificate.certificate_hash)
+            })
+            .then_with(|| left.certificate.file_hash.cmp(&right.certificate.file_hash))
+    });
+    let manifest = IndependentCheckerImportLockManifest { imports };
+    let manifest_json = manifest.canonical_json();
+    parse_independent_checker_import_lock_manifest(&manifest_json).map_err(|error| {
+        PackageVerificationError::phase8_import_lock_invalid(
+            format!("entries[{entry_index}].independent_checker_import_lock"),
+            format!("{error:?}"),
+        )
+    })?;
+    let manifest_hash = independent_checker_file_hash(manifest_json.as_bytes());
+
+    Ok(PackagePhase8ImportLockMaterialization {
+        module: entry.module.clone(),
+        path: package_phase8_import_lock_path(lock, &entry.module, checker_profile),
+        manifest,
+        manifest_hash,
+    })
+}
+
+fn phase8_import_lock_module_sort_key(module: &str) -> Vec<u8> {
+    parse_module_name_wire(module)
+        .and_then(|name| machine_api_name_canonical_bytes(&name))
+        .unwrap_or_else(|_| module.as_bytes().to_vec())
+}
+
+fn package_phase8_request_id(
+    lock: &PackageLockManifest,
+    module: &Name,
+    checker_profile: &str,
+) -> String {
+    format!(
+        "package:{}:{}:{}:{}",
+        lock.package.as_str(),
+        lock.version.as_str(),
+        module.as_dotted(),
+        checker_profile
+    )
+}
+
+fn package_phase8_import_lock_path(
+    lock: &PackageLockManifest,
+    module: &Name,
+    checker_profile: &str,
+) -> String {
+    format!(
+        "{}/imports.json",
+        package_phase8_module_dir(lock, module, checker_profile)
+    )
+}
+
+fn package_phase8_request_path(
+    lock: &PackageLockManifest,
+    module: &Name,
+    checker_profile: &str,
+) -> String {
+    format!(
+        "{}/request.json",
+        package_phase8_module_dir(lock, module, checker_profile)
+    )
+}
+
+fn package_phase8_module_dir(
+    lock: &PackageLockManifest,
+    module: &Name,
+    checker_profile: &str,
+) -> String {
+    format!(
+        "generated/checker-requests/{}/{}/{}/{}",
+        lock.package.as_str(),
+        lock.version.as_str(),
+        module.as_dotted(),
+        checker_profile
+    )
 }
 
 fn validate_manifest_lock_identity(
@@ -1168,7 +1544,7 @@ fn module_result(
 #[cfg(test)]
 mod tests {
     use std::{
-        collections::BTreeMap,
+        collections::{BTreeMap, BTreeSet},
         fs,
         path::{Path, PathBuf},
     };
@@ -1176,6 +1552,16 @@ mod tests {
     use npa_package::{
         parse_and_validate_manifest_str, parse_manifest_str, parse_package_lock_json,
         validate_manifest, PackageLockManifest, PackagePath, ValidatedPackageManifest,
+    };
+
+    use crate::independent_checker::{
+        independent_checker_machine_check_request_hash,
+        parse_independent_checker_import_lock_manifest,
+        parse_independent_checker_machine_check_request,
+        parse_independent_checker_request_store_manifest, IndependentCheckerAllowlistEntry,
+        IndependentCheckerRunnerAxiomPolicy, IndependentCheckerRunnerBudget,
+        IndependentCheckerRunnerImportPolicy, IndependentCheckerRunnerPolicy,
+        IndependentCheckerTrustMode,
     };
 
     use super::*;
@@ -1250,6 +1636,46 @@ mod tests {
                 bytes: bytes.as_slice(),
             })
             .collect()
+    }
+
+    fn test_hash(byte: u8) -> npa_cert::Hash {
+        [byte; 32]
+    }
+
+    fn phase8_reference_runner_policy() -> IndependentCheckerRunnerPolicy {
+        IndependentCheckerRunnerPolicy {
+            id: "package-reference-check".to_owned(),
+            version: 1,
+            trust_mode: IndependentCheckerTrustMode::Pr,
+            required_checker_profiles: vec!["reference".to_owned()],
+            optional_checker_profiles: Vec::new(),
+            checker_allowlist: vec![IndependentCheckerAllowlistEntry {
+                profile: "reference".to_owned(),
+                checker_id: "npa-checker-ref".to_owned(),
+                binary_id: "npa-checker-ref-test".to_owned(),
+                binary_hash: test_hash(10),
+                build_hash: test_hash(11),
+                allowed_args: vec!["--json".to_owned(), "--canonical-only".to_owned()],
+            }],
+            checker_identity_manifest: None,
+            import_policy: IndependentCheckerRunnerImportPolicy {
+                mode: "locked_store".to_owned(),
+                network: "forbidden".to_owned(),
+                require_import_lock_hash: true,
+            },
+            axiom_policy: IndependentCheckerRunnerAxiomPolicy {
+                path: "generated/checker-requests/axiom-policy.toml".to_owned(),
+                hash: test_hash(12),
+            },
+            budgets: BTreeMap::from([(
+                "reference".to_owned(),
+                IndependentCheckerRunnerBudget {
+                    max_steps: 10_000_000,
+                    max_memory_mb: 2048,
+                    timeout_ms: 60_000,
+                },
+            )]),
+        }
     }
 
     fn verify_proof_package(
@@ -1630,5 +2056,206 @@ mod tests {
             error.reason_code,
             PackageVerificationErrorReason::LockGraphInvalid
         );
+    }
+
+    #[test]
+    fn package_phase8_import_lock_adapter_materializes_direct_imports_only() {
+        let lock = proof_lock();
+        let materialized = materialize_package_phase8_import_locks(&lock, "reference").unwrap();
+        let canonical_entries = canonical_lock_entries(&lock);
+        let entries_by_module = canonical_entries
+            .iter()
+            .map(|(_, entry)| (entry.module.clone(), *entry))
+            .collect::<BTreeMap<_, _>>();
+
+        assert_eq!(materialized.len(), lock.entries.len());
+        for artifact in &materialized {
+            let entry = entries_by_module.get(&artifact.module).unwrap();
+            let parsed =
+                parse_independent_checker_import_lock_manifest(&artifact.manifest.canonical_json())
+                    .unwrap();
+            assert_eq!(parsed, artifact.manifest);
+            assert_eq!(
+                artifact.manifest_hash,
+                independent_checker_file_hash(artifact.manifest.canonical_json().as_bytes())
+            );
+            assert_eq!(
+                artifact.path,
+                format!(
+                    "generated/checker-requests/{}/{}/{}/reference/imports.json",
+                    lock.package.as_str(),
+                    lock.version.as_str(),
+                    artifact.module.as_dotted()
+                )
+            );
+            assert_eq!(artifact.manifest.imports.len(), entry.imports.len());
+            assert_eq!(
+                artifact
+                    .manifest
+                    .imports
+                    .iter()
+                    .map(|import| import.module.clone())
+                    .collect::<BTreeSet<_>>(),
+                entry
+                    .imports
+                    .iter()
+                    .map(|import| import.module.as_dotted())
+                    .collect::<BTreeSet<_>>()
+            );
+            for import in &artifact.manifest.imports {
+                let lock_import = entry
+                    .imports
+                    .iter()
+                    .find(|candidate| candidate.module.as_dotted() == import.module)
+                    .unwrap();
+                let import_entry = entries_by_module.get(&lock_import.module).unwrap();
+                assert_eq!(import.export_hash, lock_import.export_hash.into_bytes());
+                assert_eq!(import.certificate.path, import_entry.certificate.as_str());
+                assert_eq!(
+                    import.certificate.file_hash,
+                    import_entry.certificate_file_hash.into_bytes()
+                );
+                assert_eq!(
+                    import.certificate.certificate_hash,
+                    lock_import.certificate_hash.into_bytes()
+                );
+            }
+
+            let json = artifact.manifest.canonical_json();
+            for forbidden in [
+                "source",
+                "replay",
+                "meta",
+                "theorem_index",
+                "ai_trace",
+                "registry",
+                "solver",
+            ] {
+                assert!(!json.contains(forbidden), "import lock leaked {forbidden}");
+            }
+        }
+    }
+
+    #[test]
+    fn package_phase8_request_materialization_builds_valid_requests_and_hashes() {
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let policy = phase8_reference_runner_policy();
+
+        let report = materialize_package_phase8_requests(
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            &policy,
+            "reference",
+            None,
+        )
+        .unwrap();
+
+        let canonical_entries = canonical_lock_entries(&lock);
+        let entries_by_module = canonical_entries
+            .iter()
+            .map(|(_, entry)| (entry.module.clone(), *entry))
+            .collect::<BTreeMap<_, _>>();
+
+        assert_eq!(report.modules.len(), lock.entries.len());
+        assert_eq!(report.request_store.requests.len(), lock.entries.len());
+        assert_eq!(
+            parse_independent_checker_request_store_manifest(
+                &report.request_store.canonical_json()
+            )
+            .unwrap(),
+            report.request_store
+        );
+        assert_eq!(
+            report.request_store_file_hash,
+            independent_checker_file_hash(report.request_store.canonical_json().as_bytes())
+        );
+        assert!(report.request_store_rewrite_required);
+
+        let second = materialize_package_phase8_requests(
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            &policy,
+            "reference",
+            Some(&report.request_store),
+        )
+        .unwrap();
+        assert!(!second.request_store_rewrite_required);
+        assert_eq!(second.request_store, report.request_store);
+
+        for module in &report.modules {
+            let entry = entries_by_module.get(&module.module).unwrap();
+            let cert_bytes = artifacts.get(&entry.certificate).unwrap();
+            let request_json = module.request.canonical_json();
+
+            assert_eq!(
+                parse_independent_checker_machine_check_request(&request_json).unwrap(),
+                module.request
+            );
+            assert_eq!(
+                independent_checker_machine_check_request_hash(&request_json).unwrap(),
+                module.request.request_hash()
+            );
+            assert_eq!(
+                module.request_file_hash,
+                independent_checker_file_hash(request_json.as_bytes())
+            );
+            assert_eq!(
+                module.request.request_id,
+                format!(
+                    "package:{}:{}:{}:reference",
+                    lock.package.as_str(),
+                    lock.version.as_str(),
+                    module.module.as_dotted()
+                )
+            );
+            assert_eq!(
+                module.request_path,
+                format!(
+                    "generated/checker-requests/{}/{}/{}/reference/request.json",
+                    lock.package.as_str(),
+                    lock.version.as_str(),
+                    module.module.as_dotted()
+                )
+            );
+            assert_eq!(module.request.module, module.module.as_dotted());
+            assert_eq!(module.request.checker_profile, "reference");
+            assert_eq!(module.request.certificate.path, entry.certificate.as_str());
+            assert_eq!(
+                module.request.certificate.file_hash,
+                independent_checker_file_hash(cert_bytes)
+            );
+            assert_eq!(
+                module.request.certificate.expected_certificate_hash,
+                entry.certificate_hash.into_bytes()
+            );
+            assert_eq!(module.request.imports.manifest, module.import_lock_path);
+            assert_eq!(
+                module.request.imports.manifest_hash,
+                module.import_lock_manifest_hash
+            );
+            assert_eq!(
+                parse_independent_checker_import_lock_manifest(
+                    &module.import_lock_manifest.canonical_json()
+                )
+                .unwrap(),
+                module.import_lock_manifest
+            );
+
+            for forbidden in [
+                "source",
+                "replay",
+                "meta",
+                "theorem_index",
+                "ai_trace",
+                "registry",
+                "solver",
+            ] {
+                assert!(
+                    !request_json.contains(forbidden),
+                    "request leaked {forbidden}"
+                );
+            }
+        }
     }
 }
