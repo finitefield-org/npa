@@ -61,6 +61,9 @@ canonical certificate を検査します。
 | 9 Human | advanced inductive、universe polymorphism強化、quotient、typeclass、SMT certificates、theorem graph、natural language formalization |
 | 9 AI | 高度機能向け Machine Profile: AI 候補、SMT 再構成、theorem graph、自然言語形式化の非信頼仕様 |
 
+公開後に theorem library を別リポジトリとして育てるための package / CI / registry への移行計画は
+`doc/community-library-roadmap.md` にまとめています。
+
 ## リポジトリ構成
 
 ```text
