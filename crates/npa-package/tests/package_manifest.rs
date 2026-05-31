@@ -96,6 +96,42 @@ checker_profile = "npa.checker.reference.v0.1"
     )
 }
 
+fn module_block(module: &str, source: &str, certificate: &str) -> String {
+    format!(
+        r#"
+[[modules]]
+module = "{module}"
+source = "{source}"
+certificate = "{certificate}"
+imports = []
+expected_source_hash = "{ZERO_HASH}"
+expected_certificate_file_hash = "{ZERO_HASH}"
+expected_export_hash = "{ZERO_HASH}"
+expected_axiom_report_hash = "{ZERO_HASH}"
+expected_certificate_hash = "{ZERO_HASH}"
+inductives = []
+definitions = []
+theorems = ["other"]
+axioms = []
+tags = []
+"#
+    )
+}
+
+fn external_import_block(module: &str, certificate: &str) -> String {
+    format!(
+        r#"
+[[imports]]
+module = "{module}"
+package = "npa-std-extra"
+version = "0.1.0"
+certificate = "{certificate}"
+export_hash = "{ZERO_HASH}"
+certificate_hash = "{ZERO_HASH}"
+"#
+    )
+}
+
 #[test]
 fn package_manifest_parse_accepts_valid_closed_manifest() {
     let manifest = parse_manifest_str(&valid_manifest()).unwrap();
@@ -560,4 +596,170 @@ fn package_manifest_hashes_rejects_bad_hash_prefix_and_length() {
         "imports[0].certificate_hash",
         None,
     );
+}
+
+#[test]
+fn package_manifest_duplicates_rejects_duplicate_module_names() {
+    let source = valid_manifest()
+        + &module_block(
+            "Proofs.Ai.Basic",
+            "Proofs/Ai/Duplicate/source.npa",
+            "Proofs/Ai/Duplicate/certificate.npcert",
+        );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateModule,
+        "modules[1].module",
+        Some("module"),
+    );
+    assert_manifest_error_values(&error, Some("unique value"), Some("Proofs.Ai.Basic"));
+}
+
+#[test]
+fn package_manifest_duplicates_rejects_duplicate_external_import_modules() {
+    let source = valid_manifest()
+        + &external_import_block(
+            "Std.Logic.Eq",
+            "vendor/npa-std-extra/Std/Logic/Eq/certificate.npcert",
+        );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateExternalImport,
+        "imports[1].module",
+        Some("module"),
+    );
+}
+
+#[test]
+fn package_manifest_duplicates_rejects_local_external_module_collision_before_import_resolution() {
+    let source = valid_manifest().replace(
+        r#"module = "Proofs.Ai.Basic"
+source = "Proofs/Ai/Basic/source.npa""#,
+        r#"module = "Std.Logic.Eq"
+source = "Proofs/Ai/Basic/source.npa""#,
+    );
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::LocalExternalModuleCollision,
+        "modules[0].module",
+        Some("module"),
+    );
+}
+
+#[test]
+fn package_manifest_duplicates_rejects_duplicate_declaration_summaries_within_module() {
+    let source = valid_manifest().replace("definitions = []", r#"definitions = ["id"]"#);
+
+    let error = validation_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateDeclaration,
+        "modules[0].theorems[0]",
+        Some("declaration"),
+    );
+}
+
+#[test]
+fn package_manifest_duplicates_rejects_duplicate_allowed_and_module_axioms() {
+    let policy_error = validation_error(valid_manifest().replace(
+        r#"allowed_axioms = ["Eq.rec"]"#,
+        r#"allowed_axioms = ["Eq.rec", "Eq.rec"]"#,
+    ));
+    assert_manifest_error(
+        &policy_error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateAxiom,
+        "policy.allowed_axioms[1]",
+        Some("axiom"),
+    );
+
+    let module_error = validation_error(
+        valid_manifest().replace("axioms = []", r#"axioms = ["Eq.rec", "Eq.rec"]"#),
+    );
+    assert_manifest_error(
+        &module_error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateAxiom,
+        "modules[0].axioms[1]",
+        Some("axiom"),
+    );
+}
+
+#[test]
+fn package_manifest_duplicates_rejects_duplicate_module_artifact_paths() {
+    let same_module_error = validation_error(valid_manifest().replace(
+        r#"certificate = "Proofs/Ai/Basic/certificate.npcert""#,
+        r#"certificate = "Proofs/Ai/Basic/source.npa""#,
+    ));
+    assert_manifest_error(
+        &same_module_error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateArtifactPath,
+        "modules[0].certificate",
+        Some("artifact_path"),
+    );
+
+    let cross_module_error = validation_error(
+        valid_manifest()
+            + &module_block(
+                "Proofs.Ai.Other",
+                "Proofs/Ai/Basic/source.npa",
+                "Proofs/Ai/Other/certificate.npcert",
+            ),
+    );
+    assert_manifest_error(
+        &cross_module_error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateArtifactPath,
+        "modules[1].source",
+        Some("artifact_path"),
+    );
+}
+
+#[test]
+fn package_manifest_duplicates_checks_optional_artifact_paths_only_when_present() {
+    let optional_duplicate_error = validation_error(valid_manifest().replace(
+        r#"meta = "Proofs/Ai/Basic/meta.json""#,
+        r#"meta = "Proofs/Ai/Basic/source.npa""#,
+    ));
+    assert_manifest_error(
+        &optional_duplicate_error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateArtifactPath,
+        "modules[0].meta",
+        Some("artifact_path"),
+    );
+
+    let source_without_optional_paths = valid_manifest()
+        .replace(
+            r#"meta = "Proofs/Ai/Basic/meta.json"
+"#,
+            "",
+        )
+        .replace(
+            r#"replay = "Proofs/Ai/Basic/replay.json"
+"#,
+            "",
+        )
+        + &module_block(
+            "Proofs.Ai.Other",
+            "Proofs/Ai/Other/source.npa",
+            "Proofs/Ai/Other/certificate.npcert",
+        );
+
+    parse_and_validate_manifest_str(&source_without_optional_paths).unwrap();
 }

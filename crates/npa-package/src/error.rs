@@ -206,6 +206,85 @@ impl PackageManifestError {
         )
     }
 
+    /// Build a duplicate-module error.
+    pub fn duplicate_module(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "module",
+            PackageManifestErrorReason::DuplicateModule,
+            actual,
+        )
+    }
+
+    /// Build a duplicate-external-import error.
+    pub fn duplicate_external_import(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "module",
+            PackageManifestErrorReason::DuplicateExternalImport,
+            actual,
+        )
+    }
+
+    /// Build a duplicate-declaration summary error.
+    pub fn duplicate_declaration(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "declaration",
+            PackageManifestErrorReason::DuplicateDeclaration,
+            actual,
+        )
+    }
+
+    /// Build a duplicate-axiom error.
+    pub fn duplicate_axiom(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "axiom",
+            PackageManifestErrorReason::DuplicateAxiom,
+            actual,
+        )
+    }
+
+    /// Build a duplicate-artifact-path error.
+    pub fn duplicate_artifact_path(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "artifact_path",
+            PackageManifestErrorReason::DuplicateArtifactPath,
+            actual,
+        )
+    }
+
+    /// Build a local/external module collision error.
+    pub fn local_external_module_collision(
+        path: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::duplicate(
+            path,
+            "module",
+            PackageManifestErrorReason::LocalExternalModuleCollision,
+            actual,
+        )
+    }
+
+    fn duplicate(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        reason_code: PackageManifestErrorReason,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Duplicate,
+            path,
+            Some(field.into()),
+            reason_code,
+            Some("unique value".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
     fn new(
         kind: PackageManifestErrorKind,
         path: impl Into<String>,

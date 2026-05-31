@@ -1,15 +1,20 @@
 //! Package manifest validation entry points.
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use npa_cert::Name;
 
 use crate::{
     error::{PackageManifestError, PackageManifestResult},
-    manifest::{parse_manifest_str, PackageManifest, PackageModule, PackageVersion},
+    manifest::{
+        parse_manifest_str, PackageExternalImport, PackageManifest, PackageModule, PackagePolicy,
+        PackageVersion,
+    },
     name::{
         validate_canonical_axiom_name, validate_canonical_declaration_name,
         validate_canonical_module_name, validate_package_id,
     },
-    path::validate_package_path,
+    path::{validate_package_path, PackagePath},
     schema::{
         CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
         KERNEL_PROFILE_V0_1, PACKAGE_MANIFEST_SCHEMA,
@@ -27,9 +32,9 @@ pub struct PackageManifestValidationOptions {
 
 /// A package manifest that has passed validation implemented so far.
 ///
-/// CLR-01 grows this value in phases. At CLR-01-04 it means closed-object
-/// parsing has succeeded and scalar domains have been checked; duplicate,
-/// graph, and axiom-policy validation are added by later milestones.
+/// CLR-01 grows this value in phases. At CLR-01-05 it means closed-object
+/// parsing, scalar domain checks, and duplicate checks have succeeded; graph
+/// and axiom-policy validation are added by later milestones.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidatedPackageManifest {
     manifest: PackageManifest,
@@ -68,6 +73,7 @@ pub fn validate_manifest_with_options(
 ) -> PackageManifestResult<ValidatedPackageManifest> {
     validate_fixed_schema_and_profiles(&manifest)?;
     validate_scalar_domains(&manifest)?;
+    validate_duplicate_domains(&manifest)?;
     Ok(ValidatedPackageManifest { manifest })
 }
 
@@ -208,6 +214,162 @@ fn validate_name_list(
         validate(name, format!("{path}[{index}]"))?;
     }
     Ok(())
+}
+
+fn validate_duplicate_domains(manifest: &PackageManifest) -> PackageManifestResult<()> {
+    validate_duplicate_module_names(&manifest.modules)?;
+    if let Some(imports) = &manifest.imports {
+        validate_duplicate_external_imports(imports)?;
+        validate_local_external_module_collisions(&manifest.modules, imports)?;
+    }
+    validate_duplicate_allowed_axioms(&manifest.policy)?;
+
+    for (index, module) in manifest.modules.iter().enumerate() {
+        validate_duplicate_declarations(index, module)?;
+        validate_duplicate_module_axioms(index, module)?;
+    }
+
+    validate_duplicate_module_artifact_paths(&manifest.modules)
+}
+
+fn validate_duplicate_module_names(modules: &[PackageModule]) -> PackageManifestResult<()> {
+    let mut seen = BTreeMap::<Name, usize>::new();
+    for (index, module) in modules.iter().enumerate() {
+        if seen.insert(module.module.clone(), index).is_some() {
+            return Err(PackageManifestError::duplicate_module(
+                format!("modules[{index}].module"),
+                module.module.as_dotted(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_duplicate_external_imports(
+    imports: &[PackageExternalImport],
+) -> PackageManifestResult<()> {
+    let mut seen = BTreeMap::<Name, usize>::new();
+    for (index, import) in imports.iter().enumerate() {
+        if seen.insert(import.module.clone(), index).is_some() {
+            return Err(PackageManifestError::duplicate_external_import(
+                format!("imports[{index}].module"),
+                import.module.as_dotted(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_local_external_module_collisions(
+    modules: &[PackageModule],
+    imports: &[PackageExternalImport],
+) -> PackageManifestResult<()> {
+    let external_modules = imports
+        .iter()
+        .map(|import| import.module.clone())
+        .collect::<BTreeSet<_>>();
+    for (index, module) in modules.iter().enumerate() {
+        if external_modules.contains(&module.module) {
+            return Err(PackageManifestError::local_external_module_collision(
+                format!("modules[{index}].module"),
+                module.module.as_dotted(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_duplicate_allowed_axioms(policy: &PackagePolicy) -> PackageManifestResult<()> {
+    validate_duplicate_names(
+        &policy.allowed_axioms,
+        "policy.allowed_axioms",
+        PackageManifestError::duplicate_axiom,
+    )
+}
+
+fn validate_duplicate_declarations(
+    module_index: usize,
+    module: &PackageModule,
+) -> PackageManifestResult<()> {
+    let mut seen = BTreeMap::<Name, String>::new();
+    for (field, names) in [
+        ("inductives", module.inductives.as_deref()),
+        ("definitions", module.definitions.as_deref()),
+        ("theorems", module.theorems.as_deref()),
+    ] {
+        if let Some(names) = names {
+            for (index, name) in names.iter().enumerate() {
+                let path = format!("modules[{module_index}].{field}[{index}]");
+                if seen.insert(name.clone(), path.clone()).is_some() {
+                    return Err(PackageManifestError::duplicate_declaration(
+                        path,
+                        name.as_dotted(),
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_duplicate_module_axioms(
+    module_index: usize,
+    module: &PackageModule,
+) -> PackageManifestResult<()> {
+    if let Some(axioms) = &module.axioms {
+        validate_duplicate_names(
+            axioms,
+            &format!("modules[{module_index}].axioms"),
+            PackageManifestError::duplicate_axiom,
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_duplicate_names(
+    names: &[Name],
+    path: &str,
+    error: impl Fn(String, String) -> PackageManifestError,
+) -> PackageManifestResult<()> {
+    let mut seen = BTreeMap::<Name, usize>::new();
+    for (index, name) in names.iter().enumerate() {
+        if seen.insert(name.clone(), index).is_some() {
+            return Err(error(format!("{path}[{index}]"), name.as_dotted()));
+        }
+    }
+    Ok(())
+}
+
+fn validate_duplicate_module_artifact_paths(
+    modules: &[PackageModule],
+) -> PackageManifestResult<()> {
+    let mut seen = BTreeMap::<PackagePath, String>::new();
+    for (module_index, module) in modules.iter().enumerate() {
+        for (path_field, artifact_path) in module_artifact_paths(module) {
+            let path = format!("modules[{module_index}].{path_field}");
+            if seen.insert(artifact_path.clone(), path.clone()).is_some() {
+                return Err(PackageManifestError::duplicate_artifact_path(
+                    path,
+                    artifact_path.as_str(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn module_artifact_paths(module: &PackageModule) -> Vec<(&'static str, &PackagePath)> {
+    let mut paths = vec![
+        ("source", &module.source),
+        ("certificate", &module.certificate),
+    ];
+    if let Some(meta) = &module.meta {
+        paths.push(("meta", meta));
+    }
+    if let Some(replay) = &module.replay {
+        paths.push(("replay", replay));
+    }
+    paths
 }
 
 fn is_valid_package_version(value: &str) -> bool {

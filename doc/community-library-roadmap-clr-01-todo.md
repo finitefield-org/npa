@@ -606,7 +606,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-05 Implement Duplicate And Artifact Path Checks
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-04
 - Inputs:
   - validated raw manifest values
@@ -629,6 +629,10 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test -p npa-package package_manifest_duplicates`
 - Notes:
   - Duplicate artifact paths are rejected to avoid ambiguous writes in later build commands.
+  - Implemented by adding duplicate checks for local modules, top-level external
+    imports, local/external collisions, per-module declaration summaries,
+    package and module axioms, and module artifact paths, with targeted duplicate
+    validation tests.
 
 ### CLR-01-06 Implement Import Resolution And Graph Validation
 
