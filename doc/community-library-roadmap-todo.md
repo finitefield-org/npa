@@ -317,12 +317,14 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Status: Pending
 - Depends on: CLR-05
 - Inputs:
+  - `doc/community-library-roadmap-clr-06-todo.md`
   - registry entry sketch in `doc/community-library-roadmap.md`
   - package manifest / lock / axiom report / theorem index artifacts
   - checker results from CLR-03/CLR-04
 - Code or documentation areas:
-  - package CLI publish-plan command
-  - registry seed artifact schema
+  - `crates/npa-package` publish-plan and registry seed schemas
+  - `crates/npa-cli` `package publish-plan`
+  - `proofs/generated/publish-plan.json`
   - release metadata tests
 - Deliverables:
   - `package publish-plan` producing package release manifest and module registry entries.
@@ -336,10 +338,15 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - The schema explicitly distinguishes package registry metadata from independent checker binary registry metadata.
 - Verification:
   - `cargo run -p npa-cli -- package publish-plan --root proofs --check`
+  - `cargo test -p npa-cli package_publish_plan`
+  - `cargo test -p npa-package publish_plan`
   - `cargo test --workspace publish_plan`
   - `rg -n "npa.registry.module.v0.1|independent-checker.checker_binary_registry" doc crates`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-06-todo.md`.
   - This milestone still does not implement a registry server.
+  - MVP signature policy is checksum-only SHA-256; cryptographic signing remains target integration.
+  - Publish metadata and registry seed entries are helper data, not proof acceptance evidence.
 
 ### CLR-07 Add External Theorem Library CI Template
 
