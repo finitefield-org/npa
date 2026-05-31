@@ -288,6 +288,25 @@ manifest の役割:
 - registry publish に必要な metadata を出す
 ```
 
+CLR-00 で固定する schema constants:
+
+| Constant | Schema string | Artifact |
+| --- | --- | --- |
+| `PACKAGE_MANIFEST_SCHEMA` | `npa.package.v0.1` | `npa-package.toml` |
+| `PACKAGE_LOCK_SCHEMA` | `npa.package.lock.v0.1` | `generated/package-lock.json` |
+| `PACKAGE_AXIOM_REPORT_SCHEMA` | `npa.package.axiom_report.v0.1` | `generated/axiom-report.json` |
+| `PACKAGE_THEOREM_INDEX_SCHEMA` | `npa.package.theorem_index.v0.1` | `generated/theorem-index.json` |
+| `PACKAGE_PUBLISH_PLAN_SCHEMA` | `npa.package.publish_plan.v0.1` | `generated/publish-plan.json` |
+| `REGISTRY_MODULE_SCHEMA` | `npa.registry.module.v0.1` | module registry entry |
+
+`npa.package.lock.v0.1` は package-level artifact です。
+Phase 8 の `npa.independent-checker.import_lock_manifest.v1` は、checker run ごとに
+package metadata から導出される source-free checker input であり、同じ schema ではありません。
+`generated/package-lock.json`、`generated/axiom-report.json`、`generated/theorem-index.json`、
+`generated/publish-plan.json`、registry module entry は review、search、publish、
+CI freshness check のための metadata です。これらは checker evidence ではなく、
+証明受理の根拠は canonical certificate と kernel / source-free checker verdict だけです。
+
 禁止すること:
 
 ```text

@@ -880,7 +880,7 @@ MVP の import lock manifest schema：
 
 ```json
 {
-  "schema": "npa.phase8.import_lock_manifest.v1",
+  "schema": "npa.independent-checker.import_lock_manifest.v1",
   "imports": [
     {
       "module": "Std.Logic",
@@ -896,6 +896,10 @@ MVP の import lock manifest schema：
 }
 ```
 
+この Phase 8 import lock は source-free checker input です。
+package-level artifact の `npa.package.lock.v0.1` とは別 schema であり、
+package CLI が導出元になっても checker runner は
+`npa.independent-checker.import_lock_manifest.v1` だけを direct input として扱います。
 `MachineCheckRequest.imports.manifest_hash` は、この manifest file bytes の SHA-256 です。
 import lock manifest object 自身に self hash field は持たせません。
 `imports` は decoded Phase 2 `ModuleName` の canonical name order、
@@ -908,7 +912,7 @@ MVP v1 ではすべての entry で `certificate.certificate_hash` を required 
 MVP の top-level required field は `schema`、`imports` です。
 manifest object、`imports[]` entry object、`certificate` object は closed-world object で、
 unknown field と duplicate key を禁止します。
-`schema` が `npa.phase8.import_lock_manifest.v1` 以外の string の場合、
+`schema` が `npa.independent-checker.import_lock_manifest.v1` 以外の string の場合、
 および `certificate.kind` が `path` 以外の string の場合は
 `actual_value = "invalid_enum"` の schema / domain failure とします。
 `certificate.path` は workspace-relative path で、runner / checker は HTTP URL、
@@ -2250,7 +2254,7 @@ MVP の最小 internal shape は次です。
 
 ```json
 {
-  "schema": "npa.phase8.checker_binary_registry.v1",
+  "schema": "npa.independent-checker.checker_binary_registry.v1",
   "root_kind": "workspace",
   "entries": [
     {

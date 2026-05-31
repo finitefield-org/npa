@@ -86,25 +86,29 @@ repository verification commands is `npa-cli`.
 
 ### Schema Names
 
-```text
-npa.package.v0.1
-npa.package.lock.v0.1
-npa.package.axiom_report.v0.1
-npa.package.theorem_index.v0.1
-npa.package.publish_plan.v0.1
-npa.registry.module.v0.1
-```
+Target `npa-package` Rust constants:
+
+| Constant | Schema string | Primary artifact | Boundary |
+| --- | --- | --- | --- |
+| `PACKAGE_MANIFEST_SCHEMA` | `npa.package.v0.1` | `npa-package.toml` | Package input manifest, not checker evidence. |
+| `PACKAGE_LOCK_SCHEMA` | `npa.package.lock.v0.1` | `generated/package-lock.json` | Generated package metadata; source for checker-run import lock derivation, not checker evidence. |
+| `PACKAGE_AXIOM_REPORT_SCHEMA` | `npa.package.axiom_report.v0.1` | `generated/axiom-report.json` | Generated policy/report metadata, not checker evidence. |
+| `PACKAGE_THEOREM_INDEX_SCHEMA` | `npa.package.theorem_index.v0.1` | `generated/theorem-index.json` | Generated search/docs metadata, not checker evidence. |
+| `PACKAGE_PUBLISH_PLAN_SCHEMA` | `npa.package.publish_plan.v0.1` | `generated/publish-plan.json` | Generated release/registry upload plan, not checker evidence. |
+| `REGISTRY_MODULE_SCHEMA` | `npa.registry.module.v0.1` | module registry entry | Distribution/search metadata, not trusted base. |
 
 Existing Phase 8 schemas remain separate:
 
-```text
-npa.independent-checker.import_lock_manifest.v1
-npa.independent-checker.checker_binary_registry.v1
-```
+| Existing constant | Schema string | Boundary |
+| --- | --- | --- |
+| `INDEPENDENT_CHECKER_IMPORT_LOCK_MANIFEST_SCHEMA` | `npa.independent-checker.import_lock_manifest.v1` | Source-free checker input derived per checker run. |
+| `INDEPENDENT_CHECKER_CHECKER_BINARY_REGISTRY_SCHEMA` | `npa.independent-checker.checker_binary_registry.v1` | Runner-local checker executable configuration. |
 
 `npa.package.lock.v0.1` is the package-level import/package lock artifact. The
 independent-checker import lock is a source-free checker input derived from package
 metadata, not the same public package lock schema.
+No `npa.package.*` schema string is reused for `npa.independent-checker.*` artifacts,
+and no `npa.independent-checker.*` schema string is reused for public package artifacts.
 
 ### Current Proof Corpus Compatibility
 
@@ -253,6 +257,9 @@ verified_high_trust artifact
 
 Generated artifacts may support review, search, publishing, or checker orchestration.
 They must not become proof acceptance evidence.
+The proof acceptance boundary remains canonical certificate plus Rust kernel or
+source-free checker verdict. Generated package metadata can make a CI job fail when it
+is stale or inconsistent, but it cannot make an unchecked certificate accepted.
 
 ### Legacy Field Mapping
 
@@ -365,7 +372,7 @@ axiom_report_hash when available
 
 ### CLR-00-02 Define Schema Constant Names And Artifact Boundaries
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-01
 - Inputs:
   - Phase 8 schema constants in `crates/npa-api/src/independent_checker.rs`
@@ -383,6 +390,9 @@ axiom_report_hash when available
   - `git diff --check`
 - Notes:
   - `verified_high_trust` remains target integration outside CLR-00.
+  - Implemented by fixing `npa-package` target constants, separating
+    `npa.package.lock.v0.1` from `npa.independent-checker.import_lock_manifest.v1`,
+    and documenting generated package metadata as non-evidence.
 
 ### CLR-00-03 Specify `npa.package.v0.1` Manifest Field Contract
 
