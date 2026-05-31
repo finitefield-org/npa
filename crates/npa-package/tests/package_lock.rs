@@ -4,12 +4,13 @@ use std::path::{Path, PathBuf};
 
 use npa_cert::Name;
 use npa_package::{
-    build_package_lock_from_artifacts, build_package_lock_from_package_root, package_file_hash,
-    parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash,
-    parse_package_lock_json, validate_manifest, PackageHash, PackageId, PackageLockArtifact,
-    PackageLockEntry, PackageLockEntryOrigin, PackageLockError, PackageLockErrorKind,
-    PackageLockErrorReason, PackageLockImport, PackageLockManifest, PackageLockManifestReference,
-    PackagePath, PackageVersion, ValidatedPackageManifest, PACKAGE_LOCK_SCHEMA,
+    build_package_lock_from_artifacts, build_package_lock_from_package_root,
+    build_package_lock_graph, package_file_hash, parse_and_validate_manifest_str,
+    parse_manifest_str, parse_package_hash, parse_package_lock_json, validate_manifest,
+    PackageHash, PackageId, PackageLockArtifact, PackageLockEntry, PackageLockEntryOrigin,
+    PackageLockError, PackageLockErrorKind, PackageLockErrorReason, PackageLockImport,
+    PackageLockManifest, PackageLockManifestReference, PackagePath, PackageVersion,
+    ValidatedPackageManifest, PACKAGE_LOCK_SCHEMA,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
@@ -160,6 +161,16 @@ fn assert_lock_error(
     assert_eq!(error.field.as_deref(), field);
 }
 
+fn assert_lock_error_kind_reason(
+    error: &PackageLockError,
+    kind: PackageLockErrorKind,
+    reason: PackageLockErrorReason,
+) {
+    assert_eq!(error.kind, kind);
+    assert_eq!(error.reason_code, reason);
+    assert_eq!(error.reason_code.as_str(), reason.as_str());
+}
+
 fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -250,6 +261,36 @@ fn tampered_module_name(bytes: &[u8], module: &str) -> Vec<u8> {
     let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
     cert.header.module = Name::from_dotted(module);
     npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
+}
+
+fn tampered_certificate_imports(
+    bytes: &[u8],
+    edit: impl FnOnce(&mut Vec<npa_cert::ImportEntry>),
+) -> Vec<u8> {
+    let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
+    edit(&mut cert.imports);
+    npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
+}
+
+fn certificate_import(
+    module: &str,
+    export_hash: PackageHash,
+    certificate_hash: PackageHash,
+) -> npa_cert::ImportEntry {
+    npa_cert::ImportEntry {
+        module: Name::from_dotted(module),
+        export_hash: export_hash.into_bytes(),
+        certificate_hash: Some(certificate_hash.into_bytes()),
+    }
+}
+
+fn first_module_with_manifest_imports(validated: &ValidatedPackageManifest) -> usize {
+    validated
+        .manifest()
+        .modules
+        .iter()
+        .position(|module| !module.imports.is_empty())
+        .expect("proof corpus has a module with imports")
 }
 
 #[test]
@@ -761,4 +802,246 @@ fn package_lock_builder_ignores_source_replay_and_meta_paths() {
     let validated = validate_manifest(manifest).unwrap();
 
     build_proof_lock_from_artifacts(&validated, &artifacts).unwrap();
+}
+
+#[test]
+fn package_lock_import_identity_rejects_certificate_import_absent_from_manifest_graph() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let external = manifest.imports.as_deref().unwrap()[0].clone();
+    let module_index = manifest
+        .modules
+        .iter()
+        .position(|module| module.imports.is_empty())
+        .expect("proof corpus has an import-free module");
+    let original_validated = validate_manifest(manifest.clone()).unwrap();
+    let mut artifacts = proof_certificate_artifacts(&original_validated);
+    let certificate_path = manifest.modules[module_index].certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports.push(certificate_import(
+                &external.module.as_dotted(),
+                external.export_hash,
+                external.certificate_hash,
+            ));
+        });
+    manifest.modules[module_index].expected_certificate_file_hash = package_file_hash(&tampered);
+    artifacts.insert(certificate_path, tampered);
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::ManifestImportMissing,
+    );
+}
+
+#[test]
+fn package_lock_import_identity_rejects_wrong_import_export_hash() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let base_validated = validate_manifest(manifest.clone()).unwrap();
+    let module_index = first_module_with_manifest_imports(&base_validated);
+    let mut artifacts = proof_certificate_artifacts(&base_validated);
+    let certificate_path = manifest.modules[module_index].certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports[0].export_hash[0] ^= 0x01;
+        });
+    manifest.modules[module_index].expected_certificate_file_hash = package_file_hash(&tampered);
+    artifacts.insert(certificate_path, tampered);
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::LockImportExportHashMismatch,
+    );
+}
+
+#[test]
+fn package_lock_import_identity_rejects_wrong_import_certificate_hash() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let base_validated = validate_manifest(manifest.clone()).unwrap();
+    let module_index = first_module_with_manifest_imports(&base_validated);
+    let mut artifacts = proof_certificate_artifacts(&base_validated);
+    let certificate_path = manifest.modules[module_index].certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports[0]
+                .certificate_hash
+                .as_mut()
+                .expect("proof imports carry certificate hash")[0] ^= 0x01;
+        });
+    manifest.modules[module_index].expected_certificate_file_hash = package_file_hash(&tampered);
+    artifacts.insert(certificate_path, tampered);
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::LockImportCertificateHashMismatch,
+    );
+}
+
+#[test]
+fn package_lock_import_identity_rejects_manifest_import_absent_from_certificate() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let base_validated = validate_manifest(manifest.clone()).unwrap();
+    let module_index = first_module_with_manifest_imports(&base_validated);
+    let mut artifacts = proof_certificate_artifacts(&base_validated);
+    let certificate_path = manifest.modules[module_index].certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports.remove(0);
+        });
+    manifest.modules[module_index].expected_certificate_file_hash = package_file_hash(&tampered);
+    artifacts.insert(certificate_path, tampered);
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::CertificateImportMissing,
+    );
+}
+
+#[test]
+fn package_lock_import_identity_rejects_external_import_outside_package_lock() {
+    let manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let validated = validate_manifest(manifest.clone()).unwrap();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let external = manifest.imports.as_deref().unwrap()[0].clone();
+    let certificate_path = external.certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports.push(certificate_import(
+                "Std.Unknown.Missing",
+                hash(ZERO_HASH),
+                hash(ONE_HASH),
+            ));
+        });
+    artifacts.insert(certificate_path, tampered);
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::LockImportMissing,
+    );
+}
+
+#[test]
+fn package_lock_import_identity_rejects_external_import_to_local_entry() {
+    let manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let validated = validate_manifest(manifest.clone()).unwrap();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let external = manifest.imports.as_deref().unwrap()[0].clone();
+    let local = manifest.modules[0].clone();
+    let certificate_path = external.certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports.push(certificate_import(
+                &local.module.as_dotted(),
+                local.expected_export_hash,
+                local.expected_certificate_hash,
+            ));
+        });
+    artifacts.insert(certificate_path, tampered);
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::ExternalImportDependsOnLocal,
+    );
+}
+
+#[test]
+fn package_lock_import_identity_resolves_external_import_through_package_lock() {
+    let manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let validated = validate_manifest(manifest.clone()).unwrap();
+    let mut artifacts = proof_certificate_artifacts(&validated);
+    let imports = manifest.imports.as_deref().unwrap();
+    let first_external = imports[0].clone();
+    let second_external = imports[1].clone();
+    let certificate_path = first_external.certificate.clone();
+    let tampered =
+        tampered_certificate_imports(artifacts.get(&certificate_path).unwrap(), |imports| {
+            imports.push(certificate_import(
+                &second_external.module.as_dotted(),
+                second_external.export_hash,
+                second_external.certificate_hash,
+            ));
+        });
+    artifacts.insert(certificate_path, tampered);
+
+    let lock = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap();
+    let entry = lock
+        .entries
+        .iter()
+        .find(|entry| entry.module == first_external.module)
+        .expect("external lock entry exists");
+
+    assert_eq!(entry.imports.len(), 1);
+    assert_eq!(entry.imports[0].module, second_external.module);
+    assert_eq!(entry.imports[0].export_hash, second_external.export_hash);
+    assert_eq!(
+        entry.imports[0].certificate_hash,
+        second_external.certificate_hash
+    );
+}
+
+#[test]
+fn package_lock_topological_order_uses_lock_graph_dependencies() {
+    let graph = build_package_lock_graph(&unsorted_lock()).unwrap();
+
+    assert_eq!(
+        graph
+            .topological_order
+            .iter()
+            .map(Name::as_dotted)
+            .collect::<Vec<_>>(),
+        vec!["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.Basic"]
+    );
+}
+
+#[test]
+fn package_lock_topological_order_rejects_lock_graph_cycles() {
+    let mut lock = unsorted_lock();
+    for entry in &mut lock.entries {
+        match entry.module.as_dotted().as_str() {
+            "Std.Logic.Eq" => {
+                entry
+                    .imports
+                    .push(import("Std.Nat.Basic", NAT_EXPORT_HASH, NAT_CERT_HASH))
+            }
+            "Std.Nat.Basic" => {
+                entry
+                    .imports
+                    .push(import("Std.Logic.Eq", EQ_EXPORT_HASH, EQ_CERT_HASH))
+            }
+            _ => {}
+        }
+    }
+
+    let error = build_package_lock_graph(&lock).unwrap_err();
+
+    assert_lock_error_kind_reason(
+        &error,
+        PackageLockErrorKind::Graph,
+        PackageLockErrorReason::LockImportCycle,
+    );
+    assert_eq!(
+        error.actual_value.as_deref(),
+        Some("Std.Logic.Eq -> Std.Nat.Basic -> Std.Logic.Eq")
+    );
 }

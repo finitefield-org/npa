@@ -14,6 +14,7 @@ use npa_cert::Name;
 
 use crate::{
     error::{PackageLockError, PackageLockResult},
+    graph::ResolvedModuleImport,
     hash::{format_package_hash, package_file_hash, parse_package_hash, PackageHash},
     json::{parse_json, JsonMember, JsonValue},
     manifest::{PackageExternalImport, PackageModule, PackageVersion},
@@ -127,6 +128,28 @@ pub struct PackageLockArtifact<'a> {
     pub bytes: &'a [u8],
 }
 
+/// Resolved package-lock import graph.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageLockGraph {
+    /// Direct imports for each canonical, module-sorted package-lock entry.
+    pub resolved_entry_imports: Vec<Vec<PackageLockResolvedImport>>,
+    /// Deterministic certificate verification order, dependency before dependent.
+    pub topological_order: Vec<Name>,
+}
+
+/// One package-lock import resolved to another canonical package-lock entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageLockResolvedImport {
+    /// Imported module name.
+    pub module: Name,
+    /// Index into the canonical, module-sorted package-lock entry list.
+    pub entry_index: usize,
+    /// Imported module export hash.
+    pub export_hash: PackageHash,
+    /// Imported module certificate hash.
+    pub certificate_hash: PackageHash,
+}
+
 /// Build a package lock from a validated manifest and explicit certificate bytes.
 ///
 /// This builder reads no source, replay, metadata, theorem-index, or AI trace
@@ -175,6 +198,7 @@ pub fn build_package_lock_from_artifacts<'a>(
         entries,
     };
     validate_package_lock_manifest(&lock)?;
+    validate_package_lock_against_manifest_graph(validated, &lock)?;
     Ok(normalized_package_lock(&lock))
 }
 
@@ -216,6 +240,31 @@ pub fn build_package_lock_from_package_root(
             bytes: bytes.as_slice(),
         });
     build_package_lock_from_artifacts(validated, manifest_path, &manifest_bytes, artifacts)
+}
+
+/// Validate a package lock against manifest-resolved imports and return its lock graph.
+pub fn validate_package_lock_against_manifest_graph(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+) -> PackageLockResult<PackageLockGraph> {
+    let graph = build_package_lock_graph(lock)?;
+    let normalized = normalized_package_lock(lock);
+    validate_manifest_lock_entries(validated, &normalized)?;
+    validate_local_certificate_imports(validated, &normalized)?;
+    Ok(graph)
+}
+
+/// Build a resolved package-lock graph and deterministic verification order.
+pub fn build_package_lock_graph(lock: &PackageLockManifest) -> PackageLockResult<PackageLockGraph> {
+    validate_package_lock_manifest(lock)?;
+    let normalized = normalized_package_lock(lock);
+    let resolved_entry_imports = resolve_lock_entry_imports(&normalized.entries)?;
+    let topological_order = lock_topological_order(&normalized.entries, &resolved_entry_imports)?;
+
+    Ok(PackageLockGraph {
+        resolved_entry_imports,
+        topological_order,
+    })
 }
 
 fn artifact_byte_map<'a>(
@@ -585,6 +634,303 @@ fn validate_lock_imports(imports: &[PackageLockImport], entry_path: &str) -> Pac
         }
     }
     Ok(())
+}
+
+fn validate_manifest_lock_entries(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+) -> PackageLockResult<()> {
+    let entry_indices = lock_entry_indices(&lock.entries);
+    let manifest = validated.manifest();
+
+    for (module_index, module) in manifest.modules.iter().enumerate() {
+        let Some(entry_index) = entry_indices.get(&module.module).copied() else {
+            return Err(PackageLockError::lock_entry_missing(
+                format!("modules[{module_index}].module"),
+                module.module.as_dotted(),
+            ));
+        };
+        let entry = &lock.entries[entry_index];
+        if entry.origin != PackageLockEntryOrigin::Local {
+            return Err(PackageLockError::lock_entry_origin_mismatch(
+                format!("entries[{entry_index}].origin"),
+                "local",
+                entry.origin.as_str(),
+            ));
+        }
+    }
+
+    for (import_index, import) in manifest
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .enumerate()
+    {
+        let Some(entry_index) = entry_indices.get(&import.module).copied() else {
+            return Err(PackageLockError::lock_entry_missing(
+                format!("imports[{import_index}].module"),
+                import.module.as_dotted(),
+            ));
+        };
+        let entry = &lock.entries[entry_index];
+        if entry.origin != PackageLockEntryOrigin::External {
+            return Err(PackageLockError::lock_entry_origin_mismatch(
+                format!("entries[{entry_index}].origin"),
+                "external",
+                entry.origin.as_str(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_local_certificate_imports(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+) -> PackageLockResult<()> {
+    let entry_indices = lock_entry_indices(&lock.entries);
+    let manifest = validated.manifest();
+
+    for (module_index, module) in manifest.modules.iter().enumerate() {
+        let entry_index = entry_indices
+            .get(&module.module)
+            .copied()
+            .expect("validated manifest lock entry exists");
+        let entry = &lock.entries[entry_index];
+        compare_manifest_imports(
+            module_index,
+            entry_index,
+            &validated.graph().resolved_module_imports[module_index],
+            &entry.imports,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn compare_manifest_imports(
+    module_index: usize,
+    entry_index: usize,
+    expected_imports: &[ResolvedModuleImport],
+    actual_imports: &[PackageLockImport],
+) -> PackageLockResult<()> {
+    let mut expected_by_module = BTreeMap::<Name, (usize, &ResolvedModuleImport)>::new();
+    for (expected_index, expected) in expected_imports.iter().enumerate() {
+        expected_by_module.insert(expected.module.clone(), (expected_index, expected));
+    }
+
+    let mut actual_modules = BTreeSet::<Name>::new();
+    for (import_index, actual) in actual_imports.iter().enumerate() {
+        let Some((_, expected)) = expected_by_module.get(&actual.module) else {
+            return Err(PackageLockError::manifest_import_missing(
+                format!("entries[{entry_index}].imports[{import_index}].module"),
+                actual.module.as_dotted(),
+            ));
+        };
+
+        check_lock_import_export_hash(
+            format!("entries[{entry_index}].imports[{import_index}].export_hash"),
+            expected.export_hash,
+            actual.export_hash,
+        )?;
+        check_lock_import_certificate_hash(
+            format!("entries[{entry_index}].imports[{import_index}].certificate_hash"),
+            expected.certificate_hash,
+            actual.certificate_hash,
+        )?;
+        actual_modules.insert(actual.module.clone());
+    }
+
+    for (expected_index, expected) in expected_imports.iter().enumerate() {
+        if !actual_modules.contains(&expected.module) {
+            return Err(PackageLockError::certificate_import_missing(
+                format!("modules[{module_index}].imports[{expected_index}]"),
+                expected.module.as_dotted(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn resolve_lock_entry_imports(
+    entries: &[PackageLockEntry],
+) -> PackageLockResult<Vec<Vec<PackageLockResolvedImport>>> {
+    let entry_indices = lock_entry_indices(entries);
+    let mut resolved_entries = Vec::with_capacity(entries.len());
+
+    for (entry_index, entry) in entries.iter().enumerate() {
+        let mut resolved_imports = Vec::with_capacity(entry.imports.len());
+        for (import_index, import) in entry.imports.iter().enumerate() {
+            let import_path = format!("entries[{entry_index}].imports[{import_index}]");
+            let Some(import_entry_index) = entry_indices.get(&import.module).copied() else {
+                return Err(PackageLockError::lock_import_missing(
+                    format!("{import_path}.module"),
+                    import.module.as_dotted(),
+                ));
+            };
+            let import_entry = &entries[import_entry_index];
+
+            if entry.origin == PackageLockEntryOrigin::External
+                && import_entry.origin == PackageLockEntryOrigin::Local
+            {
+                return Err(PackageLockError::external_import_depends_on_local(
+                    format!("{import_path}.module"),
+                    import.module.as_dotted(),
+                ));
+            }
+
+            check_lock_import_export_hash(
+                format!("{import_path}.export_hash"),
+                import_entry.export_hash,
+                import.export_hash,
+            )?;
+            check_lock_import_certificate_hash(
+                format!("{import_path}.certificate_hash"),
+                import_entry.certificate_hash,
+                import.certificate_hash,
+            )?;
+
+            resolved_imports.push(PackageLockResolvedImport {
+                module: import.module.clone(),
+                entry_index: import_entry_index,
+                export_hash: import.export_hash,
+                certificate_hash: import.certificate_hash,
+            });
+        }
+        resolved_entries.push(resolved_imports);
+    }
+
+    Ok(resolved_entries)
+}
+
+fn lock_entry_indices(entries: &[PackageLockEntry]) -> BTreeMap<Name, usize> {
+    entries
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| (entry.module.clone(), index))
+        .collect()
+}
+
+fn lock_topological_order(
+    entries: &[PackageLockEntry],
+    resolved_entry_imports: &[Vec<PackageLockResolvedImport>],
+) -> PackageLockResult<Vec<Name>> {
+    let mut states = vec![LockVisitState::Unvisited; entries.len()];
+    let mut stack = Vec::<usize>::new();
+    let mut order = Vec::<Name>::new();
+
+    for entry_index in 0..entries.len() {
+        visit_lock_entry(
+            entry_index,
+            entries,
+            resolved_entry_imports,
+            &mut states,
+            &mut stack,
+            &mut order,
+        )?;
+    }
+
+    Ok(order)
+}
+
+fn visit_lock_entry(
+    entry_index: usize,
+    entries: &[PackageLockEntry],
+    resolved_entry_imports: &[Vec<PackageLockResolvedImport>],
+    states: &mut [LockVisitState],
+    stack: &mut Vec<usize>,
+    order: &mut Vec<Name>,
+) -> PackageLockResult<()> {
+    match states[entry_index] {
+        LockVisitState::Visited => return Ok(()),
+        LockVisitState::Visiting => {
+            return Err(PackageLockError::lock_import_cycle(
+                format!("entries[{entry_index}].imports"),
+                lock_cycle_path(entries, stack, entry_index),
+            ));
+        }
+        LockVisitState::Unvisited => {}
+    }
+
+    states[entry_index] = LockVisitState::Visiting;
+    stack.push(entry_index);
+
+    for import in &resolved_entry_imports[entry_index] {
+        if states[import.entry_index] == LockVisitState::Visiting {
+            return Err(PackageLockError::lock_import_cycle(
+                format!("entries[{entry_index}].imports"),
+                lock_cycle_path(entries, stack, import.entry_index),
+            ));
+        }
+        visit_lock_entry(
+            import.entry_index,
+            entries,
+            resolved_entry_imports,
+            states,
+            stack,
+            order,
+        )?;
+    }
+
+    stack.pop();
+    states[entry_index] = LockVisitState::Visited;
+    order.push(entries[entry_index].module.clone());
+    Ok(())
+}
+
+fn lock_cycle_path(entries: &[PackageLockEntry], stack: &[usize], repeated: usize) -> String {
+    let start = stack
+        .iter()
+        .position(|entry_index| *entry_index == repeated)
+        .unwrap_or(0);
+    let mut cycle = stack[start..]
+        .iter()
+        .map(|entry_index| entries[*entry_index].module.as_dotted())
+        .collect::<Vec<_>>();
+    cycle.push(entries[repeated].module.as_dotted());
+    cycle.join(" -> ")
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LockVisitState {
+    Unvisited,
+    Visiting,
+    Visited,
+}
+
+fn check_lock_import_export_hash(
+    path: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::lock_import_export_hash_mismatch(
+            path,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
+}
+
+fn check_lock_import_certificate_hash(
+    path: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageLockResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageLockError::lock_import_certificate_hash_mismatch(
+            path,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
 }
 
 fn parse_package_lock_value(value: &JsonValue) -> PackageLockResult<PackageLockManifest> {

@@ -113,8 +113,11 @@ pub use hash::{
 };
 pub use lock::{
     build_package_lock_from_artifacts, build_package_lock_from_package_root,
-    parse_package_lock_json, validate_package_lock_manifest, PackageLockArtifact, PackageLockEntry,
-    PackageLockEntryOrigin, PackageLockImport, PackageLockManifest, PackageLockManifestReference,
+    build_package_lock_graph, parse_package_lock_json,
+    validate_package_lock_against_manifest_graph, validate_package_lock_manifest,
+    PackageLockArtifact, PackageLockEntry, PackageLockEntryOrigin, PackageLockGraph,
+    PackageLockImport, PackageLockManifest, PackageLockManifestReference,
+    PackageLockResolvedImport,
 };
 pub use manifest::{
     parse_manifest_str, PackageExternalImport, PackageManifest, PackageModule, PackagePolicy,

@@ -840,6 +840,132 @@ impl PackageLockError {
         )
     }
 
+    /// Build a package-lock entry missing from the resolved lock graph.
+    pub fn lock_entry_missing(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("module".to_owned()),
+            PackageLockErrorReason::LockEntryMissing,
+            Some("package lock entry".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a package-lock entry origin mismatch error.
+    pub fn lock_entry_origin_mismatch(
+        path: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("origin".to_owned()),
+            PackageLockErrorReason::LockEntryOriginMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a certificate import that is absent from the package manifest graph.
+    pub fn manifest_import_missing(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("module".to_owned()),
+            PackageLockErrorReason::ManifestImportMissing,
+            Some("manifest-resolved direct import".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a package manifest import that is absent from the certificate imports.
+    pub fn certificate_import_missing(
+        path: impl Into<String>,
+        expected: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("module".to_owned()),
+            PackageLockErrorReason::CertificateImportMissing,
+            Some(expected.into()),
+            None,
+        )
+    }
+
+    /// Build a certificate import that does not resolve to any package-lock entry.
+    pub fn lock_import_missing(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("module".to_owned()),
+            PackageLockErrorReason::LockImportMissing,
+            Some("local or external package-lock entry".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a lock import export-hash mismatch error.
+    pub fn lock_import_export_hash_mismatch(
+        path: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("export_hash".to_owned()),
+            PackageLockErrorReason::LockImportExportHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a lock import certificate-hash mismatch error.
+    pub fn lock_import_certificate_hash_mismatch(
+        path: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("certificate_hash".to_owned()),
+            PackageLockErrorReason::LockImportCertificateHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an external lock entry depending on a local entry error.
+    pub fn external_import_depends_on_local(
+        path: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("module".to_owned()),
+            PackageLockErrorReason::ExternalImportDependsOnLocal,
+            Some("external package-lock entry".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a package-lock import graph cycle error.
+    pub fn lock_import_cycle(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Graph,
+            path,
+            Some("imports".to_owned()),
+            PackageLockErrorReason::LockImportCycle,
+            Some("acyclic package-lock import graph".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
     fn duplicate(
         path: impl Into<String>,
         field: impl Into<String>,
@@ -908,6 +1034,8 @@ pub enum PackageLockErrorKind {
     CertificateDecode,
     /// Decoded certificate identity does not match the validated package manifest.
     CertificateIdentity,
+    /// Package-lock import graph validation failure.
+    Graph,
 }
 
 /// Stable package lock error reason code.
@@ -965,6 +1093,24 @@ pub enum PackageLockErrorReason {
     CertificateHashMismatch,
     /// A direct import lacks the high-trust certificate hash required by package locks.
     ImportCertificateHashMissing,
+    /// A package-lock entry is missing for a manifest module or external import.
+    LockEntryMissing,
+    /// A package-lock entry has the wrong local/external origin.
+    LockEntryOriginMismatch,
+    /// A certificate declares a direct import not present in the manifest graph.
+    ManifestImportMissing,
+    /// The manifest graph declares a direct import not present in the certificate.
+    CertificateImportMissing,
+    /// A certificate import cannot be resolved to a package-lock entry.
+    LockImportMissing,
+    /// A certificate import export hash differs from the resolved lock entry.
+    LockImportExportHashMismatch,
+    /// A certificate import certificate hash differs from the resolved lock entry.
+    LockImportCertificateHashMismatch,
+    /// An external certificate import resolves to a local package lock entry.
+    ExternalImportDependsOnLocal,
+    /// The package-lock import graph has a cycle.
+    LockImportCycle,
 }
 
 impl PackageLockErrorReason {
@@ -997,6 +1143,15 @@ impl PackageLockErrorReason {
             Self::AxiomReportHashMismatch => "axiom_report_hash_mismatch",
             Self::CertificateHashMismatch => "certificate_hash_mismatch",
             Self::ImportCertificateHashMissing => "import_certificate_hash_missing",
+            Self::LockEntryMissing => "lock_entry_missing",
+            Self::LockEntryOriginMismatch => "lock_entry_origin_mismatch",
+            Self::ManifestImportMissing => "manifest_import_missing",
+            Self::CertificateImportMissing => "certificate_import_missing",
+            Self::LockImportMissing => "lock_import_missing",
+            Self::LockImportExportHashMismatch => "lock_import_export_hash_mismatch",
+            Self::LockImportCertificateHashMismatch => "lock_import_certificate_hash_mismatch",
+            Self::ExternalImportDependsOnLocal => "external_import_depends_on_local",
+            Self::LockImportCycle => "lock_import_cycle",
         }
     }
 }
