@@ -63,10 +63,29 @@ pub fn parse_package_hash(
     Ok(PackageHash::new(digest))
 }
 
+/// Format a parsed package hash as `sha256:<64 lowercase hex>`.
+pub fn format_package_hash(hash: &PackageHash) -> String {
+    let mut out = String::with_capacity("sha256:".len() + 64);
+    out.push_str("sha256:");
+    for byte in hash.as_bytes() {
+        out.push(hex_digit(byte >> 4));
+        out.push(hex_digit(byte & 0x0f));
+    }
+    out
+}
+
 fn hex_nibble(byte: u8) -> u8 {
     match byte {
         b'0'..=b'9' => byte - b'0',
         b'a'..=b'f' => byte - b'a' + 10,
         _ => unreachable!("hash parser validates lowercase hex before decoding"),
+    }
+}
+
+fn hex_digit(value: u8) -> char {
+    match value {
+        0..=9 => char::from(b'0' + value),
+        10..=15 => char::from(b'a' + (value - 10)),
+        _ => unreachable!("hex digit out of range"),
     }
 }

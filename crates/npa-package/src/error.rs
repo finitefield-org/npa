@@ -3,6 +3,9 @@
 /// Result type for package manifest parsing and validation.
 pub type PackageManifestResult<T> = Result<T, PackageManifestError>;
 
+/// Result type for package lock parsing and validation.
+pub type PackageLockResult<T> = Result<T, PackageLockError>;
+
 /// Stable package manifest error payload.
 ///
 /// Tests should assert these structured fields instead of matching display text.
@@ -463,6 +466,367 @@ impl PackageManifestErrorReason {
             Self::UnknownImport => "unknown_import",
             Self::ImportCycle => "import_cycle",
             Self::DisallowedAxiom => "disallowed_axiom",
+        }
+    }
+}
+
+/// Stable package lock error payload.
+///
+/// Package locks are generated JSON artifacts, separate from package manifests.
+/// Tests should assert these structured fields instead of matching display text.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageLockError {
+    /// Stable error category.
+    pub kind: PackageLockErrorKind,
+    /// Stable artifact-local path, for example `$`, `manifest.file_hash`, or `entries[0].module`.
+    pub path: String,
+    /// Field name when the error is attached to one object field.
+    pub field: Option<String>,
+    /// Stable machine-readable reason code.
+    pub reason_code: PackageLockErrorReason,
+    /// Expected value or type when useful.
+    pub expected_value: Option<String>,
+    /// Actual value or type when useful.
+    pub actual_value: Option<String>,
+}
+
+impl PackageLockError {
+    /// Build a JSON syntax error.
+    pub fn invalid_json(message: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            "$",
+            None,
+            PackageLockErrorReason::InvalidJson,
+            Some("valid JSON object".to_owned()),
+            Some(message.into()),
+        )
+    }
+
+    /// Build a duplicate JSON object field error.
+    pub fn duplicate_field(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::DuplicateField,
+            Some("unique object field".to_owned()),
+            None,
+        )
+    }
+
+    /// Build an unknown-field error.
+    pub fn unknown_field(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::UnknownField,
+            None,
+            None,
+        )
+    }
+
+    /// Build a missing-field error.
+    pub fn missing_field(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::MissingField,
+            None,
+            None,
+        )
+    }
+
+    /// Build a wrong-type error.
+    pub fn wrong_type(
+        path: impl Into<String>,
+        field: Option<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            field,
+            PackageLockErrorReason::WrongType,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an unsupported lock schema error.
+    pub fn unsupported_schema(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::LockSchemaInvalid,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-hash-format error.
+    pub fn invalid_hash_format(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Hash,
+            path,
+            None,
+            PackageLockErrorReason::InvalidHashFormat,
+            Some("sha256:<64 lowercase hex>".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-package-id error.
+    pub fn invalid_package_id(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Domain,
+            path,
+            None,
+            PackageLockErrorReason::InvalidPackageId,
+            Some("lowercase ASCII package id".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-version error.
+    pub fn invalid_version(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Domain,
+            path,
+            None,
+            PackageLockErrorReason::InvalidVersion,
+            Some("MAJOR.MINOR.PATCH without leading zeroes".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-module-name error.
+    pub fn invalid_module_name(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Domain,
+            path,
+            None,
+            PackageLockErrorReason::InvalidModuleName,
+            Some("canonical dotted name".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-path error.
+    pub fn invalid_path(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::Path,
+            path,
+            None,
+            PackageLockErrorReason::InvalidPath,
+            Some("lexical package-relative path".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-origin error.
+    pub fn invalid_origin(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some("origin".to_owned()),
+            PackageLockErrorReason::InvalidOrigin,
+            Some("local or external".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a duplicate-lock-entry error.
+    pub fn duplicate_lock_entry(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "module",
+            PackageLockErrorReason::DuplicateLockEntry,
+            actual,
+        )
+    }
+
+    /// Build a duplicate-certificate-path error.
+    pub fn duplicate_certificate_path(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "certificate",
+            PackageLockErrorReason::DuplicateCertificatePath,
+            actual,
+        )
+    }
+
+    /// Build a duplicate-import error within one lock entry.
+    pub fn duplicate_import(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::duplicate(
+            path,
+            "module",
+            PackageLockErrorReason::DuplicateImport,
+            actual,
+        )
+    }
+
+    /// Build an external-entry missing package or version error.
+    pub fn external_field_required(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::ExternalFieldRequired,
+            Some("present for origin = external".to_owned()),
+            None,
+        )
+    }
+
+    /// Build a local-entry forbidden package or version error.
+    pub fn local_field_forbidden(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::LockSchema,
+            path,
+            Some(field.into()),
+            PackageLockErrorReason::LocalFieldForbidden,
+            Some("absent for origin = local".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    fn duplicate(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        reason_code: PackageLockErrorReason,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageLockErrorKind::Duplicate,
+            path,
+            Some(field.into()),
+            reason_code,
+            Some("unique value".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    fn new(
+        kind: PackageLockErrorKind,
+        path: impl Into<String>,
+        field: Option<String>,
+        reason_code: PackageLockErrorReason,
+        expected_value: Option<String>,
+        actual_value: Option<String>,
+    ) -> Self {
+        Self {
+            kind,
+            path: path.into(),
+            field,
+            reason_code,
+            expected_value,
+            actual_value,
+        }
+    }
+}
+
+impl std::fmt::Display for PackageLockError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:?} at {}: {}",
+            self.kind,
+            self.path,
+            self.reason_code.as_str()
+        )
+    }
+}
+
+impl std::error::Error for PackageLockError {}
+
+/// Stable package lock error category.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageLockErrorKind {
+    /// JSON syntax, closed-object schema, required field, or type validation failure.
+    LockSchema,
+    /// Scalar domain validation failure.
+    Domain,
+    /// Duplicate package lock identity failure.
+    Duplicate,
+    /// Package-relative path validation failure.
+    Path,
+    /// Hash grammar validation failure.
+    Hash,
+}
+
+/// Stable package lock error reason code.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageLockErrorReason {
+    /// JSON syntax is invalid.
+    InvalidJson,
+    /// A duplicate object field was rejected.
+    DuplicateField,
+    /// A field is not part of the closed schema.
+    UnknownField,
+    /// A required field is absent.
+    MissingField,
+    /// A field has the wrong JSON type.
+    WrongType,
+    /// The lock schema field has the wrong value.
+    LockSchemaInvalid,
+    /// Hash string grammar is invalid.
+    InvalidHashFormat,
+    /// Package id grammar is invalid.
+    InvalidPackageId,
+    /// Package version grammar is invalid.
+    InvalidVersion,
+    /// Module name grammar is invalid.
+    InvalidModuleName,
+    /// Package path grammar is invalid.
+    InvalidPath,
+    /// Entry origin is neither local nor external.
+    InvalidOrigin,
+    /// Lock entry module is duplicated.
+    DuplicateLockEntry,
+    /// Lock entry certificate path is duplicated.
+    DuplicateCertificatePath,
+    /// Direct import module is duplicated within one lock entry.
+    DuplicateImport,
+    /// External entries must carry package and version.
+    ExternalFieldRequired,
+    /// Local entries must not carry package or version.
+    LocalFieldForbidden,
+}
+
+impl PackageLockErrorReason {
+    /// Return the stable wire reason code.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::InvalidJson => "invalid_json",
+            Self::DuplicateField => "duplicate_field",
+            Self::UnknownField => "unknown_field",
+            Self::MissingField => "missing_field",
+            Self::WrongType => "wrong_type",
+            Self::LockSchemaInvalid => "lock_schema_invalid",
+            Self::InvalidHashFormat => "invalid_hash_format",
+            Self::InvalidPackageId => "invalid_package_id",
+            Self::InvalidVersion => "invalid_version",
+            Self::InvalidModuleName => "invalid_module_name",
+            Self::InvalidPath => "invalid_path",
+            Self::InvalidOrigin => "invalid_origin",
+            Self::DuplicateLockEntry => "duplicate_lock_entry",
+            Self::DuplicateCertificatePath => "duplicate_certificate_path",
+            Self::DuplicateImport => "duplicate_import",
+            Self::ExternalFieldRequired => "external_field_required",
+            Self::LocalFieldForbidden => "local_field_forbidden",
         }
     }
 }

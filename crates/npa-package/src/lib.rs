@@ -14,6 +14,9 @@
 //! certificate files for proof acceptance; later CLI commands may compare file
 //! hashes or invoke checkers, but those results are separate generated
 //! artifacts.
+//! CLR-03 package locks are also orchestration artifacts: `npa-package` parses
+//! and serializes their canonical JSON identity data, but proof acceptance still
+//! depends on canonical certificate bytes and checker verdicts.
 //!
 //! CLI implementers should use the structured error API instead of parsing
 //! [`std::fmt::Display`] strings. [`PackageManifestError`] exposes stable
@@ -88,6 +91,8 @@
 pub mod error;
 pub mod graph;
 pub mod hash;
+mod json;
+pub mod lock;
 pub mod manifest;
 pub mod name;
 pub mod path;
@@ -95,13 +100,18 @@ pub mod schema;
 pub mod validate;
 
 pub use error::{
+    PackageLockError, PackageLockErrorKind, PackageLockErrorReason, PackageLockResult,
     PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
     PackageManifestResult,
 };
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,
 };
-pub use hash::{parse_package_hash, PackageHash, PackageHashBytes};
+pub use hash::{format_package_hash, parse_package_hash, PackageHash, PackageHashBytes};
+pub use lock::{
+    parse_package_lock_json, validate_package_lock_manifest, PackageLockEntry,
+    PackageLockEntryOrigin, PackageLockImport, PackageLockManifest, PackageLockManifestReference,
+};
 pub use manifest::{
     parse_manifest_str, PackageExternalImport, PackageManifest, PackageModule, PackagePolicy,
     PackageVersion,
