@@ -1,0 +1,172 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MatrixMulAssocLaw",
+      "source_kind": "explicit_def_source",
+      "term": "def MatrixMulAssocLaw.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), Prop :=\n  fun Matrix => fun mat_mul => forall (A : Matrix), forall (B : Matrix), forall (C : Matrix), @Eq.{m} Matrix (mat_mul (mat_mul A B) C) (mat_mul A (mat_mul B C))"
+    },
+    {
+      "declaration": "MatrixLeftUnitLaw",
+      "source_kind": "explicit_def_source",
+      "term": "def MatrixLeftUnitLaw.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => forall (A : Matrix), @Eq.{m} Matrix (mat_mul mat_one A) A"
+    },
+    {
+      "declaration": "MatrixRightUnitLaw",
+      "source_kind": "explicit_def_source",
+      "term": "def MatrixRightUnitLaw.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => forall (A : Matrix), @Eq.{m} Matrix (mat_mul A mat_one) A"
+    },
+    {
+      "declaration": "MatrixAdjointMulLaw",
+      "source_kind": "explicit_def_source",
+      "term": "def MatrixAdjointMulLaw.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), Prop :=\n  fun Matrix => fun mat_mul => fun mat_adjoint => forall (A : Matrix), forall (B : Matrix), @Eq.{m} Matrix (mat_adjoint (mat_mul A B)) (mat_mul (mat_adjoint B) (mat_adjoint A))"
+    },
+    {
+      "declaration": "MatrixAdjointInvolutiveLaw",
+      "source_kind": "explicit_def_source",
+      "term": "def MatrixAdjointInvolutiveLaw.{m} :\n  forall (Matrix : Sort m), forall (mat_adjoint : forall (A : Matrix), Matrix), Prop :=\n  fun Matrix => fun mat_adjoint => forall (A : Matrix), @Eq.{m} Matrix (mat_adjoint (mat_adjoint A)) A"
+    },
+    {
+      "declaration": "MatrixStarAlgebraLawArgs",
+      "source_kind": "explicit_def_source",
+      "term": "def MatrixStarAlgebraLawArgs.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => forall (Q : Prop), forall (mk : forall (mul_assoc : @MatrixMulAssocLaw.{m} Matrix mat_mul), forall (left_unit : @MatrixLeftUnitLaw.{m} Matrix mat_one mat_mul), forall (right_unit : @MatrixRightUnitLaw.{m} Matrix mat_one mat_mul), forall (adjoint_mul : @MatrixAdjointMulLaw.{m} Matrix mat_mul mat_adjoint), forall (adjoint_involutive : @MatrixAdjointInvolutiveLaw.{m} Matrix mat_adjoint), Q), Q"
+    },
+    {
+      "declaration": "NormalMatrix",
+      "source_kind": "explicit_def_source",
+      "term": "def NormalMatrix.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (A : Matrix), Prop :=\n  fun Matrix => fun mat_mul => fun mat_adjoint => fun A => @Eq.{m} Matrix (mat_mul A (mat_adjoint A)) (mat_mul (mat_adjoint A) A)"
+    },
+    {
+      "declaration": "UnitaryMatrix",
+      "source_kind": "explicit_def_source",
+      "term": "def UnitaryMatrix.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => forall (Q : Prop), forall (mk : forall (left_unitary : @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one), forall (right_unitary : @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one), Q), Q"
+    },
+    {
+      "declaration": "DiagonalMatrix",
+      "source_kind": "explicit_def_source",
+      "term": "def DiagonalMatrix.{m} :\n  forall (Matrix : Sort m), forall (is_diagonal : forall (D : Matrix), Prop), forall (D : Matrix), Prop :=\n  fun Matrix => fun is_diagonal => fun D => is_diagonal D"
+    },
+    {
+      "declaration": "DiagonalizationEquation",
+      "source_kind": "explicit_def_source",
+      "term": "def DiagonalizationEquation.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), Prop :=\n  fun Matrix => fun mat_mul => fun mat_adjoint => fun A => fun U => fun D => @Eq.{m} Matrix A (mat_mul (mat_mul U D) (mat_adjoint U))"
+    },
+    {
+      "declaration": "UnitaryDiagonalization",
+      "source_kind": "explicit_def_source",
+      "term": "def UnitaryDiagonalization.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun A => fun U => fun D => forall (Q : Prop), forall (mk : forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (diagonal : @DiagonalMatrix.{m} Matrix is_diagonal D), forall (equation : @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D), Q), Q"
+    },
+    {
+      "declaration": "NormalMatrixDiagonalizes",
+      "source_kind": "explicit_def_source",
+      "term": "def NormalMatrixDiagonalizes.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => forall (A : Matrix), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint A), forall (S : Prop), forall (choose : forall (U : Matrix), forall (D : Matrix), forall (diag : @UnitaryDiagonalization.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal A U D), S), S"
+    },
+    {
+      "declaration": "SpectralConstructionArgs",
+      "source_kind": "explicit_def_source",
+      "term": "def SpectralConstructionArgs.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => forall (Q : Prop), forall (mk : forall (finite_dimensional_law : finite_dimensional), forall (complex_spectral_field_law : complex_spectral_field), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), Q), Q"
+    },
+    {
+      "declaration": "FiniteDimensionalSpectralTheorem",
+      "source_kind": "explicit_def_source",
+      "term": "def FiniteDimensionalSpectralTheorem.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (construction : @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws), Prop :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => forall (Q : Prop), forall (mk : forall (finite_dimensional_out : finite_dimensional), forall (complex_spectral_field_out : complex_spectral_field), forall (matrix_laws_out : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), Q), Q"
+    },
+    {
+      "declaration": "normal_matrix_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem normal_matrix_intro.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (A : Matrix), forall (commutes_with_adjoint : @Eq.{m} Matrix (mat_mul A (mat_adjoint A)) (mat_mul (mat_adjoint A) A)), @NormalMatrix.{m} Matrix mat_mul mat_adjoint A :=\n  fun Matrix => fun mat_mul => fun mat_adjoint => fun A => fun commutes_with_adjoint => commutes_with_adjoint"
+    },
+    {
+      "declaration": "normal_matrix_commutes_with_adjoint",
+      "source_kind": "explicit_term_source",
+      "term": "theorem normal_matrix_commutes_with_adjoint.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (A : Matrix), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint A), @Eq.{m} Matrix (mat_mul A (mat_adjoint A)) (mat_mul (mat_adjoint A) A) :=\n  fun Matrix => fun mat_mul => fun mat_adjoint => fun A => fun normal => normal"
+    },
+    {
+      "declaration": "unitary_matrix_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_matrix_intro.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (left_unitary : @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one), forall (right_unitary : @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one), @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun left_unitary => fun right_unitary => fun (Q : Prop) => fun (mk : forall (left_unitary_arg : @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one), forall (right_unitary_arg : @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one), Q) => mk left_unitary right_unitary"
+    },
+    {
+      "declaration": "unitary_matrix_left_inverse",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_matrix_left_inverse.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun unitary => unitary (@Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one) (fun (left_unitary : @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one) => fun (right_unitary : @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one) => left_unitary)"
+    },
+    {
+      "declaration": "unitary_matrix_right_inverse",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_matrix_right_inverse.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun unitary => unitary (@Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one) (fun (left_unitary : @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one) => fun (right_unitary : @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one) => right_unitary)"
+    },
+    {
+      "declaration": "diagonal_matrix_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem diagonal_matrix_intro.{m} :\n  forall (Matrix : Sort m), forall (is_diagonal : forall (D : Matrix), Prop), forall (D : Matrix), forall (diagonal : is_diagonal D), @DiagonalMatrix.{m} Matrix is_diagonal D :=\n  fun Matrix => fun is_diagonal => fun D => fun diagonal => diagonal"
+    },
+    {
+      "declaration": "diagonal_matrix_property",
+      "source_kind": "explicit_term_source",
+      "term": "theorem diagonal_matrix_property.{m} :\n  forall (Matrix : Sort m), forall (is_diagonal : forall (D : Matrix), Prop), forall (D : Matrix), forall (diagonal : @DiagonalMatrix.{m} Matrix is_diagonal D), is_diagonal D :=\n  fun Matrix => fun is_diagonal => fun D => fun diagonal => diagonal"
+    },
+    {
+      "declaration": "diagonalization_equation_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem diagonalization_equation_intro.{m} :\n  forall (Matrix : Sort m), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), forall (equation : @Eq.{m} Matrix A (mat_mul (mat_mul U D) (mat_adjoint U))), @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D :=\n  fun Matrix => fun mat_mul => fun mat_adjoint => fun A => fun U => fun D => fun equation => equation"
+    },
+    {
+      "declaration": "unitary_diagonalization_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_diagonalization_intro.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (diagonal : @DiagonalMatrix.{m} Matrix is_diagonal D), forall (equation : @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D), @UnitaryDiagonalization.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal A U D :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun A => fun U => fun D => fun unitary => fun diagonal => fun equation => fun (Q : Prop) => fun (mk : forall (unitary_arg : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (diagonal_arg : @DiagonalMatrix.{m} Matrix is_diagonal D), forall (equation_arg : @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D), Q) => mk unitary diagonal equation"
+    },
+    {
+      "declaration": "unitary_diagonalization_unitary",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_diagonalization_unitary.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), forall (diag : @UnitaryDiagonalization.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal A U D), @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun A => fun U => fun D => fun diag => diag (@UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (diagonal : @DiagonalMatrix.{m} Matrix is_diagonal D) => fun (equation : @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D) => unitary)"
+    },
+    {
+      "declaration": "unitary_diagonalization_diagonal",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_diagonalization_diagonal.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), forall (diag : @UnitaryDiagonalization.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal A U D), @DiagonalMatrix.{m} Matrix is_diagonal D :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun A => fun U => fun D => fun diag => diag (@DiagonalMatrix.{m} Matrix is_diagonal D) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (diagonal : @DiagonalMatrix.{m} Matrix is_diagonal D) => fun (equation : @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D) => diagonal)"
+    },
+    {
+      "declaration": "unitary_diagonalization_equation",
+      "source_kind": "explicit_term_source",
+      "term": "theorem unitary_diagonalization_equation.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (A : Matrix), forall (U : Matrix), forall (D : Matrix), forall (diag : @UnitaryDiagonalization.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal A U D), @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun A => fun U => fun D => fun diag => diag (@DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (diagonal : @DiagonalMatrix.{m} Matrix is_diagonal D) => fun (equation : @DiagonalizationEquation.{m} Matrix mat_mul mat_adjoint A U D) => equation)"
+    },
+    {
+      "declaration": "spectral_construction_args_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem spectral_construction_args_intro.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (finite_dimensional_law : finite_dimensional), forall (complex_spectral_field_law : complex_spectral_field), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun finite_dimensional_law => fun complex_spectral_field_law => fun normal_matrix_diagonalizes => fun (Q : Prop) => fun (mk : forall (finite_dimensional_law_arg : finite_dimensional), forall (complex_spectral_field_law_arg : complex_spectral_field), forall (normal_matrix_diagonalizes_arg : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), Q) => mk finite_dimensional_law complex_spectral_field_law normal_matrix_diagonalizes"
+    },
+    {
+      "declaration": "spectral_construction_finite_dimensional",
+      "source_kind": "explicit_term_source",
+      "term": "theorem spectral_construction_finite_dimensional.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (construction : @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws), finite_dimensional :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => construction finite_dimensional (fun (finite_dimensional_law : finite_dimensional) => fun (complex_spectral_field_law : complex_spectral_field) => fun (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) => finite_dimensional_law)"
+    },
+    {
+      "declaration": "spectral_construction_complex_field",
+      "source_kind": "explicit_term_source",
+      "term": "theorem spectral_construction_complex_field.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (construction : @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws), complex_spectral_field :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => construction complex_spectral_field (fun (finite_dimensional_law : finite_dimensional) => fun (complex_spectral_field_law : complex_spectral_field) => fun (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) => complex_spectral_field_law)"
+    },
+    {
+      "declaration": "spectral_construction_diagonalizes",
+      "source_kind": "explicit_term_source",
+      "term": "theorem spectral_construction_diagonalizes.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (construction : @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws), @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => construction (@NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) (fun (finite_dimensional_law : finite_dimensional) => fun (complex_spectral_field_law : complex_spectral_field) => fun (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) => normal_matrix_diagonalizes)"
+    },
+    {
+      "declaration": "finite_dimensional_normal_matrix_unitarily_diagonalizable",
+      "source_kind": "explicit_term_source",
+      "term": "theorem finite_dimensional_normal_matrix_unitarily_diagonalizable.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (construction : @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws), forall (A : Matrix), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint A), forall (S : Prop), forall (choose : forall (U : Matrix), forall (D : Matrix), forall (diag : @UnitaryDiagonalization.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal A U D), S), S :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun A => fun normal => fun S => fun choose => @spectral_construction_diagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction A normal S choose"
+    },
+    {
+      "declaration": "finite_dimensional_spectral_theorem",
+      "source_kind": "explicit_term_source",
+      "term": "theorem finite_dimensional_spectral_theorem.{m} :\n  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (is_diagonal : forall (D : Matrix), Prop), forall (finite_dimensional : Prop), forall (complex_spectral_field : Prop), forall (matrix_laws : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (construction : @SpectralConstructionArgs.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws), @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction :=\n  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun (Q : Prop) => fun (mk : forall (finite_dimensional_out : finite_dimensional), forall (complex_spectral_field_out : complex_spectral_field), forall (matrix_laws_out : @MatrixStarAlgebraLawArgs.{m} Matrix mat_one mat_mul mat_adjoint), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), Q) => construction Q (fun (finite_dimensional_law : finite_dimensional) => fun (complex_spectral_field_law : complex_spectral_field) => fun (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) => mk finite_dimensional_law complex_spectral_field_law matrix_laws normal_matrix_diagonalizes)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/certificate.npcert"
+  }
+}

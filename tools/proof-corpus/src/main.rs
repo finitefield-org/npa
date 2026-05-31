@@ -1127,6 +1127,33 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_SPECTRAL_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem",
+    source_path: "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: ABSTRACT_SPECTRAL_THEOREM_DEFINITIONS,
+    theorems: ABSTRACT_SPECTRAL_THEOREM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.FunctionalAnalysis.AbstractHilbertSpaceSpectralTheorem",
+    source_path: "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/source.npa",
+    certificate_path:
+        "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/certificate.npcert",
+    meta_path: "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/meta.json",
+    replay_path: "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_DEFINITIONS,
+    theorems: ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_THEOREMS,
+    expected_axioms: &[],
+};
+
 const AFFINE_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Geometry.Affine",
     source_path: "Proofs/Ai/Geometry/Affine/source.npa",
@@ -17152,6 +17179,414 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_SPECTRAL_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "MatrixMulAssocLaw",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MatrixLeftUnitLaw",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MatrixRightUnitLaw",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MatrixAdjointMulLaw",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MatrixAdjointInvolutiveLaw",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MatrixStarAlgebraLawArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "NormalMatrix",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "UnitaryMatrix",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "DiagonalMatrix",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "DiagonalizationEquation",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "UnitaryDiagonalization",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "NormalMatrixDiagonalizes",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "SpectralConstructionArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "FiniteDimensionalSpectralTheorem",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_SPECTRAL_THEOREM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "normal_matrix_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "normal_matrix_commutes_with_adjoint",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_matrix_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_matrix_left_inverse",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_matrix_right_inverse",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "diagonal_matrix_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "diagonal_matrix_property",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "diagonalization_equation_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_diagonalization_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_diagonalization_unitary",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_diagonalization_diagonal",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "unitary_diagonalization_equation",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "spectral_construction_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "spectral_construction_finite_dimensional",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "spectral_construction_complex_field",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "spectral_construction_diagonalizes",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "finite_dimensional_normal_matrix_unitarily_diagonalizable",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "finite_dimensional_spectral_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
+const ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "BoundedHilbertOperator",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "NormalHilbertOperator",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "SelfAdjointHilbertOperator",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "ProjectionValuedMeasure",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "RealSupportedProjectionValuedMeasure",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "SpectralIntegralEquation",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "MultiplicationOperatorModel",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "DirectIntegralDecomposition",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "BoundedNormalSpectralData",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "BoundedSelfAdjointSpectralData",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "BoundedNormalSpectralResolution",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "BoundedSelfAdjointSpectralResolution",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HilbertSpaceSpectralConstructionArgs",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+    DefinitionArtifact {
+        name: "HilbertSpaceSpectralTheorem",
+        universe_params: &[],
+        ty: "",
+        value: "",
+    },
+];
+
+const ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "bounded_hilbert_operator_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "normal_hilbert_operator_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "self_adjoint_hilbert_operator_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_normal_spectral_data_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_normal_spectral_data_pvm",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_normal_spectral_data_integral_eq",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_normal_spectral_data_multiplication_model",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_normal_spectral_data_direct_integral",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_spectral_data_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_spectral_data_real_support",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_spectral_data_pvm",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_spectral_data_integral_eq",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_spectral_data_multiplication_model",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_spectral_data_direct_integral",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_space_spectral_construction_args_intro",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "spectral_construction_normal_resolution",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "spectral_construction_self_adjoint_resolution",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_normal_operator_spectral_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "bounded_self_adjoint_operator_spectral_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+    TheoremArtifact {
+        name: "hilbert_space_spectral_theorem",
+        universe_params: &[],
+        statement: "",
+        proof: "",
+    },
+];
+
 const AFFINE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "Point",
@@ -18262,6 +18697,23 @@ fn run() -> Result<(), String> {
 
     let basic = build_and_write_module(&proof_root, &BASIC_MODULE, &[], &[])?;
     let eq = build_and_write_module(&proof_root, &EQ_MODULE, &eq_imports, &eq_source_interfaces)?;
+    let abstract_spectral_theorem_imports = vec![eq_import.clone()];
+    let abstract_spectral_theorem_source_interfaces = vec![eq_source_interface.clone()];
+    let abstract_spectral_theorem = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_SPECTRAL_THEOREM_MODULE,
+        &abstract_spectral_theorem_imports,
+        &abstract_spectral_theorem_source_interfaces,
+    )?;
+    let abstract_hilbert_space_spectral_theorem_imports = vec![eq_import.clone()];
+    let abstract_hilbert_space_spectral_theorem_source_interfaces =
+        vec![eq_source_interface.clone()];
+    let abstract_hilbert_space_spectral_theorem = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_MODULE,
+        &abstract_hilbert_space_spectral_theorem_imports,
+        &abstract_hilbert_space_spectral_theorem_source_interfaces,
+    )?;
     let nat = build_and_write_module(
         &proof_root,
         &NAT_MODULE,
@@ -19558,6 +20010,8 @@ fn run() -> Result<(), String> {
             abstract_implicit_function,
             abstract_inner_product,
             abstract_inner_product_derive,
+            abstract_spectral_theorem,
+            abstract_hilbert_space_spectral_theorem,
             affine,
             affine_derive,
             abstract_right_triangle,
@@ -19671,6 +20125,8 @@ fn uses_checked_in_source(module: &str) -> bool {
         || module == ABSTRACT_HILBERT_BASIS_THEOREM_MODULE.module
         || module == ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE.module
         || module == ABSTRACT_KRULL_THEOREM_MODULE.module
+        || module == ABSTRACT_SPECTRAL_THEOREM_MODULE.module
+        || module == ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_MODULE.module
 }
 
 fn axiom_policy_for_module(module: &str) -> npa_cert::AxiomPolicy {
