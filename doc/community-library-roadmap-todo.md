@@ -434,25 +434,34 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - package CLI and artifacts from CLR-04/CLR-05/CLR-06
   - current proof corpus modules such as `Proofs.Ai.Basic`, `Proofs.Ai.Eq`, `Proofs.Ai.Nat`
   - external CI template from CLR-07
+  - detailed task breakdown in `doc/community-library-roadmap-clr-09-todo.md`
 - Code or documentation areas:
-  - new external repository or local fixture describing it
-  - `npa` repo integration fixture for importing an external package artifact
-  - docs for contributor workflow
+  - separate `npa-mathlib-seed` repository, or a local fixture that models that external repository boundary
+  - package fixture in `npa` for importing seed release artifacts through the CLR-06 downstream import bundle
+  - CLR-07 CI templates and external theorem library documentation
+  - contributor workflow and release handoff documentation
 - Deliverables:
   - Minimal external theorem library with `npa-package.toml`, source, certificates, replay/meta where useful, axiom reports, theorem index, and CI.
   - Import fixture proving `npa` can consume hash-pinned artifacts from the external library.
+  - Seed module scope decision that starts from a closed subset of the current proof corpus instead of moving the full corpus.
+  - Release artifact set including package lock, axiom report, theorem index, and `generated/publish-plan.json`.
   - Documented contributor workflow for theorem-only PRs.
 - Acceptance criteria:
   - Fresh checkout of the seed library can build certificates, check hashes, run source-free reference verification, check axiom report, and check theorem index.
   - Updating a theorem in the seed library does not require modifying `npa` kernel / checker / certificate code.
   - Downstream package import uses hash-pinned artifacts, not implicit latest registry lookup.
   - The seed library can publish release artifacts usable by another package without a registry server.
+  - If CLR-08 is still deferred, seed release evidence is explicitly reference-checker-only and does not emit `verified_high_trust`.
 - Verification:
   - Seed repo CI passes from fresh checkout.
   - In `npa`: package import fixture test passes.
+  - In `npa`: downstream import bundle mismatch tests reject corrupted seed hashes.
   - `cargo test --workspace` in `npa` after adding any integration fixture.
+  - targeted search: `rg -n "community-library-roadmap-clr-09-todo|npa-mathlib-seed|reference-checker-only|publish-plan|downstream_import_bundle" doc README.md ci-templates crates`
 - Notes:
   - Start with a small subset. Do not move the entire proof corpus until package ergonomics are proven.
+  - Detailed breakdown: `doc/community-library-roadmap-clr-09-todo.md`.
+  - CLR-09 depends on CLR-06 and CLR-07. It can proceed without CLR-08 only when the seed release policy is explicitly reference-checker-only.
 
 ### CLR-10 Registry Readiness Review
 
