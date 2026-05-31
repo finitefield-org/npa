@@ -31,11 +31,53 @@ pub struct PackageManifestValidationOptions {
     _private: (),
 }
 
+/// Deterministic package manifest validation report.
+///
+/// CLR-01 currently stops at the first error, so the report contains either no
+/// errors or one structured error. The vector shape is kept stable for callers
+/// that want report-style handling without depending on human display strings.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct PackageManifestValidationReport {
+    errors: Vec<PackageManifestError>,
+}
+
+impl PackageManifestValidationReport {
+    /// Return whether validation completed without errors.
+    pub fn is_valid(&self) -> bool {
+        self.errors.is_empty()
+    }
+
+    /// Return structured validation errors in deterministic pass order.
+    pub fn errors(&self) -> &[PackageManifestError] {
+        &self.errors
+    }
+
+    /// Return the first structured validation error, if any.
+    pub fn first_error(&self) -> Option<&PackageManifestError> {
+        self.errors.first()
+    }
+
+    /// Consume the report and return its structured validation errors.
+    pub fn into_errors(self) -> Vec<PackageManifestError> {
+        self.errors
+    }
+
+    fn valid() -> Self {
+        Self { errors: Vec::new() }
+    }
+
+    fn from_error(error: PackageManifestError) -> Self {
+        Self {
+            errors: vec![error],
+        }
+    }
+}
+
 /// A package manifest that has passed validation implemented so far.
 ///
-/// CLR-01 grows this value in phases. At CLR-01-07 it means closed-object
-/// parsing, scalar domain checks, duplicate checks, import resolution, and
-/// local graph validation, and package axiom-policy validation have succeeded.
+/// CLR-01 grows this value in phases. At CLR-01-08 it means closed-object
+/// parsing, scalar domain checks, duplicate checks, import resolution, local
+/// graph validation, and package axiom-policy validation have succeeded.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidatedPackageManifest {
     manifest: PackageManifest,
@@ -71,11 +113,27 @@ pub fn parse_and_validate_manifest_str(
     validate_manifest(parse_manifest_str(source)?)
 }
 
+/// Parse and validate a package manifest string, returning a report.
+pub fn validate_manifest_source_report(source: &str) -> PackageManifestValidationReport {
+    match parse_and_validate_manifest_str(source) {
+        Ok(_) => PackageManifestValidationReport::valid(),
+        Err(error) => PackageManifestValidationReport::from_error(error),
+    }
+}
+
 /// Validate an already parsed package manifest with default options.
 pub fn validate_manifest(
     manifest: PackageManifest,
 ) -> PackageManifestResult<ValidatedPackageManifest> {
     validate_manifest_with_options(manifest, &PackageManifestValidationOptions::default())
+}
+
+/// Validate an already parsed package manifest, returning a report.
+pub fn validate_manifest_report(manifest: PackageManifest) -> PackageManifestValidationReport {
+    match validate_manifest(manifest) {
+        Ok(_) => PackageManifestValidationReport::valid(),
+        Err(error) => PackageManifestValidationReport::from_error(error),
+    }
 }
 
 /// Validate an already parsed package manifest.

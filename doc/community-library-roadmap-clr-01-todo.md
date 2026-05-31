@@ -699,7 +699,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-08 Implement Validation Report And Error Tests
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-03, CLR-01-04, CLR-01-05, CLR-01-06, CLR-01-07
 - Inputs:
   - structured error contract in this document
@@ -721,6 +721,9 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test -p npa-package package_manifest_errors`
 - Notes:
   - It is acceptable to collect multiple errors or return one report object, as long as behavior is deterministic and tested.
+  - Implemented by exposing a deterministic validation report API that carries
+    the first structured error, re-exporting the public result type, and adding
+    targeted tests for structured fields plus validation-pass suppression.
 
 ### CLR-01-09 Add Valid And Invalid Manifest Fixtures
 

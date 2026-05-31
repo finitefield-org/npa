@@ -1,7 +1,8 @@
 use npa_package::{
-    parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash, PackageManifestError,
-    PackageManifestErrorKind, PackageManifestErrorReason, ResolvedModuleImportKind,
-    PACKAGE_MANIFEST_SCHEMA,
+    parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash,
+    validate_manifest_report, validate_manifest_source_report, PackageManifestError,
+    PackageManifestErrorKind, PackageManifestErrorReason, PackageManifestResult,
+    PackageManifestValidationReport, ResolvedModuleImportKind, PACKAGE_MANIFEST_SCHEMA,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
@@ -82,6 +83,13 @@ fn assert_manifest_error_values(
 
 fn validation_error(source: String) -> PackageManifestError {
     parse_and_validate_manifest_str(&source).unwrap_err()
+}
+
+fn report_error(source: String) -> PackageManifestError {
+    let report = validate_manifest_source_report(&source);
+    assert!(!report.is_valid());
+    assert_eq!(report.errors().len(), 1);
+    report.first_error().unwrap().clone()
 }
 
 fn manifest_with_root_entries(root_entries: &str, policy: &str) -> String {
@@ -1079,5 +1087,143 @@ fn package_manifest_axiom_policy_rejects_allowed_axiom_name_grammar_before_polic
         PackageManifestErrorReason::InvalidAxiomName,
         "policy.allowed_axioms[0]",
         None,
+    );
+}
+
+#[test]
+fn package_manifest_errors_public_report_and_result_types_are_usable() {
+    let source = valid_manifest();
+    let report: PackageManifestValidationReport = validate_manifest_source_report(&source);
+    assert!(report.is_valid());
+    assert!(report.errors().is_empty());
+    assert_eq!(report.first_error(), None);
+    assert!(report.clone().into_errors().is_empty());
+
+    let parsed_report = validate_manifest_report(parse_manifest_str(&source).unwrap());
+    assert!(parsed_report.is_valid());
+
+    let result: PackageManifestResult<_> = parse_and_validate_manifest_str(&source);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn package_manifest_errors_report_exposes_structured_schema_values() {
+    let source = valid_manifest().replace(
+        "allow_custom_axioms = false",
+        r#"allow_custom_axioms = "false""#,
+    );
+
+    let error = report_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Schema,
+        PackageManifestErrorReason::WrongType,
+        "policy.allow_custom_axioms",
+        Some("allow_custom_axioms"),
+    );
+    assert_manifest_error_values(&error, Some("bool"), Some("string"));
+}
+
+#[test]
+fn package_manifest_errors_earlier_schema_pass_suppresses_later_errors() {
+    let source = valid_manifest()
+        .replace(
+            "allow_custom_axioms = false",
+            r#"allow_custom_axioms = "false""#,
+        )
+        .replace(
+            r#"imports = ["Std.Logic.Eq"]"#,
+            r#"imports = ["Std.Logic.Missing"]"#,
+        )
+        .replace("axioms = []", r#"axioms = ["Classical.choice"]"#);
+
+    let error = report_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Schema,
+        PackageManifestErrorReason::WrongType,
+        "policy.allow_custom_axioms",
+        Some("allow_custom_axioms"),
+    );
+}
+
+#[test]
+fn package_manifest_errors_earlier_duplicate_pass_suppresses_graph_and_policy() {
+    let source = valid_manifest()
+        .replace(
+            r#"imports = ["Std.Logic.Eq"]"#,
+            r#"imports = ["Std.Logic.Missing"]"#,
+        )
+        .replace("axioms = []", r#"axioms = ["Classical.choice"]"#)
+        + &module_block(
+            "Proofs.Ai.Basic",
+            "Proofs/Ai/Duplicate/source.npa",
+            "Proofs/Ai/Duplicate/certificate.npcert",
+        );
+
+    let error = report_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Duplicate,
+        PackageManifestErrorReason::DuplicateModule,
+        "modules[1].module",
+        Some("module"),
+    );
+    assert_manifest_error_values(&error, Some("unique value"), Some("Proofs.Ai.Basic"));
+}
+
+#[test]
+fn package_manifest_errors_graph_pass_suppresses_policy() {
+    let source = valid_manifest()
+        .replace(
+            r#"imports = ["Std.Logic.Eq"]"#,
+            r#"imports = ["Std.Logic.Missing"]"#,
+        )
+        .replace("axioms = []", r#"axioms = ["Classical.choice"]"#);
+
+    let error = report_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Graph,
+        PackageManifestErrorReason::UnknownImport,
+        "modules[0].imports[0]",
+        Some("imports"),
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("local module or hash-pinned top-level external import"),
+        Some("Std.Logic.Missing"),
+    );
+}
+
+#[test]
+fn package_manifest_errors_same_pass_path_order_is_deterministic() {
+    let source = valid_manifest()
+        .replace(
+            r#"certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert""#,
+            r#"certificate = "file://vendor/npa-std/Std/Logic/Eq/certificate.npcert""#,
+        )
+        .replace(
+            r#"source = "Proofs/Ai/Basic/source.npa""#,
+            r#"source = "/Proofs/Ai/Basic/source.npa""#,
+        );
+
+    let error = report_error(source);
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Path,
+        PackageManifestErrorReason::InvalidPath,
+        "imports[0].certificate",
+        None,
+    );
+    assert_manifest_error_values(
+        &error,
+        Some("lexical package-relative path"),
+        Some("file://vendor/npa-std/Std/Logic/Eq/certificate.npcert"),
     );
 }

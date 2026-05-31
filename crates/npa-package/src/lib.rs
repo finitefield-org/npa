@@ -16,7 +16,10 @@ pub mod path;
 pub mod schema;
 pub mod validate;
 
-pub use error::{PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason};
+pub use error::{
+    PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
+    PackageManifestResult,
+};
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,
 };
@@ -36,6 +39,7 @@ pub use schema::{
     PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA, REGISTRY_MODULE_SCHEMA,
 };
 pub use validate::{
-    parse_and_validate_manifest_str, validate_manifest, validate_manifest_with_options,
-    validate_package_version, PackageManifestValidationOptions, ValidatedPackageManifest,
+    parse_and_validate_manifest_str, validate_manifest, validate_manifest_report,
+    validate_manifest_source_report, validate_manifest_with_options, validate_package_version,
+    PackageManifestValidationOptions, PackageManifestValidationReport, ValidatedPackageManifest,
 };
