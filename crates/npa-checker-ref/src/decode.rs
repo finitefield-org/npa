@@ -4523,6 +4523,66 @@ impl<'a> TypeChecker<'a> {
         self.is_defeq_with_fuel(ctx, delta, lhs, rhs, offset, &mut fuel)
     }
 
+    fn global_refs_defeq(
+        &self,
+        lhs: &ReferenceCoreGlobalRef,
+        rhs: &ReferenceCoreGlobalRef,
+        offset: usize,
+    ) -> DecodeResult<bool> {
+        if lhs == rhs {
+            return Ok(true);
+        }
+        match (lhs, rhs) {
+            (
+                ReferenceCoreGlobalRef::Builtin { name, .. },
+                ReferenceCoreGlobalRef::Imported { .. },
+            ) => self.imported_std_logic_eq_ref_matches_builtin(rhs, name, offset),
+            (
+                ReferenceCoreGlobalRef::Imported { .. },
+                ReferenceCoreGlobalRef::Builtin { name, .. },
+            ) => self.imported_std_logic_eq_ref_matches_builtin(lhs, name, offset),
+            _ => Ok(false),
+        }
+    }
+
+    fn imported_std_logic_eq_ref_matches_builtin(
+        &self,
+        imported_ref: &ReferenceCoreGlobalRef,
+        builtin_name: &ReferenceModuleName,
+        offset: usize,
+    ) -> DecodeResult<bool> {
+        let ReferenceCoreGlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } = imported_ref
+        else {
+            return Ok(false);
+        };
+        if name != builtin_name
+            || !matches!(builtin_name.dotted().as_str(), "Eq" | "Eq.refl" | "Eq.rec")
+            || builtin_decl_interface_hash(builtin_name).is_none()
+        {
+            return Ok(false);
+        }
+        let import = self.imports.imports().get(*import_index).ok_or_else(|| {
+            ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::UnknownReference,
+            )
+        })?;
+        if import.module.dotted() != "Std.Logic.Eq" {
+            return Ok(false);
+        }
+        // Std.Logic.Eq exports are checked declarations, so their interface
+        // hashes are not the builtin hashes. Require the dependent certificate
+        // to name an actual checked export carrying the exact referenced hash.
+        Ok(import.public_environment.exports().iter().any(|export| {
+            export.name == *name && export.decl_interface_hash == *decl_interface_hash
+        }))
+    }
+
     fn is_defeq_with_fuel(
         &self,
         ctx: &TypeContext,
@@ -4551,7 +4611,7 @@ impl<'a> TypeChecker<'a> {
                     global_ref: rhs_ref,
                     levels: rhs_levels,
                 },
-            ) => Ok(lhs_ref == rhs_ref && lhs_levels == rhs_levels),
+            ) => Ok(lhs_levels == rhs_levels && self.global_refs_defeq(lhs_ref, rhs_ref, offset)?),
             (ReferenceCoreExpr::App(lhs_f, lhs_a), ReferenceCoreExpr::App(rhs_f, rhs_a)) => Ok(
                 self.is_defeq_with_fuel(ctx, delta, lhs_f, rhs_f, offset, fuel)?
                     && self.is_defeq_with_fuel(ctx, delta, lhs_a, rhs_a, offset, fuel)?,

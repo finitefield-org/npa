@@ -7,12 +7,10 @@ repository.workspace = true
 
 [dependencies]
 npa-cert = { path = "../npa-cert" }
+npa-checker-ref = { path = "../npa-checker-ref" }
 npa-frontend = { path = "../npa-frontend" }
 npa-kernel = { path = "../npa-kernel" }
 npa-package = { path = "../npa-package" }
 npa-tactic = { path = "../npa-tactic" }
 libc = "0.2"
 sha2 = "0.10"
-
-[dev-dependencies]
-npa-checker-ref = { path = "../npa-checker-ref" }

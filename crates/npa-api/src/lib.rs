@@ -455,8 +455,9 @@ pub use json::{
     JsonValue, JsonValueKind,
 };
 pub use package_verifier::{
-    verify_package_fast_source_free, PackageCertificateArtifact, PackageModuleVerificationResult,
-    PackageModuleVerificationStatus, PackageVerificationError, PackageVerificationErrorKind,
+    verify_package_fast_source_free, verify_package_reference_source_free,
+    PackageCertificateArtifact, PackageModuleVerificationResult, PackageModuleVerificationStatus,
+    PackageVerificationCheckerError, PackageVerificationError, PackageVerificationErrorKind,
     PackageVerificationErrorReason, PackageVerificationMode, PackageVerificationReport,
     PackageVerificationResult, PackageVerificationStatus, PackageVerificationVerdictSource,
 };

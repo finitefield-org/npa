@@ -4,9 +4,16 @@ use npa_cert::{
     decode_module_cert, verify_module_cert, AxiomPolicy, CertError, CoreFeature, Name,
     VerifierSession,
 };
+use npa_checker_ref::{
+    check_certificate, verify_certificate_hashes, ReferenceCertificateSection, ReferenceCheckError,
+    ReferenceCheckErrorKind, ReferenceCheckReason, ReferenceCheckResult, ReferenceCheckedModule,
+    ReferenceCheckerPolicy, ReferenceCoreFeature, ReferenceImportStore, ReferenceModuleName,
+    ReferenceTrustMode,
+};
 use npa_package::{
     format_package_hash, package_file_hash, validate_package_lock_against_manifest_graph,
-    PackageHash, PackageLockEntry, PackageLockManifest, PackagePath, ValidatedPackageManifest,
+    PackageHash, PackageLockEntry, PackageLockManifest, PackageLockResolvedImport, PackagePath,
+    ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
 };
 
 /// Result type for source-free package verification.
@@ -26,6 +33,8 @@ pub struct PackageCertificateArtifact<'a> {
 pub enum PackageVerificationMode {
     /// Fast local verifier backed by `npa_cert::verify_module_cert`.
     FastKernel,
+    /// Source-free independent reference checker mode backed by `npa-checker-ref`.
+    Reference,
 }
 
 impl PackageVerificationMode {
@@ -33,6 +42,7 @@ impl PackageVerificationMode {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::FastKernel => "fast-kernel",
+            Self::Reference => "reference",
         }
     }
 }
@@ -42,6 +52,8 @@ impl PackageVerificationMode {
 pub enum PackageVerificationVerdictSource {
     /// Verdict came from the fast certificate verifier, not `npa-checker-ref`.
     FastKernelCertificateVerifier,
+    /// Verdict came from `npa-checker-ref`.
+    ReferenceChecker,
 }
 
 impl PackageVerificationVerdictSource {
@@ -49,6 +61,7 @@ impl PackageVerificationVerdictSource {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::FastKernelCertificateVerifier => "fast-kernel-certificate-verifier",
+            Self::ReferenceChecker => "npa-checker-ref",
         }
     }
 
@@ -56,6 +69,7 @@ impl PackageVerificationVerdictSource {
     pub const fn is_reference_checker_verdict(self) -> bool {
         match self {
             Self::FastKernelCertificateVerifier => false,
+            Self::ReferenceChecker => true,
         }
     }
 }
@@ -108,7 +122,7 @@ pub struct PackageVerificationReport {
     pub mode: PackageVerificationMode,
     /// Explicit verdict source, to distinguish fast results from reference checker results.
     pub verdict_source: PackageVerificationVerdictSource,
-    /// Convenience field that is always false for fast-kernel package verification.
+    /// Convenience field that is true only for independent reference checker verdicts.
     pub reference_checker_verdict: bool,
     /// Overall status.
     pub status: PackageVerificationStatus,
@@ -152,6 +166,23 @@ pub struct PackageVerificationError {
     pub expected_value: Option<String>,
     /// Actual value or type when useful.
     pub actual_value: Option<String>,
+    /// Checker-local structured rejection details, when the error came from a checker.
+    pub checker_error: Option<Box<PackageVerificationCheckerError>>,
+}
+
+/// Structured checker-local package verification error details.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageVerificationCheckerError {
+    /// Checker implementation that produced the error.
+    pub checker: String,
+    /// Checker-local stable error kind.
+    pub kind: String,
+    /// Checker-local certificate section.
+    pub section: Option<String>,
+    /// Checker-local byte offset, when applicable.
+    pub offset: Option<usize>,
+    /// Checker-local stable reason code.
+    pub reason_code: Option<String>,
 }
 
 impl PackageVerificationError {
@@ -295,15 +326,38 @@ impl PackageVerificationError {
             CertError::ForbiddenAxiom { .. } | CertError::SorryDenied { .. } => {
                 PackageVerificationErrorReason::AxiomPolicyRejected
             }
+            CertError::UnsupportedCoreFeature { .. } => {
+                PackageVerificationErrorReason::UnsupportedCoreFeature
+            }
             _ => PackageVerificationErrorReason::KernelVerificationFailed,
         };
-        Self::new(
+        Self::new_with_checker_error(
             PackageVerificationErrorKind::Kernel,
             path,
             Some("certificate".to_owned()),
             reason_code,
             Some("kernel-verifiable module certificate".to_owned()),
             Some(format!("{source:?}")),
+            Some(PackageVerificationCheckerError {
+                checker: "npa-cert".to_owned(),
+                kind: "certificate_verifier".to_owned(),
+                section: None,
+                offset: None,
+                reason_code: Some(reason_code.as_str().to_owned()),
+            }),
+        )
+    }
+
+    fn reference_checker_rejected(path: impl Into<String>, source: ReferenceCheckError) -> Self {
+        let reason_code = package_reference_checker_reason(&source);
+        Self::new_with_checker_error(
+            PackageVerificationErrorKind::ReferenceChecker,
+            path,
+            Some("certificate".to_owned()),
+            reason_code,
+            Some("reference-checker-verifiable module certificate".to_owned()),
+            Some(format!("{source:?}")),
+            Some(reference_checker_error_details(&source)),
         )
     }
 
@@ -344,6 +398,26 @@ impl PackageVerificationError {
         expected_value: Option<String>,
         actual_value: Option<String>,
     ) -> Self {
+        Self::new_with_checker_error(
+            kind,
+            path,
+            field,
+            reason_code,
+            expected_value,
+            actual_value,
+            None,
+        )
+    }
+
+    fn new_with_checker_error(
+        kind: PackageVerificationErrorKind,
+        path: impl Into<String>,
+        field: Option<String>,
+        reason_code: PackageVerificationErrorReason,
+        expected_value: Option<String>,
+        actual_value: Option<String>,
+        checker_error: Option<PackageVerificationCheckerError>,
+    ) -> Self {
         Self {
             kind,
             path: path.into(),
@@ -351,6 +425,7 @@ impl PackageVerificationError {
             reason_code,
             expected_value,
             actual_value,
+            checker_error: checker_error.map(Box::new),
         }
     }
 }
@@ -370,6 +445,8 @@ pub enum PackageVerificationErrorKind {
     CertificateIdentity,
     /// Kernel certificate verification failed.
     Kernel,
+    /// Independent reference checker verification failed.
+    ReferenceChecker,
     /// Verification was skipped because an earlier lock entry failed.
     Dependency,
 }
@@ -399,8 +476,12 @@ pub enum PackageVerificationErrorReason {
     CertificateHashMismatch,
     /// Certificate was rejected by package-derived axiom policy.
     AxiomPolicyRejected,
+    /// Certificate requires a core feature unsupported by the selected checker profile.
+    UnsupportedCoreFeature,
     /// Certificate was rejected by the fast kernel verifier.
     KernelVerificationFailed,
+    /// Certificate was rejected by the independent reference checker.
+    ReferenceCheckerRejected,
     /// Module was skipped because an earlier topological dependency failed.
     EarlierModuleFailed,
 }
@@ -420,7 +501,9 @@ impl PackageVerificationErrorReason {
             Self::AxiomReportHashMismatch => "axiom_report_hash_mismatch",
             Self::CertificateHashMismatch => "certificate_hash_mismatch",
             Self::AxiomPolicyRejected => "axiom_policy_rejected",
+            Self::UnsupportedCoreFeature => "unsupported_core_feature",
             Self::KernelVerificationFailed => "kernel_verification_failed",
+            Self::ReferenceCheckerRejected => "reference_checker_rejected",
             Self::EarlierModuleFailed => "earlier_module_failed",
         }
     }
@@ -462,6 +545,7 @@ pub fn verify_package_fast_source_free<'a>(
                     format!("entries[{entry_index}].module"),
                     failed.as_dotted(),
                 )),
+                PackageVerificationMode::FastKernel,
             ));
             continue;
         }
@@ -471,6 +555,7 @@ pub fn verify_package_fast_source_free<'a>(
                 entry,
                 PackageModuleVerificationStatus::Passed,
                 None,
+                PackageVerificationMode::FastKernel,
             )),
             Err(error) => {
                 failed_module = Some(entry.module.clone());
@@ -478,6 +563,7 @@ pub fn verify_package_fast_source_free<'a>(
                     entry,
                     PackageModuleVerificationStatus::Failed,
                     Some(error),
+                    PackageVerificationMode::FastKernel,
                 ));
             }
         }
@@ -492,6 +578,95 @@ pub fn verify_package_fast_source_free<'a>(
 
     Ok(PackageVerificationReport {
         mode: PackageVerificationMode::FastKernel,
+        verdict_source,
+        reference_checker_verdict: verdict_source.is_reference_checker_verdict(),
+        status,
+        topological_order: graph.topological_order,
+        modules: results,
+    })
+}
+
+/// Verify package certificates source-free with the independent reference checker.
+///
+/// This verifier consumes only a validated package manifest, a package lock, and
+/// caller-provided certificate bytes. It executes `npa-checker-ref` in-process
+/// in package-lock topological order and builds each import store from modules
+/// already accepted by the same reference checker.
+pub fn verify_package_reference_source_free<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+) -> PackageVerificationResult<PackageVerificationReport> {
+    validate_manifest_lock_identity(validated, lock)?;
+    let graph = validate_package_lock_against_manifest_graph(validated, lock)
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let artifact_bytes = artifact_byte_map(artifacts)?;
+    let entries = canonical_lock_entries(lock);
+    let entries_by_module = entries
+        .iter()
+        .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+        .collect::<BTreeMap<_, _>>();
+    let policy = package_reference_checker_policy(validated);
+    let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
+    let mut results = Vec::with_capacity(graph.topological_order.len());
+    let mut failed_module = None::<Name>;
+
+    for module in &graph.topological_order {
+        let (entry_index, entry) = entries_by_module
+            .get(module)
+            .expect("lock graph order only contains lock entries");
+        if let Some(failed) = &failed_module {
+            results.push(module_result(
+                entry,
+                PackageModuleVerificationStatus::Skipped,
+                Some(PackageVerificationError::earlier_module_failed(
+                    format!("entries[{entry_index}].module"),
+                    failed.as_dotted(),
+                )),
+                PackageVerificationMode::Reference,
+            ));
+            continue;
+        }
+
+        let resolved_imports = &graph.resolved_entry_imports[*entry_index];
+        match verify_reference_lock_entry(
+            *entry_index,
+            entry,
+            resolved_imports,
+            &artifact_bytes,
+            &checked_by_module,
+            &policy,
+        ) {
+            Ok(checked) => {
+                checked_by_module.insert(entry.module.clone(), checked);
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Passed,
+                    None,
+                    PackageVerificationMode::Reference,
+                ));
+            }
+            Err(error) => {
+                failed_module = Some(entry.module.clone());
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Failed,
+                    Some(error),
+                    PackageVerificationMode::Reference,
+                ));
+            }
+        }
+    }
+
+    let status = if failed_module.is_some() {
+        PackageVerificationStatus::Failed
+    } else {
+        PackageVerificationStatus::Passed
+    };
+    let verdict_source = PackageVerificationVerdictSource::ReferenceChecker;
+
+    Ok(PackageVerificationReport {
+        mode: PackageVerificationMode::Reference,
         verdict_source,
         reference_checker_verdict: verdict_source.is_reference_checker_verdict(),
         status,
@@ -567,6 +742,36 @@ fn package_fast_kernel_policy(validated: &ValidatedPackageManifest) -> AxiomPoli
     policy
 }
 
+fn package_reference_checker_policy(
+    validated: &ValidatedPackageManifest,
+) -> ReferenceCheckerPolicy {
+    let package_policy = &validated.manifest().policy;
+    ReferenceCheckerPolicy {
+        trust_mode: ReferenceTrustMode::HighTrust,
+        allowed_axioms: package_policy
+            .allowed_axioms
+            .iter()
+            .map(Name::as_dotted)
+            .collect(),
+        deny_sorry: true,
+        deny_custom_axioms: !package_policy.allow_custom_axioms,
+        supported_core_features: reference_checker_supported_core_features(
+            &validated.manifest().checker_profile,
+        ),
+    }
+}
+
+fn reference_checker_supported_core_features(profile: &str) -> Vec<ReferenceCoreFeature> {
+    match profile {
+        CHECKER_PROFILE_REFERENCE_V0_1 => vec![
+            ReferenceCoreFeature::QuotientV1,
+            ReferenceCoreFeature::QuotientV2,
+            ReferenceCoreFeature::QuotientV3,
+        ],
+        _ => Vec::new(),
+    }
+}
+
 fn verify_lock_entry(
     entry_index: usize,
     entry: &PackageLockEntry,
@@ -638,6 +843,115 @@ fn verify_lock_entry(
     Ok(())
 }
 
+fn verify_reference_lock_entry(
+    entry_index: usize,
+    entry: &PackageLockEntry,
+    resolved_imports: &[PackageLockResolvedImport],
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
+    policy: &ReferenceCheckerPolicy,
+) -> PackageVerificationResult<ReferenceCheckedModule> {
+    let entry_path = format!("entries[{entry_index}]");
+    let bytes = artifact_bytes
+        .get(&entry.certificate)
+        .copied()
+        .ok_or_else(|| {
+            PackageVerificationError::certificate_artifact_missing(
+                format!("{entry_path}.certificate"),
+                entry.certificate.as_str(),
+            )
+        })?;
+    let actual_file_hash = package_file_hash(bytes);
+    if entry.certificate_file_hash != actual_file_hash {
+        return Err(PackageVerificationError::certificate_file_hash_mismatch(
+            format!("{entry_path}.certificate_file_hash"),
+            entry.certificate_file_hash,
+            actual_file_hash,
+        ));
+    }
+
+    let decoded = verify_certificate_hashes(bytes).map_err(|source| {
+        PackageVerificationError::reference_checker_rejected(
+            format!("{entry_path}.certificate"),
+            source,
+        )
+    })?;
+    let actual_module = reference_name_to_package_name(&decoded.header().module);
+    if actual_module != entry.module {
+        return Err(PackageVerificationError::certificate_module_mismatch(
+            format!("{entry_path}.certificate"),
+            entry.module.as_dotted(),
+            actual_module.as_dotted(),
+        ));
+    }
+    check_reference_entry_hashes(entry_index, entry, decoded.hashes())?;
+
+    let import_modules = resolved_imports
+        .iter()
+        .map(|import| {
+            checked_by_module
+                .get(&import.module)
+                .cloned()
+                .ok_or_else(|| {
+                    PackageVerificationError::earlier_module_failed(
+                        format!("{entry_path}.imports"),
+                        import.module.as_dotted(),
+                    )
+                })
+        })
+        .collect::<PackageVerificationResult<Vec<_>>>()?;
+    let imports = ReferenceImportStore::from_checked_modules(import_modules).map_err(|source| {
+        PackageVerificationError::reference_checker_rejected(
+            format!("{entry_path}.imports"),
+            source,
+        )
+    })?;
+    let checked = match check_certificate(bytes, &imports, policy) {
+        ReferenceCheckResult::Checked(checked) => checked,
+        ReferenceCheckResult::Rejected(error) => {
+            return Err(PackageVerificationError::reference_checker_rejected(
+                format!("{entry_path}.certificate"),
+                error,
+            ));
+        }
+    };
+
+    let actual_module = reference_name_to_package_name(checked.module());
+    if actual_module != entry.module {
+        return Err(PackageVerificationError::certificate_module_mismatch(
+            format!("{entry_path}.certificate"),
+            entry.module.as_dotted(),
+            actual_module.as_dotted(),
+        ));
+    }
+    let actual_export_hash = PackageHash::from(*checked.export_hash());
+    if actual_export_hash != entry.export_hash {
+        return Err(PackageVerificationError::export_hash_mismatch(
+            format!("{entry_path}.export_hash"),
+            entry.export_hash,
+            actual_export_hash,
+        ));
+    }
+    let actual_axiom_report_hash = PackageHash::from(*checked.axiom_report_hash());
+    if actual_axiom_report_hash != entry.axiom_report_hash {
+        return Err(PackageVerificationError::axiom_report_hash_mismatch(
+            format!("{entry_path}.axiom_report_hash"),
+            entry.axiom_report_hash,
+            actual_axiom_report_hash,
+        ));
+    }
+    let actual_certificate_hash = PackageHash::from(*checked.certificate_hash());
+    if actual_certificate_hash != entry.certificate_hash {
+        return Err(PackageVerificationError::certificate_hash_mismatch(
+            format!("{entry_path}.certificate_hash"),
+            entry.certificate_hash,
+            actual_certificate_hash,
+        ));
+    }
+
+    Ok(checked)
+}
+
 fn check_entry_hashes(
     entry_index: usize,
     entry: &PackageLockEntry,
@@ -672,14 +986,177 @@ fn check_entry_hashes(
     Ok(())
 }
 
+fn check_reference_entry_hashes(
+    entry_index: usize,
+    entry: &PackageLockEntry,
+    hashes: &npa_checker_ref::ReferenceModuleHashes,
+) -> PackageVerificationResult<()> {
+    let entry_path = format!("entries[{entry_index}]");
+    let actual_export_hash = PackageHash::from(hashes.export_hash);
+    if entry.export_hash != actual_export_hash {
+        return Err(PackageVerificationError::export_hash_mismatch(
+            format!("{entry_path}.export_hash"),
+            entry.export_hash,
+            actual_export_hash,
+        ));
+    }
+    let actual_axiom_report_hash = PackageHash::from(hashes.axiom_report_hash);
+    if entry.axiom_report_hash != actual_axiom_report_hash {
+        return Err(PackageVerificationError::axiom_report_hash_mismatch(
+            format!("{entry_path}.axiom_report_hash"),
+            entry.axiom_report_hash,
+            actual_axiom_report_hash,
+        ));
+    }
+    let actual_certificate_hash = PackageHash::from(hashes.certificate_hash);
+    if entry.certificate_hash != actual_certificate_hash {
+        return Err(PackageVerificationError::certificate_hash_mismatch(
+            format!("{entry_path}.certificate_hash"),
+            entry.certificate_hash,
+            actual_certificate_hash,
+        ));
+    }
+
+    Ok(())
+}
+
+fn reference_name_to_package_name(name: &ReferenceModuleName) -> Name {
+    Name(name.components().to_vec())
+}
+
+fn package_reference_checker_reason(
+    source: &ReferenceCheckError,
+) -> PackageVerificationErrorReason {
+    if source.kind == ReferenceCheckErrorKind::UnsupportedCoreFeature
+        || source.reason == Some(ReferenceCheckReason::UnsupportedCoreFeature)
+    {
+        return PackageVerificationErrorReason::UnsupportedCoreFeature;
+    }
+    if matches!(
+        source.reason,
+        Some(ReferenceCheckReason::ForbiddenAxiom | ReferenceCheckReason::SorryDenied)
+    ) {
+        return PackageVerificationErrorReason::AxiomPolicyRejected;
+    }
+    if source.kind == ReferenceCheckErrorKind::AxiomPolicy {
+        return PackageVerificationErrorReason::AxiomPolicyRejected;
+    }
+    PackageVerificationErrorReason::ReferenceCheckerRejected
+}
+
+fn reference_checker_error_details(
+    source: &ReferenceCheckError,
+) -> PackageVerificationCheckerError {
+    PackageVerificationCheckerError {
+        checker: "npa-checker-ref".to_owned(),
+        kind: reference_check_error_kind_code(source.kind).to_owned(),
+        section: Some(reference_certificate_section_code(source.section).to_owned()),
+        offset: Some(source.offset),
+        reason_code: source
+            .reason
+            .map(reference_check_reason_code)
+            .map(str::to_owned),
+    }
+}
+
+fn reference_check_error_kind_code(kind: ReferenceCheckErrorKind) -> &'static str {
+    match kind {
+        ReferenceCheckErrorKind::EmptyCertificate => "empty_certificate",
+        ReferenceCheckErrorKind::MalformedCertificate => "malformed_certificate",
+        ReferenceCheckErrorKind::HashMismatch => "hash_mismatch",
+        ReferenceCheckErrorKind::ImportResolution => "import_resolution",
+        ReferenceCheckErrorKind::AxiomReportMismatch => "axiom_report_mismatch",
+        ReferenceCheckErrorKind::AxiomPolicy => "axiom_policy",
+        ReferenceCheckErrorKind::TypeCheck => "type_check",
+        ReferenceCheckErrorKind::UnsupportedSkeleton => "unsupported_skeleton",
+        ReferenceCheckErrorKind::UnsupportedCoreFeature => "unsupported_core_feature",
+    }
+}
+
+fn reference_certificate_section_code(section: ReferenceCertificateSection) -> &'static str {
+    match section {
+        ReferenceCertificateSection::HeaderFormat => "header_format",
+        ReferenceCertificateSection::HeaderCoreSpec => "header_core_spec",
+        ReferenceCertificateSection::HeaderModule => "header_module",
+        ReferenceCertificateSection::Imports => "imports",
+        ReferenceCertificateSection::NameTable => "name_table",
+        ReferenceCertificateSection::LevelTable => "level_table",
+        ReferenceCertificateSection::TermTable => "term_table",
+        ReferenceCertificateSection::Declarations => "declarations",
+        ReferenceCertificateSection::ExportBlock => "export_block",
+        ReferenceCertificateSection::AxiomReport => "axiom_report",
+        ReferenceCertificateSection::Hashes => "hashes",
+        ReferenceCertificateSection::ImportStore => "import_store",
+        ReferenceCertificateSection::FullCertificate => "full_certificate",
+    }
+}
+
+fn reference_check_reason_code(reason: ReferenceCheckReason) -> &'static str {
+    match reason {
+        ReferenceCheckReason::UnexpectedEof => "unexpected_eof",
+        ReferenceCheckReason::NonCanonicalUvar => "non_canonical_uvar",
+        ReferenceCheckReason::UvarOverflow => "uvar_overflow",
+        ReferenceCheckReason::LengthOverflow => "length_overflow",
+        ReferenceCheckReason::UnknownTag { .. } => "unknown_tag",
+        ReferenceCheckReason::InvalidUtf8 => "invalid_utf8",
+        ReferenceCheckReason::FormatMismatch => "format_mismatch",
+        ReferenceCheckReason::CoreSpecMismatch => "core_spec_mismatch",
+        ReferenceCheckReason::EmptyModuleName => "empty_module_name",
+        ReferenceCheckReason::EmptyModuleNameComponent => "empty_module_name_component",
+        ReferenceCheckReason::DottedNameComponent => "dotted_name_component",
+        ReferenceCheckReason::DanglingReference => "dangling_reference",
+        ReferenceCheckReason::NonCanonicalOrder => "non_canonical_order",
+        ReferenceCheckReason::DuplicateName => "duplicate_name",
+        ReferenceCheckReason::DuplicateDeclarationName => "duplicate_declaration_name",
+        ReferenceCheckReason::ReservedCorePrimitive => "reserved_core_primitive",
+        ReferenceCheckReason::DuplicateImport => "duplicate_import",
+        ReferenceCheckReason::NonNormalizedLevel => "non_normalized_level",
+        ReferenceCheckReason::NonNormalizedTerm => "non_normalized_term",
+        ReferenceCheckReason::UnusedTableEntry => "unused_table_entry",
+        ReferenceCheckReason::TrailingBytes => "trailing_bytes",
+        ReferenceCheckReason::MissingImport => "missing_import",
+        ReferenceCheckReason::ImportExportHashMismatch => "import_export_hash_mismatch",
+        ReferenceCheckReason::MissingImportCertificateHash => "missing_import_certificate_hash",
+        ReferenceCheckReason::ImportCertificateHashMismatch => "import_certificate_hash_mismatch",
+        ReferenceCheckReason::UncheckedImport => "unchecked_import",
+        ReferenceCheckReason::UnknownReference => "unknown_reference",
+        ReferenceCheckReason::UnsupportedCoreFeature => "unsupported_core_feature",
+        ReferenceCheckReason::BadUniverseArity => "bad_universe_arity",
+        ReferenceCheckReason::DuplicateUniverseParam => "duplicate_universe_param",
+        ReferenceCheckReason::UnresolvedMetavariable => "unresolved_metavariable",
+        ReferenceCheckReason::InvalidBVar => "invalid_bvar",
+        ReferenceCheckReason::ExpectedSort => "expected_sort",
+        ReferenceCheckReason::ExpectedFunction => "expected_function",
+        ReferenceCheckReason::TypeMismatch => "type_mismatch",
+        ReferenceCheckReason::ResourceLimit => "resource_limit",
+        ReferenceCheckReason::BadConstructorResult => "bad_constructor_result",
+        ReferenceCheckReason::NonPositiveOccurrence => "non_positive_occurrence",
+        ReferenceCheckReason::BadRecursorRule => "bad_recursor_rule",
+        ReferenceCheckReason::BadRecursorParam => "bad_recursor_param",
+        ReferenceCheckReason::BadRecursorMotive => "bad_recursor_motive",
+        ReferenceCheckReason::BadRecursorMajor => "bad_recursor_major",
+        ReferenceCheckReason::BadRecursorMinor => "bad_recursor_minor",
+        ReferenceCheckReason::BadRecursorResult => "bad_recursor_result",
+        ReferenceCheckReason::BadRecursorType => "bad_recursor_type",
+        ReferenceCheckReason::HashMismatch { .. } => "hash_mismatch",
+        ReferenceCheckReason::AxiomReportMismatch => "axiom_report_mismatch",
+        ReferenceCheckReason::SorryDenied => "sorry_denied",
+        ReferenceCheckReason::ForbiddenAxiom => "forbidden_axiom",
+        ReferenceCheckReason::ReferenceCheckerBodyUnimplemented => {
+            "reference_checker_body_unimplemented"
+        }
+    }
+}
+
 fn module_result(
     entry: &PackageLockEntry,
     status: PackageModuleVerificationStatus,
     error: Option<PackageVerificationError>,
+    checker_mode: PackageVerificationMode,
 ) -> PackageModuleVerificationResult {
     PackageModuleVerificationResult {
         module: entry.module.clone(),
-        checker_mode: PackageVerificationMode::FastKernel,
+        checker_mode,
         status,
         export_hash: entry.export_hash,
         axiom_report_hash: entry.axiom_report_hash,
@@ -781,6 +1258,18 @@ mod tests {
         artifacts: &BTreeMap<PackagePath, Vec<u8>>,
     ) -> PackageVerificationResult<PackageVerificationReport> {
         verify_package_fast_source_free(validated, lock, package_certificate_artifacts(artifacts))
+    }
+
+    fn verify_proof_package_reference(
+        validated: &ValidatedPackageManifest,
+        lock: &PackageLockManifest,
+        artifacts: &BTreeMap<PackagePath, Vec<u8>>,
+    ) -> PackageVerificationResult<PackageVerificationReport> {
+        verify_package_reference_source_free(
+            validated,
+            lock,
+            package_certificate_artifacts(artifacts),
+        )
     }
 
     #[test]
@@ -961,6 +1450,180 @@ mod tests {
 
         let error =
             verify_proof_package(&validated, &lock, &artifacts).expect_err("lock graph is invalid");
+
+        assert_eq!(error.kind, PackageVerificationErrorKind::LockGraph);
+        assert_eq!(
+            error.reason_code,
+            PackageVerificationErrorReason::LockGraphInvalid
+        );
+    }
+
+    #[test]
+    fn package_reference_verifier_verifies_proof_package_source_free_in_topological_order() {
+        run_on_large_stack(
+            "package_reference_verifier_verifies_proof_package_source_free_in_topological_order",
+            package_reference_verifier_verifies_proof_package_source_free_in_topological_order_on_large_stack,
+        );
+    }
+
+    fn package_reference_verifier_verifies_proof_package_source_free_in_topological_order_on_large_stack(
+    ) {
+        let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+        for module in &mut manifest.modules {
+            let module_path = module.module.as_dotted().replace('.', "/");
+            module.source = PackagePath::new(format!("missing/source/{module_path}.npa"));
+            module.meta = Some(PackagePath::new(format!("missing/meta/{module_path}.json")));
+            module.replay = Some(PackagePath::new(format!(
+                "missing/replay/{module_path}.json"
+            )));
+        }
+        let validated = validate_manifest(manifest).unwrap();
+        let mut lock = proof_lock();
+        lock.entries.reverse();
+        let artifacts = proof_certificate_artifacts(&lock);
+
+        let report = verify_proof_package_reference(&validated, &lock, &artifacts).unwrap();
+
+        assert_eq!(report.status, PackageVerificationStatus::Passed);
+        assert_eq!(report.mode, PackageVerificationMode::Reference);
+        assert_eq!(
+            report.verdict_source,
+            PackageVerificationVerdictSource::ReferenceChecker
+        );
+        assert!(report.reference_checker_verdict);
+        assert_eq!(report.modules.len(), lock.entries.len());
+        assert!(report.modules.iter().all(|module| {
+            module.checker_mode == PackageVerificationMode::Reference
+                && module.status == PackageModuleVerificationStatus::Passed
+        }));
+        let order = report
+            .topological_order
+            .iter()
+            .map(Name::as_dotted)
+            .collect::<Vec<_>>();
+        let std_eq = order
+            .iter()
+            .position(|module| module == "Std.Logic.Eq")
+            .unwrap();
+        let local_eq = order
+            .iter()
+            .position(|module| module == "Proofs.Ai.Eq")
+            .unwrap();
+        assert!(std_eq < local_eq);
+        assert_eq!(
+            report
+                .modules
+                .iter()
+                .map(|module| module.module.as_dotted())
+                .collect::<Vec<_>>(),
+            order
+        );
+    }
+
+    #[test]
+    fn package_reference_verifier_rejects_disallowed_axioms_from_certificate() {
+        let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+        manifest.policy.allowed_axioms.clear();
+        for module in &mut manifest.modules {
+            module.axioms = Some(Vec::new());
+        }
+        let validated = validate_manifest(manifest).unwrap();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+
+        let report = verify_proof_package_reference(&validated, &lock, &artifacts).unwrap();
+        let failed = report
+            .modules
+            .iter()
+            .find(|module| module.status == PackageModuleVerificationStatus::Failed)
+            .expect("one module fails");
+
+        assert_eq!(report.status, PackageVerificationStatus::Failed);
+        assert_eq!(
+            failed.error.as_ref().unwrap().kind,
+            PackageVerificationErrorKind::ReferenceChecker
+        );
+        assert_eq!(
+            failed.error.as_ref().unwrap().reason_code,
+            PackageVerificationErrorReason::AxiomPolicyRejected
+        );
+        assert_eq!(
+            failed
+                .error
+                .as_ref()
+                .unwrap()
+                .checker_error
+                .as_ref()
+                .unwrap()
+                .checker,
+            "npa-checker-ref"
+        );
+    }
+
+    #[test]
+    fn package_reference_verifier_rejects_unsupported_core_feature() {
+        run_on_large_stack(
+            "package_reference_verifier_rejects_unsupported_core_feature",
+            package_reference_verifier_rejects_unsupported_core_feature_on_large_stack,
+        );
+    }
+
+    fn package_reference_verifier_rejects_unsupported_core_feature_on_large_stack() {
+        let validated = validated_proof_manifest();
+        let mut lock = proof_lock();
+        let mut artifacts = proof_certificate_artifacts(&lock);
+        let target_index = lock
+            .entries
+            .iter()
+            .position(|entry| entry.module.as_dotted() == "Proofs.Ai.Algebra.AbstractGroupQuotient")
+            .expect("proof lock contains a quotient_v1 certificate");
+        let target_path = lock.entries[target_index].certificate.clone();
+        let target_module = lock.entries[target_index].module.clone();
+        let bytes = artifacts.get_mut(&target_path).unwrap();
+        let needle = b"quotient_v1";
+        let replacement = b"unknown_v01";
+        let offset = bytes
+            .windows(needle.len())
+            .position(|window| window == needle)
+            .expect("target certificate records quotient_v1");
+        bytes[offset..offset + needle.len()].copy_from_slice(replacement);
+        lock.entries[target_index].certificate_file_hash = npa_package::package_file_hash(bytes);
+
+        let report = verify_proof_package_reference(&validated, &lock, &artifacts).unwrap();
+        let failed = report
+            .modules
+            .iter()
+            .find(|module| module.status == PackageModuleVerificationStatus::Failed)
+            .expect("one module fails");
+        let error = failed.error.as_ref().unwrap();
+
+        assert_eq!(report.status, PackageVerificationStatus::Failed);
+        assert_eq!(failed.module, target_module);
+        assert_eq!(error.kind, PackageVerificationErrorKind::ReferenceChecker);
+        assert_eq!(
+            error.reason_code,
+            PackageVerificationErrorReason::UnsupportedCoreFeature
+        );
+        assert_eq!(
+            error.checker_error.as_ref().unwrap().kind,
+            "unsupported_core_feature"
+        );
+        assert_eq!(
+            error.checker_error.as_ref().unwrap().reason_code.as_deref(),
+            Some("unsupported_core_feature")
+        );
+    }
+
+    #[test]
+    fn package_reference_verifier_rejects_missing_lock_imports_before_checker_run() {
+        let validated = validated_proof_manifest();
+        let mut lock = proof_lock();
+        lock.entries
+            .retain(|entry| entry.module.as_dotted() != "Std.Logic.Eq");
+        let artifacts = proof_certificate_artifacts(&proof_lock());
+
+        let error = verify_proof_package_reference(&validated, &lock, &artifacts)
+            .expect_err("lock graph is invalid");
 
         assert_eq!(error.kind, PackageVerificationErrorKind::LockGraph);
         assert_eq!(
