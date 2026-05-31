@@ -10,3 +10,4 @@ name = "npa"
 path = "src/main.rs"
 
 [dependencies]
+npa-package = { path = "../npa-package" }

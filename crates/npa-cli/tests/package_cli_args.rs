@@ -192,6 +192,22 @@ fn package_cli_args_binary_reports_deterministic_usage_error() {
     assert!(output.stdout.is_empty());
     assert_eq!(
         String::from_utf8(output.stderr).unwrap(),
-        "error: unsupported_checker command=package verify-certs flag=--checker value=external\n"
+        "package verify-certs: failed\nerror Usage unsupported_checker field=--checker actual=external\n"
     );
+}
+
+#[test]
+fn package_cli_args_binary_reports_json_usage_error_when_requested() {
+    let output = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "check", "--mystery", "--json"])
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("\"schema\":\"npa.package.command_result.v0.1\""));
+    assert!(stdout.contains("\"kind\":\"Usage\""));
+    assert!(stdout.contains("\"reason_code\":\"unknown_flag\""));
+    assert!(stdout.contains("\"field\":\"--mystery\""));
 }

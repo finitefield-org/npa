@@ -51,6 +51,15 @@ impl PackageCommand {
             Self::CheckHashes(_) => "package check-hashes",
         }
     }
+
+    /// Common options for the package subcommand.
+    pub fn common_options(&self) -> &PackageCommonOptions {
+        match self {
+            Self::Check(options) | Self::CheckHashes(options) => options,
+            Self::BuildCerts(options) => &options.common,
+            Self::VerifyCerts(options) => &options.common,
+        }
+    }
 }
 
 /// Common options accepted by each package subcommand.

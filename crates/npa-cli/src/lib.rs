@@ -7,3 +7,6 @@
 //! execution behind the parsed command model.
 
 pub mod args;
+pub mod diagnostic;
+pub mod fs;
+pub mod package;
