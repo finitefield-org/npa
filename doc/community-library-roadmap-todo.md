@@ -275,14 +275,18 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Status: Pending
 - Depends on: CLR-04
 - Inputs:
+  - `doc/community-library-roadmap-clr-05-todo.md`
   - `crates/npa-api/src/std_library.rs`
   - `crates/npa-api/src/search.rs`
   - `crates/npa-api/src/theorem_graph.rs`
   - `proofs/manifest.toml`
   - package verification results
 - Code or documentation areas:
-  - package CLI artifact generation
-  - generated artifact schemas
+  - `crates/npa-package` package artifact schemas
+  - `crates/npa-api` package artifact extraction adapters if needed
+  - `crates/npa-cli` `package axiom-report` and `package index`
+  - `proofs/generated/axiom-report.json`
+  - `proofs/generated/theorem-index.json`
   - tests for deterministic ordering and hash stability
 - Deliverables:
   - `package axiom-report` producing package-level and module-level axiom report JSON.
@@ -297,10 +301,16 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Verification:
   - `cargo run -p npa-cli -- package axiom-report --root proofs --check`
   - `cargo run -p npa-cli -- package index --root proofs --check`
+  - `cargo test -p npa-cli package_axiom_report`
+  - `cargo test -p npa-cli package_index`
+  - `cargo test -p npa-package package_artifacts`
   - `cargo test --workspace axiom_report`
   - `cargo test --workspace theorem_index`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-05-todo.md`.
   - The theorem index is search/documentation metadata, not proof acceptance evidence.
+  - `axiom-report` and `index` are full-package commands in CLR-05; changed-module selection remains later CI work.
+  - Generated axiom report and theorem index artifacts must not require `.npa` source, replay, meta, theorem graph score, prompt metadata, or AI traces.
 
 ### CLR-06 Generate Publish Metadata And Registry Seed Artifacts
 
