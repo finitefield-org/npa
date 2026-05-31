@@ -356,8 +356,10 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - local gates in `scripts/phase8-release-audit.sh` and `scripts/phase9-regression.sh`
   - package commands from CLR-04
   - generated artifact checks from CLR-05
+  - `doc/community-library-roadmap-clr-07-todo.md`
 - Code or documentation areas:
-  - CI template directory or documentation
+  - `ci-templates/github-actions`
+  - `doc/external-theorem-library-ci.md`
   - package CLI examples
   - `doc/community-library-roadmap.md` if workflow names are fixed
 - Deliverables:
@@ -366,16 +368,21 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Contributor-facing failure messages or troubleshooting guidance.
   - Documentation that current `npa` repo local gates remain separate from external library CI.
 - Acceptance criteria:
-  - PR mode requires package check, deterministic build/hash check, reference checker for changed modules, axiom report check, and index check.
+  - PR mode requires package check, deterministic build/hash check, full-package reference checker fallback, axiom report check, and index check.
   - Release/high-trust mode requires full package check and leaves external checker as target integration unless CLR-08 is complete.
   - CI template does not rely on local machine state, registry network access, or hidden package cache.
   - Workflow examples match actual package CLI names and flags.
+  - Base CLR-07 templates use only package commands and flags already owned by CLR-04 and CLR-05; they do not use `--changed`, `--all`, or `--checker external`.
 - Verification:
   - `git diff --check`
-  - `rg -n "GitHub Actions|workflow|package check|verify-certs|axiom-report|publish-plan" doc README.md .github || true`
+  - `rg -n "npa-package-pr|npa-package-release|package check|verify-certs|axiom-report|package index" ci-templates doc README.md`
+  - `rg -n -- "--changed|--all|--checker external|--registry|--network|--latest" ci-templates && false || true`
   - dry-run or syntax validation for workflow files if they are added
 - Notes:
-  - If `.github/` workflows are reintroduced, document how they differ from local gates.
+  - Detailed breakdown: `doc/community-library-roadmap-clr-07-todo.md`.
+  - Keep external theorem library templates outside `.github/workflows` unless this repository explicitly reintroduces active workflows.
+  - Base templates use full-package reference verification as the conservative PR fallback until changed-module selection exists.
+  - Publish-plan is optional after CLR-06; external checker required mode remains CLR-08.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
