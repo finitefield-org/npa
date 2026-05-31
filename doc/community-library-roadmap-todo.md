@@ -472,24 +472,31 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - seed library release artifacts
   - generated publish metadata
   - source-free checker results
+  - detailed task breakdown in `doc/community-library-roadmap-clr-10-todo.md`
 - Code or documentation areas:
   - `doc/community-library-roadmap.md`
+  - `doc/registry-readiness.md` or equivalent release-readiness decision record
   - release checklist / registry readiness checklist
-  - issue tracker or follow-up plan for registry server
+  - issue tracker, local follow-up backlog, or registry-server implementation plan
 - Deliverables:
   - Registry readiness checklist with pass/fail evidence.
   - Decision on whether to create registry server, continue Git-release-based registry seed, or defer.
   - List of registry-server requirements that are not already solved by package artifacts.
+  - Trusted-boundary audit confirming registry metadata is discoverability data and not checker input.
+  - Follow-up backlog for registry server, signing, dependency solving, binary cache, and UX items that remain outside the package contract.
 - Acceptance criteria:
   - Every blocker from `doc/community-library-roadmap.md` section 4.2 has concrete pass/fail evidence.
   - No registry requirement asks the kernel, checker, or certificate verifier to read network data.
   - The next step can be implemented without revisiting package manifest semantics.
   - Remaining non-goals are intentionally deferred.
+  - If CLR-08 is deferred, the readiness decision explicitly distinguishes reference-checker-only release evidence from unavailable high-trust evidence.
 - Verification:
   - `rg -n "Registry 前の blocker|npa.registry.module.v0.1|npa.package.v0.1" doc/community-library-roadmap.md doc/community-library-roadmap-todo.md`
+  - `rg -n "community-library-roadmap-clr-10-todo|registry readiness|Git-release-based registry seed|not checker input|reference-checker-only" doc README.md`
   - `git diff --check`
 - Notes:
   - This is a review / release-readiness milestone, not the registry server implementation.
+  - Detailed breakdown: `doc/community-library-roadmap-clr-10-todo.md`.
 
 ---
 
