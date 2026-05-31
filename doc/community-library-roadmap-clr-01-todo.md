@@ -570,7 +570,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-04 Implement Scalar Domain Validators
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-03
 - Inputs:
   - package id, version, name, hash, and path grammar in this document
@@ -599,6 +599,10 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test -p npa-package package_manifest_hashes`
 - Notes:
   - Do not import `npa-api` only to reuse hash parsing. Match the same wire grammar locally.
+  - Implemented by adding scalar validation entry points, package id/version
+    validators, exact schema/profile checks, canonical name validators, lexical
+    package-relative path validation, local `sha256:` hash parsing, and targeted
+    scalar/path/hash tests.
 
 ### CLR-01-05 Implement Duplicate And Artifact Path Checks
 

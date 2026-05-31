@@ -1,5 +1,7 @@
 //! Package hash type adapters.
 
+use crate::error::{PackageManifestError, PackageManifestResult};
+
 /// SHA-256 digest type shared with canonical certificate artifacts.
 pub type PackageHashBytes = npa_cert::Hash;
 
@@ -31,5 +33,40 @@ impl PackageHash {
 impl From<PackageHashBytes> for PackageHash {
     fn from(digest: PackageHashBytes) -> Self {
         Self::new(digest)
+    }
+}
+
+/// Parse a manifest hash string as `sha256:<64 lowercase hex>`.
+///
+/// This parser matches the package manifest wire grammar locally and does not
+/// depend on API endpoint helpers, checker execution, files, or the network.
+pub fn parse_package_hash(
+    value: &str,
+    path: impl Into<String>,
+) -> PackageManifestResult<PackageHash> {
+    let path = path.into();
+    let Some(hex) = value.strip_prefix("sha256:") else {
+        return Err(PackageManifestError::invalid_hash_format(path, value));
+    };
+    if hex.len() != 64
+        || !hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(PackageManifestError::invalid_hash_format(path, value));
+    }
+
+    let mut digest = [0_u8; 32];
+    for (index, chunk) in hex.as_bytes().chunks_exact(2).enumerate() {
+        digest[index] = hex_nibble(chunk[0]) << 4 | hex_nibble(chunk[1]);
+    }
+    Ok(PackageHash::new(digest))
+}
+
+fn hex_nibble(byte: u8) -> u8 {
+    match byte {
+        b'0'..=b'9' => byte - b'0',
+        b'a'..=b'f' => byte - b'a' + 10,
+        _ => unreachable!("hash parser validates lowercase hex before decoding"),
     }
 }

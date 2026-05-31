@@ -90,13 +90,137 @@ impl PackageManifestError {
 
     /// Build an invalid-hash-format error.
     pub fn invalid_hash_format(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Hash,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidHashFormat,
+            Some("sha256:<64 lowercase hex>".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an unsupported-schema error.
+    pub fn unsupported_schema(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageManifestErrorKind::UnsupportedVersion,
+            path,
+            Some(field.into()),
+            PackageManifestErrorReason::UnsupportedSchema,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-package-id error.
+    pub fn invalid_package_id(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Domain,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidPackageId,
+            Some("lowercase ASCII package id".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-version error.
+    pub fn invalid_version(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Domain,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidVersion,
+            Some("MAJOR.MINOR.PATCH without leading zeroes".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-profile error.
+    pub fn invalid_profile(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Domain,
+            path,
+            Some(field.into()),
+            PackageManifestErrorReason::InvalidProfile,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-module-name error.
+    pub fn invalid_module_name(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Domain,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidModuleName,
+            Some("canonical dotted name".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-declaration-name error.
+    pub fn invalid_declaration_name(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Domain,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidDeclarationName,
+            Some("canonical dotted name".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-axiom-name error.
+    pub fn invalid_axiom_name(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Domain,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidAxiomName,
+            Some("canonical dotted name".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-path error.
+    pub fn invalid_path(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageManifestErrorKind::Path,
+            path,
+            None,
+            PackageManifestErrorReason::InvalidPath,
+            Some("lexical package-relative path".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    fn new(
+        kind: PackageManifestErrorKind,
+        path: impl Into<String>,
+        field: Option<String>,
+        reason_code: PackageManifestErrorReason,
+        expected_value: Option<String>,
+        actual_value: Option<String>,
+    ) -> Self {
         Self {
-            kind: PackageManifestErrorKind::Hash,
+            kind,
             path: path.into(),
-            field: None,
-            reason_code: PackageManifestErrorReason::InvalidHashFormat,
-            expected_value: Some("sha256:<64 lowercase hex>".to_owned()),
-            actual_value: Some(actual.into()),
+            field,
+            reason_code,
+            expected_value,
+            actual_value,
         }
     }
 }

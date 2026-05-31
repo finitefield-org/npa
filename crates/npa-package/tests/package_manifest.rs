@@ -1,6 +1,6 @@
 use npa_package::{
-    parse_manifest_str, PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
-    PACKAGE_MANIFEST_SCHEMA,
+    parse_and_validate_manifest_str, parse_manifest_str, PackageManifestError,
+    PackageManifestErrorKind, PackageManifestErrorReason, PACKAGE_MANIFEST_SCHEMA,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
@@ -64,6 +64,19 @@ fn assert_manifest_error(
     assert_eq!(error.reason_code.as_str(), reason.as_str());
     assert_eq!(error.path, path);
     assert_eq!(error.field.as_deref(), field);
+}
+
+fn assert_manifest_error_values(
+    error: &PackageManifestError,
+    expected: Option<&str>,
+    actual: Option<&str>,
+) {
+    assert_eq!(error.expected_value.as_deref(), expected);
+    assert_eq!(error.actual_value.as_deref(), actual);
+}
+
+fn validation_error(source: String) -> PackageManifestError {
+    parse_and_validate_manifest_str(&source).unwrap_err()
 }
 
 fn manifest_with_root_entries(root_entries: &str, policy: &str) -> String {
@@ -316,4 +329,235 @@ fn package_manifest_closed_objects_rejects_wrong_array_item_type() {
     );
     assert_eq!(error.expected_value.as_deref(), Some("string"));
     assert_eq!(error.actual_value.as_deref(), Some("integer"));
+}
+
+#[test]
+fn package_manifest_scalar_domains_accepts_valid_manifest() {
+    let manifest = parse_and_validate_manifest_str(&valid_manifest()).unwrap();
+
+    assert_eq!(manifest.manifest().package.as_str(), "npa-proof-corpus");
+    assert_eq!(
+        manifest.manifest().modules[0].module.as_dotted(),
+        "Proofs.Ai.Basic"
+    );
+}
+
+#[test]
+fn package_manifest_scalar_domains_rejects_exact_schema_and_profile_mismatches() {
+    let schema_error = validation_error(valid_manifest().replace(
+        r#"schema = "npa.package.v0.1""#,
+        r#"schema = "npa.package.v0.2""#,
+    ));
+    assert_manifest_error(
+        &schema_error,
+        PackageManifestErrorKind::UnsupportedVersion,
+        PackageManifestErrorReason::UnsupportedSchema,
+        "schema",
+        Some("schema"),
+    );
+    assert_manifest_error_values(
+        &schema_error,
+        Some("npa.package.v0.1"),
+        Some("npa.package.v0.2"),
+    );
+
+    let profile_error = validation_error(valid_manifest().replace(
+        r#"kernel_profile = "npa.kernel.v0.1""#,
+        r#"kernel_profile = "npa.kernel.v0.2""#,
+    ));
+    assert_manifest_error(
+        &profile_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidProfile,
+        "kernel_profile",
+        Some("kernel_profile"),
+    );
+    assert_manifest_error_values(
+        &profile_error,
+        Some("npa.kernel.v0.1"),
+        Some("npa.kernel.v0.2"),
+    );
+}
+
+#[test]
+fn package_manifest_scalar_domains_rejects_package_id_and_version_grammar() {
+    let package_error = validation_error(valid_manifest().replace(
+        r#"package = "npa-proof-corpus""#,
+        r#"package = "Npa-proof-corpus""#,
+    ));
+    assert_manifest_error(
+        &package_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidPackageId,
+        "package",
+        None,
+    );
+
+    let version_error =
+        validation_error(valid_manifest().replace(r#"version = "0.1.0""#, r#"version = "0.01.0""#));
+    assert_manifest_error(
+        &version_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidVersion,
+        "version",
+        None,
+    );
+
+    let prerelease_error = validation_error(
+        valid_manifest().replace(r#"version = "0.1.0""#, r#"version = "0.1.0-alpha""#),
+    );
+    assert_manifest_error(
+        &prerelease_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidVersion,
+        "version",
+        None,
+    );
+}
+
+#[test]
+fn package_manifest_scalar_domains_aligns_names_with_npa_cert_canonical_names() {
+    let module_error = validation_error(valid_manifest().replace(
+        r#"module = "Proofs.Ai.Basic""#,
+        r#"module = "Proofs..Basic""#,
+    ));
+    assert_manifest_error(
+        &module_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidModuleName,
+        "modules[0].module",
+        None,
+    );
+
+    let import_name_error = validation_error(
+        valid_manifest().replace(r#"imports = ["Std.Logic.Eq"]"#, r#"imports = ["Std..Eq"]"#),
+    );
+    assert_manifest_error(
+        &import_name_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidModuleName,
+        "modules[0].imports[0]",
+        None,
+    );
+
+    let declaration_error =
+        validation_error(valid_manifest().replace(r#"theorems = ["id"]"#, r#"theorems = [""]"#));
+    assert_manifest_error(
+        &declaration_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidDeclarationName,
+        "modules[0].theorems[0]",
+        None,
+    );
+
+    let axiom_error = validation_error(valid_manifest().replace(
+        r#"allowed_axioms = ["Eq.rec"]"#,
+        r#"allowed_axioms = ["Eq..rec"]"#,
+    ));
+    assert_manifest_error(
+        &axiom_error,
+        PackageManifestErrorKind::Domain,
+        PackageManifestErrorReason::InvalidAxiomName,
+        "policy.allowed_axioms[0]",
+        None,
+    );
+}
+
+#[test]
+fn package_manifest_paths_rejects_invalid_lexical_paths() {
+    for (replacement, path) in [
+        ("/Proofs/Ai/Basic/source.npa", "modules[0].source"),
+        ("Proofs/Ai/../source.npa", "modules[0].source"),
+        ("Proofs/Ai/./source.npa", "modules[0].source"),
+        ("Proofs/Ai//source.npa", "modules[0].source"),
+        (r#"Proofs\\Ai\\source.npa"#, "modules[0].source"),
+        ("https://example.invalid/source.npa", "modules[0].source"),
+    ] {
+        let error = validation_error(valid_manifest().replace(
+            r#"source = "Proofs/Ai/Basic/source.npa""#,
+            &format!(r#"source = "{replacement}""#),
+        ));
+        assert_manifest_error(
+            &error,
+            PackageManifestErrorKind::Path,
+            PackageManifestErrorReason::InvalidPath,
+            path,
+            None,
+        );
+    }
+
+    let control_error = validation_error(valid_manifest().replace(
+        r#"source = "Proofs/Ai/Basic/source.npa""#,
+        r#"source = "Proofs/Ai/\u0008/source.npa""#,
+    ));
+    assert_manifest_error(
+        &control_error,
+        PackageManifestErrorKind::Path,
+        PackageManifestErrorReason::InvalidPath,
+        "modules[0].source",
+        None,
+    );
+}
+
+#[test]
+fn package_manifest_paths_checks_external_import_certificate_path() {
+    let error = validation_error(valid_manifest().replace(
+        r#"certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert""#,
+        r#"certificate = "file://vendor/npa-std/Std/Logic/Eq/certificate.npcert""#,
+    ));
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Path,
+        PackageManifestErrorReason::InvalidPath,
+        "imports[0].certificate",
+        None,
+    );
+}
+
+#[test]
+fn package_manifest_hashes_rejects_uppercase_hash_hex() {
+    let error = parse_and_validate_manifest_str(&valid_manifest().replace(
+        r#"expected_export_hash = "sha256:0000000000000000000000000000000000000000000000000000000000000000""#,
+        r#"expected_export_hash = "sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA""#,
+    ))
+    .unwrap_err();
+
+    assert_manifest_error(
+        &error,
+        PackageManifestErrorKind::Hash,
+        PackageManifestErrorReason::InvalidHashFormat,
+        "modules[0].expected_export_hash",
+        None,
+    );
+}
+
+#[test]
+fn package_manifest_hashes_rejects_bad_hash_prefix_and_length() {
+    let bad_prefix_error = parse_and_validate_manifest_str(&valid_manifest().replace(
+        r#"expected_source_hash = "sha256:0000000000000000000000000000000000000000000000000000000000000000""#,
+        r#"expected_source_hash = "sha512:0000000000000000000000000000000000000000000000000000000000000000""#,
+    ))
+    .unwrap_err();
+    assert_manifest_error(
+        &bad_prefix_error,
+        PackageManifestErrorKind::Hash,
+        PackageManifestErrorReason::InvalidHashFormat,
+        "modules[0].expected_source_hash",
+        None,
+    );
+
+    let bad_length_error = parse_and_validate_manifest_str(&valid_manifest().replacen(
+        r#"certificate_hash = "sha256:0000000000000000000000000000000000000000000000000000000000000000""#,
+        r#"certificate_hash = "sha256:0000""#,
+        1,
+    ))
+    .unwrap_err();
+    assert_manifest_error(
+        &bad_length_error,
+        PackageManifestErrorKind::Hash,
+        PackageManifestErrorReason::InvalidHashFormat,
+        "imports[0].certificate_hash",
+        None,
+    );
 }

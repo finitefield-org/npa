@@ -6,7 +6,7 @@ use npa_cert::Name;
 
 use crate::{
     error::{PackageManifestError, PackageManifestResult},
-    hash::PackageHash,
+    hash::{parse_package_hash, PackageHash},
     name::PackageId,
     path::PackagePath,
 };
@@ -495,34 +495,7 @@ fn optional_path(
 
 fn required_hash(table: &Table, path: &str, field: &str) -> PackageManifestResult<PackageHash> {
     let value = required_string(table, path, field)?;
-    parse_sha256_hash(&value, field_path(path, field))
-}
-
-fn parse_sha256_hash(value: &str, path: String) -> PackageManifestResult<PackageHash> {
-    let Some(hex) = value.strip_prefix("sha256:") else {
-        return Err(PackageManifestError::invalid_hash_format(path, value));
-    };
-    if hex.len() != 64
-        || !hex
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-    {
-        return Err(PackageManifestError::invalid_hash_format(path, value));
-    }
-
-    let mut digest = [0_u8; 32];
-    for (index, chunk) in hex.as_bytes().chunks_exact(2).enumerate() {
-        digest[index] = hex_nibble(chunk[0]) << 4 | hex_nibble(chunk[1]);
-    }
-    Ok(PackageHash::new(digest))
-}
-
-fn hex_nibble(byte: u8) -> u8 {
-    match byte {
-        b'0'..=b'9' => byte - b'0',
-        b'a'..=b'f' => byte - b'a' + 10,
-        _ => unreachable!("hash parser validates lowercase hex before decoding"),
-    }
+    parse_package_hash(&value, field_path(path, field))
 }
 
 fn field_path(path: &str, field: &str) -> String {

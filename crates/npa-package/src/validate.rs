@@ -1,1 +1,225 @@
 //! Package manifest validation entry points.
+
+use npa_cert::Name;
+
+use crate::{
+    error::{PackageManifestError, PackageManifestResult},
+    manifest::{parse_manifest_str, PackageManifest, PackageModule, PackageVersion},
+    name::{
+        validate_canonical_axiom_name, validate_canonical_declaration_name,
+        validate_canonical_module_name, validate_package_id,
+    },
+    path::validate_package_path,
+    schema::{
+        CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
+        KERNEL_PROFILE_V0_1, PACKAGE_MANIFEST_SCHEMA,
+    },
+};
+
+/// Options for manifest validation.
+///
+/// The current CLR-01 scalar validator has no tunable behavior, but this type
+/// reserves a stable API surface for later path-root or policy flags.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct PackageManifestValidationOptions {
+    _private: (),
+}
+
+/// A package manifest that has passed validation implemented so far.
+///
+/// CLR-01 grows this value in phases. At CLR-01-04 it means closed-object
+/// parsing has succeeded and scalar domains have been checked; duplicate,
+/// graph, and axiom-policy validation are added by later milestones.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ValidatedPackageManifest {
+    manifest: PackageManifest,
+}
+
+impl ValidatedPackageManifest {
+    /// Return the validated manifest metadata.
+    pub fn manifest(&self) -> &PackageManifest {
+        &self.manifest
+    }
+
+    /// Consume the wrapper and return the manifest metadata.
+    pub fn into_manifest(self) -> PackageManifest {
+        self.manifest
+    }
+}
+
+/// Parse and validate a package manifest string.
+pub fn parse_and_validate_manifest_str(
+    source: &str,
+) -> PackageManifestResult<ValidatedPackageManifest> {
+    validate_manifest(parse_manifest_str(source)?)
+}
+
+/// Validate an already parsed package manifest with default options.
+pub fn validate_manifest(
+    manifest: PackageManifest,
+) -> PackageManifestResult<ValidatedPackageManifest> {
+    validate_manifest_with_options(manifest, &PackageManifestValidationOptions::default())
+}
+
+/// Validate an already parsed package manifest.
+pub fn validate_manifest_with_options(
+    manifest: PackageManifest,
+    _options: &PackageManifestValidationOptions,
+) -> PackageManifestResult<ValidatedPackageManifest> {
+    validate_fixed_schema_and_profiles(&manifest)?;
+    validate_scalar_domains(&manifest)?;
+    Ok(ValidatedPackageManifest { manifest })
+}
+
+/// Validate the `MAJOR.MINOR.PATCH` package version grammar.
+pub fn validate_package_version(
+    version: &PackageVersion,
+    path: impl Into<String>,
+) -> PackageManifestResult<()> {
+    let value = version.as_str();
+    if is_valid_package_version(value) {
+        Ok(())
+    } else {
+        Err(PackageManifestError::invalid_version(path, value))
+    }
+}
+
+fn validate_fixed_schema_and_profiles(manifest: &PackageManifest) -> PackageManifestResult<()> {
+    if manifest.schema != PACKAGE_MANIFEST_SCHEMA {
+        return Err(PackageManifestError::unsupported_schema(
+            "schema",
+            "schema",
+            PACKAGE_MANIFEST_SCHEMA,
+            manifest.schema.clone(),
+        ));
+    }
+    validate_exact_profile(
+        "core_spec",
+        "core_spec",
+        &manifest.core_spec,
+        CORE_SPEC_V0_1,
+    )?;
+    validate_exact_profile(
+        "kernel_profile",
+        "kernel_profile",
+        &manifest.kernel_profile,
+        KERNEL_PROFILE_V0_1,
+    )?;
+    validate_exact_profile(
+        "certificate_format",
+        "certificate_format",
+        &manifest.certificate_format,
+        CERTIFICATE_FORMAT_CANONICAL_V0_1,
+    )?;
+    validate_exact_profile(
+        "checker_profile",
+        "checker_profile",
+        &manifest.checker_profile,
+        CHECKER_PROFILE_REFERENCE_V0_1,
+    )
+}
+
+fn validate_exact_profile(
+    path: &str,
+    field: &str,
+    actual: &str,
+    expected: &str,
+) -> PackageManifestResult<()> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(PackageManifestError::invalid_profile(
+            path, field, expected, actual,
+        ))
+    }
+}
+
+fn validate_scalar_domains(manifest: &PackageManifest) -> PackageManifestResult<()> {
+    validate_package_id(&manifest.package, "package")?;
+    validate_package_version(&manifest.version, "version")?;
+
+    for (index, axiom) in manifest.policy.allowed_axioms.iter().enumerate() {
+        validate_canonical_axiom_name(axiom, format!("policy.allowed_axioms[{index}]"))?;
+    }
+
+    if let Some(imports) = &manifest.imports {
+        for (index, import) in imports.iter().enumerate() {
+            let path = format!("imports[{index}]");
+            validate_canonical_module_name(&import.module, format!("{path}.module"))?;
+            validate_package_id(&import.package, format!("{path}.package"))?;
+            validate_package_version(&import.version, format!("{path}.version"))?;
+            validate_package_path(&import.certificate, format!("{path}.certificate"))?;
+        }
+    }
+
+    for (index, module) in manifest.modules.iter().enumerate() {
+        validate_module_scalar_domains(index, module)?;
+    }
+
+    Ok(())
+}
+
+fn validate_module_scalar_domains(
+    index: usize,
+    module: &PackageModule,
+) -> PackageManifestResult<()> {
+    let path = format!("modules[{index}]");
+    validate_canonical_module_name(&module.module, format!("{path}.module"))?;
+    validate_package_path(&module.source, format!("{path}.source"))?;
+    validate_package_path(&module.certificate, format!("{path}.certificate"))?;
+    validate_name_list(&module.imports, &format!("{path}.imports"), |name, path| {
+        validate_canonical_module_name(name, path)
+    })?;
+    if let Some(meta) = &module.meta {
+        validate_package_path(meta, format!("{path}.meta"))?;
+    }
+    if let Some(replay) = &module.replay {
+        validate_package_path(replay, format!("{path}.replay"))?;
+    }
+    if let Some(inductives) = &module.inductives {
+        validate_name_list(inductives, &format!("{path}.inductives"), |name, path| {
+            validate_canonical_declaration_name(name, path)
+        })?;
+    }
+    if let Some(definitions) = &module.definitions {
+        validate_name_list(definitions, &format!("{path}.definitions"), |name, path| {
+            validate_canonical_declaration_name(name, path)
+        })?;
+    }
+    if let Some(theorems) = &module.theorems {
+        validate_name_list(theorems, &format!("{path}.theorems"), |name, path| {
+            validate_canonical_declaration_name(name, path)
+        })?;
+    }
+    if let Some(axioms) = &module.axioms {
+        validate_name_list(axioms, &format!("{path}.axioms"), |name, path| {
+            validate_canonical_axiom_name(name, path)
+        })?;
+    }
+    Ok(())
+}
+
+fn validate_name_list(
+    names: &[Name],
+    path: &str,
+    validate: impl Fn(&Name, String) -> PackageManifestResult<()>,
+) -> PackageManifestResult<()> {
+    for (index, name) in names.iter().enumerate() {
+        validate(name, format!("{path}[{index}]"))?;
+    }
+    Ok(())
+}
+
+fn is_valid_package_version(value: &str) -> bool {
+    let mut segment_count = 0;
+    for segment in value.split('.') {
+        segment_count += 1;
+        if segment.is_empty()
+            || !segment.bytes().all(|byte| byte.is_ascii_digit())
+            || (segment.len() > 1 && segment.starts_with('0'))
+        {
+            return false;
+        }
+    }
+    segment_count == 3
+}
