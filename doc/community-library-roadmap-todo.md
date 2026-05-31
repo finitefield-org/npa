@@ -248,6 +248,16 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `./scripts/phase8-release-audit.sh`
 - Notes:
   - Detailed breakdown: `doc/community-library-roadmap-clr-03-todo.md`.
+  - CLR-03 must derive source-free checker import locks from
+    `proofs/npa-package.toml`, not from legacy `proofs/manifest.toml` or
+    `tools/proof-corpus` Rust constants.
+  - The CLR-02 fixture already records local module certificate paths,
+    `expected_certificate_file_hash`, `expected_export_hash`,
+    `expected_axiom_report_hash`, and `expected_certificate_hash`, plus
+    top-level Std external import certificate paths with `export_hash` and
+    `certificate_hash`.
+  - CLR-03 derives external import `axiom_report_hash` values by reading the
+    pinned external certificates listed in `proofs/npa-package.toml`.
   - `npa.package.lock.v0.1` is distinct from `npa.independent-checker.import_lock_manifest.v1`; the latter is derived per checker run.
   - Do not add full external checker as required in this milestone; keep `npa-checker-ext` target integration.
 

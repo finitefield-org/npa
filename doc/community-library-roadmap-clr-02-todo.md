@@ -500,7 +500,7 @@ package fixture.
 
 ### CLR-02-08 Document CLR-03 Handoff Data
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-07
 - Inputs:
   - `proofs/npa-package.toml`
@@ -522,6 +522,14 @@ package fixture.
   - `git diff --check`
 - Notes:
   - Keep this documentation small and factual; the package lock format itself is CLR-03.
+  - Added CLR-03 handoff notes to `doc/community-library-roadmap-todo.md` and
+    `proofs/README.md`.
+  - The documentation states that source-free checker import locks are derived
+    from `proofs/npa-package.toml`, while `proofs/manifest.toml` remains the
+    legacy compatibility index.
+  - The README records the current Std vendor certificate paths and the package
+    hash fields available to CLR-03, including the rule that external import
+    axiom report hashes are derived from the pinned certificate artifacts.
 
 ---
 

@@ -186,7 +186,28 @@ Current bundles:
 - `Proofs/Ai/Algebra/AbstractScalarDerive/`: scalar rewrite derivations from `RingLawArgs` and
   equality transport, including the zero cross-term cancellation needed by the abstract
   Pythagorean route.
-- `manifest.toml`: stable index for the corpus and expected hashes.
+- `manifest.toml`: legacy `npa-ai-proof-corpus-v0.1` compatibility index for the corpus and
+  expected hashes.
+- `npa-package.toml`: CLR-02 `npa.package.v0.1` fixture for package-level tooling. CLR-03
+  source-free checker import locks should be derived from this fixture, not from
+  `manifest.toml` or `tools/proof-corpus` Rust constants.
+
+Package fixture handoff data for CLR-03:
+
+- Local `[[modules]]` entries provide module names, package-relative source and certificate paths,
+  direct imports, `expected_source_hash`, `expected_certificate_file_hash`,
+  `expected_export_hash`, `expected_axiom_report_hash`, and `expected_certificate_hash`.
+- Top-level `[[imports]]` entries provide external Std module identity. The current fixture pins
+  `Std.Logic.Eq` at `vendor/npa-std/Std/Logic/Eq/certificate.npcert` and `Std.Nat.Basic` at
+  `vendor/npa-std/Std/Nat/Basic/certificate.npcert`, with exact `export_hash` and
+  `certificate_hash` values. CLR-03 derives external import `axiom_report_hash` values from those
+  pinned certificate artifacts when it builds the package lock.
+- CLR-03 source-free verification should read certificates through these package-relative paths;
+  source, replay, meta, theorem index, AI traces, registry lookup, and `latest` version resolution
+  are not checker inputs.
+- Current package fixture checks are `cargo test -p npa-proof-corpus package_fixture`,
+  `cargo test -p npa-proof-corpus package_manifest_parity`, and
+  `cargo test -p npa-proof-corpus package_fixture_hashes`.
 
 Planning documents:
 
