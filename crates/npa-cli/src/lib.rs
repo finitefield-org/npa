@@ -11,3 +11,4 @@ pub mod diagnostic;
 pub mod fs;
 pub mod package;
 pub mod package_check;
+pub mod package_hashes;

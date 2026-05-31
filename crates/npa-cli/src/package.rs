@@ -9,6 +9,7 @@ use crate::args::PackageCommand;
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{artifact_io_error, join_package_path, render_package_path, render_package_root};
 use crate::package_check::run_package_check;
+use crate::package_hashes::run_package_check_hashes;
 
 /// Package-relative manifest path used by CLR-04 package commands.
 pub const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
@@ -96,6 +97,7 @@ pub fn load_package_root(
 pub fn run_package_command(command: PackageCommand) -> CommandResult {
     match command {
         PackageCommand::Check(options) => run_package_check(options),
+        PackageCommand::CheckHashes(options) => run_package_check_hashes(options),
         other => {
             let common = other.common_options();
             let diagnostic =

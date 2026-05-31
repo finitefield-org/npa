@@ -197,6 +197,17 @@ impl CommandDiagnostic {
         self
     }
 
+    /// Attach expected and actual hash values.
+    pub fn with_hashes(
+        mut self,
+        expected_hash: impl Into<String>,
+        actual_hash: impl Into<String>,
+    ) -> Self {
+        self.expected_hash = Some(expected_hash.into());
+        self.actual_hash = Some(actual_hash.into());
+        self
+    }
+
     /// Convert a CLI usage parser error into a command diagnostic.
     pub fn from_usage_error(error: &CliUsageError) -> Self {
         let mut diagnostic = Self::error(DiagnosticKind::Usage, error.reason.reason_code());
@@ -226,6 +237,36 @@ impl CommandDiagnostic {
         }
     }
 
+    /// Convert an `npa-package` lock error into a command diagnostic.
+    pub fn from_package_lock_error(error: &npa_package::PackageLockError) -> Self {
+        let kind = match error.kind {
+            _ if is_lock_hash_mismatch(error.reason_code) => DiagnosticKind::HashMismatch,
+            npa_package::PackageLockErrorKind::ArtifactIo => DiagnosticKind::ArtifactIo,
+            npa_package::PackageLockErrorKind::Graph => DiagnosticKind::PackageGraph,
+            _ => DiagnosticKind::PackageLock,
+        };
+        let mut diagnostic = Self {
+            kind,
+            reason_code: error.reason_code.as_str().to_owned(),
+            severity: DiagnosticSeverity::Error,
+            module: None,
+            path: Some(error.path.clone()),
+            field: error.field.clone(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: error.expected_value.clone(),
+            actual_value: error.actual_value.clone(),
+            checker: None,
+        };
+        if kind == DiagnosticKind::HashMismatch {
+            diagnostic.expected_hash = error.expected_value.clone();
+            diagnostic.actual_hash = error.actual_value.clone();
+            diagnostic.expected_value = None;
+            diagnostic.actual_value = None;
+        }
+        diagnostic
+    }
+
     fn render_human(&self) -> String {
         let mut message = format!(
             "{} {} {}",
@@ -245,8 +286,26 @@ impl CommandDiagnostic {
         if let Some(actual) = &self.actual_value {
             message.push_str(&format!(" actual={actual}"));
         }
+        if let Some(expected) = &self.expected_hash {
+            message.push_str(&format!(" expected_hash={expected}"));
+        }
+        if let Some(actual) = &self.actual_hash {
+            message.push_str(&format!(" actual_hash={actual}"));
+        }
         message
     }
+}
+
+fn is_lock_hash_mismatch(reason: npa_package::PackageLockErrorReason) -> bool {
+    matches!(
+        reason,
+        npa_package::PackageLockErrorReason::CertificateFileHashMismatch
+            | npa_package::PackageLockErrorReason::ExportHashMismatch
+            | npa_package::PackageLockErrorReason::AxiomReportHashMismatch
+            | npa_package::PackageLockErrorReason::CertificateHashMismatch
+            | npa_package::PackageLockErrorReason::LockImportExportHashMismatch
+            | npa_package::PackageLockErrorReason::LockImportCertificateHashMismatch
+    )
 }
 
 /// A command-owned artifact entry for command results.
