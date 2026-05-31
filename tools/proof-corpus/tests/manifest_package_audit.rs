@@ -6,6 +6,16 @@ use toml::Value;
 const LEGACY_MANIFEST_SCHEMA: &str = "npa-ai-proof-corpus-v0.1";
 const PLANNED_PACKAGE_EXTERNAL_IMPORTS: &[&str] = &["Std.Logic.Eq", "Std.Nat.Basic"];
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
+const VENDORED_STD_IMPORT_ARTIFACTS: &[(&str, &str)] = &[
+    (
+        "Std.Logic.Eq",
+        "vendor/npa-std/Std/Logic/Eq/certificate.npcert",
+    ),
+    (
+        "Std.Nat.Basic",
+        "vendor/npa-std/Std/Nat/Basic/certificate.npcert",
+    ),
+];
 
 #[test]
 fn legacy_manifest_imports_and_axioms_are_package_ready() {
@@ -111,6 +121,38 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
     );
 }
 
+#[test]
+fn vendored_std_import_artifacts_are_canonical_certificates() {
+    let root = corpus_root();
+
+    for (module, certificate_path) in VENDORED_STD_IMPORT_ARTIFACTS {
+        let certificate_bytes = read(root.join(certificate_path));
+        let decoded =
+            npa_cert::decode_module_cert(&certificate_bytes).expect("vendor certificate decodes");
+        assert_eq!(decoded.header.module.as_dotted(), *module);
+        assert!(
+            decoded.imports.is_empty(),
+            "vendored Std import certificates should be self-contained"
+        );
+        assert_eq!(
+            npa_cert::encode_module_cert(&decoded).expect("vendor certificate re-encodes"),
+            certificate_bytes,
+            "vendored Std import certificate bytes should be canonical"
+        );
+
+        let verified = npa_cert::verify_module_cert(
+            &certificate_bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("vendor certificate verifies");
+        assert_eq!(verified.module().as_dotted(), *module);
+        assert!(verified.imports().is_empty());
+        assert_eq!(decoded.hashes.export_hash, verified.export_hash());
+        assert_eq!(decoded.hashes.certificate_hash, verified.certificate_hash());
+    }
+}
+
 fn modules_importing(imports_by_module: &BTreeMap<String, Vec<String>>, import: &str) -> usize {
     imports_by_module
         .values()
@@ -136,6 +178,10 @@ fn corpus_root() -> PathBuf {
 fn read_to_string(path: PathBuf) -> String {
     fs::read_to_string(&path)
         .unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
+}
+
+fn read(path: PathBuf) -> Vec<u8> {
+    fs::read(&path).unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
 }
 
 fn array_field<'a>(value: &'a Value, key: &str) -> &'a [Value] {

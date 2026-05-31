@@ -1,8 +1,25 @@
 use sha2::{Digest, Sha256};
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 const MANIFEST_PATH: &str = "manifest.toml";
+const NPA_STD_PACKAGE: &str = "npa-std";
+const NPA_STD_VERSION: &str = "0.1.0";
+const EXTERNAL_STD_IMPORT_PLANS: &[ExternalImportPlan] = &[
+    ExternalImportPlan {
+        module: "Std.Logic.Eq",
+        package: NPA_STD_PACKAGE,
+        version: NPA_STD_VERSION,
+        certificate_path: "vendor/npa-std/Std/Logic/Eq/certificate.npcert",
+    },
+    ExternalImportPlan {
+        module: "Std.Nat.Basic",
+        package: NPA_STD_PACKAGE,
+        version: NPA_STD_VERSION,
+        certificate_path: "vendor/npa-std/Std/Nat/Basic/certificate.npcert",
+    },
+];
 
 struct ModuleArtifact {
     module: &'static str,
@@ -51,6 +68,25 @@ struct GeneratedModule {
     axiom_report_hash: String,
     certificate_hash: String,
     axioms: Vec<String>,
+    verified_module: npa_cert::VerifiedModule,
+    source_interface: npa_frontend::HumanImportedSourceInterface,
+}
+
+struct ExternalImportPlan {
+    module: &'static str,
+    package: &'static str,
+    version: &'static str,
+    certificate_path: &'static str,
+}
+
+struct GeneratedExternalImport {
+    module: &'static str,
+    package: &'static str,
+    version: &'static str,
+    certificate_path: &'static str,
+    export_hash: String,
+    certificate_hash: String,
+    certificate_bytes: Vec<u8>,
     verified_module: npa_cert::VerifiedModule,
     source_interface: npa_frontend::HumanImportedSourceInterface,
 }
@@ -18245,10 +18281,14 @@ fn run() -> Result<(), String> {
     fs::create_dir_all(&proof_root)
         .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
 
-    let (eq_import, eq_source_interface) =
-        verified_core_import_with_source_interface(std_logic_eq_module(), EQ_IMPORT_SOURCE)?;
-    let (nat_import, nat_source_interface) =
-        verified_core_import_with_source_interface(std_nat_basic_module(), NAT_IMPORT_SOURCE)?;
+    let external_imports = generated_external_std_imports()?;
+    write_external_import_artifacts(&proof_root, &external_imports)?;
+    let eq_external_import = generated_external_import(&external_imports, "Std.Logic.Eq")?;
+    let nat_external_import = generated_external_import(&external_imports, "Std.Nat.Basic")?;
+    let eq_import = eq_external_import.verified_module.clone();
+    let eq_source_interface = eq_external_import.source_interface.clone();
+    let nat_import = nat_external_import.verified_module.clone();
+    let nat_source_interface = nat_external_import.source_interface.clone();
     let eq_imports = vec![eq_import.clone(), nat_import.clone()];
     let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let eq_reasoning_imports = vec![eq_import.clone()];
@@ -19758,17 +19798,35 @@ fn human_imported_source_interface(
     }
 }
 
+fn generated_external_std_imports() -> Result<Vec<GeneratedExternalImport>, String> {
+    let imports = vec![
+        verified_core_import_with_source_interface(
+            &EXTERNAL_STD_IMPORT_PLANS[0],
+            std_logic_eq_module(),
+            EQ_IMPORT_SOURCE,
+        )?,
+        verified_core_import_with_source_interface(
+            &EXTERNAL_STD_IMPORT_PLANS[1],
+            std_nat_basic_module(),
+            NAT_IMPORT_SOURCE,
+        )?,
+    ];
+    validate_external_imports(&imports)?;
+    Ok(imports)
+}
+
 fn verified_core_import_with_source_interface(
+    plan: &'static ExternalImportPlan,
     module: npa_cert::CoreModule,
     source: &str,
-) -> Result<
-    (
-        npa_cert::VerifiedModule,
-        npa_frontend::HumanImportedSourceInterface,
-    ),
-    String,
-> {
+) -> Result<GeneratedExternalImport, String> {
     let module_name = module.name.as_dotted();
+    if module_name != plan.module {
+        return Err(format!(
+            "external import plan for {} cannot build module {module_name}",
+            plan.module
+        ));
+    }
     let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces(
         npa_frontend::FileId(0),
         module.name.clone(),
@@ -19791,8 +19849,107 @@ fn verified_core_import_with_source_interface(
     )
     .map_err(|err| format!("import {module_name} did not verify: {err:?}"))?;
     let source_interface = human_imported_source_interface(&verified, &source_interface);
+    let export_hash = tagged_hash(verified.export_hash());
+    let certificate_hash = tagged_hash(verified.certificate_hash());
 
-    Ok((verified, source_interface))
+    Ok(GeneratedExternalImport {
+        module: plan.module,
+        package: plan.package,
+        version: plan.version,
+        certificate_path: plan.certificate_path,
+        export_hash,
+        certificate_hash,
+        certificate_bytes: bytes,
+        verified_module: verified,
+        source_interface,
+    })
+}
+
+fn validate_external_imports(imports: &[GeneratedExternalImport]) -> Result<(), String> {
+    let mut seen_modules = BTreeSet::new();
+    for import in imports {
+        if !seen_modules.insert(import.module) {
+            return Err(format!(
+                "duplicate generated external package import {}",
+                import.module
+            ));
+        }
+        let plan = external_import_plan(import.module).ok_or_else(|| {
+            format!(
+                "unexpected generated external package import {} at {}",
+                import.module, import.certificate_path
+            )
+        })?;
+        if import.package != plan.package
+            || import.version != plan.version
+            || import.certificate_path != plan.certificate_path
+        {
+            return Err(format!(
+                "generated external package import {} does not match planned package identity",
+                import.module
+            ));
+        }
+        if import.source_interface.module.as_dotted() != import.module {
+            return Err(format!(
+                "generated external package import {} has source interface for {}",
+                import.module,
+                import.source_interface.module.as_dotted()
+            ));
+        }
+        if import.export_hash != tagged_hash(import.verified_module.export_hash()) {
+            return Err(format!(
+                "generated external package import {} has stale export hash",
+                import.module
+            ));
+        }
+        if import.certificate_hash != tagged_hash(import.verified_module.certificate_hash()) {
+            return Err(format!(
+                "generated external package import {} has stale certificate hash",
+                import.module
+            ));
+        }
+    }
+
+    for plan in EXTERNAL_STD_IMPORT_PLANS {
+        if !seen_modules.contains(plan.module) {
+            return Err(format!(
+                "missing planned external package import output {}",
+                plan.module
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn external_import_plan(module: &str) -> Option<&'static ExternalImportPlan> {
+    EXTERNAL_STD_IMPORT_PLANS
+        .iter()
+        .find(|plan| plan.module == module)
+}
+
+fn generated_external_import<'a>(
+    imports: &'a [GeneratedExternalImport],
+    module: &str,
+) -> Result<&'a GeneratedExternalImport, String> {
+    imports
+        .iter()
+        .find(|import| import.module == module)
+        .ok_or_else(|| format!("missing generated external package import {module}"))
+}
+
+fn write_external_import_artifacts(
+    proof_root: &Path,
+    imports: &[GeneratedExternalImport],
+) -> Result<(), String> {
+    validate_external_imports(imports)?;
+    for import in imports {
+        write(
+            proof_root.join(import.certificate_path),
+            &import.certificate_bytes,
+        )?;
+    }
+    Ok(())
 }
 
 fn clear_source_interface_hashes(source_interface: &mut npa_frontend::HumanSourceInterface) {

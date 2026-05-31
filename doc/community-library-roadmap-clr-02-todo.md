@@ -298,7 +298,7 @@ package fixture.
 
 ### CLR-02-02 Add Deterministic External Std Import Artifact Generation
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-01
 - Inputs:
   - `std_logic_eq_module`
@@ -323,6 +323,27 @@ package fixture.
   - `rg -n "vendor/npa-std|Std.Logic.Eq|Std.Nat.Basic" proofs tools/proof-corpus/src/main.rs`
 - Notes:
   - Do not treat these artifacts as a registry cache. They are a checked-in fixture for package graph identity.
+  - Completed by `tools/proof-corpus/src/main.rs`: `GeneratedExternalImport`
+    now carries module name, package, version, package-relative certificate
+    path, export hash, certificate hash, canonical certificate bytes, verified
+    module, and human source interface for each generated external Std import.
+  - The generator writes these checked-in fixture artifacts:
+    - `proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert`
+      with file SHA-256
+      `sha256:7aa25a1adf44de35cdaaa514484c1220fec0e543d3f65803805b5e6efc5b36a1`
+    - `proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert`
+      with file SHA-256
+      `sha256:d057dbc0e3c1e21649968eeaf882616602cfeb1f1cbb8393031c2010ea9596fb`
+  - `tools/proof-corpus/tests/manifest_package_audit.rs` verifies that both
+    vendored artifacts decode, re-encode to identical canonical `npa-cert`
+    bytes, verify with `AxiomPolicy::normal()`, and remain self-contained.
+  - The generator validates that the generated external import set exactly
+    covers the planned package output modules `Std.Logic.Eq` and
+    `Std.Nat.Basic`; a missing or unexpected external package import is a
+    generator error.
+  - Trusted base is unchanged: these files are package fixture sidecars for
+    graph identity and are not accepted as proof evidence without later
+    certificate verification.
 
 ### CLR-02-03 Generate `proofs/npa-package.toml`
 
