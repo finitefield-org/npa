@@ -160,27 +160,34 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Depends on: CLR-01
 - Inputs:
   - `proofs/manifest.toml`
+  - `doc/community-library-roadmap-clr-02-todo.md`
   - `proofs/Proofs/Ai/**`
   - `tools/proof-corpus/src/main.rs`
   - `tools/proof-corpus/tests/ai_proof_artifacts.rs`
 - Code or documentation areas:
   - `tools/proof-corpus`
-  - package fixture under `proofs/` or test fixture directory chosen in CLR-00
-  - package validator tests
+  - `proofs/npa-package.toml`
+  - `proofs/vendor/npa-std/**`
+  - package fixture tests in `tools/proof-corpus/tests`
+  - package validator fixture coverage when shared coverage belongs in `crates/npa-package`
 - Deliverables:
   - A package fixture that describes the current `proofs/` corpus without hard-coding the module graph in the validator.
   - Compatibility path from current `proofs/manifest.toml` to the new package model.
+  - Hash-pinned top-level package import entries for `Std.Logic.Eq` and `Std.Nat.Basic`.
+  - Deterministic external import certificate artifacts for the current Std imports.
   - Tests proving that package validation preserves the existing module list, source paths, certificate paths, hashes, theorem names, definitions, inductives, and axiom lists.
 - Acceptance criteria:
   - `cargo test -p npa-proof-corpus` still verifies checked-in artifacts.
   - The package fixture can be loaded without reading Rust source constants from `tools/proof-corpus/src/main.rs`.
   - The fixture records enough import identity to build source-free checker requests later.
   - Existing proof-corpus generation remains deterministic.
+  - `proofs/manifest.toml` remains a legacy `npa-ai-proof-corpus-v0.1` artifact while `proofs/npa-package.toml` uses `npa.package.v0.1`.
 - Verification:
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "schema = \"npa-ai-proof-corpus-v0.1\"|npa.package.v0.1" proofs tools doc/community-library-roadmap-todo.md`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-02-todo.md`.
   - This milestone may keep `npa-ai-proof-corpus-v0.1` as a legacy output, but must define how it maps to package fields.
 
 ### CLR-03 Add Import Lock And Source-Free Package Graph Verification
