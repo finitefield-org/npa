@@ -195,16 +195,20 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Status: Pending
 - Depends on: CLR-02
 - Inputs:
+  - `doc/community-library-roadmap-clr-03-todo.md`
   - `crates/npa-api/src/independent_checker.rs`
   - `crates/npa-checker-ref/src/lib.rs`
   - `crates/npa-cert/src/lib.rs`
   - package fixture from CLR-02
 - Code or documentation areas:
-  - package CLI/module selected in CLR-00
-  - import lock builder
+  - `crates/npa-package`
+  - `crates/npa-api` Phase 8 package adapters
+  - `crates/npa-checker-ref` only if policy parsing needs narrow extension
+  - `proofs/generated/package-lock.json`
   - source-free package verification tests
 - Deliverables:
-  - Package-level import lock artifact with module, export hash, certificate hash, certificate path, and axiom report hash where required.
+  - Package-level `npa.package.lock.v0.1` artifact with module, export hash, certificate hash, certificate path, certificate file hash, direct imports, and axiom report hash.
+  - Derived Phase 8 import locks and MachineCheckRequest materialization from the package lock.
   - Dependency-topological verification of package certificates without reading `.npa` source.
   - Integration with `npa-checker-ref` for reference checker mode.
   - Fast verifier mode for local development, clearly marked separate from reference checker verdict.
@@ -213,12 +217,17 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - The source-free checker path does not read source, replay, theorem index, or AI trace.
   - Import identity uses `module + export_hash + certificate_hash`; module name alone is insufficient.
   - Verification order is derived from the package graph, not request order.
+  - Reference checker mode builds imports from earlier same-checker successful results, not from unchecked directory scanning alone.
 - Verification:
+  - `cargo test -p npa-package package_lock`
+  - `cargo test -p npa-api package_source_free`
   - `cargo test --workspace import_lock`
   - `cargo test -p npa-checker-ref`
   - `cargo test -p npa-api independent_checker`
   - `./scripts/phase8-release-audit.sh`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-03-todo.md`.
+  - `npa.package.lock.v0.1` is distinct from `npa.independent-checker.import_lock_manifest.v1`; the latter is derived per checker run.
   - Do not add full external checker as required in this milestone; keep `npa-checker-ext` target integration.
 
 ### CLR-04 Implement Package Build, Verify, And Hash Check Commands
