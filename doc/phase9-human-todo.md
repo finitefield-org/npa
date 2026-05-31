@@ -185,7 +185,7 @@ cargo test --workspace
 - [x] Phase 9 Human の heavy checks が AI candidate hot path に同期挿入されない regression を追加する。
 - [x] `crates/npa-api` の Phase 9 AI substrate が trusted checker ではないことを public API docs に明記する。
 - [x] Phase 9 Human metadata が Phase 5-7 replay / verify identity hash と Phase 8 checker result を変えない fixture を追加する。
-- [x] Phase 9 Regression gate が Phase 9 Human 後も固定ゲートであることを README / docs / workflow 名で確認する。
+- [x] Phase 9 Regression gate が Phase 9 Human 後も固定ゲートであることを README / docs / local script 名で確認する。
 
 受け入れ条件:
 

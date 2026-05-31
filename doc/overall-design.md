@@ -1903,8 +1903,8 @@ NPA Core Spec v0.1
 ```
 
 Phase 9 Human の target scope は、現リポジトリでは Rust crates と deterministic fixtures として
-実装済みです。完了後の required gate は `./scripts/phase9-regression.sh` で、GitHub Actions の
-`Phase 9 Regression / phase9-regression` と同じ内容を実行します。
+実装済みです。完了後の required gate は `./scripts/phase9-regression.sh` です。
+現リポジトリでは GitHub Actions workflow は削除済みであり、この gate は必要に応じてローカルで実行します。
 
 この gate は Phase 9 AI M9 fixture、format、clippy、workspace tests を通し、
 checker result と deterministic artifact だけで release / high-trust の pass/fail を決める方針を固定します。

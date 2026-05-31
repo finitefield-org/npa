@@ -53,8 +53,8 @@ Phase 9 AI Profile の目的は次です。
 - Phase 9 Human 境界追加後も、この制約は
   `p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` と
   `p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定する
-- Phase 9 完了後の固定回帰ゲートは ./scripts/phase9-regression.sh であり、
-  GitHub Actions の Phase 9 Regression / phase9-regression でも実行される
+- Phase 9 完了後の固定回帰ゲートは ./scripts/phase9-regression.sh である。
+  現リポジトリでは GitHub Actions workflow は削除済みであり、この gate は必要に応じてローカルで実行する
 ```
 
 ---
@@ -5899,8 +5899,7 @@ fixture、CI policy で継続的に検査する。
 - rejected candidate は trusted env を変更しない
 - validation result に time / random seed / network result が混ざらないことを検査できる
 - docs と fixture 名が milestone / endpoint / error enum に対応している
-- Phase 9 完了後は `./scripts/phase9-regression.sh` を固定ゲートとして実行し、
-  GitHub Actions の `Phase 9 Regression / phase9-regression` でも同じゲートを通す
+- Phase 9 完了後は `./scripts/phase9-regression.sh` を固定ゲートとして必要に応じてローカルで実行する
 ```
 
 非対象:
