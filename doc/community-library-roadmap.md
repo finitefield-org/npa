@@ -289,6 +289,18 @@ manifest の役割:
 - registry publish に必要な metadata を出す
 ```
 
+Import resolution rule:
+
+```text
+- module-level `imports = [...]` strings first resolve to same-package `[[modules]]`
+  entries by exact module name.
+- otherwise they must resolve to hash-pinned top-level `[[imports]]` entries.
+- external import by module name alone is invalid.
+- local/external module name collision is invalid.
+- registry lookup, network fetch, package-cache fallback, and implicit latest-version
+  resolution are forbidden.
+```
+
 CLR-00 で固定する schema constants:
 
 | Constant | Schema string | Artifact |

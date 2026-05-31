@@ -434,30 +434,51 @@ certificate
 ```
 
 Module-level `imports = [...]` lists the modules a module depends on.
+In the current proof corpus, `Proofs.Ai.*` names are same-package imports and
+`Std.Logic.Eq` / `Std.Nat.Basic` are external imports that must become top-level
+hash-pinned `[[imports]]` entries in `proofs/npa-package.toml`.
 
 Resolution rules:
 
 ```text
-1. If the imported module name matches a local `[[modules]]` entry, it is a same-package import.
-   Its export and certificate identity comes from that module's expected hash fields.
+1. Build a local module map from `[[modules]].module`.
+   Duplicate local module names fail before resolving any module import.
+   Report the smallest later duplicate module entry deterministically.
 
-2. If the imported module name matches a top-level `[[imports]]` entry, it is an external import.
-   Its identity comes from the hash-pinned top-level import entry.
+2. Build an external import map from top-level `[[imports]].module`.
+   Duplicate external module names fail before resolving any module import.
+   Report the smallest later duplicate external import entry deterministically.
 
-3. If a module name matches both local and external entries, validation fails.
+3. If a module name appears in both maps, validation fails before resolving any
+   `modules[].imports` list. Report the smallest colliding top-level `[[imports]]`
+   entry. A package cannot shadow a local module with an external import.
 
-4. If a module-level import does not resolve locally or through top-level `[[imports]]`,
-   validation fails.
+4. For each `modules[].imports` string, first resolve it against the local module map.
+   If it matches a local `[[modules]]` entry, it is a same-package import.
+   Its identity is the target module's `expected_export_hash`,
+   `expected_axiom_report_hash`, `expected_certificate_hash`,
+   `expected_certificate_file_hash`, and `certificate` path.
 
-5. External imports are never accepted by module name alone.
+5. If the import string does not match a local module, resolve it against the external
+   import map. If it matches a top-level `[[imports]]` entry, it is an external import.
+   Its identity is the top-level entry's `package`, `version`, `export_hash`,
+   `certificate_hash`, and vendored `certificate` path. External imports are never
+   accepted by module name alone.
 
-6. Registry lookup, network fetch, or implicit latest-version resolution is forbidden.
+6. If the import string matches neither map, validation fails as an unknown import.
+   The validator must not search the filesystem, registry, network, package cache, or
+   installed packages to resolve it.
+
+7. Registry lookup, network fetch, package-cache fallback, directory scan fallback, or
+   implicit latest-version resolution is forbidden during manifest validation,
+   package-lock generation, and checker-request materialization.
 ```
 
-The package lock generated later must use at least:
+The package lock generated later must materialize each resolved direct import with at least:
 
 ```text
 module
+kind = same-package | external
 package identity for external imports
 export_hash
 certificate_hash
@@ -465,6 +486,17 @@ certificate path
 certificate file hash
 axiom_report_hash when available
 ```
+
+Same-package imports may stay concise in `modules[].imports` because the referenced
+local `[[modules]]` entry carries the expected hashes. This does not weaken hash
+pinning: `npa.package.lock.v0.1`, `check-hashes`, and CLR-03 source-free verification
+must use the target module's expected hashes, not only the module string.
+
+When deriving `npa.independent-checker.import_lock_manifest.v1` for a source-free
+checker run, package tooling uses the resolved package-lock identity. It emits the
+Phase 8 shape `module`, `export_hash`, `certificate.path`,
+`certificate.file_hash`, and `certificate.certificate_hash`; it does not read source,
+replay, theorem index, registry metadata, or AI sidecars to justify an import.
 
 ---
 
@@ -577,7 +609,7 @@ axiom_report_hash when available
 
 ### CLR-00-05 Specify Import Resolution Semantics
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-00-03
 - Inputs:
   - existing `imports` entries in `proofs/manifest.toml`
@@ -599,6 +631,9 @@ axiom_report_hash when available
   - `git diff --check`
 - Notes:
   - Package-level import resolution is untrusted helper logic; checker identity remains certificate/hash based.
+  - Implemented by defining local and external import maps, deterministic duplicate
+    and collision failures, module-level resolution order, and the package-lock /
+    Phase 8 import-lock derivation boundary.
 
 ### CLR-00-06 Define Validator Error And Test Surface For CLR-01
 
