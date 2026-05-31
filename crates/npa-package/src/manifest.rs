@@ -1,8 +1,15 @@
 //! Package manifest parsing entry points and raw accepted input types.
 
+use toml::{Table, Value};
+
 use npa_cert::Name;
 
-use crate::{hash::PackageHash, name::PackageId, path::PackagePath};
+use crate::{
+    error::{PackageManifestError, PackageManifestResult},
+    hash::PackageHash,
+    name::PackageId,
+    path::PackagePath,
+};
 
 /// Exact package version string accepted by `npa.package.v0.1`.
 ///
@@ -127,6 +134,415 @@ pub struct PackageModule {
 /// Parse package manifest TOML into a structured value without reading files.
 pub fn parse_toml_value(source: &str) -> Result<toml::Value, toml::de::Error> {
     source.parse()
+}
+
+/// Parse an `npa-package.toml` string into accepted manifest input fields.
+///
+/// This function performs structured TOML parsing, duplicate-key rejection as
+/// reported by the TOML parser, closed-object unknown-field checks, required
+/// field checks, and TOML type checks. It does not read files, resolve imports,
+/// build certificates, query registries, or execute checkers.
+pub fn parse_manifest_str(source: &str) -> PackageManifestResult<PackageManifest> {
+    let value = parse_toml_value(source).map_err(package_toml_parse_error)?;
+    let root = value.as_table().ok_or_else(|| {
+        PackageManifestError::wrong_type("$", None, "table", value_type_name(&value))
+    })?;
+
+    reject_unknown_fields("$", root, TOP_LEVEL_FIELDS)?;
+
+    Ok(PackageManifest {
+        schema: required_string(root, "$", "schema")?,
+        package: PackageId::new(required_string(root, "$", "package")?),
+        version: PackageVersion::new(required_string(root, "$", "version")?),
+        core_spec: required_string(root, "$", "core_spec")?,
+        kernel_profile: required_string(root, "$", "kernel_profile")?,
+        certificate_format: required_string(root, "$", "certificate_format")?,
+        checker_profile: required_string(root, "$", "checker_profile")?,
+        policy: parse_policy(required_table(root, "$", "policy")?)?,
+        modules: required_table_array(root, "$", "modules")?
+            .into_iter()
+            .enumerate()
+            .map(|(index, module)| parse_module(index, module))
+            .collect::<PackageManifestResult<Vec<_>>>()?,
+        license: optional_string(root, "$", "license")?,
+        repository: optional_string(root, "$", "repository")?,
+        description: optional_string(root, "$", "description")?,
+        imports: optional_table_array(root, "$", "imports")?
+            .map(|imports| {
+                imports
+                    .into_iter()
+                    .enumerate()
+                    .map(|(index, import)| parse_external_import(index, import))
+                    .collect::<PackageManifestResult<Vec<_>>>()
+            })
+            .transpose()?,
+    })
+}
+
+const TOP_LEVEL_FIELDS: &[&str] = &[
+    "schema",
+    "package",
+    "version",
+    "core_spec",
+    "kernel_profile",
+    "certificate_format",
+    "checker_profile",
+    "policy",
+    "modules",
+    "license",
+    "repository",
+    "description",
+    "imports",
+];
+
+const POLICY_FIELDS: &[&str] = &["allow_custom_axioms", "allowed_axioms"];
+
+const IMPORT_FIELDS: &[&str] = &[
+    "module",
+    "package",
+    "version",
+    "certificate",
+    "export_hash",
+    "certificate_hash",
+];
+
+const MODULE_FIELDS: &[&str] = &[
+    "module",
+    "source",
+    "certificate",
+    "imports",
+    "expected_source_hash",
+    "expected_certificate_file_hash",
+    "expected_export_hash",
+    "expected_axiom_report_hash",
+    "expected_certificate_hash",
+    "meta",
+    "replay",
+    "producer_profile",
+    "inductives",
+    "definitions",
+    "theorems",
+    "axioms",
+    "tags",
+];
+
+fn package_toml_parse_error(error: toml::de::Error) -> PackageManifestError {
+    let message = error.message().to_owned();
+    if message.contains("duplicate key") {
+        PackageManifestError::duplicate_field(message)
+    } else {
+        PackageManifestError::invalid_toml(message)
+    }
+}
+
+fn parse_policy(table: &Table) -> PackageManifestResult<PackagePolicy> {
+    reject_unknown_fields("policy", table, POLICY_FIELDS)?;
+    Ok(PackagePolicy {
+        allow_custom_axioms: required_bool(table, "policy", "allow_custom_axioms")?,
+        allowed_axioms: required_name_array(table, "policy", "allowed_axioms")?,
+    })
+}
+
+fn parse_external_import(
+    index: usize,
+    table: &Table,
+) -> PackageManifestResult<PackageExternalImport> {
+    let path = format!("imports[{index}]");
+    reject_unknown_fields(&path, table, IMPORT_FIELDS)?;
+    Ok(PackageExternalImport {
+        module: Name::from_dotted(required_string(table, &path, "module")?),
+        package: PackageId::new(required_string(table, &path, "package")?),
+        version: PackageVersion::new(required_string(table, &path, "version")?),
+        certificate: PackagePath::new(required_string(table, &path, "certificate")?),
+        export_hash: required_hash(table, &path, "export_hash")?,
+        certificate_hash: required_hash(table, &path, "certificate_hash")?,
+    })
+}
+
+fn parse_module(index: usize, table: &Table) -> PackageManifestResult<PackageModule> {
+    let path = format!("modules[{index}]");
+    reject_unknown_fields(&path, table, MODULE_FIELDS)?;
+    Ok(PackageModule {
+        module: Name::from_dotted(required_string(table, &path, "module")?),
+        source: PackagePath::new(required_string(table, &path, "source")?),
+        certificate: PackagePath::new(required_string(table, &path, "certificate")?),
+        imports: required_name_array(table, &path, "imports")?,
+        expected_source_hash: required_hash(table, &path, "expected_source_hash")?,
+        expected_certificate_file_hash: required_hash(
+            table,
+            &path,
+            "expected_certificate_file_hash",
+        )?,
+        expected_export_hash: required_hash(table, &path, "expected_export_hash")?,
+        expected_axiom_report_hash: required_hash(table, &path, "expected_axiom_report_hash")?,
+        expected_certificate_hash: required_hash(table, &path, "expected_certificate_hash")?,
+        meta: optional_path(table, &path, "meta")?,
+        replay: optional_path(table, &path, "replay")?,
+        producer_profile: optional_string(table, &path, "producer_profile")?,
+        inductives: optional_name_array(table, &path, "inductives")?,
+        definitions: optional_name_array(table, &path, "definitions")?,
+        theorems: optional_name_array(table, &path, "theorems")?,
+        axioms: optional_name_array(table, &path, "axioms")?,
+        tags: optional_string_array(table, &path, "tags")?,
+    })
+}
+
+fn reject_unknown_fields(path: &str, table: &Table, allowed: &[&str]) -> PackageManifestResult<()> {
+    for key in table.keys() {
+        if !allowed.iter().any(|allowed_key| allowed_key == key) {
+            return Err(PackageManifestError::unknown_field(path, key.clone()));
+        }
+    }
+    Ok(())
+}
+
+fn required_value<'a>(
+    table: &'a Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<&'a Value> {
+    table
+        .get(field)
+        .ok_or_else(|| PackageManifestError::missing_field(path, field))
+}
+
+fn required_string(table: &Table, path: &str, field: &str) -> PackageManifestResult<String> {
+    let value = required_value(table, path, field)?;
+    value.as_str().map(ToOwned::to_owned).ok_or_else(|| {
+        PackageManifestError::wrong_type(
+            field_path(path, field),
+            Some(field.to_owned()),
+            "string",
+            value_type_name(value),
+        )
+    })
+}
+
+fn optional_string(
+    table: &Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Option<String>> {
+    table
+        .get(field)
+        .map(|value| {
+            value.as_str().map(ToOwned::to_owned).ok_or_else(|| {
+                PackageManifestError::wrong_type(
+                    field_path(path, field),
+                    Some(field.to_owned()),
+                    "string",
+                    value_type_name(value),
+                )
+            })
+        })
+        .transpose()
+}
+
+fn required_bool(table: &Table, path: &str, field: &str) -> PackageManifestResult<bool> {
+    let value = required_value(table, path, field)?;
+    value.as_bool().ok_or_else(|| {
+        PackageManifestError::wrong_type(
+            field_path(path, field),
+            Some(field.to_owned()),
+            "bool",
+            value_type_name(value),
+        )
+    })
+}
+
+fn required_table<'a>(
+    table: &'a Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<&'a Table> {
+    let value = required_value(table, path, field)?;
+    value.as_table().ok_or_else(|| {
+        PackageManifestError::wrong_type(
+            field_path(path, field),
+            Some(field.to_owned()),
+            "table",
+            value_type_name(value),
+        )
+    })
+}
+
+fn required_table_array<'a>(
+    table: &'a Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Vec<&'a Table>> {
+    let value = required_value(table, path, field)?;
+    table_array_from_value(value, &field_path(path, field), Some(field.to_owned()))
+}
+
+fn optional_table_array<'a>(
+    table: &'a Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Option<Vec<&'a Table>>> {
+    table
+        .get(field)
+        .map(|value| {
+            table_array_from_value(value, &field_path(path, field), Some(field.to_owned()))
+        })
+        .transpose()
+}
+
+fn table_array_from_value<'a>(
+    value: &'a Value,
+    path: &str,
+    field: Option<String>,
+) -> PackageManifestResult<Vec<&'a Table>> {
+    let array = value.as_array().ok_or_else(|| {
+        PackageManifestError::wrong_type(
+            path.to_owned(),
+            field.clone(),
+            "array",
+            value_type_name(value),
+        )
+    })?;
+    array
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            item.as_table().ok_or_else(|| {
+                PackageManifestError::wrong_type(
+                    format!("{path}[{index}]"),
+                    None,
+                    "table",
+                    value_type_name(item),
+                )
+            })
+        })
+        .collect()
+}
+
+fn required_name_array(table: &Table, path: &str, field: &str) -> PackageManifestResult<Vec<Name>> {
+    Ok(required_string_array(table, path, field)?
+        .into_iter()
+        .map(Name::from_dotted)
+        .collect())
+}
+
+fn optional_name_array(
+    table: &Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Option<Vec<Name>>> {
+    optional_string_array(table, path, field).map(|value| {
+        value.map(|items| items.into_iter().map(Name::from_dotted).collect::<Vec<_>>())
+    })
+}
+
+fn required_string_array(
+    table: &Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Vec<String>> {
+    let value = required_value(table, path, field)?;
+    string_array_from_value(value, &field_path(path, field), Some(field.to_owned()))
+}
+
+fn optional_string_array(
+    table: &Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Option<Vec<String>>> {
+    table
+        .get(field)
+        .map(|value| {
+            string_array_from_value(value, &field_path(path, field), Some(field.to_owned()))
+        })
+        .transpose()
+}
+
+fn string_array_from_value(
+    value: &Value,
+    path: &str,
+    field: Option<String>,
+) -> PackageManifestResult<Vec<String>> {
+    let array = value.as_array().ok_or_else(|| {
+        PackageManifestError::wrong_type(
+            path.to_owned(),
+            field.clone(),
+            "array",
+            value_type_name(value),
+        )
+    })?;
+    array
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            item.as_str().map(ToOwned::to_owned).ok_or_else(|| {
+                PackageManifestError::wrong_type(
+                    format!("{path}[{index}]"),
+                    None,
+                    "string",
+                    value_type_name(item),
+                )
+            })
+        })
+        .collect()
+}
+
+fn optional_path(
+    table: &Table,
+    path: &str,
+    field: &str,
+) -> PackageManifestResult<Option<PackagePath>> {
+    optional_string(table, path, field).map(|value| value.map(PackagePath::new))
+}
+
+fn required_hash(table: &Table, path: &str, field: &str) -> PackageManifestResult<PackageHash> {
+    let value = required_string(table, path, field)?;
+    parse_sha256_hash(&value, field_path(path, field))
+}
+
+fn parse_sha256_hash(value: &str, path: String) -> PackageManifestResult<PackageHash> {
+    let Some(hex) = value.strip_prefix("sha256:") else {
+        return Err(PackageManifestError::invalid_hash_format(path, value));
+    };
+    if hex.len() != 64
+        || !hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(PackageManifestError::invalid_hash_format(path, value));
+    }
+
+    let mut digest = [0_u8; 32];
+    for (index, chunk) in hex.as_bytes().chunks_exact(2).enumerate() {
+        digest[index] = hex_nibble(chunk[0]) << 4 | hex_nibble(chunk[1]);
+    }
+    Ok(PackageHash::new(digest))
+}
+
+fn hex_nibble(byte: u8) -> u8 {
+    match byte {
+        b'0'..=b'9' => byte - b'0',
+        b'a'..=b'f' => byte - b'a' + 10,
+        _ => unreachable!("hash parser validates lowercase hex before decoding"),
+    }
+}
+
+fn field_path(path: &str, field: &str) -> String {
+    if path == "$" {
+        field.to_owned()
+    } else {
+        format!("{path}.{field}")
+    }
+}
+
+fn value_type_name(value: &Value) -> &'static str {
+    match value {
+        Value::String(_) => "string",
+        Value::Integer(_) => "integer",
+        Value::Float(_) => "float",
+        Value::Boolean(_) => "bool",
+        Value::Datetime(_) => "datetime",
+        Value::Array(_) => "array",
+        Value::Table(_) => "table",
+    }
 }
 
 #[cfg(test)]

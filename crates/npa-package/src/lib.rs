@@ -16,9 +16,11 @@ pub mod path;
 pub mod schema;
 pub mod validate;
 
+pub use error::{PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason};
 pub use hash::{PackageHash, PackageHashBytes};
 pub use manifest::{
-    PackageExternalImport, PackageManifest, PackageModule, PackagePolicy, PackageVersion,
+    parse_manifest_str, PackageExternalImport, PackageManifest, PackageModule, PackagePolicy,
+    PackageVersion,
 };
 pub use name::PackageId;
 pub use path::PackagePath;

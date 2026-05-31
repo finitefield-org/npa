@@ -539,7 +539,7 @@ both local imports and external imports. The full corpus package fixture is stil
 
 ### CLR-01-03 Implement Structured TOML Parse And Closed-Object Extraction
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-01-02
 - Inputs:
   - CLR-00 unknown-field rejection rule
@@ -564,6 +564,9 @@ both local imports and external imports. The full corpus package fixture is stil
   - `cargo test -p npa-package package_manifest_closed_objects`
 - Notes:
   - Use parsed TOML values and typed extraction. Avoid ad hoc line scanning.
+  - Implemented by exposing `parse_manifest_str`, structured manifest errors,
+    closed-object field allowlists, required-field/type extraction, duplicate-key
+    TOML error mapping, and integration tests for parse and closed-object failures.
 
 ### CLR-01-04 Implement Scalar Domain Validators
 
