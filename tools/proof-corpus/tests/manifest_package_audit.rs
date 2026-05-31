@@ -71,6 +71,168 @@ fn package_fixture_validates_with_npa_package() {
 }
 
 #[test]
+fn package_manifest_parity_matches_legacy_manifest() {
+    let root = corpus_root();
+    let legacy_manifest = toml_value(root.join("manifest.toml"));
+    let package_manifest = toml_value(root.join("npa-package.toml"));
+    npa_package::parse_and_validate_manifest_str(&read_to_string(root.join("npa-package.toml")))
+        .expect("package fixture validates before parity checks");
+
+    let legacy_modules = array_field(&legacy_manifest, "proof_modules");
+    let package_modules = array_field(&package_manifest, "modules");
+    assert_eq!(
+        package_modules.len(),
+        legacy_modules.len(),
+        "package fixture must contain exactly the legacy local proof modules"
+    );
+
+    let legacy_by_module = module_map(legacy_modules, "legacy proof_modules");
+    let package_by_module = module_map(package_modules, "package modules");
+
+    assert_eq!(
+        package_by_module.keys().copied().collect::<Vec<_>>(),
+        legacy_by_module.keys().copied().collect::<Vec<_>>(),
+        "package fixture must not add or omit local modules"
+    );
+
+    let local_modules = legacy_by_module.keys().copied().collect::<BTreeSet<_>>();
+    let mut external_imports_from_legacy = BTreeSet::new();
+
+    for (module_name, legacy_module) in &legacy_by_module {
+        let package_module = package_by_module
+            .get(module_name)
+            .unwrap_or_else(|| panic!("package module {module_name} should exist"));
+
+        assert_eq!(
+            string_field(package_module, "module"),
+            string_field(legacy_module, "module"),
+            "module name mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "source"),
+            string_field(legacy_module, "source"),
+            "source path mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "certificate"),
+            string_field(legacy_module, "certificate"),
+            "certificate path mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "meta"),
+            string_field(legacy_module, "meta"),
+            "meta path mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "replay"),
+            string_field(legacy_module, "replay"),
+            "replay path mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "producer_profile"),
+            string_field(legacy_module, "producer_profile"),
+            "producer profile mismatch for {module_name}"
+        );
+
+        assert_eq!(
+            string_array_field(package_module, "imports"),
+            string_array_field(legacy_module, "imports"),
+            "import order mismatch for {module_name}"
+        );
+        for import in string_array_field(legacy_module, "imports") {
+            if !local_modules.contains(import) {
+                external_imports_from_legacy.insert(import.to_owned());
+            }
+        }
+
+        assert_eq!(
+            string_field(package_module, "expected_source_hash"),
+            string_field(legacy_module, "source_sha256"),
+            "source hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "expected_certificate_file_hash"),
+            string_field(legacy_module, "certificate_file_sha256"),
+            "certificate file hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "expected_export_hash"),
+            string_field(legacy_module, "export_hash"),
+            "export hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "expected_axiom_report_hash"),
+            string_field(legacy_module, "axiom_report_hash"),
+            "axiom report hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_field(package_module, "expected_certificate_hash"),
+            string_field(legacy_module, "certificate_hash"),
+            "certificate hash mismatch for {module_name}"
+        );
+
+        assert_eq!(
+            optional_string_array_field(package_module, "inductives"),
+            optional_string_array_field(legacy_module, "inductives"),
+            "inductive summary mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_array_field(package_module, "definitions"),
+            string_array_field(legacy_module, "definitions"),
+            "definition summary mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_array_field(package_module, "theorems"),
+            string_array_field(legacy_module, "theorems"),
+            "theorem summary mismatch for {module_name}"
+        );
+        assert_eq!(
+            string_array_field(package_module, "axioms"),
+            string_array_field(legacy_module, "axioms"),
+            "axiom summary mismatch for {module_name}"
+        );
+    }
+
+    let package_imports = array_field(&package_manifest, "imports");
+    let package_external_imports = package_imports
+        .iter()
+        .map(|import| string_field(import, "module").to_owned())
+        .collect::<BTreeSet<_>>();
+    assert_eq!(
+        package_external_imports, external_imports_from_legacy,
+        "top-level package imports must exactly cover legacy non-local imports"
+    );
+    for import in package_imports {
+        let module_name = string_field(import, "module");
+        assert_ne!(
+            string_field(import, "package"),
+            "",
+            "package import {module_name} must record package identity"
+        );
+        assert_ne!(
+            string_field(import, "version"),
+            "",
+            "package import {module_name} must record version identity"
+        );
+        assert_ne!(
+            string_field(import, "certificate"),
+            "",
+            "package import {module_name} must record certificate path"
+        );
+        assert_ne!(
+            string_field(import, "export_hash"),
+            "",
+            "package import {module_name} must record export hash"
+        );
+        assert_ne!(
+            string_field(import, "certificate_hash"),
+            "",
+            "package import {module_name} must record certificate hash"
+        );
+    }
+}
+
+#[test]
 fn legacy_manifest_imports_and_axioms_are_package_ready() {
     let manifest = read_to_string(corpus_root().join("manifest.toml"));
     let manifest = manifest
@@ -233,8 +395,26 @@ fn read_to_string(path: PathBuf) -> String {
         .unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
 }
 
+fn toml_value(path: PathBuf) -> Value {
+    read_to_string(path)
+        .parse::<Value>()
+        .expect("manifest should be valid TOML")
+}
+
 fn read(path: PathBuf) -> Vec<u8> {
     fs::read(&path).unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
+}
+
+fn module_map<'a>(modules: &'a [Value], table_name: &str) -> BTreeMap<&'a str, &'a Value> {
+    let mut by_module = BTreeMap::new();
+    for module in modules {
+        let module_name = string_field(module, "module");
+        assert!(
+            by_module.insert(module_name, module).is_none(),
+            "duplicate module {module_name} in {table_name}"
+        );
+    }
+    by_module
 }
 
 fn array_field<'a>(value: &'a Value, key: &str) -> &'a [Value] {
@@ -260,4 +440,8 @@ fn string_array_field<'a>(value: &'a Value, key: &str) -> Vec<&'a str> {
                 .unwrap_or_else(|| panic!("manifest field {key} should contain only strings"))
         })
         .collect()
+}
+
+fn optional_string_array_field<'a>(value: &'a Value, key: &str) -> Option<Vec<&'a str>> {
+    value.get(key).map(|_| string_array_field(value, key))
 }

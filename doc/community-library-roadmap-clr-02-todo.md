@@ -412,14 +412,14 @@ package fixture.
 
 ### CLR-02-05 Add Legacy Manifest Versus Package Fixture Parity Tests
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-04
 - Inputs:
   - `proofs/manifest.toml`
   - `proofs/npa-package.toml`
   - legacy manifest parsing already used by proof-corpus tests
 - Code or documentation areas:
-  - `tools/proof-corpus/tests/ai_proof_artifacts.rs`
+  - `tools/proof-corpus/tests/manifest_package_audit.rs`
 - Deliverables:
   - A parity test that compares every legacy `[[proof_modules]]` entry with the matching package `[[modules]]` entry.
   - Field-by-field assertions for module names, source paths, certificate paths, meta paths, replay paths, producer profile, imports, hash fields, inductives, definitions, theorems, and axioms.
@@ -434,6 +434,9 @@ package fixture.
   - `cargo test -p npa-proof-corpus`
 - Notes:
   - Keep the existing hard-coded artifact verification test until a later milestone replaces it with package-driven verification.
+  - Implemented in `tools/proof-corpus/tests/manifest_package_audit.rs` as `package_manifest_parity_matches_legacy_manifest`.
+  - The parity test derives local module coverage from `proofs/manifest.toml`, compares every matching `[[modules]]` field to its legacy `[[proof_modules]]` source, and checks the legacy hash-to-`expected_*` mapping.
+  - The test also derives non-local imports from legacy imports and requires package top-level imports to cover exactly those external modules with package, version, certificate, export hash, and certificate hash identity.
 
 ### CLR-02-06 Check Package Fixture Artifact Hashes
 
