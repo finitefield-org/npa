@@ -13,4 +13,5 @@ npa-package = { path = "../../crates/npa-package" }
 sha2 = "0.10"
 
 [dev-dependencies]
+npa-api = { path = "../../crates/npa-api" }
 toml = "0.8"

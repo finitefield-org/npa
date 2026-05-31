@@ -20,6 +20,7 @@ const PACKAGE_MODULE_HASH_FIELDS: &[&str] = &[
     "expected_certificate_hash",
 ];
 const PACKAGE_IMPORT_HASH_FIELDS: &[&str] = &["export_hash", "certificate_hash"];
+const PACKAGE_FAST_SOURCE_FREE_TEST_STACK_BYTES: usize = 64 * 1024 * 1024;
 const PACKAGE_FIXTURE_FORBIDDEN_FIELDS: &[&str] = &[
     "trusted_status",
     "verified_by_certificate",
@@ -213,6 +214,56 @@ fn package_lock_fixture_matches_builder_output() {
                 .iter()
                 .any(|import| import.module.as_dotted() == "Std.Logic.Eq")
     }));
+}
+
+#[test]
+fn package_fast_source_free_verifies_checked_in_package_lock() {
+    std::thread::Builder::new()
+        .name("package_fast_source_free_verifies_checked_in_package_lock".to_owned())
+        .stack_size(PACKAGE_FAST_SOURCE_FREE_TEST_STACK_BYTES)
+        .spawn(package_fast_source_free_verifies_checked_in_package_lock_on_large_stack)
+        .expect("package fast source-free test thread should spawn")
+        .join()
+        .expect("package fast source-free test thread should not panic");
+}
+
+fn package_fast_source_free_verifies_checked_in_package_lock_on_large_stack() {
+    let root = corpus_root();
+    let source = read_to_string(root.join("npa-package.toml"));
+    let validated = npa_package::parse_and_validate_manifest_str(&source)
+        .expect("package fixture validates before fast verification");
+    let lock = npa_package::parse_package_lock_json(&read_to_string(
+        root.join("generated/package-lock.json"),
+    ))
+    .expect("package lock fixture parses before fast verification");
+    let certificate_buffers = lock
+        .entries
+        .iter()
+        .map(|entry| {
+            (
+                entry.certificate.clone(),
+                read(root.join(entry.certificate.as_str())),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let artifacts = certificate_buffers
+        .iter()
+        .map(|(path, bytes)| npa_api::PackageCertificateArtifact {
+            path: path.clone(),
+            bytes: bytes.as_slice(),
+        })
+        .collect::<Vec<_>>();
+
+    let report = npa_api::verify_package_fast_source_free(&validated, &lock, artifacts)
+        .expect("fast package verification should run");
+
+    assert_eq!(report.status, npa_api::PackageVerificationStatus::Passed);
+    assert!(!report.reference_checker_verdict);
+    assert_eq!(
+        report.verdict_source,
+        npa_api::PackageVerificationVerdictSource::FastKernelCertificateVerifier
+    );
+    assert_eq!(report.modules.len(), lock.entries.len());
 }
 
 #[test]

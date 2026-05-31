@@ -99,6 +99,7 @@ dependencies = [
  "npa-checker-ref",
  "npa-frontend",
  "npa-kernel",
+ "npa-package",
  "npa-tactic",
  "sha2",
 ]
@@ -146,6 +147,7 @@ dependencies = [
 name = "npa-proof-corpus"
 version = "0.1.0"
 dependencies = [
+ "npa-api",
  "npa-cert",
  "npa-frontend",
  "npa-kernel",

@@ -29,6 +29,7 @@ mod human;
 mod human_ide;
 mod independent_checker;
 mod json;
+mod package_verifier;
 mod projection;
 mod prompt;
 mod renderer;
@@ -452,6 +453,12 @@ pub use independent_checker::{
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
     JsonValue, JsonValueKind,
+};
+pub use package_verifier::{
+    verify_package_fast_source_free, PackageCertificateArtifact, PackageModuleVerificationResult,
+    PackageModuleVerificationStatus, PackageVerificationError, PackageVerificationErrorKind,
+    PackageVerificationErrorReason, PackageVerificationMode, PackageVerificationReport,
+    PackageVerificationResult, PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,
