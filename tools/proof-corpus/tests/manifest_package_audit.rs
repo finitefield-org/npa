@@ -319,6 +319,78 @@ fn package_reference_source_free_verifies_checked_in_package_lock_on_large_stack
 }
 
 #[test]
+fn package_source_free_temp_copy_without_source_replay_or_meta_verifies_certificates() {
+    let source_root = corpus_root();
+    let package_root = temp_package_root("package-source-free-boundary");
+    let certificate_path = "Proofs/Ai/Basic/certificate.npcert";
+    let source_path = "missing/source/Proofs/Ai/Basic/source.npa";
+    let meta_path = "missing/meta/Proofs/Ai/Basic/meta.json";
+    let replay_path = "missing/replay/Proofs/Ai/Basic/replay.json";
+    let certificate_bytes = read(source_root.join(certificate_path));
+    let manifest_source = source_free_single_module_manifest(
+        certificate_path,
+        source_path,
+        meta_path,
+        replay_path,
+        &certificate_bytes,
+    );
+
+    write_package_file(
+        &package_root,
+        "npa-package.toml",
+        manifest_source.as_bytes(),
+    );
+    copy_package_file(&source_root, &package_root, certificate_path);
+    assert!(!package_root.join(source_path).exists());
+    assert!(!package_root.join(meta_path).exists());
+    assert!(!package_root.join(replay_path).exists());
+
+    let validated = npa_package::parse_and_validate_manifest_str(&manifest_source)
+        .expect("source-free temp package manifest validates");
+    let lock = npa_package::build_package_lock_from_package_root(
+        &validated,
+        &package_root,
+        npa_package::PackagePath::new("npa-package.toml"),
+    )
+    .expect("lock builder reads only manifest and certificate bytes");
+    let temp_certificate_bytes = read(package_root.join(certificate_path));
+    let artifact_path = npa_package::PackagePath::new(certificate_path);
+    let fast_report = npa_api::verify_package_fast_source_free(
+        &validated,
+        &lock,
+        vec![npa_api::PackageCertificateArtifact {
+            path: artifact_path.clone(),
+            bytes: temp_certificate_bytes.as_slice(),
+        }],
+    )
+    .expect("fast source-free verification succeeds without source files");
+    let reference_report = npa_api::verify_package_reference_source_free(
+        &validated,
+        &lock,
+        vec![npa_api::PackageCertificateArtifact {
+            path: artifact_path,
+            bytes: temp_certificate_bytes.as_slice(),
+        }],
+    )
+    .expect("reference source-free verification succeeds without source files");
+
+    assert_eq!(lock.entries.len(), 1);
+    assert_eq!(
+        fast_report.status,
+        npa_api::PackageVerificationStatus::Passed
+    );
+    assert_eq!(
+        reference_report.status,
+        npa_api::PackageVerificationStatus::Passed
+    );
+    assert!(!package_root.join(source_path).exists());
+    assert!(!package_root.join(meta_path).exists());
+    assert!(!package_root.join(replay_path).exists());
+
+    let _ = fs::remove_dir_all(package_root);
+}
+
+#[test]
 fn package_manifest_parity_matches_legacy_manifest() {
     let root = corpus_root();
     let legacy_manifest = toml_value(root.join("manifest.toml"));
@@ -638,6 +710,18 @@ fn corpus_root() -> PathBuf {
         .join("proofs")
 }
 
+fn temp_package_root(name: &str) -> PathBuf {
+    let path = std::env::temp_dir().join(format!("npa-proof-corpus-{name}-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&path);
+    fs::create_dir_all(&path).unwrap_or_else(|err| {
+        panic!(
+            "failed to create temp package root {}: {err}",
+            path.display()
+        )
+    });
+    path
+}
+
 fn read_to_string(path: PathBuf) -> String {
     fs::read_to_string(&path)
         .unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
@@ -651,6 +735,84 @@ fn toml_value(path: PathBuf) -> Value {
 
 fn read(path: PathBuf) -> Vec<u8> {
     fs::read(&path).unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
+}
+
+fn write_package_file(root: &Path, package_path: &str, bytes: &[u8]) {
+    let path = root.join(package_path);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .unwrap_or_else(|err| panic!("failed to create {}: {err}", parent.display()));
+    }
+    fs::write(&path, bytes)
+        .unwrap_or_else(|err| panic!("failed to write {}: {err}", path.display()));
+}
+
+fn copy_package_file(source_root: &Path, target_root: &Path, package_path: &str) {
+    let target_path = target_root.join(package_path);
+    if let Some(parent) = target_path.parent() {
+        fs::create_dir_all(parent)
+            .unwrap_or_else(|err| panic!("failed to create {}: {err}", parent.display()));
+    }
+    fs::copy(source_root.join(package_path), &target_path)
+        .unwrap_or_else(|err| panic!("failed to copy {package_path}: {err}"));
+}
+
+fn source_free_single_module_manifest(
+    certificate_path: &str,
+    source_path: &str,
+    meta_path: &str,
+    replay_path: &str,
+    certificate_bytes: &[u8],
+) -> String {
+    let decoded =
+        npa_cert::decode_module_cert(certificate_bytes).expect("source-free certificate decodes");
+    assert!(
+        decoded.imports.is_empty(),
+        "single-module source-free fixture should not need imports"
+    );
+    let certificate_file_hash = npa_package::package_file_hash(certificate_bytes);
+    let export_hash = npa_package::PackageHash::from(decoded.hashes.export_hash);
+    let axiom_report_hash = npa_package::PackageHash::from(decoded.hashes.axiom_report_hash);
+    let certificate_hash = npa_package::PackageHash::from(decoded.hashes.certificate_hash);
+
+    format!(
+        concat!(
+            "schema = \"npa.package.v0.1\"\n",
+            "package = \"source-free-boundary\"\n",
+            "version = \"0.1.0\"\n",
+            "core_spec = \"npa.core.v0.1\"\n",
+            "kernel_profile = \"npa.kernel.v0.1\"\n",
+            "certificate_format = \"npa.certificate.canonical.v0.1\"\n",
+            "checker_profile = \"npa.checker.reference.v0.1\"\n\n",
+            "[policy]\n",
+            "allow_custom_axioms = false\n",
+            "allowed_axioms = []\n\n",
+            "[[modules]]\n",
+            "module = \"{}\"\n",
+            "source = \"{}\"\n",
+            "certificate = \"{}\"\n",
+            "meta = \"{}\"\n",
+            "replay = \"{}\"\n",
+            "expected_source_hash = \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\n",
+            "expected_certificate_file_hash = \"{}\"\n",
+            "expected_export_hash = \"{}\"\n",
+            "expected_axiom_report_hash = \"{}\"\n",
+            "expected_certificate_hash = \"{}\"\n",
+            "imports = []\n",
+            "definitions = []\n",
+            "theorems = []\n",
+            "axioms = []\n"
+        ),
+        decoded.header.module.as_dotted(),
+        source_path,
+        certificate_path,
+        meta_path,
+        replay_path,
+        npa_package::format_package_hash(&certificate_file_hash),
+        npa_package::format_package_hash(&export_hash),
+        npa_package::format_package_hash(&axiom_report_hash),
+        npa_package::format_package_hash(&certificate_hash),
+    )
 }
 
 fn sha256(bytes: &[u8]) -> npa_cert::Hash {

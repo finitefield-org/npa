@@ -1885,6 +1885,35 @@ mod tests {
     }
 
     #[test]
+    fn package_source_free_invalid_graph_fails_before_artifact_or_checker_lookup() {
+        let validated = validated_proof_manifest();
+        let mut lock = proof_lock();
+        lock.entries
+            .retain(|entry| entry.module.as_dotted() != "Std.Logic.Eq");
+
+        let fast = verify_package_fast_source_free(
+            &validated,
+            &lock,
+            Vec::<PackageCertificateArtifact<'_>>::new(),
+        )
+        .expect_err("invalid lock graph fails before fast verifier artifact lookup");
+        let reference = verify_package_reference_source_free(
+            &validated,
+            &lock,
+            Vec::<PackageCertificateArtifact<'_>>::new(),
+        )
+        .expect_err("invalid lock graph fails before reference checker artifact lookup");
+
+        for error in [fast, reference] {
+            assert_eq!(error.kind, PackageVerificationErrorKind::LockGraph);
+            assert_eq!(
+                error.reason_code,
+                PackageVerificationErrorReason::LockGraphInvalid
+            );
+        }
+    }
+
+    #[test]
     fn package_reference_verifier_verifies_proof_package_source_free_in_topological_order() {
         run_on_large_stack(
             "package_reference_verifier_verifies_proof_package_source_free_in_topological_order",
@@ -1983,6 +2012,43 @@ mod tests {
                 .unwrap()
                 .checker,
             "npa-checker-ref"
+        );
+    }
+
+    #[test]
+    fn package_source_free_reference_checker_failure_preserves_structured_payload() {
+        let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+        manifest.policy.allowed_axioms.clear();
+        for module in &mut manifest.modules {
+            module.axioms = Some(Vec::new());
+        }
+        let validated = validate_manifest(manifest).unwrap();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+
+        let report = verify_proof_package_reference(&validated, &lock, &artifacts).unwrap();
+        let failed = report
+            .modules
+            .iter()
+            .find(|module| module.status == PackageModuleVerificationStatus::Failed)
+            .expect("reference checker rejects one module");
+        let error = failed.error.as_ref().unwrap();
+        let checker_error = error
+            .checker_error
+            .as_ref()
+            .expect("reference checker failure carries checker payload");
+
+        assert_eq!(report.status, PackageVerificationStatus::Failed);
+        assert_eq!(error.kind, PackageVerificationErrorKind::ReferenceChecker);
+        assert_eq!(
+            error.reason_code,
+            PackageVerificationErrorReason::AxiomPolicyRejected
+        );
+        assert_eq!(checker_error.checker, "npa-checker-ref");
+        assert_eq!(checker_error.kind, "axiom_policy");
+        assert_eq!(
+            checker_error.reason_code.as_deref(),
+            Some("forbidden_axiom")
         );
     }
 

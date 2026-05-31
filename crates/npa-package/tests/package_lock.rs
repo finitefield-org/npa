@@ -257,6 +257,12 @@ fn tampered_export_hash(bytes: &[u8]) -> Vec<u8> {
     npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
 }
 
+fn tampered_axiom_report_hash(bytes: &[u8]) -> Vec<u8> {
+    let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
+    cert.hashes.axiom_report_hash[0] ^= 0x01;
+    npa_cert::encode_module_cert(&cert).expect("tampered certificate re-encodes")
+}
+
 fn tampered_module_name(bytes: &[u8], module: &str) -> Vec<u8> {
     let mut cert = npa_cert::decode_module_cert(bytes).expect("certificate decodes before tamper");
     cert.header.module = Name::from_dotted(module);
@@ -728,6 +734,27 @@ fn package_lock_builder_stale_local_canonical_certificate_hash_is_rejected() {
         PackageLockErrorReason::CertificateHashMismatch,
         "modules[0].expected_certificate_hash",
         Some("expected_certificate_hash"),
+    );
+}
+
+#[test]
+fn package_lock_builder_stale_local_axiom_report_hash_is_rejected() {
+    let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+    let mut artifacts = proof_certificate_artifacts(&validate_manifest(manifest.clone()).unwrap());
+    let certificate_path = manifest.modules[0].certificate.clone();
+    let tampered = tampered_axiom_report_hash(artifacts.get(&certificate_path).unwrap());
+    manifest.modules[0].expected_certificate_file_hash = package_file_hash(&tampered);
+    artifacts.insert(certificate_path, tampered);
+    let validated = validate_manifest(manifest).unwrap();
+
+    let error = build_proof_lock_from_artifacts(&validated, &artifacts).unwrap_err();
+
+    assert_lock_error(
+        &error,
+        PackageLockErrorKind::CertificateIdentity,
+        PackageLockErrorReason::AxiomReportHashMismatch,
+        "modules[0].expected_axiom_report_hash",
+        Some("expected_axiom_report_hash"),
     );
 }
 
