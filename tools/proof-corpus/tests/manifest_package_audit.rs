@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,6 +11,14 @@ const PROOF_CORPUS_VERSION: &str = "0.1.0";
 const PROOF_CORPUS_LICENSE: &str = "MIT";
 const PLANNED_PACKAGE_EXTERNAL_IMPORTS: &[&str] = &["Std.Logic.Eq", "Std.Nat.Basic"];
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
+const PACKAGE_MODULE_HASH_FIELDS: &[&str] = &[
+    "expected_source_hash",
+    "expected_certificate_file_hash",
+    "expected_export_hash",
+    "expected_axiom_report_hash",
+    "expected_certificate_hash",
+];
+const PACKAGE_IMPORT_HASH_FIELDS: &[&str] = &["export_hash", "certificate_hash"];
 const PACKAGE_FIXTURE_FORBIDDEN_FIELDS: &[&str] = &[
     "trusted_status",
     "verified_by_certificate",
@@ -68,6 +77,104 @@ fn package_fixture_validates_with_npa_package() {
             .collect::<Vec<_>>(),
         PACKAGE_POLICY_ALLOWED_AXIOMS
     );
+}
+
+#[test]
+fn package_fixture_hashes_match_checked_in_artifacts() {
+    let root = corpus_root();
+    let package_source = read_to_string(root.join("npa-package.toml"));
+    let package_manifest = toml_value(root.join("npa-package.toml"));
+    let validated = npa_package::parse_and_validate_manifest_str(&package_source)
+        .expect("package fixture validates before artifact hash checks");
+    let manifest = validated.manifest();
+
+    for (module_index, raw_module) in array_field(&package_manifest, "modules").iter().enumerate() {
+        for field in PACKAGE_MODULE_HASH_FIELDS {
+            npa_package::parse_package_hash(
+                string_field(raw_module, field),
+                format!("modules[{module_index}].{field}"),
+            )
+            .unwrap_or_else(|error| panic!("module package hash field {field} parses: {error:?}"));
+        }
+    }
+    for (import_index, raw_import) in array_field(&package_manifest, "imports").iter().enumerate() {
+        for field in PACKAGE_IMPORT_HASH_FIELDS {
+            npa_package::parse_package_hash(
+                string_field(raw_import, field),
+                format!("imports[{import_index}].{field}"),
+            )
+            .unwrap_or_else(|error| panic!("import package hash field {field} parses: {error:?}"));
+        }
+    }
+
+    for module in &manifest.modules {
+        let module_name = module.module.as_dotted();
+        let source_bytes = read(root.join(module.source.as_str()));
+        assert_eq!(
+            sha256(&source_bytes),
+            *module.expected_source_hash.as_bytes(),
+            "source file hash mismatch for {module_name}"
+        );
+
+        let certificate_bytes = read(root.join(module.certificate.as_str()));
+        assert_eq!(
+            sha256(&certificate_bytes),
+            *module.expected_certificate_file_hash.as_bytes(),
+            "certificate file hash mismatch for {module_name}"
+        );
+
+        let decoded = npa_cert::decode_module_cert(&certificate_bytes).unwrap_or_else(|error| {
+            panic!("package module certificate decodes for {module_name}: {error:?}")
+        });
+        assert_eq!(
+            decoded.header.module, module.module,
+            "certificate module mismatch for {module_name}"
+        );
+        assert_eq!(
+            decoded.hashes.export_hash,
+            *module.expected_export_hash.as_bytes(),
+            "certificate export hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            decoded.hashes.axiom_report_hash,
+            *module.expected_axiom_report_hash.as_bytes(),
+            "certificate axiom report hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            decoded.hashes.certificate_hash,
+            *module.expected_certificate_hash.as_bytes(),
+            "certificate canonical hash mismatch for {module_name}"
+        );
+    }
+
+    for import in manifest.imports.as_deref().unwrap_or(&[]) {
+        let module_name = import.module.as_dotted();
+        let certificate_bytes = read(root.join(import.certificate.as_str()));
+        let decoded = npa_cert::decode_module_cert(&certificate_bytes).unwrap_or_else(|error| {
+            panic!("package external import certificate decodes for {module_name}: {error:?}")
+        });
+        assert_eq!(
+            npa_cert::encode_module_cert(&decoded).unwrap_or_else(|error| panic!(
+                "package external import certificate re-encodes for {module_name}: {error:?}"
+            )),
+            certificate_bytes,
+            "external import certificate bytes must be canonical for {module_name}"
+        );
+        assert_eq!(
+            decoded.header.module, import.module,
+            "external import certificate module mismatch for {module_name}"
+        );
+        assert_eq!(
+            decoded.hashes.export_hash,
+            *import.export_hash.as_bytes(),
+            "external import export hash mismatch for {module_name}"
+        );
+        assert_eq!(
+            decoded.hashes.certificate_hash,
+            *import.certificate_hash.as_bytes(),
+            "external import certificate hash mismatch for {module_name}"
+        );
+    }
 }
 
 #[test]
@@ -403,6 +510,13 @@ fn toml_value(path: PathBuf) -> Value {
 
 fn read(path: PathBuf) -> Vec<u8> {
     fs::read(&path).unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
+}
+
+fn sha256(bytes: &[u8]) -> npa_cert::Hash {
+    let digest = Sha256::digest(bytes);
+    let mut hash = [0_u8; 32];
+    hash.copy_from_slice(&digest);
+    hash
 }
 
 fn module_map<'a>(modules: &'a [Value], table_name: &str) -> BTreeMap<&'a str, &'a Value> {

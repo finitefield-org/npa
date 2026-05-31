@@ -440,7 +440,7 @@ package fixture.
 
 ### CLR-02-06 Check Package Fixture Artifact Hashes
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-05
 - Inputs:
   - `proofs/npa-package.toml`
@@ -449,7 +449,7 @@ package fixture.
   - checked-in Std vendor certificate files
   - `npa-cert` hash helpers
 - Code or documentation areas:
-  - `tools/proof-corpus/tests/ai_proof_artifacts.rs`
+  - `tools/proof-corpus/tests/manifest_package_audit.rs`
 - Deliverables:
   - Hash integrity tests for every package module source and certificate file.
   - Hash integrity tests for every top-level external import certificate file.
@@ -463,6 +463,9 @@ package fixture.
   - `cargo test -p npa-proof-corpus`
 - Notes:
   - Full certificate replay and source-free checker execution remain CLR-03 and CLR-04 work.
+  - Implemented in `tools/proof-corpus/tests/manifest_package_audit.rs` as `package_fixture_hashes_match_checked_in_artifacts`.
+  - The test validates package hash grammar through `npa-package`, hashes each package-local source and certificate file from paths relative to `proofs/`, and compares decoded certificate export, axiom report, and certificate hashes to the package fixture.
+  - External Std imports are checked from their package certificate paths only; no `.npa` source is read for external imports.
 
 ### CLR-02-07 Preserve Generator Determinism
 
