@@ -1,6 +1,10 @@
 //! Implementation of `npa package build-certs`.
 
-use std::{collections::BTreeSet, fs};
+use std::{
+    collections::BTreeSet,
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 use npa_cert::{AxiomPolicy, CoreFeature, ModuleCert, Name, VerifiedModule, VerifierSession};
 use npa_frontend::{
@@ -15,7 +19,7 @@ use npa_package::{
 
 use crate::args::{PackageBuildCertsOptions, PackageCommonOptions};
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
-use crate::fs::{join_package_path, render_package_path, render_package_root};
+use crate::fs::{join_package_path, render_package_path};
 use crate::package::{load_package_root, LoadedPackageRoot};
 
 const COMMAND: &str = "package build-certs";
@@ -27,19 +31,36 @@ struct CertificateArtifactBuffer {
     bytes: Vec<u8>,
 }
 
+#[derive(Clone, Debug)]
+struct LocalCertificateBuild {
+    module_index: usize,
+    module: Name,
+    path: PackagePath,
+    bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug)]
+struct PackageCertificateBuild {
+    local_certificates: Vec<LocalCertificateBuild>,
+    package_lock_json: String,
+}
+
+#[derive(Clone, Debug)]
+struct PendingWrite {
+    path: PackagePath,
+    full_path: PathBuf,
+    temp_path: PathBuf,
+    reason_code: &'static str,
+    module: Option<Name>,
+}
+
 /// Run `package build-certs`.
 pub fn run_package_build_certs(options: PackageBuildCertsOptions) -> CommandResult {
     if options.check {
         return run_package_build_certs_check(options.common);
     }
 
-    let diagnostic = CommandDiagnostic::error(DiagnosticKind::Internal, "command_not_implemented")
-        .with_actual_value("package build-certs write mode");
-    CommandResult::failed(
-        COMMAND,
-        render_package_root(&options.common.root),
-        vec![diagnostic],
-    )
+    run_package_build_certs_write(options.common)
 }
 
 /// Run no-write certificate rebuild checking.
@@ -54,30 +75,139 @@ pub fn run_package_build_certs_check(options: PackageCommonOptions) -> CommandRe
         Ok(loaded) => loaded,
         Err(result) => return result,
     };
-    let policy = axiom_policy_for_package(&loaded);
 
-    let mut verified_modules = Vec::new();
-    let mut source_interfaces = Vec::new();
-    let mut artifacts = Vec::new();
+    let build = match build_package_certificates(&loaded) {
+        Ok(build) => build,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+        }
+    };
 
-    if let Some(diagnostic) = load_external_imports(
-        &loaded,
-        &policy,
-        &mut verified_modules,
-        &mut source_interfaces,
-        &mut artifacts,
-    ) {
+    if let Some(diagnostic) = check_local_certificate_files(&loaded, &build.local_certificates) {
         return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
     }
 
-    if let Some(diagnostic) = build_local_modules(
-        &loaded,
+    if let Some(diagnostic) = check_package_lock(&loaded, &build.package_lock_json) {
+        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
+    }
+
+    CommandResult::passed(COMMAND, loaded.root_display)
+}
+
+/// Run certificate rebuild write mode.
+///
+/// This mode uses the same complete in-memory build as `--check`, then writes
+/// only command-owned certificate artifacts and the generated package lock. No
+/// target file is touched until every module has built successfully.
+pub fn run_package_build_certs_write(options: PackageCommonOptions) -> CommandResult {
+    let loaded = match load_package_root(&options.root, COMMAND) {
+        Ok(loaded) => loaded,
+        Err(result) => return result,
+    };
+
+    if let Some(diagnostic) = check_write_mode_targets(&loaded) {
+        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
+    }
+
+    let build = match build_package_certificates(&loaded) {
+        Ok(build) => build,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+        }
+    };
+
+    if let Some(diagnostic) = write_package_build(&loaded, &build) {
+        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
+    }
+
+    CommandResult::passed(COMMAND, loaded.root_display)
+}
+
+fn check_write_mode_targets(loaded: &LoadedPackageRoot) -> Option<CommandDiagnostic> {
+    for (module_index, module) in loaded.validated.manifest().modules.iter().enumerate() {
+        let Some(forbidden_reason) =
+            forbidden_local_certificate_write_reason(loaded, &module.certificate)
+        else {
+            continue;
+        };
+        return Some(
+            CommandDiagnostic::error(
+                DiagnosticKind::ArtifactIo,
+                "certificate_write_target_forbidden",
+            )
+            .with_module(module.module.as_dotted())
+            .with_path(render_package_path(&module.certificate))
+            .with_field(format!("modules[{module_index}].certificate"))
+            .with_expected_value("local module .npcert certificate artifact")
+            .with_actual_value(forbidden_reason),
+        );
+    }
+    None
+}
+
+fn forbidden_local_certificate_write_reason(
+    loaded: &LoadedPackageRoot,
+    path: &PackagePath,
+) -> Option<&'static str> {
+    if path == &loaded.manifest_path {
+        return Some("package_manifest");
+    }
+    if path.as_str() == PACKAGE_LOCK_PATH {
+        return Some("package_lock");
+    }
+    if loaded
+        .validated
+        .manifest()
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .any(|import| import.certificate == *path)
+    {
+        return Some("external_import_certificate");
+    }
+    for module in &loaded.validated.manifest().modules {
+        if module.source == *path {
+            return Some("source_file");
+        }
+        if module.meta.as_ref() == Some(path) || module.replay.as_ref() == Some(path) {
+            return Some("untrusted_sidecar");
+        }
+    }
+    if !path.as_str().ends_with(".npcert") {
+        return Some("non_npcert_certificate_path");
+    }
+    None
+}
+
+fn build_package_certificates(
+    loaded: &LoadedPackageRoot,
+) -> Result<PackageCertificateBuild, Box<CommandDiagnostic>> {
+    let policy = axiom_policy_for_package(loaded);
+    let mut verified_modules = Vec::new();
+    let mut source_interfaces = Vec::new();
+    let mut artifacts = Vec::new();
+    let mut local_certificates = Vec::new();
+
+    if let Some(diagnostic) = load_external_imports(
+        loaded,
         &policy,
         &mut verified_modules,
         &mut source_interfaces,
         &mut artifacts,
     ) {
-        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
+        return Err(Box::new(diagnostic));
+    }
+
+    if let Some(diagnostic) = build_local_modules(
+        loaded,
+        &policy,
+        &mut verified_modules,
+        &mut source_interfaces,
+        &mut artifacts,
+        &mut local_certificates,
+    ) {
+        return Err(Box::new(diagnostic));
     }
 
     let regenerated_lock = match build_package_lock_from_artifacts(
@@ -91,30 +221,21 @@ pub fn run_package_build_certs_check(options: PackageCommonOptions) -> CommandRe
     ) {
         Ok(lock) => lock,
         Err(error) => {
-            return CommandResult::failed(
-                COMMAND,
-                loaded.root_display,
-                vec![CommandDiagnostic::from_package_lock_error(&error)],
-            );
+            return Err(Box::new(CommandDiagnostic::from_package_lock_error(&error)));
         }
     };
 
     let regenerated_lock_json = match regenerated_lock.canonical_json() {
         Ok(json) => json,
         Err(error) => {
-            return CommandResult::failed(
-                COMMAND,
-                loaded.root_display,
-                vec![CommandDiagnostic::from_package_lock_error(&error)],
-            );
+            return Err(Box::new(CommandDiagnostic::from_package_lock_error(&error)));
         }
     };
 
-    if let Some(diagnostic) = check_package_lock(&loaded, &regenerated_lock_json) {
-        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
-    }
-
-    CommandResult::passed(COMMAND, loaded.root_display)
+    Ok(PackageCertificateBuild {
+        local_certificates,
+        package_lock_json: regenerated_lock_json,
+    })
 }
 
 fn axiom_policy_for_package(loaded: &LoadedPackageRoot) -> AxiomPolicy {
@@ -222,6 +343,7 @@ fn build_local_modules(
     verified_modules: &mut Vec<VerifiedModule>,
     source_interfaces: &mut Vec<HumanImportedSourceInterface>,
     artifacts: &mut Vec<CertificateArtifactBuffer>,
+    local_certificates: &mut Vec<LocalCertificateBuild>,
 ) -> Option<CommandDiagnostic> {
     let compile_options = HumanCompileOptions::default();
     for &module_index in &loaded.validated.graph().topological_order {
@@ -289,26 +411,6 @@ fn build_local_modules(
             return Some(diagnostic);
         }
 
-        let checked_in_bytes = match read_certificate_bytes(
-            loaded,
-            &module.certificate,
-            format!("modules[{module_index}].certificate"),
-        ) {
-            Ok(bytes) => bytes,
-            Err(diagnostic) => return Some(*diagnostic),
-        };
-        if checked_in_bytes != generated_bytes {
-            return Some(
-                CommandDiagnostic::error(DiagnosticKind::Build, "build_certificate_changed")
-                    .with_module(module.module.as_dotted())
-                    .with_path(render_package_path(&module.certificate))
-                    .with_hashes(
-                        format_package_hash(&package_file_hash(&checked_in_bytes)),
-                        format_package_hash(&package_file_hash(&generated_bytes)),
-                    ),
-            );
-        }
-
         let verified = output.verified_module.clone();
         if verified.module() != &module.module {
             return Some(
@@ -329,10 +431,44 @@ fn build_local_modules(
         };
         verified_modules.push(verified);
         source_interfaces.push(imported_source_interface);
+        local_certificates.push(LocalCertificateBuild {
+            module_index,
+            module: module.module.clone(),
+            path: module.certificate.clone(),
+            bytes: generated_bytes.clone(),
+        });
         artifacts.push(CertificateArtifactBuffer {
             path: module.certificate.clone(),
             bytes: generated_bytes,
         });
+    }
+    None
+}
+
+fn check_local_certificate_files(
+    loaded: &LoadedPackageRoot,
+    certificates: &[LocalCertificateBuild],
+) -> Option<CommandDiagnostic> {
+    for certificate in certificates {
+        let checked_in_bytes = match read_certificate_bytes(
+            loaded,
+            &certificate.path,
+            format!("modules[{}].certificate", certificate.module_index),
+        ) {
+            Ok(bytes) => bytes,
+            Err(diagnostic) => return Some(*diagnostic),
+        };
+        if checked_in_bytes != certificate.bytes {
+            return Some(
+                CommandDiagnostic::error(DiagnosticKind::Build, "build_certificate_changed")
+                    .with_module(certificate.module.as_dotted())
+                    .with_path(render_package_path(&certificate.path))
+                    .with_hashes(
+                        format_package_hash(&package_file_hash(&checked_in_bytes)),
+                        format_package_hash(&package_file_hash(&certificate.bytes)),
+                    ),
+            );
+        }
     }
     None
 }
@@ -557,6 +693,141 @@ fn check_package_lock(
         );
     }
     None
+}
+
+fn write_package_build(
+    loaded: &LoadedPackageRoot,
+    build: &PackageCertificateBuild,
+) -> Option<CommandDiagnostic> {
+    let mut pending = Vec::new();
+    for certificate in &build.local_certificates {
+        match prepare_pending_write(
+            &loaded.root,
+            &certificate.path,
+            format!("modules[{}].certificate", certificate.module_index),
+            &certificate.bytes,
+            "certificate_write_failed",
+            Some(certificate.module.clone()),
+        ) {
+            Ok(Some(write)) => pending.push(write),
+            Ok(None) => {}
+            Err(diagnostic) => {
+                cleanup_pending_writes(&pending);
+                return Some(*diagnostic);
+            }
+        }
+    }
+
+    let lock_path = PackagePath::new(PACKAGE_LOCK_PATH);
+    match prepare_pending_write(
+        &loaded.root,
+        &lock_path,
+        "package_lock.path",
+        build.package_lock_json.as_bytes(),
+        "package_lock_write_failed",
+        None,
+    ) {
+        Ok(Some(write)) => pending.push(write),
+        Ok(None) => {}
+        Err(diagnostic) => {
+            cleanup_pending_writes(&pending);
+            return Some(*diagnostic);
+        }
+    }
+
+    commit_pending_writes(&pending)
+}
+
+fn prepare_pending_write(
+    root: &Path,
+    package_path: &PackagePath,
+    manifest_field_path: impl Into<String>,
+    bytes: &[u8],
+    reason_code: &'static str,
+    module: Option<Name>,
+) -> Result<Option<PendingWrite>, Box<CommandDiagnostic>> {
+    let full_path = join_package_path(root, package_path, manifest_field_path)?;
+    match fs::read(&full_path) {
+        Ok(existing) if existing == bytes => return Ok(None),
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(_) => {
+            return Err(Box::new(write_artifact_diagnostic(
+                reason_code,
+                package_path,
+                module.as_ref(),
+            )));
+        }
+    }
+
+    if let Some(parent) = full_path.parent() {
+        if fs::create_dir_all(parent).is_err() {
+            return Err(Box::new(write_artifact_diagnostic(
+                reason_code,
+                package_path,
+                module.as_ref(),
+            )));
+        }
+    }
+
+    let temp_path = temporary_write_path(&full_path);
+    if fs::write(&temp_path, bytes).is_err() {
+        return Err(Box::new(write_artifact_diagnostic(
+            reason_code,
+            package_path,
+            module.as_ref(),
+        )));
+    }
+
+    Ok(Some(PendingWrite {
+        path: package_path.clone(),
+        full_path,
+        temp_path,
+        reason_code,
+        module,
+    }))
+}
+
+fn commit_pending_writes(pending: &[PendingWrite]) -> Option<CommandDiagnostic> {
+    for write in pending {
+        if fs::rename(&write.temp_path, &write.full_path).is_err() {
+            cleanup_pending_writes(pending);
+            return Some(write_artifact_diagnostic(
+                write.reason_code,
+                &write.path,
+                write.module.as_ref(),
+            ));
+        }
+    }
+    None
+}
+
+fn cleanup_pending_writes(pending: &[PendingWrite]) {
+    for write in pending {
+        let _ = fs::remove_file(&write.temp_path);
+    }
+}
+
+fn temporary_write_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("artifact");
+    path.with_file_name(format!(".{file_name}.npa-build-certs.tmp"))
+}
+
+fn write_artifact_diagnostic(
+    reason_code: &'static str,
+    path: &PackagePath,
+    module: Option<&Name>,
+) -> CommandDiagnostic {
+    let diagnostic =
+        CommandDiagnostic::error(DiagnosticKind::ArtifactIo, reason_code).with_path(path.as_str());
+    if let Some(module) = module {
+        diagnostic.with_module(module.as_dotted())
+    } else {
+        diagnostic
+    }
 }
 
 fn fallback_imported_source_interface(verified: &VerifiedModule) -> HumanImportedSourceInterface {

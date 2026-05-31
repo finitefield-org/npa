@@ -502,7 +502,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
         }
         HelpTopic::PackageBuildCerts => {
-            "Usage: npa package build-certs [--root PATH] [--json] [--check]\n\nRebuild package certificates. --check writes no files."
+            "Usage: npa package build-certs [--root PATH] [--json] [--check]\n\nRebuild package certificates. --check writes no files; write mode updates local certificates and generated/package-lock.json."
         }
         HelpTopic::PackageVerifyCerts => {
             "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast]\n\nVerify certificates through the CLR-03 source-free package verifier. The default checker is reference."
