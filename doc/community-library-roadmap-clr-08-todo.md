@@ -1,0 +1,741 @@
+# Community Library Roadmap CLR-08 Todo
+
+Source: `doc/community-library-roadmap-todo.md` CLR-08
+
+CLR-08 turns the Phase 8 external-checker target integration into a concrete
+package release gate. It defines when an external checker is required, how a
+runner may select that checker, how package verification invokes it without
+reading source, and when a `verified_high_trust` artifact may be generated.
+
+The core rule is unchanged: release and high-trust automation is untrusted
+orchestration. Proof acceptance still comes from canonical certificates and
+deterministic checker verdicts.
+
+---
+
+## Scope
+
+対象:
+
+```text
+- external checker required mode for release and high-trust package verification
+- runner-owned checker binary registry and checker identity policy
+- source-free `npa package verify-certs --checker external` extension
+- high-trust package verification command and policy wiring
+- fast/reference/external/high-trust-reference comparison gates
+- `verified_high_trust` artifact schema, generator, and validator
+- release/high-trust CI extension for the CLR-07 templates
+- external checker benchmark and audit collection plan
+- documentation that PR mode remains reference-checker-only by default
+```
+
+非対象:
+
+```text
+- registry server
+- package dependency solver
+- network import resolution
+- remote checker service
+- implicit latest checker or package resolution
+- production LLM, RAG, theorem graph service, or online proving service
+- using source re-elaboration, tactic replay, AI summary, or theorem index as independent verification
+- making external checker required for ordinary PR mode
+- cryptographic signing key management
+- distributed checker farm
+- formal verification of the checker implementation
+```
+
+Trusted-boundary rule:
+
+```text
+The external checker runner may read package certificates, import certificates,
+import locks, runner policy, axiom policy, challenge files, and release policy.
+It must not read `.npa` source, replay files, meta files, theorem index files,
+AI traces, registry network data, hidden package caches, plugins, or unchecked
+source-derived environments.
+
+RunnerPolicy, ReleasePolicy, CI workflows, benchmark output, release audit
+bundles, and `verified_high_trust` artifacts are evidence and metadata. They
+must never become checker input that changes proof validity. The kernel,
+`npa-cert`, and `npa-checker-ref` must not depend on GitHub Actions,
+RunnerPolicy, package registry metadata, or AI sidecars.
+```
+
+---
+
+## Current Implementation Facts
+
+Already present in this repository:
+
+```text
+- `crates/npa-checker-ref` standalone source-free reference checker binary
+- `ReferenceTrustMode::HighTrust` import certificate hash checks
+- `crates/npa-api/src/independent_checker.rs`
+  - `IndependentCheckerTrustMode`
+  - `IndependentCheckerRunnerPolicy`
+  - `IndependentCheckerReleasePolicy`
+  - `IndependentCheckerBinaryRegistry`
+  - `MachineCheckRequest` / `MachineCheckResult`
+  - `NormalizedCheckResult` comparison and disagreement gates
+  - release audit bundle substrate
+  - external checker profile fixtures
+- `scripts/phase8-release-audit.sh` fixture gate
+```
+
+Still target integration:
+
+```text
+- standalone `npa-checker-ext` binary
+- production external checker process execution from package CLI
+- `npa package verify-certs --checker external`
+- high-trust package command that requires release policy and runner policy
+- generated `verified_high_trust` package artifact
+- full external-checker release CI workflow
+- external checker benchmark collection job
+```
+
+Important dependency split:
+
+```text
+CLR-08 policy and runner-contract work can start from CLR-03.
+Package CLI integration depends on CLR-04.
+Release artifact and publish-metadata cross-checks depend on CLR-05 and CLR-06.
+CI template integration depends on CLR-07.
+```
+
+CLR-08 may remain deferred while CLR-09 dogfoods a reference-checker-only seed
+library. If deferred, docs must clearly say that `verified_high_trust` is not
+available and release/high-trust CI runs without the external checker gate.
+
+---
+
+## Implementation Specification
+
+### Checker Profiles
+
+Use the Phase 8 profile names already fixed in `IndependentCheckerTrustMode`:
+
+```text
+pr:
+  required = reference
+  external may be optional / on-demand only
+
+nightly:
+  required = reference, external
+
+release:
+  required = fast-kernel, reference, external
+
+high-trust:
+  required = fast-kernel, reference, external, high-trust-reference
+```
+
+`high-trust-reference` is a distinct checker profile. A normal `reference`
+result must not be reused to satisfy it. It must run with high-trust import
+certificate hash policy and all-import recursive verification.
+
+The `external` profile must be selected only through runner-owned policy and a
+runner-owned binary registry. AI output, package source, theorem index metadata,
+or request sidecars must not choose or override the checker executable.
+
+### External Checker Process Contract
+
+Target standalone command:
+
+```sh
+npa-checker-ext \
+  --cert path/to/module.npcert \
+  --import-dir path/to/import-certs \
+  --policy path/to/axiom-policy.toml \
+  --output json
+```
+
+The package CLI may invoke the external checker directly or through the
+Phase 8 runner API, but the effective dynamic input must be equivalent to:
+
+```text
+- certificate path
+- import lock / import certificate paths
+- axiom policy path and hash
+- checker profile
+- trust mode
+- deterministic budget
+- expected certificate hash / export hash when available
+```
+
+The runner must enforce:
+
+```text
+- no network
+- no source directory mount
+- no plugin loading
+- read-only certificate and import inputs
+- deterministic environment allowlist
+- explicit timeout, step, and memory budget
+- checker executable hash matches RunnerPolicy allowlist
+- checker identity manifest matches selected checker profile when configured
+```
+
+The external checker command must emit deterministic JSON. Any human-readable
+stderr is diagnostic only and must not be parsed as proof evidence.
+
+### Package CLI Extension
+
+CLR-04 explicitly rejected `--checker external`. CLR-08 is the milestone that
+may enable it.
+
+Required command:
+
+```sh
+npa package verify-certs \
+  --root . \
+  --checker external \
+  --runner-policy ci/runner.release.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --json
+```
+
+Behavior:
+
+```text
+1. Validate `npa-package.toml`.
+2. Validate `generated/package-lock.json`.
+3. Materialize source-free MachineCheckRequest values from package lock entries.
+4. Resolve RunnerPolicy by path and canonical hash.
+5. Resolve the selected external checker through CheckerBinaryRegistry.
+6. Verify checker executable bytes against the policy binary hash.
+7. Run the external checker on local certificates and import certificates only.
+8. Save deterministic MachineCheckResult JSON diagnostics.
+9. Normalize results against the active RunnerPolicy.
+10. Fail when required external results are missing, failed, inconclusive, or disagree.
+```
+
+The command must not read:
+
+```text
+- `.npa` source
+- replay files
+- meta files
+- theorem index
+- AI traces
+- registry metadata
+- hidden package caches
+```
+
+Still unsupported unless a later milestone explicitly adds them:
+
+```text
+--changed
+--all
+--registry
+--network
+--latest
+--sign
+```
+
+Full-package operation remains the default scope. Do not copy the stale
+`--all` examples from the source roadmap into the implemented command contract.
+
+### High-Trust Package Command
+
+Add a package-level command only when the external checker gate and release
+policy are wired end to end:
+
+```sh
+npa package high-trust \
+  --root . \
+  --release-policy ci/release.high-trust.json \
+  --release-policy-hash "$NPA_RELEASE_POLICY_HASH" \
+  --runner-policy ci/runner.high-trust.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --challenge-runner-policy ci/runner.challenge.json \
+  --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --out generated/verified-high-trust.json \
+  --check \
+  --json
+```
+
+Required gates:
+
+```text
+- full package manifest and lock validation
+- full fast-kernel result
+- full reference checker result
+- full external checker result
+- distinct high-trust-reference result
+- normalized all-agree checked comparison
+- axiom policy passed
+- reproducibility passed
+- high-trust import certificate hash auxiliary passed
+- challenge replay coverage complete when challenge inputs are configured
+- release audit bundle manifest generated and valid
+```
+
+If `npa-checker-ext` is unavailable or only documented as target integration,
+the command must fail with a structured diagnostic. It must not emit a verified
+`verified_high_trust` artifact from reference-only evidence.
+
+### `verified_high_trust` Artifact Schema
+
+Schema name:
+
+```text
+npa.package.verified_high_trust.v0.1
+```
+
+Required fields:
+
+```text
+schema
+package
+package_version
+package_lock_hash
+axiom_report_hash
+theorem_index_hash
+publish_plan_hash, optional until CLR-06 is complete
+release_policy_hash
+runner_policy_hash
+challenge_runner_policy_hash
+normalized_result_hash
+release_audit_bundle_manifest_hash
+required_checker_profiles
+checker_identities
+auxiliary_results
+generated_by
+artifact_hash
+```
+
+`required_checker_profiles` must include:
+
+```text
+fast-kernel
+reference
+external
+high-trust-reference
+```
+
+`checker_identities` entries must record:
+
+```text
+profile
+checker_id
+checker_version, if available
+binary_id
+binary_hash
+build_hash
+result_hash
+status
+```
+
+`auxiliary_results` must include passed results for:
+
+```text
+axiom_policy
+reproducibility
+audit_bundle
+import_certificate_hash
+challenge_coverage, when challenge inputs are configured
+```
+
+Artifact rules:
+
+```text
+- canonical JSON, closed-world schema
+- duplicate object keys rejected
+- deterministic object key and array ordering
+- workspace-relative paths only
+- `artifact_hash` excludes itself
+- no source paths outside package root
+- no AI sidecar text, prompt text, tactic trace, or theorem index content copied into checker evidence
+```
+
+This artifact is release evidence, not proof input. A downstream checker must
+still be able to re-run from certificates and import artifacts without trusting
+the `verified_high_trust` JSON.
+
+### CI Integration
+
+CLR-07 base templates must remain valid without CLR-08. CLR-08 adds optional
+release/high-trust template extensions:
+
+```text
+- external checker job
+- high-trust-reference job
+- normalized comparison job
+- release audit bundle validation job
+- verified_high_trust artifact generation/check job
+- benchmark collection job for release/nightly, not PR hot path
+```
+
+PR mode remains:
+
+```text
+required = reference
+external = optional / on-demand
+```
+
+Release/high-trust mode becomes:
+
+```text
+required = fast-kernel, reference, external
+high-trust additionally requires high-trust-reference
+```
+
+CI must fail if:
+
+```text
+- the external checker binary is not configured
+- binary hash or checker identity does not match policy
+- required checker result is missing or failed
+- fast/reference/external/high-trust-reference disagree
+- high-trust import certificate hash auxiliary is missing or failed
+- `verified_high_trust` would be generated from reference-only evidence
+```
+
+### Benchmark And Audit Collection
+
+External checker benchmark collection is release/nightly evidence only. It must
+not be a synchronous PR hot-path requirement.
+
+Record at least:
+
+```text
+- module
+- checker profile
+- checker id
+- checker binary hash
+- certificate hash
+- declaration count
+- wall time
+- timeout status
+- memory limit status
+- result hash
+```
+
+Benchmarks are regression signals. They do not change proof validity.
+
+---
+
+## Tasks
+
+### CLR-08-01 Define High-Trust External Checker Contract
+
+- Status: Pending
+- Depends on: CLR-03
+- Inputs:
+  - `doc/community-library-roadmap-todo.md` CLR-08
+  - `doc/phase8-human.md` sections 10, 11, 14, 18, 22
+  - `doc/phase8-ai.md` RunnerPolicy, ReleasePolicy, CheckerBinaryRegistry sections
+  - `crates/npa-api/src/independent_checker.rs`
+  - `doc/community-library-roadmap-clr-07-todo.md`
+- Code or documentation areas:
+  - `doc/external-theorem-library-ci.md`
+  - `doc/community-library-roadmap.md`
+  - `doc/community-library-roadmap-todo.md`
+  - `doc/community-library-roadmap-clr-08-todo.md`
+- Deliverables:
+  - Written contract for `external` and `high-trust-reference` profiles.
+  - Explicit rule that PR mode remains reference-checker-only by default.
+  - Exact list of checker inputs and forbidden inputs.
+  - Decision record that `verified_high_trust` cannot be produced when external checker is unavailable.
+- Acceptance criteria:
+  - Contract uses existing Phase 8 profile names and does not invent a conflicting trust mode.
+  - Contract states that RunnerPolicy, ReleasePolicy, CI, and `verified_high_trust` are not proof inputs.
+  - Contract forbids source, replay, meta, AI traces, theorem index, registry network data, and hidden caches as checker inputs.
+  - Contract separates target integration from current implemented fixtures.
+- Verification:
+  - `rg -n "external|high-trust-reference|verified_high_trust|PR mode|not proof input" doc/community-library-roadmap-clr-08-todo.md doc/external-theorem-library-ci.md doc/community-library-roadmap-todo.md`
+  - `git diff --check`
+- Notes:
+  - This is the contract anchor before changing package CLI or CI templates.
+
+### CLR-08-02 Harden Runner Policy, Binary Registry, And Sandbox Boundaries
+
+- Status: Pending
+- Depends on: CLR-08-01
+- Inputs:
+  - `IndependentCheckerRunnerPolicy`
+  - `IndependentCheckerBinaryRegistry`
+  - `IndependentCheckerIdentityManifest`
+  - `IndependentCheckerRunnerSandboxPolicy`
+  - existing `independent_checker` tests
+- Code or documentation areas:
+  - `crates/npa-api/src/independent_checker.rs`
+  - `crates/npa-api` tests
+  - policy fixture docs
+- Deliverables:
+  - RunnerPolicy validation for release and high-trust profile sets.
+  - CheckerBinaryRegistry resolution that is runner-owned and closed-world.
+  - Binary hash and checker identity manifest validation for selected profiles.
+  - Sandbox policy fixture for no network, no source mount, no plugin loading, deterministic environment.
+  - Structured policy failure diagnostics for missing binary, hash mismatch, identity mismatch, and forbidden sandbox configuration.
+- Acceptance criteria:
+  - AI sidecars, MachineCheckRequest, theorem index, package source, and registry metadata cannot override checker binary selection.
+  - `external` is required in nightly/release/high-trust policies and optional only in PR policies.
+  - `high-trust-reference` is required only for high-trust and cannot reuse a normal `reference` result.
+  - Checker executable identity is `binary_id` plus executable byte hash, not filesystem path alone.
+  - Sandbox policy failures are deterministic and testable.
+- Verification:
+  - `cargo test -p npa-api independent_checker`
+  - `cargo test -p npa-api independent_checker::tests::p8h00_pr_mode_requires_reference_and_keeps_external_on_demand_only`
+  - `cargo test -p npa-api independent_checker::tests::p8h14_release_and_high_trust_pass_requirements_are_closed`
+  - `rg -n "CheckerBinaryRegistry|high-trust-reference|checker_binary_hash_mismatch|checker_identity" crates/npa-api/src/independent_checker.rs`
+- Notes:
+  - Keep this in `npa-api` orchestration. Do not move runner state into the kernel.
+
+### CLR-08-03 Extend Package Verification With External Checker Mode
+
+- Status: Pending
+- Depends on: CLR-08-02, CLR-04
+- Inputs:
+  - package lock and source-free verifier from CLR-03
+  - package CLI command framework from CLR-04
+  - RunnerPolicy and CheckerBinaryRegistry from CLR-08-02
+  - package fixture from CLR-02
+- Code or documentation areas:
+  - `crates/npa-cli`
+  - `crates/npa-package`
+  - `crates/npa-api` package adapters
+  - package CLI tests
+  - README / command docs
+- Deliverables:
+  - `npa package verify-certs --checker external`.
+  - Required `--runner-policy`, `--runner-policy-hash`, and `--checker-registry` options for external mode.
+  - Source-free MachineCheckRequest materialization for each package module.
+  - Deterministic JSON diagnostics and MachineCheckResult output paths.
+  - Deterministic usage failure when external mode lacks policy, registry, or configured binary.
+- Acceptance criteria:
+  - External mode reads certificates, import certificates, package lock, runner policy, checker registry, and axiom policy only.
+  - External mode rejects or ignores source, replay, meta, theorem index, AI trace, registry network, and hidden package cache inputs.
+  - `--checker external` remains unsupported unless the external runner is fully configured.
+  - `--changed`, `--all`, `--registry`, `--network`, and `--latest` remain unsupported in CLR-08.
+  - Fast/reference behavior from CLR-04 is unchanged.
+- Verification:
+  - `cargo test -p npa-cli package_verify_external`
+  - `cargo test -p npa-package package_external_checker`
+  - `cargo test -p npa-api independent_checker`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker external --runner-policy ci/runner.release.json --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" --checker-registry ci/checker-binaries.json --json`
+  - `rg -n -- "--checker external|runner-policy|checker-registry|--changed|--all|--network|--latest" crates doc README.md`
+- Notes:
+  - The example command needs real fixture hashes when implemented. Do not use placeholder hashes in checked-in tests.
+
+### CLR-08-04 Gate Release And High-Trust Checker Comparison
+
+- Status: Pending
+- Depends on: CLR-08-03
+- Inputs:
+  - `NormalizedCheckResult`
+  - `IndependentCheckerTrustMode::ci_pass_requirements`
+  - `IndependentCheckerReleasePolicy`
+  - external checker MachineCheckResult artifacts
+  - high-trust reference MachineCheckResult artifacts
+- Code or documentation areas:
+  - `crates/npa-api/src/independent_checker.rs`
+  - `crates/npa-package` checker summary adapters
+  - package release/high-trust tests
+- Deliverables:
+  - Release gate requiring fast-kernel, reference, and external results.
+  - High-trust gate requiring fast-kernel, reference, external, and high-trust-reference results.
+  - Comparison failure model for missing, failed, inconclusive, hash-disagreeing, status-disagreeing, or policy-disallowed results.
+  - Structured diagnostics that identify the baseline profile and disagreeing profile.
+  - Tests that PR mode does not require external checker.
+- Acceptance criteria:
+  - Any required checker disagreement fails release/high-trust.
+  - Missing external result fails release/high-trust but not PR mode.
+  - A normal `reference` result cannot satisfy `high-trust-reference`.
+  - Fast-kernel success is never reported as reference or external checker success.
+  - AI sidecar text cannot change comparison status.
+- Verification:
+  - `cargo test -p npa-api independent_checker::tests::independent_checker_challenge_p8h13_differential_disagreements_fail_ci`
+  - `cargo test -p npa-api independent_checker::tests::p8h14_release_and_high_trust_pass_requirements_are_closed`
+  - `cargo test -p npa-api independent_checker`
+  - `cargo test --workspace external_checker`
+- Notes:
+  - Comparison policy is release evidence. It does not alter core typing rules.
+
+### CLR-08-05 Add `verified_high_trust` Artifact Schema And Generator
+
+- Status: Pending
+- Depends on: CLR-08-04, CLR-05
+- Inputs:
+  - package lock from CLR-03
+  - axiom report and theorem index from CLR-05
+  - publish plan from CLR-06 when available
+  - ReleaseAuditBundleManifest substrate from Phase 8
+  - release/high-trust comparison results from CLR-08-04
+- Code or documentation areas:
+  - `crates/npa-package` artifact schema
+  - `crates/npa-cli` package high-trust command
+  - `proofs/generated/verified-high-trust.json`
+  - docs for release artifacts
+- Deliverables:
+  - `npa.package.verified_high_trust.v0.1` schema.
+  - Generator for `generated/verified-high-trust.json`.
+  - `--check` mode that fails when the generated artifact would differ.
+  - Validator for artifact hash, checker identity entries, required profiles, auxiliary result references, and release policy hashes.
+  - Explicit `not_verified` or command failure behavior when external checker evidence is absent.
+- Acceptance criteria:
+  - The artifact is generated only after all required release/high-trust gates pass.
+  - The artifact includes external checker and high-trust-reference evidence.
+  - The artifact cannot be generated from reference-only evidence.
+  - The artifact is deterministic and uses workspace-relative paths only.
+  - The artifact is documented as release evidence, not checker input.
+- Verification:
+  - `cargo test -p npa-package verified_high_trust`
+  - `cargo test -p npa-cli package_high_trust`
+  - `cargo run -p npa-cli -- package high-trust --root proofs --release-policy ci/release.high-trust.json --release-policy-hash "$NPA_RELEASE_POLICY_HASH" --runner-policy ci/runner.high-trust.json --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" --challenge-runner-policy ci/runner.challenge.json --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" --checker-registry ci/checker-binaries.json --out proofs/generated/verified-high-trust.json --check --json`
+  - `rg -n "npa.package.verified_high_trust.v0.1|verified-high-trust|verified_high_trust" crates doc proofs README.md`
+- Notes:
+  - If CLR-06 publish-plan is not implemented yet, make `publish_plan_hash` absent by schema rule rather than fake.
+  - Cryptographic signing is not required for CLR-08 unless a later signing policy milestone is added.
+
+### CLR-08-06 Extend Release/High-Trust CI Templates
+
+- Status: Pending
+- Depends on: CLR-08-04, CLR-08-05, CLR-07
+- Inputs:
+  - CLR-07 CI templates
+  - package external checker command from CLR-08-03
+  - `verified_high_trust` command from CLR-08-05
+  - RunnerPolicy and checker registry fixtures
+- Code or documentation areas:
+  - `ci-templates/github-actions/npa-package-release.yml`
+  - `ci-templates/github-actions/README.md`
+  - `doc/external-theorem-library-ci.md`
+  - optional high-trust workflow snippet
+- Deliverables:
+  - Release/high-trust CI extension with external checker job.
+  - High-trust-reference job.
+  - Normalized comparison and release audit bundle validation job.
+  - `verified_high_trust` generation/check job.
+  - Failure guide for missing binary, binary hash mismatch, checker disagreement, and failed high-trust import certificate hash auxiliary.
+- Acceptance criteria:
+  - PR template remains reference-checker-only by default.
+  - Release/high-trust template requires a pinned external checker binary or fails.
+  - The template does not resolve package imports from registry network or hidden cache.
+  - The template does not use `--changed`, `--all`, `--registry`, `--network`, or `--latest`.
+  - Uploaded artifacts exclude secrets, AI traces, host caches, and unredacted environment dumps.
+- Verification:
+  - `rg -n "verify-certs --root \\. --checker external|package high-trust|verified-high-trust|checker-registry|runner-policy" ci-templates doc/external-theorem-library-ci.md`
+  - `rg -n -- "--changed|--all|--registry|--network|--latest" ci-templates && false || true`
+  - `actionlint ci-templates/github-actions/*.yml` when available
+  - `git diff --check`
+- Notes:
+  - If no workflow files exist yet, update template docs and keep executable workflow creation inside CLR-07 implementation.
+
+### CLR-08-07 Add External Checker Benchmark And Audit Collection
+
+- Status: Pending
+- Depends on: CLR-08-04
+- Inputs:
+  - Phase 8 performance gate definitions
+  - external checker MachineCheckResult artifacts
+  - release/nightly CI mode definitions
+  - package module list from package lock
+- Code or documentation areas:
+  - `crates/npa-api` benchmark/audit summary helpers
+  - `crates/npa-cli` package high-trust diagnostics
+  - CI template docs
+  - release audit docs
+- Deliverables:
+  - Deterministic external checker benchmark summary schema.
+  - Nightly/release benchmark collection plan.
+  - Documentation that reference/external checker benchmark is not a PR hot-path blocker.
+  - Release audit summary linking benchmark rows to checker result hashes.
+- Acceptance criteria:
+  - Benchmarks record checker identity, certificate hash, module, time, timeout, memory limit, and result hash.
+  - Benchmark output is regression evidence only and cannot change proof validity.
+  - PR mode does not require external checker benchmark completion.
+  - Release/high-trust mode can fail on configured benchmark policy without changing checker verdicts.
+- Verification:
+  - `cargo test -p npa-api independent_checker_performance`
+  - `cargo test -p npa-cli package_high_trust_benchmark`
+  - `rg -n "external checker benchmark|reference / external checker benchmark|PR hot path|proof validity" doc README.md crates`
+- Notes:
+  - Keep benchmark thresholds policy-owned. Do not bake machine-specific timing into the kernel.
+
+### CLR-08-08 Update Roadmap, Docs, And Deferral Handoff
+
+- Status: Pending
+- Depends on: CLR-08-06, CLR-08-07
+- Inputs:
+  - `doc/community-library-roadmap-todo.md`
+  - `doc/community-library-roadmap.md`
+  - `doc/community-library-roadmap-clr-07-todo.md`
+  - `README.md`
+  - implementation results from CLR-08-01 through CLR-08-07
+- Code or documentation areas:
+  - `README.md`
+  - `doc/community-library-roadmap-todo.md`
+  - `doc/community-library-roadmap.md`
+  - `doc/external-theorem-library-ci.md`
+  - `ci-templates/github-actions/README.md`
+- Deliverables:
+  - Parent roadmap points to this detailed CLR-08 task document.
+  - Docs say whether CLR-08 is complete or deferred for the first seed library.
+  - Docs distinguish reference-checker-only release evidence from `verified_high_trust`.
+  - Handoff notes for CLR-09 and CLR-10.
+- Acceptance criteria:
+  - Docs do not imply `npa-checker-ext` exists before it does.
+  - Docs do not imply `verified_high_trust` can be generated from reference-only evidence.
+  - Docs do not imply PR mode requires external checker.
+  - Docs do not copy stale `--all` examples into the active CLI contract.
+  - Registry readiness docs treat high-trust metadata as helper evidence, not checker input.
+- Verification:
+  - `rg -n "community-library-roadmap-clr-08-todo|npa-checker-ext|verified_high_trust|reference-checker-only|--all" README.md doc ci-templates`
+  - `git diff --check`
+- Notes:
+  - CLR-09 can proceed without CLR-08 when the seed library intentionally uses reference-checker-only release gates.
+
+---
+
+## Review Findings
+
+Review pass 1 findings and fixes:
+
+```text
+Finding: The parent CLR-08 dependency says CLR-03, but package CLI and CI
+integration also require later package milestones.
+Fix: The detailed spec splits policy/runner work from package CLI, release
+artifact, and CI work. Individual tasks name dependencies on CLR-04, CLR-05,
+CLR-06, and CLR-07 where needed.
+
+Finding: The source roadmap contains stale release examples using `--all`,
+while CLR-04 and CLR-07 intentionally keep full-package operation as the
+default and reject `--all`.
+Fix: CLR-08 enables only `--checker external` and explicitly keeps `--all`,
+`--changed`, `--registry`, `--network`, and `--latest` unsupported.
+
+Finding: `verified_high_trust` could be mistaken for a trusted proof object.
+Fix: The schema and trusted-boundary sections state that it is release evidence
+only; downstream verification must still rerun from certificates and imports.
+
+Finding: External checker availability is still target integration in the
+current repository, so a task list that always emits `verified_high_trust`
+would overstate current capability.
+Fix: The high-trust command and artifact tasks require structured failure or
+`not_verified` behavior when the external checker is absent, and forbid
+verified artifacts from reference-only evidence.
+
+Finding: Phase 8 already has RunnerPolicy, ReleasePolicy, CheckerBinaryRegistry,
+and comparison fixtures; reimplementing them in package code would duplicate
+policy logic.
+Fix: Package integration tasks reuse `crates/npa-api` policy and normalization
+substrate, while `crates/npa-package` owns package artifact schemas.
+
+Finding: Example commands with pseudo hash literals could be copied into tests
+as fake expected hashes.
+Fix: Example commands read pinned policy hashes from environment variables.
+Tests must compute or fixture real SHA-256 values before invoking the commands.
+```
+
+Review pass 2 result:
+
+```text
+No remaining findings. The task sequence now distinguishes runner policy,
+package external verification, release/high-trust comparison, verified artifact
+generation, CI extension, benchmark collection, and deferral handoff without
+expanding the trusted base or relying on unsupported package flags.
+```

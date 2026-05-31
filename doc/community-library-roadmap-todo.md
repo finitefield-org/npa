@@ -393,12 +393,17 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `doc/phase8-ai.md`
   - `crates/npa-api/src/independent_checker.rs`
   - `crates/npa-checker-ref`
+  - `doc/community-library-roadmap-clr-08-todo.md`
 - Code or documentation areas:
+  - `crates/npa-api/src/independent_checker.rs` RunnerPolicy / ReleasePolicy / CheckerBinaryRegistry integration
+  - `crates/npa-cli` `package verify-certs --checker external` and package high-trust command
+  - `crates/npa-package` `verified_high_trust` schema
   - external checker runner integration
   - high-trust release policy tests
   - generated `verified_high_trust` artifact schema
 - Deliverables:
   - Explicit contract for when `npa-checker-ext` becomes required.
+  - Source-free package verification path for `--checker external`, gated by runner policy and checker binary registry.
   - `verified_high_trust` artifact schema and generation path, or a documented target-integration placeholder if deferred.
   - Release/high-trust policy tests that do not affect AI candidate hot path.
   - Benchmark / audit collection plan for external checker.
@@ -407,13 +412,19 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Release/high-trust mode has a clear failure model for fast/reference/external disagreement.
   - External checker runner cannot read source, replay, AI sidecars, theorem index, or registry network data.
   - The integration does not expand the trusted base beyond certificate and checker verdict.
+  - `verified_high_trust` is not emitted as verified from reference-checker-only evidence.
+  - CLR-08 enables `--checker external` only with explicit runner policy and checker registry; it does not add `--changed`, `--all`, `--registry`, `--network`, or `--latest`.
 - Verification:
   - `cargo test -p npa-api independent_checker`
   - `cargo test -p npa-checker-ref`
+  - `cargo test -p npa-cli package_verify_external`
+  - `cargo test -p npa-package verified_high_trust`
   - `./scripts/phase8-release-audit.sh`
-  - targeted search: `rg -n "verified_high_trust|npa-checker-ext|external checker" doc crates`
+  - targeted search: `rg -n "community-library-roadmap-clr-08-todo|verified_high_trust|npa-checker-ext|external checker|high-trust-reference|CheckerBinaryRegistry" doc crates`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-08-todo.md`.
   - This milestone may be deferred until after npa-mathlib-seed if reference-checker-only release seed is acceptable.
+  - Policy / runner contract work can start from CLR-03, but package CLI integration depends on CLR-04 and CI integration depends on CLR-07.
 
 ### CLR-09 Dogfood `npa-mathlib-seed`
 
