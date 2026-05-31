@@ -131,7 +131,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `crates/npa-api/src/independent_checker.rs`
   - `crates/npa-cert/src/hash.rs`
 - Code or documentation areas:
-  - new package module/crate chosen in CLR-00
+  - `crates/npa-package`
   - tests for manifest parser / validator
   - documentation for `npa-package.toml`
 - Deliverables:
@@ -145,12 +145,14 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Module imports cannot be accepted by module name alone when hash fields are required.
   - Validator accepts a package representation equivalent to the current `proofs/manifest.toml` corpus.
 - Verification:
+  - `cargo test -p npa-package package_manifest`
   - `cargo test --workspace package_manifest`
   - `cargo test -p npa-proof-corpus`
   - `git diff --check`
 - Notes:
+  - Detailed breakdown: `doc/community-library-roadmap-clr-01-todo.md`.
   - Prefer structured parsing over ad hoc string scanning.
-  - The validator may live outside `npa-api`; if it uses `npa-api` types, keep the dependency direction explicit.
+  - The validator lives in `crates/npa-package` and must not depend on `npa-api`.
 
 ### CLR-02 Represent The Existing Proof Corpus As A Package Fixture
 
