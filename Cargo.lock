@@ -148,6 +148,7 @@ dependencies = [
  "npa-cert",
  "npa-frontend",
  "npa-kernel",
+ "npa-package",
  "sha2",
  "toml",
 ]

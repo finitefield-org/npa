@@ -347,7 +347,7 @@ package fixture.
 
 ### CLR-02-03 Generate `proofs/npa-package.toml`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-02-02
 - Inputs:
   - CLR-00 target manifest shape
@@ -376,6 +376,10 @@ package fixture.
   - `! rg -n "trusted_status|verified_by_certificate|checker_result|registry_url|latest|generated_at" proofs/npa-package.toml`
 - Notes:
   - If a serialization helper is added to `npa-package`, keep it deterministic and free of filesystem access.
+  - Implemented by `tools/proof-corpus`: `cargo run -p npa-proof-corpus` now writes both legacy `proofs/manifest.toml` and `proofs/npa-package.toml` from the same generated module data.
+  - `proofs/npa-package.toml` is validated with `npa-package` before it is written, includes the two sorted Std imports exactly once, and preserves the 66 local proof modules in legacy manifest order.
+  - The package fixture uses `expected_*` hash fields and omits legacy/generated trust claims such as `trusted_status`, `verified_by_certificate`, and `checker_result`.
+  - `proofs/manifest.toml` remains the legacy `npa-ai-proof-corpus-v0.1` output with legacy hash field names.
 
 ### CLR-02-04 Validate The Package Fixture With `npa-package`
 

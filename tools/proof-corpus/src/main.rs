@@ -4,6 +4,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const MANIFEST_PATH: &str = "manifest.toml";
+const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
+const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
+const PROOF_CORPUS_VERSION: &str = "0.1.0";
+const PROOF_CORPUS_LICENSE: &str = "MIT";
+const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
 const NPA_STD_PACKAGE: &str = "npa-std";
 const NPA_STD_VERSION: &str = "0.1.0";
 const EXTERNAL_STD_IMPORT_PLANS: &[ExternalImportPlan] = &[
@@ -19535,77 +19540,81 @@ fn run() -> Result<(), String> {
         &pythagorean_source_interfaces,
     )?;
 
+    let generated_modules = [
+        basic,
+        eq,
+        nat,
+        prop,
+        reduction,
+        eq_reasoning,
+        abstract_metric_topology,
+        ring,
+        square,
+        ordered_field,
+        vector_basic,
+        vector_dot,
+        right_triangle,
+        metric,
+        iff,
+        abstract_group,
+        abstract_group_kernel,
+        abstract_group_image,
+        abstract_group_quotient,
+        abstract_group_quotient_mul,
+        abstract_group_quotient_group,
+        abstract_group_quotient_hom,
+        abstract_group_first_iso_full,
+        abstract_group_first_iso_image,
+        abstract_group_first_iso,
+        abstract_group_subgroup,
+        abstract_group_subgroup_order,
+        abstract_group_normal_quotient,
+        abstract_group_normal_quotient_mul,
+        abstract_group_normal_quotient_group,
+        abstract_group_second_iso_phi,
+        abstract_group_second_iso_kernel,
+        abstract_group_second_iso_image,
+        abstract_group_second_iso_final,
+        abstract_group_third_iso,
+        abstract_group_correspondence,
+        abstract_group_correspondence_order,
+        abstract_group_correspondence_final,
+        abstract_group_correspondence_order_final,
+        abstract_ring,
+        abstract_ring_first_iso_base,
+        abstract_ring_first_iso,
+        abstract_ring_chinese_remainder,
+        abstract_ufd_prime_factorization,
+        abstract_hilbert_basis_theorem,
+        abstract_hilbert_nullstellensatz,
+        abstract_krull_theorem,
+        abstract_ordered_field,
+        abstract_square_normalize,
+        abstract_scalar_derive,
+        abstract_vector_space,
+        abstract_normed_space,
+        abstract_linear_map,
+        abstract_derivative,
+        abstract_fixed_point,
+        abstract_inverse_function,
+        abstract_implicit_phi,
+        abstract_implicit_function,
+        abstract_inner_product,
+        abstract_inner_product_derive,
+        affine,
+        affine_derive,
+        abstract_right_triangle,
+        abstract_right_triangle_derive,
+        abstract_metric,
+        pythagorean,
+    ];
+
+    let manifest = manifest_toml(&generated_modules);
+    let package_manifest = package_manifest_toml(&generated_modules, &external_imports)?;
+    write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
     write(
-        proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[
-            basic,
-            eq,
-            nat,
-            prop,
-            reduction,
-            eq_reasoning,
-            abstract_metric_topology,
-            ring,
-            square,
-            ordered_field,
-            vector_basic,
-            vector_dot,
-            right_triangle,
-            metric,
-            iff,
-            abstract_group,
-            abstract_group_kernel,
-            abstract_group_image,
-            abstract_group_quotient,
-            abstract_group_quotient_mul,
-            abstract_group_quotient_group,
-            abstract_group_quotient_hom,
-            abstract_group_first_iso_full,
-            abstract_group_first_iso_image,
-            abstract_group_first_iso,
-            abstract_group_subgroup,
-            abstract_group_subgroup_order,
-            abstract_group_normal_quotient,
-            abstract_group_normal_quotient_mul,
-            abstract_group_normal_quotient_group,
-            abstract_group_second_iso_phi,
-            abstract_group_second_iso_kernel,
-            abstract_group_second_iso_image,
-            abstract_group_second_iso_final,
-            abstract_group_third_iso,
-            abstract_group_correspondence,
-            abstract_group_correspondence_order,
-            abstract_group_correspondence_final,
-            abstract_group_correspondence_order_final,
-            abstract_ring,
-            abstract_ring_first_iso_base,
-            abstract_ring_first_iso,
-            abstract_ring_chinese_remainder,
-            abstract_ufd_prime_factorization,
-            abstract_hilbert_basis_theorem,
-            abstract_hilbert_nullstellensatz,
-            abstract_krull_theorem,
-            abstract_ordered_field,
-            abstract_square_normalize,
-            abstract_scalar_derive,
-            abstract_vector_space,
-            abstract_normed_space,
-            abstract_linear_map,
-            abstract_derivative,
-            abstract_fixed_point,
-            abstract_inverse_function,
-            abstract_implicit_phi,
-            abstract_implicit_function,
-            abstract_inner_product,
-            abstract_inner_product_derive,
-            affine,
-            affine_derive,
-            abstract_right_triangle,
-            abstract_right_triangle_derive,
-            abstract_metric,
-            pythagorean,
-        ])
-        .as_bytes(),
+        proof_root.join(PACKAGE_MANIFEST_PATH),
+        package_manifest.as_bytes(),
     )?;
 
     Ok(())
@@ -20268,6 +20277,141 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
         ));
     }
     manifest
+}
+
+fn package_manifest_toml(
+    modules: &[GeneratedModule],
+    external_imports: &[GeneratedExternalImport],
+) -> Result<String, String> {
+    let mut manifest = String::new();
+    manifest.push_str(&format!(
+        "schema = \"{}\"\n",
+        npa_package::PACKAGE_MANIFEST_SCHEMA
+    ));
+    manifest.push_str(&format!("package = \"{}\"\n", PROOF_CORPUS_PACKAGE));
+    manifest.push_str(&format!("version = \"{}\"\n", PROOF_CORPUS_VERSION));
+    manifest.push_str(&format!("license = \"{}\"\n\n", PROOF_CORPUS_LICENSE));
+    manifest.push_str(&format!(
+        "core_spec = \"{}\"\n",
+        npa_package::CORE_SPEC_V0_1
+    ));
+    manifest.push_str(&format!(
+        "kernel_profile = \"{}\"\n",
+        npa_package::KERNEL_PROFILE_V0_1
+    ));
+    manifest.push_str(&format!(
+        "certificate_format = \"{}\"\n",
+        npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1
+    ));
+    manifest.push_str(&format!(
+        "checker_profile = \"{}\"\n\n",
+        npa_package::CHECKER_PROFILE_REFERENCE_V0_1
+    ));
+    manifest.push_str("[policy]\n");
+    manifest.push_str("allow_custom_axioms = false\n");
+    manifest.push_str(&format!(
+        "allowed_axioms = [{}]\n",
+        quoted_items(PACKAGE_POLICY_ALLOWED_AXIOMS)
+    ));
+
+    let mut sorted_external_imports = external_imports.iter().collect::<Vec<_>>();
+    sorted_external_imports.sort_by_key(|import| import.module);
+    for import in sorted_external_imports {
+        manifest.push('\n');
+        manifest.push_str("[[imports]]\n");
+        manifest.push_str(&format!("module = \"{}\"\n", import.module));
+        manifest.push_str(&format!("package = \"{}\"\n", import.package));
+        manifest.push_str(&format!("version = \"{}\"\n", import.version));
+        manifest.push_str(&format!("certificate = \"{}\"\n", import.certificate_path));
+        manifest.push_str(&format!("export_hash = \"{}\"\n", import.export_hash));
+        manifest.push_str(&format!(
+            "certificate_hash = \"{}\"\n",
+            import.certificate_hash
+        ));
+    }
+
+    for module in modules {
+        manifest.push('\n');
+        manifest.push_str("[[modules]]\n");
+        manifest.push_str(&format!("module = \"{}\"\n", module.config.module));
+        manifest.push_str(&format!("source = \"{}\"\n", module.config.source_path));
+        manifest.push_str(&format!(
+            "certificate = \"{}\"\n",
+            module.config.certificate_path
+        ));
+        manifest.push_str(&format!("meta = \"{}\"\n", module.config.meta_path));
+        manifest.push_str(&format!("replay = \"{}\"\n", module.config.replay_path));
+        manifest.push_str("producer_profile = \"human-surface-explicit-term\"\n");
+        manifest.push_str(&format!(
+            "expected_source_hash = \"{}\"\n",
+            module.source_sha256
+        ));
+        manifest.push_str(&format!(
+            "expected_certificate_file_hash = \"{}\"\n",
+            module.certificate_file_sha256
+        ));
+        manifest.push_str(&format!(
+            "expected_export_hash = \"{}\"\n",
+            module.export_hash
+        ));
+        manifest.push_str(&format!(
+            "expected_axiom_report_hash = \"{}\"\n",
+            module.axiom_report_hash
+        ));
+        manifest.push_str(&format!(
+            "expected_certificate_hash = \"{}\"\n",
+            module.certificate_hash
+        ));
+        manifest.push_str(&format!(
+            "imports = [{}]\n",
+            quoted_items(module.config.imports)
+        ));
+        if !module.config.inductives.is_empty() {
+            manifest.push_str(&format!(
+                "inductives = [{}]\n",
+                quoted_items(
+                    &module
+                        .config
+                        .inductives
+                        .iter()
+                        .map(|inductive| inductive.name)
+                        .collect::<Vec<_>>()
+                )
+            ));
+        }
+        manifest.push_str(&format!(
+            "definitions = [{}]\n",
+            quoted_items(
+                &module
+                    .config
+                    .definitions
+                    .iter()
+                    .map(|definition| definition.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+        manifest.push_str(&format!(
+            "theorems = [{}]\n",
+            quoted_items(
+                &module
+                    .config
+                    .theorems
+                    .iter()
+                    .map(|theorem| theorem.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+        manifest.push_str(&format!(
+            "axioms = [{}]\n",
+            quoted_owned_items(&module.axioms)
+        ));
+    }
+
+    npa_package::parse_and_validate_manifest_str(&manifest).map_err(|err| {
+        format!("generated {PACKAGE_MANIFEST_PATH} did not validate with npa-package: {err:?}")
+    })?;
+
+    Ok(manifest)
 }
 
 fn meta_json(module: &GeneratedModule) -> String {

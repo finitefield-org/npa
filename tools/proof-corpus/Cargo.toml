@@ -9,6 +9,7 @@ repository.workspace = true
 npa-cert = { path = "../../crates/npa-cert" }
 npa-frontend = { path = "../../crates/npa-frontend" }
 npa-kernel = { path = "../../crates/npa-kernel" }
+npa-package = { path = "../../crates/npa-package" }
 sha2 = "0.10"
 
 [dev-dependencies]
