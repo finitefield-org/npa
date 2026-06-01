@@ -15,6 +15,9 @@ type public_environment = {
   public_core_features : Ext_feature.feature_report_entry list;
 }
 
+(* Public interfaces use a fixed sentinel for references to the imported module itself. *)
+let public_self_import_index = 1_073_741_823
+
 type module_entry = {
   import_entry : Ext_import.entry;
   axiom_report_hash : Ext_hash.digest;
@@ -23,6 +26,15 @@ type module_entry = {
 }
 
 type store = module_entry list
+
+type resolved_import = {
+  resolved_module_name : Ext_name.t;
+  resolved_export_hash : Ext_hash.digest;
+  resolved_certificate_hash : Ext_hash.digest option;
+  resolved_public_environment : public_environment;
+}
+
+type import_environment = { resolved_imports : resolved_import list }
 
 type hash_mismatch = {
   hash_mismatch_kind : string;
@@ -56,10 +68,38 @@ let empty = []
 
 let entries store = store
 
+let import_environment_empty = { resolved_imports = [] }
+
+let import_environment_imports environment = environment.resolved_imports
+
+let import_environment_public_exports environment =
+  List.concat
+    (List.map
+       (fun import -> import.resolved_public_environment.public_exports)
+       environment.resolved_imports)
+
+let import_environment_module_axioms environment =
+  List.concat
+    (List.map
+       (fun import -> import.resolved_public_environment.public_module_axioms)
+       environment.resolved_imports)
+
 let bind result f =
   match result with
   | Error err -> Error err
   | Ok value -> f value
+
+let rec map_result f values =
+  match values with
+  | [] -> Ok []
+  | value :: rest ->
+      bind (f value) (fun mapped ->
+          bind (map_result f rest) (fun mapped_rest -> Ok (mapped :: mapped_rest)))
+
+let map_option_result f value =
+  match value with
+  | None -> Ok None
+  | Some value -> bind (f value) (fun mapped -> Ok (Some mapped))
 
 let has_suffix text suffix =
   let text_len = String.length text in
@@ -149,38 +189,137 @@ let module_hash_error mismatch =
           mismatch.Ext_canonical.module_mismatch_role)
        "hashes" mismatch.Ext_canonical.module_mismatch_offset)
 
-let public_export_of_export export =
-  {
-    public_export_name = export.Ext_cert.export_name;
-    public_export_kind = export.Ext_cert.export_kind;
-    public_decl_interface_hash = export.Ext_cert.export_decl_interface_hash;
-    public_axiom_dependencies = export.Ext_cert.export_axiom_dependencies;
-    public_universe_params = export.Ext_cert.export_universe_params;
-    public_ty = export.Ext_cert.export_ty;
-    public_body = export.Ext_cert.export_body;
-  }
+let declaration_at section offset (declarations : Ext_cert.declaration list) decl_index =
+  if decl_index < 0 || decl_index >= List.length declarations then
+    Ext_bytes.error section offset Ext_bytes.Dangling_reference
+  else Ok (List.nth declarations decl_index)
+
+let imported_self_ref name decl_interface_hash =
+  Ext_term.Imported
+    { import_index = public_self_import_index; name; decl_interface_hash }
+
+let public_global_ref section offset declarations global_ref =
+  match global_ref with
+  | Ext_term.Builtin _ | Ext_term.Imported _ -> Ok global_ref
+  | Ext_term.Local { decl_index } ->
+      bind (declaration_at section offset declarations decl_index) (fun declaration ->
+          Ok
+            (imported_self_ref declaration.Ext_cert.name
+               declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash))
+  | Ext_term.LocalGenerated { decl_index; name } ->
+      bind (declaration_at section offset declarations decl_index) (fun declaration ->
+          Ok
+            (imported_self_ref name
+               declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash))
+
+let rec public_term section offset declarations term =
+  match term with
+  | Ext_term.Sort _ | Ext_term.BVar _ -> Ok term
+  | Ext_term.Const (global_ref, levels) ->
+      bind (public_global_ref section offset declarations global_ref) (fun public_ref ->
+          Ok (Ext_term.Const (public_ref, levels)))
+  | Ext_term.App (fn, arg) ->
+      bind (public_term section offset declarations fn) (fun public_fn ->
+          bind (public_term section offset declarations arg) (fun public_arg ->
+              Ok (Ext_term.App (public_fn, public_arg))))
+  | Ext_term.Lam (ty, body) ->
+      bind (public_term section offset declarations ty) (fun public_ty ->
+          bind (public_term section offset declarations body) (fun public_body ->
+              Ok (Ext_term.Lam (public_ty, public_body))))
+  | Ext_term.Pi (ty, body) ->
+      bind (public_term section offset declarations ty) (fun public_ty ->
+          bind (public_term section offset declarations body) (fun public_body ->
+              Ok (Ext_term.Pi (public_ty, public_body))))
+  | Ext_term.Let (ty, value, body) ->
+      bind (public_term section offset declarations ty) (fun public_ty ->
+          bind (public_term section offset declarations value) (fun public_value ->
+              bind (public_term section offset declarations body) (fun public_body ->
+                  Ok (Ext_term.Let (public_ty, public_value, public_body)))))
+
+let public_axiom_ref section offset declarations axiom =
+  match axiom.Ext_cert.axiom_global_ref with
+  | Ext_term.Local _ | Ext_term.LocalGenerated _ ->
+      bind
+        (public_global_ref section offset declarations axiom.Ext_cert.axiom_global_ref)
+        (fun _ ->
+          Ok
+            {
+              axiom with
+              Ext_cert.axiom_global_ref =
+                imported_self_ref axiom.Ext_cert.axiom_name
+                  axiom.Ext_cert.axiom_decl_interface_hash;
+            })
+  | _ ->
+      bind
+        (public_global_ref section offset declarations axiom.Ext_cert.axiom_global_ref)
+        (fun public_ref ->
+          Ok { axiom with Ext_cert.axiom_global_ref = public_ref })
+
+let public_export_of_export declarations export =
+  bind
+    (public_term Ext_bytes.Export_block export.Ext_cert.export_offset declarations
+       export.Ext_cert.export_ty)
+    (fun public_ty ->
+      bind
+        (map_option_result
+           (public_term Ext_bytes.Export_block export.Ext_cert.export_offset declarations)
+           export.Ext_cert.export_body)
+        (fun public_body ->
+          bind
+            (map_result
+               (public_axiom_ref Ext_bytes.Export_block export.Ext_cert.export_offset
+                  declarations)
+               export.Ext_cert.export_axiom_dependencies)
+            (fun public_axiom_dependencies ->
+              Ok
+                {
+                  public_export_name = export.Ext_cert.export_name;
+                  public_export_kind = export.Ext_cert.export_kind;
+                  public_decl_interface_hash = export.Ext_cert.export_decl_interface_hash;
+                  public_axiom_dependencies;
+                  public_universe_params = export.Ext_cert.export_universe_params;
+                  public_ty;
+                  public_body;
+                })))
 
 let public_environment_of_decoded decoded =
-  {
-    public_imports =
-      List.map (fun import -> import.Ext_cert.import_entry) decoded.Ext_cert.imports;
-    public_exports = List.map public_export_of_export decoded.Ext_cert.export_block;
-    public_module_axioms = decoded.Ext_cert.axiom_report.Ext_cert.module_axioms;
-    public_core_features = decoded.Ext_cert.axiom_report.Ext_cert.core_features;
-  }
+  bind
+    (map_result
+       (public_export_of_export decoded.Ext_cert.declaration_table)
+       decoded.Ext_cert.export_block)
+    (fun public_exports ->
+      bind
+        (map_result
+           (public_axiom_ref Ext_bytes.Axiom_report
+              decoded.Ext_cert.axiom_report.Ext_cert.module_axioms_offset
+              decoded.Ext_cert.declaration_table)
+           decoded.Ext_cert.axiom_report.Ext_cert.module_axioms)
+        (fun public_module_axioms ->
+          Ok
+            {
+              public_imports =
+                List.map
+                  (fun import -> import.Ext_cert.import_entry)
+                  decoded.Ext_cert.imports;
+              public_exports;
+              public_module_axioms;
+              public_core_features = decoded.Ext_cert.axiom_report.Ext_cert.core_features;
+            }))
 
 let module_entry_of_decoded decoded =
-  {
-    import_entry =
-      {
-        Ext_import.module_name = decoded.Ext_cert.header.Ext_cert.module_name;
-        export_hash = decoded.Ext_cert.hashes.Ext_cert.export_hash;
-        certificate_hash = Some decoded.Ext_cert.hashes.Ext_cert.certificate_hash;
-      };
-    axiom_report_hash = decoded.Ext_cert.hashes.Ext_cert.axiom_report_hash;
-    public_environment = public_environment_of_decoded decoded;
-    checked_by_ext_checker = false;
-  }
+  bind (public_environment_of_decoded decoded) (fun public_environment ->
+      Ok
+        {
+          import_entry =
+            {
+              Ext_import.module_name = decoded.Ext_cert.header.Ext_cert.module_name;
+              export_hash = decoded.Ext_cert.hashes.Ext_cert.export_hash;
+              certificate_hash = Some decoded.Ext_cert.hashes.Ext_cert.certificate_hash;
+            };
+          axiom_report_hash = decoded.Ext_cert.hashes.Ext_cert.axiom_report_hash;
+          public_environment;
+          checked_by_ext_checker = false;
+        })
 
 let module_entry_from_source_free_certificate bytes =
   match Ext_cert.read_module (Ext_bytes.of_string bytes) with
@@ -191,7 +330,10 @@ let module_entry_from_source_free_certificate bytes =
       | Ok Ext_canonical.Declaration_hashes_ok -> (
           match Ext_canonical.verify_module_hashes bytes decoded with
           | Error err -> Error (Certificate_decode_error err)
-          | Ok Ext_canonical.Module_hashes_ok -> Ok (module_entry_of_decoded decoded)
+          | Ok Ext_canonical.Module_hashes_ok -> (
+              match module_entry_of_decoded decoded with
+              | Error err -> Error (Certificate_decode_error err)
+              | Ok entry -> Ok entry)
           | Ok (Ext_canonical.Module_hash_mismatch mismatch) ->
               Error (module_hash_error mismatch))
       | Ok (Ext_canonical.Declaration_hash_mismatch mismatch) ->
@@ -295,3 +437,24 @@ let resolve_normal ?(offset = 0) store requested =
                       resolve_offset = offset;
                     }))
       | _ -> Error { resolve_reason = Duplicate_import; resolve_offset = offset })
+
+let resolved_import_of_module_entry entry =
+  {
+    resolved_module_name = entry.import_entry.Ext_import.module_name;
+    resolved_export_hash = entry.import_entry.Ext_import.export_hash;
+    resolved_certificate_hash = entry.import_entry.Ext_import.certificate_hash;
+    resolved_public_environment = entry.public_environment;
+  }
+
+let build_import_environment store decoded =
+  let rec loop remaining resolved =
+    match remaining with
+    | [] -> Ok { resolved_imports = List.rev resolved }
+    | requested :: rest ->
+        bind
+          (resolve_normal ~offset:requested.Ext_cert.import_offset store
+             requested.Ext_cert.import_entry)
+          (fun entry ->
+            loop rest (resolved_import_of_module_entry entry :: resolved))
+  in
+  loop decoded.Ext_cert.imports []
