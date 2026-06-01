@@ -17,4 +17,6 @@ let of_components components =
 
 let to_string name = String.concat "." name
 
+let components name = name
+
 let equal left right = left = right

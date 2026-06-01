@@ -562,6 +562,17 @@ header は `NPA-CERT-0.1` と `NPA-Core-0.1` を必須とし、module name と n
 dotted component、invalid UTF-8、duplicate name table entry は reason code 付きの decode error
 として拒否します。
 
+M1-03 では `LevelTable` と `TermTable` を source-free に decode します。
+level は `Zero` / `Succ` / `Max` / `Imax` / `Param`、term は `Sort` / `BVar` /
+`Const` / `App` / `Lam` / `Pi` / `Let` の OCaml algebraic data type として保持し、
+source text へ戻さない形で後続 checker に渡します。level child と term child は table の
+topological order に従い、自分より前の entry だけを参照できます。`Sort` と `Const` の
+universe level reference、`Param` と global reference の name reference は、該当 table 内に
+存在しなければ `dangling_reference` として拒否します。unknown tag は section と byte offset
+付きの deterministic error にし、`Max Zero u` など normalize 後に変化する level entry、
+duplicate term entry、`?` を含む unresolved universe metavariable name は semantic trust の前に
+拒否します。
+
 M2: hash verifier
 
 ```text

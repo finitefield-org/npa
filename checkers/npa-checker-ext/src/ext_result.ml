@@ -145,13 +145,19 @@ let decode_error_kind error =
   | Ext_bytes.Empty_name
   | Ext_bytes.Empty_name_component
   | Ext_bytes.Dotted_name_component
-  | Ext_bytes.Duplicate_name ->
+  | Ext_bytes.Duplicate_name
+  | Ext_bytes.Non_normalized_level
+  | Ext_bytes.Non_normalized_term
+  | Ext_bytes.Noncanonical_order ->
       "noncanonical_encoding"
   | Ext_bytes.Unexpected_eof
   | Ext_bytes.Uvar_overflow
   | Ext_bytes.Length_overflow
   | Ext_bytes.Format_mismatch
-  | Ext_bytes.Core_spec_mismatch ->
+  | Ext_bytes.Core_spec_mismatch
+  | Ext_bytes.Unknown_tag _
+  | Ext_bytes.Dangling_reference
+  | Ext_bytes.Unresolved_metavariable ->
       "certificate_decode_error"
 
 let decode_error error =

@@ -410,7 +410,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-tables
+sh checkers/npa-checker-ext/scripts/test.sh decoder-tables
 ```
 
 ### M1-04 Decode Declarations, Export Block, And Axiom Report
