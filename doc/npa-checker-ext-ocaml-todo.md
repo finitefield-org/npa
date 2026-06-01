@@ -709,7 +709,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST import-high-trust
+sh checkers/npa-checker-ext/scripts/test.sh import-high-trust
 cargo test -p npa-checker-ref high_trust
 ```
 

@@ -27,6 +27,16 @@ type module_entry = {
 
 type store = module_entry list
 
+type trust_mode =
+  | Normal
+  | High_trust
+
+type checker_policy = { trust_mode : trust_mode }
+
+let normal_policy = { trust_mode = Normal }
+
+let high_trust_policy = { trust_mode = High_trust }
+
 type resolved_import = {
   resolved_module_name : Ext_name.t;
   resolved_export_hash : Ext_hash.digest;
@@ -57,6 +67,8 @@ type resolve_error_reason =
   | Missing_import
   | Import_export_hash_mismatch
   | Import_certificate_hash_mismatch
+  | Missing_import_certificate_hash
+  | Unchecked_import
   | Duplicate_import
 
 type resolve_error = {
@@ -383,6 +395,10 @@ let from_source_free_certificates certificates =
   in
   loop certificates []
 
+let from_checked_modules modules =
+  let mark_checked_by_ext_checker entry = { entry with checked_by_ext_checker = true } in
+  validate_unique (List.map mark_checked_by_ext_checker modules)
+
 let load_import_dir import_dir =
   bind (collect_cert_paths import_dir) (fun paths ->
       let rec read_all remaining bytes =
@@ -402,7 +418,11 @@ let same_export entry requested =
 
 let resolve_error_kind error =
   match error.resolve_reason with
-  | Missing_import | Duplicate_import -> "import_not_found"
+  | Missing_import
+  | Missing_import_certificate_hash
+  | Unchecked_import
+  | Duplicate_import ->
+      "import_not_found"
   | Import_export_hash_mismatch
   | Import_certificate_hash_mismatch ->
       "import_hash_mismatch"
@@ -412,6 +432,8 @@ let resolve_error_reason_code reason =
   | Missing_import -> "missing_import"
   | Import_export_hash_mismatch -> "import_export_hash_mismatch"
   | Import_certificate_hash_mismatch -> "import_certificate_hash_mismatch"
+  | Missing_import_certificate_hash -> "missing_import_certificate_hash"
+  | Unchecked_import -> "unchecked_import"
   | Duplicate_import -> "duplicate_import"
 
 let resolve_normal ?(offset = 0) store requested =
@@ -438,6 +460,28 @@ let resolve_normal ?(offset = 0) store requested =
                     }))
       | _ -> Error { resolve_reason = Duplicate_import; resolve_offset = offset })
 
+let enforce_high_trust_import ~offset requested entry =
+  match requested.Ext_import.certificate_hash with
+  | None ->
+      Error { resolve_reason = Missing_import_certificate_hash; resolve_offset = offset }
+  | Some certificate_hash -> (
+      match entry.import_entry.Ext_import.certificate_hash with
+      | Some actual when actual = certificate_hash ->
+          if entry.checked_by_ext_checker then Ok entry
+          else Error { resolve_reason = Unchecked_import; resolve_offset = offset }
+      | _ ->
+          Error
+            {
+              resolve_reason = Import_certificate_hash_mismatch;
+              resolve_offset = offset;
+            })
+
+let resolve ?(policy = normal_policy) ?(offset = 0) store requested =
+  bind (resolve_normal ~offset store requested) (fun entry ->
+      match policy.trust_mode with
+      | Normal -> Ok entry
+      | High_trust -> enforce_high_trust_import ~offset requested entry)
+
 let resolved_import_of_module_entry entry =
   {
     resolved_module_name = entry.import_entry.Ext_import.module_name;
@@ -446,13 +490,13 @@ let resolved_import_of_module_entry entry =
     resolved_public_environment = entry.public_environment;
   }
 
-let build_import_environment store decoded =
+let build_import_environment ?(policy = normal_policy) store decoded =
   let rec loop remaining resolved =
     match remaining with
     | [] -> Ok { resolved_imports = List.rev resolved }
     | requested :: rest ->
         bind
-          (resolve_normal ~offset:requested.Ext_cert.import_offset store
+          (resolve ~policy ~offset:requested.Ext_cert.import_offset store
              requested.Ext_cert.import_entry)
           (fun entry ->
             loop rest (resolved_import_of_module_entry entry :: resolved))
