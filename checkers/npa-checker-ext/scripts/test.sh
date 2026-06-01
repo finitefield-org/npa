@@ -5,15 +5,16 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 BUILD_DIR="$ROOT/_build"
 OCAMLC=$("$ROOT/scripts/ocamlc.sh")
 
-"$ROOT/scripts/build.sh" >/dev/null
+sh "$ROOT/scripts/build.sh"
 
 "$OCAMLC" -I "$BUILD_DIR" -c -o "$BUILD_DIR/test_runner.cmo" "$ROOT/test/test_runner.ml"
 "$OCAMLC" -I "$BUILD_DIR" \
   -o "$BUILD_DIR/test_runner" \
   "$BUILD_DIR/ext_sha256.cmo" \
   "$BUILD_DIR/ext_hash.cmo" \
-  "$BUILD_DIR/ext_result.cmo" \
   "$BUILD_DIR/ext_bytes.cmo" \
+  "$BUILD_DIR/ext_result.cmo" \
+  "$BUILD_DIR/ext_feature.cmo" \
   "$BUILD_DIR/ext_name.cmo" \
   "$BUILD_DIR/ext_level.cmo" \
   "$BUILD_DIR/ext_term.cmo" \

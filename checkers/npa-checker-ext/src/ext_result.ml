@@ -4,17 +4,58 @@ let checker_id = "npa-checker-ext"
 
 let checker_version = "0.1.0"
 
-let checker_build_material =
-  String.concat "\000"
-    [
-      checker_id;
-      checker_version;
-      "format:NPA-CERT-0.1";
-      "core:NPA-Core-0.1";
-      Ext_hash.vendored_sha256_source_identity;
-    ]
+let certificate_format = "NPA-CERT-0.1"
 
-let checker_build_hash = Ext_hash.sha256_prefixed_hex_of_string checker_build_material
+let core_spec = "NPA-Core-0.1"
+
+let implementation_profile = "ocaml-clean-room"
+
+let project_directory = "checkers/npa-checker-ext/"
+
+let cli_contract = "m0-04:first-release-cli"
+
+let feature_policy_contract = "m0-05:first-release-empty-core-feature-set"
+
+let checker_identity_manifest_signature_required = false
+
+let build_identity_inputs sha256_source_identity =
+  [
+    "checker_id:" ^ checker_id;
+    "checker_version:" ^ checker_version;
+    "certificate_format:" ^ certificate_format;
+    "core_spec:" ^ core_spec;
+    "implementation_profile:" ^ implementation_profile;
+    "project_directory:" ^ project_directory;
+    "cli_contract:" ^ cli_contract;
+    "feature_policy_contract:" ^ feature_policy_contract;
+    "vendored_sha256_source_identity:" ^ sha256_source_identity;
+  ]
+
+let checker_build_material_for_sha256_source_identity sha256_source_identity =
+  String.concat "\000" (build_identity_inputs sha256_source_identity)
+
+let checker_build_hash_for_sha256_source_identity sha256_source_identity =
+  Ext_hash.sha256_prefixed_hex_of_string
+    (checker_build_material_for_sha256_source_identity sha256_source_identity)
+
+let checker_build_hash =
+  checker_build_hash_for_sha256_source_identity Ext_hash.vendored_sha256_source_identity
+
+let version_text =
+  String.concat "\n"
+    [
+      checker_id ^ " " ^ checker_version;
+      "checker_build_hash " ^ checker_build_hash;
+      "certificate_format " ^ certificate_format;
+      "core_spec " ^ core_spec;
+      "implementation_profile " ^ implementation_profile;
+      "project_directory " ^ project_directory;
+      "feature_policy_contract " ^ feature_policy_contract;
+      "vendored_sha256_source_identity " ^ Ext_hash.vendored_sha256_source_identity;
+      "checker_identity_manifest_signature_required "
+      ^ string_of_bool checker_identity_manifest_signature_required;
+    ]
+  ^ "\n"
 
 type checker_error = {
   kind : string;
@@ -78,3 +119,42 @@ let skeleton_failure () =
       section = Some "skeleton";
       offset = Some 0;
     }
+
+let unsupported_core_feature ?offset _feature =
+  render_failed
+    {
+      kind = "unsupported_core_feature";
+      reason_code = Some "unsupported_core_feature";
+      section = Some "core_features";
+      offset;
+    }
+
+let decode_failure ~kind ~reason_code ~section ~offset =
+  render_failed
+    {
+      kind;
+      reason_code = Some reason_code;
+      section = Some section;
+      offset = Some offset;
+    }
+
+let decode_error_kind error =
+  match error.Ext_bytes.reason with
+  | Ext_bytes.Noncanonical_uvar
+  | Ext_bytes.Invalid_utf8
+  | Ext_bytes.Empty_name
+  | Ext_bytes.Empty_name_component
+  | Ext_bytes.Dotted_name_component
+  | Ext_bytes.Duplicate_name ->
+      "noncanonical_encoding"
+  | Ext_bytes.Unexpected_eof
+  | Ext_bytes.Uvar_overflow
+  | Ext_bytes.Length_overflow
+  | Ext_bytes.Format_mismatch
+  | Ext_bytes.Core_spec_mismatch ->
+      "certificate_decode_error"
+
+let decode_error error =
+  decode_failure ~kind:(decode_error_kind error)
+    ~reason_code:(Ext_bytes.reason_code error.Ext_bytes.reason)
+    ~section:(Ext_bytes.section_name error.Ext_bytes.section) ~offset:error.Ext_bytes.offset

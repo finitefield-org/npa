@@ -11,6 +11,9 @@ scripts/build.sh
 _build/npa-checker-ext --version
 scripts/test.sh
 scripts/test.sh sha256
+scripts/test.sh feature-policy
+scripts/test.sh decoder-bytes
+scripts/test.sh decoder-header
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -29,3 +32,35 @@ by later milestones.
 
 M0-03 adds a vendored SHA-256 implementation in `src/ext_sha256.ml`. It is used
 by `src/ext_hash.ml` and by the checker build hash material.
+
+M0-04 fixes the first-release CLI boundary:
+
+```text
+--cert path
+--import-dir path
+--policy path
+--output json
+--version
+```
+
+`--version` must be used alone and prints deterministic build identity fields.
+Check-shaped invocations write only checker raw result JSON to stdout.
+
+M0-05 pins the first-release core feature policy. The supported core feature set
+is empty, so `quotient_v1`, `quotient_v2`, and `quotient_v3` certificate feature
+reports fail deterministically with `unsupported_core_feature`. This policy is
+driven only by the canonical certificate feature report; AI sidecars, package
+metadata, and source-derived data cannot enable features. Adding quotient support
+requires expanding fast-kernel, reference-checker, and external-checker golden
+corpora before the feature is enabled. The feature policy contract is included
+in `--version` build identity material.
+
+M1-01 adds the source-free byte reader foundation. `src/ext_bytes.ml` tracks
+certificate section and byte offsets, keeps input bytes immutable after reader
+construction, and rejects malformed canonical unsigned LEB128 with structured
+decode errors. The byte reader has no filesystem or JSON output dependency.
+
+M1-02 adds source-free header and name grammar decoding. The decoder requires
+`NPA-CERT-0.1` and `NPA-Core-0.1`, decodes names into structured components,
+and rejects invalid UTF-8, empty names, empty components, dotted components,
+and duplicate name table entries with structured reasons.

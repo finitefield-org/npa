@@ -266,7 +266,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST cli
+checkers/npa-checker-ext/scripts/test.sh cli
 rg -n "checker_id.*npa-checker-ext|checker_raw_result" "$OCAML_EXT_DIR"
 ```
 
@@ -298,7 +298,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST feature-policy
+checkers/npa-checker-ext/scripts/test.sh feature-policy
 cargo test -p npa-checker-ref quotient_feature
 ```
 
@@ -352,7 +352,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-bytes
+sh checkers/npa-checker-ext/scripts/test.sh decoder-bytes
 ```
 
 ### M1-02 Decode Header And Name Grammar
@@ -380,7 +380,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-header
+sh checkers/npa-checker-ext/scripts/test.sh decoder-header
 ```
 
 ### M1-03 Decode Level And Term Tables

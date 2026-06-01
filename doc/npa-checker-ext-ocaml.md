@@ -361,6 +361,15 @@ First release では quotient feature profile を実装せず、quotient certifi
 feature gate を増やす場合は、fast kernel、reference checker、external checker の3者で
 golden corpus を追加してから有効化します。
 
+M0-05 では first-release supported core feature set を空集合として実装します。
+このため canonical certificate の feature report に `quotient_v1`, `quotient_v2`,
+`quotient_v3` のいずれかが現れた時点で、外部 checker は
+`checker_raw.error.kind = unsupported_core_feature` を返します。空の feature report を持つ
+MVP certificate はこの gate では拒否しません。feature policy の入力は canonical certificate
+feature report のみであり、AI sidecar、package metadata、source-derived environment は
+feature enablement に使いません。quotient support を導入する場合は、fast kernel /
+reference checker / external checker の golden corpus を同時に拡張してから supported set に追加します。
+
 ---
 
 ## 10. Axiom report and policy
@@ -540,6 +549,19 @@ M1: source-free decoder
 - offset-preserving structured errors
 ```
 
+M1-01 で decoder の基礎として immutable byte reader を追加します。
+reader は construction 時点で入力 bytes を immutable string にコピーし、read 操作は reader を
+破壊せず `(value, next_reader)` を返します。すべての decode error は certificate section、
+byte offset、reason code を持ちます。canonical unsigned varint は minimal ULEB128 のみを許可し、
+unexpected EOF、non-minimal encoding、u64 overflow、host length overflow を拒否します。
+この層は filesystem、source parser、JSON rendering を参照しません。
+
+M1-02 では header と name grammar を source-free に decode します。
+header は `NPA-CERT-0.1` と `NPA-Core-0.1` を必須とし、module name と name table entry は
+`Ext_name.t` の structured component list として保持します。empty name、empty component、
+dotted component、invalid UTF-8、duplicate name table entry は reason code 付きの decode error
+として拒否します。
+
 M2: hash verifier
 
 ```text
@@ -676,6 +698,59 @@ test:
 
 `Ext_sha256.source_identity` は checker build hash material に含めます。
 source file 全体の hash pinning は runner policy の checker binary hash / manifest hash pinning で扱います。
+
+M0-04 で first-release CLI boundary と build identity material を次のように固定します。
+
+```text
+accepted CLI:
+  --cert path
+  --import-dir path
+  --policy path
+  --output json
+  --version
+
+--version:
+  must be used alone
+  prints checker_id, checker_version, checker_build_hash, certificate_format,
+  core_spec, implementation_profile, project_directory,
+  vendored_sha256_source_identity, and
+  checker_identity_manifest_signature_required
+
+checker_build_hash material:
+  checker_id
+  checker_version
+  certificate_format
+  core_spec
+  implementation_profile
+  project_directory
+  CLI contract version
+  feature policy contract version
+  vendored SHA-256 source identity
+```
+
+First release では checker identity manifest signature は required identity material に含めず、
+`checker_identity_manifest_signature_required false` として version output に固定します。
+
+M0-05 で first-release feature policy を次のように固定します。
+
+```text
+supported_core_features:
+  []
+
+rejected quotient feature profiles:
+  quotient_v1
+  quotient_v2
+  quotient_v3
+
+error kind:
+  unsupported_core_feature
+
+policy input:
+  canonical certificate feature report only
+
+build identity material:
+  feature_policy_contract = m0-05:first-release-empty-core-feature-set
+```
 
 この配置は clean-room 境界を狭く保つためのものです。OCaml project は同一 repository 内の
 公開仕様、canonical certificate fixture、JSON schema contract、差分 test result を入力としてよい一方、
