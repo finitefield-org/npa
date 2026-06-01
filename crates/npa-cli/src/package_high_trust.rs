@@ -1572,3 +1572,49 @@ fn json_kind_name(kind: JsonValueKind) -> &'static str {
         JsonValueKind::Object => "object",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use npa_api::{IndependentCheckerAuxiliaryError, IndependentCheckerAuxiliaryReasonCode};
+
+    #[test]
+    fn package_high_trust_benchmark_failure_maps_release_audit_policy_diagnostic() {
+        let result = IndependentCheckerAuxiliaryResult::failed(
+            "aux_package_high_trust_benchmark_missing",
+            IndependentCheckerAuxiliaryResultKind::AuditBundle,
+            [1; 32],
+            [2; 32],
+            None,
+            IndependentCheckerAuxiliaryError::value(
+                IndependentCheckerAuxiliaryReasonCode::AuditBundleInvalid,
+                "artifacts[performance_benchmark_summary]",
+                "external checker benchmark",
+                "missing",
+            ),
+        );
+
+        let diagnostic = release_audit_bundle_failure_diagnostic(
+            &result,
+            DEFAULT_RELEASE_AUDIT_BUNDLE_MANIFEST_PATH,
+        );
+
+        assert_eq!(diagnostic.kind, DiagnosticKind::ExternalVerifier);
+        assert_eq!(diagnostic.reason_code, "audit_bundle_invalid");
+        assert_eq!(
+            diagnostic.path.as_deref(),
+            Some(DEFAULT_RELEASE_AUDIT_BUNDLE_MANIFEST_PATH)
+        );
+        assert_eq!(
+            diagnostic.field.as_deref(),
+            Some("artifacts[performance_benchmark_summary]")
+        );
+        assert_eq!(
+            diagnostic.expected_value.as_deref(),
+            Some("external checker benchmark")
+        );
+        assert_eq!(diagnostic.actual_value.as_deref(), Some("missing"));
+        assert!(diagnostic.expected_hash.is_none());
+        assert!(diagnostic.actual_hash.is_none());
+    }
+}

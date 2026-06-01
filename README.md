@@ -191,6 +191,11 @@ external checker を required にしません。`--checker external` と
 `npa-checker-ext` binary、runner policy、checker registry、release audit evidence を
 同じ review で用意する high-trust integration scope です。
 `verified_high_trust` artifact は reference-only evidence から生成してはいけません。
+External checker benchmark collection is release/high-trust regression
+evidence only: rows link checker identity, certificate hash, module, timing,
+timeout/memory budget, and result hash back to saved checker results, but do
+not change proof validity. Reference / external checker benchmark completion is
+not a PR hot path requirement.
 これらの template はこの repo の
 `.github/workflows` ではなく、`npa-mathlib-seed` などの外部 repo が copy または reference
 するためのものです。この repo の local gate は引き続き `scripts/phase8-release-audit.sh` と
@@ -314,6 +319,9 @@ identity validation が通った場合だけです。`package high-trust` は
 `verified_high_trust` artifact generator として実装済みで、copyable opt-in
 high-trust CI template は `ci-templates/github-actions/npa-package-high-trust.yml` に
 あります。ただし reference-only evidence から artifact を生成しません。
+External checker benchmark summaries are release audit metadata linked to
+checker result hashes. They may fail release/high-trust policy as regression
+evidence, but they are not checker verdicts and do not affect proof validity.
 これらの `npa-api` automation / library API は候補生成、検査要求の構成、
 監査 artifact の正規化、回帰 fixture の実行を担う非信頼層です。
 trusted base は広げません。証明の受理根拠は引き続き canonical certificate と、

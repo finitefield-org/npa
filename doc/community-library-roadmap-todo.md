@@ -485,7 +485,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
-- Status: Partially Completed; high-trust command and opt-in CI template implemented, benchmark/audit collection remains
+- Status: Completed; high-trust command, opt-in CI template, and benchmark/audit summary contract implemented. Actual high-trust evidence still requires a pinned external checker binary in the consuming repository.
 - Depends on: CLR-03
 - Inputs:
   - `doc/phase8-human.md`
@@ -534,6 +534,10 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
     opt-in `npa-package-high-trust.yml` template are implemented.
     `verified_high_trust` must not be generated from reference-checker-only
     evidence.
+  - External checker benchmark summaries use deterministic release audit rows
+    linked to checker result hashes. They are regression evidence, not proof
+    validity inputs, and reference / external checker benchmark completion is
+    not on the PR hot path.
   - `npa-mathlib-seed` may proceed as a reference-checker-only release seed.
   - Policy / runner contract work can start from CLR-03, but package CLI integration depends on CLR-04 and CI integration depends on CLR-07.
 

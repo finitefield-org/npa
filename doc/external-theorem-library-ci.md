@@ -231,6 +231,10 @@ The high-trust-reference job validates the release audit bundle through
 `high-trust-reference`. `verified_high_trust` artifacts require
 `npa package high-trust` and complete external / high-trust-reference release
 audit evidence. They must not be emitted from reference-checker-only evidence.
+External checker benchmark collection belongs to the release/high-trust audit
+track, not the PR hot path. A benchmark summary can fail release/high-trust
+policy as regression evidence, but it is not proof input, does not change proof
+validity, and must link rows back to saved checker result hashes.
 
 Publish metadata is not a base CLR-07 dependency. A later optional release
 template variant may add:
@@ -399,3 +403,5 @@ release audit evidence consumable by `npa package high-trust`, `npa-mathlib-seed
 release evidence is reference-checker-only plus the labeled fast-kernel
 verifier; it must not require `--checker external` or emit
 `verified_high_trust`.
+Reference / external checker benchmark evidence may be collected later as
+release audit regression metadata; it is never a substitute checker verdict.

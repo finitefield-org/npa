@@ -685,7 +685,7 @@ Benchmarks are regression signals. They do not change proof validity.
 
 ### CLR-08-07 Add External Checker Benchmark And Audit Collection
 
-- Status: Partially Completed
+- Status: Completed
 - Depends on: CLR-08-04
 - Inputs:
   - Phase 8 performance gate definitions
@@ -713,9 +713,21 @@ Benchmarks are regression signals. They do not change proof validity.
   - `rg -n "external checker benchmark|reference / external checker benchmark|PR hot path|proof validity" doc README.md crates`
 - Notes:
   - Keep benchmark thresholds policy-owned. Do not bake machine-specific timing into the kernel.
-  - The deterministic audit/summary substrate exists in Phase 8 fixtures.
-    CI benchmark collection for an actual pinned external checker binary is
-    deferred with CLR-08-06.
+  - `npa.independent-checker.performance_benchmark_summary.v1` is the
+    deterministic summary schema. Rows record module, checker identity,
+    certificate hash, result hash, run artifact hash, elapsed time, timeout
+    budget/exceeded state, memory budget/peak/exceeded state, declarations
+    checked, and status.
+  - Release audit bundle validation links external checker benchmark rows back
+    to included checker result hashes and run artifact hashes. The summary is
+    regression evidence only; it is not proof input and does not change proof
+    validity.
+  - PR mode keeps reference / external checker benchmark collection off the
+    PR hot path. Release/high-trust mode may fail a configured benchmark policy
+    through release audit diagnostics without mutating checker verdicts.
+  - CI collection against a real pinned `npa-checker-ext` binary still depends
+    on the external repository providing that binary, registry entry, and
+    release audit evidence.
 
 ### CLR-08-08 Update Roadmap, Docs, And Deferral Handoff
 
