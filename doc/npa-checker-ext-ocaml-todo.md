@@ -60,7 +60,15 @@ Current implementation facts:
 - crates/npa-api already fixes external profile, runner policy, raw result
   parsing, MachineCheckResult adoption, normalization, and release bundle
   substrate.
-- standalone npa-checker-ext binary is still target integration.
+- `checkers/npa-checker-ext/` contains the in-repository OCaml clean-room
+  source project, build scripts, and test scripts.
+- `npa package verify-certs --checker external` is implemented as a
+  source-free package runner path requiring runner policy, runner policy hash,
+  and checker registry inputs.
+- `npa-checker-ext` counts as release/high-trust evidence only after a built
+  executable is present in a fresh checkout or documented CI environment and
+  runner-owned policy / registry validation passes for its binary identity and
+  hash.
 - M0-01 fixes the in-repository OCaml directory as
   `checkers/npa-checker-ext/`.
 - M0-03 fixes vendored SHA-256 implementation and fixture layout.

@@ -201,7 +201,29 @@ package caches, or resolve imports by implicit latest version.
 
 CI output is not proof evidence. The proof boundary remains canonical
 certificate artifacts plus source-free checker or kernel verifier verdicts.
-External checker required mode and `verified_high_trust` wait for CLR-08; base
-CLR-07 templates remain reference-checker-only for PR acceptance and do not use
-registry access, a package solver, a binary cache, or implicit latest package
-resolution.
+Base CLR-07 templates remain reference-checker-only for PR acceptance and do
+not use registry access, a package solver, a binary cache, or implicit latest
+package resolution. Release base mode adds only the labeled fast-kernel gate.
+
+The implemented external checker package command is an opt-in high-trust
+extension, not a base-template requirement:
+
+```sh
+npa package verify-certs --root . --checker external \
+  --runner-policy ci/runner.release.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --json
+```
+
+That extension requires a pinned built `npa-checker-ext` executable in the
+fresh-checkout or documented CI environment, plus runner-owned policy and
+checker registry entries that validate binary identity and hash. The source-free
+boundary stays the same: the checker path reads package metadata, package lock,
+canonical certificates, import certificates, runner policy, checker registry,
+checker executable bytes, and axiom policy, not `.npa` source, replay/meta
+files, theorem index, AI traces, registry network data, hidden caches, or
+plugins.
+
+`verified_high_trust` is a separate high-trust artifact generator target. It
+must not be emitted from reference-checker-only release evidence.

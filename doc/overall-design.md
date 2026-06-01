@@ -109,6 +109,10 @@ independent checker(s)
 verified_high_trust
 ```
 
+これは target high-trust flow です。現リポジトリで `verified_high_trust` artifact を
+reference-checker-only evidence から生成してよい、または external checker を PR mode の
+必須条件にする、という意味ではありません。
+
 この境界は、automation や machine API を `crates/npa-api` に実装しても変わりません。
 `npa-api` は proof search controller、checker audit automation、advanced automation endpoint substrate を
 提供できますが、それらは producer / orchestrator / validator-facing library であり trusted checker ではありません。
@@ -1708,6 +1712,11 @@ NPAには通常モードと高信頼モードを分けます。
   "imports_verified": true
 }
 ```
+
+この JSON は target artifact shape です。実際の release evidence として扱うには、
+build 済み `npa-checker-ext` executable が runner-owned registry / policy から解決され、
+external checker と high-trust-reference を含む required evidence が揃っている必要があります。
+reference-only evidence から `verified_high_trust` を近似生成してはいけません。
 
 ---
 

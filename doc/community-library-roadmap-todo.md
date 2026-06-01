@@ -259,7 +259,9 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - CLR-03 derives external import `axiom_report_hash` values by reading the
     pinned external certificates listed in `proofs/npa-package.toml`.
   - `npa.package.lock.v0.1` is distinct from `npa.independent-checker.import_lock_manifest.v1`; the latter is derived per checker run.
-  - Do not add full external checker as required in this milestone; keep `npa-checker-ext` target integration.
+  - Do not add full external checker as required in this milestone; keep
+    `npa-checker-ext` release/high-trust binary evidence for the later CLR-08
+    integration gate.
   - `proofs/generated/package-lock.json` is derived package metadata, not proof
     evidence. Accepted proof evidence remains canonical `.npcert` bytes plus
     the selected checker verdict. The lock records package graph identity,
@@ -483,7 +485,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
-- Status: Pending
+- Status: Partially Completed; high-trust artifact and CI template extension deferred
 - Depends on: CLR-03
 - Inputs:
   - `doc/phase8-human.md`
@@ -493,11 +495,12 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `doc/community-library-roadmap-clr-08-todo.md`
 - Code or documentation areas:
   - `crates/npa-api/src/independent_checker.rs` RunnerPolicy / ReleasePolicy / CheckerBinaryRegistry integration
-  - `crates/npa-cli` `package verify-certs --checker external` and package high-trust command
-  - `crates/npa-package` `verified_high_trust` schema
+  - `crates/npa-cli` `package verify-certs --checker external`
+  - future `crates/npa-cli` package high-trust command when `verified_high_trust` is implemented
+  - future `crates/npa-package` `verified_high_trust` schema
   - external checker runner integration
   - high-trust release policy tests
-  - generated `verified_high_trust` artifact schema
+  - generated `verified_high_trust` artifact schema when no longer deferred
 - Deliverables:
   - Explicit contract for when `npa-checker-ext` becomes required.
   - Source-free package verification path for `--checker external`, gated by runner policy and checker binary registry.
@@ -515,12 +518,20 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `cargo test -p npa-api independent_checker`
   - `cargo test -p npa-checker-ref`
   - `cargo test -p npa-cli package_verify_external`
-  - `cargo test -p npa-package verified_high_trust`
+  - future artifact-generator verification: `cargo test -p npa-package verified_high_trust`
   - `./scripts/phase8-release-audit.sh`
   - targeted search: `rg -n "community-library-roadmap-clr-08-todo|verified_high_trust|npa-checker-ext|external checker|high-trust-reference|CheckerBinaryRegistry" doc crates`
 - Notes:
   - Detailed breakdown: `doc/community-library-roadmap-clr-08-todo.md`.
-  - This milestone may be deferred until after npa-mathlib-seed if reference-checker-only release seed is acceptable.
+  - `checkers/npa-checker-ext/` contains the OCaml clean-room source project,
+    and `npa package verify-certs --checker external` is implemented with
+    required runner policy / checker registry inputs. Treat `npa-checker-ext`
+    as release evidence only after a built executable is present in a fresh
+    checkout or documented CI environment and its identity/hash pass runner
+    validation.
+  - `verified_high_trust` and full external-checker release/high-trust CI are
+    deferred. They must not be generated from reference-checker-only evidence.
+  - `npa-mathlib-seed` may proceed as a reference-checker-only release seed.
   - Policy / runner contract work can start from CLR-03, but package CLI integration depends on CLR-04 and CI integration depends on CLR-07.
 
 ### CLR-09 Dogfood `npa-mathlib-seed`

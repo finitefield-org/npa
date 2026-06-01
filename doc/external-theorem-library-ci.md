@@ -186,9 +186,32 @@ Required behavior:
 - Upload deterministic diagnostics, package lock, checked certificates, axiom
   report, theorem index, and optional publish metadata useful for review.
 
-The base CLR-07 release template must not require the external checker.
-`--checker external`, external checker disagreement gates, and
-`verified_high_trust` artifacts belong to CLR-08.
+The base CLR-07 release template must not require the external checker. It
+continues to produce reference-checker-only release evidence plus the labeled
+fast-kernel verifier result.
+
+A high-trust extension may add the implemented external checker package
+command only when the documented CI environment provides a pinned built
+`npa-checker-ext` executable and runner-owned policy / registry files:
+
+```sh
+npa package verify-certs --root . --checker external \
+  --runner-policy ci/runner.release.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --json
+```
+
+That command is source-free: it may read package metadata, package lock,
+canonical `.npcert` files, import certificates, runner policy, checker
+registry, checker executable bytes, and axiom policy. It must not read `.npa`
+source, replay files, meta files, theorem index files, AI traces, registry
+network data, hidden package caches, plugins, or source-derived unchecked
+environments.
+
+`verified_high_trust` artifacts require a separate generator and complete
+external / high-trust-reference evidence. They must not be emitted from
+reference-checker-only evidence.
 
 Publish metadata is not a base CLR-07 dependency. A later optional release
 template variant may add:
@@ -296,6 +319,11 @@ reference verifier commands, and rejects unsupported base-template flags:
 --latest
 ```
 
+The `--checker external` rejection is intentional for the base templates only.
+An opt-in high-trust template variant must validate its own pinned
+`npa-checker-ext`, runner policy, checker registry, and source-free boundary in
+the same review that adds the external job.
+
 Run it from the repository root:
 
 ```sh
@@ -335,7 +363,8 @@ scripts/phase9-regression.sh
 ```
 
 Those scripts remain local `npa` repository checks, and the templates remain
-outside this repository's `.github/workflows`. Until CLR-08 is complete,
-`npa-mathlib-seed` release evidence is reference-checker-only plus the labeled
-fast-kernel verifier; it must not require `--checker external` or emit
-`verified_high_trust`.
+outside this repository's `.github/workflows`. Until a seed repository opts into
+a pinned `npa-checker-ext` binary with runner policy / checker registry and a
+separate `verified_high_trust` generator exists, `npa-mathlib-seed` release
+evidence is reference-checker-only plus the labeled fast-kernel verifier; it
+must not require `--checker external` or emit `verified_high_trust`.
