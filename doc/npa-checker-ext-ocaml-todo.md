@@ -603,7 +603,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-module
+sh checkers/npa-checker-ext/scripts/test.sh hash-module
 cargo test -p npa-checker-ref hash_verifier
 ```
 

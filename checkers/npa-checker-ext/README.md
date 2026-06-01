@@ -20,6 +20,7 @@ scripts/test.sh decoder-reachability
 scripts/test.sh hash-encoder
 scripts/test.sh hash-level-term
 scripts/test.sh hash-declarations
+scripts/test.sh hash-module
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -106,3 +107,8 @@ hashes from decoded canonical certificate data. The `hash-declarations` fixture
 checks golden certificates and rejects mutations to declaration type, body,
 dependency, and axiom dependency material with deterministic declaration-section
 offsets.
+
+M2-04 recomputes the final export, axiom report, and module certificate hashes.
+The export hash is checked against an export block rebuilt from declaration
+interfaces, while the module certificate hash uses the exact original
+certificate bytes before the stored certificate hash.

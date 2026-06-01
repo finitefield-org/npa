@@ -52,6 +52,14 @@ let bytes_of_codes codes =
 
 let string_of_codes codes = Bytes.to_string (bytes_of_codes codes)
 
+let mutate_byte text offset =
+  if offset < 0 || offset >= String.length text then
+    failwith ("cannot mutate byte at offset " ^ string_of_int offset);
+  let bytes = Bytes.of_string text in
+  let original = Char.code (Bytes.get bytes offset) in
+  Bytes.set bytes offset (Char.chr (original lxor 0x01));
+  Bytes.to_string bytes
+
 let split_tabs line =
   let length = String.length line in
   let rec loop start fields =
@@ -1318,6 +1326,48 @@ let assert_declaration_hash_rejects label expected_kind expected_reason decoded 
       assert_contains (label ^ " raw section") "\"section\": \"declarations\"" raw;
       assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int offset) raw
 
+let assert_module_hash_verifies label bytes decoded =
+  match
+    assert_ok (label ^ " module hash check")
+      (Ext_canonical.verify_module_hashes bytes decoded)
+  with
+  | Ext_canonical.Module_hashes_ok -> ()
+  | Ext_canonical.Module_hash_mismatch mismatch ->
+      failwith
+        (label ^ ": unexpected module hash mismatch "
+       ^ Ext_canonical.module_hash_role_kind_code
+           mismatch.Ext_canonical.module_mismatch_role
+       ^ " at "
+       ^ string_of_int mismatch.Ext_canonical.module_mismatch_offset)
+
+let assert_module_hash_rejects label expected_kind expected_offset bytes decoded =
+  match
+    assert_ok (label ^ " module hash check")
+      (Ext_canonical.verify_module_hashes bytes decoded)
+  with
+  | Ext_canonical.Module_hashes_ok -> failwith (label ^ ": expected module hash mismatch")
+  | Ext_canonical.Module_hash_mismatch mismatch ->
+      let kind =
+        Ext_canonical.module_hash_role_kind_code
+          mismatch.Ext_canonical.module_mismatch_role
+      in
+      let offset = mismatch.Ext_canonical.module_mismatch_offset in
+      assert_equal (label ^ " kind") expected_kind kind;
+      assert_int_equal (label ^ " offset") expected_offset offset;
+      assert_bool (label ^ " expected differs from actual")
+        (mismatch.Ext_canonical.module_expected_hash
+        <> mismatch.Ext_canonical.module_actual_hash);
+      let raw =
+        Ext_result.hash_mismatch_failure ~kind ~reason_code:kind ~section:"hashes"
+          ~offset
+      in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_kind ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section") "\"section\": \"hashes\"" raw;
+      assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int offset) raw
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -1570,6 +1620,74 @@ let run_hash_declarations_tests () =
     "dependency_hash_mismatch" "decl_certificate_hash_mismatch"
     mutated_axiom_dependency
 
+let run_hash_module_tests () =
+  let golden_paths =
+    [
+      ( "nat",
+        Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+      );
+      ( "eq",
+        Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+      );
+    ]
+  in
+  let decoded_golden label path =
+    let bytes = read_binary_file path in
+    (bytes, decode_module_bytes (label ^ " module hash golden") bytes)
+  in
+  List.iter
+    (fun (label, path) ->
+      let bytes, decoded = decoded_golden label path in
+      assert_module_hash_verifies (label ^ " valid module hashes") bytes decoded)
+    golden_paths;
+
+  let bytes, decoded = decoded_golden "nat mutation corpus" (List.assoc "nat" golden_paths) in
+  let hashes = decoded.Ext_cert.hashes in
+  let assert_mutated_hash label expected_kind offset =
+    let mutated = mutate_byte bytes offset in
+    let decoded_mutated =
+      decode_module_bytes (label ^ " mutated module hash") mutated
+    in
+    assert_module_hash_rejects label expected_kind offset mutated decoded_mutated
+  in
+  assert_mutated_hash "mutated export hash" "export_hash_mismatch"
+    hashes.Ext_cert.export_hash_offset;
+  assert_mutated_hash "mutated axiom report hash" "axiom_report_mismatch"
+    hashes.Ext_cert.axiom_report_hash_offset;
+  assert_mutated_hash "mutated certificate hash" "certificate_hash_mismatch"
+    hashes.Ext_cert.certificate_hash_offset;
+
+  let prefix_mutated = mutate_byte bytes 0 in
+  assert_module_hash_rejects "module certificate hash uses exact input prefix"
+    "certificate_hash_mismatch" hashes.Ext_cert.certificate_hash_offset prefix_mutated
+    decoded;
+
+  let mutated_export_block =
+    match decoded.Ext_cert.export_block with
+    | export :: rest ->
+        {
+          export with
+          Ext_cert.export_type_hash = mutate_byte export.Ext_cert.export_type_hash 0;
+        }
+        :: rest
+    | [] -> failwith "expected golden export block"
+  in
+  let decoded_with_stored_export_block = { decoded with Ext_cert.export_block = mutated_export_block } in
+  let forged_export_hash =
+    assert_ok "stored export block hash"
+      (Ext_canonical.export_hash decoded_with_stored_export_block)
+  in
+  let forged_hashes =
+    { decoded.Ext_cert.hashes with Ext_cert.export_hash = forged_export_hash }
+  in
+  let decoded_with_forged_export_hash =
+    { decoded_with_stored_export_block with Ext_cert.hashes = forged_hashes }
+  in
+  assert_module_hash_rejects
+    "module hash verifier rebuilds expected export block from declarations"
+    "export_hash_mismatch" hashes.Ext_cert.export_hash_offset bytes
+    decoded_with_forged_export_hash
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -1755,6 +1873,7 @@ let () =
                "hash-declarations";
                "hash-encoder";
                "hash-level-term";
+               "hash-module";
                "sha256";
              ])
       then
@@ -1769,5 +1888,6 @@ let () =
   if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "hash-level-term" then run_hash_level_term_tests ();
   if should_run selected "hash-declarations" then run_hash_declarations_tests ();
+  if should_run selected "hash-module" then run_hash_module_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
