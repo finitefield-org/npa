@@ -195,6 +195,13 @@ Current bundles:
   `npa-package.toml` and checked-in certificate bytes. It is package metadata, not proof
   evidence; accepted proof evidence remains canonical `.npcert` bytes plus the selected checker
   verdict.
+- `generated/axiom-report.json`: CLR-05 `npa.package.axiom_report.v0.1` fixture derived from
+  package metadata, the package lock, certificate artifacts, and source-free verifier output. It is
+  package metadata, not proof evidence, and it is distinct from
+  `npa.independent-checker.axiom_report.v1` and Std-only axiom report schemas.
+- `generated/theorem-index.json`: CLR-05 `npa.package.theorem_index.v0.1` fixture derived from
+  checked certificates for theorem search, documentation, and later registry metadata. It is
+  metadata, not proof evidence, and it is distinct from Std-only theorem index schemas.
 
 Package fixture handoff data for CLR-03:
 
@@ -212,6 +219,11 @@ Package fixture handoff data for CLR-03:
   certificate file hashes, export hashes, certificate hashes, direct imports, and axiom report
   hashes. It must not be treated as source-free proof evidence or augmented with source, replay,
   meta, theorem index, AI trace, or out-of-package state.
+- `proofs/generated/axiom-report.json` records package policy, module axiom usage, checker
+  summaries, and deterministic report hashes. `proofs/generated/theorem-index.json` records
+  certificate-derived theorem/axiom entries, statement/interface hashes, dependency constants,
+  axiom dependencies, artifact paths, checker summaries, and deterministic index hashes. Neither
+  file is checker input.
 - Fast and reference source-free library verification examples are
   `cargo test -p npa-api package_fast_verifier`,
   `cargo test -p npa-api package_reference_verifier`,
@@ -224,6 +236,8 @@ Package fixture handoff data for CLR-03:
   cargo run -p npa-cli -- package build-certs --root proofs --check
   cargo run -p npa-cli -- package verify-certs --root proofs --checker reference
   cargo run -p npa-cli -- package check-hashes --root proofs
+  cargo run -p npa-cli -- package axiom-report --root proofs --check
+  cargo run -p npa-cli -- package index --root proofs --check
   ```
 
 - The equivalent contributor-facing commands use the installed `npa` binary:
@@ -233,6 +247,8 @@ Package fixture handoff data for CLR-03:
   npa package build-certs --root . --check
   npa package verify-certs --root . --checker reference
   npa package check-hashes --root .
+  npa package axiom-report --root . --check
+  npa package index --root . --check
   ```
 
 - `package check` is a manifest metadata gate. `package build-certs` may read local
@@ -241,6 +257,10 @@ Package fixture handoff data for CLR-03:
   manifest-pinned hashes. `package verify-certs` is source-free: it reads
   `generated/package-lock.json` and certificate artifacts, not `.npa` source,
   replay, meta, theorem index, AI traces, or out-of-package state.
+- `package axiom-report` and `package index` are source-free CLR-05 metadata commands. They read
+  package metadata, the package lock, certificate artifacts, and checked generated artifacts in
+  `--check` mode. They do not require source, replay, meta, theorem graph score, prompt metadata,
+  AI traces, or out-of-package state.
 - CLR-04 `npa package verify-certs` wraps
   `npa_package::build_package_lock_from_package_root`,
   `npa_package::parse_package_lock_json`, `npa_api::verify_package_fast_source_free`,
@@ -251,8 +271,7 @@ Package fixture handoff data for CLR-03:
 - Package CLI output and generated package metadata are review/CI diagnostics, not proof
   evidence. Accepted proof evidence remains canonical `.npcert` bytes plus the selected
   checker verdict.
-- `npa package axiom-report` and `npa package index` belong to CLR-05. `npa package
-  publish-plan` belongs to CLR-06.
+- `npa package publish-plan` belongs to CLR-06 and is not implemented by CLR-05.
 - Raw `npa-checker-ref` CLI import scanning is not enough for high-trust package graph verification
   by itself. Package verification also needs the CLR-03 package lock, pinned import identity,
   dependency-topological order, and imports accepted earlier by the same checker run.

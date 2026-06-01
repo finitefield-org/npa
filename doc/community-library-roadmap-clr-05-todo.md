@@ -963,7 +963,7 @@ external checker disagreement gates
 
 ### CLR-05-08 Update Documentation And CLR-06 Handoff
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-07
 - Inputs:
   - `doc/community-library-roadmap-todo.md`
@@ -991,6 +991,75 @@ external checker disagreement gates
   - `git diff --check`
 - Notes:
   - Keep `publish-plan` examples marked as CLR-06 until that command is implemented.
+
+---
+
+## CLR-06 Handoff
+
+CLR-05 leaves two checked generated artifacts for CLR-06 `publish-plan` to consume:
+
+```text
+generated/axiom-report.json
+generated/theorem-index.json
+```
+
+Both are deterministic package metadata, not proof evidence. `publish-plan` may
+copy or summarize their stable identities and derived review/search fields, but
+the checker acceptance boundary remains canonical certificate plus source-free
+checker verdict.
+
+Fields available from `generated/axiom-report.json`:
+
+```text
+schema = npa.package.axiom_report.v0.1
+package
+version
+manifest.path / manifest.file_hash
+package_lock.path / package_lock.file_hash
+policy.allow_custom_axioms
+policy.allowed_axioms
+modules[].module
+modules[].origin
+modules[].export_hash
+modules[].certificate_hash
+modules[].axiom_report_hash
+modules[].certificate_file_hash
+modules[].direct_axioms
+modules[].transitive_axioms
+modules[].policy_status
+checker_summaries[]
+summary.*
+package_axiom_report_hash
+```
+
+Fields available from `generated/theorem-index.json`:
+
+```text
+schema = npa.package.theorem_index.v0.1
+package
+version
+manifest.path / manifest.file_hash
+package_lock.path / package_lock.file_hash
+index_profile
+entries[].global_ref
+entries[].kind
+entries[].statement.core_hash
+entries[].statement.head
+entries[].statement.constants
+entries[].modes
+entries[].tags
+entries[].axiom_dependencies
+entries[].module_axiom_report_hash
+entries[].artifact.certificate
+checker_summaries[]
+summary.*
+theorem_index_hash
+```
+
+CLR-06 must not require `.npa` source, replay, meta, theorem graph score,
+prompt metadata, AI traces, registry lookup, network access, or binary cache
+state to validate these CLR-05 artifacts. Those data can remain contributor or
+review aids, but they are outside the generated package artifact trust boundary.
 
 ---
 

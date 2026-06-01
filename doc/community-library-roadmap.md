@@ -179,7 +179,8 @@ registry server より先に必要な blocker は次です。
 
 2. package CLI
    `npa package check`、`build-certs`、`verify-certs`、`check-hashes`、
-   `axiom-report`、`index`、`publish-plan` がない。
+   `axiom-report`、`index` は実装済み。`publish-plan` と外部 library CI template は
+   後続 milestone。
 
 3. CI contract
    theorem-only PR で何を required にし、release / high-trust で何を required にするかを
@@ -345,11 +346,16 @@ npa package verify-certs
 npa package check-hashes
 ```
 
-後続 milestone の command:
+CLR-05 までに実装済みの generated metadata command:
 
 ```sh
 npa package axiom-report
 npa package index
+```
+
+後続 milestone の command:
+
+```sh
 npa package publish-plan
 ```
 
@@ -377,19 +383,24 @@ npa package check-hashes
   checked-in bytes に対して検査する。
 
 npa package axiom-report
-  CLR-05。package 全体と module ごとの axiom report を生成する。
+  package 全体と module ごとの `npa.package.axiom_report.v0.1` metadata を生成または --check する。
+  package axiom report schema は `npa.independent-checker.axiom_report.v1` や
+  Std-only axiom report schema とは別物。
 
 npa package index
-  CLR-05。theorem search / documentation / future registry metadata 用の theorem index を生成する。
+  theorem search / documentation / future registry metadata 用の
+  `npa.package.theorem_index.v0.1` metadata を生成または --check する。
+  package theorem index schema は Std-only theorem index schema とは別物。
 
 npa package publish-plan
   CLR-06。publish metadata と artifact list を出す。
 ```
 
 CLI は非信頼 orchestration layer です。CLI output、diagnostics、package lock、generated
-metadata は review / CI 用の deterministic metadata であり、proof evidence ではありません。
+axiom report、generated theorem index は review / CI / search 用の deterministic
+metadata, not proof evidence です。
 証明受理の根拠は canonical `.npcert` と kernel / source-free checker verdict に限定します。
-kernel crate に filesystem、network、registry lookup を入れてはいけません。CLR-04 commands は
+kernel crate に filesystem、network、registry lookup を入れてはいけません。package commands は
 explicit local package root だけを対象にし、network access や binary cache lookup を行いません。
 
 ## 5.3 CI contract
@@ -402,11 +413,14 @@ npa package check --root . --json
 npa package build-certs --root . --check --json
 npa package check-hashes --root . --json
 npa package verify-certs --root . --checker reference --json
+npa package axiom-report --root . --check --json
+npa package index --root . --check --json
 ```
 
-CLR-05 完了後に `axiom-report --check` と `index --check` を追加します。release mode でも
-full-package を明示 root で検査します。CLR-06 完了後は `publish-plan --check` も release
-artifact の freshness gate に含めます。
+`axiom-report --check` と `index --check` は CLR-05 の full-package freshness gate です。
+どちらも source-free artifact generation boundary を保ち、source、replay、meta、theorem graph
+score、prompt metadata、AI traces を required input にしません。CLR-06 完了後は
+`publish-plan --check` も release artifact の freshness gate に含めます。
 
 ```sh
 npa package check --root . --json
@@ -414,13 +428,13 @@ npa package build-certs --root . --check --json
 npa package check-hashes --root . --json
 npa package verify-certs --root . --checker fast --json
 npa package verify-certs --root . --checker reference --json
-```
-
-CLR-05/CLR-06 後の release gate extension:
-
-```sh
 npa package axiom-report --root . --check --json
 npa package index --root . --check --json
+```
+
+CLR-06 後の release gate extension:
+
+```sh
 npa package publish-plan --root . --check --json
 ```
 
@@ -459,6 +473,9 @@ npa-mathlib/
 
 `replay.json` は任意です。
 AI proof search や tactic replay の再現性には有用ですが、checker は読まない前提にします。
+`generated/axiom-report.json` と `generated/theorem-index.json` も checker input ではありません。
+これらの生成・検査は source-free で、manifest、package lock、certificate artifacts、
+source-free verifier output、check mode の checked generated JSON だけを必要入力にします。
 
 ## 5.5 review policy
 
@@ -489,7 +506,41 @@ CI で見るべきもの:
 - theorem index が deterministic か
 ```
 
-## 5.6 registry
+## 5.6 CLR-06 publish-plan handoff
+
+CLR-06 `publish-plan` は CLR-05 が固定した package metadata を消費できます。ただし
+publish metadata も registry entry も trusted base ではなく、証明受理の根拠は canonical
+certificate と source-free checker verdict のままです。
+
+CLR-06 が使ってよい CLR-05 artifact fields:
+
+```text
+generated/axiom-report.json
+  schema = npa.package.axiom_report.v0.1
+  package, version, manifest, package_lock
+  policy.allow_custom_axioms, policy.allowed_axioms
+  modules[].module, origin, export_hash, certificate_hash, axiom_report_hash,
+  certificate_file_hash, direct_axioms, transitive_axioms, policy_status
+  checker_summaries[]
+  summary.*
+  package_axiom_report_hash
+
+generated/theorem-index.json
+  schema = npa.package.theorem_index.v0.1
+  package, version, manifest, package_lock, index_profile
+  entries[].global_ref, kind, statement.core_hash, statement.head,
+  statement.constants, modes, tags, axiom_dependencies,
+  module_axiom_report_hash, artifact.certificate
+  checker_summaries[]
+  summary.*
+  theorem_index_hash
+```
+
+CLR-06 may copy artifact paths, hashes, policy status, checker summaries, and theorem index
+entries into publish metadata. It must not require source, replay, meta, theorem graph score,
+prompt metadata, or AI traces to validate CLR-05 artifacts.
+
+## 5.7 registry
 
 最初は registry service を作らず、Git tag と release artifact だけでもよいです。
 ただし registry に将来移行できる metadata は初期から固定します。
@@ -564,6 +615,7 @@ M3: deterministic public artifacts and CI template
   -> CLR-05, CLR-07
      axiom report / theorem index、external theorem library CI templates。
      Base CI は full-package reference check を使い、changed-module selection は後続。
+     CLR-05 の詳細 breakdown は `doc/community-library-roadmap-clr-05-todo.md`。
 
 M4: publish metadata / registry seed
   -> CLR-06
@@ -598,8 +650,8 @@ reference-checker-only release として進められます。
 3. npa package build-certs --root . --check --json を実行する
 4. npa package check-hashes --root . --json を実行する
 5. npa package verify-certs --root . --checker reference --json を実行する
-6. CLR-05 後は npa package axiom-report --root . --check --json を実行する
-7. CLR-05 後は npa package index --root . --check --json を実行する
+6. npa package axiom-report --root . --check --json を実行する
+7. npa package index --root . --check --json を実行する
 8. CLR-06 後、release 前には npa package publish-plan --root . --check --json を実行する
 9. source / certificate / replay / meta / generated artifact の必要な差分を commit する
 10. PR を出す

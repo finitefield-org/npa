@@ -77,14 +77,23 @@ npa package check-hashes --root .
 ```
 
 このリポジトリ内での開発・検証では、Cargo package `npa-cli` から同じ command family を
-実行します。`npa-cli` が提供する installed binary name は `npa` です。CLR-04 の
-repository verification examples は次です。
+実行します。`npa-cli` が提供する installed binary name は `npa` です。repository
+verification examples は次です。
 
 ```sh
 cargo run -p npa-cli -- package check --root proofs
 cargo run -p npa-cli -- package build-certs --root proofs --check
 cargo run -p npa-cli -- package verify-certs --root proofs --checker reference
 cargo run -p npa-cli -- package check-hashes --root proofs
+cargo run -p npa-cli -- package axiom-report --root proofs --check
+cargo run -p npa-cli -- package index --root proofs --check
+```
+
+Contributor-facing examples use the installed `npa` binary:
+
+```sh
+npa package axiom-report --root . --check
+npa package index --root . --check
 ```
 
 source-reading boundary は command ごとに違います。
@@ -103,15 +112,28 @@ package check-hashes
 package verify-certs
   source-free verification path。`generated/package-lock.json` と certificate artifacts を読み、
   `.npa` source、replay、meta、theorem index、AI trace、out-of-package state は checker input にしない。
+
+package axiom-report
+  `npa.package.axiom_report.v0.1` の package metadata を生成または `--check` する。
+  manifest、package lock、certificate artifacts、source-free verifier output から導出し、
+  `.npa` source、replay、meta、theorem graph score、prompt metadata、AI trace は必要入力にしない。
+
+package index
+  `npa.package.theorem_index.v0.1` の theorem search / documentation metadata を生成または `--check` する。
+  certificate-derived data だけを使い、pretty source statement、replay、meta、prompt metadata、
+  theorem graph score、AI trace から定理情報を推測しない。
 ```
 
-CLI output、package lock、diagnostics は CI / review 用の deterministic metadata であり、
-proof evidence ではありません。証明の受理根拠は canonical `.npcert` bytes と、
+CLI output、package lock、diagnostics、`generated/axiom-report.json`、
+`generated/theorem-index.json` は CI / review / search 用の deterministic metadata,
+not proof evidence です。証明の受理根拠は canonical `.npcert` bytes と、
 選択された source-free checker / kernel verifier の deterministic verdict です。
+`npa.package.axiom_report.v0.1` は package-level schema であり、
+`npa.independent-checker.axiom_report.v1` や Std-only axiom report schema とは別物です。
+`npa.package.theorem_index.v0.1` も Std-only theorem index schema とは別物です。
 
-`npa package axiom-report` と `npa package index` は CLR-05、`npa package publish-plan` は
-CLR-06 の担当です。CLR-04 の package commands は explicit local package root だけを対象にし、
-network access や binary cache lookup を行いません。
+`npa package publish-plan` は CLR-06 の担当です。package commands は explicit local
+package root だけを対象にし、network access や binary cache lookup を行いません。
 
 `npa-kernel`、`npa-cert`、`npa-checker-ref` は package CLI の責務を持ちません。
 package command の filesystem access、registry metadata handling、CI orchestration は

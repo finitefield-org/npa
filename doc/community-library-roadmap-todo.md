@@ -352,7 +352,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-05 Generate Deterministic Axiom Report And Theorem Index Artifacts
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04
 - Inputs:
   - `doc/community-library-roadmap-clr-05-todo.md`
@@ -391,6 +391,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - The theorem index is search/documentation metadata, not proof acceptance evidence.
   - `axiom-report` and `index` are full-package commands in CLR-05; changed-module selection remains later CI work.
   - Generated axiom report and theorem index artifacts must not require `.npa` source, replay, meta, theorem graph score, prompt metadata, or AI traces.
+  - CLR-06 `publish-plan` may consume CLR-05 package metadata fields, hashes, checker summaries, policy status, theorem index entries, and artifact paths, but generated CLR-05 metadata remains metadata, not proof evidence.
 
 ### CLR-06 Generate Publish Metadata And Registry Seed Artifacts
 
