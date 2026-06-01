@@ -143,16 +143,13 @@ crates/npa-api
 ## 4.1 NPA 本体側の未完了 / target integration
 
 すでに certificate / fast verifier / reference checker / Machine API substrate はあります。
-一方で、公開 ecosystem の基盤としては次がまだ完了していません。
+CLR-06 完了時点では、package manifest、package CLI、hash-pinned imports、
+source-free package verification、axiom report、theorem index、publish metadata も
+local package contract として実装済みです。
+
+公開 ecosystem の残り target integration は次です。
 
 ```text
-- 汎用 `npa.package.v0.1` data model / validator
-- 外部 package root を入力に取る package CLI
-- 外部 package import lock / import closure resolver
-- package 単位の source-free checker runner
-- package 単位の deterministic axiom report artifact
-- package 単位の deterministic theorem index artifact
-- package release / publish metadata generator
 - external checker を required にする production high-trust workflow
 - `verified_high_trust` artifact
 - standalone `npa-checker-ext` binary
@@ -174,40 +171,44 @@ registry server より先に必要な blocker は次です。
 
 ```text
 1. package manifest
-   外部 repo が module graph、source path、certificate path、imports、expected hashes、
-   axiom policy を宣言できる標準形式がない。
+   `npa.package.v0.1` で module graph、source path、certificate path、imports、
+   expected hashes、axiom policy を宣言する標準形式は固定済み。external dogfood repo
+   で使うことが次の検証対象。
 
 2. package CLI
    `npa package check`、`build-certs`、`verify-certs`、`check-hashes`、
-   `axiom-report`、`index` は実装済み。`publish-plan` と外部 library CI template は
-   後続 milestone。
+   `axiom-report`、`index`、`publish-plan` は実装済み。外部 library CI template は
+   CLR-07 の後続 milestone。
 
 3. CI contract
    theorem-only PR で何を required にし、release / high-trust で何を required にするかを
    外部 repo 用 workflow として固定できていない。
 
 4. external package import resolution
-   package 間 import を `module + export_hash + certificate_hash` で lock し、
-   source-free checker に渡す一般機構がない。
+   package 間 import は `module + export_hash + certificate_hash` で lock する。
+   CLR-09 で seed release artifact から downstream fixture に取り込む実績を作る。
 
 5. source-free package verification
-   単体 certificate の checker はあるが、package graph 全体を dependency-topological order で
-   source なし検査する CLI contract がない。
+   package graph 全体を dependency-topological order で source なし検査する CLI contract は
+   `npa package verify-certs` で実装済み。external repo CI template への組み込みは CLR-07。
 
 6. deterministic public artifacts
    theorem index、axiom report、package lock、publish metadata を registry / docs / downstream package 用に
-   deterministic artifact として固定できていない。
+   deterministic artifact として固定する。CLR-06 で publish metadata は
+   `generated/publish-plan.json` として固定済み。
 
 7. publish metadata
    module ごとの `export_hash`、`certificate_hash`、`axiom_report_hash`、checker result、
-   import closure を registry entry として出す schema / generator がない。
+   import closure を registry entry として出す schema / generator は CLR-06 が提供する。
+   registry server と dependency solver はまだ作らない。
 
 8. external dogfood repo
    `npa-mathlib-seed` のような別 repo で、fresh checkout から build / verify / CI を完走する実績がない。
 ```
 
-これらがない状態で registry だけを作ると、registry が「最新 source や最新 package を便利に配る層」になり、
-NPA の certificate-first な信頼境界が曖昧になります。
+残りの CI / dogfood / registry integration を飛ばして registry server だけを作ると、
+registry が「最新 source や最新 package を便利に配る層」になり、NPA の
+certificate-first な信頼境界が曖昧になります。
 
 ## 4.3 Registry 前に blocker ではないもの
 
@@ -353,7 +354,7 @@ npa package axiom-report
 npa package index
 ```
 
-後続 milestone の command:
+CLR-06 の release metadata command:
 
 ```sh
 npa package publish-plan
@@ -393,13 +394,19 @@ npa package index
   package theorem index schema は Std-only theorem index schema とは別物。
 
 npa package publish-plan
-  CLR-06。publish metadata と artifact list を出す。
+  CLR-06。`npa.package.publish_plan.v0.1` の publish metadata と artifact list を出す。
+  `npa.registry.module.v0.1` theorem package module registry seed entries、
+  downstream import bundle、checksum-only SHA-256 signature policy を含む。
+  registry server、registry URL、network fetch、latest-version resolution、upload、signing は行わない。
 ```
 
 CLI は非信頼 orchestration layer です。CLI output、diagnostics、package lock、generated
-axiom report、generated theorem index は review / CI / search 用の deterministic
+axiom report、generated theorem index、generated publish plan は review / CI / search / release 用の deterministic
 metadata, not proof evidence です。
 証明受理の根拠は canonical `.npcert` と kernel / source-free checker verdict に限定します。
+`npa.registry.module.v0.1` は theorem package registry metadata であり、
+`npa.independent-checker.checker_binary_registry.v1` とは別物です。registry metadata は
+checker input ではありません。
 kernel crate に filesystem、network、registry lookup を入れてはいけません。package commands は
 explicit local package root だけを対象にし、network access や binary cache lookup を行いません。
 
@@ -419,8 +426,8 @@ npa package index --root . --check --json
 
 `axiom-report --check` と `index --check` は CLR-05 の full-package freshness gate です。
 どちらも source-free artifact generation boundary を保ち、source、replay、meta、theorem graph
-score、prompt metadata、AI traces を required input にしません。CLR-06 完了後は
-`publish-plan --check` も release artifact の freshness gate に含めます。
+score、prompt metadata、AI traces を required input にしません。CLR-06 の
+`publish-plan --check` は release artifact の freshness gate に含めます。
 
 ```sh
 npa package check --root . --json
@@ -432,7 +439,7 @@ npa package axiom-report --root . --check --json
 npa package index --root . --check --json
 ```
 
-CLR-06 後の release gate extension:
+CLR-06 release gate extension:
 
 ```sh
 npa package publish-plan --root . --check --json
@@ -540,6 +547,24 @@ CLR-06 may copy artifact paths, hashes, policy status, checker summaries, and th
 entries into publish metadata. It must not require source, replay, meta, theorem graph score,
 prompt metadata, or AI traces to validate CLR-05 artifacts.
 
+CLR-06 output is helper metadata, not proof evidence. `generated/publish-plan.json` uses
+`npa.package.publish_plan.v0.1`, embeds `npa.registry.module.v0.1` theorem package module seed
+entries, and records a checksum-only SHA-256 MVP signature policy. It must remain distinct from
+Phase 8 independent checker binary registry metadata such as
+`npa.independent-checker.checker_binary_registry.v1`. Downstream packages may use the
+downstream import bundle to copy package, version, module, path, `export_hash`, and
+`certificate_hash` pins, but they still rerun source-free local verification from certificate
+bytes.
+
+Handoff boundaries:
+
+```text
+CLR-07 may add an optional publish-plan check step to release-template variants.
+Base CLR-07 templates still avoid registry/network/latest/upload/sign behavior.
+CLR-09 consumes the publish plan, release artifact list, registry seed entries,
+and downstream import bundle for the seed library release flow.
+```
+
 ## 5.7 registry
 
 最初は registry service を作らず、Git tag と release artifact だけでもよいです。
@@ -565,6 +590,10 @@ artifact_hashes = release artifact file hashes
 
 registry は便利な配布・検索の層であり、trusted base ではありません。
 registry metadata は、local checker が certificate を再検査するための入力補助として扱います。
+`npa.registry.module.v0.1` は theorem package module metadata であり、
+`npa.independent-checker.checker_binary_registry.v1` は external checker binary selection /
+runner policy metadata です。この 2 つは相互に代替できません。registry seed だけで
+import を承認せず、downstream package は source-free checker をローカルに再実行します。
 
 ---
 

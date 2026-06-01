@@ -395,7 +395,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-06 Generate Publish Metadata And Registry Seed Artifacts
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05
 - Inputs:
   - `doc/community-library-roadmap-clr-06-todo.md`
@@ -428,6 +428,10 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - This milestone still does not implement a registry server.
   - MVP signature policy is checksum-only SHA-256; cryptographic signing remains target integration.
   - Publish metadata and registry seed entries are helper data, not proof acceptance evidence.
+  - Contributor docs include `npa package publish-plan --root . --check` as the installed-binary
+    check-mode example.
+  - `npa.registry.module.v0.1` is theorem package module metadata, not
+    `npa.independent-checker.checker_binary_registry.v1` checker binary registry metadata.
 
 ### CLR-07 Add External Theorem Library CI Template
 
@@ -528,7 +532,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Release artifact set including package lock, axiom report, theorem index, and `generated/publish-plan.json`.
   - Documented contributor workflow for theorem-only PRs.
 - Acceptance criteria:
-  - Fresh checkout of the seed library can build certificates, check hashes, run source-free reference verification, check axiom report, and check theorem index.
+  - Fresh checkout of the seed library can build certificates, check hashes, run source-free reference verification, check axiom report, check theorem index, and check publish-plan metadata.
   - Updating a theorem in the seed library does not require modifying `npa` kernel / checker / certificate code.
   - Downstream package import uses hash-pinned artifacts, not implicit latest registry lookup.
   - The seed library can publish release artifacts usable by another package without a registry server.

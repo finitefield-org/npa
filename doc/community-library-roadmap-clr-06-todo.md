@@ -898,7 +898,7 @@ remaining registry-server requirements
 
 ### CLR-06-08 Update Documentation And Handoff To CLR-07/09
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-07
 - Inputs:
   - `doc/community-library-roadmap-todo.md`

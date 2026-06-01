@@ -202,6 +202,12 @@ Current bundles:
 - `generated/theorem-index.json`: CLR-05 `npa.package.theorem_index.v0.1` fixture derived from
   checked certificates for theorem search, documentation, and later registry metadata. It is
   metadata, not proof evidence, and it is distinct from Std-only theorem index schemas.
+- `generated/publish-plan.json`: CLR-06 `npa.package.publish_plan.v0.1` fixture derived from
+  the manifest, package lock, axiom report, theorem index, certificate artifacts, and source-free
+  checker summaries. It records release artifact hashes, `npa.registry.module.v0.1` theorem
+  package module registry seed entries, downstream import bundle data, and checksum-only SHA-256
+  signature policy. It is release metadata, not proof evidence, and it is distinct from
+  `npa.independent-checker.checker_binary_registry.v1`.
 
 Package fixture handoff data for CLR-03:
 
@@ -238,6 +244,7 @@ Package fixture handoff data for CLR-03:
   cargo run -p npa-cli -- package check-hashes --root proofs
   cargo run -p npa-cli -- package axiom-report --root proofs --check
   cargo run -p npa-cli -- package index --root proofs --check
+  cargo run -p npa-cli -- package publish-plan --root proofs --check
   ```
 
 - The equivalent contributor-facing commands use the installed `npa` binary:
@@ -249,6 +256,7 @@ Package fixture handoff data for CLR-03:
   npa package check-hashes --root .
   npa package axiom-report --root . --check
   npa package index --root . --check
+  npa package publish-plan --root . --check
   ```
 
 - `package check` is a manifest metadata gate. `package build-certs` may read local
@@ -261,6 +269,12 @@ Package fixture handoff data for CLR-03:
   package metadata, the package lock, certificate artifacts, and checked generated artifacts in
   `--check` mode. They do not require source, replay, meta, theorem graph score, prompt metadata,
   AI traces, or out-of-package state.
+- `package publish-plan` is the CLR-06 release metadata command. It reads package metadata,
+  generated package artifacts, certificate artifacts, checker summaries, and the checked
+  `generated/publish-plan.json` in `--check` mode. It does not contact a registry server, resolve
+  latest versions, read registry URLs, upload release files, or sign artifacts. The signature
+  policy is checksum-only SHA-256 in CLR-06; cryptographic signing remains later release workflow
+  work.
 - CLR-04 `npa package verify-certs` wraps
   `npa_package::build_package_lock_from_package_root`,
   `npa_package::parse_package_lock_json`, `npa_api::verify_package_fast_source_free`,
@@ -271,7 +285,9 @@ Package fixture handoff data for CLR-03:
 - Package CLI output and generated package metadata are review/CI diagnostics, not proof
   evidence. Accepted proof evidence remains canonical `.npcert` bytes plus the selected
   checker verdict.
-- `npa package publish-plan` belongs to CLR-06 and is not implemented by CLR-05.
+- CLR-06 publish metadata and `npa.registry.module.v0.1` seed entries are helper data for release
+  review, search, and downstream hash-pinned imports. They are not checker input and do not replace
+  source-free local verification in downstream packages.
 - Raw `npa-checker-ref` CLI import scanning is not enough for high-trust package graph verification
   by itself. Package verification also needs the CLR-03 package lock, pinned import identity,
   dependency-topological order, and imports accepted earlier by the same checker run.

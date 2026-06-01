@@ -87,6 +87,7 @@ cargo run -p npa-cli -- package verify-certs --root proofs --checker reference
 cargo run -p npa-cli -- package check-hashes --root proofs
 cargo run -p npa-cli -- package axiom-report --root proofs --check
 cargo run -p npa-cli -- package index --root proofs --check
+cargo run -p npa-cli -- package publish-plan --root proofs --check
 ```
 
 Contributor-facing examples use the installed `npa` binary:
@@ -94,6 +95,7 @@ Contributor-facing examples use the installed `npa` binary:
 ```sh
 npa package axiom-report --root . --check
 npa package index --root . --check
+npa package publish-plan --root . --check
 ```
 
 source-reading boundary は command ごとに違います。
@@ -122,18 +124,28 @@ package index
   `npa.package.theorem_index.v0.1` の theorem search / documentation metadata を生成または `--check` する。
   certificate-derived data だけを使い、pretty source statement、replay、meta、prompt metadata、
   theorem graph score、AI trace から定理情報を推測しない。
+
+package publish-plan
+  `npa.package.publish_plan.v0.1` の release metadata を生成または `--check` する。
+  artifact file hashes、`npa.registry.module.v0.1` module registry seed entries、
+  downstream import bundle、checksum-only SHA-256 signature policy を記録する。
+  registry server、registry URL、network fetch、latest-version resolution、upload、signing は行わない。
 ```
 
 CLI output、package lock、diagnostics、`generated/axiom-report.json`、
-`generated/theorem-index.json` は CI / review / search 用の deterministic metadata,
+`generated/theorem-index.json`、`generated/publish-plan.json` は CI / review / search / release 用の deterministic metadata,
 not proof evidence です。証明の受理根拠は canonical `.npcert` bytes と、
 選択された source-free checker / kernel verifier の deterministic verdict です。
 `npa.package.axiom_report.v0.1` は package-level schema であり、
 `npa.independent-checker.axiom_report.v1` や Std-only axiom report schema とは別物です。
 `npa.package.theorem_index.v0.1` も Std-only theorem index schema とは別物です。
+`npa.registry.module.v0.1` は theorem package module metadata であり、
+`npa.independent-checker.checker_binary_registry.v1` とは別物です。registry seed entries
+は checker input ではなく、downstream package は certificate bytes と hash pins を取得した後も
+source-free local verification を再実行します。
 
-`npa package publish-plan` は CLR-06 の担当です。package commands は explicit local
-package root だけを対象にし、network access や binary cache lookup を行いません。
+`npa package publish-plan` は CLR-06 の release metadata command です。package commands は
+explicit local package root だけを対象にし、network access や binary cache lookup を行いません。
 
 `npa-kernel`、`npa-cert`、`npa-checker-ref` は package CLI の責務を持ちません。
 package command の filesystem access、registry metadata handling、CI orchestration は
