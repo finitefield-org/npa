@@ -16201,16 +16201,8 @@ fn raw_optional_error(
             ));
         }
         error.reason_code = Some(reason_code);
-    } else if duplicate_member(error_members, "reason_code")
-        || error_members
-            .iter()
-            .any(|member| member.key() == "reason_code")
-    {
-        return Err(IndependentCheckerRawResultSchemaError::new(
-            "checker_raw.error.reason_code",
-            "absent_for_error_kind",
-            "forbidden_field",
-        ));
+    } else if let Some(reason_code) = raw_optional_reason_code(error_members)? {
+        error.reason_code = Some(reason_code);
     }
     if let Some(declaration) = raw_optional_module(
         error_members,
@@ -16311,6 +16303,47 @@ fn raw_optional_core_path(
     Ok(Some(out))
 }
 
+fn raw_optional_reason_code(
+    members: &[JsonMember<'_>],
+) -> Result<Option<String>, IndependentCheckerRawResultSchemaError> {
+    if duplicate_member(members, "reason_code") {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == "reason_code")
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "checker_raw_error_reason_code",
+            "null_not_allowed",
+        ));
+    }
+    let Some(reason_code) = value.string_value() else {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "checker_raw_error_reason_code",
+            "wrong_type",
+        ));
+    };
+    if !independent_checker_valid_checker_reason_code(reason_code) {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "checker_raw_error_reason_code",
+            "invalid_name_format",
+        ));
+    }
+    Ok(Some(reason_code.to_owned()))
+}
+
 fn raw_optional_u64(
     members: &[JsonMember<'_>],
     name: &str,
@@ -16363,6 +16396,7 @@ fn independent_checker_raw_checker_error_kind_allowed(kind: &str) -> bool {
         "certificate_decode_error"
             | "noncanonical_encoding"
             | "unsupported_schema_version"
+            | "unsupported_core_feature"
             | "import_not_found"
             | "import_hash_mismatch"
             | "certificate_hash_mismatch"
@@ -28217,6 +28251,10 @@ fn independent_checker_valid_checker_id(value: &str) -> bool {
     })
 }
 
+fn independent_checker_valid_checker_reason_code(value: &str) -> bool {
+    independent_checker_valid_checker_id(value)
+}
+
 fn independent_checker_visible_ascii_nonempty(value: &str) -> bool {
     !value.is_empty() && value.bytes().all(|byte| (0x21..=0x7e).contains(&byte))
 }
@@ -29925,6 +29963,183 @@ mod tests {
     }
 
     #[test]
+    fn m8_external_checker_raw_results_adopt_and_reject_runner_owned_raw_kinds() {
+        let policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let materialized = independent_checker_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            independent_checker_file_hash(imports_json.as_bytes()),
+            "external",
+            "mchkreq_m8_external_raw",
+            "build/check-requests/Std.Nat.external.json",
+            None,
+        )
+        .unwrap();
+
+        let checked_raw = format!(
+            r#"{{
+              "schema":"npa.independent-checker.checker_raw_result.v1",
+              "checker_id":"npa-checker-ext",
+              "checker_version":"0.1.0",
+              "checker_build_hash":"{}",
+              "status":"checked",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "export_hash":"{}",
+              "axiom_report_hash":"{}"
+            }}"#,
+            hash_wire(15),
+            hash_wire(70),
+            hash_wire(90),
+            hash_wire(91)
+        );
+        let checked = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_external_checked_raw".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(20),
+                stdout: checked_raw.into_bytes(),
+                stderr: b"human-only diagnostic".to_vec(),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            checked.status,
+            IndependentCheckerMachineCheckStatus::Checked
+        );
+        assert_eq!(checked.error, None);
+        assert_eq!(checked.checker.id.as_deref(), Some("npa-checker-ext"));
+        assert_eq!(checked.checker.version.as_deref(), Some("0.1.0"));
+        assert_eq!(checked.checker.build_hash, Some(test_hash(15)));
+        assert_eq!(checked.certificate_hash, Some(test_hash(70)));
+        assert_eq!(checked.export_hash, Some(test_hash(90)));
+        assert_eq!(checked.axiom_report_hash, Some(test_hash(91)));
+        assert_eq!(
+            checked.diagnostics,
+            vec!["checker_process:stderr_present".to_owned()]
+        );
+        let checked_summary =
+            parse_independent_checker_machine_check_result_summary(&checked.canonical_json(), "$")
+                .unwrap();
+        assert_eq!(checked_summary.result_hash, checked.result_hash());
+        assert_eq!(
+            checked_summary.run_artifact_hash,
+            checked.run_artifact_hash()
+        );
+
+        let unsupported_raw = format!(
+            r#"{{
+              "schema":"npa.independent-checker.checker_raw_result.v1",
+              "checker_id":"npa-checker-ext",
+              "checker_version":"0.1.0",
+              "checker_build_hash":"{}",
+              "status":"failed",
+              "error":{{
+                "kind":"unsupported_core_feature",
+                "reason_code":"unsupported_core_feature",
+                "section":"core_features",
+                "offset":17
+              }}
+            }}"#,
+            hash_wire(15)
+        );
+        let unsupported = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_external_unsupported_raw".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::exited(1),
+                resource_usage: m3_resource_usage(21),
+                stdout: unsupported_raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let unsupported_error = unsupported.error.as_ref().unwrap();
+        assert_eq!(
+            unsupported.status,
+            IndependentCheckerMachineCheckStatus::Failed
+        );
+        assert_eq!(unsupported_error.kind, "unsupported_core_feature");
+        assert_eq!(
+            unsupported_error.reason_code.as_deref(),
+            Some("unsupported_core_feature")
+        );
+        assert_eq!(unsupported_error.section.as_deref(), Some("core_features"));
+        assert_eq!(unsupported_error.offset, Some(17));
+        assert_eq!(unsupported.checker.id.as_deref(), Some("npa-checker-ext"));
+        assert_eq!(unsupported.checker.build_hash, Some(test_hash(15)));
+        assert_eq!(unsupported.certificate_hash, None);
+        let unsupported_summary = parse_independent_checker_machine_check_result_summary(
+            &unsupported.canonical_json(),
+            "$",
+        )
+        .unwrap();
+        assert_eq!(unsupported_summary.result_hash, unsupported.result_hash());
+        assert_eq!(
+            unsupported_summary.run_artifact_hash,
+            unsupported.run_artifact_hash()
+        );
+
+        for kind in ["policy_failure", "timeout", "resource_exhausted"] {
+            let raw = format!(
+                r#"{{
+                  "schema":"npa.independent-checker.checker_raw_result.v1",
+                  "checker_id":"npa-checker-ext",
+                  "checker_version":"0.1.0",
+                  "checker_build_hash":"{}",
+                  "status":"failed",
+                  "error":{{"kind":"{}"}}
+                }}"#,
+                hash_wire(15),
+                kind
+            );
+            let result = independent_checker_machine_check_run(
+                &materialized.request,
+                &policy,
+                IndependentCheckerRunObservation {
+                    result_id: format!("mchkres_m8_external_forbidden_{kind}"),
+                    attempt: 1,
+                    runner: m3_runner(),
+                    process: IndependentCheckerMachineCheckProcess::exited(1),
+                    resource_usage: m3_resource_usage(22),
+                    stdout: raw.into_bytes(),
+                    stderr: Vec::new(),
+                },
+            )
+            .unwrap();
+            let error = result.error.as_ref().unwrap();
+            assert_eq!(result.status, IndependentCheckerMachineCheckStatus::Failed);
+            assert_eq!(error.kind, "checker_internal_error");
+            assert_eq!(
+                error.reason_code.as_deref(),
+                Some("malformed_rejection_output")
+            );
+            assert_eq!(error.field.as_deref(), Some("checker_raw.error.kind"));
+            assert_eq!(
+                error.expected_value.as_deref(),
+                Some("checker_raw_error_kind")
+            );
+            assert_eq!(error.actual_value.as_deref(), Some("invalid_enum"));
+        }
+    }
+
+    #[test]
     fn p8h14_ci_command_sets_fix_mode_scope_and_pr_reference_gate() {
         let pr_commands = independent_checker_ci_command_set(IndependentCheckerTrustMode::Pr);
         for command in [
@@ -30771,7 +30986,7 @@ mod tests {
               "certificate_hash":"{}",
               "error":{{
                 "kind":"type_mismatch",
-                "reason_code":"checker_reported_internal_error"
+                "reason_code":"Bad Reason"
               }}
             }}"#,
             hash_wire(11),
@@ -30779,8 +30994,8 @@ mod tests {
         );
         let error = parse_independent_checker_raw_result(&raw).unwrap_err();
         assert_eq!(error.field, "checker_raw.error.reason_code");
-        assert_eq!(error.expected_value, "absent_for_error_kind");
-        assert_eq!(error.actual_value, "forbidden_field");
+        assert_eq!(error.expected_value, "checker_raw_error_reason_code");
+        assert_eq!(error.actual_value, "invalid_name_format");
     }
 
     #[test]
