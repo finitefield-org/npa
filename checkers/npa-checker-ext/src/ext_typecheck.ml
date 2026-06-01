@@ -152,7 +152,7 @@ let rec subst_levels_term params levels term =
           subst_levels_term params levels value,
           subst_levels_term params levels body )
 
-let rec shift section offset term amount cutoff =
+let rec shift_at section offset term amount cutoff =
   match term with
   | Ext_term.Sort _ | Ext_term.Const _ -> Ok term
   | Ext_term.BVar index ->
@@ -163,24 +163,28 @@ let rec shift section offset term amount cutoff =
         if shifted < 0 then error section offset Invalid_bvar
         else Ok (Ext_term.BVar shifted)
   | Ext_term.App (fn, arg) ->
-      bind (shift section offset fn amount cutoff) (fun shifted_fn ->
-          bind (shift section offset arg amount cutoff) (fun shifted_arg ->
+      bind (shift_at section offset fn amount cutoff) (fun shifted_fn ->
+          bind (shift_at section offset arg amount cutoff) (fun shifted_arg ->
               Ok (Ext_term.App (shifted_fn, shifted_arg))))
   | Ext_term.Lam (ty, body) ->
-      bind (shift section offset ty amount cutoff) (fun shifted_ty ->
-          bind (shift section offset body amount (cutoff + 1)) (fun shifted_body ->
+      bind (shift_at section offset ty amount cutoff) (fun shifted_ty ->
+          bind (shift_at section offset body amount (cutoff + 1)) (fun shifted_body ->
               Ok (Ext_term.Lam (shifted_ty, shifted_body))))
   | Ext_term.Pi (ty, body) ->
-      bind (shift section offset ty amount cutoff) (fun shifted_ty ->
-          bind (shift section offset body amount (cutoff + 1)) (fun shifted_body ->
+      bind (shift_at section offset ty amount cutoff) (fun shifted_ty ->
+          bind (shift_at section offset body amount (cutoff + 1)) (fun shifted_body ->
               Ok (Ext_term.Pi (shifted_ty, shifted_body))))
   | Ext_term.Let (ty, value, body) ->
-      bind (shift section offset ty amount cutoff) (fun shifted_ty ->
-          bind (shift section offset value amount cutoff) (fun shifted_value ->
-              bind (shift section offset body amount (cutoff + 1)) (fun shifted_body ->
+      bind (shift_at section offset ty amount cutoff) (fun shifted_ty ->
+          bind (shift_at section offset value amount cutoff) (fun shifted_value ->
+              bind (shift_at section offset body amount (cutoff + 1)) (fun shifted_body ->
                   Ok (Ext_term.Let (shifted_ty, shifted_value, shifted_body)))))
 
-let rec substitute section offset term target replacement =
+let shift section offset term amount cutoff =
+  if cutoff < 0 then error section offset Invalid_bvar
+  else shift_at section offset term amount cutoff
+
+let rec substitute_at section offset term target replacement =
   match term with
   | Ext_term.Sort _ | Ext_term.Const _ -> Ok term
   | Ext_term.BVar index ->
@@ -189,23 +193,27 @@ let rec substitute section offset term target replacement =
       else if index > target then Ok (Ext_term.BVar (index - 1))
       else Ok term
   | Ext_term.App (fn, arg) ->
-      bind (substitute section offset fn target replacement) (fun substituted_fn ->
-          bind (substitute section offset arg target replacement) (fun substituted_arg ->
+      bind (substitute_at section offset fn target replacement) (fun substituted_fn ->
+          bind (substitute_at section offset arg target replacement) (fun substituted_arg ->
               Ok (Ext_term.App (substituted_fn, substituted_arg))))
   | Ext_term.Lam (ty, body) ->
-      bind (substitute section offset ty target replacement) (fun substituted_ty ->
-          bind (substitute section offset body (target + 1) replacement)
+      bind (substitute_at section offset ty target replacement) (fun substituted_ty ->
+          bind (substitute_at section offset body (target + 1) replacement)
             (fun substituted_body -> Ok (Ext_term.Lam (substituted_ty, substituted_body))))
   | Ext_term.Pi (ty, body) ->
-      bind (substitute section offset ty target replacement) (fun substituted_ty ->
-          bind (substitute section offset body (target + 1) replacement)
+      bind (substitute_at section offset ty target replacement) (fun substituted_ty ->
+          bind (substitute_at section offset body (target + 1) replacement)
             (fun substituted_body -> Ok (Ext_term.Pi (substituted_ty, substituted_body))))
   | Ext_term.Let (ty, value, body) ->
-      bind (substitute section offset ty target replacement) (fun substituted_ty ->
-          bind (substitute section offset value target replacement) (fun substituted_value ->
-              bind (substitute section offset body (target + 1) replacement)
+      bind (substitute_at section offset ty target replacement) (fun substituted_ty ->
+          bind (substitute_at section offset value target replacement) (fun substituted_value ->
+              bind (substitute_at section offset body (target + 1) replacement)
                 (fun substituted_body ->
                   Ok (Ext_term.Let (substituted_ty, substituted_value, substituted_body)))))
+
+let substitute section offset term target replacement =
+  if target < 0 then error section offset Invalid_bvar
+  else substitute_at section offset term target replacement
 
 let instantiate section offset body value = substitute section offset body 0 value
 

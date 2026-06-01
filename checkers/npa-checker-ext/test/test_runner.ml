@@ -1507,6 +1507,15 @@ let assert_infers_term label expected result =
         (label ^ ": unexpected typecheck error "
        ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
 
+let assert_term_result label expected result =
+  match result with
+  | Ok actual ->
+      if actual <> expected then failwith (label ^ ": unexpected term result")
+  | Error error ->
+      failwith
+        (label ^ ": unexpected typecheck error "
+       ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -2769,6 +2778,109 @@ let run_type_declarations_tests () =
     "universe_inconsistency" "unresolved_metavariable"
     (Ext_typecheck.check_declarations [ unresolved_meta_decl ])
 
+let run_subst_tests () =
+  let section = Ext_bytes.Declarations in
+  let offset = 17 in
+  let shift term amount cutoff =
+    Ext_typecheck.shift section offset term amount cutoff
+  in
+  let substitute term target replacement =
+    Ext_typecheck.substitute section offset term target replacement
+  in
+  let instantiate body value = Ext_typecheck.instantiate section offset body value in
+  let nested =
+    Ext_term.Lam
+      ( Ext_term.BVar 1,
+        Ext_term.Pi
+          ( Ext_term.App (Ext_term.BVar 2, Ext_term.BVar 0),
+            Ext_term.Let
+              ( Ext_term.BVar 3,
+                Ext_term.BVar 1,
+                Ext_term.App (Ext_term.BVar 4, Ext_term.BVar 0) ) ) )
+  in
+  let shifted_nested =
+    Ext_term.Lam
+      ( Ext_term.BVar 2,
+        Ext_term.Pi
+          ( Ext_term.App (Ext_term.BVar 3, Ext_term.BVar 0),
+            Ext_term.Let
+              ( Ext_term.BVar 4,
+                Ext_term.BVar 1,
+                Ext_term.App (Ext_term.BVar 5, Ext_term.BVar 0) ) ) )
+  in
+  assert_term_result "subst shifts nested binders by Rust reference rules"
+    shifted_nested (shift nested 1 0);
+  assert_term_result "subst shift round trip preserves nested binders" nested
+    (match shift nested 1 0 with
+    | Error error -> Error error
+    | Ok shifted -> shift shifted (-1) 0);
+
+  let replacement = Ext_term.App (Ext_term.BVar 0, Ext_term.BVar 2) in
+  assert_term_result "subst app replaces both boundaries"
+    (Ext_term.App
+       ( replacement,
+         Ext_term.App (replacement, Ext_term.BVar 0) ))
+    (substitute
+       (Ext_term.App (Ext_term.BVar 0, Ext_term.App (Ext_term.BVar 0, Ext_term.BVar 1)))
+       0 replacement);
+  assert_term_result "subst lam preserves bound bvar and lifts replacement"
+    (Ext_term.Lam
+       ( replacement,
+         Ext_term.App
+           ( Ext_term.App (Ext_term.BVar 1, Ext_term.BVar 3),
+             Ext_term.BVar 0 ) ))
+    (substitute
+       (Ext_term.Lam
+          ( Ext_term.BVar 0,
+            Ext_term.App (Ext_term.BVar 1, Ext_term.BVar 0) ))
+       0 replacement);
+  assert_term_result "subst pi preserves bound bvar and lifts replacement"
+    (Ext_term.Pi
+       ( replacement,
+         Ext_term.App
+           ( Ext_term.BVar 0,
+             Ext_term.App (Ext_term.BVar 1, Ext_term.BVar 3) ) ))
+    (substitute
+       (Ext_term.Pi
+          ( Ext_term.BVar 0,
+            Ext_term.App (Ext_term.BVar 0, Ext_term.BVar 1) ))
+       0 replacement);
+  assert_term_result "subst let preserves body binder boundary"
+    (Ext_term.Let
+       ( replacement,
+         replacement,
+         Ext_term.App
+           ( Ext_term.App (Ext_term.BVar 1, Ext_term.BVar 3),
+             Ext_term.BVar 0 ) ))
+    (substitute
+       (Ext_term.Let
+          ( Ext_term.BVar 0,
+            Ext_term.BVar 0,
+            Ext_term.App (Ext_term.BVar 1, Ext_term.BVar 0) ))
+       0 replacement);
+  assert_term_result "subst instantiate removes the top binder"
+    (Ext_term.App (Ext_term.BVar 1, Ext_term.BVar 1))
+    (instantiate
+       (Ext_term.App (Ext_term.BVar 2, Ext_term.BVar 0))
+       (Ext_term.BVar 1));
+
+  assert_typecheck_ok "subst preserves well-scoped beta body after instantiate"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context
+       (Ext_term.Let (Ext_env.nat, Ext_env.nat_zero, Ext_term.BVar 0))
+       Ext_env.nat);
+  assert_typecheck_rejects "subst rejects negative bvar before reduction"
+    "type_mismatch" "invalid_bvar"
+    (shift (Ext_term.BVar (-1)) 1 0);
+  assert_typecheck_rejects "subst rejects negative shift result"
+    "type_mismatch" "invalid_bvar"
+    (shift (Ext_term.BVar 0) (-1) 0);
+  assert_typecheck_rejects "subst rejects negative cutoff"
+    "type_mismatch" "invalid_bvar"
+    (shift (Ext_term.BVar 0) 1 (-1));
+  assert_typecheck_rejects "subst rejects negative target"
+    "type_mismatch" "invalid_bvar"
+    (substitute (Ext_term.BVar 0) (-1) Ext_env.nat_zero)
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -2959,6 +3071,7 @@ let () =
                "import-normal";
                "import-store";
                "sha256";
+               "subst";
                "type-core";
                "type-declarations";
                "type-env";
@@ -2979,6 +3092,7 @@ let () =
   if should_run selected "import-store" then run_import_store_tests ();
   if should_run selected "import-normal" then run_import_normal_tests ();
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
+  if should_run selected "subst" then run_subst_tests ();
   if should_run selected "type-env" then run_type_env_tests ();
   if should_run selected "type-core" then run_type_core_tests ();
   if should_run selected "type-declarations" then run_type_declarations_tests ();
