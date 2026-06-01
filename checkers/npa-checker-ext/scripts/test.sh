@@ -3,19 +3,21 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 BUILD_DIR="$ROOT/_build"
+OCAMLC=$("$ROOT/scripts/ocamlc.sh")
 
 "$ROOT/scripts/build.sh" >/dev/null
 
-ocamlc -I "$BUILD_DIR" -c -o "$BUILD_DIR/test_runner.cmo" "$ROOT/test/test_runner.ml"
-ocamlc -I "$BUILD_DIR" \
+"$OCAMLC" -I "$BUILD_DIR" -c -o "$BUILD_DIR/test_runner.cmo" "$ROOT/test/test_runner.ml"
+"$OCAMLC" -I "$BUILD_DIR" \
   -o "$BUILD_DIR/test_runner" \
+  "$BUILD_DIR/ext_sha256.cmo" \
+  "$BUILD_DIR/ext_hash.cmo" \
   "$BUILD_DIR/ext_result.cmo" \
   "$BUILD_DIR/ext_bytes.cmo" \
   "$BUILD_DIR/ext_name.cmo" \
   "$BUILD_DIR/ext_level.cmo" \
   "$BUILD_DIR/ext_term.cmo" \
   "$BUILD_DIR/ext_cert.cmo" \
-  "$BUILD_DIR/ext_hash.cmo" \
   "$BUILD_DIR/ext_import.cmo" \
   "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
@@ -25,4 +27,4 @@ ocamlc -I "$BUILD_DIR" \
   "$BUILD_DIR/ext_cli.cmo" \
   "$BUILD_DIR/test_runner.cmo"
 
-"$BUILD_DIR/test_runner"
+NPA_CHECKER_EXT_ROOT="$ROOT" "$BUILD_DIR/test_runner" "$@"

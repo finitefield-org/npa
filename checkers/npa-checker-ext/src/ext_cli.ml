@@ -43,21 +43,21 @@ let rec parse args options =
   match args with
   | [] -> Parsed options
   | "--cert" :: value :: rest -> (
-      match set_once "--cert" options.cert value (fun cert -> { options with cert = cert }) with
+      match set_once "--cert" options.cert value (fun cert -> { options with cert = Some cert }) with
       | Parse_error message -> Parse_error message
       | Parsed next_options -> parse rest next_options)
   | "--cert" :: [] -> Parse_error "missing value for --cert"
   | "--import-dir" :: value :: rest -> (
       match
         set_once "--import-dir" options.import_dir value (fun import_dir ->
-            { options with import_dir = import_dir })
+            { options with import_dir = Some import_dir })
       with
       | Parse_error message -> Parse_error message
       | Parsed next_options -> parse rest next_options)
   | "--import-dir" :: [] -> Parse_error "missing value for --import-dir"
   | "--policy" :: value :: rest -> (
       match
-        set_once "--policy" options.policy value (fun policy -> { options with policy = policy })
+        set_once "--policy" options.policy value (fun policy -> { options with policy = Some policy })
       with
       | Parse_error message -> Parse_error message
       | Parsed next_options -> parse rest next_options)
