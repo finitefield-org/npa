@@ -10,3 +10,12 @@ commands:
 
 These files let a fresh checkout run the base command sequence in check mode.
 They remain generated metadata, not trusted proof evidence.
+
+`publish-plan.json` is the CLR-09-05 release handoff artifact. Its
+downstream_import_bundle has one entry for each exported seed module and
+includes exported declaration identifiers, export hash, certificate hash,
+certificate path, certificate file hash, and source-free checker summaries.
+
+The base seed release is reference-checker-only for proof acceptance. It does
+not claim external-checker evidence and does not include a
+`verified_high_trust` artifact because no CLR-08 high-trust inputs are supplied.

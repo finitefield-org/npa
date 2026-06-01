@@ -2,18 +2,21 @@ use npa_cert::Name;
 use npa_package::{
     build_package_downstream_import_bundle, build_package_publish_artifacts,
     compute_package_publish_plan_hash, format_package_hash, package_checksum_only_signature_policy,
-    parse_and_validate_manifest_str, parse_package_hash, parse_package_publish_plan_json,
-    parse_registry_module_json, PackageArtifactError, PackageArtifactErrorKind,
-    PackageArtifactErrorReason, PackageArtifactFileReference, PackageArtifactOrigin,
-    PackageCheckerMode, PackageCheckerSummary, PackageDownstreamImportBundleInput, PackageHash,
-    PackageId, PackageLockEntry, PackageLockEntryOrigin, PackageLockManifest,
-    PackageLockManifestReference, PackagePath, PackagePublishArtifact,
-    PackagePublishArtifactListInput, PackagePublishArtifactRole, PackagePublishPlan,
-    PackagePublishRelease, PackagePublishReleaseReference, PackagePublishSummary,
-    PackageRegistryArtifactHashes, PackageRegistryCheckerResult, PackageRegistryCheckerStatus,
-    PackageRegistryImport, PackageRegistryModule, PackageSignaturePolicy, PackageVersion,
-    PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,
-    PACKAGE_PUBLISH_PLAN_PATH, PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA,
+    package_theorem_index_summary, parse_and_validate_manifest_str, parse_package_hash,
+    parse_package_publish_plan_json, parse_registry_module_json, PackageArtifactError,
+    PackageArtifactErrorKind, PackageArtifactErrorReason, PackageArtifactFileReference,
+    PackageArtifactOrigin, PackageCheckerMode, PackageCheckerSummary,
+    PackageDownstreamImportBundleInput, PackageGlobalRef, PackageHash, PackageId, PackageLockEntry,
+    PackageLockEntryOrigin, PackageLockManifest, PackageLockManifestReference, PackagePath,
+    PackagePublishArtifact, PackagePublishArtifactListInput, PackagePublishArtifactRole,
+    PackagePublishPlan, PackagePublishRelease, PackagePublishReleaseReference,
+    PackagePublishSummary, PackageRegistryArtifactHashes, PackageRegistryCheckerResult,
+    PackageRegistryCheckerStatus, PackageRegistryImport, PackageRegistryModule,
+    PackageSignaturePolicy, PackageTheoremIndex, PackageTheoremIndexArtifact,
+    PackageTheoremIndexEntry, PackageTheoremIndexKind, PackageTheoremIndexMode,
+    PackageTheoremStatement, PackageVersion, PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA,
+    PACKAGE_MANIFEST_SCHEMA, PACKAGE_PUBLISH_PLAN_PATH, PACKAGE_PUBLISH_PLAN_SCHEMA,
+    PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE, PACKAGE_THEOREM_INDEX_SCHEMA,
     REGISTRY_MODULE_SCHEMA,
 };
 
@@ -24,6 +27,7 @@ const TWO_HASH: &str = "sha256:2222222222222222222222222222222222222222222222222
 const THREE_HASH: &str = "sha256:3333333333333333333333333333333333333333333333333333333333333333";
 const FOUR_HASH: &str = "sha256:4444444444444444444444444444444444444444444444444444444444444444";
 const FIVE_HASH: &str = "sha256:5555555555555555555555555555555555555555555555555555555555555555";
+const SIX_HASH: &str = "sha256:6666666666666666666666666666666666666666666666666666666666666666";
 const SEVEN_HASH: &str = "sha256:7777777777777777777777777777777777777777777777777777777777777777";
 const EIGHT_HASH: &str = "sha256:8888888888888888888888888888888888888888888888888888888888888888";
 const A_HASH: &str = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -151,6 +155,47 @@ fn registry_module(
     }
 }
 
+fn theorem_index_for_registry_entries(entries: &[PackageRegistryModule]) -> PackageTheoremIndex {
+    let entries = entries
+        .iter()
+        .map(|entry| PackageTheoremIndexEntry {
+            global_ref: PackageGlobalRef {
+                module: entry.module.clone(),
+                name: name("exported"),
+                export_hash: entry.export_hash,
+                certificate_hash: entry.certificate_hash,
+                decl_interface_hash: hash(SIX_HASH),
+            },
+            kind: PackageTheoremIndexKind::Theorem,
+            statement: PackageTheoremStatement {
+                core_hash: hash(ZERO_HASH),
+                head: None,
+                constants: Vec::new(),
+            },
+            modes: vec![PackageTheoremIndexMode::Exact],
+            tags: Vec::new(),
+            axiom_dependencies: Vec::new(),
+            module_axiom_report_hash: entry.axiom_report_hash,
+            artifact: PackageTheoremIndexArtifact {
+                origin: PackageArtifactOrigin::Local,
+                certificate: entry.certificate.path.clone(),
+            },
+        })
+        .collect::<Vec<_>>();
+    PackageTheoremIndex {
+        schema: PACKAGE_THEOREM_INDEX_SCHEMA.to_owned(),
+        package: PackageId::new("npa-proof-corpus"),
+        version: PackageVersion::new("0.1.0"),
+        manifest: artifact_ref("npa-package.toml", ZERO_HASH),
+        package_lock: artifact_ref("generated/package-lock.json", ONE_HASH),
+        index_profile: PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE.to_owned(),
+        summary: package_theorem_index_summary(&entries),
+        entries,
+        checker_summaries: Vec::new(),
+        theorem_index_hash: hash(ZERO_HASH),
+    }
+}
+
 fn local_certificate_artifact(module: &str, path: &str, file_hash: &str) -> PackagePublishArtifact {
     PackagePublishArtifact {
         role: PackagePublishArtifactRole::LocalCertificate,
@@ -169,11 +214,15 @@ fn base_publish_plan() -> PackagePublishPlan {
         registry_module("Proofs.Z", "Proofs/Z/certificate.npcert", E_HASH),
         registry_module("Proofs.A", "Proofs/A/certificate.npcert", D_HASH),
     ];
+    let theorem_index = theorem_index_for_registry_entries(&module_registry_entries);
+    let checker_summaries = vec![checker_summary("Proofs.Z"), checker_summary("Proofs.A")];
     let downstream_import_bundle =
         build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
             package: &package,
             version: &version,
             module_registry_entries: &module_registry_entries,
+            theorem_index: &theorem_index,
+            checker_summaries: &checker_summaries,
         })
         .unwrap();
     PackagePublishPlan {
@@ -243,7 +292,7 @@ fn base_publish_plan() -> PackagePublishPlan {
         ],
         module_registry_entries,
         downstream_import_bundle,
-        checker_summaries: vec![checker_summary("Proofs.Z"), checker_summary("Proofs.A")],
+        checker_summaries,
         signature_policy: PackageSignaturePolicy {
             mode: "checksum-only".to_owned(),
             hash_algorithm: "sha256".to_owned(),
@@ -358,11 +407,15 @@ fn downstream_import_bundle_builds_import_ready_modules_from_registry_entries() 
         registry_module("Proofs.Z", "Proofs/Z/certificate.npcert", E_HASH),
         registry_module("Proofs.A", "Proofs/A/certificate.npcert", D_HASH),
     ];
+    let theorem_index = theorem_index_for_registry_entries(&registry_entries);
+    let checker_summaries = vec![checker_summary("Proofs.Z"), checker_summary("Proofs.A")];
 
     let bundle = build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
         package: &package,
         version: &version,
         module_registry_entries: &registry_entries,
+        theorem_index: &theorem_index,
+        checker_summaries: &checker_summaries,
     })
     .unwrap();
 
@@ -378,8 +431,10 @@ fn downstream_import_bundle_builds_import_ready_modules_from_registry_entries() 
     assert_eq!(import.export_hash, hash(THREE_HASH));
     assert_eq!(import.certificate_hash, hash(FOUR_HASH));
     assert_eq!(import.axiom_report_hash, hash(FIVE_HASH));
+    assert_eq!(import.exported_declarations, vec![name("exported")]);
     assert_eq!(import.certificate.as_str(), "Proofs/A/certificate.npcert");
     assert_eq!(import.certificate_file_hash, hash(D_HASH));
+    assert_eq!(import.checker_summaries, vec![checker_summary("Proofs.A")]);
 
     let downstream_manifest = format!(
         r#"schema = "npa.package.v0.1"
@@ -440,6 +495,34 @@ axioms = []
 }
 
 #[test]
+fn downstream_import_bundle_rejects_theorem_index_for_wrong_package() {
+    let package = PackageId::new("npa-proof-corpus");
+    let version = PackageVersion::new("0.1.0");
+    let registry_entries = vec![registry_module(
+        "Proofs.A",
+        "Proofs/A/certificate.npcert",
+        D_HASH,
+    )];
+    let mut theorem_index = theorem_index_for_registry_entries(&registry_entries);
+    theorem_index.package = PackageId::new("other-package");
+    let checker_summaries = vec![checker_summary("Proofs.A")];
+
+    assert_artifact_error(
+        build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
+            package: &package,
+            version: &version,
+            module_registry_entries: &registry_entries,
+            theorem_index: &theorem_index,
+            checker_summaries: &checker_summaries,
+        })
+        .unwrap_err(),
+        PackageArtifactErrorKind::Domain,
+        PackageArtifactErrorReason::InvalidEnumValue,
+        Some("package"),
+    );
+}
+
+#[test]
 fn downstream_import_bundle_rejects_missing_stale_or_name_only_entries() {
     let mut missing_module = base_publish_plan();
     missing_module
@@ -455,6 +538,10 @@ fn downstream_import_bundle_rejects_missing_stale_or_name_only_entries() {
 
     let mut missing_registry_entry = base_publish_plan();
     missing_registry_entry.downstream_import_bundle.modules[0].module = name("Proofs.Missing");
+    for summary in &mut missing_registry_entry.downstream_import_bundle.modules[0].checker_summaries
+    {
+        summary.module = name("Proofs.Missing");
+    }
     assert_artifact_error(
         missing_registry_entry.with_computed_hash().unwrap_err(),
         PackageArtifactErrorKind::ArtifactSchema,

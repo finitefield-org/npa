@@ -555,18 +555,25 @@ pub(crate) fn parse_checker_summary(
     value: &JsonValue,
 ) -> PackageArtifactResult<PackageCheckerSummary> {
     let path = format!("checker_summaries[{index}]");
-    let members = expect_object(value, &path)?;
-    reject_unknown_fields(&path, members, CHECKER_SUMMARY_FIELDS)?;
-    let mode_path = field_path(&path, "mode");
+    parse_checker_summary_at_path(value, &path)
+}
+
+pub(crate) fn parse_checker_summary_at_path(
+    value: &JsonValue,
+    path: &str,
+) -> PackageArtifactResult<PackageCheckerSummary> {
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, CHECKER_SUMMARY_FIELDS)?;
+    let mode_path = field_path(path, "mode");
     Ok(PackageCheckerSummary {
-        module: required_name(members, &path, "module")?,
-        checker: required_string(members, &path, "checker")?,
-        profile: required_string(members, &path, "profile")?,
-        mode: PackageCheckerMode::parse(&required_string(members, &path, "mode")?, &mode_path)?,
-        status: required_string(members, &path, "status")?,
-        export_hash: required_hash(members, &path, "export_hash")?,
-        certificate_hash: required_hash(members, &path, "certificate_hash")?,
-        axiom_report_hash: required_hash(members, &path, "axiom_report_hash")?,
+        module: required_name(members, path, "module")?,
+        checker: required_string(members, path, "checker")?,
+        profile: required_string(members, path, "profile")?,
+        mode: PackageCheckerMode::parse(&required_string(members, path, "mode")?, &mode_path)?,
+        status: required_string(members, path, "status")?,
+        export_hash: required_hash(members, path, "export_hash")?,
+        certificate_hash: required_hash(members, path, "certificate_hash")?,
+        axiom_report_hash: required_hash(members, path, "axiom_report_hash")?,
     })
 }
 

@@ -594,7 +594,7 @@ fn package_publish_plan_check_write_and_registry_mismatch_diagnostics() {
     assert_eq!(package_file_hashes(package.path()), before_success_check);
 
     let mut stale_plan = publish_plan.clone();
-    stale_plan.checker_summaries[0].status = "stale".to_owned();
+    stale_plan.release.checker_profile = "npa.checker.reference.v0.1.stale".to_owned();
     let stale_plan = stale_plan.with_computed_hash().unwrap();
     fs::write(&publish_plan_path, stale_plan.canonical_json().unwrap()).unwrap();
     let stale_plan_check = Command::new(env!("CARGO_BIN_EXE_npa"))
@@ -614,10 +614,23 @@ fn package_publish_plan_check_write_and_registry_mismatch_diagnostics() {
     fs::write(&publish_plan_path, publish_plan_json.as_bytes()).unwrap();
 
     let mut stale_registry = publish_plan;
-    stale_registry.module_registry_entries[0].export_hash =
-        package_file_hash(b"stale registry export hash");
-    stale_registry.downstream_import_bundle.modules[0].export_hash =
-        stale_registry.module_registry_entries[0].export_hash;
+    let stale_hash = package_file_hash(b"stale registry export hash");
+    let stale_module = stale_registry.module_registry_entries[0].module.clone();
+    stale_registry.module_registry_entries[0].export_hash = stale_hash;
+    for result in &mut stale_registry.module_registry_entries[0].checker_results {
+        result.export_hash = stale_hash;
+    }
+    stale_registry.downstream_import_bundle.modules[0].export_hash = stale_hash;
+    for summary in stale_registry
+        .checker_summaries
+        .iter_mut()
+        .filter(|summary| summary.module == stale_module)
+    {
+        summary.export_hash = stale_hash;
+    }
+    for summary in &mut stale_registry.downstream_import_bundle.modules[0].checker_summaries {
+        summary.export_hash = stale_hash;
+    }
     let stale_registry = stale_registry.with_computed_hash().unwrap();
     fs::write(&publish_plan_path, stale_registry.canonical_json().unwrap()).unwrap();
     let stale_check = Command::new(env!("CARGO_BIN_EXE_npa"))

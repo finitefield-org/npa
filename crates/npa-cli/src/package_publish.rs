@@ -172,6 +172,8 @@ fn generate_package_publish_plan(
             package: &inputs.validated.manifest().package,
             version: &inputs.validated.manifest().version,
             module_registry_entries: &module_registry_entries,
+            theorem_index: &inputs.theorem_index,
+            checker_summaries: &inputs.checker_summaries,
         })
         .map_err(|error| {
             CommandResult::failed(
@@ -335,6 +337,8 @@ pub fn collect_package_publish_downstream_import_bundle(
         package: &inputs.validated.manifest().package,
         version: &inputs.validated.manifest().version,
         module_registry_entries: &module_registry_entries,
+        theorem_index: &inputs.theorem_index,
+        checker_summaries: &inputs.checker_summaries,
     })
     .map_err(|error| {
         CommandResult::failed(

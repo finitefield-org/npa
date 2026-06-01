@@ -51,6 +51,23 @@ CLR-09-03 checks in these generated files so a fresh checkout can run the base
 package command sequence in check mode. They are still untrusted generated
 metadata, not proof evidence.
 
+CLR-09-05 refreshes the release artifact set. `generated/publish-plan.json`
+contains the downstream_import_bundle entry for each exported seed module:
+
+- `Proofs.Ai.Basic`
+- `Proofs.Ai.Prop`
+- `Proofs.Ai.Eq`
+- `Proofs.Ai.Nat`
+- `Proofs.Ai.Reduction`
+
+Each downstream entry records exported declaration identifiers, the module
+export hash, certificate hash, certificate artifact path, certificate file
+hash, and source-free checker summaries. The release artifact list also records
+the manifest, lock, axiom report, theorem index, local certificates, and
+standard-library import certificates by file hash. Together with
+`generated/publish-plan.json`, those files can be archived and consumed by a
+downstream package without a registry service.
+
 ## Initial Module Set
 
 The seed starts with this closed theorem module subset copied from the current

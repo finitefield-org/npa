@@ -12,11 +12,12 @@ use crate::{
     artifacts::{
         checker_summary_json, expect_object, field_path, hash_json, json_array, json_bool,
         json_object_in_order, json_string, json_u64, normalize_checker_summaries,
-        parse_artifact_json, parse_checker_summary, reject_unknown_fields, required_array,
-        required_bool, required_hash, required_name, required_path, required_string, required_u64,
-        validate_artifact_path, validate_checker_summaries, validate_module_name,
+        parse_artifact_json, parse_checker_summary, parse_checker_summary_at_path,
+        reject_unknown_fields, required_array, required_bool, required_hash, required_name,
+        required_path, required_string, required_u64, validate_artifact_path,
+        validate_checker_summaries, validate_declaration_name, validate_module_name,
         validate_package_identity, validate_plain_string, PackageArtifactFileReference,
-        PackageArtifactOrigin, PackageCheckerSummary,
+        PackageArtifactOrigin, PackageCheckerMode, PackageCheckerSummary,
     },
     error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
     hash::{format_package_hash, package_file_hash, PackageHash},
@@ -33,6 +34,7 @@ use crate::{
         PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,
         PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA,
     },
+    theorem_index::PackageTheoremIndex,
 };
 
 /// Package-relative path owned by CLR-06 publish-plan write mode.
@@ -201,6 +203,8 @@ pub struct PackageDownstreamImportModule {
     pub package: PackageId,
     /// Package version to pin in downstream `[[imports]]`.
     pub version: PackageVersion,
+    /// Exported declaration identifiers from the checked theorem index.
+    pub exported_declarations: Vec<Name>,
     /// Module export hash.
     pub export_hash: PackageHash,
     /// Module certificate hash.
@@ -211,6 +215,8 @@ pub struct PackageDownstreamImportModule {
     pub certificate: PackagePath,
     /// Exact SHA-256 hash of certificate file bytes.
     pub certificate_file_hash: PackageHash,
+    /// Source-free checker summaries for this released module.
+    pub checker_summaries: Vec<PackageCheckerSummary>,
 }
 
 /// Checksum-only signature policy for CLR-06 MVP publish plans.
@@ -248,6 +254,10 @@ pub struct PackageDownstreamImportBundleInput<'a> {
     pub version: &'a PackageVersion,
     /// Local module registry seed entries generated for this package.
     pub module_registry_entries: &'a [PackageRegistryModule],
+    /// Checked theorem index used to list exported declarations.
+    pub theorem_index: &'a PackageTheoremIndex,
+    /// Source-free checker summaries copied into downstream module entries.
+    pub checker_summaries: &'a [PackageCheckerSummary],
 }
 
 /// Deterministic publish-plan summary counts.
@@ -341,21 +351,54 @@ pub fn build_package_downstream_import_bundle(
     input: PackageDownstreamImportBundleInput<'_>,
 ) -> PackageArtifactResult<PackageDownstreamImportBundle> {
     validate_registry_entries(input.module_registry_entries, input.package, input.version)?;
+    validate_downstream_theorem_index_identity(input.theorem_index, input.package, input.version)?;
     let mut bundle = PackageDownstreamImportBundle {
         package: input.package.clone(),
         version: input.version.clone(),
         modules: input
             .module_registry_entries
             .iter()
-            .map(downstream_import_module_from_registry_entry)
-            .collect(),
+            .map(|entry| {
+                downstream_import_module_from_registry_entry(
+                    entry,
+                    input.theorem_index,
+                    input.checker_summaries,
+                )
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
     };
+    for module in &mut bundle.modules {
+        module.exported_declarations.sort();
+        normalize_checker_summaries(&mut module.checker_summaries);
+    }
     bundle
         .modules
         .sort_by_key(downstream_import_module_sort_key);
     validate_downstream_import_bundle(&bundle, input.package, input.version)?;
     validate_downstream_import_bundle_matches_registry(&bundle, input.module_registry_entries)?;
     Ok(bundle)
+}
+
+fn validate_downstream_theorem_index_identity(
+    theorem_index: &PackageTheoremIndex,
+    package: &PackageId,
+    version: &PackageVersion,
+) -> PackageArtifactResult<()> {
+    validate_package_identity(&theorem_index.package, &theorem_index.version)?;
+    if &theorem_index.package == package && &theorem_index.version == version {
+        Ok(())
+    } else {
+        Err(PackageArtifactError::invalid_enum_value(
+            "theorem_index.package",
+            "package",
+            format!("{} {}", package.as_str(), version.as_str()),
+            format!(
+                "{} {}",
+                theorem_index.package.as_str(),
+                theorem_index.version.as_str()
+            ),
+        ))
+    }
 }
 
 fn schema_artifact(
@@ -449,6 +492,10 @@ fn validate_publish_plan_shape_without_self_hash(
     )?;
     validate_downstream_certificate_artifacts(&plan.artifacts, &plan.downstream_import_bundle)?;
     validate_checker_summaries(&plan.checker_summaries)?;
+    validate_downstream_checker_summaries_match_top_level(
+        &plan.downstream_import_bundle,
+        &plan.checker_summaries,
+    )?;
     validate_signature_policy(&plan.signature_policy)?;
     validate_publish_summary(plan)?;
     Ok(())
@@ -505,6 +552,10 @@ fn normalize_publish_plan(plan: &mut PackagePublishPlan) {
     plan.downstream_import_bundle
         .modules
         .sort_by_key(downstream_import_module_sort_key);
+    for module in &mut plan.downstream_import_bundle.modules {
+        module.exported_declarations.sort();
+        normalize_checker_summaries(&mut module.checker_summaries);
+    }
     normalize_checker_summaries(&mut plan.checker_summaries);
 }
 
@@ -878,7 +929,12 @@ fn validate_downstream_import_bundle(
         let path = format!("downstream_import_bundle.modules[{index}]");
         validate_module_name(&module.module, field_path(&path, "module"))?;
         validate_package_identity(&module.package, &module.version)?;
+        validate_exported_declarations(
+            &module.exported_declarations,
+            &field_path(&path, "exported_declarations"),
+        )?;
         validate_artifact_path(&module.certificate, field_path(&path, "certificate"))?;
+        validate_downstream_checker_summaries(module, &path)?;
         let key = module.module.as_dotted();
         if !keys.insert(key.clone()) {
             return Err(PackageArtifactError::duplicate(
@@ -946,6 +1002,7 @@ fn validate_downstream_import_bundle_matches_registry(
             format_package_hash(&entry.certificate.file_hash),
             format_package_hash(&module.certificate_file_hash),
         )?;
+        validate_downstream_checker_summaries_match_registry(&path, module, entry)?;
     }
 
     for entry in entries {
@@ -962,6 +1019,174 @@ fn validate_downstream_import_bundle_matches_registry(
         ));
     }
     Ok(())
+}
+
+fn validate_exported_declarations(declarations: &[Name], path: &str) -> PackageArtifactResult<()> {
+    let mut keys = BTreeSet::<String>::new();
+    for (index, declaration) in declarations.iter().enumerate() {
+        let item_path = format!("{path}[{index}]");
+        validate_declaration_name(declaration, &item_path)?;
+        let key = declaration.as_dotted();
+        if !keys.insert(key.clone()) {
+            return Err(PackageArtifactError::duplicate(
+                item_path,
+                "exported_declarations",
+                PackageArtifactErrorReason::DuplicateTheoremEntry,
+                key,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_downstream_checker_summaries(
+    module: &PackageDownstreamImportModule,
+    path: &str,
+) -> PackageArtifactResult<()> {
+    validate_checker_summaries(&module.checker_summaries)?;
+    let mut found_reference = false;
+    for (index, summary) in module.checker_summaries.iter().enumerate() {
+        let summary_path = format!("{path}.checker_summaries[{index}]");
+        assert_downstream_import_field(
+            &summary_path,
+            "module",
+            module.module.as_dotted(),
+            summary.module.as_dotted(),
+        )?;
+        assert_downstream_import_field(
+            &summary_path,
+            "export_hash",
+            format_package_hash(&module.export_hash),
+            format_package_hash(&summary.export_hash),
+        )?;
+        assert_downstream_import_field(
+            &summary_path,
+            "certificate_hash",
+            format_package_hash(&module.certificate_hash),
+            format_package_hash(&summary.certificate_hash),
+        )?;
+        assert_downstream_import_field(
+            &summary_path,
+            "axiom_report_hash",
+            format_package_hash(&module.axiom_report_hash),
+            format_package_hash(&summary.axiom_report_hash),
+        )?;
+        if summary.status != "passed" {
+            return Err(PackageArtifactError::invalid_enum_value(
+                field_path(&summary_path, "status"),
+                "status",
+                "passed",
+                &summary.status,
+            ));
+        }
+        if summary.mode == PackageCheckerMode::Reference {
+            found_reference = true;
+        }
+    }
+    if found_reference {
+        Ok(())
+    } else {
+        Err(PackageArtifactError::missing_field(
+            field_path(path, "checker_summaries"),
+            "reference",
+        ))
+    }
+}
+
+fn validate_downstream_checker_summaries_match_top_level(
+    bundle: &PackageDownstreamImportBundle,
+    summaries: &[PackageCheckerSummary],
+) -> PackageArtifactResult<()> {
+    for module in &bundle.modules {
+        let path = format!(
+            "downstream_import_bundle.modules.{}",
+            module.module.as_dotted()
+        );
+        for summary in summaries
+            .iter()
+            .filter(|summary| summary.module == module.module)
+        {
+            if module.checker_summaries.contains(summary) {
+                continue;
+            }
+            return Err(PackageArtifactError::missing_field(
+                field_path(&path, "checker_summaries"),
+                checker_summary_key(summary),
+            ));
+        }
+        for summary in &module.checker_summaries {
+            if summaries.contains(summary) {
+                continue;
+            }
+            return Err(PackageArtifactError::downstream_import_bundle_mismatch(
+                field_path(&path, "checker_summaries"),
+                "checker_summaries",
+                "top-level checker_summaries entry",
+                checker_summary_key(summary),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_downstream_checker_summaries_match_registry(
+    path: &str,
+    module: &PackageDownstreamImportModule,
+    entry: &PackageRegistryModule,
+) -> PackageArtifactResult<()> {
+    for summary in &module.checker_summaries {
+        if entry
+            .checker_results
+            .iter()
+            .any(|result| registry_checker_result_matches_summary(result, summary))
+        {
+            continue;
+        }
+        return Err(PackageArtifactError::downstream_import_bundle_mismatch(
+            field_path(path, "checker_summaries"),
+            "checker_summaries",
+            "module_registry_entries checker result",
+            checker_summary_key(summary),
+        ));
+    }
+    for result in &entry.checker_results {
+        if module
+            .checker_summaries
+            .iter()
+            .any(|summary| registry_checker_result_matches_summary(result, summary))
+        {
+            continue;
+        }
+        return Err(PackageArtifactError::missing_field(
+            field_path(path, "checker_summaries"),
+            format!("{} {} {}", result.mode, result.checker, result.profile),
+        ));
+    }
+    Ok(())
+}
+
+fn registry_checker_result_matches_summary(
+    result: &crate::registry::PackageRegistryCheckerResult,
+    summary: &PackageCheckerSummary,
+) -> bool {
+    result.checker == summary.checker
+        && result.profile == summary.profile
+        && result.mode == summary.mode.as_str()
+        && result.status.as_str() == "accepted"
+        && summary.status == "passed"
+        && result.export_hash == summary.export_hash
+        && result.certificate_hash == summary.certificate_hash
+        && result.axiom_report_hash == summary.axiom_report_hash
+}
+
+fn checker_summary_key(summary: &PackageCheckerSummary) -> String {
+    [
+        summary.module.as_dotted(),
+        summary.mode.as_str().to_owned(),
+        summary.checker.clone(),
+        summary.profile.clone(),
+    ]
+    .join(" ")
 }
 
 fn assert_downstream_import_field(
@@ -1017,17 +1242,86 @@ fn validate_downstream_certificate_artifacts(
 
 fn downstream_import_module_from_registry_entry(
     entry: &PackageRegistryModule,
-) -> PackageDownstreamImportModule {
-    PackageDownstreamImportModule {
+    theorem_index: &PackageTheoremIndex,
+    checker_summaries: &[PackageCheckerSummary],
+) -> PackageArtifactResult<PackageDownstreamImportModule> {
+    Ok(PackageDownstreamImportModule {
         module: entry.module.clone(),
         package: entry.package.clone(),
         version: entry.package_version.clone(),
+        exported_declarations: exported_declarations_for_entry(entry, theorem_index)?,
         export_hash: entry.export_hash,
         certificate_hash: entry.certificate_hash,
         axiom_report_hash: entry.axiom_report_hash,
         certificate: entry.certificate.path.clone(),
         certificate_file_hash: entry.certificate.file_hash,
+        checker_summaries: checker_summaries_for_entry(entry, checker_summaries)?,
+    })
+}
+
+fn exported_declarations_for_entry(
+    entry: &PackageRegistryModule,
+    theorem_index: &PackageTheoremIndex,
+) -> PackageArtifactResult<Vec<Name>> {
+    let path = format!(
+        "downstream_import_bundle.modules.{}.exported_declarations",
+        entry.module.as_dotted()
+    );
+    let mut declarations = Vec::new();
+    for theorem in theorem_index
+        .entries
+        .iter()
+        .filter(|theorem| theorem.global_ref.module == entry.module)
+    {
+        assert_downstream_import_field(
+            &path,
+            "export_hash",
+            format_package_hash(&entry.export_hash),
+            format_package_hash(&theorem.global_ref.export_hash),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "certificate_hash",
+            format_package_hash(&entry.certificate_hash),
+            format_package_hash(&theorem.global_ref.certificate_hash),
+        )?;
+        declarations.push(theorem.global_ref.name.clone());
     }
+    declarations.sort();
+    declarations.dedup();
+    validate_exported_declarations(&declarations, &path)?;
+    Ok(declarations)
+}
+
+fn checker_summaries_for_entry(
+    entry: &PackageRegistryModule,
+    checker_summaries: &[PackageCheckerSummary],
+) -> PackageArtifactResult<Vec<PackageCheckerSummary>> {
+    let module_path = format!(
+        "downstream_import_bundle.modules.{}",
+        entry.module.as_dotted()
+    );
+    let mut summaries = checker_summaries
+        .iter()
+        .filter(|summary| summary.module == entry.module)
+        .cloned()
+        .collect::<Vec<_>>();
+    normalize_checker_summaries(&mut summaries);
+    let module = PackageDownstreamImportModule {
+        module: entry.module.clone(),
+        package: entry.package.clone(),
+        version: entry.package_version.clone(),
+        exported_declarations: Vec::new(),
+        export_hash: entry.export_hash,
+        certificate_hash: entry.certificate_hash,
+        axiom_report_hash: entry.axiom_report_hash,
+        certificate: entry.certificate.path.clone(),
+        certificate_file_hash: entry.certificate.file_hash,
+        checker_summaries: summaries,
+    };
+    validate_downstream_checker_summaries(&module, &module_path)?;
+    validate_downstream_checker_summaries_match_registry(&module_path, &module, entry)?;
+    Ok(module.checker_summaries)
 }
 
 fn validate_signature_policy(policy: &PackageSignaturePolicy) -> PackageArtifactResult<()> {
@@ -1226,11 +1520,32 @@ fn parse_downstream_import_module(
         module: required_name(members, path, "module")?,
         package: PackageId::new(required_string(members, path, "package")?),
         version: PackageVersion::new(required_string(members, path, "version")?),
+        exported_declarations: required_array(members, path, "exported_declarations")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                value.string_value().map(Name::from_dotted).ok_or_else(|| {
+                    PackageArtifactError::wrong_type(
+                        format!("{path}.exported_declarations[{index}]"),
+                        Some("exported_declarations".to_owned()),
+                        "string",
+                        value.kind().as_str(),
+                    )
+                })
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
         export_hash: required_hash(members, path, "export_hash")?,
         certificate_hash: required_hash(members, path, "certificate_hash")?,
         axiom_report_hash: required_hash(members, path, "axiom_report_hash")?,
         certificate: required_path(members, path, "certificate")?,
         certificate_file_hash: required_hash(members, path, "certificate_file_hash")?,
+        checker_summaries: required_array(members, path, "checker_summaries")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                parse_checker_summary_at_path(value, &format!("{path}.checker_summaries[{index}]"))
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
     })
 }
 
@@ -1351,6 +1666,16 @@ fn downstream_import_module_json(module: &PackageDownstreamImportModule) -> Stri
         ("module", json_string(&module.module.as_dotted())),
         ("package", json_string(module.package.as_str())),
         ("version", json_string(module.version.as_str())),
+        (
+            "exported_declarations",
+            json_array(
+                module
+                    .exported_declarations
+                    .iter()
+                    .map(|declaration| json_string(&declaration.as_dotted()))
+                    .collect(),
+            ),
+        ),
         ("export_hash", hash_json(module.export_hash)),
         ("certificate_hash", hash_json(module.certificate_hash)),
         ("axiom_report_hash", hash_json(module.axiom_report_hash)),
@@ -1358,6 +1683,16 @@ fn downstream_import_module_json(module: &PackageDownstreamImportModule) -> Stri
         (
             "certificate_file_hash",
             hash_json(module.certificate_file_hash),
+        ),
+        (
+            "checker_summaries",
+            json_array(
+                module
+                    .checker_summaries
+                    .iter()
+                    .map(checker_summary_json)
+                    .collect(),
+            ),
         ),
     ])
 }
@@ -1516,11 +1851,13 @@ const DOWNSTREAM_IMPORT_MODULE_FIELDS: &[&str] = &[
     "module",
     "package",
     "version",
+    "exported_declarations",
     "export_hash",
     "certificate_hash",
     "axiom_report_hash",
     "certificate",
     "certificate_file_hash",
+    "checker_summaries",
 ];
 const SIGNATURE_POLICY_FIELDS: &[&str] =
     &["mode", "hash_algorithm", "signature_required", "signatures"];
