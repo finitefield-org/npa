@@ -29,6 +29,61 @@ scripts/phase9-regression.sh
 
 Those scripts are repository development gates, not external theorem library CI.
 
+## Pinned Setup Inputs
+
+The base templates must fail unless the `npa` CLI source is explicit and
+pinned. They must not infer a floating `latest` version.
+
+Supported inputs:
+
+```text
+NPA_BINARY_PATH
+  Path to an existing executable `npa` binary. This is the baseline setup mode
+  until concrete installer templates are added.
+
+NPA_VERSION
+  Exact release version or release tag for a later release-download strategy.
+  `latest` is invalid.
+
+NPA_GIT_TAG
+  Exact immutable Git tag for building `npa-cli`.
+
+NPA_GIT_COMMIT
+  Full Git commit SHA for building `npa-cli`.
+```
+
+Exactly one of `NPA_BINARY_PATH`, `NPA_VERSION`, `NPA_GIT_TAG`, or
+`NPA_GIT_COMMIT` must be set. If none or multiple are set, setup fails before
+running package commands.
+
+Baseline binary-path setup:
+
+```sh
+test -n "${NPA_BINARY_PATH:-}" || {
+  echo "NPA_BINARY_PATH must point to a pinned npa binary" >&2
+  exit 2
+}
+test -x "$NPA_BINARY_PATH" || {
+  echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+  exit 2
+}
+"$NPA_BINARY_PATH" --version
+```
+
+When Rust is used to build `npa-cli`, templates must use a checked-in
+`rust-toolchain.toml` or exact `RUST_TOOLCHAIN_VERSION`, then print:
+
+```sh
+npa --version
+cargo --version
+rustc --version
+```
+
+Fetching the pinned `npa` implementation or pinned Rust toolchain is tool
+setup. It is separate from theorem package dependency resolution and must not
+fetch theorem packages, package imports, registry metadata, or hidden package
+cache entries.
+
 The base contract uses full-package package commands:
 
 ```sh

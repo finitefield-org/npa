@@ -369,7 +369,7 @@ fresh-checkout CI expectations
 
 ### CLR-07-02 Add Pinned Toolchain And `npa` CLI Setup Guidance
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-07-01
 - Inputs:
   - `npa-cli` binary name fixed by CLR-00

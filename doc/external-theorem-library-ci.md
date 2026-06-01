@@ -42,6 +42,72 @@ ci-templates/github-actions/README.md
 CLR-07-01 establishes this directory and the CI contract only. It does not add
 active repository workflows under `.github/workflows`.
 
+## Pinned `npa` Setup
+
+External theorem library CI must use an explicitly pinned `npa` CLI. It must
+not use floating names such as `latest`, `stable`, `main`, `master`, or `HEAD`
+to choose the verifier implementation.
+
+Workflow templates should support these setup inputs:
+
+```text
+NPA_BINARY_PATH
+  Package-relative or workspace-relative path to an existing executable `npa`
+  binary. This is the CLR-07-02 baseline because it works before an installer
+  or package manager distribution exists.
+
+NPA_VERSION
+  Exact release version or release tag for `npa`, for example `v0.1.0`.
+  This is allowed only when the template has a pinned release download or
+  checked release artifact strategy. The value `latest` is invalid.
+
+NPA_GIT_TAG
+  Exact immutable Git tag to build `npa-cli` from. Branch names are invalid.
+
+NPA_GIT_COMMIT
+  Full Git commit SHA to build `npa-cli` from. Short SHA prefixes are not
+  enough for the base contract.
+```
+
+A workflow must provide exactly one `npa` source: `NPA_BINARY_PATH`,
+`NPA_VERSION`, `NPA_GIT_TAG`, or `NPA_GIT_COMMIT`. If none are set, or if more
+than one is set, the setup step must fail before running any package command.
+
+Until concrete installer templates are added, the portable fresh-checkout setup
+is:
+
+```sh
+test -n "${NPA_BINARY_PATH:-}" || {
+  echo "NPA_BINARY_PATH must point to a pinned npa binary" >&2
+  exit 2
+}
+test -x "$NPA_BINARY_PATH" || {
+  echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+  exit 2
+}
+"$NPA_BINARY_PATH" --version
+```
+
+When a template builds from `NPA_GIT_TAG` or `NPA_GIT_COMMIT`, it may fetch the
+pinned `npa` implementation as tool setup. That fetch is not theorem package
+dependency resolution and must not fetch theorem packages, package imports,
+registry metadata, or hidden package cache entries.
+
+If Rust is used to build `npa-cli`, the Rust toolchain must also be pinned by a
+checked-in `rust-toolchain.toml` or an exact workflow input such as
+`RUST_TOOLCHAIN_VERSION`. Floating toolchain names are not allowed in the base
+contract. The setup step must print:
+
+```sh
+npa --version
+cargo --version
+rustc --version
+```
+
+`cargo --version` and `rustc --version` are required only when Rust is used by
+the workflow. A checked-in or release-provided `npa` binary path does not need
+Cargo or Rust.
+
 ## Required Package Commands
 
 The base CLR-07 contract uses only package commands and flags already owned by
@@ -77,9 +143,9 @@ PR mode is the required contributor gate for theorem-only pull requests.
 Required behavior:
 
 - Check out the external theorem package repository.
-- Locate or install the `npa` CLI according to the pinning rules that CLR-07-02
-  will define.
-- Print the `npa` version.
+- Locate or install the `npa` CLI from exactly one pinned source.
+- Print `npa --version`, and print `cargo --version` plus `rustc --version`
+  when Rust is used to build `npa`.
 - Run the required package commands against `--root .`.
 - Save deterministic JSON diagnostics under package-relative paths such as
   `ci-output/package-check.json`.
@@ -109,9 +175,9 @@ Release mode runs from a clean checkout at the release ref.
 
 Required behavior:
 
-- Locate or install the `npa` CLI according to the pinning rules that CLR-07-02
-  will define.
-- Print the `npa` version.
+- Locate or install the `npa` CLI from exactly one pinned source.
+- Print `npa --version`, and print `cargo --version` plus `rustc --version`
+  when Rust is used to build `npa`.
 - Run the base package checks.
 - Run both fast and reference source-free verification.
 - Run axiom-report and theorem-index check mode.
@@ -147,9 +213,8 @@ Base CLR-07 CI must not rely on:
 - cryptographic signing;
 - this repository's local phase gates.
 
-Fetching an `npa` implementation or Rust toolchain is tool setup. It is not
-theorem package dependency resolution. CLR-07-02 defines the exact required
-pinning inputs and failure behavior for unspecified `npa` sources.
+Fetching a pinned `npa` implementation or pinned Rust toolchain is tool setup.
+It is not theorem package dependency resolution.
 
 ## Diagnostic Output
 
