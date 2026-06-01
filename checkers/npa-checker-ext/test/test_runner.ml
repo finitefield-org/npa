@@ -16,6 +16,15 @@ let assert_int64_equal label expected actual =
 
 let assert_bool label value = if not value then failwith (label ^ ": expected true")
 
+let assert_ok label result =
+  match result with
+  | Ok value -> value
+  | Error error ->
+      failwith
+        (label ^ ": unexpected error " ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+
 let contains text needle =
   let text_len = String.length text in
   let needle_len = String.length needle in
@@ -401,6 +410,9 @@ let encode_term_let ty value body =
 
 let encode_global_builtin name_id hash = one_byte 0x03 ^ encode_uvar_int name_id ^ hash
 
+let encode_global_imported import_index name_id hash =
+  one_byte 0x00 ^ encode_uvar_int import_index ^ encode_uvar_int name_id ^ hash
+
 let encode_global_local decl_index = one_byte 0x01 ^ encode_uvar_int decl_index
 
 let encode_usize_vec values =
@@ -568,6 +580,51 @@ let read_binary_file path =
   let contents = really_input_string channel length in
   close_in channel;
   contents
+
+type golden_hash_fixture = {
+  golden_byte_len : int;
+  golden_export_hash : string;
+  golden_axiom_report_hash : string;
+  golden_certificate_hash : string;
+}
+
+let golden_hash_fixture label =
+  let path =
+    Filename.concat (root_dir ()) "../../crates/npa-cert/tests/fixtures/golden_hashes.tsv"
+  in
+  let contents = read_binary_file path in
+  let rec loop lines =
+    match lines with
+    | [] -> failwith ("missing golden hash fixture " ^ label)
+    | line :: rest ->
+        if line = "" || contains line "label\t" then loop rest
+        else (
+          match split_tabs line with
+          | [ current; byte_len; export_hash; axiom_report_hash; certificate_hash ]
+            when current = label ->
+              {
+                golden_byte_len = int_of_string byte_len;
+                golden_export_hash = export_hash;
+                golden_axiom_report_hash = axiom_report_hash;
+                golden_certificate_hash = certificate_hash;
+              }
+          | _ -> loop rest)
+  in
+  loop (String.split_on_char '\n' contents)
+
+let hex_of_raw_hash hash = Ext_sha256.to_hex (Bytes.of_string hash)
+
+let decode_module_bytes label bytes =
+  match Ext_cert.read_module (Ext_bytes.of_string bytes) with
+  | Ok (decoded, next) ->
+      assert_int_equal (label ^ " offset") (String.length bytes) (Ext_bytes.offset next);
+      decoded
+  | Error error ->
+      failwith
+        (label ^ ": unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
 
 let assert_header label expected_module header =
   assert_equal (label ^ " format") Ext_cert.expected_format header.Ext_cert.format;
@@ -1066,6 +1123,219 @@ let run_decoder_reachability_tests () =
     Ext_bytes.Trailing_bytes Ext_bytes.Full_certificate (String.length minimal)
     (Ext_cert.read_module (Ext_bytes.of_string (minimal ^ "x")))
 
+let encode_export_entry_full name_id kind_tag universe_params ty body type_hash body_hash
+    reducibility opacity decl_interface_hash axiom_dependencies =
+  encode_uvar_int name_id ^ encode_export_kind kind_tag ^ encode_usize_vec universe_params
+  ^ encode_uvar_int ty ^ encode_option_usize body ^ type_hash ^ encode_option_hash body_hash
+  ^ encode_option reducibility ^ encode_option opacity ^ decl_interface_hash
+  ^ encode_axiom_refs axiom_dependencies
+
+let first_declaration decoded =
+  match decoded.Ext_cert.declaration_table with
+  | declaration :: _ -> declaration
+  | [] -> failwith "expected declaration fixture"
+
+let assert_canonical_hash label expected_hex result =
+  let hash = assert_ok label result in
+  assert_equal label expected_hex (hex_of_raw_hash hash)
+
+let assert_canonical_bytes label expected result =
+  assert_equal label expected (assert_ok label result)
+
+let assert_declaration_hashes label decoded =
+  List.iteri
+    (fun index declaration ->
+      let prefix = label ^ " decl " ^ string_of_int index in
+      let interface_payload =
+        assert_ok (prefix ^ " interface payload")
+          (Ext_canonical.declaration_interface_payload decoded.Ext_cert.name_table
+             decoded.Ext_cert.level_table decoded.Ext_cert.term_table
+             declaration.Ext_cert.payload declaration.Ext_cert.dependencies
+             declaration.Ext_cert.axiom_dependencies)
+      in
+      let interface_hash =
+        Ext_canonical.hash_with_domain Ext_canonical.domain_decl_interface interface_payload
+      in
+      assert_equal (prefix ^ " interface hash")
+        (hex_of_raw_hash declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash)
+        (hex_of_raw_hash interface_hash);
+      let certificate_payload =
+        assert_ok (prefix ^ " certificate payload")
+          (Ext_canonical.declaration_certificate_payload decoded.Ext_cert.name_table
+             decoded.Ext_cert.term_table declaration.Ext_cert.payload interface_hash
+             declaration.Ext_cert.dependencies declaration.Ext_cert.axiom_dependencies)
+      in
+      let certificate_hash =
+        Ext_canonical.hash_with_domain Ext_canonical.domain_decl_certificate certificate_payload
+      in
+      assert_equal (prefix ^ " certificate hash")
+        (hex_of_raw_hash declaration.Ext_cert.hashes.Ext_cert.decl_certificate_hash)
+        (hex_of_raw_hash certificate_hash))
+    decoded.Ext_cert.declaration_table
+
+let run_hash_encoder_tests () =
+  let empty_module = encode_module [] [] [] [] [] in
+  let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
+  assert_canonical_bytes "empty export payload" (encode_export_block [])
+    (Ext_canonical.encode_export_block empty_decoded);
+  assert_canonical_bytes "empty axiom report payload" (encode_axiom_report [] [])
+    (Ext_canonical.encode_axiom_report empty_decoded.Ext_cert.name_table
+       empty_decoded.Ext_cert.axiom_report);
+  let empty_export_payload = assert_ok "empty export payload for domain"
+      (Ext_canonical.encode_export_block empty_decoded)
+  in
+  assert_bool "domain label affects export hash"
+    (Ext_canonical.hash_with_domain Ext_canonical.domain_module_export empty_export_payload
+    <> Ext_canonical.hash_with_domain "NPA-MODULE-EXPORT-X" empty_export_payload);
+
+  let axiom_module = encode_minimal_module [ minimal_axiom_decl ] [ minimal_export_entry ] in
+  let axiom_decoded = decode_module_bytes "axiom hash fixture" axiom_module in
+  assert_canonical_bytes "axiom export payload" (encode_export_block [ minimal_export_entry ])
+    (Ext_canonical.encode_export_block axiom_decoded);
+  let axiom_decl = first_declaration axiom_decoded in
+  let sort_hash =
+    assert_ok "sort term hash"
+      (Ext_canonical.term_hash Ext_bytes.Term_table axiom_decl.Ext_cert.offset
+         axiom_decoded.Ext_cert.name_table Ext_term.(Sort Ext_level.Zero))
+  in
+  let expected_axiom_iface =
+    one_byte 0x00 ^ encode_name [ "A" ] ^ encode_uvar_int 0 ^ sort_hash
+    ^ encode_dependency_entries []
+  in
+  assert_canonical_bytes "axiom declaration interface payload" expected_axiom_iface
+    (Ext_canonical.declaration_interface_payload axiom_decoded.Ext_cert.name_table
+       axiom_decoded.Ext_cert.level_table axiom_decoded.Ext_cert.term_table axiom_decl.Ext_cert.payload
+       axiom_decl.Ext_cert.dependencies axiom_decl.Ext_cert.axiom_dependencies);
+  let axiom_iface_hash =
+    Ext_canonical.hash_with_domain Ext_canonical.domain_decl_interface expected_axiom_iface
+  in
+  assert_canonical_bytes "axiom declaration certificate payload"
+    (axiom_iface_hash ^ encode_axiom_refs [])
+    (Ext_canonical.declaration_certificate_payload axiom_decoded.Ext_cert.name_table
+       axiom_decoded.Ext_cert.term_table axiom_decl.Ext_cert.payload axiom_iface_hash
+       axiom_decl.Ext_cert.dependencies axiom_decl.Ext_cert.axiom_dependencies);
+
+  let imported_ref = encode_global_imported 0 1 (hash_bytes 0x55) in
+  let theorem_decl_bytes =
+    encode_decl_cert
+      (encode_theorem_decl_payload 0x02 0 [] 0 1)
+      [ (imported_ref, hash_bytes 0x55) ] [] (hash_bytes 0x41) (hash_bytes 0x42)
+  in
+  let theorem_export =
+    encode_export_entry_full 0 0x02 [] 0 None (hash_bytes 0x31) None None
+      (Some encode_opacity_opaque) (hash_bytes 0x32) []
+  in
+  let theorem_module =
+    encode_module ~imports:[ ([ "Dep" ], hash_bytes 0x71, None) ]
+      [ [ "A" ]; [ "Imported" ] ] [ encode_level_zero ]
+      [ encode_term_sort 0; encode_term_const imported_ref [] ]
+      [ theorem_decl_bytes ] [ theorem_export ]
+  in
+  let theorem_decoded = decode_module_bytes "theorem hash fixture" theorem_module in
+  assert_canonical_bytes "theorem export payload" (encode_export_block [ theorem_export ])
+    (Ext_canonical.encode_export_block theorem_decoded);
+  let theorem_decl = first_declaration theorem_decoded in
+  let theorem_sort_hash =
+    assert_ok "theorem sort term hash"
+      (Ext_canonical.term_hash Ext_bytes.Term_table theorem_decl.Ext_cert.offset
+         theorem_decoded.Ext_cert.name_table Ext_term.(Sort Ext_level.Zero))
+  in
+  let expected_theorem_iface =
+    one_byte 0x02 ^ encode_name [ "A" ] ^ encode_uvar_int 0 ^ theorem_sort_hash
+    ^ encode_opacity_opaque ^ encode_dependency_entries [] ^ encode_axiom_refs []
+  in
+  assert_canonical_bytes "theorem declaration interface payload" expected_theorem_iface
+    (Ext_canonical.declaration_interface_payload theorem_decoded.Ext_cert.name_table
+       theorem_decoded.Ext_cert.level_table theorem_decoded.Ext_cert.term_table
+       theorem_decl.Ext_cert.payload theorem_decl.Ext_cert.dependencies
+       theorem_decl.Ext_cert.axiom_dependencies);
+  let theorem_proof =
+    match theorem_decl.Ext_cert.payload with
+    | Ext_cert.TheoremDecl { decl_proof; _ } -> decl_proof
+    | _ -> failwith "expected theorem declaration"
+  in
+  let theorem_proof_hash =
+    assert_ok "theorem proof term hash"
+      (Ext_canonical.term_hash Ext_bytes.Term_table theorem_decl.Ext_cert.offset
+         theorem_decoded.Ext_cert.name_table theorem_proof)
+  in
+  let theorem_iface_hash =
+    Ext_canonical.hash_with_domain Ext_canonical.domain_decl_interface expected_theorem_iface
+  in
+  assert_canonical_bytes "theorem declaration certificate payload"
+    (theorem_iface_hash ^ theorem_proof_hash
+    ^ encode_dependency_entries [ (imported_ref, hash_bytes 0x55) ])
+    (Ext_canonical.declaration_certificate_payload theorem_decoded.Ext_cert.name_table
+       theorem_decoded.Ext_cert.term_table theorem_decl.Ext_cert.payload theorem_iface_hash
+       theorem_decl.Ext_cert.dependencies theorem_decl.Ext_cert.axiom_dependencies);
+
+  let import_decl =
+    encode_decl_cert
+      (encode_def_decl_payload 0x01 0 [] 0 1 `Reducible)
+      [ (imported_ref, hash_bytes 0x55) ] [] (hash_bytes 0x56) (hash_bytes 0x57)
+  in
+  let import_export =
+    encode_export_entry_full 0 0x01 [] 0 (Some 1) (hash_bytes 0x31)
+      (Some (hash_bytes 0x61)) (Some (encode_reducibility `Reducible)) None
+      (hash_bytes 0x32) []
+  in
+  let import_module =
+    encode_module ~imports:[ ([ "Dep" ], hash_bytes 0x71, None) ] [ [ "A" ]; [ "Imported" ] ]
+      [ encode_level_zero ]
+      [ encode_term_sort 0; encode_term_const imported_ref [] ]
+      [ import_decl ] [ import_export ]
+  in
+  let import_decoded = decode_module_bytes "import hash fixture" import_module in
+  assert_canonical_bytes "import dependency payload"
+    (encode_dependency_entries [ (imported_ref, hash_bytes 0x55) ])
+    (Ext_canonical.encode_dependency_entries Ext_bytes.Declarations 0
+       import_decoded.Ext_cert.name_table (first_declaration import_decoded).Ext_cert.dependencies);
+  assert_canonical_bytes "import export payload" (encode_export_block [ import_export ])
+    (Ext_canonical.encode_export_block import_decoded);
+
+  let inductive_decl =
+    encode_decl_cert (encode_inductive_decl_payload 0x03 0 [] [] [] 0 [ (1, 0) ] None) [] []
+      (hash_bytes 0x81) (hash_bytes 0x82)
+  in
+  let inductive_export = encode_export_entry 0 0x03 [] 0 None [] in
+  let inductive_module =
+    encode_module [ [ "A" ]; [ "C" ] ] [ encode_level_zero ] [ encode_term_sort 0 ]
+      [ inductive_decl ] [ inductive_export ]
+  in
+  let inductive_decoded = decode_module_bytes "inductive hash fixture" inductive_module in
+  ignore
+    (assert_ok "inductive declaration interface payload"
+       (Ext_canonical.declaration_interface_payload inductive_decoded.Ext_cert.name_table
+          inductive_decoded.Ext_cert.level_table inductive_decoded.Ext_cert.term_table
+          (first_declaration inductive_decoded).Ext_cert.payload
+          (first_declaration inductive_decoded).Ext_cert.dependencies
+          (first_declaration inductive_decoded).Ext_cert.axiom_dependencies));
+  assert_canonical_bytes "inductive export payload" (encode_export_block [ inductive_export ])
+    (Ext_canonical.encode_export_block inductive_decoded);
+
+  let assert_golden_module label path =
+    let bytes = read_binary_file path in
+    let fixture = golden_hash_fixture label in
+    assert_int_equal (label ^ " golden byte length") fixture.golden_byte_len
+      (String.length bytes);
+    let decoded = decode_module_bytes (label ^ " golden") bytes in
+    assert_equal (label ^ " stored export hash") fixture.golden_export_hash
+      (hex_of_raw_hash decoded.Ext_cert.hashes.Ext_cert.export_hash);
+    assert_equal (label ^ " stored axiom report hash") fixture.golden_axiom_report_hash
+      (hex_of_raw_hash decoded.Ext_cert.hashes.Ext_cert.axiom_report_hash);
+    assert_equal (label ^ " stored certificate hash") fixture.golden_certificate_hash
+      (hex_of_raw_hash decoded.Ext_cert.hashes.Ext_cert.certificate_hash);
+    assert_declaration_hashes label decoded;
+    assert_canonical_hash (label ^ " encoded export hash") fixture.golden_export_hash
+      (Ext_canonical.export_hash decoded);
+    assert_canonical_hash (label ^ " encoded axiom report hash")
+      fixture.golden_axiom_report_hash (Ext_canonical.axiom_report_hash decoded)
+  in
+  assert_golden_module "nat"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert");
+  assert_golden_module "eq"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert")
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
@@ -1083,6 +1353,7 @@ let () =
                "decoder-reachability";
                "decoder-tables";
                "feature-policy";
+               "hash-encoder";
                "sha256";
              ])
       then
@@ -1095,4 +1366,5 @@ let () =
   if should_run selected "decoder-declarations" then run_decoder_declarations_tests ();
   if should_run selected "decoder-reachability" then run_decoder_reachability_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
+  if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()

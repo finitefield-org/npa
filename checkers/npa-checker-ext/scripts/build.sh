@@ -24,6 +24,7 @@ for src in \
   src/ext_level.ml \
   src/ext_term.ml \
   src/ext_cert.ml \
+  src/ext_canonical.ml \
   src/ext_axiom.ml \
   src/ext_env.ml \
   src/ext_reduce.ml \
@@ -47,6 +48,7 @@ done
   "$BUILD_DIR/ext_level.cmo" \
   "$BUILD_DIR/ext_term.cmo" \
   "$BUILD_DIR/ext_cert.cmo" \
+  "$BUILD_DIR/ext_canonical.cmo" \
   "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
   "$BUILD_DIR/ext_reduce.cmo" \

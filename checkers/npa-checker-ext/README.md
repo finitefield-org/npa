@@ -17,6 +17,7 @@ scripts/test.sh decoder-header
 scripts/test.sh decoder-tables
 scripts/test.sh decoder-declarations
 scripts/test.sh decoder-reachability
+scripts/test.sh hash-encoder
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -86,3 +87,9 @@ module is accepted. The validator marks roots from the header, imports,
 declarations, exports, and axiom report, traverses reachable terms and levels,
 rejects unused name/level/term table entries, enforces canonical table ordering,
 and rejects bytes after the module hash trailer.
+
+M2-01 adds canonical hash input encoders in `src/ext_canonical.ml`. These
+encoders produce domain-separated inputs for level, term, declaration
+dependency, axiom dependency, declaration payload, export block, and axiom
+report hashing without reading source spans, debug sidecars, filesystem paths,
+pretty printers, or JSON output.
