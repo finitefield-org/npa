@@ -242,6 +242,7 @@ host-specific caches, and unredacted environment dumps.
 
 ## Later Handoff
 
-CLR-07-03 and CLR-07-04 add concrete `npa-package-pr` and
-`npa-package-release` workflow templates under `ci-templates/github-actions/`.
-CLR-09 copies or references those templates for the seed theorem library.
+CLR-07-03 adds the concrete `npa-package-pr` workflow template under
+`ci-templates/github-actions/`. CLR-07-04 adds the `npa-package-release`
+workflow template. CLR-09 copies or references those templates for the seed
+theorem library.

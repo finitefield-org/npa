@@ -4,15 +4,15 @@ This directory is reserved for copyable external theorem library CI templates.
 It is intentionally outside `.github/workflows` so these files are not active
 local workflows for the `npa` repository.
 
-Planned template files:
+Template files:
 
 ```text
-npa-package-pr.yml
+npa-package-pr.yml          available
 npa-package-release.yml
 ```
 
-CLR-07-01 defines the contract and directory location before adding concrete
-YAML. The contract source is:
+CLR-07-03 adds the PR template. Later CLR-07 milestones add the release
+template. The contract source is:
 
 ```text
 doc/external-theorem-library-ci.md
@@ -70,6 +70,11 @@ test -x "$NPA_BINARY_PATH" || {
 "$NPA_BINARY_PATH" --version
 ```
 
+`npa-package-pr.yml` reads `NPA_BINARY_PATH`, `NPA_VERSION`, `NPA_GIT_TAG`, and
+`NPA_GIT_COMMIT` from GitHub repository variables. For CLR-07-03 it accepts
+`NPA_BINARY_PATH` only and fails clearly if a later installer-mode variable is
+selected.
+
 When Rust is used to build `npa-cli`, templates must use a checked-in
 `rust-toolchain.toml` or exact `RUST_TOOLCHAIN_VERSION`, then print:
 
@@ -93,6 +98,31 @@ npa package check-hashes --root . --json
 npa package verify-certs --root . --checker reference --json
 npa package axiom-report --root . --check --json
 npa package index --root . --check --json
+```
+
+`npa-package-pr.yml` is the PR-mode template. It runs the full package as the
+conservative changed-module fallback and saves command JSON to:
+
+```text
+ci-output/package-check.json
+ci-output/build-certs.json
+ci-output/check-hashes.json
+ci-output/verify-certs-reference.json
+ci-output/axiom-report.json
+ci-output/index.json
+```
+
+Validate workflow syntax with `actionlint` when it is installed:
+
+```sh
+actionlint ci-templates/github-actions/npa-package-pr.yml
+```
+
+If `actionlint` is unavailable, use a local YAML parser as a cheap syntax
+fallback:
+
+```sh
+python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' ci-templates/github-actions/npa-package-pr.yml
 ```
 
 Release templates may add the fast verifier as a labeled non-reference gate:
