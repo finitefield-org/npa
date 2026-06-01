@@ -597,7 +597,7 @@ let generated_signatures_of_declaration decl_index (declaration : Ext_cert.decla
         generated_name = signature.signature_name;
       }
     in
-    (key, signature) :: generated
+    generated @ [ (key, signature) ]
   in
   let collect_constructor_signatures universe_params constructors generated =
     let rec loop remaining generated =

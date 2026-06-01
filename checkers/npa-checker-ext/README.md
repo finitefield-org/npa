@@ -22,6 +22,7 @@ scripts/test.sh hash-level-term
 scripts/test.sh hash-declarations
 scripts/test.sh hash-module
 scripts/test.sh import-store
+scripts/test.sh inductive-constructors
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using

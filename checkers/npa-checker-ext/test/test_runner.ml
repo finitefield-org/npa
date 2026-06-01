@@ -2788,6 +2788,174 @@ let run_type_declarations_tests () =
     "universe_inconsistency" "unresolved_metavariable"
     (Ext_typecheck.check_declarations [ unresolved_meta_decl ])
 
+let binder_type ty = { Ext_cert.binder_ty = ty }
+
+let constructor_spec constructor_name constructor_ty =
+  { Ext_cert.constructor_name; constructor_ty }
+
+let generated_signature_names env =
+  String.concat ","
+    (List.map
+       (fun (_, signature) -> Ext_name.to_string signature.Ext_env.signature_name)
+       env.Ext_env.generated_signatures)
+
+let run_inductive_constructor_tests () =
+  let local_family ?(decl_index = 0) levels =
+    Ext_term.Const (Ext_term.Local { decl_index }, levels)
+  in
+  let nat_like_name = make_name [ "NatLike" ] in
+  let nat_like_zero_name = make_name [ "NatLike"; "zero" ] in
+  let nat_like_succ_name = make_name [ "NatLike"; "succ" ] in
+  let nat_like = local_family [] in
+  let nat_like_zero = constructor_spec nat_like_zero_name nat_like in
+  let nat_like_succ =
+    constructor_spec nat_like_succ_name (Ext_term.Pi (nat_like, nat_like))
+  in
+  let nat_like_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = nat_like_name;
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors = [ nat_like_zero; nat_like_succ ];
+           ind_recursor = None;
+         })
+  in
+  let nat_like_env =
+    assert_declaration_check_ok
+      "inductive-constructors valid Nat-like constructors"
+      (Ext_typecheck.check_declarations [ nat_like_decl ])
+  in
+  assert_equal "inductive-constructors generated Nat-like order"
+    "NatLike.zero,NatLike.succ"
+    (generated_signature_names nat_like_env);
+  let nat_zero_signature =
+    assert_env_resolves "inductive-constructors resolves Nat-like zero"
+      nat_like_env
+      (Ext_term.LocalGenerated { decl_index = 0; name = nat_like_zero_name })
+  in
+  if nat_zero_signature.Ext_env.signature_ty <> nat_like then
+    failwith "inductive-constructors Nat-like zero type mismatch";
+
+  let u_name = make_name [ "u" ] in
+  let u_level = Ext_level.Param u_name in
+  let sort_u = Ext_term.Sort u_level in
+  let list_like_name = make_name [ "ListLike" ] in
+  let list_like_nil_name = make_name [ "ListLike"; "nil" ] in
+  let list_like_cons_name = make_name [ "ListLike"; "cons" ] in
+  let list_like = local_family [ u_level ] in
+  let list_like_of index = Ext_term.App (list_like, Ext_term.BVar index) in
+  let list_like_nil =
+    constructor_spec list_like_nil_name
+      (Ext_term.Pi (sort_u, list_like_of 0))
+  in
+  let list_like_cons =
+    constructor_spec list_like_cons_name
+      (Ext_term.Pi
+         ( sort_u,
+           Ext_term.Pi
+             ( Ext_term.BVar 0,
+               Ext_term.Pi (list_like_of 1, list_like_of 2) ) ))
+  in
+  let list_like_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = list_like_name;
+           decl_universe_params = [ u_name ];
+           decl_universe_constraints = [];
+           ind_params = [ binder_type sort_u ];
+           ind_indices = [];
+           ind_sort = u_level;
+           ind_constructors = [ list_like_nil; list_like_cons ];
+           ind_recursor = None;
+         })
+  in
+  let list_like_env =
+    assert_declaration_check_ok
+      "inductive-constructors valid List-like constructors"
+      (Ext_typecheck.check_declarations [ list_like_decl ])
+  in
+  assert_equal "inductive-constructors generated List-like order"
+    "ListLike.nil,ListLike.cons"
+    (generated_signature_names list_like_env);
+
+  let wrong_family_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "WrongFamily" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors =
+             [ constructor_spec (make_name [ "WrongFamily"; "bad" ]) Ext_env.nat ];
+           ind_recursor = None;
+         })
+  in
+  assert_typecheck_rejects
+    "inductive-constructors rejects constructor returning wrong family"
+    "inductive_invalid" "inductive_invalid"
+    (Ext_typecheck.check_declarations [ wrong_family_decl ]);
+
+  let bad_domain_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "BadDomain" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "BadDomain"; "bad" ])
+                 (Ext_term.Pi (Ext_env.nat_zero, local_family []));
+             ];
+           ind_recursor = None;
+         })
+  in
+  assert_typecheck_rejects
+    "inductive-constructors validates constructor domain types"
+    "type_mismatch" "expected_sort"
+    (Ext_typecheck.check_declarations [ bad_domain_decl ]);
+
+  let malformed_interface_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "MalformedList" ];
+           decl_universe_params = [ u_name ];
+           decl_universe_constraints = [];
+           ind_params = [ binder_type sort_u ];
+           ind_indices = [];
+           ind_sort = u_level;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "MalformedList"; "bad" ])
+                 (Ext_term.Pi
+                    ( sort_u,
+                      Ext_term.Pi
+                        ( sort_u,
+                          Ext_term.App (local_family [ u_level ], Ext_term.BVar 0)
+                        )
+                    ));
+             ];
+           ind_recursor = None;
+         })
+  in
+  assert_typecheck_rejects
+    "inductive-constructors rejects malformed generated interface"
+    "inductive_invalid" "inductive_invalid"
+    (Ext_typecheck.check_declarations [ malformed_interface_decl ])
+
 let run_subst_tests () =
   let section = Ext_bytes.Declarations in
   let offset = 17 in
@@ -3255,6 +3423,7 @@ let () =
                "import-high-trust";
                "import-normal";
                "import-store";
+               "inductive-constructors";
                "reduce";
                "sha256";
                "subst";
@@ -3279,6 +3448,8 @@ let () =
   if should_run selected "import-store" then run_import_store_tests ();
   if should_run selected "import-normal" then run_import_normal_tests ();
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
+  if should_run selected "inductive-constructors" then
+    run_inductive_constructor_tests ();
   if should_run selected "reduce" then run_reduce_tests ();
   if should_run selected "subst" then run_subst_tests ();
   if should_run selected "type-env" then run_type_env_tests ();

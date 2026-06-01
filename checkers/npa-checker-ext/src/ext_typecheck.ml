@@ -12,6 +12,7 @@ type error_reason =
   | Expected_function
   | Type_mismatch
   | Unsupported_declaration
+  | Inductive_invalid
   | Resource_limit
 
 type error = {
@@ -54,6 +55,7 @@ let error_reason_code reason =
   | Expected_function -> "expected_function"
   | Type_mismatch -> "type_mismatch"
   | Unsupported_declaration -> "unsupported_declaration"
+  | Inductive_invalid -> "inductive_invalid"
   | Resource_limit -> "resource_limit"
 
 let error_kind error =
@@ -63,6 +65,7 @@ let error_kind error =
   | Unknown_reference | Invalid_bvar | Expected_sort | Expected_function | Type_mismatch
   | Unsupported_declaration ->
       "type_mismatch"
+  | Inductive_invalid -> "inductive_invalid"
   | Resource_limit -> "conversion_failure"
 
 let error_of_env_error (env_error : Ext_env.error) =
@@ -273,6 +276,14 @@ let collect_apps term =
     | _ -> (current, args)
   in
   loop term []
+
+let peel_pi_domains term =
+  let rec loop domains current =
+    match current with
+    | Ext_term.Pi (domain, body) -> loop (domain :: domains) body
+    | _ -> (List.rev domains, current)
+  in
+  loop [] term
 
 let rec apply_args fn args =
   match args with
@@ -557,6 +568,202 @@ let add_checked_declaration env declaration =
   | Ok env -> Ok env
   | Error env_error -> error_of_env_error env_error
 
+let rec names_equal lhs rhs =
+  match (lhs, rhs) with
+  | [], [] -> true
+  | left :: left_rest, right :: right_rest ->
+      Ext_name.equal left right && names_equal left_rest right_rest
+  | _ -> false
+
+let rec has_name name names =
+  match names with
+  | [] -> false
+  | current :: rest -> Ext_name.equal current name || has_name name rest
+
+let ensure_constructor_names_unique section offset family_name constructors =
+  let rec loop seen remaining =
+    match remaining with
+    | [] -> Ok ()
+    | constructor :: rest ->
+        let constructor_name = constructor.Ext_cert.constructor_name in
+        if
+          Ext_name.equal constructor_name family_name
+          || has_name constructor_name seen
+        then error section offset Inductive_invalid
+        else loop (constructor_name :: seen) rest
+  in
+  loop [] constructors
+
+let universe_param_levels delta =
+  List.map (fun name -> Ext_level.Param name) delta
+
+let check_constructor_result section offset decl_index delta param_count index_count
+    domain_count result =
+  let head, args = collect_apps result in
+  let expected_ref = Ext_term.Local { decl_index } in
+  let expected_levels = universe_param_levels delta in
+  match head with
+  | Ext_term.Const (global_ref, levels)
+    when global_ref_equal global_ref expected_ref
+         && levels_equal levels expected_levels ->
+      if List.length args <> param_count + index_count then
+        error section offset Inductive_invalid
+      else if domain_count < param_count then error section offset Inductive_invalid
+      else
+        let rec check_params param_index remaining_args =
+          if param_index = param_count then Ok ()
+          else
+            match remaining_args with
+            | [] -> error section offset Inductive_invalid
+            | arg :: rest ->
+                let expected_arg =
+                  Ext_term.BVar (domain_count - 1 - param_index)
+                in
+                if arg = expected_arg then check_params (param_index + 1) rest
+                else error section offset Inductive_invalid
+        in
+        check_params 0 args
+  | _ -> error section offset Inductive_invalid
+
+let check_constructor section offset env delta decl_index params indices constructor =
+  bind
+    (expect_sort ~section ~offset ~delta env empty_context
+       constructor.Ext_cert.constructor_ty)
+    (fun _ ->
+      let domains, result = peel_pi_domains constructor.Ext_cert.constructor_ty in
+      bind (whnf ~section ~offset ~delta env empty_context result) (fun result ->
+          check_constructor_result section offset decl_index delta
+            (List.length params) (List.length indices) (List.length domains) result))
+
+let rec check_constructors section offset env delta decl_index params indices constructors =
+  match constructors with
+  | [] -> Ok ()
+  | constructor :: rest ->
+      bind
+        (check_constructor section offset env delta decl_index params indices constructor)
+        (fun () ->
+          check_constructors section offset env delta decl_index params indices rest)
+
+let inductive_family_only_declaration (declaration : Ext_cert.declaration) =
+  match declaration.Ext_cert.payload with
+  | Ext_cert.InductiveDecl
+      {
+        decl_name;
+        decl_universe_params;
+        decl_universe_constraints;
+        ind_params;
+        ind_indices;
+        ind_sort;
+        _;
+      } ->
+      {
+        declaration with
+        Ext_cert.payload =
+          Ext_cert.InductiveDecl
+            {
+              decl_name;
+              decl_universe_params;
+              decl_universe_constraints;
+              ind_params;
+              ind_indices;
+              ind_sort;
+              ind_constructors = [];
+              ind_recursor = None;
+            };
+      }
+  | _ -> declaration
+
+let check_generated_constructor_interface section offset env decl_index delta
+    decl_interface_hash constructor =
+  let constructor_name = constructor.Ext_cert.constructor_name in
+  bind
+    (resolve_signature section offset env
+       (Ext_term.LocalGenerated { decl_index; name = constructor_name }))
+    (fun signature ->
+      if not (Ext_name.equal signature.Ext_env.signature_name constructor_name)
+      then error section offset Inductive_invalid
+      else if
+        signature.Ext_env.signature_decl_interface_hash
+        <> Some decl_interface_hash
+      then error section offset Inductive_invalid
+      else if
+        not (names_equal signature.Ext_env.signature_universe_params delta)
+      then error section offset Inductive_invalid
+      else if signature.Ext_env.signature_ty <> constructor.Ext_cert.constructor_ty
+      then error section offset Inductive_invalid
+      else
+        match signature.Ext_env.signature_origin with
+        | Ext_env.Local_generated { decl_index = origin_index; name }
+          when origin_index = decl_index && Ext_name.equal name constructor_name ->
+            Ok ()
+        | _ -> error section offset Inductive_invalid)
+
+let rec check_generated_constructor_interfaces section offset env decl_index delta
+    decl_interface_hash constructors =
+  match constructors with
+  | [] -> Ok ()
+  | constructor :: rest ->
+      bind
+        (check_generated_constructor_interface section offset env decl_index delta
+           decl_interface_hash constructor)
+        (fun () ->
+          check_generated_constructor_interfaces section offset env decl_index delta
+            decl_interface_hash rest)
+
+let check_inductive_declaration env (declaration : Ext_cert.declaration) =
+  let section = Ext_bytes.Declarations in
+  let offset = declaration.Ext_cert.offset in
+  let decl_index = env.Ext_env.checked_declaration_count in
+  let decl_interface_hash =
+    declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash
+  in
+  match declaration.Ext_cert.payload with
+  | Ext_cert.InductiveDecl
+      {
+        decl_name;
+        decl_universe_params = delta;
+        ind_params;
+        ind_indices;
+        ind_sort;
+        ind_constructors;
+        ind_recursor;
+        _;
+      } -> (
+      match ind_recursor with
+      | Some _ -> error section offset Unsupported_declaration
+      | None ->
+          bind (ensure_level_wf section offset delta ind_sort) (fun () ->
+              bind
+                (ensure_constructor_names_unique section offset decl_name
+                   ind_constructors)
+                (fun () ->
+                  let family_ty =
+                    Ext_env.pi_of_binders (ind_params @ ind_indices)
+                      (Ext_term.Sort ind_sort)
+                  in
+                  bind
+                    (expect_sort ~section ~offset ~delta env empty_context
+                       family_ty)
+                    (fun _ ->
+                      let family_declaration =
+                        inductive_family_only_declaration declaration
+                      in
+                      bind (add_checked_declaration env family_declaration)
+                        (fun family_env ->
+                          bind
+                            (check_constructors section offset family_env delta
+                               decl_index ind_params ind_indices
+                               ind_constructors)
+                            (fun () ->
+                              bind (add_checked_declaration env declaration)
+                                (fun checked_env ->
+                                  bind
+                                    (check_generated_constructor_interfaces
+                                       section offset checked_env decl_index delta
+                                       decl_interface_hash ind_constructors)
+                                    (fun () -> Ok checked_env))))))))
+  | _ -> error section offset Unsupported_declaration
+
 let check_declaration env (declaration : Ext_cert.declaration) =
   let section = Ext_bytes.Declarations in
   let offset = declaration.Ext_cert.offset in
@@ -590,7 +797,8 @@ let check_declaration env (declaration : Ext_cert.declaration) =
                         (check ~section ~offset ~delta env empty_context decl_proof
                            decl_ty)
                         (fun () -> add_checked_declaration env declaration))
-              | Ext_cert.InductiveDecl _ | Ext_cert.MutualInductiveBlockDecl _ ->
+              | Ext_cert.InductiveDecl _ -> check_inductive_declaration env declaration
+              | Ext_cert.MutualInductiveBlockDecl _ ->
                   error section offset Unsupported_declaration)))
 
 let check_declarations ?(env = Ext_env.empty) declarations =
