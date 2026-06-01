@@ -9,18 +9,46 @@ The first implementation target is an inert local fixture at
 `fixtures/npa-mathlib-seed/`. It models a repository that will later be copied
 or moved to a separate `npa-mathlib-seed` checkout.
 
-This fixture is intentionally not wired into this repository as an active
-package yet:
+This fixture is intentionally not wired into this repository's active CI:
 
 - it has no active workflow under this repository's `.github/workflows/`;
 - it does not depend on hidden relative paths into this `npa` checkout;
-- later package files must use package-relative paths from the fixture root;
-- later standard-library inputs must be declared as `npa-std` package
-  artifacts, not loaded implicitly from this repository's `proofs/` tree.
+- package files use package-relative paths from the fixture root;
+- standard-library inputs are declared as `npa-std` package artifacts, not
+  loaded implicitly from this repository's `proofs/` tree.
 
-CLR-09-02 owns materializing `npa-package.toml`, source files, certificates,
-replay files, meta files, vendor artifacts, and generated package artifacts.
-CLR-09-01 only fixes the repository boundary and module scope.
+The fixture can be copied to a standalone checkout as the package root. The
+only expected external input is an `npa` CLI built from a compatible `npa`
+checkout or release.
+
+## Package Layout
+
+The materialized seed package contains:
+
+```text
+npa-package.toml
+README.md
+CONTRIBUTING.md
+Proofs/Ai/{Basic,Prop,Eq,Nat,Reduction}/source.npa
+Proofs/Ai/{Basic,Prop,Eq,Nat,Reduction}/certificate.npcert
+Proofs/Ai/{Basic,Prop,Eq,Nat,Reduction}/replay.json
+Proofs/Ai/{Basic,Prop,Eq,Nat,Reduction}/meta.json
+vendor/npa-std/Std/Logic/Eq/certificate.npcert
+vendor/npa-std/Std/Nat/Basic/certificate.npcert
+```
+
+Generated package artifacts use the CLR-04 through CLR-06 conventional paths
+under `generated/`:
+
+```text
+generated/package-lock.json
+generated/axiom-report.json
+generated/theorem-index.json
+generated/publish-plan.json
+```
+
+Those generated files are intentionally not produced in CLR-09-02. Later
+milestones wire the full fresh-checkout command sequence and release metadata.
 
 ## Initial Module Set
 
@@ -79,3 +107,17 @@ The trusted boundary remains the canonical certificate, the small Rust kernel,
 and the source-free checker verdict. Package metadata, fixture documentation,
 replay files, theorem indexes, publish-plan data, CI, and future registry seed
 entries remain untrusted metadata.
+
+## Local Check
+
+From this fixture root, the CLR-09-02 validation command is:
+
+```sh
+npa package check --root . --json
+```
+
+When running from the parent `npa` workspace before installing `npa`, use:
+
+```sh
+cargo run -p npa-cli -- package check --root fixtures/npa-mathlib-seed --json
+```
