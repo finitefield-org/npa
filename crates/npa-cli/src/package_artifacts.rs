@@ -9,7 +9,10 @@ use npa_api::{
     PackageVerificationErrorReason, PackageVerificationVerdictSource,
 };
 use npa_cert::Name;
-use npa_package::{parse_package_lock_json, PackageLockManifest, PackagePath};
+use npa_package::{
+    package_file_hash, parse_package_lock_json, PackageArtifactFileReference, PackageLockManifest,
+    PackagePath, ValidatedPackageManifest,
+};
 
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path};
@@ -69,6 +72,10 @@ pub struct CheckedGeneratedPackageArtifacts {
 pub struct LoadedPackageArtifactExtraction {
     /// Sanitized package root display string for diagnostics.
     pub root_display: String,
+    /// Validated package manifest used for extraction.
+    pub validated: ValidatedPackageManifest,
+    /// Exact package-lock file identity used for extraction.
+    pub package_lock: PackageArtifactFileReference,
     /// Source-free extraction output for later artifact projection.
     pub extraction: PackageArtifactExtraction,
     /// Checked generated artifacts requested by check mode.
@@ -89,7 +96,7 @@ pub fn load_package_artifact_extraction(
 ) -> Result<LoadedPackageArtifactExtraction, CommandResult> {
     let command = command.into();
     let loaded = load_package_root(root, command.clone())?;
-    let lock = match read_package_lock(&loaded) {
+    let (lock_source, lock) = match read_package_lock(&loaded) {
         Ok(lock) => lock,
         Err(diagnostic) => {
             return Err(CommandResult::failed(
@@ -98,6 +105,10 @@ pub fn load_package_artifact_extraction(
                 vec![*diagnostic],
             ));
         }
+    };
+    let package_lock = PackageArtifactFileReference {
+        path: PackagePath::new(PACKAGE_LOCK_PATH),
+        file_hash: package_file_hash(lock_source.as_bytes()),
     };
     let certificates = match read_certificate_artifacts(&loaded) {
         Ok(certificates) => certificates,
@@ -140,6 +151,8 @@ pub fn load_package_artifact_extraction(
 
     Ok(LoadedPackageArtifactExtraction {
         root_display: loaded.root_display,
+        validated: loaded.validated,
+        package_lock,
         extraction,
         checked_generated,
     })
@@ -147,7 +160,7 @@ pub fn load_package_artifact_extraction(
 
 fn read_package_lock(
     loaded: &LoadedPackageRoot,
-) -> Result<PackageLockManifest, Box<CommandDiagnostic>> {
+) -> Result<(String, PackageLockManifest), Box<CommandDiagnostic>> {
     let lock_path = PackagePath::new(PACKAGE_LOCK_PATH);
     let full_lock_path = join_package_path(&loaded.root, &lock_path, "package_lock.path")?;
     let lock_source = match fs::read_to_string(&full_lock_path) {
@@ -165,9 +178,10 @@ fn read_package_lock(
             ));
         }
     };
-    parse_package_lock_json(&lock_source).map_err(|error| {
+    let lock = parse_package_lock_json(&lock_source).map_err(|error| {
         Box::new(CommandDiagnostic::from_package_lock_error(&error).with_path(PACKAGE_LOCK_PATH))
-    })
+    })?;
+    Ok((lock_source, lock))
 }
 
 fn read_certificate_artifacts(
@@ -286,9 +300,13 @@ fn read_generated_artifact(
 }
 
 fn extraction_error_diagnostic(error: &PackageVerificationError) -> CommandDiagnostic {
-    let mut diagnostic =
-        CommandDiagnostic::error(diagnostic_kind_for_error(error), error.reason_code.as_str())
-            .with_path(error.path.clone());
+    let reason_code = if error.reason_code == PackageVerificationErrorReason::AxiomPolicyRejected {
+        "axiom_report_policy_violation"
+    } else {
+        error.reason_code.as_str()
+    };
+    let mut diagnostic = CommandDiagnostic::error(diagnostic_kind_for_error(error), reason_code)
+        .with_path(error.path.clone());
     if let Some(field) = &error.field {
         diagnostic = diagnostic.with_field(field.clone());
     }
@@ -314,6 +332,9 @@ fn extraction_error_diagnostic(error: &PackageVerificationError) -> CommandDiagn
 }
 
 fn diagnostic_kind_for_error(error: &PackageVerificationError) -> DiagnosticKind {
+    if error.reason_code == PackageVerificationErrorReason::AxiomPolicyRejected {
+        return DiagnosticKind::PackagePolicy;
+    }
     match error.kind {
         PackageVerificationErrorKind::Input => DiagnosticKind::PackageLock,
         PackageVerificationErrorKind::LockGraph => DiagnosticKind::PackageGraph,

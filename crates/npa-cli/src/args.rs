@@ -35,6 +35,8 @@ pub enum PackageCommand {
     Check(PackageCommonOptions),
     /// `npa package build-certs`.
     BuildCerts(PackageBuildCertsOptions),
+    /// `npa package axiom-report`.
+    AxiomReport(PackageAxiomReportOptions),
     /// `npa package verify-certs`.
     VerifyCerts(PackageVerifyCertsOptions),
     /// `npa package check-hashes`.
@@ -47,6 +49,7 @@ impl PackageCommand {
         match self {
             Self::Check(_) => "package check",
             Self::BuildCerts(_) => "package build-certs",
+            Self::AxiomReport(_) => "package axiom-report",
             Self::VerifyCerts(_) => "package verify-certs",
             Self::CheckHashes(_) => "package check-hashes",
         }
@@ -57,6 +60,7 @@ impl PackageCommand {
         match self {
             Self::Check(options) | Self::CheckHashes(options) => options,
             Self::BuildCerts(options) => &options.common,
+            Self::AxiomReport(options) => &options.common,
             Self::VerifyCerts(options) => &options.common,
         }
     }
@@ -86,6 +90,15 @@ pub struct PackageBuildCertsOptions {
     /// Common package command options.
     pub common: PackageCommonOptions,
     /// Check mode: rebuild in memory without writing files.
+    pub check: bool,
+}
+
+/// Options for `package axiom-report`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageAxiomReportOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
+    /// Check mode: regenerate in memory without writing files.
     pub check: bool,
 }
 
@@ -128,6 +141,8 @@ pub enum HelpTopic {
     PackageCheck,
     /// `npa package build-certs --help`.
     PackageBuildCerts,
+    /// `npa package axiom-report --help`.
+    PackageAxiomReport,
     /// `npa package verify-certs --help`.
     PackageVerifyCerts,
     /// `npa package check-hashes --help`.
@@ -253,6 +268,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "--help" | "-h" => Ok(CliAction::Help(HelpTopic::Package)),
         "check" => parse_package_check_args(&args[1..]),
         "build-certs" => parse_package_build_certs_args(&args[1..]),
+        "axiom-report" => parse_package_axiom_report_args(&args[1..]),
         "verify-certs" => parse_package_verify_certs_args(&args[1..]),
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
         command if command.starts_with('-') => {
@@ -311,6 +327,41 @@ fn parse_package_build_certs_args(args: &[String]) -> Result<CliAction, CliUsage
     let common = parse_common_options(&common_tokens, "package build-certs", &["--check"])?;
     Ok(CliAction::Run(CliCommand::Package(
         PackageCommand::BuildCerts(PackageBuildCertsOptions { common, check }),
+    )))
+}
+
+fn parse_package_axiom_report_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackageAxiomReport));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut check = false;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--check" => {
+                if check {
+                    return Err(flag_error("--check", UsageReason::DuplicateFlag)
+                        .with_command("package axiom-report"));
+                }
+                check = true;
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(
+        &common_tokens,
+        "package axiom-report",
+        &["--check", "--checker"],
+    )?;
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::AxiomReport(PackageAxiomReportOptions { common, check }),
     )))
 }
 
@@ -481,12 +532,24 @@ fn contains_help(args: &[String]) -> bool {
 fn is_unsupported_clr04_flag(flag: &str) -> bool {
     matches!(
         flag,
-        "--changed" | "--all" | "--registry" | "--network" | "--update-manifest-hashes"
+        "--changed"
+            | "--all"
+            | "--registry"
+            | "--network"
+            | "--update-manifest-hashes"
+            | "--include-source"
+            | "--include-replay"
+            | "--include-ai-traces"
+            | "--checker"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
         || flag.starts_with("--network=")
         || flag.starts_with("--update-manifest-hashes=")
+        || flag.starts_with("--include-source=")
+        || flag.starts_with("--include-replay=")
+        || flag.starts_with("--include-ai-traces=")
+        || flag.starts_with("--checker=")
 }
 
 /// Render deterministic help text.
@@ -496,13 +559,16 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  verify-certs\n  check-hashes\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  verify-certs\n  check-hashes\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
         }
         HelpTopic::PackageBuildCerts => {
             "Usage: npa package build-certs [--root PATH] [--json] [--check]\n\nRebuild package certificates. --check writes no files; write mode updates local certificates and generated/package-lock.json."
+        }
+        HelpTopic::PackageAxiomReport => {
+            "Usage: npa package axiom-report [--root PATH] [--json] [--check]\n\nGenerate or check generated/axiom-report.json from source-free package certificate artifacts."
         }
         HelpTopic::PackageVerifyCerts => {
             "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast]\n\nVerify certificates through the CLR-03 source-free package verifier. The default checker is reference."

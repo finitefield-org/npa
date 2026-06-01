@@ -829,7 +829,7 @@ external checker disagreement gates
 
 ### CLR-05-04 Implement `package axiom-report`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-03
 - Inputs:
   - CLR-04 `npa-cli` package command framework

@@ -54,6 +54,24 @@ fn package_cli_args_parses_build_certs_check_mode() {
 }
 
 #[test]
+fn package_cli_args_parses_axiom_report_check_mode() {
+    let action = parse(&[
+        "package",
+        "axiom-report",
+        "--root=proofs",
+        "--check",
+        "--json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::AxiomReport(options))) = action else {
+        panic!("expected package axiom-report command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert!(options.check);
+}
+
+#[test]
 fn package_cli_args_defaults_verify_certs_checker_to_reference() {
     let action = parse(&["package", "verify-certs"]);
 
@@ -102,11 +120,21 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
         "--registry=local",
         "--network",
         "--network=on",
+        "--include-source",
+        "--include-source=true",
+        "--include-replay",
+        "--include-replay=true",
+        "--include-ai-traces",
+        "--include-ai-traces=true",
     ] {
         let error = parse_error(&["package", "check", flag]);
         assert_eq!(error.reason, UsageReason::UnsupportedFlag, "{flag}");
         assert_eq!(error.flag.as_deref(), Some(flag), "{flag}");
     }
+
+    let checker_error = parse_error(&["package", "axiom-report", "--checker=external"]);
+    assert_eq!(checker_error.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(checker_error.flag.as_deref(), Some("--checker=external"));
 }
 
 #[test]
@@ -147,6 +175,10 @@ fn package_cli_args_rejects_duplicate_flags() {
     let build_error = parse_error(&["package", "build-certs", "--check", "--check"]);
     assert_eq!(build_error.reason, UsageReason::DuplicateFlag);
     assert_eq!(build_error.flag.as_deref(), Some("--check"));
+
+    let axiom_report_error = parse_error(&["package", "axiom-report", "--check", "--check"]);
+    assert_eq!(axiom_report_error.reason, UsageReason::DuplicateFlag);
+    assert_eq!(axiom_report_error.flag.as_deref(), Some("--check"));
 }
 
 #[test]
@@ -178,6 +210,10 @@ fn package_cli_args_parses_help_topics() {
     assert_eq!(
         parse(&["package", "verify-certs", "--help"]),
         CliAction::Help(HelpTopic::PackageVerifyCerts)
+    );
+    assert_eq!(
+        parse(&["package", "axiom-report", "--help"]),
+        CliAction::Help(HelpTopic::PackageAxiomReport)
     );
 }
 
