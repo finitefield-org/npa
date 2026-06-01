@@ -25,6 +25,12 @@ let assert_contains label needle text =
   if not (contains text needle) then
     failwith (label ^ ": missing " ^ String.escaped needle ^ " in " ^ String.escaped text)
 
+let assert_cli_error label expected args =
+  let result = Ext_cli.run args in
+  assert_int_equal (label ^ " exit") 2 result.code;
+  assert_equal (label ^ " stdout") "" result.stdout;
+  assert_equal (label ^ " stderr") ("npa-checker-ext: " ^ expected ^ "\n") result.stderr
+
 let split_tabs line =
   let length = String.length line in
   let rec loop start fields =
@@ -114,66 +120,66 @@ let run_sha256_tests () =
    with End_of_file -> close_in channel);
   assert_int_equal "sha256 vector count" 18 !count;
   let expected_build_hash =
-    Ext_hash.sha256_prefixed_hex_of_string
-      (String.concat "\000"
-         [
-           Ext_result.checker_id;
-           Ext_result.checker_version;
-           "format:NPA-CERT-0.1";
-           "core:NPA-Core-0.1";
-           Ext_sha256.source_identity;
-         ])
+    Ext_result.checker_build_hash_for_sha256_source_identity Ext_sha256.source_identity
   in
   assert_equal "checker build hash uses vendored sha256 source identity" expected_build_hash
     Ext_result.checker_build_hash;
   assert_bool "checker build hash is not placeholder"
     (Ext_result.checker_build_hash
-    <> "sha256:0000000000000000000000000000000000000000000000000000000000000000")
+    <> "sha256:0000000000000000000000000000000000000000000000000000000000000000");
+  assert_bool "checker build hash changes with vendored sha256 identity"
+    (Ext_result.checker_build_hash
+    <> Ext_result.checker_build_hash_for_sha256_source_identity
+         "vendored-sha256-source:test-change")
 
 let run_cli_tests () =
   let version = Ext_cli.run [ "--version" ] in
   assert_int_equal "version exit" 0 version.code;
-  assert_equal "version stdout" "npa-checker-ext 0.1.0\n" version.stdout;
+  assert_contains "version checker id" "npa-checker-ext 0.1.0\n" version.stdout;
+  assert_contains "version build hash" ("checker_build_hash " ^ Ext_result.checker_build_hash)
+    version.stdout;
+  assert_contains "version certificate format" "certificate_format NPA-CERT-0.1\n"
+    version.stdout;
+  assert_contains "version core spec" "core_spec NPA-Core-0.1\n" version.stdout;
+  assert_contains "version implementation profile" "implementation_profile ocaml-clean-room\n"
+    version.stdout;
+  assert_contains "version source identity"
+    ("vendored_sha256_source_identity " ^ Ext_sha256.source_identity ^ "\n")
+    version.stdout;
+  assert_contains "version manifest signature"
+    "checker_identity_manifest_signature_required false\n" version.stdout;
   assert_equal "version stderr" "" version.stderr;
 
-  let no_args = Ext_cli.run [] in
-  assert_int_equal "no args exit" 2 no_args.code;
-  assert_equal "no args stdout" "" no_args.stdout;
-  assert_equal "no args stderr" "npa-checker-ext: missing required --cert\n" no_args.stderr;
-
-  let source_path =
-    Ext_cli.run
-      [
-        "--cert";
-        "example.npa";
-        "--import-dir";
-        "imports";
-        "--policy";
-        "policy.toml";
-        "--output";
-        "json";
-      ]
-  in
-  assert_int_equal "source path exit" 2 source_path.code;
-  assert_equal "source path stderr" "npa-checker-ext: --cert must not point to .npa source\n"
-    source_path.stderr;
-
-  let bad_output =
-    Ext_cli.run
-      [
-        "--cert";
-        "example.npcert";
-        "--import-dir";
-        "imports";
-        "--policy";
-        "policy.toml";
-        "--output";
-        "pretty";
-      ]
-  in
-  assert_int_equal "bad output exit" 2 bad_output.code;
-  assert_equal "bad output stderr" "npa-checker-ext: --output must be json\n"
-    bad_output.stderr;
+  assert_cli_error "no args" "missing required --cert" [];
+  assert_cli_error "version mixed" "--version must be used alone" [ "--version"; "--output"; "json" ];
+  assert_cli_error "source cert path" "--cert must not point to .npa source"
+    [ "--cert"; "example.npa"; "--import-dir"; "imports"; "--policy"; "policy.toml"; "--output"; "json" ];
+  assert_cli_error "source policy path" "--policy must not point to .npa source"
+    [ "--cert"; "example.npcert"; "--import-dir"; "imports"; "--policy"; "policy.npa"; "--output"; "json" ];
+  assert_cli_error "source import dir" "--import-dir must not point to .npa source"
+    [ "--cert"; "example.npcert"; "--import-dir"; "src/module.npa/imports"; "--policy"; "policy.toml"; "--output"; "json" ];
+  assert_cli_error "bad output" "--output must be json"
+    [ "--cert"; "example.npcert"; "--import-dir"; "imports"; "--policy"; "policy.toml"; "--output"; "pretty" ];
+  assert_cli_error "duplicate cert" "duplicate --cert"
+    [
+      "--cert";
+      "a.npcert";
+      "--cert";
+      "b.npcert";
+      "--import-dir";
+      "imports";
+      "--policy";
+      "policy.toml";
+      "--output";
+      "json";
+    ];
+  assert_cli_error "missing cert value" "missing value for --cert"
+    [ "--cert"; "--import-dir"; "imports"; "--policy"; "policy.toml"; "--output"; "json" ];
+  assert_cli_error "missing output value" "missing value for --output"
+    [ "--cert"; "example.npcert"; "--import-dir"; "imports"; "--policy"; "policy.toml"; "--output"; "--policy" ];
+  assert_cli_error "unknown flag" "unknown flag --audit-bundle" [ "--audit-bundle"; "bundle" ];
+  assert_cli_error "positional source" "positional .npa source input is forbidden" [ "example.npa" ];
+  assert_cli_error "positional input" "positional input is forbidden" [ "example.npcert" ];
 
   let check_shape =
     Ext_cli.run

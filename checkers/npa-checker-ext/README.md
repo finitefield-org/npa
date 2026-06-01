@@ -29,3 +29,16 @@ by later milestones.
 
 M0-03 adds a vendored SHA-256 implementation in `src/ext_sha256.ml`. It is used
 by `src/ext_hash.ml` and by the checker build hash material.
+
+M0-04 fixes the first-release CLI boundary:
+
+```text
+--cert path
+--import-dir path
+--policy path
+--output json
+--version
+```
+
+`--version` must be used alone and prints deterministic build identity fields.
+Check-shaped invocations write only checker raw result JSON to stdout.

@@ -677,6 +677,37 @@ test:
 `Ext_sha256.source_identity` は checker build hash material に含めます。
 source file 全体の hash pinning は runner policy の checker binary hash / manifest hash pinning で扱います。
 
+M0-04 で first-release CLI boundary と build identity material を次のように固定します。
+
+```text
+accepted CLI:
+  --cert path
+  --import-dir path
+  --policy path
+  --output json
+  --version
+
+--version:
+  must be used alone
+  prints checker_id, checker_version, checker_build_hash, certificate_format,
+  core_spec, implementation_profile, project_directory,
+  vendored_sha256_source_identity, and
+  checker_identity_manifest_signature_required
+
+checker_build_hash material:
+  checker_id
+  checker_version
+  certificate_format
+  core_spec
+  implementation_profile
+  project_directory
+  CLI contract version
+  vendored SHA-256 source identity
+```
+
+First release では checker identity manifest signature は required identity material に含めず、
+`checker_identity_manifest_signature_required false` として version output に固定します。
+
 この配置は clean-room 境界を狭く保つためのものです。OCaml project は同一 repository 内の
 公開仕様、canonical certificate fixture、JSON schema contract、差分 test result を入力としてよい一方、
 Rust workspace crate を build dependency として参照してはいけません。

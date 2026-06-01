@@ -4,17 +4,54 @@ let checker_id = "npa-checker-ext"
 
 let checker_version = "0.1.0"
 
-let checker_build_material =
-  String.concat "\000"
-    [
-      checker_id;
-      checker_version;
-      "format:NPA-CERT-0.1";
-      "core:NPA-Core-0.1";
-      Ext_hash.vendored_sha256_source_identity;
-    ]
+let certificate_format = "NPA-CERT-0.1"
 
-let checker_build_hash = Ext_hash.sha256_prefixed_hex_of_string checker_build_material
+let core_spec = "NPA-Core-0.1"
+
+let implementation_profile = "ocaml-clean-room"
+
+let project_directory = "checkers/npa-checker-ext/"
+
+let cli_contract = "m0-04:first-release-cli"
+
+let checker_identity_manifest_signature_required = false
+
+let build_identity_inputs sha256_source_identity =
+  [
+    "checker_id:" ^ checker_id;
+    "checker_version:" ^ checker_version;
+    "certificate_format:" ^ certificate_format;
+    "core_spec:" ^ core_spec;
+    "implementation_profile:" ^ implementation_profile;
+    "project_directory:" ^ project_directory;
+    "cli_contract:" ^ cli_contract;
+    "vendored_sha256_source_identity:" ^ sha256_source_identity;
+  ]
+
+let checker_build_material_for_sha256_source_identity sha256_source_identity =
+  String.concat "\000" (build_identity_inputs sha256_source_identity)
+
+let checker_build_hash_for_sha256_source_identity sha256_source_identity =
+  Ext_hash.sha256_prefixed_hex_of_string
+    (checker_build_material_for_sha256_source_identity sha256_source_identity)
+
+let checker_build_hash =
+  checker_build_hash_for_sha256_source_identity Ext_hash.vendored_sha256_source_identity
+
+let version_text =
+  String.concat "\n"
+    [
+      checker_id ^ " " ^ checker_version;
+      "checker_build_hash " ^ checker_build_hash;
+      "certificate_format " ^ certificate_format;
+      "core_spec " ^ core_spec;
+      "implementation_profile " ^ implementation_profile;
+      "project_directory " ^ project_directory;
+      "vendored_sha256_source_identity " ^ Ext_hash.vendored_sha256_source_identity;
+      "checker_identity_manifest_signature_required "
+      ^ string_of_bool checker_identity_manifest_signature_required;
+    ]
+  ^ "\n"
 
 type checker_error = {
   kind : string;

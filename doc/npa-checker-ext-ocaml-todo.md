@@ -266,7 +266,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST cli
+checkers/npa-checker-ext/scripts/test.sh cli
 rg -n "checker_id.*npa-checker-ext|checker_raw_result" "$OCAML_EXT_DIR"
 ```
 
