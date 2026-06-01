@@ -1,12 +1,16 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use npa_cert::{Name, VerifiedModule};
+use npa_cert::{AxiomRef, DeclPayload, ExportKind, GlobalRef, Name, VerifiedModule};
 use npa_package::{
-    build_package_lock_from_artifacts, format_package_hash, package_file_hash,
-    PackageArtifactFileReference, PackageArtifactOrigin, PackageCheckerMode, PackageCheckerSummary,
-    PackageHash, PackageLockArtifact, PackageLockEntryOrigin, PackageLockError,
-    PackageLockErrorKind, PackageLockErrorReason, PackageLockManifest,
-    PackageLockManifestReference, PackagePath, ValidatedPackageManifest,
+    build_package_lock_from_artifacts, format_package_hash, package_axiom_report_summary,
+    package_file_hash, PackageArtifactError, PackageArtifactFileReference, PackageArtifactOrigin,
+    PackageArtifactPolicy, PackageArtifactResult, PackageAxiomPolicyStatus,
+    PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
+    PackageAxiomReference, PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode,
+    PackageCheckerSummary, PackageHash, PackageId, PackageLockArtifact, PackageLockEntryOrigin,
+    PackageLockError, PackageLockErrorKind, PackageLockErrorReason, PackageLockManifest,
+    PackageLockManifestReference, PackagePath, PackageVersion, ValidatedPackageManifest,
+    PACKAGE_AXIOM_REPORT_SCHEMA,
 };
 
 use crate::package_verifier::{
@@ -86,6 +90,21 @@ pub struct PackageArtifactExtraction {
     pub reference_verification_report: Option<PackageVerificationReport>,
 }
 
+/// Source-free input for projecting a package axiom report artifact.
+#[derive(Clone, Debug)]
+pub struct PackageAxiomReportProjectionInput<'a> {
+    /// Package id copied from the validated package manifest.
+    pub package: PackageId,
+    /// Package version copied from the validated package manifest.
+    pub version: PackageVersion,
+    /// Package axiom policy copied from the validated package manifest.
+    pub policy: PackageArtifactPolicy,
+    /// Exact generated package lock file identity used for extraction.
+    pub package_lock: PackageArtifactFileReference,
+    /// Source-free verified module extraction.
+    pub extraction: &'a PackageArtifactExtraction,
+}
+
 /// Extract source-free package artifact metadata from manifest, lock, and certificates.
 ///
 /// This adapter does not read files. The caller supplies manifest bytes,
@@ -139,6 +158,54 @@ pub fn extract_package_artifacts_source_free<'a>(
         checker_summaries,
         fast_verification_report: fast.report,
         reference_verification_report,
+    })
+}
+
+/// Project `npa.package.axiom_report.v0.1` from verified package modules.
+///
+/// The projection reads only source-free extraction output: verified
+/// certificates, package-lock identities, checker summaries, and the package
+/// policy supplied by the caller. It never reads source, replay, meta, AI, or
+/// theorem-search sidecars.
+pub fn project_package_axiom_report_source_free(
+    input: PackageAxiomReportProjectionInput<'_>,
+) -> PackageArtifactResult<PackageAxiomReport> {
+    let modules = project_package_axiom_report_modules(input.extraction, &input.policy)?;
+    PackageAxiomReport {
+        schema: PACKAGE_AXIOM_REPORT_SCHEMA.to_owned(),
+        package: input.package,
+        version: input.version,
+        manifest: PackageArtifactFileReference {
+            path: input.extraction.manifest.path.clone(),
+            file_hash: input.extraction.manifest.file_hash,
+        },
+        package_lock: input.package_lock,
+        policy: input.policy,
+        summary: package_axiom_report_summary(&modules),
+        modules,
+        checker_summaries: input.extraction.checker_summaries.clone(),
+        package_axiom_report_hash: PackageHash::new([0_u8; 32]),
+    }
+    .with_computed_hash()
+}
+
+/// Project `npa.package.axiom_report.v0.1` using package identity and policy
+/// from a validated manifest.
+pub fn project_package_axiom_report_from_extraction(
+    validated: &ValidatedPackageManifest,
+    extraction: &PackageArtifactExtraction,
+    package_lock: PackageArtifactFileReference,
+) -> PackageArtifactResult<PackageAxiomReport> {
+    let manifest = validated.manifest();
+    project_package_axiom_report_source_free(PackageAxiomReportProjectionInput {
+        package: manifest.package.clone(),
+        version: manifest.version.clone(),
+        policy: PackageArtifactPolicy {
+            allow_custom_axioms: manifest.policy.allow_custom_axioms,
+            allowed_axioms: manifest.policy.allowed_axioms.clone(),
+        },
+        package_lock,
+        extraction,
     })
 }
 
@@ -317,6 +384,265 @@ fn artifact_origin(origin: PackageLockEntryOrigin) -> PackageArtifactOrigin {
     }
 }
 
+fn project_package_axiom_report_modules(
+    extraction: &PackageArtifactExtraction,
+    policy: &PackageArtifactPolicy,
+) -> PackageArtifactResult<Vec<PackageAxiomReportModule>> {
+    let mut modules = Vec::with_capacity(extraction.topological_order.len());
+    for key in &extraction.topological_order {
+        let module = extraction.verified_modules.get(key).ok_or_else(|| {
+            projection_error(
+                &key.module,
+                "module",
+                "verified module present in extraction",
+                key.module.as_dotted(),
+            )
+        })?;
+        let direct_axioms = project_direct_axioms(extraction, module)?;
+        let transitive_axioms = project_transitive_axioms(extraction, module)?;
+        let policy_status = evaluate_axiom_policy(policy, &transitive_axioms);
+        modules.push(PackageAxiomReportModule {
+            module: module.key.module.clone(),
+            origin: module.origin,
+            export_hash: module.key.export_hash,
+            certificate_hash: module.key.certificate_hash,
+            axiom_report_hash: module.axiom_report_hash,
+            certificate_file_hash: module.certificate.file_hash,
+            direct_axioms,
+            transitive_axioms,
+            policy_status,
+        });
+    }
+    Ok(modules)
+}
+
+fn project_direct_axioms(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+) -> PackageArtifactResult<Vec<PackageAxiomReference>> {
+    let mut projected = BTreeMap::new();
+    for report in &module.verified_module.axiom_report().per_declaration {
+        for axiom in &report.direct_axioms {
+            insert_projected_axiom(&mut projected, extraction, module, axiom)?;
+        }
+    }
+    Ok(projected.into_values().collect())
+}
+
+fn project_transitive_axioms(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+) -> PackageArtifactResult<Vec<PackageAxiomReference>> {
+    let mut projected = BTreeMap::new();
+    for axiom in &module.verified_module.axiom_report().module_axioms {
+        insert_projected_axiom(&mut projected, extraction, module, axiom)?;
+    }
+    Ok(projected.into_values().collect())
+}
+
+fn insert_projected_axiom(
+    projected: &mut BTreeMap<(Name, Name, PackageHash, PackageHash), PackageAxiomReference>,
+    extraction: &PackageArtifactExtraction,
+    owner: &PackageArtifactVerifiedModule,
+    axiom: &AxiomRef,
+) -> PackageArtifactResult<()> {
+    let axiom = project_axiom_ref(extraction, owner, axiom)?;
+    projected.insert(
+        (
+            axiom.module.clone(),
+            axiom.name.clone(),
+            axiom.export_hash,
+            axiom.decl_interface_hash,
+        ),
+        axiom,
+    );
+    Ok(())
+}
+
+fn project_axiom_ref(
+    extraction: &PackageArtifactExtraction,
+    owner: &PackageArtifactVerifiedModule,
+    axiom: &AxiomRef,
+) -> PackageArtifactResult<PackageAxiomReference> {
+    match &axiom.global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            if axiom.decl_interface_hash != *decl_interface_hash {
+                return Err(axiom_projection_error(owner));
+            }
+            let Some(axiom_name) = owner.verified_module.name_table().get(*name) else {
+                return Err(axiom_projection_error(owner));
+            };
+            let Some(report_name) = owner.verified_module.name_table().get(axiom.name) else {
+                return Err(axiom_projection_error(owner));
+            };
+            if report_name != axiom_name {
+                return Err(axiom_projection_error(owner));
+            }
+            Ok(PackageAxiomReference {
+                module: owner.key.module.clone(),
+                name: axiom_name.clone(),
+                export_hash: owner.key.export_hash,
+                decl_interface_hash: PackageHash::from(*decl_interface_hash),
+            })
+        }
+        GlobalRef::Local { decl_index } => {
+            let Some(decl) = owner.verified_module.declarations().get(*decl_index) else {
+                return Err(axiom_projection_error(owner));
+            };
+            if !matches!(
+                decl.decl,
+                DeclPayload::Axiom { .. } | DeclPayload::AxiomConstrained { .. }
+            ) {
+                return Err(axiom_projection_error(owner));
+            }
+            let Some(name) = owner.verified_module.name_table().get(axiom.name) else {
+                return Err(axiom_projection_error(owner));
+            };
+            Ok(PackageAxiomReference {
+                module: owner.key.module.clone(),
+                name: name.clone(),
+                export_hash: owner.key.export_hash,
+                decl_interface_hash: PackageHash::from(axiom.decl_interface_hash),
+            })
+        }
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            let imported = imported_module_for_axiom(extraction, owner, *import_index)?;
+            let Some(axiom_name) = owner.verified_module.name_table().get(*name) else {
+                return Err(axiom_projection_error(owner));
+            };
+            if axiom.decl_interface_hash != *decl_interface_hash
+                || !module_exports_declared_axiom(imported, axiom_name, *decl_interface_hash)
+            {
+                return Err(axiom_projection_error(owner));
+            }
+            Ok(PackageAxiomReference {
+                module: imported.key.module.clone(),
+                name: axiom_name.clone(),
+                export_hash: imported.key.export_hash,
+                decl_interface_hash: PackageHash::from(*decl_interface_hash),
+            })
+        }
+        GlobalRef::LocalGenerated { .. } => Err(axiom_projection_error(owner)),
+    }
+}
+
+fn module_exports_declared_axiom(
+    module: &PackageArtifactVerifiedModule,
+    axiom_name: &Name,
+    decl_interface_hash: npa_cert::Hash,
+) -> bool {
+    module.verified_module.export_block().iter().any(|entry| {
+        module
+            .verified_module
+            .name_table()
+            .get(entry.name)
+            .is_some_and(|entry_name| {
+                entry.kind == ExportKind::Axiom
+                    && entry_name == axiom_name
+                    && entry.decl_interface_hash == decl_interface_hash
+            })
+    })
+}
+
+fn imported_module_for_axiom<'a>(
+    extraction: &'a PackageArtifactExtraction,
+    owner: &PackageArtifactVerifiedModule,
+    import_index: usize,
+) -> PackageArtifactResult<&'a PackageArtifactVerifiedModule> {
+    let Some(import) = owner.verified_module.imports().get(import_index) else {
+        return Err(axiom_projection_error(owner));
+    };
+    let mut matches = extraction.verified_modules.values().filter(|candidate| {
+        candidate.key.module == import.module
+            && candidate.key.export_hash == PackageHash::from(import.export_hash)
+            && import
+                .certificate_hash
+                .is_none_or(|hash| candidate.key.certificate_hash == PackageHash::from(hash))
+    });
+    let Some(imported) = matches.next() else {
+        return Err(axiom_projection_error(owner));
+    };
+    if matches.next().is_some() {
+        return Err(axiom_projection_error(owner));
+    }
+    Ok(imported)
+}
+
+fn evaluate_axiom_policy(
+    policy: &PackageArtifactPolicy,
+    transitive_axioms: &[PackageAxiomReference],
+) -> PackageAxiomPolicyStatus {
+    let allowed_axioms = policy
+        .allowed_axioms
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut violations = BTreeMap::new();
+    for axiom in transitive_axioms {
+        let reason_code = if axiom.name.as_dotted().contains("sorry") {
+            Some(PackageAxiomPolicyViolationReason::SorryDisallowed)
+        } else if !policy.allow_custom_axioms && !allowed_axioms.contains(&axiom.name) {
+            Some(PackageAxiomPolicyViolationReason::AxiomNotAllowlisted)
+        } else {
+            None
+        };
+        if let Some(reason_code) = reason_code {
+            violations.insert(
+                (
+                    axiom.module.clone(),
+                    axiom.name.clone(),
+                    axiom.export_hash,
+                    axiom.decl_interface_hash,
+                    reason_code,
+                ),
+                PackageAxiomPolicyViolation {
+                    axiom: axiom.clone(),
+                    reason_code,
+                },
+            );
+        }
+    }
+    let violations = violations.into_values().collect::<Vec<_>>();
+    PackageAxiomPolicyStatus {
+        status: if violations.is_empty() {
+            PackageAxiomPolicyStatusKind::Ok
+        } else {
+            PackageAxiomPolicyStatusKind::Violation
+        },
+        violations,
+    }
+}
+
+fn axiom_projection_error(module: &PackageArtifactVerifiedModule) -> PackageArtifactError {
+    projection_error(
+        &module.key.module,
+        "axiom_ref",
+        "package-projectable builtin, local, or imported axiom reference",
+        module.key.module.as_dotted(),
+    )
+}
+
+fn projection_error(
+    module: &Name,
+    field: &str,
+    expected: impl Into<String>,
+    actual: impl Into<String>,
+) -> PackageArtifactError {
+    PackageArtifactError::summary_mismatch(
+        format!("modules[{}].{field}", module.as_dotted()),
+        field,
+        expected,
+        actual,
+    )
+}
+
 fn checker_summaries_from_report(
     report: &PackageVerificationReport,
     mode: PackageCheckerMode,
@@ -356,12 +682,21 @@ mod tests {
     };
 
     use npa_package::{
-        build_package_lock_from_artifacts, parse_and_validate_manifest_str, PackageLockImport,
+        build_package_lock_from_artifacts, parse_and_validate_manifest_str,
+        parse_package_axiom_report_json, parse_package_lock_json, PackageLockImport,
     };
 
     use super::*;
 
     const BASIC_CERTIFICATE_PATH: &str = "Proofs/Ai/Basic/certificate.npcert";
+    const EQ_CERTIFICATE_PATH: &str = "vendor/npa-std/Std/Logic/Eq/certificate.npcert";
+    const EQ_REASONING_CERTIFICATE_PATH: &str = "Proofs/Ai/EqReasoning/certificate.npcert";
+
+    #[derive(Clone, Debug)]
+    struct CertificateBuffer {
+        path: PackagePath,
+        bytes: Vec<u8>,
+    }
 
     fn repo_root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -373,6 +708,30 @@ mod tests {
 
     fn basic_certificate_bytes() -> Vec<u8> {
         fs::read(repo_root().join("proofs").join(BASIC_CERTIFICATE_PATH)).unwrap()
+    }
+
+    fn proof_certificate_buffer(root: &Path, path: &str) -> CertificateBuffer {
+        CertificateBuffer {
+            path: PackagePath::new(path),
+            bytes: fs::read(root.join(path)).unwrap(),
+        }
+    }
+
+    fn certificate_artifacts(buffers: &[CertificateBuffer]) -> Vec<PackageCertificateArtifact<'_>> {
+        buffers
+            .iter()
+            .map(|buffer| PackageCertificateArtifact {
+                path: buffer.path.clone(),
+                bytes: buffer.bytes.as_slice(),
+            })
+            .collect()
+    }
+
+    fn package_lock_file_reference(lock_json: &str) -> PackageArtifactFileReference {
+        PackageArtifactFileReference {
+            path: PackagePath::new("generated/package-lock.json"),
+            file_hash: package_file_hash(lock_json.as_bytes()),
+        }
     }
 
     fn basic_manifest_source() -> String {
@@ -404,6 +763,47 @@ imports = []
 definitions = []
 theorems = ["id"]
 axioms = []
+"#
+        .to_owned()
+    }
+
+    fn eq_reasoning_manifest_source() -> String {
+        r#"schema = "npa.package.v0.1"
+package = "fixture-package"
+version = "0.1.0"
+core_spec = "npa.core.v0.1"
+kernel_profile = "npa.kernel.v0.1"
+certificate_format = "npa.certificate.canonical.v0.1"
+checker_profile = "npa.checker.reference.v0.1"
+
+[policy]
+allow_custom_axioms = false
+allowed_axioms = ["Eq.rec"]
+
+[[imports]]
+module = "Std.Logic.Eq"
+package = "npa-std"
+version = "0.1.0"
+certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+export_hash = "sha256:b78b442d5f593458cc12f079b59e3c70259c0bec4967511e1a01d262d2f0e874"
+certificate_hash = "sha256:5a5b68a51b3e90223f1e0cca730f8b155c79f881b9dca70d67e6bf10058054aa"
+
+[[modules]]
+module = "Proofs.Ai.EqReasoning"
+source = "missing/source/Proofs/Ai/EqReasoning.npa"
+certificate = "Proofs/Ai/EqReasoning/certificate.npcert"
+meta = "missing/meta/Proofs/Ai/EqReasoning.json"
+replay = "missing/replay/Proofs/Ai/EqReasoning.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:3eb1f94054f46fe74c2b7294f50ff6f0a5700e53a613f6b48f8a6d0f379a34b4"
+expected_certificate_file_hash = "sha256:cd4c2338a26f0bd259103706e056bb05320777b1f473ce9263fda4ad94f86682"
+expected_export_hash = "sha256:67f90711ce596378579688b337552c3ae555aada85f97c5d40eab2381e2d1679"
+expected_axiom_report_hash = "sha256:5283e4bbd120c3ffa60356b600be06364c3739f9c1992538f75aa4c7df947968"
+expected_certificate_hash = "sha256:1a146be8c2aee52e4e19e44c84357bbb40bf6f649efcc78f8f8174213abfab8e"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["eq_symm", "eq_trans", "eq_congr_arg", "eq_congr_fun", "eq_congr2", "eq_subst", "eq_transport_const", "eq_rewrite_left", "eq_rewrite_right", "eq_cast_trans", "eq_calc3"]
+axioms = ["Eq.rec"]
 "#
         .to_owned()
     }
@@ -443,6 +843,59 @@ axioms = []
             }],
             reference_summaries,
         }
+    }
+
+    fn eq_reasoning_projection_fixture() -> (
+        ValidatedPackageManifest,
+        PackageArtifactExtraction,
+        PackageArtifactFileReference,
+    ) {
+        let root = repo_root().join("proofs");
+        let manifest_source = eq_reasoning_manifest_source();
+        let validated = parse_and_validate_manifest_str(&manifest_source).unwrap();
+        let buffers = vec![
+            proof_certificate_buffer(&root, EQ_CERTIFICATE_PATH),
+            proof_certificate_buffer(&root, EQ_REASONING_CERTIFICATE_PATH),
+        ];
+        let lock = build_package_lock_from_artifacts(
+            &validated,
+            PackagePath::new("npa-package.toml"),
+            manifest_source.as_bytes(),
+            buffers.iter().map(|buffer| PackageLockArtifact {
+                path: buffer.path.clone(),
+                bytes: buffer.bytes.as_slice(),
+            }),
+        )
+        .unwrap();
+        let lock_json = lock.canonical_json().unwrap();
+        let package_lock = package_lock_file_reference(&lock_json);
+        let extraction = extract_package_artifacts_source_free(PackageArtifactExtractionInput {
+            validated: &validated,
+            manifest_path: PackagePath::new("npa-package.toml"),
+            manifest_bytes: manifest_source.as_bytes(),
+            package_lock: &lock,
+            certificates: certificate_artifacts(&buffers),
+            reference_summaries: PackageArtifactReferenceSummaryMode::Omit,
+        })
+        .unwrap();
+
+        (validated, extraction, package_lock)
+    }
+
+    fn proof_corpus_certificate_buffers(
+        validated: &ValidatedPackageManifest,
+    ) -> Vec<CertificateBuffer> {
+        let root = repo_root().join("proofs");
+        let mut buffers = Vec::new();
+        if let Some(imports) = &validated.manifest().imports {
+            for import in imports {
+                buffers.push(proof_certificate_buffer(&root, import.certificate.as_str()));
+            }
+        }
+        for module in &validated.manifest().modules {
+            buffers.push(proof_certificate_buffer(&root, module.certificate.as_str()));
+        }
+        buffers
     }
 
     #[test]
@@ -525,6 +978,176 @@ axioms = []
                 .unwrap()
                 .reference_checker_verdict
         );
+    }
+
+    #[test]
+    fn package_axiom_report_projection_projects_axioms_policy_summary_and_ordering() {
+        let (validated, extraction, package_lock) = eq_reasoning_projection_fixture();
+
+        let report =
+            project_package_axiom_report_from_extraction(&validated, &extraction, package_lock)
+                .unwrap();
+
+        assert_eq!(report.modules.len(), 2);
+        assert_eq!(
+            report
+                .modules
+                .iter()
+                .map(|module| module.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Proofs.Ai.EqReasoning", "Std.Logic.Eq"]
+        );
+        let eq_reasoning = report
+            .modules
+            .iter()
+            .find(|module| module.module.as_dotted() == "Proofs.Ai.EqReasoning")
+            .unwrap();
+        assert_eq!(eq_reasoning.origin, PackageArtifactOrigin::Local);
+        assert_eq!(eq_reasoning.direct_axioms.len(), 1);
+        assert_eq!(eq_reasoning.transitive_axioms.len(), 1);
+        assert_eq!(
+            eq_reasoning.direct_axioms[0].module.as_dotted(),
+            "Proofs.Ai.EqReasoning"
+        );
+        assert_eq!(eq_reasoning.direct_axioms[0].name.as_dotted(), "Eq.rec");
+
+        let std_eq = report
+            .modules
+            .iter()
+            .find(|module| module.module.as_dotted() == "Std.Logic.Eq")
+            .unwrap();
+        assert_eq!(std_eq.origin, PackageArtifactOrigin::External);
+        assert!(std_eq.direct_axioms.is_empty());
+        assert!(std_eq.transitive_axioms.is_empty());
+        assert!(report
+            .modules
+            .iter()
+            .all(|module| module.policy_status.status == PackageAxiomPolicyStatusKind::Ok));
+        assert_eq!(report.summary.module_count, 2);
+        assert_eq!(report.summary.local_module_count, 1);
+        assert_eq!(report.summary.external_module_count, 1);
+        assert_eq!(report.summary.direct_axiom_count, 1);
+        assert_eq!(report.summary.transitive_axiom_count, 1);
+        assert_eq!(report.summary.policy_violation_count, 0);
+        assert_eq!(
+            report
+                .checker_summaries
+                .iter()
+                .map(|summary| summary.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Proofs.Ai.EqReasoning", "Std.Logic.Eq"]
+        );
+
+        let json = report.canonical_json().unwrap();
+        assert_eq!(parse_package_axiom_report_json(&json).unwrap(), report);
+    }
+
+    #[test]
+    fn package_axiom_report_projection_reports_non_allowlisted_axiom_without_mutating_policy() {
+        let (validated, extraction, package_lock) = eq_reasoning_projection_fixture();
+        let manifest = validated.manifest();
+
+        let report = project_package_axiom_report_source_free(PackageAxiomReportProjectionInput {
+            package: manifest.package.clone(),
+            version: manifest.version.clone(),
+            policy: PackageArtifactPolicy {
+                allow_custom_axioms: false,
+                allowed_axioms: vec![Name::from_dotted("Other.allowed")],
+            },
+            package_lock,
+            extraction: &extraction,
+        })
+        .unwrap();
+
+        assert_eq!(
+            report
+                .policy
+                .allowed_axioms
+                .iter()
+                .map(Name::as_dotted)
+                .collect::<Vec<_>>(),
+            vec!["Other.allowed"]
+        );
+        assert!(report.summary.policy_violation_count >= 1);
+        assert!(report.modules.iter().any(|module| {
+            module.policy_status.violations.iter().any(|violation| {
+                violation.axiom.name.as_dotted() == "Eq.rec"
+                    && violation.reason_code
+                        == PackageAxiomPolicyViolationReason::AxiomNotAllowlisted
+            })
+        }));
+    }
+
+    #[test]
+    fn package_axiom_report_projection_proof_corpus_fixture_passes_eq_rec_policy() {
+        std::thread::Builder::new()
+            .name(
+                "package_axiom_report_projection_proof_corpus_fixture_passes_eq_rec_policy".into(),
+            )
+            .stack_size(16 * 1024 * 1024)
+            .spawn(|| {
+                let root = repo_root().join("proofs");
+                let manifest_source = fs::read_to_string(root.join("npa-package.toml")).unwrap();
+                let validated = parse_and_validate_manifest_str(&manifest_source).unwrap();
+                let lock_source =
+                    fs::read_to_string(root.join("generated/package-lock.json")).unwrap();
+                let lock = parse_package_lock_json(&lock_source).unwrap();
+                let buffers = proof_corpus_certificate_buffers(&validated);
+
+                let extraction =
+                    extract_package_artifacts_source_free(PackageArtifactExtractionInput {
+                        validated: &validated,
+                        manifest_path: PackagePath::new("npa-package.toml"),
+                        manifest_bytes: manifest_source.as_bytes(),
+                        package_lock: &lock,
+                        certificates: certificate_artifacts(&buffers),
+                        reference_summaries: PackageArtifactReferenceSummaryMode::Omit,
+                    })
+                    .unwrap();
+                let report = project_package_axiom_report_from_extraction(
+                    &validated,
+                    &extraction,
+                    package_lock_file_reference(&lock_source),
+                )
+                .unwrap();
+
+                assert_eq!(
+                    report.policy.allowed_axioms,
+                    vec![Name::from_dotted("Eq.rec")]
+                );
+                assert!(report
+                    .modules
+                    .iter()
+                    .all(|module| module.policy_status.status == PackageAxiomPolicyStatusKind::Ok));
+                assert_eq!(
+                    report.summary.local_module_count,
+                    validated.manifest().modules.len() as u64
+                );
+                assert_eq!(
+                    report.summary.external_module_count,
+                    validated.manifest().imports.as_ref().map_or(0, Vec::len) as u64
+                );
+                let axiom_names = report
+                    .modules
+                    .iter()
+                    .flat_map(|module| {
+                        module
+                            .direct_axioms
+                            .iter()
+                            .chain(module.transitive_axioms.iter())
+                    })
+                    .map(|axiom| axiom.name.as_dotted())
+                    .collect::<BTreeSet<_>>();
+                assert_eq!(axiom_names, BTreeSet::from(["Eq.rec".to_owned()]));
+                assert!(report.summary.direct_axiom_count > 0);
+                assert!(report.summary.transitive_axiom_count >= report.summary.direct_axiom_count);
+                assert_eq!(report.summary.policy_violation_count, 0);
+                let json = report.canonical_json().unwrap();
+                assert_eq!(parse_package_axiom_report_json(&json).unwrap(), report);
+            })
+            .unwrap()
+            .join()
+            .unwrap();
     }
 
     #[test]

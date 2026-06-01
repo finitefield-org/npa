@@ -248,6 +248,13 @@ pub fn compute_package_axiom_report_hash(
     ))
 }
 
+/// Compute deterministic package axiom report summary counts from module entries.
+pub fn package_axiom_report_summary(
+    modules: &[PackageAxiomReportModule],
+) -> PackageAxiomReportSummary {
+    expected_axiom_report_summary(modules)
+}
+
 fn validate_axiom_report_shape_without_self_hash(
     report: &PackageAxiomReport,
 ) -> PackageArtifactResult<()> {

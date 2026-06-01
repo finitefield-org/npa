@@ -797,7 +797,7 @@ external checker disagreement gates
 
 ### CLR-05-03 Generate Package Axiom Report Values
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-02
 - Inputs:
   - source-free extraction output

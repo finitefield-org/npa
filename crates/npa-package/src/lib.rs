@@ -109,10 +109,10 @@ pub use artifacts::{
     PackageGlobalRefView,
 };
 pub use axiom_report::{
-    compute_package_axiom_report_hash, parse_package_axiom_report_json,
-    validate_package_axiom_report, PackageAxiomPolicyStatus, PackageAxiomPolicyStatusKind,
-    PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason, PackageAxiomReport,
-    PackageAxiomReportModule, PackageAxiomReportSummary,
+    compute_package_axiom_report_hash, package_axiom_report_summary,
+    parse_package_axiom_report_json, validate_package_axiom_report, PackageAxiomPolicyStatus,
+    PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
+    PackageAxiomReport, PackageAxiomReportModule, PackageAxiomReportSummary,
 };
 pub use error::{
     PackageArtifactError, PackageArtifactErrorKind, PackageArtifactErrorReason,
