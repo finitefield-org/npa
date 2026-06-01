@@ -1046,3 +1046,234 @@ let verify_axiom_report imports (decoded : Ext_cert.decoded_module) =
                     else
                       error Ext_bytes.Hashes
                         (decoded.Ext_cert.hashes).Ext_cert.axiom_report_hash_offset)))
+
+type policy_violation_reason =
+  | Sorry_denied
+  | Forbidden_axiom
+
+type policy_check_error = {
+  policy_section : Ext_bytes.certificate_section;
+  policy_offset : Ext_bytes.offset;
+  policy_reason : policy_violation_reason;
+}
+
+let policy_check_error section offset reason =
+  Error { policy_section = section; policy_offset = offset; policy_reason = reason }
+
+let policy_check_error_kind _ = "forbidden_axiom"
+
+let policy_check_error_reason_code error =
+  match error.policy_reason with
+  | Sorry_denied -> "sorry_denied"
+  | Forbidden_axiom -> "forbidden_axiom"
+
+let contains_substring text needle =
+  let text_len = String.length text in
+  let needle_len = String.length needle in
+  let rec loop index =
+    if needle_len = 0 then true
+    else if index + needle_len > text_len then false
+    else if String.sub text index needle_len = needle then true
+    else loop (index + 1)
+  in
+  loop 0
+
+let option_exists predicate value =
+  match value with
+  | None -> false
+  | Some value -> predicate value
+
+let public_export_matches_axiom_ref axiom export =
+  export.Ext_import_store.public_export_kind = Ext_cert.Export_axiom
+  && Ext_name.equal export.Ext_import_store.public_export_name
+       axiom.Ext_cert.axiom_name
+  && export.Ext_import_store.public_decl_interface_hash
+     = axiom.Ext_cert.axiom_decl_interface_hash
+
+let import_exports_axiom import axiom =
+  List.exists
+    (public_export_matches_axiom_ref axiom)
+    import.Ext_import_store.resolved_public_environment
+      .Ext_import_store.public_exports
+
+let import_environment_exports_axiom imports axiom =
+  match
+    import_index_exporting_axiom imports axiom.Ext_cert.axiom_name
+      axiom.Ext_cert.axiom_decl_interface_hash
+  with
+  | Some _ -> true
+  | None -> false
+
+let qualify_name module_name raw_name =
+  Ext_name.components module_name @ Ext_name.components raw_name
+
+let global_ref_hash_matches_axiom imports (decoded : Ext_cert.decoded_module) axiom =
+  match axiom.Ext_cert.axiom_global_ref with
+  | Ext_term.Builtin { name; decl_interface_hash } ->
+      Ext_name.equal name axiom.Ext_cert.axiom_name
+      && decl_interface_hash = axiom.Ext_cert.axiom_decl_interface_hash
+      && Ext_env.builtin_decl_interface_hash name = Some decl_interface_hash
+  | Ext_term.Imported { name; decl_interface_hash; _ } -> (
+      Ext_name.equal name axiom.Ext_cert.axiom_name
+      && decl_interface_hash = axiom.Ext_cert.axiom_decl_interface_hash
+      &&
+      match
+        imported_export_for_global_ref Ext_bytes.Axiom_report
+          decoded.Ext_cert.axiom_report.Ext_cert.module_axioms_offset imports
+          axiom.Ext_cert.axiom_global_ref
+      with
+      | Ok _ -> true
+      | Error _ -> false)
+  | Ext_term.Local { decl_index } -> (
+      match list_nth_opt decl_index decoded.Ext_cert.declaration_table with
+      | Some declaration ->
+          declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash
+          = axiom.Ext_cert.axiom_decl_interface_hash
+      | None -> false)
+  | Ext_term.LocalGenerated { decl_index; name } -> (
+      Ext_name.equal name axiom.Ext_cert.axiom_name
+      &&
+      match list_nth_opt decl_index decoded.Ext_cert.declaration_table with
+      | Some declaration ->
+          generated_name_exists declaration name
+          && declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash
+             = axiom.Ext_cert.axiom_decl_interface_hash
+      | None -> false)
+
+let qualified_name_for_axiom imports decoded axiom =
+  match axiom.Ext_cert.axiom_global_ref with
+  | Ext_term.Imported { import_index; _ } -> (
+      match find_import import_index imports with
+      | None -> None
+      | Some import ->
+          Some
+            (qualify_name import.Ext_import_store.resolved_module_name
+               axiom.Ext_cert.axiom_name))
+  | Ext_term.Local _ | Ext_term.LocalGenerated _ ->
+      Some
+        (qualify_name decoded.Ext_cert.header.Ext_cert.module_name
+           axiom.Ext_cert.axiom_name)
+  | Ext_term.Builtin _ -> None
+
+let is_standard_eq_rec_exception imports decoded axiom =
+  match axiom.Ext_cert.axiom_global_ref with
+  | Ext_term.Builtin _ ->
+      Ext_name.to_string axiom.Ext_cert.axiom_name = "Eq.rec"
+      && global_ref_hash_matches_axiom imports decoded axiom
+  | Ext_term.Imported _ | Ext_term.Local _ | Ext_term.LocalGenerated _ ->
+      option_exists
+        (fun qualified ->
+          Ext_name.to_string qualified = "Std.Logic.Eq.rec"
+          && global_ref_hash_matches_axiom imports decoded axiom)
+        (qualified_name_for_axiom imports decoded axiom)
+
+let policy_allows_axiom_name policy raw_name qualified_name =
+  policy_allows policy raw_name
+  || option_exists (fun name -> policy_allows policy name) qualified_name
+
+let enforce_axiom_policy_name policy raw_name qualified_name is_standard_exception
+    section offset =
+  if
+    policy.deny_sorry
+    && (contains_substring (Ext_name.to_string raw_name) "sorry"
+       || option_exists
+            (fun name -> contains_substring (Ext_name.to_string name) "sorry")
+            qualified_name)
+  then policy_check_error section offset Sorry_denied
+  else
+    let require_allowlist =
+      policy.deny_custom_axioms || policy.allowed_axioms <> []
+    in
+    if
+      (not require_allowlist) || is_standard_exception
+      || policy_allows_axiom_name policy raw_name qualified_name
+    then Ok ()
+    else policy_check_error section offset Forbidden_axiom
+
+let enforce_axiom_ref_policy imports decoded policy axiom =
+  enforce_axiom_policy_name policy axiom.Ext_cert.axiom_name
+    (qualified_name_for_axiom imports decoded axiom)
+    (is_standard_eq_rec_exception imports decoded axiom)
+    Ext_bytes.Axiom_report
+    decoded.Ext_cert.axiom_report.Ext_cert.module_axioms_offset
+
+let qualified_name_for_import_axiom imports import axiom =
+  if import_exports_axiom import axiom then
+    Some
+      (qualify_name import.Ext_import_store.resolved_module_name
+         axiom.Ext_cert.axiom_name)
+  else
+    match
+      import_index_exporting_axiom imports axiom.Ext_cert.axiom_name
+        axiom.Ext_cert.axiom_decl_interface_hash
+    with
+    | Some import_index -> (
+      match find_import import_index imports with
+      | Some import ->
+          Some
+            (qualify_name import.Ext_import_store.resolved_module_name
+               axiom.Ext_cert.axiom_name)
+      | None ->
+          Some
+            (qualify_name import.Ext_import_store.resolved_module_name
+               axiom.Ext_cert.axiom_name))
+    | None ->
+        Some
+          (qualify_name import.Ext_import_store.resolved_module_name
+             axiom.Ext_cert.axiom_name)
+
+let is_standard_import_eq_rec_exception imports import axiom =
+  option_exists
+    (fun qualified ->
+      Ext_name.to_string qualified = "Std.Logic.Eq.rec"
+      && (import_exports_axiom import axiom
+         || import_environment_exports_axiom imports axiom))
+    (qualified_name_for_import_axiom imports import axiom)
+
+let enforce_import_axiom_policy imports policy import axiom offset =
+  enforce_axiom_policy_name policy axiom.Ext_cert.axiom_name
+    (qualified_name_for_import_axiom imports import axiom)
+    (is_standard_import_eq_rec_exception imports import axiom)
+    Ext_bytes.Imports offset
+
+let enforce_axiom_policy imports decoded policy =
+  let rec enforce_imports index remaining =
+    match remaining with
+    | [] -> Ok ()
+    | import :: rest ->
+        let offset =
+          match list_nth_opt index decoded.Ext_cert.imports with
+          | Some located -> located.Ext_cert.import_offset
+          | None -> 0
+        in
+        let rec enforce_axioms axioms =
+          match axioms with
+          | [] -> Ok ()
+          | axiom :: axiom_rest -> (
+              match
+                enforce_import_axiom_policy imports policy
+                  import axiom offset
+              with
+              | Error err -> Error err
+              | Ok () -> enforce_axioms axiom_rest)
+        in
+        (match
+           enforce_axioms
+             import.Ext_import_store.resolved_public_environment
+               .Ext_import_store.public_module_axioms
+         with
+        | Error err -> Error err
+        | Ok () -> enforce_imports (index + 1) rest)
+  in
+  match enforce_imports 0 (Ext_import_store.import_environment_imports imports) with
+  | Error err -> Error err
+  | Ok () ->
+      let rec enforce_module_axioms axioms =
+        match axioms with
+        | [] -> Ok ()
+        | axiom :: rest -> (
+            match enforce_axiom_ref_policy imports decoded policy axiom with
+            | Error err -> Error err
+            | Ok () -> enforce_module_axioms rest)
+      in
+      enforce_module_axioms decoded.Ext_cert.axiom_report.Ext_cert.module_axioms

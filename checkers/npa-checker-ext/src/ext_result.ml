@@ -165,6 +165,15 @@ let axiom_report_failure ~section ~offset =
       offset = Some offset;
     }
 
+let axiom_policy_failure ~reason_code ~section ~offset =
+  render_failed
+    {
+      kind = "forbidden_axiom";
+      reason_code = Some reason_code;
+      section = Some section;
+      offset = Some offset;
+    }
+
 let decode_error_kind error =
   match error.Ext_bytes.reason with
   | Ext_bytes.Noncanonical_uvar

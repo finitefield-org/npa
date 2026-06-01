@@ -2337,13 +2337,14 @@ let empty_axiom_report declaration_count =
     core_features_offset = None;
   }
 
-let decoded_axiom_report_fixture names declarations =
+let decoded_axiom_report_fixture ?(module_name = make_name [ "AxiomReportFixture" ])
+    names declarations =
   {
     Ext_cert.header =
       {
         format = Ext_cert.expected_format;
         core_spec = Ext_cert.expected_core_spec;
-        module_name = make_name [ "AxiomReportFixture" ];
+        module_name;
       };
     imports = [];
     name_table = located_names names;
@@ -2554,6 +2555,238 @@ deny_sorry = false
   assert_policy_parse_rejects "axiom policy unknown field"
     "axiom_policy.allow_axioms" "absent" "unknown_field"
     (Ext_axiom.parse_policy_toml {|allow_axioms = []|})
+
+let assert_axiom_policy_ok label result =
+  match result with
+  | Ok () -> ()
+  | Error error ->
+      failwith
+        (label ^ ": unexpected axiom policy error "
+       ^ Ext_axiom.policy_check_error_reason_code error)
+
+let assert_axiom_policy_rejects label expected_reason expected_section
+    expected_offset result =
+  match result with
+  | Ok () -> failwith (label ^ ": expected axiom policy rejection")
+  | Error error ->
+      assert_equal (label ^ " kind") "forbidden_axiom"
+        (Ext_axiom.policy_check_error_kind error);
+      assert_equal (label ^ " reason") expected_reason
+        (Ext_axiom.policy_check_error_reason_code error);
+      assert_equal (label ^ " section") expected_section
+        (Ext_bytes.section_name error.Ext_axiom.policy_section);
+      assert_int_equal (label ^ " offset") expected_offset
+        error.Ext_axiom.policy_offset;
+      let raw =
+        Ext_result.axiom_policy_failure ~reason_code:expected_reason
+          ~section:expected_section ~offset:expected_offset
+      in
+      assert_contains (label ^ " raw kind") "\"kind\": \"forbidden_axiom\"" raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_reason ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section")
+        ("\"section\": \"" ^ expected_section ^ "\"")
+        raw;
+      assert_contains (label ^ " raw offset")
+        ("\"offset\": " ^ string_of_int expected_offset)
+        raw
+
+let decoded_single_axiom_policy_fixture module_name axiom_name axiom_hash =
+  let axiom_decl =
+    declaration_fixture ~offset:10 ~interface_hash:axiom_hash Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = axiom_name;
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_env.level_type0;
+         })
+  in
+  with_valid_recomputed_axiom_report Ext_import_store.import_environment_empty
+    (decoded_axiom_report_fixture ~module_name [ axiom_name ] [ axiom_decl ])
+
+let run_axiom_policy_tests () =
+  let empty_imports = Ext_import_store.import_environment_empty in
+  let custom_name = make_name [ "P" ] in
+  let custom_decoded =
+    decoded_single_axiom_policy_fixture (make_name [ "Policy"; "Custom" ])
+      custom_name (hash_bytes 0xb1)
+  in
+  assert_axiom_policy_rejects "axiom policy rejects custom axiom"
+    "forbidden_axiom" "axiom_report"
+    custom_decoded.Ext_cert.axiom_report.Ext_cert.module_axioms_offset
+    (Ext_axiom.enforce_axiom_policy empty_imports custom_decoded
+       Ext_axiom.default_policy);
+  let allow_custom_policy =
+    {
+      Ext_axiom.default_policy with
+      Ext_axiom.allowed_axioms = [ make_name [ "Policy"; "Custom"; "P" ] ];
+    }
+  in
+  assert_axiom_policy_ok "axiom policy accepts exact allowed custom axiom"
+    (Ext_axiom.enforce_axiom_policy empty_imports custom_decoded
+       allow_custom_policy);
+  let permissive_policy =
+    {
+      Ext_axiom.default_policy with
+      Ext_axiom.deny_custom_axioms = false;
+      allowed_axioms = [];
+    }
+  in
+  assert_axiom_policy_ok "axiom policy permits custom axioms when gate disabled"
+    (Ext_axiom.enforce_axiom_policy empty_imports custom_decoded
+       permissive_policy);
+
+  let sorry_decoded =
+    decoded_single_axiom_policy_fixture (make_name [ "Std"; "Nat" ])
+      (make_name [ "A"; "sorry" ]) (hash_bytes 0xb2)
+  in
+  assert_axiom_policy_rejects "axiom policy rejects synthetic sorry first"
+    "sorry_denied" "axiom_report"
+    sorry_decoded.Ext_cert.axiom_report.Ext_cert.module_axioms_offset
+    (Ext_axiom.enforce_axiom_policy empty_imports sorry_decoded
+       {
+         allow_custom_policy with
+         Ext_axiom.allowed_axioms = [ make_name [ "Std"; "Nat"; "A"; "sorry" ] ];
+       });
+
+  let eq_rec_name = make_name [ "Eq"; "rec" ] in
+  let eq_rec_hash =
+    match Ext_env.builtin_decl_interface_hash eq_rec_name with
+    | Some hash -> hash
+    | None -> failwith "expected builtin Eq.rec hash"
+  in
+  let eq_rec_decoded =
+    decoded_single_axiom_policy_fixture (make_name [ "Std"; "Logic" ])
+      eq_rec_name eq_rec_hash
+  in
+  assert_axiom_policy_ok "axiom policy accepts exact Std.Logic.Eq.rec"
+    (Ext_axiom.enforce_axiom_policy empty_imports eq_rec_decoded
+       Ext_axiom.default_policy);
+
+  let classical_decoded =
+    decoded_single_axiom_policy_fixture (make_name [ "Std"; "Logic" ])
+      (make_name [ "Classical"; "choice" ]) (hash_bytes 0xb4)
+  in
+  assert_axiom_policy_rejects "axiom policy rejects non Eq.rec std axiom"
+    "forbidden_axiom" "axiom_report"
+    classical_decoded.Ext_cert.axiom_report.Ext_cert.module_axioms_offset
+    (Ext_axiom.enforce_axiom_policy empty_imports classical_decoded
+       Ext_axiom.default_policy);
+
+  let imported_eq_rec =
+    axiom_ref
+      (Ext_term.Imported
+         {
+           import_index = Ext_import_store.public_self_import_index;
+           name = eq_rec_name;
+           decl_interface_hash = eq_rec_hash;
+         })
+      eq_rec_name eq_rec_hash
+  in
+  let eq_rec_public_export =
+    {
+      Ext_import_store.public_export_name = eq_rec_name;
+      public_export_kind = Ext_cert.Export_axiom;
+      public_decl_interface_hash = eq_rec_hash;
+      public_axiom_dependencies = [ imported_eq_rec ];
+      public_universe_params = [];
+      public_ty = Ext_term.Sort Ext_env.level_type0;
+      public_body = None;
+    }
+  in
+  let std_logic_import_environment public_exports =
+    {
+      Ext_import_store.resolved_imports =
+        [
+          {
+            Ext_import_store.resolved_module_name = make_name [ "Std"; "Logic" ];
+            resolved_export_hash = hash_bytes 0xb5;
+            resolved_certificate_hash = None;
+            resolved_public_environment =
+              {
+                Ext_import_store.public_imports = [];
+                public_exports;
+                public_module_axioms = [ imported_eq_rec ];
+                public_core_features = [];
+              };
+          };
+        ];
+    }
+  in
+  let import_eq_rec_decoded =
+    with_valid_recomputed_axiom_report
+      (std_logic_import_environment [ eq_rec_public_export ])
+      (decoded_axiom_report_fixture [] [])
+  in
+  assert_axiom_policy_ok "axiom policy accepts imported exact Std.Logic.Eq.rec"
+    (Ext_axiom.enforce_axiom_policy
+       (std_logic_import_environment [ eq_rec_public_export ])
+       import_eq_rec_decoded Ext_axiom.default_policy);
+  assert_axiom_policy_rejects
+    "axiom policy rejects imported Eq.rec hash mismatch" "forbidden_axiom"
+    "imports" 0
+    (Ext_axiom.enforce_axiom_policy
+       (std_logic_import_environment
+          [
+            {
+              eq_rec_public_export with
+              Ext_import_store.public_decl_interface_hash = hash_bytes 0xb6;
+            };
+          ])
+       import_eq_rec_decoded Ext_axiom.default_policy);
+
+  let imported_axiom_name = make_name [ "ImportedAxiom" ] in
+  let imported_axiom_hash = hash_bytes 0xb7 in
+  let imported_axiom =
+    axiom_ref
+      (Ext_term.Imported
+         {
+           import_index = Ext_import_store.public_self_import_index;
+           name = imported_axiom_name;
+           decl_interface_hash = imported_axiom_hash;
+         })
+      imported_axiom_name imported_axiom_hash
+  in
+  let import_environment =
+    {
+      Ext_import_store.resolved_imports =
+        [
+          {
+            Ext_import_store.resolved_module_name = make_name [ "Imported" ];
+            resolved_export_hash = hash_bytes 0xb8;
+            resolved_certificate_hash = None;
+            resolved_public_environment =
+              {
+                Ext_import_store.public_imports = [];
+                public_exports =
+                  [
+                    {
+                      Ext_import_store.public_export_name = imported_axiom_name;
+                      public_export_kind = Ext_cert.Export_axiom;
+                      public_decl_interface_hash = imported_axiom_hash;
+                      public_axiom_dependencies = [ imported_axiom ];
+                      public_universe_params = [];
+                      public_ty = Ext_term.Sort Ext_env.level_type0;
+                      public_body = None;
+                    };
+                  ];
+                public_module_axioms = [ imported_axiom ];
+                public_core_features = [];
+              };
+          };
+        ];
+    }
+  in
+  let empty_decoded =
+    with_valid_recomputed_axiom_report import_environment
+      (decoded_axiom_report_fixture [] [])
+  in
+  assert_axiom_policy_rejects "axiom policy rechecks imported module axioms"
+    "forbidden_axiom" "imports" 0
+    (Ext_axiom.enforce_axiom_policy import_environment empty_decoded
+       Ext_axiom.default_policy)
 
 let run_axiom_report_tests () =
   let empty_imports = Ext_import_store.import_environment_empty in
@@ -4319,6 +4552,7 @@ let () =
                "cli";
                "defeq";
                "axiom-report";
+               "axiom-policy";
                "axiom-policy-parse";
                "decoder-bytes";
                "decoder-declarations";
@@ -4348,6 +4582,7 @@ let () =
     selected;
   if should_run selected "defeq" then run_defeq_tests ();
   if should_run selected "axiom-report" then run_axiom_report_tests ();
+  if should_run selected "axiom-policy" then run_axiom_policy_tests ();
   if should_run selected "axiom-policy-parse" then
     run_axiom_policy_parse_tests ();
   if should_run selected "sha256" then run_sha256_tests ();
