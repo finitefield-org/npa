@@ -29,6 +29,7 @@ type generated_key = {
 type t = {
   imports : Ext_import_store.import_environment;
   checked_declaration_count : int;
+  local_declarations : (int * Ext_cert.declaration) list;
   local_signatures : (int * signature) list;
   generated_signatures : (generated_key * signature) list;
 }
@@ -47,6 +48,7 @@ let empty =
   {
     imports = Ext_import_store.import_environment_empty;
     checked_declaration_count = 0;
+    local_declarations = [];
     local_signatures = [];
     generated_signatures = [];
   }
@@ -398,6 +400,15 @@ let find_local_signature decl_index signatures =
   in
   loop signatures
 
+let find_local_declaration decl_index declarations =
+  let rec loop remaining =
+    match remaining with
+    | [] -> None
+    | (index, declaration) :: rest ->
+        if index = decl_index then Some declaration else loop rest
+  in
+  loop declarations
+
 let find_generated_signature key signatures =
   let rec loop remaining =
     match remaining with
@@ -666,6 +677,8 @@ let add_checked_declaration env (declaration : Ext_cert.declaration) =
                 {
                   env with
                   checked_declaration_count = decl_index + 1;
+                  local_declarations =
+                    (decl_index, declaration) :: env.local_declarations;
                   local_signatures = (decl_index, signature) :: env.local_signatures;
                   generated_signatures = generated @ env.generated_signatures;
                 }
@@ -677,6 +690,8 @@ let add_checked_declaration env (declaration : Ext_cert.declaration) =
                 {
                   env with
                   checked_declaration_count = decl_index + 1;
+                  local_declarations =
+                    (decl_index, declaration) :: env.local_declarations;
                   generated_signatures = generated @ env.generated_signatures;
                 }
           | Error err -> Error err))

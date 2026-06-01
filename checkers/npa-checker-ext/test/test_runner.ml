@@ -2796,6 +2796,9 @@ let constructor_spec constructor_name constructor_ty =
 let local_family ?(decl_index = 0) levels =
   Ext_term.Const (Ext_term.Local { decl_index }, levels)
 
+let local_generated ?(decl_index = 0) name levels =
+  Ext_term.Const (Ext_term.LocalGenerated { decl_index; name }, levels)
+
 let generated_signature_names env =
   String.concat ","
     (List.map
@@ -3108,6 +3111,272 @@ let run_positivity_tests () =
     "positivity rejects unsupported nested recursive occurrence"
     "positivity_failure" "positivity_failure"
     (Ext_typecheck.check_declarations [ wrapper_decl; nested_decl ])
+
+let run_recursor_tests () =
+  let nat_name = make_name [ "RecNat" ] in
+  let nat_zero_name = make_name [ "RecNat"; "zero" ] in
+  let nat_succ_name = make_name [ "RecNat"; "succ" ] in
+  let nat_rec_name = make_name [ "RecNat"; "rec" ] in
+  let motive_universe = make_name [ "r" ] in
+  let motive_level = Ext_level.Param motive_universe in
+  let nat_family = local_family [] in
+  let nat_zero_ctor = constructor_spec nat_zero_name nat_family in
+  let nat_succ_ctor =
+    constructor_spec nat_succ_name (Ext_term.Pi (nat_family, nat_family))
+  in
+  let nat_zero_term = local_generated nat_zero_name [] in
+  let nat_succ_term arg =
+    Ext_term.App (local_generated nat_succ_name [], arg)
+  in
+  let nat_motive_domain =
+    Ext_term.Pi (nat_family, Ext_term.Sort motive_level)
+  in
+  let nat_zero_minor = Ext_term.App (Ext_term.BVar 0, nat_zero_term) in
+  let nat_succ_minor =
+    Ext_term.Pi
+      ( nat_family,
+        Ext_term.Pi
+          ( Ext_term.App (Ext_term.BVar 2, Ext_term.BVar 0),
+            Ext_term.App
+              ( Ext_term.BVar 3,
+                nat_succ_term (Ext_term.BVar 1) ) ) )
+  in
+  let nat_result = Ext_term.App (Ext_term.BVar 3, Ext_term.BVar 0) in
+  let nat_recursor_ty =
+    Ext_term.Pi
+      ( nat_motive_domain,
+        Ext_term.Pi
+          ( nat_zero_minor,
+            Ext_term.Pi
+              ( nat_succ_minor,
+                Ext_term.Pi (nat_family, nat_result) ) ) )
+  in
+  let nat_recursor recursor_ty =
+    {
+      Ext_cert.recursor_name = nat_rec_name;
+      recursor_universe_params = [ motive_universe ];
+      recursor_ty;
+      recursor_rules = { minor_start = 1; major_index = 3 };
+    }
+  in
+  let nat_decl recursor_ty =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = nat_name;
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors = [ nat_zero_ctor; nat_succ_ctor ];
+           ind_recursor = Some (nat_recursor recursor_ty);
+         })
+  in
+  let nat_env =
+    assert_declaration_check_ok "recursor accepts Nat-like recursor shape"
+      (Ext_typecheck.check_declarations [ nat_decl nat_recursor_ty ])
+  in
+  let nat_rec_term =
+    local_generated nat_rec_name [ Ext_env.level_type0 ]
+  in
+  let nat_motive = Ext_term.Lam (nat_family, nat_family) in
+  let nat_step =
+    Ext_term.Lam
+      (nat_family, Ext_term.Lam (nat_family, Ext_term.BVar 1))
+  in
+  let nat_rec_zero =
+    Ext_env.apps nat_rec_term
+      [ nat_motive; nat_zero_term; nat_step; nat_zero_term ]
+  in
+  assert_term_result "recursor Nat-like zero iota" nat_zero_term
+    (Ext_typecheck.whnf nat_env Ext_typecheck.empty_context nat_rec_zero);
+  assert_typecheck_ok "recursor Nat-like zero checks through iota"
+    (Ext_typecheck.check nat_env Ext_typecheck.empty_context nat_rec_zero
+       nat_family);
+  let nat_rec_succ =
+    Ext_env.apps nat_rec_term
+      [ nat_motive; nat_zero_term; nat_step; nat_succ_term nat_zero_term ]
+  in
+  assert_term_result "recursor Nat-like succ iota" nat_zero_term
+    (Ext_typecheck.whnf nat_env Ext_typecheck.empty_context nat_rec_succ);
+  assert_typecheck_ok "recursor Nat-like succ checks through iota"
+    (Ext_typecheck.check nat_env Ext_typecheck.empty_context nat_rec_succ
+       nat_family);
+
+  let bad_motive_ty =
+    Ext_term.Pi
+      ( Ext_term.Pi (Ext_env.nat, Ext_term.Sort motive_level),
+        Ext_term.Pi
+          ( nat_zero_minor,
+            Ext_term.Pi
+              ( nat_succ_minor,
+                Ext_term.Pi (nat_family, nat_result) ) ) )
+  in
+  assert_typecheck_rejects "recursor rejects bad motive domain"
+    "inductive_invalid" "inductive_invalid"
+    (Ext_typecheck.check_declarations [ nat_decl bad_motive_ty ]);
+  let bad_minor_ty =
+    let bad_succ_minor =
+      Ext_term.Pi
+        ( nat_family,
+          Ext_term.App
+            (Ext_term.BVar 2, nat_succ_term (Ext_term.BVar 0)) )
+    in
+    Ext_term.Pi
+      ( nat_motive_domain,
+        Ext_term.Pi
+          ( nat_zero_minor,
+            Ext_term.Pi
+              ( bad_succ_minor,
+                Ext_term.Pi (nat_family, nat_result) ) ) )
+  in
+  assert_typecheck_rejects "recursor rejects bad minor premise"
+    "inductive_invalid" "inductive_invalid"
+    (Ext_typecheck.check_declarations [ nat_decl bad_minor_ty ]);
+  let bad_result_ty =
+    Ext_term.Pi
+      ( nat_motive_domain,
+        Ext_term.Pi
+          ( nat_zero_minor,
+            Ext_term.Pi
+              ( nat_succ_minor,
+                Ext_term.Pi
+                  ( nat_family,
+                    Ext_term.App (Ext_term.BVar 3, nat_zero_term) ) ) ) )
+  in
+  assert_typecheck_rejects "recursor rejects bad result"
+    "inductive_invalid" "inductive_invalid"
+    (Ext_typecheck.check_declarations [ nat_decl bad_result_ty ]);
+
+  let u_name = make_name [ "u" ] in
+  let v_name = make_name [ "v" ] in
+  let u_level = Ext_level.Param u_name in
+  let v_level = Ext_level.Param v_name in
+  let sort_u = Ext_term.Sort u_level in
+  let list_name = make_name [ "RecList" ] in
+  let nil_name = make_name [ "RecList"; "nil" ] in
+  let cons_name = make_name [ "RecList"; "cons" ] in
+  let list_rec_name = make_name [ "RecList"; "rec" ] in
+  let list_family = local_family [ u_level ] in
+  let list_of index = Ext_term.App (list_family, Ext_term.BVar index) in
+  let nil_ctor =
+    constructor_spec nil_name (Ext_term.Pi (sort_u, list_of 0))
+  in
+  let cons_ctor =
+    constructor_spec cons_name
+      (Ext_term.Pi
+         ( sort_u,
+           Ext_term.Pi
+             ( Ext_term.BVar 0,
+               Ext_term.Pi (list_of 1, list_of 2) ) ))
+  in
+  let nil_const level = local_generated nil_name [ level ] in
+  let cons_const level = local_generated cons_name [ level ] in
+  let list_rec_const levels = local_generated list_rec_name levels in
+  let list_motive_domain =
+    Ext_term.Pi
+      (Ext_term.App (list_family, Ext_term.BVar 0), Ext_term.Sort v_level)
+  in
+  let nil_minor =
+    Ext_term.App
+      (Ext_term.BVar 0, Ext_term.App (nil_const u_level, Ext_term.BVar 1))
+  in
+  let cons_value =
+    Ext_env.apps (cons_const u_level)
+      [ Ext_term.BVar 5; Ext_term.BVar 2; Ext_term.BVar 1 ]
+  in
+  let cons_minor =
+    Ext_term.Pi
+      ( Ext_term.BVar 2,
+        Ext_term.Pi
+          ( Ext_term.App (list_family, Ext_term.BVar 3),
+            Ext_term.Pi
+              ( Ext_term.App (Ext_term.BVar 3, Ext_term.BVar 0),
+                Ext_term.App (Ext_term.BVar 4, cons_value) ) ) )
+  in
+  let list_major_domain = Ext_term.App (list_family, Ext_term.BVar 3) in
+  let list_result = Ext_term.App (Ext_term.BVar 3, Ext_term.BVar 0) in
+  let list_recursor_ty =
+    Ext_term.Pi
+      ( sort_u,
+        Ext_term.Pi
+          ( list_motive_domain,
+            Ext_term.Pi
+              ( nil_minor,
+                Ext_term.Pi
+                  ( cons_minor,
+                    Ext_term.Pi (list_major_domain, list_result) ) ) ) )
+  in
+  let list_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = list_name;
+           decl_universe_params = [ u_name ];
+           decl_universe_constraints = [];
+           ind_params = [ binder_type sort_u ];
+           ind_indices = [];
+           ind_sort = u_level;
+           ind_constructors = [ nil_ctor; cons_ctor ];
+           ind_recursor =
+             Some
+               {
+                 Ext_cert.recursor_name = list_rec_name;
+                 recursor_universe_params = [ u_name; v_name ];
+                 recursor_ty = list_recursor_ty;
+                 recursor_rules = { minor_start = 2; major_index = 4 };
+               };
+         })
+  in
+  let list_env =
+    assert_declaration_check_ok "recursor accepts List-like recursor shape"
+      (Ext_typecheck.check_declarations [ list_decl ])
+  in
+  let list_nat =
+    Ext_term.App
+      (local_family [ Ext_env.level_type0 ], Ext_env.nat)
+  in
+  let nil_nat =
+    Ext_term.App (nil_const Ext_env.level_type0, Ext_env.nat)
+  in
+  let cons_nat head tail =
+    Ext_env.apps (cons_const Ext_env.level_type0) [ Ext_env.nat; head; tail ]
+  in
+  let list_rec_nat =
+    list_rec_const [ Ext_env.level_type0; Ext_env.level_type0 ]
+  in
+  let list_motive = Ext_term.Lam (list_nat, Ext_env.nat) in
+  let list_cons_case =
+    Ext_term.Lam
+      ( Ext_env.nat,
+        Ext_term.Lam
+          (list_nat, Ext_term.Lam (Ext_env.nat, Ext_term.BVar 0)) )
+  in
+  let list_rec_nil =
+    Ext_env.apps list_rec_nat
+      [ Ext_env.nat; list_motive; Ext_env.nat_zero; list_cons_case; nil_nat ]
+  in
+  assert_term_result "recursor List-like nil iota" Ext_env.nat_zero
+    (Ext_typecheck.whnf list_env Ext_typecheck.empty_context list_rec_nil);
+  assert_typecheck_ok "recursor List-like nil checks through iota"
+    (Ext_typecheck.check list_env Ext_typecheck.empty_context list_rec_nil
+       Ext_env.nat);
+  let list_rec_cons =
+    Ext_env.apps list_rec_nat
+      [
+        Ext_env.nat;
+        list_motive;
+        Ext_env.nat_zero;
+        list_cons_case;
+        cons_nat Ext_env.nat_zero nil_nat;
+      ]
+  in
+  assert_term_result "recursor List-like cons iota" Ext_env.nat_zero
+    (Ext_typecheck.whnf list_env Ext_typecheck.empty_context list_rec_cons);
+  assert_typecheck_ok "recursor List-like cons checks through iota"
+    (Ext_typecheck.check list_env Ext_typecheck.empty_context list_rec_cons
+       Ext_env.nat)
 
 let run_subst_tests () =
   let section = Ext_bytes.Declarations in
@@ -3578,6 +3847,7 @@ let () =
                "import-store";
                "inductive-constructors";
                "positivity";
+               "recursor";
                "reduce";
                "sha256";
                "subst";
@@ -3605,6 +3875,7 @@ let () =
   if should_run selected "inductive-constructors" then
     run_inductive_constructor_tests ();
   if should_run selected "positivity" then run_positivity_tests ();
+  if should_run selected "recursor" then run_recursor_tests ();
   if should_run selected "reduce" then run_reduce_tests ();
   if should_run selected "subst" then run_subst_tests ();
   if should_run selected "type-env" then run_type_env_tests ();

@@ -293,6 +293,28 @@ let rec apply_args fn args =
   | [] -> fn
   | arg :: rest -> apply_args (Ext_term.App (fn, arg)) rest
 
+let rec take count values =
+  if count <= 0 then []
+  else
+    match values with
+    | [] -> []
+    | value :: rest -> value :: take (count - 1) rest
+
+let rec drop count values =
+  if count <= 0 then values
+  else
+    match values with
+    | [] -> []
+    | _ :: rest -> drop (count - 1) rest
+
+let rec find_index predicate values =
+  let rec loop index remaining =
+    match remaining with
+    | [] -> None
+    | value :: rest -> if predicate value then Some index else loop (index + 1) rest
+  in
+  loop 0 values
+
 let builtin_name_is dotted global_ref =
   match global_ref with
   | Ext_term.Builtin { name; _ } -> Ext_name.to_string name = dotted
@@ -329,9 +351,17 @@ let rec whnf_with_fuel env context section offset delta term fuel =
                 bind
                   (reduce_nat_rec_iota env context section offset delta app fuel)
                   (function
-                    | None -> Ok app
                     | Some reduced ->
-                        whnf_with_fuel env context section offset delta reduced fuel))
+                        whnf_with_fuel env context section offset delta reduced fuel
+                    | None ->
+                        bind
+                          (reduce_local_recursor_iota env context section offset delta
+                             app fuel)
+                          (function
+                            | None -> Ok app
+                            | Some reduced ->
+                                whnf_with_fuel env context section offset delta reduced
+                                  fuel)))
       | Ext_term.Let (_, value, body) ->
           bind (instantiate section offset body value) (fun instantiated ->
               whnf_with_fuel env context section offset delta instantiated fuel)
@@ -364,6 +394,143 @@ and reduce_nat_rec_iota env context section offset delta term fuel =
                   | _ -> Ok None)
               | _ -> Ok None)
       | _ -> Ok None)
+  | _ -> Ok None
+
+and reduce_local_recursor_iota env context section offset delta term fuel =
+  let head, args = collect_apps term in
+  match head with
+  | Ext_term.Const
+      ( Ext_term.LocalGenerated { decl_index; name = recursor_name },
+        recursor_levels ) -> (
+      match Ext_env.find_local_declaration decl_index env.Ext_env.local_declarations with
+      | None -> Ok None
+      | Some declaration -> (
+          match declaration.Ext_cert.payload with
+          | Ext_cert.InductiveDecl
+              {
+                decl_universe_params;
+                ind_params;
+                ind_indices;
+                ind_constructors;
+                ind_recursor = Some recursor;
+                _;
+              } ->
+              if
+                ind_indices <> []
+                || not
+                     (Ext_name.equal recursor.Ext_cert.recursor_name
+                        recursor_name)
+              then Ok None
+              else (
+              let major_index = recursor.Ext_cert.recursor_rules.major_index in
+              let minor_start = recursor.Ext_cert.recursor_rules.minor_start in
+              if List.length args <= major_index then Ok None
+              else
+                match list_nth_opt major_index args with
+                | None -> Ok None
+                | Some major ->
+                    bind
+                      (whnf_with_fuel env context section offset delta major fuel)
+                      (fun major_whnf ->
+                        let ctor_head, ctor_args = collect_apps major_whnf in
+                        match ctor_head with
+                        | Ext_term.Const
+                            ( Ext_term.LocalGenerated
+                                {
+                                  decl_index = ctor_decl_index;
+                                  name = constructor_name;
+                                },
+                              _ )
+                          when ctor_decl_index = decl_index -> (
+                            match
+                              find_index
+                                (fun constructor ->
+                                  Ext_name.equal
+                                    constructor.Ext_cert.constructor_name
+                                    constructor_name)
+                                ind_constructors
+                            with
+                            | None -> Ok None
+                            | Some constructor_index -> (
+                                match
+                                  ( list_nth_opt
+                                      (minor_start + constructor_index)
+                                      args,
+                                    list_nth_opt constructor_index
+                                      ind_constructors )
+                                with
+                                | Some minor, Some constructor ->
+                                    let domains, _ =
+                                      peel_pi_domains
+                                        constructor.Ext_cert.constructor_ty
+                                    in
+                                    let param_count = List.length ind_params in
+                                    let field_domains =
+                                      drop param_count domains
+                                    in
+                                    let field_args = drop param_count ctor_args in
+                                    if
+                                      List.length field_args
+                                      < List.length field_domains
+                                    then Ok None
+                                    else
+                                      let family =
+                                        Ext_inductive.family ~decl_index
+                                          ~universe_params:decl_universe_params
+                                          ~param_count ~index_count:0
+                                      in
+                                      let rec loop field_index current
+                                          remaining_args remaining_domains =
+                                        match
+                                          (remaining_args, remaining_domains)
+                                        with
+                                        | _, [] -> Ok current
+                                        | ( field_arg :: rest_args,
+                                            field_domain :: rest_domains ) ->
+                                            let applied =
+                                              Ext_term.App (current, field_arg)
+                                            in
+                                            if
+                                              Ext_inductive.direct_recursive_domain family
+                                                field_domain
+                                                (param_count + field_index)
+                                            then
+                                              let recursive_args =
+                                                take major_index args
+                                                @ [ field_arg ]
+                                              in
+                                              let recursive_call =
+                                                apply_args
+                                                  (Ext_term.Const
+                                                     ( Ext_term.LocalGenerated
+                                                         {
+                                                           decl_index;
+                                                           name =
+                                                             recursor_name;
+                                                         },
+                                                       recursor_levels ))
+                                                  recursive_args
+                                              in
+                                              loop (field_index + 1)
+                                                (Ext_term.App
+                                                   (applied, recursive_call))
+                                                rest_args rest_domains
+                                            else
+                                              loop (field_index + 1) applied
+                                                rest_args rest_domains
+                                        | [], _ :: _ -> Ok current
+                                      in
+                                      bind
+                                        (loop 0 minor field_args field_domains)
+                                        (fun reduced ->
+                                          Ok
+                                            (Some
+                                               (apply_args reduced
+                                                  (drop (major_index + 1)
+                                                     args))))
+                                | _ -> Ok None))
+                        | _ -> Ok None))
+          | _ -> Ok None))
   | _ -> Ok None
 
 let whnf ?(section = Ext_bytes.Declarations) ?(offset = 0) ?(delta = []) env context term =
@@ -656,6 +823,292 @@ let rec check_constructors section offset env delta decl_index params indices co
         (fun () ->
           check_constructors section offset env delta decl_index params indices rest)
 
+let bvar_for_abs section offset ctx_len abs_index =
+  if abs_index < 0 || abs_index >= ctx_len then
+    error section offset Inductive_invalid
+  else Ok (Ext_term.BVar (ctx_len - 1 - abs_index))
+
+let rec remap_bvars section offset term source_ctx_len target_ctx_len source_to_target =
+  match term with
+  | Ext_term.Sort _ | Ext_term.Const _ -> Ok term
+  | Ext_term.BVar index ->
+      if index < 0 then error section offset Inductive_invalid
+      else if index < source_ctx_len then
+        let source_abs = source_ctx_len - 1 - index in
+        match list_nth_opt source_abs source_to_target with
+        | Some target_abs -> bvar_for_abs section offset target_ctx_len target_abs
+        | None -> error section offset Inductive_invalid
+      else error section offset Inductive_invalid
+  | Ext_term.App (fn, arg) ->
+      bind
+        (remap_bvars section offset fn source_ctx_len target_ctx_len
+           source_to_target)
+        (fun remapped_fn ->
+          bind
+            (remap_bvars section offset arg source_ctx_len target_ctx_len
+               source_to_target)
+            (fun remapped_arg -> Ok (Ext_term.App (remapped_fn, remapped_arg))))
+  | Ext_term.Lam (ty, body) ->
+      bind
+        (remap_bvars section offset ty source_ctx_len target_ctx_len
+           source_to_target)
+        (fun remapped_ty ->
+          bind
+            (remap_bvars section offset body (source_ctx_len + 1)
+               (target_ctx_len + 1) (source_to_target @ [ target_ctx_len ]))
+            (fun remapped_body -> Ok (Ext_term.Lam (remapped_ty, remapped_body))))
+  | Ext_term.Pi (ty, body) ->
+      bind
+        (remap_bvars section offset ty source_ctx_len target_ctx_len
+           source_to_target)
+        (fun remapped_ty ->
+          bind
+            (remap_bvars section offset body (source_ctx_len + 1)
+               (target_ctx_len + 1) (source_to_target @ [ target_ctx_len ]))
+            (fun remapped_body -> Ok (Ext_term.Pi (remapped_ty, remapped_body))))
+  | Ext_term.Let (ty, value, body) ->
+      bind
+        (remap_bvars section offset ty source_ctx_len target_ctx_len
+           source_to_target)
+        (fun remapped_ty ->
+          bind
+            (remap_bvars section offset value source_ctx_len target_ctx_len
+               source_to_target)
+            (fun remapped_value ->
+              bind
+                (remap_bvars section offset body (source_ctx_len + 1)
+                   (target_ctx_len + 1)
+                   (source_to_target @ [ target_ctx_len ]))
+                (fun remapped_body ->
+                  Ok (Ext_term.Let (remapped_ty, remapped_value, remapped_body)))))
+
+let rec mk_pi_from_domains domains body =
+  match domains with
+  | [] -> body
+  | domain :: rest -> Ext_term.Pi (domain, mk_pi_from_domains rest body)
+
+let expected_motive_level ind_sort recursor_universe_params decl_universe_params =
+  if Ext_level.normalize ind_sort = Ext_level.Zero then Ext_level.Zero
+  else
+    let rec find_extra reversed =
+      match reversed with
+      | [] -> None
+      | name :: rest ->
+          if has_name name decl_universe_params then find_extra rest
+          else Some name
+    in
+    match find_extra (List.rev recursor_universe_params) with
+    | Some name -> Ext_level.Param name
+    | None -> (
+        match List.rev recursor_universe_params with
+        | name :: _ -> Ext_level.Param name
+        | [] -> ind_sort)
+
+let inductive_target_expr section offset decl_index delta param_count ctx_len =
+  let head =
+    Ext_term.Const (Ext_term.Local { decl_index }, universe_param_levels delta)
+  in
+  let rec collect param_abs args =
+    if param_abs = param_count then Ok (List.rev args)
+    else
+      bind (bvar_for_abs section offset ctx_len param_abs) (fun arg ->
+          collect (param_abs + 1) (arg :: args))
+  in
+  bind (collect 0 []) (fun args -> Ok (apply_args head args))
+
+let motive_app section offset ctx_len motive_abs target =
+  bind (bvar_for_abs section offset ctx_len motive_abs) (fun motive ->
+      Ok (Ext_term.App (motive, target)))
+
+let motive_domain_expr section offset decl_index delta param_count motive_level =
+  bind
+    (inductive_target_expr section offset decl_index delta param_count param_count)
+    (fun target -> Ok (Ext_term.Pi (target, Ext_term.Sort motive_level)))
+
+let constructor_result_index_args section offset family constructor_result =
+  let head, args = collect_apps constructor_result in
+  match head with
+  | Ext_term.Const (global_ref, levels)
+    when Ext_inductive.family_ref family global_ref
+         && levels_equal levels (universe_param_levels family.Ext_inductive.family_universe_params)
+         && List.length args
+            = family.Ext_inductive.family_param_count
+              + family.Ext_inductive.family_index_count ->
+      Ok (drop family.Ext_inductive.family_param_count args)
+  | _ -> error section offset Inductive_invalid
+
+let expected_minor_type section offset decl_index delta params indices constructor_index
+    constructor =
+  let param_count = List.length params in
+  let index_count = List.length indices in
+  if index_count <> 0 then error section offset Unsupported_declaration
+  else
+    let family =
+      Ext_inductive.family ~decl_index ~universe_params:delta ~param_count
+        ~index_count
+    in
+    let constructor_domains, constructor_result =
+      peel_pi_domains constructor.Ext_cert.constructor_ty
+    in
+    if List.length constructor_domains < param_count then
+      error section offset Inductive_invalid
+    else
+      bind
+        (constructor_result_index_args section offset family constructor_result)
+        (fun result_index_args ->
+          if result_index_args <> [] then error section offset Unsupported_declaration
+          else
+            let prefix_len = param_count + 1 + constructor_index in
+            let motive_abs = param_count in
+            let source_to_target = ref (List.init param_count (fun index -> index)) in
+            let target_ctx_len = ref prefix_len in
+            let expected_domains = ref [] in
+            let field_abs = ref [] in
+            let rec add_fields field_index remaining =
+              match remaining with
+              | [] -> Ok ()
+              | field_domain :: rest ->
+                  let source_ctx_len = param_count + field_index in
+                  bind
+                    (remap_bvars section offset field_domain source_ctx_len
+                       !target_ctx_len !source_to_target)
+                    (fun remapped_domain ->
+                      expected_domains := remapped_domain :: !expected_domains;
+                      source_to_target := !source_to_target @ [ !target_ctx_len ];
+                      field_abs := !target_ctx_len :: !field_abs;
+                      target_ctx_len := !target_ctx_len + 1;
+                      if
+                        Ext_inductive.direct_recursive_domain family field_domain
+                          source_ctx_len
+                      then
+                        bind
+                          (motive_app section offset !target_ctx_len motive_abs
+                             (Ext_term.BVar 0))
+                          (fun ih_domain ->
+                            expected_domains := ih_domain :: !expected_domains;
+                            target_ctx_len := !target_ctx_len + 1;
+                            add_fields (field_index + 1) rest)
+                      else add_fields (field_index + 1) rest)
+            in
+            bind (add_fields 0 (drop param_count constructor_domains)) (fun () ->
+                let rec collect_params param_abs args =
+                  if param_abs = param_count then Ok (List.rev args)
+                  else
+                    bind
+                      (bvar_for_abs section offset !target_ctx_len param_abs)
+                      (fun arg -> collect_params (param_abs + 1) (arg :: args))
+                in
+                let rec collect_fields remaining args =
+                  match remaining with
+                  | [] -> Ok (List.rev args)
+                  | abs_index :: rest ->
+                      bind
+                        (bvar_for_abs section offset !target_ctx_len abs_index)
+                        (fun arg -> collect_fields rest (arg :: args))
+                in
+                bind (collect_params 0 []) (fun param_args ->
+                    bind (collect_fields (List.rev !field_abs) []) (fun field_args ->
+                        let constructor_value =
+                          apply_args
+                            (Ext_term.Const
+                               ( Ext_term.LocalGenerated
+                                   {
+                                     decl_index;
+                                     name = constructor.Ext_cert.constructor_name;
+                                   },
+                                 universe_param_levels delta ))
+                            (param_args @ field_args)
+                        in
+                        bind
+                          (motive_app section offset !target_ctx_len motive_abs
+                             constructor_value)
+                          (fun result ->
+                            Ok
+                              (mk_pi_from_domains
+                                 (List.rev !expected_domains)
+                                 result))))))
+
+let expected_recursor_type section offset decl_index delta ind_params ind_indices
+    ind_sort ind_constructors recursor =
+  let param_count = List.length ind_params in
+  if ind_indices <> [] then error section offset Unsupported_declaration
+  else
+    let motive_level =
+      expected_motive_level ind_sort recursor.Ext_cert.recursor_universe_params delta
+    in
+    let param_domains = List.map (fun param -> param.Ext_cert.binder_ty) ind_params in
+    match
+      motive_domain_expr section offset decl_index delta param_count motive_level
+    with
+    | Error err -> Error err
+    | Ok motive_domain -> (
+        let rec collect_minors constructor_index remaining minors =
+          match remaining with
+          | [] -> Ok (List.rev minors)
+          | constructor :: rest ->
+              bind
+                (expected_minor_type section offset decl_index delta ind_params
+                   ind_indices constructor_index constructor)
+                (fun minor ->
+                  collect_minors (constructor_index + 1) rest (minor :: minors))
+        in
+        match collect_minors 0 ind_constructors [] with
+        | Error err -> Error err
+        | Ok minor_domains -> (
+            let domains = param_domains @ [ motive_domain ] @ minor_domains in
+            match
+              inductive_target_expr section offset decl_index delta param_count
+                (List.length domains)
+            with
+            | Error err -> Error err
+            | Ok major_domain -> (
+                let domains = domains @ [ major_domain ] in
+                match
+                  bvar_for_abs section offset (List.length domains)
+                    recursor.Ext_cert.recursor_rules.major_index
+                with
+                | Error err -> Error err
+                | Ok major -> (
+                    match
+                      motive_app section offset (List.length domains) param_count
+                        major
+                    with
+                    | Error err -> Error err
+                    | Ok result -> Ok (mk_pi_from_domains domains result)))))
+
+let check_recursor_declaration section offset env decl_index delta ind_params ind_indices
+    ind_sort ind_constructors recursor =
+  if ind_indices <> [] then error section offset Unsupported_declaration
+  else
+    let param_count = List.length ind_params in
+    let constructor_count = List.length ind_constructors in
+    let expected_minor_start = param_count + 1 in
+    let expected_major_index = expected_minor_start + constructor_count in
+    let domains, _ = peel_pi_domains recursor.Ext_cert.recursor_ty in
+    if recursor.Ext_cert.recursor_rules.minor_start <> expected_minor_start then
+      error section offset Inductive_invalid
+    else if
+      recursor.Ext_cert.recursor_rules.major_index <> expected_major_index
+    then error section offset Inductive_invalid
+    else if List.length domains <> expected_major_index + 1 then
+      error section offset Inductive_invalid
+    else
+      bind
+        (ensure_delta_wf section offset recursor.Ext_cert.recursor_universe_params)
+        (fun () ->
+          bind
+            (expected_recursor_type section offset decl_index delta ind_params
+               ind_indices ind_sort ind_constructors recursor)
+            (fun expected_ty ->
+              if recursor.Ext_cert.recursor_ty <> expected_ty then
+                error section offset Inductive_invalid
+              else
+                bind
+                  (expect_sort ~section ~offset
+                     ~delta:recursor.Ext_cert.recursor_universe_params env
+                     empty_context recursor.Ext_cert.recursor_ty)
+                  (fun _ -> Ok ())))
+
 let inductive_family_only_declaration (declaration : Ext_cert.declaration) =
   match declaration.Ext_cert.payload with
   | Ext_cert.InductiveDecl
@@ -680,6 +1133,36 @@ let inductive_family_only_declaration (declaration : Ext_cert.declaration) =
               ind_indices;
               ind_sort;
               ind_constructors = [];
+              ind_recursor = None;
+            };
+      }
+  | _ -> declaration
+
+let inductive_without_recursor_declaration (declaration : Ext_cert.declaration) =
+  match declaration.Ext_cert.payload with
+  | Ext_cert.InductiveDecl
+      {
+        decl_name;
+        decl_universe_params;
+        decl_universe_constraints;
+        ind_params;
+        ind_indices;
+        ind_sort;
+        ind_constructors;
+        _;
+      } ->
+      {
+        declaration with
+        Ext_cert.payload =
+          Ext_cert.InductiveDecl
+            {
+              decl_name;
+              decl_universe_params;
+              decl_universe_constraints;
+              ind_params;
+              ind_indices;
+              ind_sort;
+              ind_constructors;
               ind_recursor = None;
             };
       }
@@ -722,6 +1205,33 @@ let rec check_generated_constructor_interfaces section offset env decl_index del
           check_generated_constructor_interfaces section offset env decl_index delta
             decl_interface_hash rest)
 
+let check_generated_recursor_interface section offset env decl_index
+    decl_interface_hash recursor =
+  let recursor_name = recursor.Ext_cert.recursor_name in
+  bind
+    (resolve_signature section offset env
+       (Ext_term.LocalGenerated { decl_index; name = recursor_name }))
+    (fun signature ->
+      if not (Ext_name.equal signature.Ext_env.signature_name recursor_name)
+      then error section offset Inductive_invalid
+      else if
+        signature.Ext_env.signature_decl_interface_hash
+        <> Some decl_interface_hash
+      then error section offset Inductive_invalid
+      else if
+        not
+          (names_equal signature.Ext_env.signature_universe_params
+             recursor.Ext_cert.recursor_universe_params)
+      then error section offset Inductive_invalid
+      else if signature.Ext_env.signature_ty <> recursor.Ext_cert.recursor_ty
+      then error section offset Inductive_invalid
+      else
+        match signature.Ext_env.signature_origin with
+        | Ext_env.Local_generated { decl_index = origin_index; name }
+          when origin_index = decl_index && Ext_name.equal name recursor_name ->
+            Ok ()
+        | _ -> error section offset Inductive_invalid)
+
 let check_inductive_declaration env (declaration : Ext_cert.declaration) =
   let section = Ext_bytes.Declarations in
   let offset = declaration.Ext_cert.offset in
@@ -740,40 +1250,76 @@ let check_inductive_declaration env (declaration : Ext_cert.declaration) =
         ind_constructors;
         ind_recursor;
         _;
-      } -> (
-      match ind_recursor with
-      | Some _ -> error section offset Unsupported_declaration
-      | None ->
-          bind (ensure_level_wf section offset delta ind_sort) (fun () ->
-              bind
-                (ensure_constructor_names_unique section offset decl_name
-                   ind_constructors)
-                (fun () ->
-                  let family_ty =
-                    Ext_env.pi_of_binders (ind_params @ ind_indices)
-                      (Ext_term.Sort ind_sort)
-                  in
-                  bind
-                    (expect_sort ~section ~offset ~delta env empty_context
-                       family_ty)
-                    (fun _ ->
-                      let family_declaration =
-                        inductive_family_only_declaration declaration
-                      in
-                      bind (add_checked_declaration env family_declaration)
-                        (fun family_env ->
-                          bind
-                            (check_constructors section offset family_env delta
-                               decl_index ind_params ind_indices
-                               ind_constructors)
-                            (fun () ->
-                              bind (add_checked_declaration env declaration)
-                                (fun checked_env ->
-                                  bind
-                                    (check_generated_constructor_interfaces
-                                       section offset checked_env decl_index delta
-                                       decl_interface_hash ind_constructors)
-                                    (fun () -> Ok checked_env))))))))
+      } ->
+      let family_ty =
+        Ext_env.pi_of_binders (ind_params @ ind_indices)
+          (Ext_term.Sort ind_sort)
+      in
+      let family_declaration = inductive_family_only_declaration declaration in
+      let constructor_declaration =
+        inductive_without_recursor_declaration declaration
+      in
+      (match ensure_level_wf section offset delta ind_sort with
+      | Error err -> Error err
+      | Ok () -> (
+          match
+            ensure_constructor_names_unique section offset decl_name
+              ind_constructors
+          with
+          | Error err -> Error err
+          | Ok () -> (
+              match
+                expect_sort ~section ~offset ~delta env empty_context family_ty
+              with
+              | Error err -> Error err
+              | Ok _ -> (
+                  match add_checked_declaration env family_declaration with
+                  | Error err -> Error err
+                  | Ok family_env -> (
+                      match
+                        check_constructors section offset family_env delta
+                          decl_index ind_params ind_indices ind_constructors
+                      with
+                      | Error err -> Error err
+                      | Ok () -> (
+                          match
+                            add_checked_declaration env constructor_declaration
+                          with
+                          | Error err -> Error err
+                          | Ok constructor_env -> (
+                              match
+                                (match ind_recursor with
+                                | None -> Ok ()
+                                | Some recursor ->
+                                    check_recursor_declaration section offset
+                                      constructor_env decl_index delta ind_params
+                                      ind_indices ind_sort ind_constructors
+                                      recursor)
+                              with
+                              | Error err -> Error err
+                              | Ok () -> (
+                                  match add_checked_declaration env declaration with
+                                  | Error err -> Error err
+                                  | Ok checked_env -> (
+                                      match
+                                        check_generated_constructor_interfaces
+                                          section offset checked_env decl_index
+                                          delta decl_interface_hash
+                                          ind_constructors
+                                      with
+                                      | Error err -> Error err
+                                      | Ok () -> (
+                                          match ind_recursor with
+                                          | None -> Ok checked_env
+                                          | Some recursor -> (
+                                              match
+                                                check_generated_recursor_interface
+                                                  section offset checked_env
+                                                  decl_index decl_interface_hash
+                                                  recursor
+                                              with
+                                              | Error err -> Error err
+                                              | Ok () -> Ok checked_env)))))))))))
   | _ -> error section offset Unsupported_declaration
 
 let check_declaration env (declaration : Ext_cert.declaration) =
