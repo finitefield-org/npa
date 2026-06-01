@@ -7,6 +7,458 @@ type policy = {
 let default_policy =
   { deny_sorry = true; deny_custom_axioms = true; allowed_axioms = [] }
 
+let policy_format = "npa.independent-checker.axiom_policy.v1"
+
+let legacy_policy_format = "npa.phase8.axiom_policy.v1"
+
+type policy_parse_error = {
+  policy_field : string;
+  expected_value : string;
+  actual_value : string;
+}
+
+type policy_string_entry =
+  | Policy_string of string
+  | Policy_non_string
+
+type policy_assignment = {
+  assignment_key : string;
+  assignment_value : string;
+}
+
+let policy_parse_error field expected_value actual_value =
+  Error { policy_field = field; expected_value; actual_value }
+
+let policy_invalid_toml () =
+  policy_parse_error "axiom_policy" "valid_toml" "invalid_toml"
+
+let policy_error_kind _ = "policy_input_error"
+
+let policy_error_reason_code _ = "request_axiom_policy_invalid"
+
+let policy_allows policy name =
+  List.exists (Ext_name.equal name) policy.allowed_axioms
+
+let starts_with text prefix =
+  let text_len = String.length text in
+  let prefix_len = String.length prefix in
+  text_len >= prefix_len && String.sub text 0 prefix_len = prefix
+
+let has_utf8_bom text =
+  String.length text >= 3
+  && Char.code text.[0] = 0xef
+  && Char.code text.[1] = 0xbb
+  && Char.code text.[2] = 0xbf
+
+let schema_path_component value =
+  let length = String.length value in
+  let rec loop index =
+    if index >= length then true
+    else
+      let code = Char.code value.[index] in
+      ((code >= Char.code 'a' && code <= Char.code 'z')
+      || (code >= Char.code 'A' && code <= Char.code 'Z')
+      || (code >= Char.code '0' && code <= Char.code '9')
+      || value.[index] = '_' || value.[index] = '-')
+      && loop (index + 1)
+  in
+  length > 0 && length <= 64 && loop 0
+
+let key_path_valid key =
+  key <> "" && List.for_all schema_path_component (String.split_on_char '.' key)
+
+let policy_field_for_key key =
+  if key_path_valid key then "axiom_policy." ^ key else "axiom_policy"
+
+let find_char_from text start target =
+  let rec loop index =
+    if index >= String.length text then None
+    else if text.[index] = target then Some index
+    else loop (index + 1)
+  in
+  loop start
+
+let strip_toml_comment line =
+  let rec loop index in_string escaped =
+    if index >= String.length line then
+      if in_string || escaped then policy_invalid_toml () else Ok line
+    else
+      let ch = line.[index] in
+      if in_string then
+        if escaped then loop (index + 1) true false
+        else
+          match ch with
+          | '\\' -> loop (index + 1) true true
+          | '"' -> loop (index + 1) false false
+          | _ -> loop (index + 1) true false
+      else
+        match ch with
+        | '"' -> loop (index + 1) true false
+        | '#' -> Ok (String.sub line 0 index)
+        | _ -> loop (index + 1) false false
+  in
+  loop 0 false false
+
+let toml_array_closed value =
+  let rec loop index depth in_string escaped =
+    if index >= String.length value then
+      if in_string || escaped then policy_invalid_toml () else Ok false
+    else
+      let ch = value.[index] in
+      if in_string then
+        if escaped then loop (index + 1) depth true false
+        else
+          match ch with
+          | '\\' -> loop (index + 1) depth true true
+          | '"' -> loop (index + 1) depth false false
+          | _ -> loop (index + 1) depth true false
+      else
+        match ch with
+        | '"' -> loop (index + 1) depth true false
+        | '[' -> loop (index + 1) (depth + 1) false false
+        | ']' ->
+            if depth = 0 then policy_invalid_toml ()
+            else if depth = 1 then Ok true
+            else loop (index + 1) (depth - 1) false false
+        | _ -> loop (index + 1) depth false false
+  in
+  loop 0 0 false false
+
+let collect_policy_assignments source =
+  let lines = String.split_on_char '\n' source in
+  let rec loop index assignments =
+    if index >= List.length lines then Ok (List.rev assignments)
+    else
+      let line = List.nth lines index in
+      match strip_toml_comment line with
+      | Error err -> Error err
+      | Ok without_comment ->
+          let trimmed = String.trim without_comment in
+          if trimmed = "" then loop (index + 1) assignments
+          else if starts_with trimmed "[" then (
+            match find_char_from trimmed 0 ']' with
+            | None -> policy_invalid_toml ()
+            | Some close_index ->
+                if String.trim (String.sub trimmed (close_index + 1)
+                                  (String.length trimmed - close_index - 1))
+                   <> ""
+                then policy_invalid_toml ()
+                else
+                  let key = String.trim (String.sub trimmed 1 (close_index - 1)) in
+                  if key = "" then policy_invalid_toml ()
+                  else
+                    loop (index + 1)
+                      ({ assignment_key = key; assignment_value = "{table}" }
+                      :: assignments))
+          else
+            match find_char_from trimmed 0 '=' with
+            | None -> policy_invalid_toml ()
+            | Some eq_index ->
+                let key = String.trim (String.sub trimmed 0 eq_index) in
+                if key = "" || not (key_path_valid key) then policy_invalid_toml ()
+                else
+                  let value =
+                    String.trim
+                      (String.sub trimmed (eq_index + 1)
+                         (String.length trimmed - eq_index - 1))
+                  in
+                  let rec collect_array current_index value =
+                    if starts_with (String.trim value) "[" then
+                      match toml_array_closed value with
+                      | Error err -> Error err
+                      | Ok true -> Ok (current_index, value)
+                      | Ok false ->
+                          let next_index = current_index + 1 in
+                          if next_index >= List.length lines then policy_invalid_toml ()
+                          else
+                            let next_line = List.nth lines next_index in
+                            (match strip_toml_comment next_line with
+                            | Error err -> Error err
+                            | Ok next_without_comment ->
+                                collect_array next_index
+                                  (value ^ "\n"
+                                  ^ String.trim next_without_comment))
+                    else Ok (current_index, value)
+                  in
+                  (match collect_array index value with
+                  | Error err -> Error err
+                  | Ok (next_index, value) ->
+                      loop (next_index + 1)
+                        ({ assignment_key = key; assignment_value = value }
+                        :: assignments))
+  in
+  loop 0 []
+
+let toml_skip_ws value index =
+  let rec loop index =
+    if index >= String.length value then index
+    else
+      match value.[index] with
+      | ' ' | '\t' | '\n' | '\r' -> loop (index + 1)
+      | _ -> index
+  in
+  loop index
+
+let parse_toml_basic_string_at value start =
+  if start >= String.length value || value.[start] <> '"' then policy_invalid_toml ()
+  else
+    let buffer = Buffer.create 16 in
+    let rec loop index =
+      if index >= String.length value then policy_invalid_toml ()
+      else
+        match value.[index] with
+        | '"' -> Ok (Buffer.contents buffer, index + 1)
+        | '\\' ->
+            if index + 1 >= String.length value then policy_invalid_toml ()
+            else
+              let escaped = value.[index + 1] in
+              let decoded =
+                match escaped with
+                | '"' -> Some '"'
+                | '\\' -> Some '\\'
+                | 'b' -> Some '\b'
+                | 't' -> Some '\t'
+                | 'n' -> Some '\n'
+                | 'f' -> Some '\012'
+                | 'r' -> Some '\r'
+                | _ -> None
+              in
+              (match decoded with
+              | None -> policy_invalid_toml ()
+              | Some ch ->
+                  Buffer.add_char buffer ch;
+                  loop (index + 2))
+        | ch ->
+            if Char.code ch < 0x20 then policy_invalid_toml ()
+            else (
+              Buffer.add_char buffer ch;
+              loop (index + 1))
+    in
+    loop (start + 1)
+
+let parse_toml_string_value value =
+  let trimmed = String.trim value in
+  if trimmed = "null" then policy_invalid_toml ()
+  else if not (starts_with trimmed "\"") then Ok None
+  else
+    match parse_toml_basic_string_at trimmed 0 with
+    | Error err -> Error err
+    | Ok (text, next) ->
+        if String.trim (String.sub trimmed next (String.length trimmed - next)) = "" then
+          Ok (Some text)
+        else policy_invalid_toml ()
+
+let parse_toml_bool_value field value =
+  let trimmed = String.trim value in
+  if trimmed = "null" then policy_invalid_toml ()
+  else if trimmed = "true" then Ok true
+  else if trimmed = "false" then Ok false
+  else policy_parse_error field "bool" "wrong_type"
+
+let parse_toml_string_array_value value =
+  let trimmed = String.trim value in
+  if trimmed = "null" then policy_invalid_toml ()
+  else if not (starts_with trimmed "[") then Ok None
+  else
+    let rec loop index entries =
+      let index = toml_skip_ws trimmed index in
+      if index >= String.length trimmed then policy_invalid_toml ()
+      else if trimmed.[index] = ']' then
+        let next = index + 1 in
+        if String.trim (String.sub trimmed next (String.length trimmed - next)) = "" then
+          Ok (Some (List.rev entries))
+        else policy_invalid_toml ()
+      else
+        let entry_result =
+          if trimmed.[index] = '"' then
+            match parse_toml_basic_string_at trimmed index with
+            | Error err -> Error err
+            | Ok (text, next) -> Ok (Policy_string text, next)
+          else
+            let rec find_end cursor =
+              if cursor >= String.length trimmed then cursor
+              else
+                match trimmed.[cursor] with
+                | ',' | ']' -> cursor
+                | _ -> find_end (cursor + 1)
+            in
+            let end_index = find_end index in
+            let raw = String.trim (String.sub trimmed index (end_index - index)) in
+            if raw = "null" then policy_invalid_toml ()
+            else Ok (Policy_non_string, end_index)
+        in
+        match entry_result with
+        | Error err -> Error err
+        | Ok (entry, after_entry) ->
+            let next = toml_skip_ws trimmed after_entry in
+            if next >= String.length trimmed then policy_invalid_toml ()
+            else if trimmed.[next] = ',' then loop (next + 1) (entry :: entries)
+            else if trimmed.[next] = ']' then loop next (entry :: entries)
+            else policy_invalid_toml ()
+    in
+    loop 1 []
+
+let name_of_dotted text =
+  Ext_name.of_components (String.split_on_char '.' text)
+
+let find_policy_assignment key assignments =
+  List.find_opt (fun assignment -> assignment.assignment_key = key) assignments
+
+let validate_policy_duplicates assignments =
+  let rec loop seen remaining =
+    match remaining with
+    | [] -> Ok ()
+    | assignment :: rest ->
+        if List.mem assignment.assignment_key seen then
+          policy_parse_error (policy_field_for_key assignment.assignment_key)
+            "unique_object_keys" "duplicate_field"
+        else loop (assignment.assignment_key :: seen) rest
+  in
+  loop [] assignments
+
+let validate_policy_allowed_axioms assignment =
+  match parse_toml_string_array_value assignment.assignment_value with
+  | Error err -> Error err
+  | Ok None ->
+      policy_parse_error "axiom_policy.allowed_axioms" "array" "wrong_type"
+  | Ok (Some entries) ->
+      let rec parse_entries index remaining names =
+        match remaining with
+        | [] -> Ok (List.rev names)
+        | Policy_non_string :: _ ->
+            policy_parse_error
+              ("axiom_policy.allowed_axioms[" ^ string_of_int index ^ "]")
+              "axiom_name" "wrong_type"
+        | Policy_string text :: rest -> (
+            match name_of_dotted text with
+            | None ->
+                policy_parse_error
+                  ("axiom_policy.allowed_axioms[" ^ string_of_int index ^ "]")
+                  "axiom_name" "invalid_name_format"
+            | Some name -> parse_entries (index + 1) rest (name :: names))
+      in
+      (match parse_entries 0 entries [] with
+      | Error err -> Error err
+      | Ok names ->
+          let rec check_order index previous remaining =
+            match remaining with
+            | [] -> Ok ()
+            | name :: rest ->
+                let cmp = String.compare (Ext_name.to_string name)
+                    (Ext_name.to_string previous)
+                in
+                if cmp < 0 then
+                  policy_parse_error
+                    ("axiom_policy.allowed_axioms[" ^ string_of_int index ^ "]")
+                    "axiom_name_canonical_order" "order_violation"
+                else check_order (index + 1) name rest
+          in
+          let order_result =
+            match names with
+            | [] | [ _ ] -> Ok ()
+            | first :: rest -> check_order 1 first rest
+          in
+          (match order_result with
+          | Error err -> Error err
+          | Ok () ->
+              let rec check_duplicates index seen remaining =
+                match remaining with
+                | [] -> Ok names
+                | name :: rest ->
+                    if List.exists (Ext_name.equal name) seen then
+                      policy_parse_error
+                        ("axiom_policy.allowed_axioms[" ^ string_of_int index ^ "]")
+                        "unique_axiom_name" "duplicate_axiom_name"
+                    else check_duplicates (index + 1) (name :: seen) rest
+              in
+              check_duplicates 0 [] names))
+
+let parse_policy_toml source =
+  if has_utf8_bom source then policy_invalid_toml ()
+  else
+    match collect_policy_assignments source with
+    | Error err -> Error err
+    | Ok assignments -> (
+        match validate_policy_duplicates assignments with
+        | Error err -> Error err
+        | Ok () ->
+            let parse_format policy =
+              match find_policy_assignment "format" assignments with
+              | None -> Ok policy
+              | Some assignment -> (
+                  match parse_toml_string_value assignment.assignment_value with
+                  | Error err -> Error err
+                  | Ok None ->
+                      policy_parse_error "axiom_policy.format" policy_format
+                        "wrong_type"
+                  | Ok (Some value) ->
+                      if value = policy_format || value = legacy_policy_format then
+                        Ok policy
+                      else
+                        policy_parse_error "axiom_policy.format" policy_format
+                          "invalid_fixed_value")
+            in
+            let parse_bool_field key update policy =
+              match find_policy_assignment key assignments with
+              | None -> Ok policy
+              | Some assignment -> (
+                  match
+                    parse_toml_bool_value (policy_field_for_key key)
+                      assignment.assignment_value
+                  with
+                  | Error err -> Error err
+                  | Ok value -> Ok (update policy value))
+            in
+            let parse_allowed policy =
+              match find_policy_assignment "allowed_axioms" assignments with
+              | None -> Ok policy
+              | Some assignment -> (
+                  match validate_policy_allowed_axioms assignment with
+                  | Error err -> Error err
+                  | Ok allowed_axioms -> Ok { policy with allowed_axioms })
+            in
+            let parse_unknown policy =
+              let known key =
+                key = "format" || key = "deny_sorry"
+                || key = "deny_custom_axioms" || key = "allowed_axioms"
+              in
+              let unknown =
+                List.filter
+                  (fun assignment -> not (known assignment.assignment_key))
+                  assignments
+              in
+              let unknown =
+                List.sort
+                  (fun left right ->
+                    String.compare left.assignment_key right.assignment_key)
+                  unknown
+              in
+              match unknown with
+              | [] -> Ok policy
+              | assignment :: _ ->
+                  policy_parse_error
+                    (policy_field_for_key assignment.assignment_key)
+                    "absent" "unknown_field"
+            in
+            let bind_policy result f =
+              match result with
+              | Error err -> Error err
+              | Ok value -> f value
+            in
+            bind_policy (parse_format default_policy) (fun policy ->
+                bind_policy
+                  (parse_bool_field "deny_sorry"
+                     (fun policy value -> { policy with deny_sorry = value })
+                     policy)
+                  (fun policy ->
+                    bind_policy
+                      (parse_bool_field "deny_custom_axioms"
+                         (fun policy value ->
+                           { policy with deny_custom_axioms = value })
+                         policy)
+                      (fun policy ->
+                        bind_policy (parse_allowed policy) parse_unknown))))
+
 type error = {
   section : Ext_bytes.certificate_section;
   offset : Ext_bytes.offset;

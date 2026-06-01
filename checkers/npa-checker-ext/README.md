@@ -13,6 +13,7 @@ scripts/test.sh
 scripts/test.sh sha256
 scripts/test.sh feature-policy
 scripts/test.sh axiom-report
+scripts/test.sh axiom-policy-parse
 scripts/test.sh decoder-bytes
 scripts/test.sh decoder-header
 scripts/test.sh decoder-tables

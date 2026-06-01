@@ -2450,6 +2450,111 @@ let assert_axiom_report_rejects label expected_section expected_offset result =
         ("\"offset\": " ^ string_of_int expected_offset)
         raw
 
+let assert_policy_parse_ok label result =
+  match result with
+  | Ok policy -> policy
+  | Error error ->
+      failwith
+        (label ^ ": unexpected policy parse error "
+       ^ error.Ext_axiom.policy_field ^ " " ^ error.Ext_axiom.actual_value)
+
+let assert_policy_parse_rejects label expected_field expected_value actual_value
+    result =
+  match result with
+  | Ok _ -> failwith (label ^ ": expected policy parse error")
+  | Error error ->
+      assert_equal (label ^ " kind") "policy_input_error"
+        (Ext_axiom.policy_error_kind error);
+      assert_equal (label ^ " reason") "request_axiom_policy_invalid"
+        (Ext_axiom.policy_error_reason_code error);
+      assert_equal (label ^ " field") expected_field
+        error.Ext_axiom.policy_field;
+      assert_equal (label ^ " expected") expected_value
+        error.Ext_axiom.expected_value;
+      assert_equal (label ^ " actual") actual_value error.Ext_axiom.actual_value
+
+let run_axiom_policy_parse_tests () =
+  assert_bool "axiom policy default denies sorry"
+    Ext_axiom.default_policy.Ext_axiom.deny_sorry;
+  assert_bool "axiom policy default denies custom axioms"
+    Ext_axiom.default_policy.Ext_axiom.deny_custom_axioms;
+  assert_int_equal "axiom policy default allowlist empty" 0
+    (List.length Ext_axiom.default_policy.Ext_axiom.allowed_axioms);
+
+  let policy =
+    assert_policy_parse_ok "axiom policy parses first-release toml"
+      (Ext_axiom.parse_policy_toml
+         {|
+format = "npa.independent-checker.axiom_policy.v1"
+deny_sorry = false
+deny_custom_axioms = true
+allowed_axioms = [
+  "Std.Logic.Eq.rec",
+  "User.Custom.P",
+]
+|})
+  in
+  assert_bool "axiom policy parses deny_sorry false"
+    (not policy.Ext_axiom.deny_sorry);
+  assert_bool "axiom policy parses deny_custom true"
+    policy.Ext_axiom.deny_custom_axioms;
+  assert_bool "axiom policy allows exact Std.Logic.Eq.rec"
+    (Ext_axiom.policy_allows policy (make_name [ "Std"; "Logic"; "Eq"; "rec" ]));
+  assert_bool "axiom policy rejects prefix-like axiom"
+    (not
+       (Ext_axiom.policy_allows policy
+          (make_name [ "Std"; "Logic"; "Eq"; "rec"; "custom" ])));
+  assert_bool "axiom policy rejects unlisted axiom"
+    (not (Ext_axiom.policy_allows policy (make_name [ "User"; "Other" ])));
+
+  let defaulted =
+    assert_policy_parse_ok "axiom policy missing fields use defaults"
+      (Ext_axiom.parse_policy_toml "")
+  in
+  assert_bool "axiom policy empty input default deny_sorry"
+    defaulted.Ext_axiom.deny_sorry;
+  assert_bool "axiom policy empty input default deny_custom"
+    defaulted.Ext_axiom.deny_custom_axioms;
+  assert_int_equal "axiom policy empty input default allowlist" 0
+    (List.length defaulted.Ext_axiom.allowed_axioms);
+
+  assert_policy_parse_rejects "axiom policy rejects JSON input" "axiom_policy"
+    "valid_toml" "invalid_toml"
+    (Ext_axiom.parse_policy_toml
+       {|{"deny_sorry": true, "allowed_axioms": []}|});
+  assert_policy_parse_rejects "axiom policy duplicate field is deterministic"
+    "axiom_policy.deny_sorry" "unique_object_keys" "duplicate_field"
+    (Ext_axiom.parse_policy_toml
+       {|
+deny_sorry = true
+deny_sorry = false
+|});
+  assert_policy_parse_rejects "axiom policy bool wrong type"
+    "axiom_policy.deny_custom_axioms" "bool" "wrong_type"
+    (Ext_axiom.parse_policy_toml {|deny_custom_axioms = "true"|});
+  assert_policy_parse_rejects "axiom policy allowlist wrong type"
+    "axiom_policy.allowed_axioms" "array" "wrong_type"
+    (Ext_axiom.parse_policy_toml {|allowed_axioms = "Std.Logic.Eq.rec"|});
+  assert_policy_parse_rejects "axiom policy allowlist entry wrong type"
+    "axiom_policy.allowed_axioms[0]" "axiom_name" "wrong_type"
+    (Ext_axiom.parse_policy_toml {|allowed_axioms = [1]|});
+  assert_policy_parse_rejects "axiom policy allowlist invalid name"
+    "axiom_policy.allowed_axioms[0]" "axiom_name" "invalid_name_format"
+    (Ext_axiom.parse_policy_toml {|allowed_axioms = ["Std..Logic"]|});
+  assert_policy_parse_rejects "axiom policy allowlist order violation"
+    "axiom_policy.allowed_axioms[1]" "axiom_name_canonical_order"
+    "order_violation"
+    (Ext_axiom.parse_policy_toml
+       {|allowed_axioms = ["User.Z", "Std.Logic.Eq.rec"]|});
+  assert_policy_parse_rejects "axiom policy duplicate axiom name"
+    "axiom_policy.allowed_axioms[1]" "unique_axiom_name"
+    "duplicate_axiom_name"
+    (Ext_axiom.parse_policy_toml
+       {|allowed_axioms = ["Std.Logic.Eq.rec", "Std.Logic.Eq.rec"]|});
+  assert_policy_parse_rejects "axiom policy unknown field"
+    "axiom_policy.allow_axioms" "absent" "unknown_field"
+    (Ext_axiom.parse_policy_toml {|allow_axioms = []|})
+
 let run_axiom_report_tests () =
   let empty_imports = Ext_import_store.import_environment_empty in
   let axiom_name = make_name [ "LocalAxiom" ] in
@@ -4214,6 +4319,7 @@ let () =
                "cli";
                "defeq";
                "axiom-report";
+               "axiom-policy-parse";
                "decoder-bytes";
                "decoder-declarations";
                "decoder-header";
@@ -4242,6 +4348,8 @@ let () =
     selected;
   if should_run selected "defeq" then run_defeq_tests ();
   if should_run selected "axiom-report" then run_axiom_report_tests ();
+  if should_run selected "axiom-policy-parse" then
+    run_axiom_policy_parse_tests ();
   if should_run selected "sha256" then run_sha256_tests ();
   if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
   if should_run selected "decoder-header" then run_decoder_header_tests ();
