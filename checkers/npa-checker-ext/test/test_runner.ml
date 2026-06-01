@@ -2317,6 +2317,387 @@ let dependency_entry global_ref decl_interface_hash =
     dependency_decl_interface_hash = decl_interface_hash;
   }
 
+let axiom_ref global_ref axiom_name axiom_decl_interface_hash =
+  { Ext_cert.axiom_global_ref = global_ref; axiom_name; axiom_decl_interface_hash }
+
+let empty_axiom_report_entry index =
+  {
+    Ext_cert.report_decl_index = index;
+    report_direct_axioms = [];
+    report_transitive_axioms = [];
+    report_offset = 300 + index;
+  }
+
+let empty_axiom_report declaration_count =
+  {
+    Ext_cert.per_declaration = List.init declaration_count empty_axiom_report_entry;
+    module_axioms = [];
+    module_axioms_offset = 400;
+    core_features = [];
+    core_features_offset = None;
+  }
+
+let decoded_axiom_report_fixture names declarations =
+  {
+    Ext_cert.header =
+      {
+        format = Ext_cert.expected_format;
+        core_spec = Ext_cert.expected_core_spec;
+        module_name = make_name [ "AxiomReportFixture" ];
+      };
+    imports = [];
+    name_table = located_names names;
+    level_table = [];
+    term_table = [];
+    declaration_table = declarations;
+    export_block = [];
+    axiom_report = empty_axiom_report (List.length declarations);
+    hashes =
+      {
+        Ext_cert.export_hash = hash_bytes 0x10;
+        axiom_report_hash = hash_bytes 0x11;
+        certificate_hash = hash_bytes 0x12;
+        export_hash_offset = 500;
+        axiom_report_hash_offset = 501;
+        certificate_hash_offset = 502;
+      };
+  }
+
+let set_axiom_report_hash decoded =
+  let payload =
+    assert_ok "axiom-report encode recomputed report"
+      (Ext_canonical.encode_axiom_report decoded.Ext_cert.name_table
+         decoded.Ext_cert.axiom_report)
+  in
+  let axiom_report_hash =
+    Ext_canonical.hash_with_domain Ext_canonical.domain_axiom_report payload
+  in
+  {
+    decoded with
+    Ext_cert.hashes =
+      { decoded.Ext_cert.hashes with Ext_cert.axiom_report_hash };
+  }
+
+let declaration_report_by_index report decl_index =
+  match
+    List.find_opt
+      (fun entry -> entry.Ext_cert.report_decl_index = decl_index)
+      report.Ext_cert.per_declaration
+  with
+  | Some entry -> entry
+  | None -> failwith "missing recomputed declaration axiom report"
+
+let set_declaration_axiom_dependencies_from_report decoded report =
+  let declaration_table =
+    List.mapi
+      (fun decl_index declaration ->
+        let entry = declaration_report_by_index report decl_index in
+        {
+          declaration with
+          Ext_cert.axiom_dependencies = entry.Ext_cert.report_transitive_axioms;
+        })
+      decoded.Ext_cert.declaration_table
+  in
+  { decoded with Ext_cert.declaration_table }
+
+let assert_axiom_report_value_ok label result =
+  match result with
+  | Ok value -> value
+  | Error error ->
+      failwith
+        (label ^ ": unexpected axiom report error "
+       ^ Ext_axiom.error_reason_code error)
+
+let with_valid_recomputed_axiom_report imports decoded =
+  let report =
+    assert_axiom_report_value_ok "axiom-report recompute fixture"
+      (Ext_axiom.recompute_axiom_report imports decoded)
+  in
+  let decoded = set_declaration_axiom_dependencies_from_report decoded report in
+  set_axiom_report_hash { decoded with Ext_cert.axiom_report = report }
+
+let assert_axiom_report_ok label result =
+  match result with
+  | Ok () -> ()
+  | Error error ->
+      failwith
+        (label ^ ": unexpected axiom report error "
+       ^ Ext_axiom.error_reason_code error)
+
+let assert_axiom_report_rejects label expected_section expected_offset result =
+  match result with
+  | Ok () -> failwith (label ^ ": expected axiom report mismatch")
+  | Error error ->
+      assert_equal (label ^ " kind") "axiom_report_mismatch"
+        (Ext_axiom.error_kind error);
+      assert_equal (label ^ " reason") "axiom_report_mismatch"
+        (Ext_axiom.error_reason_code error);
+      assert_equal (label ^ " section") expected_section
+        (Ext_bytes.section_name error.Ext_axiom.section);
+      assert_int_equal (label ^ " offset") expected_offset error.Ext_axiom.offset;
+      let raw =
+        Ext_result.axiom_report_failure ~section:expected_section
+          ~offset:expected_offset
+      in
+      assert_contains (label ^ " raw kind")
+        "\"kind\": \"axiom_report_mismatch\"" raw;
+      assert_contains (label ^ " raw reason")
+        "\"reason_code\": \"axiom_report_mismatch\"" raw;
+      assert_contains (label ^ " raw section")
+        ("\"section\": \"" ^ expected_section ^ "\"")
+        raw;
+      assert_contains (label ^ " raw offset")
+        ("\"offset\": " ^ string_of_int expected_offset)
+        raw
+
+let run_axiom_report_tests () =
+  let empty_imports = Ext_import_store.import_environment_empty in
+  let axiom_name = make_name [ "LocalAxiom" ] in
+  let theorem_name = make_name [ "UsesLocalAxiom" ] in
+  let transitive_name = make_name [ "UsesTheorem" ] in
+  let axiom_hash = hash_bytes 0x91 in
+  let theorem_hash = hash_bytes 0x92 in
+  let axiom_decl =
+    declaration_fixture ~offset:10 ~interface_hash:axiom_hash Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = axiom_name;
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_env.level_type0;
+         })
+  in
+  let local_axiom_ref = Ext_term.Local { decl_index = 0 } in
+  let theorem_decl =
+    declaration_with_dependencies
+      (declaration_fixture ~offset:20 ~interface_hash:theorem_hash Ext_cert.Theorem
+         (Ext_cert.TheoremDecl
+            {
+              decl_name = theorem_name;
+              decl_universe_params = [];
+              decl_universe_constraints = [];
+              decl_ty = Ext_term.Sort Ext_env.level_type0;
+              decl_proof = Ext_term.Const (local_axiom_ref, []);
+              decl_opacity = Ext_cert.Opaque;
+            }))
+      [ dependency_entry local_axiom_ref axiom_hash ]
+  in
+  let local_theorem_ref = Ext_term.Local { decl_index = 1 } in
+  let transitive_decl =
+    declaration_with_dependencies
+      (declaration_fixture ~offset:30 Ext_cert.Theorem
+         (Ext_cert.TheoremDecl
+            {
+              decl_name = transitive_name;
+              decl_universe_params = [];
+              decl_universe_constraints = [];
+              decl_ty = Ext_term.Sort Ext_env.level_type0;
+              decl_proof = Ext_term.Const (local_theorem_ref, []);
+              decl_opacity = Ext_cert.Opaque;
+            }))
+      [ dependency_entry local_theorem_ref theorem_hash ]
+  in
+  let local_decoded =
+    decoded_axiom_report_fixture [ axiom_name; theorem_name; transitive_name ]
+      [ axiom_decl; theorem_decl; transitive_decl ]
+  in
+  let local_valid =
+    with_valid_recomputed_axiom_report empty_imports local_decoded
+  in
+  assert_axiom_report_ok "axiom-report accepts local self dependency"
+    (Ext_axiom.verify_axiom_report empty_imports local_valid);
+  (match
+     (List.nth local_valid.Ext_cert.axiom_report.Ext_cert.per_declaration 0)
+       .Ext_cert.report_direct_axioms
+   with
+  | [ axiom ] ->
+      assert_equal "axiom-report local direct self name" "LocalAxiom"
+        (Ext_name.to_string axiom.Ext_cert.axiom_name)
+  | _ -> failwith "expected local axiom direct dependency");
+  (match
+     (List.nth local_valid.Ext_cert.axiom_report.Ext_cert.per_declaration 2)
+       .Ext_cert.report_direct_axioms
+   with
+  | [] -> ()
+  | _ -> failwith "expected no direct axiom through local theorem dependency");
+  (match
+     (List.nth local_valid.Ext_cert.axiom_report.Ext_cert.per_declaration 2)
+       .Ext_cert.report_transitive_axioms
+   with
+  | [ axiom ] ->
+      assert_equal "axiom-report local transitive name" "LocalAxiom"
+        (Ext_name.to_string axiom.Ext_cert.axiom_name)
+  | _ -> failwith "expected transitive axiom through local theorem dependency");
+
+  let missing_declaration_axiom =
+    match local_valid.Ext_cert.declaration_table with
+    | first :: second :: rest ->
+        {
+          local_valid with
+          Ext_cert.declaration_table =
+            first :: { second with Ext_cert.axiom_dependencies = [] } :: rest;
+        }
+    | _ -> failwith "expected local axiom fixture declarations"
+  in
+  assert_axiom_report_rejects
+    "axiom-report rejects missing declaration axiom dependency" "declarations"
+    theorem_decl.Ext_cert.offset
+    (Ext_axiom.verify_axiom_report empty_imports missing_declaration_axiom);
+
+  let missing_actual_dependency =
+    match local_valid.Ext_cert.declaration_table with
+    | first :: second :: third :: rest ->
+        {
+          local_valid with
+          Ext_cert.declaration_table =
+            first :: second :: { third with Ext_cert.dependencies = [] } :: rest;
+        }
+    | _ -> failwith "expected local axiom fixture declarations"
+  in
+  assert_axiom_report_rejects "axiom-report rejects missing actual dependency"
+    "declarations" transitive_decl.Ext_cert.offset
+    (Ext_axiom.verify_axiom_report empty_imports missing_actual_dependency);
+
+  let missing_report_axiom =
+    let per_declaration =
+      match local_valid.Ext_cert.axiom_report.Ext_cert.per_declaration with
+      | first :: second :: rest ->
+          first
+          :: { second with Ext_cert.report_transitive_axioms = [] }
+          :: rest
+      | _ -> failwith "expected local axiom report entries"
+    in
+    let report =
+      { local_valid.Ext_cert.axiom_report with Ext_cert.per_declaration }
+    in
+    set_axiom_report_hash { local_valid with Ext_cert.axiom_report = report }
+  in
+  assert_axiom_report_rejects "axiom-report rejects missing report axiom"
+    "axiom_report"
+    (List.nth
+       missing_report_axiom.Ext_cert.axiom_report.Ext_cert.per_declaration
+       1)
+      .Ext_cert.report_offset
+    (Ext_axiom.verify_axiom_report empty_imports missing_report_axiom);
+
+  let mismatched_report_hash =
+    {
+      local_valid with
+      Ext_cert.hashes =
+        {
+          local_valid.Ext_cert.hashes with
+          Ext_cert.axiom_report_hash =
+            mutate_byte
+              local_valid.Ext_cert.hashes.Ext_cert.axiom_report_hash
+              0;
+        };
+    }
+  in
+  assert_axiom_report_rejects "axiom-report rejects recomputed hash mismatch"
+    "hashes"
+    local_valid.Ext_cert.hashes.Ext_cert.axiom_report_hash_offset
+    (Ext_axiom.verify_axiom_report empty_imports mismatched_report_hash);
+
+  let imported_axiom_name = make_name [ "ImportedAxiom" ] in
+  let imported_theorem_name = make_name [ "ImportedTheorem" ] in
+  let uses_import_name = make_name [ "UsesImportedTheorem" ] in
+  let imported_axiom_hash = hash_bytes 0xa1 in
+  let imported_theorem_hash = hash_bytes 0xa2 in
+  let imported_axiom =
+    axiom_ref
+      (Ext_term.Imported
+         {
+           import_index = Ext_import_store.public_self_import_index;
+           name = imported_axiom_name;
+           decl_interface_hash = imported_axiom_hash;
+         })
+      imported_axiom_name imported_axiom_hash
+  in
+  let public_environment =
+    {
+      Ext_import_store.public_imports = [];
+      public_exports =
+        [
+          {
+            Ext_import_store.public_export_name = imported_axiom_name;
+            public_export_kind = Ext_cert.Export_axiom;
+            public_decl_interface_hash = imported_axiom_hash;
+            public_axiom_dependencies = [ imported_axiom ];
+            public_universe_params = [];
+            public_ty = Ext_term.Sort Ext_env.level_type0;
+            public_body = None;
+          };
+          {
+            Ext_import_store.public_export_name = imported_theorem_name;
+            public_export_kind = Ext_cert.Export_theorem;
+            public_decl_interface_hash = imported_theorem_hash;
+            public_axiom_dependencies = [ imported_axiom ];
+            public_universe_params = [];
+            public_ty = Ext_term.Sort Ext_env.level_type0;
+            public_body = None;
+          };
+        ];
+      public_module_axioms = [ imported_axiom ];
+      public_core_features = [];
+    }
+  in
+  let import_environment =
+    {
+      Ext_import_store.resolved_imports =
+        [
+          {
+            Ext_import_store.resolved_module_name = make_name [ "Imported" ];
+            resolved_export_hash = hash_bytes 0xa3;
+            resolved_certificate_hash = None;
+            resolved_public_environment = public_environment;
+          };
+        ];
+    }
+  in
+  let imported_theorem_ref =
+    Ext_term.Imported
+      {
+        import_index = 0;
+        name = imported_theorem_name;
+        decl_interface_hash = imported_theorem_hash;
+      }
+  in
+  let uses_import_decl =
+    declaration_with_dependencies
+      (declaration_fixture ~offset:30 Ext_cert.Theorem
+         (Ext_cert.TheoremDecl
+            {
+              decl_name = uses_import_name;
+              decl_universe_params = [];
+              decl_universe_constraints = [];
+              decl_ty = Ext_term.Sort Ext_env.level_type0;
+              decl_proof = Ext_term.Const (imported_theorem_ref, []);
+              decl_opacity = Ext_cert.Opaque;
+            }))
+      [ dependency_entry imported_theorem_ref imported_theorem_hash ]
+  in
+  let import_decoded =
+    decoded_axiom_report_fixture
+      [ imported_axiom_name; imported_theorem_name; uses_import_name ]
+      [ uses_import_decl ]
+  in
+  let import_valid =
+    with_valid_recomputed_axiom_report import_environment import_decoded
+  in
+  assert_axiom_report_ok "axiom-report preserves imported axiom dependencies"
+    (Ext_axiom.verify_axiom_report import_environment import_valid);
+  match import_valid.Ext_cert.axiom_report.Ext_cert.module_axioms with
+  | [ axiom ] -> (
+      match axiom.Ext_cert.axiom_global_ref with
+      | Ext_term.Imported { import_index; name; decl_interface_hash } ->
+          assert_int_equal "axiom-report imported axiom index" 0 import_index;
+          assert_equal "axiom-report imported axiom name" "ImportedAxiom"
+            (Ext_name.to_string name);
+          assert_equal "axiom-report imported axiom hash" imported_axiom_hash
+            decl_interface_hash
+      | _ -> failwith "expected imported axiom dependency")
+  | _ -> failwith "expected imported axiom dependency in module report"
+
 let assert_duplicate_universe_param_error label result =
   match result with
   | Ok _ -> failwith (label ^ ": duplicate universe params must reject")
@@ -3832,6 +4213,7 @@ let () =
              [
                "cli";
                "defeq";
+               "axiom-report";
                "decoder-bytes";
                "decoder-declarations";
                "decoder-header";
@@ -3859,6 +4241,7 @@ let () =
         failwith ("unknown test filter " ^ name))
     selected;
   if should_run selected "defeq" then run_defeq_tests ();
+  if should_run selected "axiom-report" then run_axiom_report_tests ();
   if should_run selected "sha256" then run_sha256_tests ();
   if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
   if should_run selected "decoder-header" then run_decoder_header_tests ();

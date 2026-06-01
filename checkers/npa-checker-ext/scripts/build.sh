@@ -26,8 +26,8 @@ for src in \
   src/ext_cert.ml \
   src/ext_canonical.ml \
   src/ext_import_store.ml \
-  src/ext_axiom.ml \
   src/ext_env.ml \
+  src/ext_axiom.ml \
   src/ext_reduce.ml \
   src/ext_inductive.ml \
   src/ext_typecheck.ml \
@@ -51,8 +51,8 @@ done
   "$BUILD_DIR/ext_cert.cmo" \
   "$BUILD_DIR/ext_canonical.cmo" \
   "$BUILD_DIR/ext_import_store.cmo" \
-  "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
+  "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_reduce.cmo" \
   "$BUILD_DIR/ext_inductive.cmo" \
   "$BUILD_DIR/ext_typecheck.cmo" \

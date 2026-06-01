@@ -22,8 +22,8 @@ sh "$ROOT/scripts/build.sh"
   "$BUILD_DIR/ext_cert.cmo" \
   "$BUILD_DIR/ext_canonical.cmo" \
   "$BUILD_DIR/ext_import_store.cmo" \
-  "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
+  "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_reduce.cmo" \
   "$BUILD_DIR/ext_inductive.cmo" \
   "$BUILD_DIR/ext_typecheck.cmo" \

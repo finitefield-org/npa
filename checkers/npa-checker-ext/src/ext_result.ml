@@ -156,6 +156,15 @@ let import_failure ~kind ~reason_code ~section ~offset =
       offset = Some offset;
     }
 
+let axiom_report_failure ~section ~offset =
+  render_failed
+    {
+      kind = "axiom_report_mismatch";
+      reason_code = Some "axiom_report_mismatch";
+      section = Some section;
+      offset = Some offset;
+    }
+
 let decode_error_kind error =
   match error.Ext_bytes.reason with
   | Ext_bytes.Noncanonical_uvar
