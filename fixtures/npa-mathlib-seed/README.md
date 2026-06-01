@@ -214,3 +214,8 @@ artifact set before any registry server exists. The handoff inputs are:
 
 Those registry seed entries are discoverability metadata. Downstream packages
 still need hash-pinned certificate artifacts and source-free verification.
+
+The completed dogfood review and registry handoff audit is recorded in
+`DOGFOOD-AUDIT.md`. It lists the concrete release artifact set, downstream
+fixture evidence, CI boundary check, and gaps deferred to CLR-10 or later
+milestones.
