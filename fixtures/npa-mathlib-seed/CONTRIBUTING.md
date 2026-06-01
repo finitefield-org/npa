@@ -7,20 +7,27 @@ directory is copied out of the `npa` checkout.
 
 ## Theorem-Only Changes
 
-For CLR-09-02, contributors should validate the package manifest and layout:
+For CLR-09-03, contributors should run the base package command sequence:
 
 ```sh
 npa package check --root . --json
+npa package build-certs --root . --check --json
+npa package check-hashes --root . --json
+npa package verify-certs --root . --checker reference --json
+npa package axiom-report --root . --check --json
+npa package index --root . --check --json
+npa package publish-plan --root . --check --json
 ```
 
-Before the `npa` binary is installed, the equivalent workspace command is:
+Before the `npa` binary is installed, use the parent workspace command shape:
 
 ```sh
 cargo run -p npa-cli -- package check --root fixtures/npa-mathlib-seed --json
 ```
 
-Later CLR-09 milestones add certificate rebuild checks, source-free
-verification, generated axiom reports, theorem indexes, publish plans, and CI.
+Check mode must fail when generated artifacts are stale. If a theorem-only
+change intentionally updates certificates or hashes, regenerate the affected
+artifacts first and then rerun the sequence above.
 
 ## Package Boundary
 
@@ -39,11 +46,11 @@ The base seed contains only:
 
 Adding larger proof-corpus modules, changing the axiom policy, adding
 `Eq.rec`-dependent modules, or renaming the public namespace is outside
-CLR-09-02.
+the current seed command wiring scope.
 
 ## Trust Boundary
 
-Source files, replay files, metadata, package manifests, and future generated
-indexes are useful contributor artifacts, but they are not trusted proof
-evidence. Acceptance remains based on canonical certificates plus source-free
-checker verdicts.
+Source files, replay files, metadata, package manifests, generated indexes,
+publish plans, and CI are useful contributor artifacts, but they are not
+trusted proof evidence. Acceptance remains based on canonical certificates plus
+source-free checker verdicts.

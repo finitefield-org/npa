@@ -47,8 +47,9 @@ generated/theorem-index.json
 generated/publish-plan.json
 ```
 
-Those generated files are intentionally not produced in CLR-09-02. Later
-milestones wire the full fresh-checkout command sequence and release metadata.
+CLR-09-03 checks in these generated files so a fresh checkout can run the base
+package command sequence in check mode. They are still untrusted generated
+metadata, not proof evidence.
 
 ## Initial Module Set
 
@@ -110,13 +111,20 @@ entries remain untrusted metadata.
 
 ## Local Check
 
-From this fixture root, the CLR-09-02 validation command is:
+From this fixture root, the CLR-09-03 validation sequence is:
 
 ```sh
 npa package check --root . --json
+npa package build-certs --root . --check --json
+npa package check-hashes --root . --json
+npa package verify-certs --root . --checker reference --json
+npa package axiom-report --root . --check --json
+npa package index --root . --check --json
+npa package publish-plan --root . --check --json
 ```
 
-When running from the parent `npa` workspace before installing `npa`, use:
+When running from the parent `npa` workspace before installing `npa`, replace
+`npa` with `cargo run -p npa-cli --`, for example:
 
 ```sh
 cargo run -p npa-cli -- package check --root fixtures/npa-mathlib-seed --json
