@@ -12,6 +12,7 @@ _build/npa-checker-ext --version
 scripts/test.sh
 scripts/test.sh sha256
 scripts/test.sh feature-policy
+scripts/test.sh decoder-bytes
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -52,3 +53,8 @@ metadata, and source-derived data cannot enable features. Adding quotient suppor
 requires expanding fast-kernel, reference-checker, and external-checker golden
 corpora before the feature is enabled. The feature policy contract is included
 in `--version` build identity material.
+
+M1-01 adds the source-free byte reader foundation. `src/ext_bytes.ml` tracks
+certificate section and byte offsets, keeps input bytes immutable after reader
+construction, and rejects malformed canonical unsigned LEB128 with structured
+decode errors. The byte reader has no filesystem or JSON output dependency.

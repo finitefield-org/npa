@@ -352,7 +352,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-bytes
+sh checkers/npa-checker-ext/scripts/test.sh decoder-bytes
 ```
 
 ### M1-02 Decode Header And Name Grammar

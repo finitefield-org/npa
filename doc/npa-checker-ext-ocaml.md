@@ -549,6 +549,13 @@ M1: source-free decoder
 - offset-preserving structured errors
 ```
 
+M1-01 で decoder の基礎として immutable byte reader を追加します。
+reader は construction 時点で入力 bytes を immutable string にコピーし、read 操作は reader を
+破壊せず `(value, next_reader)` を返します。すべての decode error は certificate section、
+byte offset、reason code を持ちます。canonical unsigned varint は minimal ULEB128 のみを許可し、
+unexpected EOF、non-minimal encoding、u64 overflow、host length overflow を拒否します。
+この層は filesystem、source parser、JSON rendering を参照しません。
+
 M2: hash verifier
 
 ```text

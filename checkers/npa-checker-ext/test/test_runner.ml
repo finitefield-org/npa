@@ -9,6 +9,11 @@ let assert_int_equal label expected actual =
     failwith
       (label ^ ": expected " ^ string_of_int expected ^ " but got " ^ string_of_int actual)
 
+let assert_int64_equal label expected actual =
+  if expected <> actual then
+    failwith
+      (label ^ ": expected " ^ Int64.to_string expected ^ " but got " ^ Int64.to_string actual)
+
 let assert_bool label value = if not value then failwith (label ^ ": expected true")
 
 let contains text needle =
@@ -30,6 +35,11 @@ let assert_cli_error label expected args =
   assert_int_equal (label ^ " exit") 2 result.code;
   assert_equal (label ^ " stdout") "" result.stdout;
   assert_equal (label ^ " stderr") ("npa-checker-ext: " ^ expected ^ "\n") result.stderr
+
+let bytes_of_codes codes =
+  let bytes = Bytes.create (List.length codes) in
+  List.iteri (fun index code -> Bytes.set bytes index (Char.chr code)) codes;
+  bytes
 
 let split_tabs line =
   let length = String.length line in
@@ -253,15 +263,107 @@ let run_feature_policy_tests () =
     (Ext_feature.raw_result_for_first_release_report [] = None);
   run_feature_policy_fixture_tests ()
 
+let decode_error_raw_result error =
+  Ext_result.decode_error error
+
+let assert_decode_error label expected_kind expected_reason expected_section expected_offset result =
+  match result with
+  | Ok _ -> failwith (label ^ ": expected decode error")
+  | Error error ->
+      assert_equal (label ^ " stable kind") expected_kind (Ext_result.decode_error_kind error);
+      assert_equal (label ^ " reason") (Ext_bytes.reason_code expected_reason)
+        (Ext_bytes.reason_code error.Ext_bytes.reason);
+      assert_equal (label ^ " section") (Ext_bytes.section_name expected_section)
+        (Ext_bytes.section_name error.Ext_bytes.section);
+      assert_int_equal (label ^ " offset") expected_offset error.Ext_bytes.offset;
+      let raw = decode_error_raw_result error in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ Ext_bytes.reason_code expected_reason ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section")
+        ("\"section\": \"" ^ Ext_bytes.section_name expected_section ^ "\"")
+        raw;
+      assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int expected_offset)
+        raw
+
+let assert_read_uvar label codes expected offset =
+  let reader = Ext_bytes.of_bytes (bytes_of_codes codes) in
+  match Ext_bytes.read_uvar Ext_bytes.Imports reader with
+  | Error error ->
+      failwith
+        (label ^ ": unexpected decode error " ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (actual, next) ->
+      assert_int64_equal (label ^ " value") expected actual;
+      assert_int_equal (label ^ " offset") offset (Ext_bytes.offset next);
+      assert_int_equal (label ^ " original offset") 0 (Ext_bytes.offset reader)
+
+let run_decoder_bytes_tests () =
+  let mutable_input = Bytes.of_string "ab" in
+  let reader = Ext_bytes.of_bytes mutable_input in
+  Bytes.set mutable_input 0 'z';
+  (match Ext_bytes.read_byte Ext_bytes.Full_certificate reader with
+  | Error error ->
+      failwith
+        ("immutable reader byte: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (byte, next) ->
+      assert_int_equal "immutable reader copied input" (Char.code 'a') byte;
+      assert_int_equal "immutable reader original offset" 0 (Ext_bytes.offset reader);
+      assert_int_equal "immutable reader next offset" 1 (Ext_bytes.offset next));
+
+  (match Ext_bytes.take Ext_bytes.Full_certificate 2 (Ext_bytes.of_string "abcd") with
+  | Error error ->
+      failwith ("take: unexpected decode error " ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (taken, next) ->
+      assert_equal "take bytes" "ab" taken;
+      assert_int_equal "take offset" 2 (Ext_bytes.offset next);
+      assert_int_equal "take remaining" 2 (Ext_bytes.remaining next));
+
+  assert_read_uvar "uvar zero" [ 0x00 ] 0L 1;
+  assert_read_uvar "uvar one-byte max" [ 0x7f ] 127L 1;
+  assert_read_uvar "uvar 128" [ 0x80; 0x01 ] 128L 2;
+  assert_read_uvar "uvar 300" [ 0xac; 0x02 ] 300L 2;
+  assert_read_uvar "uvar u64 max"
+    [ 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0x01 ]
+    Int64.minus_one 10;
+
+  assert_decode_error "empty input" "certificate_decode_error"
+    Ext_bytes.Unexpected_eof Ext_bytes.Full_certificate 0
+    (Ext_bytes.read_byte Ext_bytes.Full_certificate Ext_bytes.empty);
+  assert_decode_error "noncanonical zero" "noncanonical_encoding"
+    Ext_bytes.Noncanonical_uvar Ext_bytes.Imports 1
+    (Ext_bytes.read_uvar Ext_bytes.Imports (Ext_bytes.of_bytes (bytes_of_codes [ 0x80; 0x00 ])));
+  assert_decode_error "overlong one" "noncanonical_encoding"
+    Ext_bytes.Noncanonical_uvar Ext_bytes.Imports 1
+    (Ext_bytes.read_uvar Ext_bytes.Imports (Ext_bytes.of_bytes (bytes_of_codes [ 0x81; 0x00 ])));
+  assert_decode_error "uvar eof after continuation" "certificate_decode_error"
+    Ext_bytes.Unexpected_eof Ext_bytes.Imports 1
+    (Ext_bytes.read_uvar Ext_bytes.Imports (Ext_bytes.of_bytes (bytes_of_codes [ 0x80 ])));
+  assert_decode_error "take eof" "certificate_decode_error" Ext_bytes.Unexpected_eof
+    Ext_bytes.Full_certificate 1
+    (Ext_bytes.take Ext_bytes.Full_certificate 2 (Ext_bytes.of_string "a"));
+  assert_decode_error "uvar overflow" "certificate_decode_error" Ext_bytes.Uvar_overflow
+    Ext_bytes.Imports 9
+    (Ext_bytes.read_uvar Ext_bytes.Imports
+       (Ext_bytes.of_bytes
+          (bytes_of_codes
+             [ 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0xff; 0x02 ])));
+  let usize_overflow = Ext_bytes.encode_uvar (Int64.add (Int64.of_int max_int) 1L) in
+  assert_decode_error "usize overflow" "certificate_decode_error" Ext_bytes.Length_overflow
+    Ext_bytes.Imports (String.length usize_overflow - 1)
+    (Ext_bytes.read_usize Ext_bytes.Imports (Ext_bytes.of_string usize_overflow))
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
   let selected = Array.to_list Sys.argv |> List.tl in
   List.iter
     (fun name ->
-      if not (List.mem name [ "cli"; "feature-policy"; "sha256" ]) then
+      if not (List.mem name [ "cli"; "decoder-bytes"; "feature-policy"; "sha256" ]) then
         failwith ("unknown test filter " ^ name))
     selected;
   if should_run selected "sha256" then run_sha256_tests ();
+  if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "cli" then run_cli_tests ()
