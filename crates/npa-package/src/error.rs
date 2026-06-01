@@ -1416,6 +1416,23 @@ impl PackageArtifactError {
         )
     }
 
+    /// Build a downstream import bundle mismatch error.
+    pub fn downstream_import_bundle_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Domain,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::DownstreamImportBundleMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
     /// Build a release-artifact self-reference error.
     pub fn release_artifact_self_reference(
         path: impl Into<String>,
@@ -1540,6 +1557,8 @@ pub enum PackageArtifactErrorReason {
     SelfHashMismatch,
     /// Summary count differs from deterministic contents.
     SummaryMismatch,
+    /// Downstream import bundle does not match local registry seed entries.
+    DownstreamImportBundleMismatch,
 }
 
 impl PackageArtifactErrorReason {
@@ -1572,6 +1591,7 @@ impl PackageArtifactErrorReason {
             Self::NonCanonicalOrder => "non_canonical_order",
             Self::SelfHashMismatch => "self_hash_mismatch",
             Self::SummaryMismatch => "summary_mismatch",
+            Self::DownstreamImportBundleMismatch => "downstream_import_bundle_mismatch",
         }
     }
 }

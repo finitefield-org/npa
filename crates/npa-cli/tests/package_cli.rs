@@ -15,8 +15,8 @@ use npa_cli::package_artifacts::{
 };
 use npa_cli::package_publish::{
     checksum_only_signature_policy, collect_package_publish_artifacts,
-    collect_package_publish_registry_entries, load_package_publish_inputs,
-    validate_publish_checker_summaries,
+    collect_package_publish_downstream_import_bundle, collect_package_publish_registry_entries,
+    load_package_publish_inputs, validate_publish_checker_summaries,
 };
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
@@ -428,6 +428,92 @@ fn package_publish_registry_entries_link_artifacts_imports_and_checker_results()
         .export_hash = package_file_hash(b"stale registry checker summary");
     let stale = collect_package_publish_registry_entries(&stale_reference).unwrap_err();
     assert_command_result_failure(stale, "GeneratedArtifact", "invalid_enum_value");
+}
+
+#[test]
+fn package_publish_downstream_import_bundle_exports_import_ready_modules() {
+    let package = build_basic_package("publish-downstream-import-bundle", false);
+    write_publish_input_metadata(&package);
+
+    let loaded = load_package_publish_inputs(package.path()).unwrap();
+    let registry_entries = collect_package_publish_registry_entries(&loaded).unwrap();
+    let bundle = collect_package_publish_downstream_import_bundle(&loaded).unwrap();
+
+    assert_eq!(bundle.package.as_str(), "fixture-package");
+    assert_eq!(bundle.version.as_str(), "0.1.0");
+    assert_eq!(bundle.modules.len(), 1);
+    let module = &bundle.modules[0];
+    let registry_entry = &registry_entries[0];
+    assert_eq!(module.module.as_dotted(), "Proofs.Ai.Basic");
+    assert_eq!(module.package, registry_entry.package);
+    assert_eq!(module.version, registry_entry.package_version);
+    assert_eq!(module.export_hash, registry_entry.export_hash);
+    assert_eq!(module.certificate_hash, registry_entry.certificate_hash);
+    assert_eq!(module.axiom_report_hash, registry_entry.axiom_report_hash);
+    assert_eq!(module.certificate, registry_entry.certificate.path);
+    assert_eq!(
+        module.certificate_file_hash,
+        registry_entry.certificate.file_hash
+    );
+
+    let downstream_manifest = format!(
+        r#"schema = "npa.package.v0.1"
+package = "downstream-fixture"
+version = "0.1.0"
+core_spec = "npa.core.v0.1"
+kernel_profile = "npa.kernel.v0.1"
+certificate_format = "npa.certificate.canonical.v0.1"
+checker_profile = "npa.checker.reference.v0.1"
+
+[policy]
+allow_custom_axioms = false
+allowed_axioms = []
+
+[[imports]]
+module = "{}"
+package = "{}"
+version = "{}"
+certificate = "{}"
+export_hash = "{}"
+certificate_hash = "{}"
+
+[[modules]]
+module = "Downstream.UsesBasic"
+source = "Downstream/UsesBasic/source.npa"
+certificate = "Downstream/UsesBasic/certificate.npcert"
+imports = ["{}"]
+expected_source_hash = "{}"
+expected_certificate_file_hash = "{}"
+expected_export_hash = "{}"
+expected_axiom_report_hash = "{}"
+expected_certificate_hash = "{}"
+definitions = []
+theorems = []
+axioms = []
+"#,
+        module.module.as_dotted(),
+        module.package.as_str(),
+        module.version.as_str(),
+        module.certificate.as_str(),
+        format_package_hash(&module.export_hash),
+        format_package_hash(&module.certificate_hash),
+        module.module.as_dotted(),
+        format_package_hash(&package_file_hash(b"downstream source placeholder")),
+        format_package_hash(&package_file_hash(b"downstream certificate placeholder")),
+        format_package_hash(&package_file_hash(b"downstream export placeholder")),
+        format_package_hash(&package_file_hash(b"downstream axiom placeholder")),
+        format_package_hash(&package_file_hash(
+            b"downstream certificate hash placeholder"
+        )),
+    );
+    let validated = parse_and_validate_manifest_str(&downstream_manifest).unwrap();
+    let copied_import = &validated.manifest().imports.as_ref().unwrap()[0];
+    assert_eq!(copied_import.module, module.module);
+    assert_eq!(copied_import.package, module.package);
+    assert_eq!(copied_import.version, module.version);
+    assert_eq!(copied_import.certificate, module.certificate);
+    assert_eq!(copied_import.export_hash, module.export_hash);
+    assert_eq!(copied_import.certificate_hash, module.certificate_hash);
 }
 
 #[test]

@@ -803,7 +803,7 @@ remaining registry-server requirements
 
 ### CLR-06-05 Generate Downstream Import Bundle Metadata
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-04
 - Inputs:
   - local module registry entries

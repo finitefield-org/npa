@@ -240,6 +240,16 @@ pub struct PackagePublishArtifactListInput<'a> {
     pub package_lock_manifest: &'a PackageLockManifest,
 }
 
+/// Inputs used to build an embedded downstream import bundle from registry seeds.
+pub struct PackageDownstreamImportBundleInput<'a> {
+    /// Package identity from the validated manifest.
+    pub package: &'a PackageId,
+    /// Package version from the validated manifest.
+    pub version: &'a PackageVersion,
+    /// Local module registry seed entries generated for this package.
+    pub module_registry_entries: &'a [PackageRegistryModule],
+}
+
 /// Deterministic publish-plan summary counts.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackagePublishSummary {
@@ -320,6 +330,32 @@ pub fn build_package_publish_artifacts(
     artifacts.sort_by_key(publish_artifact_sort_key);
     validate_publish_artifacts(&artifacts, None)?;
     Ok(artifacts)
+}
+
+/// Build the deterministic downstream import bundle embedded in a publish plan.
+///
+/// The function projects only local module registry seed entries for the current
+/// package. It does not add registry URLs, latest-version markers, fetch hints,
+/// or any other network-resolution metadata.
+pub fn build_package_downstream_import_bundle(
+    input: PackageDownstreamImportBundleInput<'_>,
+) -> PackageArtifactResult<PackageDownstreamImportBundle> {
+    validate_registry_entries(input.module_registry_entries, input.package, input.version)?;
+    let mut bundle = PackageDownstreamImportBundle {
+        package: input.package.clone(),
+        version: input.version.clone(),
+        modules: input
+            .module_registry_entries
+            .iter()
+            .map(downstream_import_module_from_registry_entry)
+            .collect(),
+    };
+    bundle
+        .modules
+        .sort_by_key(downstream_import_module_sort_key);
+    validate_downstream_import_bundle(&bundle, input.package, input.version)?;
+    validate_downstream_import_bundle_matches_registry(&bundle, input.module_registry_entries)?;
+    Ok(bundle)
 }
 
 fn schema_artifact(
@@ -406,6 +442,10 @@ fn validate_publish_plan_shape_without_self_hash(
         &plan.downstream_import_bundle,
         &plan.package,
         &plan.version,
+    )?;
+    validate_downstream_import_bundle_matches_registry(
+        &plan.downstream_import_bundle,
+        &plan.module_registry_entries,
     )?;
     validate_downstream_certificate_artifacts(&plan.artifacts, &plan.downstream_import_bundle)?;
     validate_checker_summaries(&plan.checker_summaries)?;
@@ -852,6 +892,98 @@ fn validate_downstream_import_bundle(
     Ok(())
 }
 
+fn validate_downstream_import_bundle_matches_registry(
+    bundle: &PackageDownstreamImportBundle,
+    entries: &[PackageRegistryModule],
+) -> PackageArtifactResult<()> {
+    for (index, module) in bundle.modules.iter().enumerate() {
+        let path = format!("downstream_import_bundle.modules[{index}]");
+        let Some(entry) = entries.iter().find(|entry| entry.module == module.module) else {
+            return Err(PackageArtifactError::missing_field(
+                "module_registry_entries",
+                module.module.as_dotted(),
+            ));
+        };
+        assert_downstream_import_field(
+            &path,
+            "package",
+            entry.package.as_str(),
+            module.package.as_str(),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "version",
+            entry.package_version.as_str(),
+            module.version.as_str(),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "export_hash",
+            format_package_hash(&entry.export_hash),
+            format_package_hash(&module.export_hash),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "certificate_hash",
+            format_package_hash(&entry.certificate_hash),
+            format_package_hash(&module.certificate_hash),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "axiom_report_hash",
+            format_package_hash(&entry.axiom_report_hash),
+            format_package_hash(&module.axiom_report_hash),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "certificate",
+            entry.certificate.path.as_str(),
+            module.certificate.as_str(),
+        )?;
+        assert_downstream_import_field(
+            &path,
+            "certificate_file_hash",
+            format_package_hash(&entry.certificate.file_hash),
+            format_package_hash(&module.certificate_file_hash),
+        )?;
+    }
+
+    for entry in entries {
+        if bundle
+            .modules
+            .iter()
+            .any(|module| module.module == entry.module)
+        {
+            continue;
+        }
+        return Err(PackageArtifactError::missing_field(
+            "downstream_import_bundle.modules",
+            entry.module.as_dotted(),
+        ));
+    }
+    Ok(())
+}
+
+fn assert_downstream_import_field(
+    path: &str,
+    field: &'static str,
+    expected: impl Into<String>,
+    actual: impl Into<String>,
+) -> PackageArtifactResult<()> {
+    let expected = expected.into();
+    let actual = actual.into();
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageArtifactError::downstream_import_bundle_mismatch(
+            field_path(path, field),
+            field,
+            expected,
+            actual,
+        ))
+    }
+}
+
 fn validate_downstream_certificate_artifacts(
     artifacts: &[PackagePublishArtifact],
     bundle: &PackageDownstreamImportBundle,
@@ -881,6 +1013,21 @@ fn validate_downstream_certificate_artifacts(
         )?;
     }
     Ok(())
+}
+
+fn downstream_import_module_from_registry_entry(
+    entry: &PackageRegistryModule,
+) -> PackageDownstreamImportModule {
+    PackageDownstreamImportModule {
+        module: entry.module.clone(),
+        package: entry.package.clone(),
+        version: entry.package_version.clone(),
+        export_hash: entry.export_hash,
+        certificate_hash: entry.certificate_hash,
+        axiom_report_hash: entry.axiom_report_hash,
+        certificate: entry.certificate.path.clone(),
+        certificate_file_hash: entry.certificate.file_hash,
+    }
 }
 
 fn validate_signature_policy(policy: &PackageSignaturePolicy) -> PackageArtifactResult<()> {

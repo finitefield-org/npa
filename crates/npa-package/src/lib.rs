@@ -146,12 +146,13 @@ pub use name::{
 };
 pub use path::{validate_package_path, PackagePath};
 pub use publish_plan::{
-    build_package_publish_artifacts, compute_package_publish_plan_hash,
-    package_checksum_only_signature_policy, parse_package_publish_plan_json,
-    validate_package_publish_plan, PackageDownstreamImportBundle, PackageDownstreamImportModule,
-    PackagePublishArtifact, PackagePublishArtifactListInput, PackagePublishArtifactRole,
-    PackagePublishPlan, PackagePublishRelease, PackagePublishReleaseReference,
-    PackagePublishSummary, PackageSignaturePolicy, PACKAGE_PUBLISH_PLAN_PATH,
+    build_package_downstream_import_bundle, build_package_publish_artifacts,
+    compute_package_publish_plan_hash, package_checksum_only_signature_policy,
+    parse_package_publish_plan_json, validate_package_publish_plan, PackageDownstreamImportBundle,
+    PackageDownstreamImportBundleInput, PackageDownstreamImportModule, PackagePublishArtifact,
+    PackagePublishArtifactListInput, PackagePublishArtifactRole, PackagePublishPlan,
+    PackagePublishRelease, PackagePublishReleaseReference, PackagePublishSummary,
+    PackageSignaturePolicy, PACKAGE_PUBLISH_PLAN_PATH,
 };
 pub use registry::{
     build_package_registry_modules, parse_registry_module_json, validate_registry_module,

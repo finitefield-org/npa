@@ -2,9 +2,9 @@
 //!
 //! This module loads and validates the source-free inputs that later CLR-06
 //! milestones use to build `generated/publish-plan.json`. It also projects the
-//! deterministic release artifact list, module registry seed entries, and
-//! checksum-only signature policy. It intentionally does not generate
-//! downstream bundles or write the publish-plan file yet.
+//! deterministic release artifact list, module registry seed entries,
+//! downstream import bundle, and checksum-only signature policy. It
+//! intentionally does not write the publish-plan file yet.
 
 use std::path::Path;
 
@@ -14,14 +14,15 @@ use npa_api::{
     PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 use npa_package::{
-    build_package_publish_artifacts, build_package_registry_modules, format_package_hash,
-    package_checksum_only_signature_policy, package_file_hash, parse_package_axiom_report_json,
-    parse_package_theorem_index_json, PackageArtifactError, PackageArtifactErrorReason,
-    PackageArtifactFileReference, PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary,
-    PackageHash, PackageLockManifest, PackagePath, PackagePublishArtifact,
-    PackagePublishArtifactListInput, PackageRegistryArtifactHashes, PackageRegistryModule,
-    PackageRegistryModuleSeedInput, PackageSignaturePolicy, PackageTheoremIndex,
-    ValidatedPackageManifest,
+    build_package_downstream_import_bundle, build_package_publish_artifacts,
+    build_package_registry_modules, format_package_hash, package_checksum_only_signature_policy,
+    package_file_hash, parse_package_axiom_report_json, parse_package_theorem_index_json,
+    PackageArtifactError, PackageArtifactErrorReason, PackageArtifactFileReference,
+    PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary, PackageDownstreamImportBundle,
+    PackageDownstreamImportBundleInput, PackageHash, PackageLockManifest, PackagePath,
+    PackagePublishArtifact, PackagePublishArtifactListInput, PackageRegistryArtifactHashes,
+    PackageRegistryModule, PackageRegistryModuleSeedInput, PackageSignaturePolicy,
+    PackageTheoremIndex, ValidatedPackageManifest,
 };
 
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
@@ -172,6 +173,25 @@ pub fn collect_package_publish_registry_entries(
             COMMAND,
             inputs.root_display.clone(),
             vec![publish_registry_error_diagnostic(error)],
+        )
+    })
+}
+
+/// Build the embedded downstream import bundle from local registry seed entries.
+pub fn collect_package_publish_downstream_import_bundle(
+    inputs: &LoadedPackagePublishInputs,
+) -> Result<PackageDownstreamImportBundle, CommandResult> {
+    let module_registry_entries = collect_package_publish_registry_entries(inputs)?;
+    build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
+        package: &inputs.validated.manifest().package,
+        version: &inputs.validated.manifest().version,
+        module_registry_entries: &module_registry_entries,
+    })
+    .map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            inputs.root_display.clone(),
+            vec![publish_downstream_import_bundle_error_diagnostic(error)],
         )
     })
 }
@@ -571,6 +591,12 @@ fn publish_artifact_error_diagnostic(error: PackageArtifactError) -> CommandDiag
 
 fn publish_registry_error_diagnostic(error: PackageArtifactError) -> CommandDiagnostic {
     publish_metadata_error_diagnostic(error, "module_registry_entries")
+}
+
+fn publish_downstream_import_bundle_error_diagnostic(
+    error: PackageArtifactError,
+) -> CommandDiagnostic {
+    publish_metadata_error_diagnostic(error, "downstream_import_bundle")
 }
 
 fn publish_metadata_error_diagnostic(
