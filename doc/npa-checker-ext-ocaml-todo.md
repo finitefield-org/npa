@@ -546,7 +546,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-level-term
+sh checkers/npa-checker-ext/scripts/test.sh hash-level-term
 ```
 
 ### M2-03 Recompute Declaration Hashes

@@ -139,23 +139,126 @@ and term_hash section offset name_table term =
   bind (term_payload section offset name_table term) (fun payload ->
       Ok (hash_with_domain domain_term payload))
 
-let level_hashes level_table = List.map (fun entry -> level_hash entry.Ext_level.level) level_table
+let lookup_level_hash section offset level_table level_hashes level =
+  let rec loop levels hashes =
+    match (levels, hashes) with
+    | entry :: rest_levels, hash :: rest_hashes ->
+        if entry.Ext_level.level = level then Ok hash else loop rest_levels rest_hashes
+    | _ -> error section offset Ext_bytes.Dangling_reference
+  in
+  loop level_table level_hashes
 
-let term_hashes name_table term_table =
-  let rec loop entries hashes =
-    match entries with
-    | [] -> Ok (List.rev hashes)
+let level_entry_payload offset previous_levels previous_hashes level =
+  match level with
+  | Ext_level.Zero -> Ok (byte 0x00)
+  | Ext_level.Succ inner ->
+      bind
+        (lookup_level_hash Ext_bytes.Level_table offset previous_levels previous_hashes inner)
+        (fun inner_hash -> Ok (byte 0x01 ^ inner_hash))
+  | Ext_level.Max (lhs, rhs) ->
+      bind
+        (lookup_level_hash Ext_bytes.Level_table offset previous_levels previous_hashes lhs)
+        (fun lhs_hash ->
+          bind
+            (lookup_level_hash Ext_bytes.Level_table offset previous_levels previous_hashes rhs)
+            (fun rhs_hash -> Ok (byte 0x02 ^ lhs_hash ^ rhs_hash)))
+  | Ext_level.Imax (lhs, rhs) ->
+      bind
+        (lookup_level_hash Ext_bytes.Level_table offset previous_levels previous_hashes lhs)
+        (fun lhs_hash ->
+          bind
+            (lookup_level_hash Ext_bytes.Level_table offset previous_levels previous_hashes rhs)
+            (fun rhs_hash -> Ok (byte 0x03 ^ lhs_hash ^ rhs_hash)))
+  | Ext_level.Param name -> Ok (byte 0x04 ^ encode_name name)
+
+let level_hashes level_table =
+  let rec loop processed_levels processed_hashes remaining =
+    match remaining with
+    | [] -> Ok (List.rev processed_hashes)
     | entry :: rest ->
         bind
-          (term_hash Ext_bytes.Term_table entry.Ext_term.offset name_table entry.Ext_term.term)
-          (fun hash -> loop rest (hash :: hashes))
+          (level_entry_payload entry.Ext_level.offset processed_levels processed_hashes
+             entry.Ext_level.level)
+          (fun payload ->
+            loop (entry :: processed_levels)
+              (hash_with_domain domain_level payload :: processed_hashes)
+              rest)
   in
-  loop term_table []
+  loop [] [] level_table
 
-let hash_for_level _level_table _level_hashes level = Ok (level_hash level)
+let lookup_term_hash section offset term_table term_hashes term =
+  let rec loop terms hashes =
+    match (terms, hashes) with
+    | entry :: rest_terms, hash :: rest_hashes ->
+        if entry.Ext_term.term = term then Ok hash else loop rest_terms rest_hashes
+    | _ -> error section offset Ext_bytes.Dangling_reference
+  in
+  loop term_table term_hashes
 
-let hash_for_term section offset name_table _term_table _term_hashes term =
-  term_hash section offset name_table term
+let term_entry_payload section offset name_table level_table level_hashes previous_terms
+    previous_hashes term =
+  match term with
+  | Ext_term.Sort level ->
+      bind (lookup_level_hash section offset level_table level_hashes level) (fun level_hash ->
+          Ok (byte 0x00 ^ level_hash))
+  | Ext_term.BVar index -> Ok (byte 0x01 ^ encode_uvar index)
+  | Ext_term.Const (global_ref, levels) ->
+      bind (encode_global_ref section offset name_table global_ref) (fun global_ref_bytes ->
+          let rec loop remaining encoded =
+            match remaining with
+            | [] ->
+                Ok
+                  (byte 0x02 ^ global_ref_bytes ^ encode_uvar (List.length levels)
+                 ^ String.concat "" (List.rev encoded))
+            | level :: rest ->
+                bind (lookup_level_hash section offset level_table level_hashes level)
+                  (fun level_hash -> loop rest (level_hash :: encoded))
+          in
+          loop levels [])
+  | Ext_term.App (fn, arg) ->
+      bind (lookup_term_hash section offset previous_terms previous_hashes fn) (fun fn_hash ->
+          bind
+            (lookup_term_hash section offset previous_terms previous_hashes arg)
+            (fun arg_hash -> Ok (byte 0x03 ^ fn_hash ^ arg_hash)))
+  | Ext_term.Lam (ty, body) ->
+      bind (lookup_term_hash section offset previous_terms previous_hashes ty) (fun ty_hash ->
+          bind
+            (lookup_term_hash section offset previous_terms previous_hashes body)
+            (fun body_hash -> Ok (byte 0x04 ^ ty_hash ^ body_hash)))
+  | Ext_term.Pi (ty, body) ->
+      bind (lookup_term_hash section offset previous_terms previous_hashes ty) (fun ty_hash ->
+          bind
+            (lookup_term_hash section offset previous_terms previous_hashes body)
+            (fun body_hash -> Ok (byte 0x05 ^ ty_hash ^ body_hash)))
+  | Ext_term.Let (ty, value, body) ->
+      bind (lookup_term_hash section offset previous_terms previous_hashes ty) (fun ty_hash ->
+          bind
+            (lookup_term_hash section offset previous_terms previous_hashes value)
+            (fun value_hash ->
+              bind
+                (lookup_term_hash section offset previous_terms previous_hashes body)
+                (fun body_hash -> Ok (byte 0x06 ^ ty_hash ^ value_hash ^ body_hash))))
+
+let term_hashes name_table level_table level_hashes term_table =
+  let rec loop processed_terms processed_hashes remaining =
+    match remaining with
+    | [] -> Ok (List.rev processed_hashes)
+    | entry :: rest ->
+        bind
+          (term_entry_payload Ext_bytes.Term_table entry.Ext_term.offset name_table level_table
+             level_hashes processed_terms processed_hashes entry.Ext_term.term)
+          (fun payload ->
+            loop (entry :: processed_terms)
+              (hash_with_domain domain_term payload :: processed_hashes)
+              rest)
+  in
+  loop [] [] term_table
+
+let hash_for_level section offset level_table level_hashes level =
+  lookup_level_hash section offset level_table level_hashes level
+
+let hash_for_term section offset _name_table term_table term_hashes term =
+  lookup_term_hash section offset term_table term_hashes term
 
 let encode_universe_constraint_relation relation =
   match relation with
@@ -168,10 +271,12 @@ let encode_universe_constraints section offset level_table level_hashes constrai
     | [] -> Ok (encode_uvar (List.length constraints) ^ String.concat "" (List.rev encoded))
     | constraint_ :: rest ->
         bind
-          (hash_for_level level_table level_hashes constraint_.Ext_cert.constraint_lhs)
+          (hash_for_level section offset level_table level_hashes
+             constraint_.Ext_cert.constraint_lhs)
           (fun lhs_hash ->
             bind
-              (hash_for_level level_table level_hashes constraint_.Ext_cert.constraint_rhs)
+              (hash_for_level section offset level_table level_hashes
+                 constraint_.Ext_cert.constraint_rhs)
               (fun rhs_hash ->
                 loop rest
                   ((lhs_hash ^ encode_universe_constraint_relation constraint_.Ext_cert.constraint_relation
@@ -357,7 +462,8 @@ let encode_mutual_inductive_specs section offset name_table level_table level_ha
                      inductive.Ext_cert.mutual_indices)
                   (fun indices ->
                     bind
-                      (hash_for_level level_table level_hashes inductive.Ext_cert.mutual_sort)
+                      (hash_for_level section offset level_table level_hashes
+                         inductive.Ext_cert.mutual_sort)
                       (fun sort_hash ->
                         bind
                           (encode_constructor_specs section offset name_table term_table term_hashes
@@ -381,15 +487,15 @@ let encode_mutual_inductive_specs section offset name_table level_table level_ha
 let declaration_interface_payload name_table level_table term_table payload dependencies
     axiom_dependencies =
   capture (fun () ->
-      let level_hashes = level_hashes level_table in
-      let term_hashes = unwrap (term_hashes name_table term_table) in
+      let table_level_hashes = unwrap (level_hashes level_table) in
+      let table_term_hashes = unwrap (term_hashes name_table level_table table_level_hashes term_table) in
       let section = Ext_bytes.Declarations in
       let offset = 0 in
       let name = encode_name_value section offset name_table in
       let names = encode_name_values section offset name_table in
-      let term = hash_for_term section offset name_table term_table term_hashes in
-      let level = hash_for_level level_table level_hashes in
-      let constraints = encode_universe_constraints section offset level_table level_hashes in
+      let term = hash_for_term section offset name_table term_table table_term_hashes in
+      let level = hash_for_level section offset level_table table_level_hashes in
+      let constraints = encode_universe_constraints section offset level_table table_level_hashes in
       let interface_dependencies = interface_dependencies_for_decl payload dependencies in
       let deps = encode_dependency_entries section offset name_table interface_dependencies in
       let axioms = encode_axiom_refs section offset name_table axiom_dependencies in
@@ -467,17 +573,17 @@ let declaration_interface_payload name_table level_table term_table payload depe
           } ->
           byte 0x03 ^ unwrap (name decl_name) ^ unwrap (names decl_universe_params)
           ^ unwrap
-              (encode_binder_type_hashes section offset name_table term_table term_hashes
+              (encode_binder_type_hashes section offset name_table term_table table_term_hashes
                  ind_params)
           ^ unwrap
-              (encode_binder_type_hashes section offset name_table term_table term_hashes
+              (encode_binder_type_hashes section offset name_table term_table table_term_hashes
                  ind_indices)
           ^ unwrap (level ind_sort)
           ^ unwrap
-              (encode_constructor_specs section offset name_table term_table term_hashes
+              (encode_constructor_specs section offset name_table term_table table_term_hashes
                  ind_constructors)
           ^ unwrap
-              (generated_recursor_signature_hash section offset name_table term_table term_hashes
+              (generated_recursor_signature_hash section offset name_table term_table table_term_hashes
                  ind_recursor)
           ^ generated_computation_rule_hash ind_recursor ^ unwrap deps ^ unwrap axioms
       | Ext_cert.InductiveDecl
@@ -494,17 +600,17 @@ let declaration_interface_payload name_table level_table term_table payload depe
           byte 0x13 ^ unwrap (name decl_name) ^ unwrap (names decl_universe_params)
           ^ unwrap (constraints decl_universe_constraints)
           ^ unwrap
-              (encode_binder_type_hashes section offset name_table term_table term_hashes
+              (encode_binder_type_hashes section offset name_table term_table table_term_hashes
                  ind_params)
           ^ unwrap
-              (encode_binder_type_hashes section offset name_table term_table term_hashes
+              (encode_binder_type_hashes section offset name_table term_table table_term_hashes
                  ind_indices)
           ^ unwrap (level ind_sort)
           ^ unwrap
-              (encode_constructor_specs section offset name_table term_table term_hashes
+              (encode_constructor_specs section offset name_table term_table table_term_hashes
                  ind_constructors)
           ^ unwrap
-              (generated_recursor_signature_hash section offset name_table term_table term_hashes
+              (generated_recursor_signature_hash section offset name_table term_table table_term_hashes
                  ind_recursor)
           ^ generated_computation_rule_hash ind_recursor ^ unwrap deps ^ unwrap axioms
       | Ext_cert.MutualInductiveBlockDecl
@@ -512,30 +618,33 @@ let declaration_interface_payload name_table level_table term_table payload depe
           byte 0x04 ^ unwrap (name decl_name) ^ unwrap (names decl_universe_params)
           ^ unwrap (constraints decl_universe_constraints)
           ^ unwrap
-              (encode_mutual_inductive_specs section offset name_table level_table level_hashes
-                 term_table term_hashes mutual_inductives)
+              (encode_mutual_inductive_specs section offset name_table level_table table_level_hashes
+                 term_table table_term_hashes mutual_inductives)
           ^ unwrap deps ^ unwrap axioms)
 
-let declaration_certificate_payload name_table term_table payload interface_hash dependencies
+let declaration_certificate_payload name_table level_table term_table payload interface_hash dependencies
     axiom_dependencies =
-  bind (term_hashes name_table term_table) (fun term_hashes ->
-      let section = Ext_bytes.Declarations in
-      let offset = 0 in
-      let term = hash_for_term section offset name_table term_table term_hashes in
-      let deps = encode_dependency_entries section offset name_table dependencies in
-      let axioms = encode_axiom_refs section offset name_table axiom_dependencies in
-      match payload with
-      | Ext_cert.AxiomDecl _ -> bind axioms (fun axioms -> Ok (interface_hash ^ axioms))
-      | Ext_cert.DefDecl { decl_value; _ } ->
-          bind (term decl_value) (fun value ->
+  bind (level_hashes level_table) (fun table_level_hashes ->
+      bind
+        (term_hashes name_table level_table table_level_hashes term_table)
+        (fun table_term_hashes ->
+          let section = Ext_bytes.Declarations in
+          let offset = 0 in
+          let term = hash_for_term section offset name_table term_table table_term_hashes in
+          let deps = encode_dependency_entries section offset name_table dependencies in
+          let axioms = encode_axiom_refs section offset name_table axiom_dependencies in
+          match payload with
+          | Ext_cert.AxiomDecl _ -> bind axioms (fun axioms -> Ok (interface_hash ^ axioms))
+          | Ext_cert.DefDecl { decl_value; _ } ->
+              bind (term decl_value) (fun value ->
+                  bind deps (fun deps ->
+                      bind axioms (fun axioms -> Ok (interface_hash ^ value ^ deps ^ axioms))))
+          | Ext_cert.TheoremDecl { decl_proof; _ } ->
+              bind (term decl_proof) (fun proof ->
+                  bind deps (fun deps -> Ok (interface_hash ^ proof ^ deps)))
+          | Ext_cert.InductiveDecl _ | Ext_cert.MutualInductiveBlockDecl _ ->
               bind deps (fun deps ->
-                  bind axioms (fun axioms -> Ok (interface_hash ^ value ^ deps ^ axioms))))
-      | Ext_cert.TheoremDecl { decl_proof; _ } ->
-          bind (term decl_proof) (fun proof ->
-              bind deps (fun deps -> Ok (interface_hash ^ proof ^ deps)))
-      | Ext_cert.InductiveDecl _ | Ext_cert.MutualInductiveBlockDecl _ ->
-          bind deps (fun deps ->
-              bind axioms (fun axioms -> Ok (interface_hash ^ deps ^ axioms))))
+                  bind axioms (fun axioms -> Ok (interface_hash ^ deps ^ axioms)))))
 
 let encode_export_kind kind =
   match kind with

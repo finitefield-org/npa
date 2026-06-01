@@ -18,6 +18,7 @@ scripts/test.sh decoder-tables
 scripts/test.sh decoder-declarations
 scripts/test.sh decoder-reachability
 scripts/test.sh hash-encoder
+scripts/test.sh hash-level-term
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -93,3 +94,8 @@ encoders produce domain-separated inputs for level, term, declaration
 dependency, axiom dependency, declaration payload, export block, and axiom
 report hashing without reading source spans, debug sidecars, filesystem paths,
 pretty printers, or JSON output.
+
+M2-02 makes level and term table hash recomputation table-order based. Child
+level and term references must resolve to already hashed table entries, and the
+`hash-level-term` fixture pins the expected Rust-compatible hash bytes plus
+dependent-hash mutation behavior.

@@ -389,6 +389,8 @@ let encode_level_succ inner = one_byte 0x01 ^ encode_uvar_int inner
 
 let encode_level_max lhs rhs = one_byte 0x02 ^ encode_uvar_int lhs ^ encode_uvar_int rhs
 
+let encode_level_imax lhs rhs = one_byte 0x03 ^ encode_uvar_int lhs ^ encode_uvar_int rhs
+
 let encode_level_param name_id = one_byte 0x04 ^ encode_uvar_int name_id
 
 let encode_term_sort level_id = one_byte 0x00 ^ encode_uvar_int level_id
@@ -1142,6 +1144,79 @@ let assert_canonical_hash label expected_hex result =
 let assert_canonical_bytes label expected result =
   assert_equal label expected (assert_ok label result)
 
+let assert_hash_hexes label expected result =
+  let hashes = assert_ok label result in
+  assert_int_equal (label ^ " length") (List.length expected) (List.length hashes);
+  List.iteri
+    (fun index expected_hex ->
+      assert_equal
+        (label ^ " " ^ string_of_int index)
+        expected_hex
+        (hex_of_raw_hash (List.nth hashes index)))
+    expected;
+  hashes
+
+let located_names names =
+  List.mapi (fun offset name -> { Ext_cert.name; offset }) names
+
+let decode_level_table label names bytes =
+  match Ext_level.read_table names (Ext_bytes.of_string bytes) with
+  | Ok (levels, next) ->
+      assert_int_equal (label ^ " offset") (String.length bytes) (Ext_bytes.offset next);
+      levels
+  | Error error ->
+      failwith
+        (label ^ ": unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+
+let decode_term_table label names levels bytes =
+  match Ext_term.read_table names levels (Ext_bytes.of_string bytes) with
+  | Ok (terms, next) ->
+      assert_int_equal (label ^ " offset") (String.length bytes) (Ext_bytes.offset next);
+      terms
+  | Error error ->
+      failwith
+        (label ^ ": unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+
+let assert_export_term_hashes label decoded =
+  let level_hashes =
+    assert_ok (label ^ " level hashes") (Ext_canonical.level_hashes decoded.Ext_cert.level_table)
+  in
+  let term_hashes =
+    assert_ok (label ^ " term hashes")
+      (Ext_canonical.term_hashes decoded.Ext_cert.name_table decoded.Ext_cert.level_table
+         level_hashes decoded.Ext_cert.term_table)
+  in
+  List.iteri
+    (fun index export ->
+      let prefix = label ^ " export " ^ string_of_int index in
+      let type_hash =
+        assert_ok (prefix ^ " type hash")
+          (Ext_canonical.hash_for_term Ext_bytes.Export_block export.Ext_cert.export_offset
+             decoded.Ext_cert.name_table decoded.Ext_cert.term_table term_hashes
+             export.Ext_cert.export_ty)
+      in
+      assert_equal (prefix ^ " type hash")
+        (hex_of_raw_hash export.Ext_cert.export_type_hash)
+        (hex_of_raw_hash type_hash);
+      match (export.Ext_cert.export_body, export.Ext_cert.export_body_hash) with
+      | None, None -> ()
+      | Some body, Some expected_body_hash ->
+          let body_hash =
+            assert_ok (prefix ^ " body hash")
+              (Ext_canonical.hash_for_term Ext_bytes.Export_block export.Ext_cert.export_offset
+                 decoded.Ext_cert.name_table decoded.Ext_cert.term_table term_hashes body)
+          in
+          assert_equal (prefix ^ " body hash") (hex_of_raw_hash expected_body_hash)
+            (hex_of_raw_hash body_hash)
+      | _ -> failwith (prefix ^ ": body and body_hash option mismatch"))
+    decoded.Ext_cert.export_block
+
 let assert_declaration_hashes label decoded =
   List.iteri
     (fun index declaration ->
@@ -1162,8 +1237,8 @@ let assert_declaration_hashes label decoded =
       let certificate_payload =
         assert_ok (prefix ^ " certificate payload")
           (Ext_canonical.declaration_certificate_payload decoded.Ext_cert.name_table
-             decoded.Ext_cert.term_table declaration.Ext_cert.payload interface_hash
-             declaration.Ext_cert.dependencies declaration.Ext_cert.axiom_dependencies)
+             decoded.Ext_cert.level_table decoded.Ext_cert.term_table declaration.Ext_cert.payload
+             interface_hash declaration.Ext_cert.dependencies declaration.Ext_cert.axiom_dependencies)
       in
       let certificate_hash =
         Ext_canonical.hash_with_domain Ext_canonical.domain_decl_certificate certificate_payload
@@ -1172,6 +1247,99 @@ let assert_declaration_hashes label decoded =
         (hex_of_raw_hash declaration.Ext_cert.hashes.Ext_cert.decl_certificate_hash)
         (hex_of_raw_hash certificate_hash))
     decoded.Ext_cert.declaration_table
+
+let run_hash_level_term_tests () =
+  let names = [ make_name [ "u" ]; make_name [ "Imported" ] ] in
+  let name_table = located_names names in
+  let level_bytes =
+    encode_uvar_int 4 ^ encode_level_param 0 ^ encode_level_succ 0
+    ^ encode_level_max 1 0 ^ encode_level_imax 0 0
+  in
+  let level_table = decode_level_table "hash level table" names level_bytes in
+  let level_hashes =
+    assert_hash_hexes "level hash"
+      [
+        "14ca4d271ed543507887e0ea523cefe7767b12c4c88c64db7797af8e5d60edca";
+        "3c4dc3d2830d5c7b16bf22a38bbdc0867936d8e0faa2cdfb909fbfb314e0b9ef";
+        "5ca42f83e7ab0f56fa5d53b157a5816bba36dfe71ca83d228b790dd7f52f667e";
+        "b7dff10a5ac7d0c3c25ec2f2007b12015444606e970292c103dd2239df70cc48";
+      ]
+      (Ext_canonical.level_hashes level_table)
+  in
+
+  let imported_ref = encode_global_imported 0 1 (hash_bytes 0x55) in
+  let term_bytes =
+    encode_uvar_int 8 ^ encode_term_sort 0 ^ encode_term_sort 1 ^ encode_term_bvar 0
+    ^ encode_term_const imported_ref [ 0; 1 ]
+    ^ encode_term_app 3 2 ^ encode_term_lam 0 4 ^ encode_term_pi 0 5
+    ^ encode_term_let 0 2 6
+  in
+  let term_table = decode_term_table "hash term table" names level_table term_bytes in
+  let term_hashes =
+    assert_hash_hexes "term hash"
+      [
+        "4dbd7b9567ca2c9a3014d70c03e2213e85686af92f3aa86ee57a1003de1c48d5";
+        "d4c881c652406552c33e9f7e374c0eed412f711733a4657b978d052262f19406";
+        "7f20eac79de1e58183de939cbf75e45bc92e8c8a1ac0b7c8e4fca287d201fcb7";
+        "f6aac19b5b3fbe1c698ebc7b02acd3f32d7d287fe06ad7108191d5d6cfe09c42";
+        "aa45ed6b3051ec6dd79b578d048c64711404e1434d39082d8874ad1777db8ea9";
+        "8079e8d16fa1f32538052afd5379b3107399c2964d6e43aad7082ad938b8c670";
+        "37adbeb21882f9c57f6c6f952715b9e75e8a30e53ab88269d20ec40976b3300e";
+        "9dde1d65cb02d6d632083bd28394894abb0c42b55285190f4e1d4b648433ac46";
+      ]
+      (Ext_canonical.term_hashes name_table level_table level_hashes term_table)
+  in
+
+  let mutated_level_table =
+    decode_level_table "mutated level table" names
+      (encode_uvar_int 2 ^ encode_level_zero ^ encode_level_succ 0)
+  in
+  let mutated_level_hashes =
+    assert_ok "mutated level hashes"
+      (Ext_canonical.level_hashes mutated_level_table)
+  in
+  assert_bool "mutating referenced level changes dependent level hash"
+    (List.nth level_hashes 1 <> List.nth mutated_level_hashes 1);
+  let mutated_term_table =
+    decode_term_table "mutated term table" names level_table
+      (encode_uvar_int 5 ^ encode_term_sort 0 ^ encode_term_sort 1
+      ^ encode_term_bvar 1 ^ encode_term_const imported_ref [ 0; 1 ]
+      ^ encode_term_app 3 2)
+  in
+  let mutated_term_hashes =
+    assert_ok "mutated term hashes"
+      (Ext_canonical.term_hashes name_table level_table level_hashes mutated_term_table)
+  in
+  assert_bool "mutating referenced term changes dependent term hash"
+    (List.nth term_hashes 4 <> List.nth mutated_term_hashes 4);
+
+  let dangling_level_table = [ { Ext_level.level = Ext_level.Succ Ext_level.Zero; offset = 7 } ] in
+  assert_decode_error "level hash dangling child" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Level_table 7
+    (Ext_canonical.level_hashes dangling_level_table);
+  let dangling_term_table =
+    [ { Ext_term.term = Ext_term.App (Ext_term.BVar 0, Ext_term.BVar 0); offset = 9 } ]
+  in
+  assert_decode_error "term hash dangling child" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 9
+    (Ext_canonical.term_hashes [] [] [] dangling_term_table);
+  let missing_level_term_table =
+    [ { Ext_term.term = Ext_term.Sort Ext_level.Zero; offset = 11 } ]
+  in
+  assert_decode_error "term hash dangling level" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 11
+    (Ext_canonical.term_hashes [] [] [] missing_level_term_table);
+
+  let assert_golden_export_terms label path =
+    let decoded =
+      decode_module_bytes (label ^ " hash level-term golden") (read_binary_file path)
+    in
+    assert_export_term_hashes label decoded
+  in
+  assert_golden_export_terms "nat"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert");
+  assert_golden_export_terms "eq"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert")
 
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
@@ -1212,8 +1380,9 @@ let run_hash_encoder_tests () =
   assert_canonical_bytes "axiom declaration certificate payload"
     (axiom_iface_hash ^ encode_axiom_refs [])
     (Ext_canonical.declaration_certificate_payload axiom_decoded.Ext_cert.name_table
-       axiom_decoded.Ext_cert.term_table axiom_decl.Ext_cert.payload axiom_iface_hash
-       axiom_decl.Ext_cert.dependencies axiom_decl.Ext_cert.axiom_dependencies);
+       axiom_decoded.Ext_cert.level_table axiom_decoded.Ext_cert.term_table
+       axiom_decl.Ext_cert.payload axiom_iface_hash axiom_decl.Ext_cert.dependencies
+       axiom_decl.Ext_cert.axiom_dependencies);
 
   let imported_ref = encode_global_imported 0 1 (hash_bytes 0x55) in
   let theorem_decl_bytes =
@@ -1266,8 +1435,9 @@ let run_hash_encoder_tests () =
     (theorem_iface_hash ^ theorem_proof_hash
     ^ encode_dependency_entries [ (imported_ref, hash_bytes 0x55) ])
     (Ext_canonical.declaration_certificate_payload theorem_decoded.Ext_cert.name_table
-       theorem_decoded.Ext_cert.term_table theorem_decl.Ext_cert.payload theorem_iface_hash
-       theorem_decl.Ext_cert.dependencies theorem_decl.Ext_cert.axiom_dependencies);
+       theorem_decoded.Ext_cert.level_table theorem_decoded.Ext_cert.term_table
+       theorem_decl.Ext_cert.payload theorem_iface_hash theorem_decl.Ext_cert.dependencies
+       theorem_decl.Ext_cert.axiom_dependencies);
 
   let import_decl =
     encode_decl_cert
@@ -1354,6 +1524,7 @@ let () =
                "decoder-tables";
                "feature-policy";
                "hash-encoder";
+               "hash-level-term";
                "sha256";
              ])
       then
@@ -1366,5 +1537,6 @@ let () =
   if should_run selected "decoder-declarations" then run_decoder_declarations_tests ();
   if should_run selected "decoder-reachability" then run_decoder_reachability_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
+  if should_run selected "hash-level-term" then run_hash_level_term_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
