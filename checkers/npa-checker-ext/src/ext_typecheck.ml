@@ -400,12 +400,37 @@ let rec is_defeq_with_fuel env context section offset delta lhs rhs fuel =
                         let body_context = push_assumption context lhs_ty in
                         is_defeq_with_fuel env body_context section offset delta lhs_body
                           rhs_body fuel)
+              | ( Ext_term.Let (lhs_ty, lhs_value, lhs_body),
+                  Ext_term.Let (rhs_ty, rhs_value, rhs_body) ) ->
+                  bind
+                    (is_defeq_with_fuel env context section offset delta lhs_ty rhs_ty fuel)
+                    (fun ty_equal ->
+                      if not ty_equal then Ok false
+                      else
+                        bind
+                          (is_defeq_with_fuel env context section offset delta lhs_value
+                             rhs_value fuel)
+                          (fun value_equal ->
+                            if not value_equal then Ok false
+                            else
+                              let body_context =
+                                push_definition context lhs_ty lhs_value
+                              in
+                              is_defeq_with_fuel env body_context section offset delta
+                                lhs_body rhs_body fuel))
               | _ -> Ok false)))
 
 let is_defeq ?(section = Ext_bytes.Declarations) ?(offset = 0) ?(delta = []) env context lhs
     rhs =
   let fuel = ref max_fuel in
   is_defeq_with_fuel env context section offset delta lhs rhs fuel
+
+let is_defeq_with_fuel_budget ?(section = Ext_bytes.Declarations) ?(offset = 0)
+    ?(delta = []) ~fuel_budget env context lhs rhs =
+  if fuel_budget < 0 then error section offset Resource_limit
+  else
+    let fuel = ref fuel_budget in
+    is_defeq_with_fuel env context section offset delta lhs rhs fuel
 
 let rec infer ?(section = Ext_bytes.Declarations) ?(offset = 0) ?(delta = []) env context
     term =

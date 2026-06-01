@@ -1516,6 +1516,16 @@ let assert_term_result label expected result =
         (label ^ ": unexpected typecheck error "
        ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
 
+let assert_defeq label expected result =
+  match result with
+  | Ok actual ->
+      assert_equal (label ^ " result") (string_of_bool expected)
+        (string_of_bool actual)
+  | Error error ->
+      failwith
+        (label ^ ": unexpected typecheck error "
+       ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -2988,6 +2998,73 @@ let run_reduce_tests () =
     (Ext_typecheck.whnf_with_fuel_budget ~fuel_budget:1 Ext_env.empty
        Ext_typecheck.empty_context beta_term)
 
+let run_defeq_tests () =
+  let nat = Ext_env.nat in
+  let nat_zero = Ext_env.nat_zero in
+  let beta_term = Ext_term.App (Ext_term.Lam (nat, Ext_term.BVar 0), nat_zero) in
+  let zeta_term = Ext_term.Let (nat, nat_zero, Ext_term.BVar 0) in
+  let defeq ?(env = Ext_env.empty) ?(context = Ext_typecheck.empty_context) lhs rhs =
+    Ext_typecheck.is_defeq env context lhs rhs
+  in
+  assert_defeq "defeq beta equals contractum" true (defeq beta_term nat_zero);
+  assert_defeq "defeq zeta equals body instantiation" true (defeq zeta_term nat_zero);
+
+  let alias_decl =
+    declaration_fixture Ext_cert.Definition
+      (Ext_cert.DefDecl
+         {
+           decl_name = make_name [ "AliasNatDefeq" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_env.level_type0;
+           decl_value = nat;
+           decl_reducibility = Ext_cert.Reducible;
+         })
+  in
+  let alias_env =
+    assert_declaration_check_ok "defeq adds reducible alias"
+      (Ext_typecheck.check_declarations [ alias_decl ])
+  in
+  let alias_ref = Ext_term.Const (Ext_term.Local { decl_index = 0 }, []) in
+  assert_defeq "defeq delta unfolds reducible definition" true
+    (defeq ~env:alias_env alias_ref nat);
+
+  let normalized_level = Ext_level.Max (Ext_level.Zero, Ext_env.level_type0) in
+  assert_defeq "defeq normalizes sort levels" true
+    (defeq (Ext_term.Sort normalized_level) (Ext_term.Sort Ext_env.level_type0));
+  assert_defeq "defeq normalizes const levels" true
+    (defeq (Ext_env.builtin_const "Eq" [ normalized_level ])
+       (Ext_env.builtin_const "Eq" [ Ext_env.level_type0 ]));
+
+  let fn_ty = Ext_term.Pi (nat, nat) in
+  let fn_context = Ext_typecheck.push_assumption Ext_typecheck.empty_context fn_ty in
+  let open_app = Ext_term.App (Ext_term.BVar 0, nat_zero) in
+  assert_defeq "defeq recurses through app" true
+    (defeq ~context:fn_context open_app open_app);
+  assert_defeq "defeq recurses through bvar" true
+    (defeq ~context:fn_context (Ext_term.BVar 0) (Ext_term.BVar 0));
+  assert_defeq "defeq recurses through pi" true
+    (defeq (Ext_term.Pi (nat, Ext_term.BVar 0))
+       (Ext_term.Pi (nat, Ext_term.BVar 0)));
+  assert_defeq "defeq recurses through lambda" true
+    (defeq (Ext_term.Lam (nat, Ext_term.BVar 0))
+       (Ext_term.Lam (nat, Ext_term.BVar 0)));
+  assert_defeq "defeq returns deterministic false for different constructors" false
+    (defeq nat_zero (Ext_env.nat_succ nat_zero));
+  assert_typecheck_rejects "defeq negative type mismatch rejects"
+    "type_mismatch" "type_mismatch"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context nat_zero
+       (Ext_env.nat_succ nat_zero));
+
+  assert_defeq "defeq repeated call without cache remains stable" true
+    (defeq beta_term nat_zero);
+  assert_defeq "defeq repeated call without cache remains stable again" true
+    (defeq beta_term nat_zero);
+  assert_typecheck_rejects "defeq fuel exhaustion uses conversion failure kind"
+    "conversion_failure" "resource_limit"
+    (Ext_typecheck.is_defeq_with_fuel_budget ~fuel_budget:0 Ext_env.empty
+       Ext_typecheck.empty_context beta_term nat_zero)
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -3164,6 +3241,7 @@ let () =
           (List.mem name
              [
                "cli";
+               "defeq";
                "decoder-bytes";
                "decoder-declarations";
                "decoder-header";
@@ -3187,6 +3265,7 @@ let () =
       then
         failwith ("unknown test filter " ^ name))
     selected;
+  if should_run selected "defeq" then run_defeq_tests ();
   if should_run selected "sha256" then run_sha256_tests ();
   if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
   if should_run selected "decoder-header" then run_decoder_header_tests ();
