@@ -485,7 +485,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
-- Status: Partially Completed; high-trust artifact and CI template extension deferred
+- Status: Partially Completed; high-trust artifact generator implemented, CI template extension deferred
 - Depends on: CLR-03
 - Inputs:
   - `doc/phase8-human.md`
@@ -496,15 +496,15 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Code or documentation areas:
   - `crates/npa-api/src/independent_checker.rs` RunnerPolicy / ReleasePolicy / CheckerBinaryRegistry integration
   - `crates/npa-cli` `package verify-certs --checker external`
-  - future `crates/npa-cli` package high-trust command when `verified_high_trust` is implemented
-  - future `crates/npa-package` `verified_high_trust` schema
+  - `crates/npa-cli` package high-trust command
+  - `crates/npa-package` `verified_high_trust` schema
   - external checker runner integration
   - high-trust release policy tests
-  - generated `verified_high_trust` artifact schema when no longer deferred
+  - generated `verified_high_trust` artifact schema and generator
 - Deliverables:
   - Explicit contract for when `npa-checker-ext` becomes required.
   - Source-free package verification path for `--checker external`, gated by runner policy and checker binary registry.
-  - `verified_high_trust` artifact schema and generation path, or a documented target-integration placeholder if deferred.
+  - `verified_high_trust` artifact schema and generation path.
   - Release/high-trust policy tests that do not affect AI candidate hot path.
   - Benchmark / audit collection plan for external checker.
 - Acceptance criteria:
@@ -518,7 +518,8 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `cargo test -p npa-api independent_checker`
   - `cargo test -p npa-checker-ref`
   - `cargo test -p npa-cli package_verify_external`
-  - future artifact-generator verification: `cargo test -p npa-package verified_high_trust`
+  - artifact-generator verification: `cargo test -p npa-package verified_high_trust`
+  - high-trust package command verification: `cargo test -p npa-cli package_high_trust`
   - `./scripts/phase8-release-audit.sh`
   - targeted search: `rg -n "community-library-roadmap-clr-08-todo|verified_high_trust|npa-checker-ext|external checker|high-trust-reference|CheckerBinaryRegistry" doc crates`
 - Notes:
@@ -529,8 +530,10 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
     as release evidence only after a built executable is present in a fresh
     checkout or documented CI environment and its identity/hash pass runner
     validation.
-  - `verified_high_trust` and full external-checker release/high-trust CI are
-    deferred. They must not be generated from reference-checker-only evidence.
+  - `verified_high_trust` schema/generator and `package high-trust` are
+    implemented. Full external-checker release/high-trust CI is deferred, and
+    `verified_high_trust` must not be generated from reference-checker-only
+    evidence.
   - `npa-mathlib-seed` may proceed as a reference-checker-only release seed.
   - Policy / runner contract work can start from CLR-03, but package CLI integration depends on CLR-04 and CI integration depends on CLR-07.
 
@@ -626,8 +629,8 @@ F2: The design originally did not fix the Cargo package that owns `npa package`.
 F3: Registry metadata could be confused with the independent checker binary registry in Phase 8 docs.
     Resolution: CLR-06 requires explicit distinction between module registry metadata and checker binary registry metadata.
 
-F4: External checker / verified_high_trust target integration could block the first seed library unnecessarily.
-    Resolution: CLR-08 is separate and may be deferred; CLR-09 depends on package CI and reference checker, not full external checker.
+F4: External checker / verified_high_trust high-trust integration could block the first seed library unnecessarily.
+    Resolution: CLR-08 is separate; CLR-09 depends on package CI and reference checker, not full external checker evidence.
 
 F5: Dependency review found that external CI requires deterministic axiom report / theorem index generation,
     and the seed library requires publish metadata before proving release artifact flow.

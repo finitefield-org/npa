@@ -102,6 +102,52 @@ fn package_cli_args_parses_publish_plan_check_mode() {
 }
 
 #[test]
+fn package_cli_args_parses_high_trust_check_mode() {
+    let action = parse(&[
+        "package",
+        "high-trust",
+        "--root=proofs",
+        "--release-policy",
+        "ci/release.high-trust.json",
+        "--release-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--runner-policy",
+        "ci/runner.high-trust.json",
+        "--runner-policy-hash",
+        "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "--challenge-runner-policy",
+        "ci/runner.challenge.json",
+        "--challenge-runner-policy-hash",
+        "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+        "--out",
+        "proofs/generated/verified-high-trust.json",
+        "--check",
+        "--json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::HighTrust(options))) = action else {
+        panic!("expected package high-trust command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert!(options.check);
+    assert_eq!(
+        options.release_policy,
+        PathBuf::from("ci/release.high-trust.json")
+    );
+    assert_eq!(
+        options.challenge_runner_policy,
+        PathBuf::from("ci/runner.challenge.json")
+    );
+    assert_eq!(
+        options.out.as_ref().unwrap(),
+        &PathBuf::from("proofs/generated/verified-high-trust.json")
+    );
+}
+
+#[test]
 fn package_cli_args_defaults_verify_certs_checker_to_reference() {
     let action = parse(&["package", "verify-certs"]);
 
@@ -170,6 +216,15 @@ fn package_cli_args_rejects_external_checker_without_runner_inputs() {
 
     assert_eq!(error.reason, UsageReason::MissingRequiredFlag);
     assert_eq!(error.flag.as_deref(), Some("--runner-policy"));
+    assert!(error.value.is_none());
+}
+
+#[test]
+fn package_cli_args_rejects_high_trust_without_required_inputs() {
+    let error = parse_error(&["package", "high-trust", "--check"]);
+
+    assert_eq!(error.reason, UsageReason::MissingRequiredFlag);
+    assert_eq!(error.flag.as_deref(), Some("--release-policy"));
     assert!(error.value.is_none());
 }
 
@@ -304,6 +359,10 @@ fn package_cli_args_parses_help_topics() {
     assert_eq!(
         parse(&["package", "publish-plan", "--help"]),
         CliAction::Help(HelpTopic::PackagePublishPlan)
+    );
+    assert_eq!(
+        parse(&["package", "high-trust", "--help"]),
+        CliAction::Help(HelpTopic::PackageHighTrust)
     );
 }
 

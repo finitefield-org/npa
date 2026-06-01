@@ -115,12 +115,13 @@ Release artifact and publish-metadata cross-checks depend on CLR-05 and CLR-06.
 CI template integration depends on CLR-07.
 ```
 
-CLR-08 is partially implemented. The package external checker command and OCaml
-clean-room source project exist, but `verified_high_trust` and full
-external-checker release/high-trust CI remain deferred. CLR-09 may dogfood a
-reference-checker-only seed library while those high-trust artifacts are absent.
-Docs must clearly say that `verified_high_trust` is not available from
-reference-only evidence and that base release CI runs without the external
+CLR-08 is partially implemented. The package external checker command, OCaml
+clean-room source project, and `verified_high_trust` artifact generator exist,
+but full external-checker release/high-trust CI remains deferred. CLR-09 may
+dogfood a reference-checker-only seed library while those high-trust evidence
+files are absent. Docs must clearly say that `verified_high_trust` is generated
+only from external and high-trust-reference release audit evidence, not from
+reference-only evidence, and that base release CI runs without the external
 checker gate.
 
 ---
@@ -587,7 +588,7 @@ Benchmarks are regression signals. They do not change proof validity.
 
 ### CLR-08-05 Add `verified_high_trust` Artifact Schema And Generator
 
-- Status: Deferred
+- Status: Completed
 - Depends on: CLR-08-04, CLR-05
 - Inputs:
   - package lock from CLR-03
@@ -618,11 +619,18 @@ Benchmarks are regression signals. They do not change proof validity.
   - `cargo run -p npa-cli -- package high-trust --root proofs --release-policy ci/release.high-trust.json --release-policy-hash "$NPA_RELEASE_POLICY_HASH" --runner-policy ci/runner.high-trust.json --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" --challenge-runner-policy ci/runner.challenge.json --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" --checker-registry ci/checker-binaries.json --out proofs/generated/verified-high-trust.json --check --json`
   - `rg -n "npa.package.verified_high_trust.v0.1|verified-high-trust|verified_high_trust" crates doc proofs README.md`
 - Notes:
-  - If CLR-06 publish-plan is not implemented yet, make `publish_plan_hash` absent by schema rule rather than fake.
-  - Cryptographic signing is not required for CLR-08 unless a later signing policy milestone is added.
-  - Deferred in the current repository: no command may emit
-    `verified_high_trust` from reference-only evidence, and docs must treat the
-    artifact generator as a future high-trust integration gate.
+  - Implemented in `crates/npa-package` as a closed-world
+    `npa.package.verified_high_trust.v0.1` artifact with canonical self hash.
+  - Implemented in `crates/npa-cli` as `npa package high-trust` with `--check`
+    and `--out`. The command validates high-trust release policy hashes,
+    required fast-kernel / reference / external / high-trust-reference checker
+    profiles, release audit bundle file hashes, normalized all-agree checked
+    evidence, and passed auxiliary results before writing.
+  - The current checked-in `proofs` tree does not include external checker
+    release audit evidence, so `proofs/generated/verified-high-trust.json` is
+    intentionally not generated from reference-only evidence.
+  - Cryptographic signing is not required for CLR-08 unless a later signing
+    policy milestone is added.
 
 ### CLR-08-06 Extend Release/High-Trust CI Templates
 
@@ -729,8 +737,8 @@ Benchmarks are regression signals. They do not change proof validity.
 - Notes:
   - CLR-09 can proceed without CLR-08 when the seed library intentionally uses reference-checker-only release gates.
   - Completed for the current handoff: docs distinguish implemented
-    `--checker external` package mode from deferred high-trust artifact and CI
-    template work.
+    `--checker external` and `package high-trust` command surfaces from
+    deferred high-trust CI template work.
 
 ---
 

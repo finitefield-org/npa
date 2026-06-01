@@ -104,6 +104,7 @@ pub mod registry;
 pub mod schema;
 pub mod theorem_index;
 pub mod validate;
+pub mod verified_high_trust;
 
 pub use artifacts::{
     PackageArtifactFileReference, PackageArtifactOrigin, PackageArtifactPolicy,
@@ -162,7 +163,8 @@ pub use registry::{
 pub use schema::{
     CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
     KERNEL_PROFILE_V0_1, PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,
-    PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA, REGISTRY_MODULE_SCHEMA,
+    PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA, PACKAGE_VERIFIED_HIGH_TRUST_SCHEMA,
+    REGISTRY_MODULE_SCHEMA,
 };
 pub use theorem_index::{
     compute_package_theorem_index_hash, package_theorem_index_summary,
@@ -175,4 +177,11 @@ pub use validate::{
     parse_and_validate_manifest_str, validate_manifest, validate_manifest_report,
     validate_manifest_source_report, validate_manifest_with_options, validate_package_version,
     PackageManifestValidationOptions, PackageManifestValidationReport, ValidatedPackageManifest,
+};
+pub use verified_high_trust::{
+    compute_package_verified_high_trust_hash, parse_package_verified_high_trust_json,
+    validate_package_verified_high_trust, PackageVerifiedHighTrust,
+    PackageVerifiedHighTrustAuxiliaryKind, PackageVerifiedHighTrustAuxiliaryResult,
+    PackageVerifiedHighTrustCheckerIdentity, PackageVerifiedHighTrustGeneratedBy,
+    PACKAGE_VERIFIED_HIGH_TRUST_PATH,
 };

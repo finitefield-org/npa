@@ -73,9 +73,10 @@ Current implementation facts:
   `checkers/npa-checker-ext/`.
 - M8 runner policy, checker registry, raw result adoption, and external
   comparison fixtures are implemented in `crates/npa-api`.
-- M9 package external mode is partially implemented through
-  `npa package verify-certs --checker external`; `verified_high_trust` and full
-  external-checker release/high-trust CI remain deferred.
+- M9 package external mode is implemented through
+  `npa package verify-certs --checker external`; `npa package high-trust`
+  implements the `verified_high_trust` generator, while full external-checker
+  release/high-trust CI remains deferred.
 ```
 
 Recommended validation baseline:
@@ -1300,7 +1301,7 @@ cargo test -p npa-api independent_checker::tests::p8h14_performance_gates_keep_r
 
 ## M9 Release Gate
 
-- Status: Partially Completed; `verified_high_trust` and full external-checker release/high-trust CI deferred
+- Status: Partially Completed; `verified_high_trust` generator implemented, full external-checker release/high-trust CI deferred
 - Depends on: M8
 - Inputs:
   - `doc/community-library-roadmap-clr-08-todo.md`

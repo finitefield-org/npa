@@ -20,6 +20,12 @@ pub const PACKAGE_THEOREM_INDEX_SCHEMA: &str = "npa.package.theorem_index.v0.1";
 /// Generated package publish plan schema.
 pub const PACKAGE_PUBLISH_PLAN_SCHEMA: &str = "npa.package.publish_plan.v0.1";
 
+/// Generated high-trust release evidence schema.
+///
+/// This artifact is release metadata. It is not proof input and does not
+/// replace source-free certificate verification.
+pub const PACKAGE_VERIFIED_HIGH_TRUST_SCHEMA: &str = "npa.package.verified_high_trust.v0.1";
+
 /// Registry module metadata schema.
 ///
 /// Registry metadata is distribution and search metadata, not trusted base.
@@ -43,7 +49,7 @@ mod tests {
         CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
         KERNEL_PROFILE_V0_1, PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA,
         PACKAGE_MANIFEST_SCHEMA, PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA,
-        REGISTRY_MODULE_SCHEMA,
+        PACKAGE_VERIFIED_HIGH_TRUST_SCHEMA, REGISTRY_MODULE_SCHEMA,
     };
 
     #[test]
@@ -56,6 +62,10 @@ mod tests {
             "npa.package.theorem_index.v0.1"
         );
         assert_eq!(PACKAGE_PUBLISH_PLAN_SCHEMA, "npa.package.publish_plan.v0.1");
+        assert_eq!(
+            PACKAGE_VERIFIED_HIGH_TRUST_SCHEMA,
+            "npa.package.verified_high_trust.v0.1"
+        );
         assert_eq!(REGISTRY_MODULE_SCHEMA, "npa.registry.module.v0.1");
         assert_eq!(CORE_SPEC_V0_1, "npa.core.v0.1");
         assert_eq!(KERNEL_PROFILE_V0_1, "npa.kernel.v0.1");

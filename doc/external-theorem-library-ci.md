@@ -209,9 +209,9 @@ source, replay files, meta files, theorem index files, AI traces, registry
 network data, hidden package caches, plugins, or source-derived unchecked
 environments.
 
-`verified_high_trust` artifacts require a separate generator and complete
-external / high-trust-reference evidence. They must not be emitted from
-reference-checker-only evidence.
+`verified_high_trust` artifacts require `npa package high-trust` and complete
+external / high-trust-reference release audit evidence. They must not be
+emitted from reference-checker-only evidence.
 
 Publish metadata is not a base CLR-07 dependency. A later optional release
 template variant may add:
@@ -364,7 +364,8 @@ scripts/phase9-regression.sh
 
 Those scripts remain local `npa` repository checks, and the templates remain
 outside this repository's `.github/workflows`. Until a seed repository opts into
-a pinned `npa-checker-ext` binary with runner policy / checker registry and a
-separate `verified_high_trust` generator exists, `npa-mathlib-seed` release
-evidence is reference-checker-only plus the labeled fast-kernel verifier; it
-must not require `--checker external` or emit `verified_high_trust`.
+a pinned `npa-checker-ext` binary with runner policy / checker registry and
+release audit evidence consumable by `npa package high-trust`, `npa-mathlib-seed`
+release evidence is reference-checker-only plus the labeled fast-kernel
+verifier; it must not require `--checker external` or emit
+`verified_high_trust`.

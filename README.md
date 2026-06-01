@@ -186,10 +186,11 @@ npa package index --root . --check --json
 fast-kernel と reference checker の source-free verification を分けて実行します。
 CLR-06 の `publish-plan` check は gated optional step です。base template は
 reference-checker-only release evidence を生成し、PR mode でも release base mode でも
-external checker を required にしません。`--checker external` を追加する template variant は、
-pinned `npa-checker-ext` binary、runner policy、checker registry を同じ review で用意する
-high-trust integration scope です。`verified_high_trust` artifact は reference-only evidence から
-生成してはいけません。これらの template はこの repo の
+external checker を required にしません。`--checker external` と
+`package high-trust` を追加する template variant は、pinned `npa-checker-ext`
+binary、runner policy、checker registry、release audit evidence を同じ review で
+用意する high-trust integration scope です。`verified_high_trust` artifact は
+reference-only evidence から生成してはいけません。これらの template はこの repo の
 `.github/workflows` ではなく、`npa-mathlib-seed` などの外部 repo が copy または reference
 するためのものです。この repo の local gate は引き続き `scripts/phase8-release-audit.sh` と
 `scripts/phase9-regression.sh` です。
@@ -308,9 +309,10 @@ release audit bundle、challenge replay、AI sidecar validation の非信頼 orc
 OCaml clean-room `npa-checker-ext` source は `checkers/npa-checker-ext/` にあります。
 release/high-trust evidence として存在すると扱うのは、build 済み binary が runner-owned
 checker registry から解決され、package `--checker external` integration と binary hash /
-identity validation が通った場合だけです。full external-checker release CI workflow と
-`verified_high_trust` artifact generation は別の high-trust integration gate であり、
-reference-only evidence から生成しません。
+identity validation が通った場合だけです。`package high-trust` は
+`verified_high_trust` artifact generator として実装済みですが、full external-checker
+release CI workflow は別の high-trust integration gate であり、
+reference-only evidence から artifact を生成しません。
 これらの `npa-api` automation / library API は候補生成、検査要求の構成、
 監査 artifact の正規化、回帰 fixture の実行を担う非信頼層です。
 trusted base は広げません。証明の受理根拠は引き続き canonical certificate と、

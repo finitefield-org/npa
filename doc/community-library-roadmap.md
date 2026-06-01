@@ -151,7 +151,7 @@ local package contract として実装済みです。
 
 ```text
 - external checker を required にする production high-trust workflow
-- `verified_high_trust` artifact
+- `package high-trust` を実 CI evidence に接続する workflow
 - pinned built `npa-checker-ext` release/high-trust binary evidence
 - external checker benchmark / release audit collection job
 ```
@@ -159,12 +159,13 @@ local package contract として実装済みです。
 `crates/npa-checker-ref` の source-free reference checker binary はあります。
 OCaml clean-room `npa-checker-ext` source は `checkers/npa-checker-ext/` にあり、
 package command `npa package verify-certs --checker external` も runner policy と
-checker registry を必須にして実装済みです。ただし `npa-checker-ext` が release/high-trust
+checker registry を必須にして実装済みです。`package high-trust` も
+`verified_high_trust` artifact generator として実装済みです。ただし
+`npa-checker-ext` が release/high-trust
 evidence として存在すると扱うのは、build 済み executable が fresh checkout または
 documented CI environment で用意され、runner-owned registry / policy が binary identity と
 hash を検証し、package external-mode integration が通った場合だけです。full
-external-checker release audit CI と `verified_high_trust` artifact generation はまだ target
-integration です。
+external-checker release audit CI はまだ target integration です。
 
 この repository の GitHub Actions workflow は現状では削除済みで、
 `scripts/phase8-release-audit.sh` と `scripts/phase9-regression.sh` を必要に応じて
@@ -456,10 +457,10 @@ npa package publish-plan --root . --check --json
 ```
 
 PR mode で external checker を required にする必要はありません。
-base release mode でも external checker は required ではありません。`--checker external` は、
-runner policy と checker binary registry を明示し、source-free package artifacts と
-build 済み `npa-checker-ext` executable だけを読む high-trust extension です。
-`verified_high_trust` は別の artifact generator が実装され、external checker と
+base release mode でも external checker は required ではありません。`--checker external`
+と `package high-trust` は、runner policy と checker binary registry を明示し、
+source-free package artifacts と build 済み `npa-checker-ext` executable だけを読む
+high-trust extension です。`verified_high_trust` は external checker と
 high-trust-reference を含む required evidence が揃った後だけ生成できます。reference-only
 evidence から `verified_high_trust` を生成してはいけません。
 `--changed`、`--all`、`--registry`、`--network`、`--latest` は base contract には入りません。
@@ -683,10 +684,10 @@ Registry readiness
 ```
 
 CLR-08 は high-trust external checker integration の独立 milestone です。
-package external checker command は実装済みですが、`verified_high_trust` artifact と
+package external checker command と `verified_high_trust` generator は実装済みですが、
 full external-checker release CI は別 gate として残ります。`npa-mathlib-seed` と registry
-readiness は、この high-trust artifact が未完了でも reference-checker-only release として
-進められます。
+readiness は、external / high-trust-reference evidence がまだ無い場合でも
+reference-checker-only release として進められます。
 
 ---
 

@@ -64,9 +64,10 @@ CI / release audit
 verified_high_trust artifact
 ```
 
-これは target high-trust flow です。現リポジトリで `verified_high_trust` artifact を
-生成できる、または reference-checker-only evidence から生成してよい、という意味では
-ありません。`npa-checker-ext` は build 済み executable が runner-owned registry / policy
+これは target high-trust flow です。現リポジトリの `npa package high-trust` は
+`verified_high_trust` artifact generator ですが、external / high-trust-reference
+release audit evidence が揃った場合だけ生成でき、reference-checker-only evidence から
+生成してよい、という意味ではありません。`npa-checker-ext` は build 済み executable が runner-owned registry / policy
 から解決され、binary identity と hash validation を通った場合だけ release/high-trust
 evidence になります。
 
