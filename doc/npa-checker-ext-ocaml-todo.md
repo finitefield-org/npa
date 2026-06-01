@@ -759,7 +759,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST type-env
+sh checkers/npa-checker-ext/scripts/test.sh type-env
 ```
 
 ### M4-02 Implement Core Infer And Check

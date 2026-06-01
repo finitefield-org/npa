@@ -1454,6 +1454,24 @@ let assert_import_environment_rejects ?(policy = Ext_import_store.normal_policy)
         ("\"offset\": " ^ string_of_int error.Ext_import_store.resolve_offset)
         raw
 
+let assert_env_resolves label env global_ref =
+  match Ext_env.resolve_global_ref env global_ref with
+  | Ok signature -> signature
+  | Error error ->
+      failwith
+        (label ^ ": unexpected env error "
+       ^ Ext_env.error_reason_code error.Ext_env.reason)
+
+let assert_env_rejects label expected_kind expected_reason env global_ref =
+  match Ext_env.resolve_global_ref env global_ref with
+  | Ok _ -> failwith (label ^ ": expected env error")
+  | Error error ->
+      assert_equal (label ^ " kind") expected_kind (Ext_env.error_kind error);
+      assert_equal (label ^ " reason") expected_reason
+        (Ext_env.error_reason_code error.Ext_env.reason);
+      assert_equal (label ^ " section") "declarations"
+        (Ext_bytes.section_name error.Ext_env.section)
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -2209,6 +2227,309 @@ let run_import_high_trust_tests () =
        (Ext_import_store.import_environment_public_exports ordered_environment)
     > 0)
 
+let declaration_fixture ?(offset = 0) ?(interface_hash = hash_bytes 0x51)
+    ?(certificate_hash = hash_bytes 0x52) kind payload =
+  let name =
+    match payload with
+    | Ext_cert.AxiomDecl { decl_name; _ }
+    | Ext_cert.DefDecl { decl_name; _ }
+    | Ext_cert.TheoremDecl { decl_name; _ }
+    | Ext_cert.InductiveDecl { decl_name; _ }
+    | Ext_cert.MutualInductiveBlockDecl { decl_name; _ } ->
+        decl_name
+  in
+  {
+    Ext_cert.name;
+    kind;
+    payload;
+    dependencies = [];
+    axiom_dependencies = [];
+    hashes =
+      {
+        Ext_cert.decl_interface_hash = interface_hash;
+        decl_certificate_hash = certificate_hash;
+        decl_interface_hash_offset = offset;
+        decl_certificate_hash_offset = offset;
+      };
+    offset;
+  }
+
+let assert_duplicate_universe_param_error label result =
+  match result with
+  | Ok _ -> failwith (label ^ ": duplicate universe params must reject")
+  | Error error ->
+      assert_equal (label ^ " kind") "universe_inconsistency" (Ext_env.error_kind error);
+      assert_equal (label ^ " reason") "duplicate_universe_param"
+        (Ext_env.error_reason_code error.Ext_env.reason)
+
+let run_type_env_tests () =
+  let nat_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let nat_module = load_single_import_entry "type-env nat fixture" nat_path in
+  let nat_request =
+    decoded_import_request "type-env nat import request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash None
+  in
+  let import_environment =
+    assert_import_environment_ok "type-env import environment"
+      [ nat_module ] nat_request
+  in
+  let env = Ext_env.of_imports import_environment in
+  let import =
+    single_resolved_import "type-env import" import_environment
+  in
+  let public_export =
+    match
+      import.Ext_import_store.resolved_public_environment
+        .Ext_import_store.public_exports
+    with
+    | export :: _ -> export
+    | [] -> failwith "expected imported public export"
+  in
+  let imported_ref =
+    Ext_term.Imported
+      {
+        import_index = 0;
+        name = public_export.Ext_import_store.public_export_name;
+        decl_interface_hash =
+          public_export.Ext_import_store.public_decl_interface_hash;
+      }
+  in
+  let imported_signature =
+    assert_env_resolves "type-env resolves imported export by name and hash" env
+      imported_ref
+  in
+  assert_equal "type-env imported signature name"
+    (Ext_name.to_string public_export.Ext_import_store.public_export_name)
+    (Ext_name.to_string imported_signature.Ext_env.signature_name);
+  assert_env_rejects "type-env rejects imported hash mismatch" "type_mismatch"
+    "unknown_reference" env
+    (Ext_term.Imported
+       {
+         import_index = 0;
+         name = public_export.Ext_import_store.public_export_name;
+         decl_interface_hash =
+           mutate_byte public_export.Ext_import_store.public_decl_interface_hash 0;
+       });
+  assert_env_rejects "type-env rejects imported name mismatch" "type_mismatch"
+    "unknown_reference" env
+    (Ext_term.Imported
+       {
+         import_index = 0;
+         name = make_name [ "Not"; "Exported" ];
+         decl_interface_hash =
+           public_export.Ext_import_store.public_decl_interface_hash;
+       });
+
+  let nat_name = make_name [ "Nat" ] in
+  let nat_builtin_hash =
+    match Ext_env.builtin_decl_interface_hash nat_name with
+    | Some hash -> hash
+    | None -> failwith "expected Nat builtin hash"
+  in
+  let nat_builtin =
+    assert_env_resolves "type-env resolves builtin by name and hash" env
+      (Ext_term.Builtin { name = nat_name; decl_interface_hash = nat_builtin_hash })
+  in
+  assert_bool "type-env builtin signature is builtin"
+    (nat_builtin.Ext_env.signature_origin = Ext_env.Builtin);
+  assert_env_rejects "type-env rejects builtin hash mismatch" "type_mismatch"
+    "unknown_reference" env
+    (Ext_term.Builtin
+       { name = nat_name; decl_interface_hash = mutate_byte nat_builtin_hash 0 });
+  let nat_rec_name = make_name [ "Nat"; "rec" ] in
+  let nat_rec_hash =
+    match Ext_env.builtin_decl_interface_hash nat_rec_name with
+    | Some hash -> hash
+    | None -> failwith "expected Nat.rec builtin hash"
+  in
+  let nat_rec_builtin =
+    assert_env_resolves "type-env resolves Nat.rec builtin signature" env
+      (Ext_term.Builtin { name = nat_rec_name; decl_interface_hash = nat_rec_hash })
+  in
+  assert_int_equal "type-env Nat.rec universe arity" 1
+    (List.length nat_rec_builtin.Ext_env.signature_universe_params);
+  (match nat_rec_builtin.Ext_env.signature_ty with
+  | Ext_term.Pi _ -> ()
+  | _ -> failwith "type-env Nat.rec type must not be a placeholder sort");
+
+  let axiom_name = make_name [ "A" ] in
+  let u_name = make_name [ "u" ] in
+  let axiom_decl =
+    declaration_fixture Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = axiom_name;
+           decl_universe_params = [ u_name ];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort (Ext_level.Param u_name);
+         })
+  in
+  assert_env_rejects "type-env rejects forward local reference" "type_mismatch"
+    "unknown_reference" Ext_env.empty (Ext_term.Local { decl_index = 0 });
+  let env_with_axiom =
+    match Ext_env.add_checked_declaration Ext_env.empty axiom_decl with
+    | Ok env -> env
+    | Error error ->
+        failwith
+          ("unexpected add axiom error "
+         ^ Ext_env.error_reason_code error.Ext_env.reason)
+  in
+  let local_signature =
+    assert_env_resolves "type-env resolves checked local declaration" env_with_axiom
+      (Ext_term.Local { decl_index = 0 })
+  in
+  assert_equal "type-env local signature name" "A"
+    (Ext_name.to_string local_signature.Ext_env.signature_name);
+  assert_env_rejects "type-env rejects future local declaration" "type_mismatch"
+    "unknown_reference" env_with_axiom (Ext_term.Local { decl_index = 1 });
+
+  let duplicate_universe_decl =
+    declaration_fixture Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = make_name [ "DupUniverse" ];
+           decl_universe_params = [ u_name; u_name ];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_level.Zero;
+         })
+  in
+  assert_duplicate_universe_param_error "type-env duplicate universe"
+    (Ext_env.add_checked_declaration Ext_env.empty duplicate_universe_decl);
+  let duplicate_mutual_decl =
+    declaration_fixture Ext_cert.Mutual_inductive
+      (Ext_cert.MutualInductiveBlockDecl
+         {
+           decl_name = make_name [ "DupMutualUniverse" ];
+           decl_universe_params = [ u_name; u_name ];
+           decl_universe_constraints = [];
+           mutual_inductives = [];
+         })
+  in
+  assert_duplicate_universe_param_error "type-env duplicate mutual universe"
+    (Ext_env.add_checked_declaration Ext_env.empty duplicate_mutual_decl);
+
+  let theorem_decl =
+    declaration_fixture Ext_cert.Theorem
+      (Ext_cert.TheoremDecl
+         {
+           decl_name = make_name [ "T" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_level.Zero;
+           decl_proof = Ext_term.BVar 0;
+           decl_opacity = Ext_cert.Opaque;
+         })
+  in
+  let env_with_theorem =
+    match Ext_env.add_checked_declaration env_with_axiom theorem_decl with
+    | Ok env -> env
+    | Error error ->
+        failwith
+          ("unexpected add theorem error "
+         ^ Ext_env.error_reason_code error.Ext_env.reason)
+  in
+  let theorem_signature =
+    assert_env_resolves "type-env resolves checked theorem" env_with_theorem
+      (Ext_term.Local { decl_index = 1 })
+  in
+  assert_bool "type-env theorem remains opaque"
+    (theorem_signature.Ext_env.signature_unfolding = Ext_env.Opaque);
+  let imported_theorem_name = make_name [ "Imported"; "T" ] in
+  let imported_theorem_hash = hash_bytes 0x91 in
+  let imported_theorem_environment =
+    {
+      Ext_import_store.resolved_imports =
+        [
+          {
+            Ext_import_store.resolved_module_name = make_name [ "Imported" ];
+            resolved_export_hash = hash_bytes 0x92;
+            resolved_certificate_hash = None;
+            resolved_public_environment =
+              {
+                Ext_import_store.public_imports = [];
+                public_exports =
+                  [
+                    {
+                      Ext_import_store.public_export_name = imported_theorem_name;
+                      public_export_kind = Ext_cert.Export_theorem;
+                      public_decl_interface_hash = imported_theorem_hash;
+                      public_axiom_dependencies = [];
+                      public_universe_params = [];
+                      public_ty = Ext_term.Sort Ext_level.Zero;
+                      public_body = Some (Ext_term.BVar 0);
+                    };
+                  ];
+                public_module_axioms = [];
+                public_core_features = [];
+              };
+          };
+        ];
+    }
+  in
+  let imported_theorem_signature =
+    assert_env_resolves "type-env imported theorem remains resolvable"
+      (Ext_env.of_imports imported_theorem_environment)
+      (Ext_term.Imported
+         {
+           import_index = 0;
+           name = imported_theorem_name;
+           decl_interface_hash = imported_theorem_hash;
+         })
+  in
+  assert_bool "type-env imported theorem body remains opaque"
+    (imported_theorem_signature.Ext_env.signature_unfolding = Ext_env.Opaque);
+
+  let constructor_name = make_name [ "One" ] in
+  let recursor_name = make_name [ "One"; "rec" ] in
+  let inductive_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "OneType" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_level.Zero;
+           ind_constructors =
+             [ { Ext_cert.constructor_name; constructor_ty = Ext_term.Sort Ext_level.Zero } ];
+           ind_recursor =
+             Some
+               {
+                 Ext_cert.recursor_name;
+                 recursor_universe_params = [];
+                 recursor_ty = Ext_term.Sort Ext_level.Zero;
+                 recursor_rules = { minor_start = 0; major_index = 0 };
+               };
+         })
+  in
+  let env_with_inductive =
+    match Ext_env.add_checked_declaration Ext_env.empty inductive_decl with
+    | Ok env -> env
+    | Error error ->
+        failwith
+          ("unexpected add inductive error "
+         ^ Ext_env.error_reason_code error.Ext_env.reason)
+  in
+  let constructor_signature =
+    assert_env_resolves "type-env resolves generated constructor" env_with_inductive
+      (Ext_term.LocalGenerated { decl_index = 0; name = constructor_name })
+  in
+  assert_equal "type-env constructor signature name" "One"
+    (Ext_name.to_string constructor_signature.Ext_env.signature_name);
+  let recursor_signature =
+    assert_env_resolves "type-env resolves generated recursor" env_with_inductive
+      (Ext_term.LocalGenerated { decl_index = 0; name = recursor_name })
+  in
+  assert_equal "type-env recursor signature name" "One.rec"
+    (Ext_name.to_string recursor_signature.Ext_env.signature_name);
+  assert_env_rejects "type-env rejects unknown generated local" "type_mismatch"
+    "unknown_reference" env_with_inductive
+    (Ext_term.LocalGenerated { decl_index = 0; name = make_name [ "Missing" ] })
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -2399,6 +2720,7 @@ let () =
                "import-normal";
                "import-store";
                "sha256";
+               "type-env";
              ])
       then
         failwith ("unknown test filter " ^ name))
@@ -2416,5 +2738,6 @@ let () =
   if should_run selected "import-store" then run_import_store_tests ();
   if should_run selected "import-normal" then run_import_normal_tests ();
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
+  if should_run selected "type-env" then run_type_env_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
