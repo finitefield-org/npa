@@ -16,4 +16,5 @@ pub mod package_build;
 pub mod package_check;
 pub mod package_hashes;
 pub mod package_index;
+pub mod package_publish;
 pub mod package_verify;

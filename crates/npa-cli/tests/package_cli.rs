@@ -3,10 +3,20 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use npa_cli::diagnostic::PACKAGE_COMMAND_RESULT_SCHEMA;
+use npa_api::{
+    project_package_axiom_report_from_extraction, project_package_theorem_index_from_extraction,
+    PackageArtifactReferenceSummaryMode,
+};
+use npa_cli::diagnostic::{CommandResult, PACKAGE_COMMAND_RESULT_SCHEMA};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
+use npa_cli::package_artifacts::{
+    load_package_artifact_extraction, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+    PACKAGE_THEOREM_INDEX_PATH,
+};
+use npa_cli::package_publish::{load_package_publish_inputs, validate_publish_checker_summaries};
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, parse_and_validate_manifest_str,
+    parse_package_axiom_report_json, parse_package_theorem_index_json, PackageCheckerMode,
     PackageModule, PackagePath,
 };
 
@@ -134,6 +144,169 @@ fn package_cli_source_free_verify_succeeds_without_source_replay_or_meta() {
     assert!(stdout.contains("\"reason_code\":\"module_verified\""));
     assert!(stdout.contains("\"checker\":\"npa-checker-ref\""));
     assert_host_path_free(&stdout, &package);
+}
+
+#[test]
+fn package_publish_inputs_collects_manifest_generated_metadata_and_reference_summaries() {
+    let package = build_basic_package("publish-inputs", false);
+    write_publish_input_metadata(&package);
+
+    let loaded = load_package_publish_inputs(package.path()).unwrap();
+
+    assert_eq!(
+        loaded.validated.manifest().package.as_str(),
+        "fixture-package"
+    );
+    assert_eq!(loaded.manifest.path.as_str(), PACKAGE_MANIFEST_PATH);
+    assert_eq!(loaded.package_lock.path.as_str(), LOCK_PATH);
+    assert_eq!(
+        loaded.axiom_report_file.path.as_str(),
+        PACKAGE_AXIOM_REPORT_PATH
+    );
+    assert_eq!(
+        loaded.theorem_index_file.path.as_str(),
+        PACKAGE_THEOREM_INDEX_PATH
+    );
+    assert_eq!(loaded.certificate_files.len(), 1);
+    assert_eq!(
+        loaded.reference_verification_report.verdict_source.as_str(),
+        "npa-checker-ref"
+    );
+    assert!(
+        loaded
+            .reference_verification_report
+            .reference_checker_verdict
+    );
+
+    let reference_summary = loaded
+        .checker_summaries
+        .iter()
+        .find(|summary| summary.mode == PackageCheckerMode::Reference)
+        .expect("collector records reference checker summary");
+    assert_eq!(reference_summary.checker, "npa-checker-ref");
+    assert_eq!(reference_summary.profile, "npa.checker.reference.v0.1");
+    assert_eq!(reference_summary.status, "passed");
+    assert!(loaded
+        .checker_summaries
+        .iter()
+        .filter(|summary| summary.mode == PackageCheckerMode::Fast)
+        .all(|summary| summary.checker != "npa-checker-ref"));
+}
+
+#[test]
+fn package_publish_inputs_rejects_stale_lock_metadata_certificate_and_checker_summaries() {
+    let stale_lock = build_basic_package("publish-stale-lock", false);
+    write_publish_input_metadata(&stale_lock);
+    let lock_path = stale_lock.artifact_path(LOCK_PATH);
+    let mut lock_source = fs::read_to_string(&lock_path).unwrap();
+    lock_source.push('\n');
+    fs::write(&lock_path, lock_source).unwrap();
+    assert_command_result_failure(
+        load_package_publish_inputs(stale_lock.path()).unwrap_err(),
+        "HashMismatch",
+        "package_lock_stale",
+    );
+
+    let stale_axiom = build_basic_package("publish-stale-axiom", false);
+    write_publish_input_metadata(&stale_axiom);
+    rewrite_axiom_report_status(&stale_axiom, "failed");
+    assert_command_result_failure(
+        load_package_publish_inputs(stale_axiom.path()).unwrap_err(),
+        "AxiomReport",
+        "axiom_report_stale",
+    );
+
+    let stale_index = build_basic_package("publish-stale-index", false);
+    write_publish_input_metadata(&stale_index);
+    rewrite_theorem_index_status(&stale_index, "failed");
+    assert_command_result_failure(
+        load_package_publish_inputs(stale_index.path()).unwrap_err(),
+        "TheoremIndex",
+        "theorem_index_stale",
+    );
+
+    let stale_certificate = build_basic_package("publish-stale-certificate", false);
+    write_publish_input_metadata(&stale_certificate);
+    fs::copy(
+        repo_root().join("proofs/Proofs/Ai/Prop/certificate.npcert"),
+        stale_certificate.artifact_path("Proofs/Ai/Basic/certificate.npcert"),
+    )
+    .unwrap();
+    assert_command_result_failure(
+        load_package_publish_inputs(stale_certificate.path()).unwrap_err(),
+        "HashMismatch",
+        "certificate_file_hash_mismatch",
+    );
+
+    let valid = build_basic_package("publish-summary-validation", false);
+    write_publish_input_metadata(&valid);
+    let loaded = load_package_publish_inputs(valid.path()).unwrap();
+
+    let mut missing_reference = loaded.checker_summaries.clone();
+    missing_reference.retain(|summary| summary.mode != PackageCheckerMode::Reference);
+    let missing = validate_publish_checker_summaries(
+        &loaded.package_lock_manifest,
+        &loaded.validated.manifest().checker_profile,
+        &missing_reference,
+    )
+    .unwrap_err();
+    assert_eq!(missing.kind.as_str(), "ReferenceVerifier");
+    assert_eq!(missing.reason_code, "checker_summary_missing");
+
+    let mut rejected = loaded.checker_summaries.clone();
+    rejected
+        .iter_mut()
+        .find(|summary| summary.mode == PackageCheckerMode::Reference)
+        .unwrap()
+        .status = "failed".to_owned();
+    let rejected = validate_publish_checker_summaries(
+        &loaded.package_lock_manifest,
+        &loaded.validated.manifest().checker_profile,
+        &rejected,
+    )
+    .unwrap_err();
+    assert_eq!(rejected.kind.as_str(), "ReferenceVerifier");
+    assert_eq!(rejected.reason_code, "checker_summary_stale");
+    assert_eq!(rejected.field.as_deref(), Some("status"));
+
+    let mut mislabeled_fast = loaded.checker_summaries.clone();
+    mislabeled_fast
+        .iter_mut()
+        .find(|summary| summary.mode == PackageCheckerMode::Fast)
+        .unwrap()
+        .checker = "npa-checker-ref".to_owned();
+    let mislabeled = validate_publish_checker_summaries(
+        &loaded.package_lock_manifest,
+        &loaded.validated.manifest().checker_profile,
+        &mislabeled_fast,
+    )
+    .unwrap_err();
+    assert_eq!(mislabeled.kind.as_str(), "ReferenceVerifier");
+    assert_eq!(mislabeled.reason_code, "checker_summary_stale");
+    assert_eq!(mislabeled.field.as_deref(), Some("mode"));
+}
+
+#[test]
+fn package_publish_source_free_boundary_ignores_source_replay_meta_ai_and_publish_plan() {
+    let package = build_basic_package("publish-source-free", false);
+    write_publish_input_metadata(&package);
+    let module = proof_basic_module();
+    write_directory(package.artifact_path(module.source.as_str()));
+    if let Some(replay) = &module.replay {
+        write_directory(package.artifact_path(replay.as_str()));
+    }
+    if let Some(meta) = &module.meta {
+        write_directory(package.artifact_path(meta.as_str()));
+    }
+    write_directory(package.artifact_path("generated/publish-plan.json"));
+    write_directory(package.artifact_path("ai/trace.json"));
+
+    let loaded = load_package_publish_inputs(package.path()).unwrap();
+
+    assert_eq!(loaded.artifact_extraction.verified_modules.len(), 1);
+    assert!(package
+        .artifact_path("generated/publish-plan.json")
+        .is_dir());
 }
 
 #[test]
@@ -339,11 +512,76 @@ fn write_lock(package: &TestPackage, manifest_source: &str) {
     fs::write(lock_path, lock_json).unwrap();
 }
 
+fn write_publish_input_metadata(package: &TestPackage) {
+    let loaded = load_package_artifact_extraction(
+        package.path(),
+        "test package publish-plan metadata",
+        PackageGeneratedArtifactReadMode::none(),
+        PackageArtifactReferenceSummaryMode::Omit,
+    )
+    .unwrap();
+    let axiom_report = project_package_axiom_report_from_extraction(
+        &loaded.validated,
+        &loaded.extraction,
+        loaded.package_lock.clone(),
+    )
+    .unwrap();
+    let theorem_index = project_package_theorem_index_from_extraction(
+        &loaded.validated,
+        &loaded.extraction,
+        loaded.package_lock,
+    )
+    .unwrap();
+    write_file(
+        package.artifact_path(PACKAGE_AXIOM_REPORT_PATH),
+        &axiom_report.canonical_json().unwrap(),
+    );
+    write_file(
+        package.artifact_path(PACKAGE_THEOREM_INDEX_PATH),
+        &theorem_index.canonical_json().unwrap(),
+    );
+}
+
+fn rewrite_axiom_report_status(package: &TestPackage, status: &str) {
+    let path = package.artifact_path(PACKAGE_AXIOM_REPORT_PATH);
+    let mut report = parse_package_axiom_report_json(&fs::read_to_string(&path).unwrap()).unwrap();
+    report.checker_summaries[0].status = status.to_owned();
+    let report = report.with_computed_hash().unwrap();
+    fs::write(path, report.canonical_json().unwrap()).unwrap();
+}
+
+fn rewrite_theorem_index_status(package: &TestPackage, status: &str) {
+    let path = package.artifact_path(PACKAGE_THEOREM_INDEX_PATH);
+    let mut index = parse_package_theorem_index_json(&fs::read_to_string(&path).unwrap()).unwrap();
+    index.checker_summaries[0].status = status.to_owned();
+    let index = index.with_computed_hash().unwrap();
+    fs::write(path, index.canonical_json().unwrap()).unwrap();
+}
+
+fn write_file(path: PathBuf, contents: &str) {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    fs::write(path, contents).unwrap();
+}
+
+fn write_directory(path: PathBuf) {
+    fs::create_dir_all(path).unwrap();
+}
+
 fn copy_artifact(package: &TestPackage, relative: &str) {
     let source = repo_root().join("proofs").join(relative);
     let target = package.artifact_path(relative);
     fs::create_dir_all(target.parent().unwrap()).unwrap();
     fs::copy(source, target).unwrap();
+}
+
+fn assert_command_result_failure(result: CommandResult, kind: &str, reason: &str) {
+    assert_eq!(result.exit_code().as_u8(), 1);
+    assert_eq!(result.command, "package publish-plan");
+    assert_eq!(result.status.as_str(), "failed");
+    assert_eq!(result.diagnostics[0].kind.as_str(), kind);
+    assert_eq!(result.diagnostics[0].reason_code, reason);
 }
 
 fn assert_json_failure(

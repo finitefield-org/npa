@@ -74,6 +74,10 @@ pub struct LoadedPackageArtifactExtraction {
     pub root_display: String,
     /// Validated package manifest used for extraction.
     pub validated: ValidatedPackageManifest,
+    /// Checked package-lock JSON bytes loaded from disk.
+    pub package_lock_json: String,
+    /// Parsed checked package-lock manifest loaded from disk.
+    pub package_lock_manifest: PackageLockManifest,
     /// Exact package-lock file identity used for extraction.
     pub package_lock: PackageArtifactFileReference,
     /// Source-free extraction output for later artifact projection.
@@ -152,6 +156,8 @@ pub fn load_package_artifact_extraction(
     Ok(LoadedPackageArtifactExtraction {
         root_display: loaded.root_display,
         validated: loaded.validated,
+        package_lock_json: lock_source,
+        package_lock_manifest: lock,
         package_lock,
         extraction,
         checked_generated,

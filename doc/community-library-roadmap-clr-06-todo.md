@@ -709,7 +709,7 @@ remaining registry-server requirements
 
 ### CLR-06-02 Implement Publish Input Collection And Freshness Checks
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-01
 - Inputs:
   - CLR-04 package root loader and diagnostics
