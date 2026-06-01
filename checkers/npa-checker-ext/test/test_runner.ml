@@ -1480,6 +1480,14 @@ let assert_typecheck_ok label result =
         (label ^ ": unexpected typecheck error "
        ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
 
+let assert_declaration_check_ok label result =
+  match result with
+  | Ok env -> env
+  | Error error ->
+      failwith
+        (label ^ ": unexpected declaration check error "
+       ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
+
 let assert_typecheck_rejects label expected_kind expected_reason result =
   match result with
   | Ok _ -> failwith (label ^ ": expected typecheck error")
@@ -2281,6 +2289,15 @@ let declaration_fixture ?(offset = 0) ?(interface_hash = hash_bytes 0x51)
     offset;
   }
 
+let declaration_with_dependencies declaration dependencies =
+  { declaration with Ext_cert.dependencies = dependencies }
+
+let dependency_entry global_ref decl_interface_hash =
+  {
+    Ext_cert.dependency_global_ref = global_ref;
+    dependency_decl_interface_hash = decl_interface_hash;
+  }
+
 let assert_duplicate_universe_param_error label result =
   match result with
   | Ok _ -> failwith (label ^ ": duplicate universe params must reject")
@@ -2629,6 +2646,129 @@ let run_type_core_tests () =
     (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context
        (Ext_term.Let (nat, Ext_term.Sort Ext_level.Zero, Ext_term.BVar 0)))
 
+let run_type_declarations_tests () =
+  let nat = Ext_env.nat in
+  let nat_zero = Ext_env.nat_zero in
+  let theorem_ty = Ext_term.Pi (nat, nat) in
+  let theorem_proof = Ext_term.Lam (nat, Ext_term.BVar 0) in
+  let axiom_hash = hash_bytes 0x60 in
+  let def_hash = hash_bytes 0x61 in
+  let theorem_hash = hash_bytes 0x62 in
+  let axiom_decl =
+    declaration_fixture ~interface_hash:axiom_hash Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = make_name [ "AxiomNat" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = nat;
+         })
+  in
+  let def_decl =
+    declaration_fixture ~interface_hash:def_hash Ext_cert.Definition
+      (Ext_cert.DefDecl
+         {
+           decl_name = make_name [ "ZeroAlias" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = nat;
+           decl_value = nat_zero;
+           decl_reducibility = Ext_cert.Reducible;
+         })
+  in
+  let theorem_decl =
+    declaration_fixture ~interface_hash:theorem_hash Ext_cert.Theorem
+      (Ext_cert.TheoremDecl
+         {
+           decl_name = make_name [ "IdNat" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = theorem_ty;
+           decl_proof = theorem_proof;
+           decl_opacity = Ext_cert.Opaque;
+         })
+  in
+  let checked_env =
+    assert_declaration_check_ok "type-declarations valid axiom def theorem"
+      (Ext_typecheck.check_declarations [ axiom_decl; def_decl; theorem_decl ])
+  in
+  let theorem_signature =
+    assert_env_resolves "type-declarations theorem added to checked env" checked_env
+      (Ext_term.Local { decl_index = 2 })
+  in
+  assert_equal "type-declarations theorem signature name" "IdNat"
+    (Ext_name.to_string theorem_signature.Ext_env.signature_name);
+
+  let dependent_decl =
+    declaration_with_dependencies theorem_decl
+      [ dependency_entry (Ext_term.Local { decl_index = 0 }) axiom_hash ]
+  in
+  ignore
+    (assert_declaration_check_ok "type-declarations dependency is ordered and available"
+       (Ext_typecheck.check_declarations [ axiom_decl; dependent_decl ]));
+
+  let forward_dependency_decl =
+    declaration_with_dependencies def_decl
+      [ dependency_entry (Ext_term.Local { decl_index = 0 }) def_hash ]
+  in
+  assert_typecheck_rejects "type-declarations rejects unavailable local dependency"
+    "type_mismatch" "unknown_reference"
+    (Ext_typecheck.check_declarations [ forward_dependency_decl ]);
+
+  let mismatched_dependency_decl =
+    declaration_with_dependencies theorem_decl
+      [ dependency_entry (Ext_term.Local { decl_index = 0 }) (hash_bytes 0x7f) ]
+  in
+  assert_typecheck_rejects "type-declarations rejects dependency hash mismatch"
+    "type_mismatch" "type_mismatch"
+    (Ext_typecheck.check_declarations [ axiom_decl; mismatched_dependency_decl ]);
+
+  let wrong_theorem_decl =
+    declaration_fixture Ext_cert.Theorem
+      (Ext_cert.TheoremDecl
+         {
+           decl_name = make_name [ "WrongTheorem" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = nat;
+           decl_proof = Ext_term.Sort Ext_level.Zero;
+           decl_opacity = Ext_cert.Opaque;
+         })
+  in
+  assert_typecheck_rejects "type-declarations rejects wrong theorem proof type"
+    "type_mismatch" "type_mismatch"
+    (Ext_typecheck.check_declarations [ wrong_theorem_decl ]);
+
+  let bad_arity_decl =
+    declaration_fixture Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = make_name [ "BadUniverseArity" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_env.builtin_const "Nat" [ Ext_level.Zero ];
+         })
+  in
+  assert_typecheck_rejects "type-declarations rejects bad constant universe arity"
+    "universe_inconsistency" "bad_universe_arity"
+    (Ext_typecheck.check_declarations [ bad_arity_decl ]);
+
+  let meta_name = make_name [ "z?meta" ] in
+  let unresolved_meta_decl =
+    declaration_fixture Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = make_name [ "UnresolvedUniverseMeta" ];
+           decl_universe_params = [ meta_name ];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort (Ext_level.Param meta_name);
+         })
+  in
+  assert_typecheck_rejects
+    "type-declarations rejects unresolved universe metavariable"
+    "universe_inconsistency" "unresolved_metavariable"
+    (Ext_typecheck.check_declarations [ unresolved_meta_decl ])
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -2820,6 +2960,7 @@ let () =
                "import-store";
                "sha256";
                "type-core";
+               "type-declarations";
                "type-env";
              ])
       then
@@ -2840,5 +2981,6 @@ let () =
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
   if should_run selected "type-env" then run_type_env_tests ();
   if should_run selected "type-core" then run_type_core_tests ();
+  if should_run selected "type-declarations" then run_type_declarations_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()

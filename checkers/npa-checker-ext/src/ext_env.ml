@@ -14,6 +14,7 @@ type unfolding =
 
 type signature = {
   signature_name : Ext_name.t;
+  signature_decl_interface_hash : Ext_hash.digest option;
   signature_universe_params : Ext_name.t list;
   signature_ty : Ext_term.t;
   signature_unfolding : unfolding;
@@ -96,11 +97,13 @@ let validate_universe_params section offset params =
   in
   loop [] params
 
-let make_signature section offset name universe_params ty unfolding origin =
+let make_signature ?decl_interface_hash section offset name universe_params ty unfolding
+    origin =
   bind (validate_universe_params section offset universe_params) (fun () ->
       Ok
         {
           signature_name = name;
+          signature_decl_interface_hash = decl_interface_hash;
           signature_universe_params = universe_params;
           signature_ty = ty;
           signature_unfolding = unfolding;
@@ -375,6 +378,7 @@ let builtin_signature builtin_name decl_interface_hash =
         Some
           {
             signature_name = builtin_name;
+            signature_decl_interface_hash = Some decl_interface_hash;
             signature_universe_params = universe_params;
             signature_ty = ty;
             signature_unfolding = No_unfolding;
@@ -518,7 +522,9 @@ let signature_of_public_export env import_index public_environment section offse
                 | None -> No_unfolding
                 | Some value -> Reducible value)
           in
-          make_signature section offset export.Ext_import_store.public_export_name
+          make_signature
+            ~decl_interface_hash:export.Ext_import_store.public_decl_interface_hash
+            section offset export.Ext_import_store.public_export_name
             export.Ext_import_store.public_universe_params ty unfolding
             (Imported { import_index })))
 
@@ -539,10 +545,13 @@ let rec pi_of_binders (binders : Ext_cert.binder_type list) result =
 let signature_of_declaration decl_index (declaration : Ext_cert.declaration) =
   let section = Ext_bytes.Declarations in
   let offset = declaration.Ext_cert.offset in
+  let decl_interface_hash =
+    declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash
+  in
   match declaration.Ext_cert.payload with
   | Ext_cert.AxiomDecl { decl_name; decl_universe_params; decl_ty; _ } ->
-      make_signature section offset decl_name decl_universe_params decl_ty No_unfolding
-        (Local { decl_index })
+      make_signature ~decl_interface_hash section offset decl_name decl_universe_params
+        decl_ty No_unfolding (Local { decl_index })
   | Ext_cert.DefDecl
       { decl_name; decl_universe_params; decl_ty; decl_value; decl_reducibility; _ } ->
       let unfolding =
@@ -550,32 +559,37 @@ let signature_of_declaration decl_index (declaration : Ext_cert.declaration) =
         | Ext_cert.Reducible -> Reducible decl_value
         | Ext_cert.Opaque_reducibility -> Opaque
       in
-      make_signature section offset decl_name decl_universe_params decl_ty unfolding
-        (Local { decl_index })
+      make_signature ~decl_interface_hash section offset decl_name decl_universe_params
+        decl_ty unfolding (Local { decl_index })
   | Ext_cert.TheoremDecl { decl_name; decl_universe_params; decl_ty; _ } ->
-      make_signature section offset decl_name decl_universe_params decl_ty Opaque
-        (Local { decl_index })
+      make_signature ~decl_interface_hash section offset decl_name decl_universe_params
+        decl_ty Opaque (Local { decl_index })
   | Ext_cert.InductiveDecl
       { decl_name; decl_universe_params; ind_params; ind_indices; ind_sort; _ } ->
-      make_signature section offset decl_name decl_universe_params
+      make_signature ~decl_interface_hash section offset decl_name decl_universe_params
         (pi_of_binders (ind_params @ ind_indices) (Ext_term.Sort ind_sort))
         No_unfolding (Local { decl_index })
   | Ext_cert.MutualInductiveBlockDecl _ -> error section offset Unknown_reference
 
-let constructor_signature decl_index universe_params offset
+let constructor_signature decl_index decl_interface_hash universe_params offset
     (constructor : Ext_cert.constructor_spec) =
-  make_signature Ext_bytes.Declarations offset constructor.Ext_cert.constructor_name
+  make_signature ~decl_interface_hash Ext_bytes.Declarations offset
+    constructor.Ext_cert.constructor_name
     universe_params constructor.Ext_cert.constructor_ty No_unfolding
     (Local_generated { decl_index; name = constructor.Ext_cert.constructor_name })
 
-let recursor_signature decl_index offset (recursor : Ext_cert.recursor_spec) =
-  make_signature Ext_bytes.Declarations offset recursor.Ext_cert.recursor_name
+let recursor_signature decl_index decl_interface_hash offset (recursor : Ext_cert.recursor_spec) =
+  make_signature ~decl_interface_hash Ext_bytes.Declarations offset
+    recursor.Ext_cert.recursor_name
     recursor.Ext_cert.recursor_universe_params recursor.Ext_cert.recursor_ty
     No_unfolding
     (Local_generated { decl_index; name = recursor.Ext_cert.recursor_name })
 
 let generated_signatures_of_declaration decl_index (declaration : Ext_cert.declaration) =
   let offset = declaration.Ext_cert.offset in
+  let decl_interface_hash =
+    declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash
+  in
   let add_generated signature generated =
     let key =
       {
@@ -590,7 +604,9 @@ let generated_signatures_of_declaration decl_index (declaration : Ext_cert.decla
       match remaining with
       | [] -> Ok generated
       | constructor :: rest ->
-          bind (constructor_signature decl_index universe_params offset constructor)
+          bind
+            (constructor_signature decl_index decl_interface_hash universe_params offset
+               constructor)
             (fun signature -> loop rest (add_generated signature generated))
     in
     loop constructors generated
@@ -599,8 +615,9 @@ let generated_signatures_of_declaration decl_index (declaration : Ext_cert.decla
     match recursor with
     | None -> Ok generated
     | Some recursor ->
-        bind (recursor_signature decl_index offset recursor) (fun signature ->
-            Ok (add_generated signature generated))
+        bind
+          (recursor_signature decl_index decl_interface_hash offset recursor)
+          (fun signature -> Ok (add_generated signature generated))
   in
   match declaration.Ext_cert.payload with
   | Ext_cert.InductiveDecl { decl_universe_params; ind_constructors; ind_recursor; _ } ->
@@ -613,7 +630,8 @@ let generated_signatures_of_declaration decl_index (declaration : Ext_cert.decla
         | [] -> Ok generated
         | mutual :: rest ->
             let family_sig =
-              make_signature Ext_bytes.Declarations offset mutual.Ext_cert.mutual_name
+              make_signature ~decl_interface_hash Ext_bytes.Declarations offset
+                mutual.Ext_cert.mutual_name
                 decl_universe_params
                 (pi_of_binders
                    (mutual.Ext_cert.mutual_params @ mutual.Ext_cert.mutual_indices)

@@ -11,6 +11,7 @@ type error_reason =
   | Expected_sort
   | Expected_function
   | Type_mismatch
+  | Unsupported_declaration
   | Resource_limit
 
 type error = {
@@ -52,6 +53,7 @@ let error_reason_code reason =
   | Expected_sort -> "expected_sort"
   | Expected_function -> "expected_function"
   | Type_mismatch -> "type_mismatch"
+  | Unsupported_declaration -> "unsupported_declaration"
   | Resource_limit -> "resource_limit"
 
 let error_kind error =
@@ -59,7 +61,7 @@ let error_kind error =
   | Bad_universe_arity | Duplicate_universe_param | Unresolved_metavariable ->
       "universe_inconsistency"
   | Unknown_reference | Invalid_bvar | Expected_sort | Expected_function | Type_mismatch
-  | Resource_limit ->
+  | Unsupported_declaration | Resource_limit ->
       "type_mismatch"
 
 let error_of_env_error (env_error : Ext_env.error) =
@@ -410,5 +412,100 @@ and expect_sort ?(section = Ext_bytes.Declarations) ?(offset = 0) ?(delta = []) 
       bind (whnf ~section ~offset ~delta env context ty) (function
         | Ext_term.Sort level -> Ok level
         | _ -> error section offset Expected_sort))
+
+let rec ensure_delta_wf section offset params =
+  match params with
+  | [] -> Ok ()
+  | name :: rest ->
+      if Ext_level.component_contains_universe_meta name then
+        error section offset Unresolved_metavariable
+      else ensure_delta_wf section offset rest
+
+let declaration_universe_constraints payload =
+  match payload with
+  | Ext_cert.AxiomDecl { decl_universe_constraints; _ }
+  | Ext_cert.DefDecl { decl_universe_constraints; _ }
+  | Ext_cert.TheoremDecl { decl_universe_constraints; _ }
+  | Ext_cert.InductiveDecl { decl_universe_constraints; _ }
+  | Ext_cert.MutualInductiveBlockDecl { decl_universe_constraints; _ } ->
+      decl_universe_constraints
+
+let rec ensure_constraints_wf section offset delta constraints =
+  match constraints with
+  | [] -> Ok ()
+  | constraint_ :: rest ->
+      bind
+        (ensure_level_wf section offset delta constraint_.Ext_cert.constraint_lhs)
+        (fun () ->
+          bind
+            (ensure_level_wf section offset delta
+               constraint_.Ext_cert.constraint_rhs)
+            (fun () -> ensure_constraints_wf section offset delta rest))
+
+let check_dependency section offset env (dependency : Ext_cert.dependency_entry) =
+  bind
+    (resolve_signature section offset env dependency.Ext_cert.dependency_global_ref)
+    (fun signature ->
+      match signature.Ext_env.signature_decl_interface_hash with
+      | Some hash when hash = dependency.Ext_cert.dependency_decl_interface_hash -> Ok ()
+      | _ -> error section offset Type_mismatch)
+
+let rec check_dependencies section offset env dependencies =
+  match dependencies with
+  | [] -> Ok ()
+  | dependency :: rest ->
+      bind (check_dependency section offset env dependency) (fun () ->
+          check_dependencies section offset env rest)
+
+let add_checked_declaration env declaration =
+  match Ext_env.add_checked_declaration env declaration with
+  | Ok env -> Ok env
+  | Error env_error -> error_of_env_error env_error
+
+let check_declaration env (declaration : Ext_cert.declaration) =
+  let section = Ext_bytes.Declarations in
+  let offset = declaration.Ext_cert.offset in
+  bind
+    (check_dependencies section offset env declaration.Ext_cert.dependencies)
+    (fun () ->
+      let delta = Ext_env.declaration_universe_params declaration.Ext_cert.payload in
+      bind (ensure_delta_wf section offset delta) (fun () ->
+          bind
+            (ensure_constraints_wf section offset delta
+               (declaration_universe_constraints declaration.Ext_cert.payload))
+            (fun () ->
+              match declaration.Ext_cert.payload with
+              | Ext_cert.AxiomDecl { decl_ty; _ } ->
+                  bind
+                    (expect_sort ~section ~offset ~delta env empty_context decl_ty)
+                    (fun _ -> add_checked_declaration env declaration)
+              | Ext_cert.DefDecl { decl_ty; decl_value; _ } ->
+                  bind
+                    (expect_sort ~section ~offset ~delta env empty_context decl_ty)
+                    (fun _ ->
+                      bind
+                        (check ~section ~offset ~delta env empty_context decl_value
+                           decl_ty)
+                        (fun () -> add_checked_declaration env declaration))
+              | Ext_cert.TheoremDecl { decl_ty; decl_proof; _ } ->
+                  bind
+                    (expect_sort ~section ~offset ~delta env empty_context decl_ty)
+                    (fun _ ->
+                      bind
+                        (check ~section ~offset ~delta env empty_context decl_proof
+                           decl_ty)
+                        (fun () -> add_checked_declaration env declaration))
+              | Ext_cert.InductiveDecl _ | Ext_cert.MutualInductiveBlockDecl _ ->
+                  error section offset Unsupported_declaration)))
+
+let check_declarations ?(env = Ext_env.empty) declarations =
+  let rec loop current_env remaining =
+    match remaining with
+    | [] -> Ok current_env
+    | declaration :: rest ->
+        bind (check_declaration current_env declaration) (fun next_env ->
+            loop next_env rest)
+  in
+  loop env declarations
 
 let check_certificate _env _certificate = Type_check_not_implemented
