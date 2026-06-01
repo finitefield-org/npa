@@ -1,4 +1,4 @@
-# npa-checker-ext OCaml Skeleton
+# npa-checker-ext OCaml Project
 
 This directory is the clean-room OCaml project for `npa-checker-ext`.
 It is intentionally outside the Cargo workspace and has no Rust crate
@@ -10,6 +10,7 @@ dependency.
 scripts/build.sh
 _build/npa-checker-ext --version
 scripts/test.sh
+scripts/test.sh cli
 scripts/test.sh sha256
 scripts/test.sh feature-policy
 scripts/test.sh axiom-report
@@ -25,6 +26,14 @@ scripts/test.sh hash-level-term
 scripts/test.sh hash-declarations
 scripts/test.sh hash-module
 scripts/test.sh import-store
+scripts/test.sh import-normal
+scripts/test.sh import-high-trust
+scripts/test.sh type-env
+scripts/test.sh type-core
+scripts/test.sh type-declarations
+scripts/test.sh subst
+scripts/test.sh reduce
+scripts/test.sh defeq
 scripts/test.sh inductive-constructors
 scripts/test.sh positivity
 scripts/test.sh recursor
@@ -36,13 +45,23 @@ scripts/test.sh recursor
 Set `OCAMLC=/path/to/ocamlc` when `ocamlc` is not on `PATH`. On macOS the
 scripts also check Homebrew's `ocaml` prefix.
 
-## M0-02 Scope
+## Current Scope
 
-The current executable is a skeleton. It provides deterministic CLI behavior
-for `--version`, deterministic errors for incomplete CLI input, and a stable
-failed raw result for complete check-shaped invocations. Certificate decoding,
-import resolution, type checking, and axiom policy enforcement are implemented
-by later milestones.
+The current executable still uses the first-release skeleton check path. It
+provides deterministic CLI behavior for `--version`, deterministic errors for
+incomplete CLI input, and a stable failed raw result for complete check-shaped
+invocations.
+
+The OCaml source modules and fixtures already cover the M0-M7 checker substrate:
+source-free certificate decoding, canonical hash recomputation, import store
+loading, normal and high-trust import policy, type checking, conversion,
+simple inductive/recursor checks, axiom report recomputation, and axiom policy
+parsing/enforcement. These modules are not yet wired into the standalone
+executable's complete check path.
+
+Rust-side runner and package integration lives in `crates/npa-api` and
+`crates/npa-cli`. `verified_high_trust` generation and full external-checker
+release CI remain separate high-trust integration work.
 
 M0-03 adds a vendored SHA-256 implementation in `src/ext_sha256.ml`. It is used
 by `src/ext_hash.ml` and by the checker build hash material.

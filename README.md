@@ -212,6 +212,11 @@ source-free checker verdict のままにします。
 │   ├── npa-cert/
 │   │   ├── src/
 │   │   └── tests/
+│   ├── npa-package/
+│   │   └── src/
+│   ├── npa-cli/
+│   │   ├── src/
+│   │   └── tests/
 │   ├── npa-frontend/
 │   │   └── src/
 │   ├── npa-tactic/
@@ -220,6 +225,19 @@ source-free checker verdict のままにします。
 │   │   └── src/
 │   └── npa-api/
 │       └── src/
+├── checkers/
+│   └── npa-checker-ext/
+│       ├── src/
+│       ├── scripts/
+│       └── test/
+├── proofs/
+│   ├── Proofs/
+│   ├── generated/
+│   └── npa-package.toml
+├── ci-templates/
+│   └── github-actions/
+├── tools/
+│   └── proof-corpus/
 ├── scripts/
 │   ├── phase8-release-audit.sh
 │   └── phase9-regression.sh

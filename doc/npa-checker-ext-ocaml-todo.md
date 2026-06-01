@@ -69,9 +69,13 @@ Current implementation facts:
   executable is present in a fresh checkout or documented CI environment and
   runner-owned policy / registry validation passes for its binary identity and
   hash.
-- M0-01 fixes the in-repository OCaml directory as
+- M0-M7 are implemented in the OCaml source modules and fixtures under
   `checkers/npa-checker-ext/`.
-- M0-03 fixes vendored SHA-256 implementation and fixture layout.
+- M8 runner policy, checker registry, raw result adoption, and external
+  comparison fixtures are implemented in `crates/npa-api`.
+- M9 package external mode is partially implemented through
+  `npa package verify-certs --checker external`; `verified_high_trust` and full
+  external-checker release/high-trust CI remain deferred.
 ```
 
 Recommended validation baseline:
@@ -116,7 +120,7 @@ existing Phase 8 orchestration and package/release workflows.
 
 ## M0 Repository And Build Identity
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `doc/npa-checker-ext-ocaml.md` sections 1, 3, 4, 7, 11, 12, 14, 16
@@ -314,7 +318,7 @@ cargo test -p npa-checker-ref quotient_feature
 
 ## M1 Source-Free Decoder
 
-- Status: Pending
+- Status: Completed
 - Depends on: M0
 - Inputs:
   - `doc/npa-checker-ext-ocaml.md` sections 5 and 6
@@ -485,7 +489,7 @@ sh checkers/npa-checker-ext/scripts/test.sh decoder-reachability
 
 ## M2 Hash Verifier
 
-- Status: Pending
+- Status: Completed
 - Depends on: M1
 - Inputs:
   - `doc/npa-checker-ext-ocaml.md` section 7
@@ -619,7 +623,7 @@ cargo test -p npa-checker-ref hash_verifier
 
 ## M3 Import Store
 
-- Status: Pending
+- Status: Completed
 - Depends on: M2
 - Inputs:
   - `doc/npa-checker-ext-ocaml.md` section 8
@@ -725,7 +729,7 @@ cargo test -p npa-checker-ref high_trust
 
 ## M4 Minimal Type Checker
 
-- Status: Pending
+- Status: Completed
 - Depends on: M3
 - Inputs:
   - `doc/core-spec-v0.1.md`
@@ -832,7 +836,7 @@ $OCAML_EXT_TEST type-declarations
 
 ## M5 Conversion Checker
 
-- Status: Pending
+- Status: Completed
 - Depends on: M4
 - Inputs:
   - `doc/core-spec-v0.1.md` conversion rules
@@ -932,7 +936,7 @@ $OCAML_EXT_TEST defeq
 
 ## M6 Inductive And Recursor Checker
 
-- Status: Pending
+- Status: Completed
 - Depends on: M5
 - Inputs:
   - `doc/core-spec-v0.1.md` inductive sections
@@ -1037,7 +1041,7 @@ cargo test -p npa-checker-ref iota inductive
 
 ## M7 Axiom Report And Policy
 
-- Status: Pending
+- Status: Completed
 - Depends on: M6
 - Inputs:
   - `doc/npa-checker-ext-ocaml.md` section 10
@@ -1144,7 +1148,7 @@ cargo test -p npa-checker-ref axiom_policy
 
 ## M8 Runner Integration
 
-- Status: Pending
+- Status: Completed
 - Depends on: M7
 - Inputs:
   - `doc/npa-checker-ext-ocaml.md` sections 4, 5, 11, 15
@@ -1296,7 +1300,7 @@ cargo test -p npa-api independent_checker::tests::p8h14_performance_gates_keep_r
 
 ## M9 Release Gate
 
-- Status: Pending
+- Status: Partially Completed; `verified_high_trust` and full external-checker release/high-trust CI deferred
 - Depends on: M8
 - Inputs:
   - `doc/community-library-roadmap-clr-08-todo.md`

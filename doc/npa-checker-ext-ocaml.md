@@ -3,9 +3,14 @@
 この文書は、Phase 8 / CLR-08 の target integration として追加する
 外部 checker `npa-checker-ext` を **OCaml clean-room 実装**にするための仕様です。
 
-現状、この文書は実装済み宣言ではありません。`crates/npa-checker-ref` はすでに
-source-free reference checker として存在しますが、`npa-checker-ext` は別実装・別プロセス・
-別ビルド環境で動く外部 checker として新規に作ります。
+現状、この文書は target specification と release evidence contract です。
+`crates/npa-checker-ref` は source-free reference checker として存在し、
+`checkers/npa-checker-ext/` には OCaml clean-room source project、build scripts、
+M0-M7 の checker substrate tests があります。`npa package verify-certs --checker external`
+の package runner path も実装済みです。ただし `npa-checker-ext` を release/high-trust
+evidence として扱うのは、build 済み executable が runner-owned checker registry から解決され、
+runner policy / binary hash / checker identity validation と package external-mode integration
+が通った場合だけです。
 
 ---
 
@@ -286,7 +291,7 @@ OCaml 側で canonical encoder と SHA-256 入力を再構成します。
 
 SHA-256 実装はこの repository 内の vendored implementation を使います。
 implementation source、test vector fixture、checker build hash への反映方法は
-OCaml project skeleton 作成時に固定します。
+`checkers/npa-checker-ext/` の OCaml project で固定済みです。
 
 ```text
 vendored implementation:
@@ -697,7 +702,7 @@ Rust workspace membership:
   do not link from the OCaml project to crates/*
 ```
 
-M0-02 以降の project skeleton は、この directory の下で次の subdirectory を使います。
+M0-02 以降の project layout は、この directory の下で次の subdirectory を使います。
 
 ```text
 checkers/npa-checker-ext/src/
