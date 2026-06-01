@@ -150,21 +150,28 @@ local package contract として実装済みです。
 公開 ecosystem の残り target integration は次です。
 
 ```text
-- external checker を required にする production high-trust workflow
-- `verified_high_trust` artifact
 - pinned built `npa-checker-ext` release/high-trust binary evidence
-- external checker benchmark / release audit collection job
 ```
 
 `crates/npa-checker-ref` の source-free reference checker binary はあります。
 OCaml clean-room `npa-checker-ext` source は `checkers/npa-checker-ext/` にあり、
 package command `npa package verify-certs --checker external` も runner policy と
-checker registry を必須にして実装済みです。ただし `npa-checker-ext` が release/high-trust
+checker registry を必須にして実装済みです。`package high-trust` も
+`verified_high_trust` artifact generator として実装済みです。ただし
+`npa-checker-ext` が release/high-trust
 evidence として存在すると扱うのは、build 済み executable が fresh checkout または
 documented CI environment で用意され、runner-owned registry / policy が binary identity と
-hash を検証し、package external-mode integration が通った場合だけです。full
-external-checker release audit CI と `verified_high_trust` artifact generation はまだ target
-integration です。
+hash を検証し、package external-mode integration が通った場合だけです。copyable
+high-trust CI template は `ci-templates/github-actions/npa-package-high-trust.yml` に
+ありますが、実際の high-trust release evidence には外部 repo 側の pinned binary と
+release audit bundle が必要です。
+External checker benchmark / release audit collection の deterministic summary
+contract は実装済みです。Benchmark row は checker identity、certificate hash、
+module、time、timeout、memory limit、checker result hash を release audit bundle
+内の machine result と結びますが、これは regression evidence であり proof validity
+を変える proof input ではありません。reference / external checker benchmark は PR hot
+path の同期必須 job ではなく、release/high-trust policy が必要な場合だけ release audit
+diagnostic として fail できます。
 
 この repository の GitHub Actions workflow は現状では削除済みで、
 `scripts/phase8-release-audit.sh` と `scripts/phase9-regression.sh` を必要に応じて
@@ -172,6 +179,8 @@ integration です。
 `ci-templates/github-actions/npa-package-pr.yml` と
 `ci-templates/github-actions/npa-package-release.yml` にありますが、この repository の
 active gate ではありません。
+opt-in high-trust release template は
+`ci-templates/github-actions/npa-package-high-trust.yml` にあり、base template とは分離されています。
 
 ## 4.2 Registry 前の blocker
 
@@ -456,15 +465,17 @@ npa package publish-plan --root . --check --json
 ```
 
 PR mode で external checker を required にする必要はありません。
-base release mode でも external checker は required ではありません。`--checker external` は、
-runner policy と checker binary registry を明示し、source-free package artifacts と
-build 済み `npa-checker-ext` executable だけを読む high-trust extension です。
-`verified_high_trust` は別の artifact generator が実装され、external checker と
+base release mode でも external checker は required ではありません。`--checker external`
+と `package high-trust` は、runner policy と checker binary registry を明示し、
+source-free package artifacts と build 済み `npa-checker-ext` executable だけを読む
+high-trust extension です。`verified_high_trust` は external checker と
 high-trust-reference を含む required evidence が揃った後だけ生成できます。reference-only
 evidence から `verified_high_trust` を生成してはいけません。
 `--changed`、`--all`、`--registry`、`--network`、`--latest` は base contract には入りません。
 `npa-package-pr.yml` と `npa-package-release.yml` は外部 repository が copy または reference
 する template であり、この repository の `.github/workflows` として有効化するものではありません。
+`npa-package-high-trust.yml` は pinned external checker binary と release audit evidence を
+同じ external repo が用意した場合だけ copy する opt-in template です。
 `npa-mathlib-seed` は CLR-09 でこれらの template と
 `summarize-npa-diagnostics.py` / `validate-workflows.py` を取り込みます。
 
@@ -683,10 +694,10 @@ Registry readiness
 ```
 
 CLR-08 は high-trust external checker integration の独立 milestone です。
-package external checker command は実装済みですが、`verified_high_trust` artifact と
-full external-checker release CI は別 gate として残ります。`npa-mathlib-seed` と registry
-readiness は、この high-trust artifact が未完了でも reference-checker-only release として
-進められます。
+package external checker command、`verified_high_trust` generator、opt-in high-trust CI
+template、external checker benchmark / audit summary contract は実装済みですが、
+`npa-mathlib-seed` と registry readiness は、external / high-trust-reference
+evidence がまだ無い場合でも reference-checker-only release として進められます。
 
 ---
 

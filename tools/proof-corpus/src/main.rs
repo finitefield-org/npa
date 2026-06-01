@@ -1,11 +1,13 @@
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 const MANIFEST_PATH: &str = "manifest.toml";
 const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
 const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
+const AI_THEOREM_INDEX_PATH: &str = "generated/ai-theorem-index.json";
 const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
 const PROOF_CORPUS_VERSION: &str = "0.1.0";
 const PROOF_CORPUS_LICENSE: &str = "MIT";
@@ -78,11 +80,123 @@ struct GeneratedModule {
     source_interface: npa_frontend::HumanImportedSourceInterface,
 }
 
+struct ModuleMeta {
+    config: &'static ModuleArtifact,
+    source_sha256: String,
+    certificate_file_sha256: String,
+    export_hash: String,
+    axiom_report_hash: String,
+    certificate_hash: String,
+    axioms: Vec<String>,
+}
+
 struct ExternalImportPlan {
     module: &'static str,
     package: &'static str,
     version: &'static str,
     certificate_path: &'static str,
+}
+
+const MODULES: &[&ModuleArtifact] = &[
+    &BASIC_MODULE,
+    &EQ_MODULE,
+    &NAT_MODULE,
+    &PROP_MODULE,
+    &REDUCTION_MODULE,
+    &EQ_REASONING_MODULE,
+    &ABSTRACT_METRIC_TOPOLOGY_MODULE,
+    &RING_MODULE,
+    &SQUARE_MODULE,
+    &ORDERED_FIELD_MODULE,
+    &VECTOR_BASIC_MODULE,
+    &VECTOR_DOT_MODULE,
+    &RIGHT_TRIANGLE_MODULE,
+    &METRIC_MODULE,
+    &IFF_MODULE,
+    &ABSTRACT_GROUP_MODULE,
+    &ABSTRACT_GROUP_KERNEL_MODULE,
+    &ABSTRACT_GROUP_IMAGE_MODULE,
+    &ABSTRACT_GROUP_QUOTIENT_MODULE,
+    &ABSTRACT_GROUP_QUOTIENT_MUL_MODULE,
+    &ABSTRACT_GROUP_QUOTIENT_GROUP_MODULE,
+    &ABSTRACT_GROUP_QUOTIENT_HOM_MODULE,
+    &ABSTRACT_GROUP_FIRST_ISO_FULL_MODULE,
+    &ABSTRACT_GROUP_FIRST_ISO_IMAGE_MODULE,
+    &ABSTRACT_GROUP_FIRST_ISO_MODULE,
+    &ABSTRACT_GROUP_SUBGROUP_MODULE,
+    &ABSTRACT_GROUP_SUBGROUP_ORDER_MODULE,
+    &ABSTRACT_GROUP_NORMAL_QUOTIENT_MODULE,
+    &ABSTRACT_GROUP_NORMAL_QUOTIENT_MUL_MODULE,
+    &ABSTRACT_GROUP_NORMAL_QUOTIENT_GROUP_MODULE,
+    &ABSTRACT_GROUP_SECOND_ISO_PHI_MODULE,
+    &ABSTRACT_GROUP_SECOND_ISO_KERNEL_MODULE,
+    &ABSTRACT_GROUP_SECOND_ISO_IMAGE_MODULE,
+    &ABSTRACT_GROUP_SECOND_ISO_FINAL_MODULE,
+    &ABSTRACT_GROUP_THIRD_ISO_MODULE,
+    &ABSTRACT_GROUP_CORRESPONDENCE_MODULE,
+    &ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE,
+    &ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE,
+    &ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE,
+    &ABSTRACT_RING_MODULE,
+    &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
+    &ABSTRACT_RING_FIRST_ISO_MODULE,
+    &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
+    &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
+    &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
+    &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
+    &ABSTRACT_KRULL_THEOREM_MODULE,
+    &ABSTRACT_ORDERED_FIELD_MODULE,
+    &ABSTRACT_SQUARE_NORMALIZE_MODULE,
+    &ABSTRACT_SCALAR_DERIVE_MODULE,
+    &ABSTRACT_VECTOR_SPACE_MODULE,
+    &ABSTRACT_NORMED_SPACE_MODULE,
+    &ABSTRACT_LINEAR_MAP_MODULE,
+    &ABSTRACT_DERIVATIVE_MODULE,
+    &ABSTRACT_FIXED_POINT_MODULE,
+    &ABSTRACT_INVERSE_FUNCTION_MODULE,
+    &ABSTRACT_IMPLICIT_PHI_MODULE,
+    &ABSTRACT_IMPLICIT_FUNCTION_MODULE,
+    &ABSTRACT_INNER_PRODUCT_MODULE,
+    &ABSTRACT_INNER_PRODUCT_DERIVE_MODULE,
+    &ABSTRACT_SPECTRAL_THEOREM_MODULE,
+    &ABSTRACT_HILBERT_SPACE_SPECTRAL_THEOREM_MODULE,
+    &AFFINE_MODULE,
+    &AFFINE_DERIVE_MODULE,
+    &ABSTRACT_RIGHT_TRIANGLE_MODULE,
+    &ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE,
+    &ABSTRACT_METRIC_MODULE,
+    &PYTHAGOREAN_MODULE,
+];
+
+#[derive(Default)]
+struct VerifyOptions {
+    modules: Vec<String>,
+    changed_only: bool,
+    shard: Option<Shard>,
+    failures_out: Option<PathBuf>,
+}
+
+#[derive(Clone, Copy)]
+struct Shard {
+    index: usize,
+    total: usize,
+}
+
+struct VerifyFailure {
+    module: String,
+    error: String,
+}
+
+struct VerifiedCorpusCache<'a> {
+    proof_root: &'a Path,
+    session: npa_cert::VerifierSession,
+    verified: BTreeMap<String, npa_cert::VerifiedModule>,
+}
+
+struct BuiltCorpusCache<'a> {
+    proof_root: &'a Path,
+    external_imports: Vec<GeneratedExternalImport>,
+    built: BTreeMap<String, GeneratedModule>,
 }
 
 struct GeneratedExternalImport {
@@ -18717,17 +18831,739 @@ fn main() {
 }
 
 fn run() -> Result<(), String> {
-    let mut args = std::env::args().skip(1);
-    match (args.next().as_deref(), args.next()) {
-        (None, None) => run_full(),
-        (Some("--package-lock-only"), None) => {
+    let args = std::env::args().skip(1).collect::<Vec<_>>();
+    if args.is_empty() {
+        return run_full();
+    }
+
+    match args[0].as_str() {
+        "--package-lock-only" if args.len() == 1 => {
             let repo_root = repo_root()?;
             let proof_root = repo_root.join("proofs");
             write_package_lock_fixture(&proof_root)
         }
-        (Some(arg), _) => Err(format!("unknown npa-proof-corpus argument: {arg}")),
-        (None, Some(_)) => unreachable!("second CLI argument cannot exist without first"),
+        "--build-module" if args.len() == 2 => {
+            let repo_root = repo_root()?;
+            run_build_module(&repo_root, &args[1])
+        }
+        "--write-ai-index" => {
+            let repo_root = repo_root()?;
+            let proof_root = repo_root.join("proofs");
+            let path = match args.get(1) {
+                Some(path) => output_path(&repo_root, path),
+                None => proof_root.join(AI_THEOREM_INDEX_PATH),
+            };
+            if args.len() > 2 {
+                return Err(usage());
+            }
+            write_ai_theorem_index(&proof_root, &path)
+        }
+        "--write-replay" if args.len() == 3 => {
+            let repo_root = repo_root()?;
+            let proof_root = repo_root.join("proofs");
+            write_focused_replay(&proof_root, &args[1], output_path(&repo_root, &args[2]))
+        }
+        "--help" | "-h" if args.len() == 1 => {
+            println!("{}", usage());
+            Ok(())
+        }
+        _ => run_verify(parse_verify_options(&args)?),
     }
+}
+
+fn output_path(repo_root: &Path, path: &str) -> PathBuf {
+    let path = PathBuf::from(path);
+    if path.is_absolute() {
+        path
+    } else {
+        repo_root.join(path)
+    }
+}
+
+fn usage() -> String {
+    "\
+usage:
+  npa-proof-corpus
+  npa-proof-corpus --package-lock-only
+  npa-proof-corpus --build-module MODULE
+  npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH]
+  npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH]
+  npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH]
+  npa-proof-corpus --write-ai-index [PATH]
+  npa-proof-corpus --write-replay MODULE::DECL PATH
+
+INDEX/TOTAL is zero-based, for example --shard 0/4.
+"
+    .to_owned()
+}
+
+fn parse_verify_options(args: &[String]) -> Result<VerifyOptions, String> {
+    let mut options = VerifyOptions::default();
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--verify" => {
+                index += 1;
+            }
+            "--module" => {
+                let module = args.get(index + 1).ok_or_else(usage)?.to_owned();
+                options.modules.push(module);
+                index += 2;
+            }
+            "--changed-only" => {
+                options.changed_only = true;
+                index += 1;
+            }
+            "--shard" => {
+                let shard = args.get(index + 1).ok_or_else(usage)?;
+                options.shard = Some(parse_shard(shard)?);
+                index += 2;
+            }
+            "--failures-out" => {
+                let path = args.get(index + 1).ok_or_else(usage).map(PathBuf::from)?;
+                options.failures_out = Some(path);
+                index += 2;
+            }
+            _ => return Err(usage()),
+        }
+    }
+    Ok(options)
+}
+
+fn parse_shard(value: &str) -> Result<Shard, String> {
+    let Some((index, total)) = value.split_once('/') else {
+        return Err(format!("invalid shard {value:?}; expected INDEX/TOTAL"));
+    };
+    let index = index
+        .parse::<usize>()
+        .map_err(|_| format!("invalid shard index in {value:?}"))?;
+    let total = total
+        .parse::<usize>()
+        .map_err(|_| format!("invalid shard total in {value:?}"))?;
+    if total == 0 || index >= total {
+        return Err(format!(
+            "invalid shard {value:?}; require total > 0 and index < total"
+        ));
+    }
+    Ok(Shard { index, total })
+}
+
+fn run_verify(options: VerifyOptions) -> Result<(), String> {
+    let repo_root = repo_root()?;
+    let proof_root = repo_root.join("proofs");
+    let mut targets = verify_targets(&repo_root, &options)?;
+    targets.sort_by_key(|module| module_order(module).unwrap_or(usize::MAX));
+    targets.dedup();
+    if let Some(shard) = options.shard {
+        targets = targets
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, module)| (index % shard.total == shard.index).then_some(module))
+            .collect();
+    }
+
+    if targets.is_empty() {
+        println!("no proof corpus modules selected");
+        return Ok(());
+    }
+
+    let mut cache = VerifiedCorpusCache::new(&proof_root);
+    let mut failures = Vec::new();
+    for module in &targets {
+        match cache.verify_module(module) {
+            Ok(_) => println!("verified {module}"),
+            Err(error) => {
+                eprintln!("failed {module}: {error}");
+                failures.push(VerifyFailure {
+                    module: module.clone(),
+                    error,
+                });
+            }
+        }
+    }
+
+    if let Some(path) = options.failures_out {
+        let path = if path.is_absolute() {
+            path
+        } else {
+            repo_root.join(path)
+        };
+        write_failure_replay(&proof_root, &path, &failures)?;
+    }
+
+    if failures.is_empty() {
+        println!(
+            "verified {} selected module(s), {} module(s) including dependency cache",
+            targets.len(),
+            cache.verified.len()
+        );
+        Ok(())
+    } else {
+        Err(format!(
+            "{} selected proof corpus module(s) failed",
+            failures.len()
+        ))
+    }
+}
+
+fn run_build_module(repo_root: &Path, module: &str) -> Result<(), String> {
+    let config =
+        module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+    let proof_root = repo_root.join("proofs");
+    fs::create_dir_all(&proof_root)
+        .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
+
+    let mut existing_metas = package_manifest_module_metas(&proof_root)?;
+    let external_imports = generated_external_std_imports()?;
+    write_external_import_artifacts(&proof_root, &external_imports)?;
+
+    let mut cache = BuiltCorpusCache::new(&proof_root, external_imports);
+    cache.build_module(config.module)?;
+
+    let mut module_metas = Vec::with_capacity(MODULES.len());
+    for module_config in MODULES {
+        let meta = if let Some(generated) = cache.built.get(module_config.module) {
+            ModuleMeta::from(generated)
+        } else {
+            existing_metas
+                .remove(module_config.module)
+                .ok_or_else(|| format!("missing existing metadata for {}", module_config.module))?
+        };
+        module_metas.push(meta);
+    }
+
+    let manifest = manifest_toml(&module_metas);
+    let package_manifest = package_manifest_toml(&module_metas, &cache.external_imports)?;
+    write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
+    write(
+        proof_root.join(PACKAGE_MANIFEST_PATH),
+        package_manifest.as_bytes(),
+    )?;
+    write_package_lock_fixture(&proof_root)?;
+    write_ai_theorem_index(&proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
+
+    println!(
+        "built {} ({} module(s) including import closure)",
+        config.module,
+        cache.built.len()
+    );
+    Ok(())
+}
+
+fn verify_targets(repo_root: &Path, options: &VerifyOptions) -> Result<Vec<String>, String> {
+    let mut targets = Vec::new();
+    if options.changed_only {
+        targets.extend(changed_modules(repo_root)?);
+    }
+    targets.extend(options.modules.iter().cloned());
+    if targets.is_empty() && !options.changed_only {
+        targets.extend(MODULES.iter().map(|module| module.module.to_owned()));
+    }
+    for module in &targets {
+        if module_config(module).is_none() {
+            return Err(format!("unknown proof corpus module {module}"));
+        }
+    }
+    Ok(targets)
+}
+
+fn changed_modules(repo_root: &Path) -> Result<Vec<String>, String> {
+    let output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .arg("--")
+        .arg("proofs")
+        .current_dir(repo_root)
+        .output()
+        .map_err(|err| format!("failed to run git status for changed proof corpus files: {err}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "git status for changed proof corpus files failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut modules = BTreeSet::new();
+    let mut all_modules = false;
+    for line in stdout.lines() {
+        if line.len() < 4 {
+            continue;
+        }
+        let path = line[3..]
+            .rsplit_once(" -> ")
+            .map(|(_, new_path)| new_path)
+            .unwrap_or(&line[3..]);
+        let path = path.trim();
+        let Some(package_path) = path.strip_prefix("proofs/") else {
+            continue;
+        };
+        if matches!(
+            package_path,
+            MANIFEST_PATH | PACKAGE_MANIFEST_PATH | PACKAGE_LOCK_PATH
+        ) {
+            all_modules = true;
+            continue;
+        }
+        if let Some(module) = module_for_package_path(package_path) {
+            modules.insert(module.to_owned());
+        }
+    }
+    if all_modules {
+        Ok(MODULES
+            .iter()
+            .map(|module| module.module.to_owned())
+            .collect())
+    } else {
+        Ok(modules.into_iter().collect())
+    }
+}
+
+impl<'a> VerifiedCorpusCache<'a> {
+    fn new(proof_root: &'a Path) -> Self {
+        Self {
+            proof_root,
+            session: npa_cert::VerifierSession::new(),
+            verified: BTreeMap::new(),
+        }
+    }
+
+    fn verify_module(&mut self, module: &str) -> Result<npa_cert::VerifiedModule, String> {
+        if let Some(verified) = self.verified.get(module) {
+            return Ok(verified.clone());
+        }
+
+        if let Some(plan) = external_import_plan(module) {
+            let verified = self.verify_certificate_at(
+                module,
+                plan.certificate_path,
+                &npa_cert::AxiomPolicy::normal(),
+            )?;
+            self.verified.insert(module.to_owned(), verified.clone());
+            return Ok(verified);
+        }
+
+        let config =
+            module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+        for import in source_imports(config) {
+            self.verify_module(import)?;
+        }
+        let policy = axiom_policy_for_module(module);
+        let verified = self.verify_certificate_at(module, config.certificate_path, &policy)?;
+        validate_verified_module(config, &verified)?;
+        self.verified.insert(module.to_owned(), verified.clone());
+        Ok(verified)
+    }
+
+    fn verify_certificate_at(
+        &mut self,
+        module: &str,
+        certificate_path: &str,
+        policy: &npa_cert::AxiomPolicy,
+    ) -> Result<npa_cert::VerifiedModule, String> {
+        let bytes = fs::read(self.proof_root.join(certificate_path))
+            .map_err(|err| format!("failed to read {certificate_path}: {err}"))?;
+        let verified = npa_cert::verify_module_cert(&bytes, &mut self.session, policy)
+            .map_err(|err| format!("failed to verify {certificate_path}: {err:?}"))?;
+        let actual = verified.module().as_dotted();
+        if actual != module {
+            return Err(format!(
+                "certificate {certificate_path} is for module {actual}, expected {module}"
+            ));
+        }
+        Ok(verified)
+    }
+}
+
+impl<'a> BuiltCorpusCache<'a> {
+    fn new(proof_root: &'a Path, external_imports: Vec<GeneratedExternalImport>) -> Self {
+        Self {
+            proof_root,
+            external_imports,
+            built: BTreeMap::new(),
+        }
+    }
+
+    fn build_module(&mut self, module: &str) -> Result<(), String> {
+        if self.built.contains_key(module) {
+            return Ok(());
+        }
+        if external_import_plan(module).is_some() {
+            return Ok(());
+        }
+
+        let config =
+            module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+        let mut internal_imports = BTreeSet::new();
+        for import in config.imports.iter().chain(source_imports(config)) {
+            if external_import_plan(import).is_some() {
+                continue;
+            }
+            internal_imports.insert(*import);
+        }
+        for import in internal_imports {
+            self.build_module(import)?;
+        }
+
+        let mut verified_modules = Vec::with_capacity(config.imports.len());
+        for import in config.imports {
+            verified_modules.push(self.verified_module_for(import)?);
+        }
+        let mut source_interfaces = Vec::with_capacity(source_imports(config).len());
+        for import in source_imports(config) {
+            source_interfaces.push(self.source_interface_for(import)?);
+        }
+
+        let generated = build_and_write_module(
+            self.proof_root,
+            config,
+            &verified_modules,
+            &source_interfaces,
+        )?;
+        self.built.insert(module.to_owned(), generated);
+        println!("built {module}");
+        Ok(())
+    }
+
+    fn verified_module_for(&self, module: &str) -> Result<npa_cert::VerifiedModule, String> {
+        if let Ok(import) = generated_external_import(&self.external_imports, module) {
+            return Ok(import.verified_module.clone());
+        }
+        self.built
+            .get(module)
+            .map(|generated| generated.verified_module.clone())
+            .ok_or_else(|| format!("missing built proof corpus dependency {module}"))
+    }
+
+    fn source_interface_for(
+        &self,
+        module: &str,
+    ) -> Result<npa_frontend::HumanImportedSourceInterface, String> {
+        if let Ok(import) = generated_external_import(&self.external_imports, module) {
+            return Ok(import.source_interface.clone());
+        }
+        self.built
+            .get(module)
+            .map(|generated| generated.source_interface.clone())
+            .ok_or_else(|| {
+                format!("missing built proof corpus dependency source interface {module}")
+            })
+    }
+}
+
+impl From<&GeneratedModule> for ModuleMeta {
+    fn from(module: &GeneratedModule) -> Self {
+        Self {
+            config: module.config,
+            source_sha256: module.source_sha256.clone(),
+            certificate_file_sha256: module.certificate_file_sha256.clone(),
+            export_hash: module.export_hash.clone(),
+            axiom_report_hash: module.axiom_report_hash.clone(),
+            certificate_hash: module.certificate_hash.clone(),
+            axioms: module.axioms.clone(),
+        }
+    }
+}
+
+fn package_manifest_module_metas(
+    proof_root: &Path,
+) -> Result<BTreeMap<String, ModuleMeta>, String> {
+    let source = fs::read_to_string(proof_root.join(PACKAGE_MANIFEST_PATH))
+        .map_err(|err| format!("failed to read {PACKAGE_MANIFEST_PATH}: {err}"))?;
+    let validated = npa_package::parse_and_validate_manifest_str(&source)
+        .map_err(|err| format!("failed to parse {PACKAGE_MANIFEST_PATH}: {err:?}"))?;
+    let mut metas = BTreeMap::new();
+    for module in &validated.manifest().modules {
+        let module_name = module.module.as_dotted();
+        let Some(config) = module_config(&module_name) else {
+            continue;
+        };
+        validate_package_module_matches_config(module, config)?;
+        metas.insert(module_name, module_meta_from_package_module(module, config));
+    }
+    Ok(metas)
+}
+
+fn validate_package_module_matches_config(
+    module: &npa_package::PackageModule,
+    config: &ModuleArtifact,
+) -> Result<(), String> {
+    let expected = [
+        ("source", module.source.as_str(), config.source_path),
+        (
+            "certificate",
+            module.certificate.as_str(),
+            config.certificate_path,
+        ),
+    ];
+    for (field, actual, expected) in expected {
+        if actual != expected {
+            return Err(format!(
+                "{PACKAGE_MANIFEST_PATH} module {} has {field} {actual:?}, expected {expected:?}",
+                config.module
+            ));
+        }
+    }
+    if module.meta.as_ref().map(|path| path.as_str()) != Some(config.meta_path) {
+        return Err(format!(
+            "{PACKAGE_MANIFEST_PATH} module {} has stale meta path",
+            config.module
+        ));
+    }
+    if module.replay.as_ref().map(|path| path.as_str()) != Some(config.replay_path) {
+        return Err(format!(
+            "{PACKAGE_MANIFEST_PATH} module {} has stale replay path",
+            config.module
+        ));
+    }
+    Ok(())
+}
+
+fn module_meta_from_package_module(
+    module: &npa_package::PackageModule,
+    config: &'static ModuleArtifact,
+) -> ModuleMeta {
+    ModuleMeta {
+        config,
+        source_sha256: npa_package::format_package_hash(&module.expected_source_hash),
+        certificate_file_sha256: npa_package::format_package_hash(
+            &module.expected_certificate_file_hash,
+        ),
+        export_hash: npa_package::format_package_hash(&module.expected_export_hash),
+        axiom_report_hash: npa_package::format_package_hash(&module.expected_axiom_report_hash),
+        certificate_hash: npa_package::format_package_hash(&module.expected_certificate_hash),
+        axioms: module
+            .axioms
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .map(|axiom| axiom.as_dotted())
+            .collect(),
+    }
+}
+
+fn validate_verified_module(
+    config: &ModuleArtifact,
+    verified: &npa_cert::VerifiedModule,
+) -> Result<(), String> {
+    let axioms = verified
+        .axiom_report()
+        .module_axioms
+        .iter()
+        .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    let expected_axioms = config
+        .expected_axioms
+        .iter()
+        .map(|axiom| (*axiom).to_owned())
+        .collect::<Vec<_>>();
+    if axioms != expected_axioms {
+        return Err(format!(
+            "checked-in AI proof corpus module {} has axioms {:?}, expected {:?}",
+            config.module, axioms, expected_axioms
+        ));
+    }
+    let expected_features = expected_core_features_for_module(config.module);
+    if verified.axiom_report().core_features != expected_features {
+        return Err(format!(
+            "checked-in AI proof corpus module {} has core features {:?}, expected {:?}",
+            config.module,
+            verified.axiom_report().core_features,
+            expected_features
+        ));
+    }
+    Ok(())
+}
+
+fn write_failure_replay(
+    proof_root: &Path,
+    path: &Path,
+    failures: &[VerifyFailure],
+) -> Result<(), String> {
+    let entries = failures
+        .iter()
+        .map(|failure| {
+            let replay_path = module_config(&failure.module)
+                .map(|module| module.replay_path)
+                .unwrap_or("");
+            format!(
+                "    {{ \"module\": \"{}\", \"replay\": \"{}\", \"error\": \"{}\" }}",
+                json_escape(&failure.module),
+                json_escape(replay_path),
+                json_escape(&failure.error)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",\n");
+    let body = format!(
+        "\
+{{
+  \"schema\": \"npa-proof-corpus-failure-replay.v1\",
+  \"trusted\": false,
+  \"failed_modules\": [
+{}
+  ]
+}}
+",
+        entries
+    );
+    let output = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        proof_root.join(path)
+    };
+    write(output, body.as_bytes())
+}
+
+fn write_ai_theorem_index(_proof_root: &Path, path: &Path) -> Result<(), String> {
+    let entries = MODULES
+        .iter()
+        .flat_map(|module| {
+            module.theorems.iter().map(move |theorem| {
+                let replay_spec = format!("{}::{}", module.module, theorem.name);
+                format!(
+                    "    {{ \"module\": \"{}\", \"theorem\": \"{}\", \"statement\": \"{}\", \"statement_sha256\": \"{}\", \"imports\": [{}], \"certificate\": \"{}\", \"replay\": \"{}\", \"focused_replay_spec\": \"{}\" }}",
+                    json_escape(module.module),
+                    json_escape(theorem.name),
+                    json_escape(theorem.statement),
+                    tagged_sha256(theorem.statement.as_bytes()),
+                    quoted_items(source_imports(module)),
+                    json_escape(module.certificate_path),
+                    json_escape(module.replay_path),
+                    json_escape(&replay_spec)
+                )
+            })
+        })
+        .collect::<Vec<_>>()
+        .join(",\n");
+    let body = format!(
+        "\
+{{
+  \"schema\": \"npa.ai.theorem_index.v1\",
+  \"package\": \"{}\",
+  \"version\": \"{}\",
+  \"trusted\": false,
+  \"entry_count\": {},
+  \"entries\": [
+{}
+  ]
+}}
+",
+        PROOF_CORPUS_PACKAGE,
+        PROOF_CORPUS_VERSION,
+        MODULES
+            .iter()
+            .map(|module| module.theorems.len())
+            .sum::<usize>(),
+        entries
+    );
+    write(path.to_path_buf(), body.as_bytes())?;
+    println!("wrote {}", path.display());
+    Ok(())
+}
+
+fn write_focused_replay(proof_root: &Path, spec: &str, path: PathBuf) -> Result<(), String> {
+    let (module_name, declaration) = spec
+        .split_once("::")
+        .ok_or_else(|| format!("invalid replay spec {spec:?}; expected MODULE::DECL"))?;
+    let config = module_config(module_name)
+        .ok_or_else(|| format!("unknown proof corpus module {module_name}"))?;
+    let step = focused_replay_step(proof_root, config, declaration)?;
+    let body = format!(
+        "\
+{{
+  \"schema\": \"npa-ai-proof-replay-v0.1\",
+  \"module\": \"{}\",
+  \"trusted\": false,
+  \"profile\": \"focused_explicit_term_source_certificate_handoff\",
+  \"steps\": [
+{}
+  ],
+  \"acceptance\": {{
+    \"required\": [\"decode_module_cert\", \"verify_module_cert\"],
+    \"accepted_artifact\": \"{}\"
+  }}
+}}
+",
+        config.module, step, config.certificate_path
+    );
+    write(path, body.as_bytes())
+}
+
+fn focused_replay_step(
+    proof_root: &Path,
+    config: &ModuleArtifact,
+    declaration: &str,
+) -> Result<String, String> {
+    if uses_checked_in_source(config.module) {
+        let source = fs::read_to_string(proof_root.join(config.source_path))
+            .map_err(|err| format!("failed to read {}: {err}", config.source_path))?;
+        if let Some((_, kind, term)) = source_replay_steps(&source)
+            .into_iter()
+            .find(|(name, _, _)| name == declaration)
+        {
+            return Ok(replay_step_json(declaration, kind, &term));
+        }
+    }
+    if let Some(inductive) = config
+        .inductives
+        .iter()
+        .find(|inductive| inductive.name == declaration)
+    {
+        return Ok(replay_step_json(
+            declaration,
+            "inductive_decl",
+            &inductive_replay_term(inductive),
+        ));
+    }
+    if let Some(definition) = config
+        .definitions
+        .iter()
+        .find(|definition| definition.name == declaration)
+    {
+        return Ok(replay_step_json(
+            declaration,
+            "explicit_def_value",
+            definition.value,
+        ));
+    }
+    if let Some(theorem) = config
+        .theorems
+        .iter()
+        .find(|theorem| theorem.name == declaration)
+    {
+        return Ok(replay_step_json(
+            declaration,
+            "explicit_term",
+            theorem.proof,
+        ));
+    }
+    Err(format!(
+        "module {} has no replay declaration {declaration}",
+        config.module
+    ))
+}
+
+fn module_config(module: &str) -> Option<&'static ModuleArtifact> {
+    MODULES
+        .iter()
+        .copied()
+        .find(|config| config.module == module)
+}
+
+fn module_order(module: &str) -> Option<usize> {
+    MODULES.iter().position(|config| config.module == module)
+}
+
+fn module_for_package_path(path: &str) -> Option<&'static str> {
+    MODULES
+        .iter()
+        .find(|module| {
+            path == module.source_path
+                || path == module.certificate_path
+                || path == module.meta_path
+                || path == module.replay_path
+        })
+        .map(|module| module.module)
 }
 
 fn run_full() -> Result<(), String> {
@@ -20078,14 +20914,19 @@ fn run_full() -> Result<(), String> {
         pythagorean,
     ];
 
-    let manifest = manifest_toml(&generated_modules);
-    let package_manifest = package_manifest_toml(&generated_modules, &external_imports)?;
+    let module_metas = generated_modules
+        .iter()
+        .map(ModuleMeta::from)
+        .collect::<Vec<_>>();
+    let manifest = manifest_toml(&module_metas);
+    let package_manifest = package_manifest_toml(&module_metas, &external_imports)?;
     write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
     write(
         proof_root.join(PACKAGE_MANIFEST_PATH),
         package_manifest.as_bytes(),
     )?;
     write_package_lock_fixture(&proof_root)?;
+    write_ai_theorem_index(&proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
 
     Ok(())
 }
@@ -20194,9 +21035,10 @@ fn build_and_write_module(
         source_interface: human_imported_source_interface(&verified, &output.source_interface),
     };
 
+    let module_meta = ModuleMeta::from(&generated);
     write(
         proof_root.join(config.meta_path),
-        meta_json(&generated).as_bytes(),
+        meta_json(&module_meta).as_bytes(),
     )?;
     write(
         proof_root.join(config.replay_path),
@@ -20699,7 +21541,7 @@ fn hex_bytes(bytes: &[u8]) -> String {
     out
 }
 
-fn manifest_toml(modules: &[GeneratedModule]) -> String {
+fn manifest_toml(modules: &[ModuleMeta]) -> String {
     let mut manifest = "schema = \"npa-ai-proof-corpus-v0.1\"\n".to_owned();
     for module in modules {
         manifest.push('\n');
@@ -20776,7 +21618,7 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
 }
 
 fn package_manifest_toml(
-    modules: &[GeneratedModule],
+    modules: &[ModuleMeta],
     external_imports: &[GeneratedExternalImport],
 ) -> Result<String, String> {
     let mut manifest = String::new();
@@ -20910,7 +21752,7 @@ fn package_manifest_toml(
     Ok(manifest)
 }
 
-fn meta_json(module: &GeneratedModule) -> String {
+fn meta_json(module: &ModuleMeta) -> String {
     let inductives = module.config.inductives.iter().map(|inductive| {
         format!(
             "    {{ \"name\": \"{}\", \"kind\": \"inductive\" }}",
@@ -21069,15 +21911,23 @@ fn source_replay_steps(source: &str) -> Vec<(String, &'static str, String)> {
         } else {
             ("theorem ", "explicit_term_source")
         };
-        let name = header[prefix.len()..]
-            .split(['.', ' ', ':'])
-            .next()
-            .unwrap_or("")
-            .to_owned();
+        let name = declaration_name_from_header(header, prefix);
         let term = lines[*start..end].join("\n").trim_end().to_owned();
         steps.push((name, kind, term));
     }
     steps
+}
+
+fn declaration_name_from_header(header: &str, prefix: &str) -> String {
+    let raw = header[prefix.len()..]
+        .trim_start()
+        .split([' ', ':'])
+        .next()
+        .unwrap_or("");
+    raw.split_once(".{")
+        .map(|(name, _)| name)
+        .unwrap_or(raw)
+        .to_owned()
 }
 
 fn json_escape(input: &str) -> String {
@@ -21110,4 +21960,49 @@ fn quoted_owned_items(items: &[String]) -> String {
         .map(|item| format!("\"{item}\""))
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shard_parser_uses_zero_based_index() {
+        let shard = parse_shard("1/4").expect("valid shard should parse");
+        assert_eq!(shard.index, 1);
+        assert_eq!(shard.total, 4);
+        assert!(parse_shard("4/4").is_err());
+        assert!(parse_shard("0/0").is_err());
+    }
+
+    #[test]
+    fn declaration_header_parser_preserves_dotted_names_and_strips_universes() {
+        assert_eq!(
+            declaration_name_from_header("theorem Foo.bar.{u} : Type :=", "theorem "),
+            "Foo.bar"
+        );
+        assert_eq!(
+            declaration_name_from_header("def simple_name : Type := Type", "def "),
+            "simple_name"
+        );
+    }
+
+    #[test]
+    fn package_path_lookup_finds_module_artifacts() {
+        assert_eq!(
+            module_for_package_path("Proofs/Ai/Basic/source.npa"),
+            Some("Proofs.Ai.Basic")
+        );
+        assert_eq!(module_for_package_path("generated/package-lock.json"), None);
+    }
+
+    #[test]
+    fn focused_replay_can_extract_single_generated_theorem() {
+        let repo = repo_root().expect("repo root should resolve");
+        let replay = focused_replay_step(&repo.join("proofs"), &BASIC_MODULE, "id")
+            .expect("id replay should be available");
+        assert!(replay.contains("\"declaration\": \"id\""));
+        assert!(replay.contains("\"source_kind\": \"explicit_term\""));
+        assert!(!replay.contains("const_left"));
+    }
 }

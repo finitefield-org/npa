@@ -36,6 +36,7 @@ Reserved template names are:
 ```text
 ci-templates/github-actions/npa-package-pr.yml
 ci-templates/github-actions/npa-package-release.yml
+ci-templates/github-actions/npa-package-high-trust.yml
 ci-templates/github-actions/summarize-npa-diagnostics.py
 ci-templates/github-actions/validate-workflows.py
 ci-templates/github-actions/README.md
@@ -190,16 +191,32 @@ The base CLR-07 release template must not require the external checker. It
 continues to produce reference-checker-only release evidence plus the labeled
 fast-kernel verifier result.
 
-A high-trust extension may add the implemented external checker package
-command only when the documented CI environment provides a pinned built
-`npa-checker-ext` executable and runner-owned policy / registry files:
+`npa-package-high-trust.yml` is the opt-in high-trust release extension. It may
+add the implemented external checker package command only when the documented
+CI environment provides a pinned built `npa-checker-ext` executable and
+runner-owned policy / registry files:
 
 ```sh
 npa package verify-certs --root . --checker external \
-  --runner-policy ci/runner.release.json \
+  --runner-policy ci/runner.high-trust.json \
   --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
   --checker-registry ci/checker-binaries.json \
   --json
+```
+
+The high-trust template must fail before verifier execution unless these
+inputs are present:
+
+```text
+NPA_CHECKER_EXT_BINARY_PATH
+NPA_RELEASE_POLICY_HASH
+NPA_RUNNER_POLICY_HASH
+NPA_CHALLENGE_RUNNER_POLICY_HASH
+ci/release.high-trust.json
+ci/runner.high-trust.json
+ci/runner.challenge.json
+ci/checker-binaries.json
+generated/release-audit/manifest.json
 ```
 
 That command is source-free: it may read package metadata, package lock,
@@ -209,9 +226,15 @@ source, replay files, meta files, theorem index files, AI traces, registry
 network data, hidden package caches, plugins, or source-derived unchecked
 environments.
 
-`verified_high_trust` artifacts require a separate generator and complete
-external / high-trust-reference evidence. They must not be emitted from
-reference-checker-only evidence.
+The high-trust-reference job validates the release audit bundle through
+`npa package high-trust`; it does not reuse a normal `reference` result as
+`high-trust-reference`. `verified_high_trust` artifacts require
+`npa package high-trust` and complete external / high-trust-reference release
+audit evidence. They must not be emitted from reference-checker-only evidence.
+External checker benchmark collection belongs to the release/high-trust audit
+track, not the PR hot path. A benchmark summary can fail release/high-trust
+policy as regression evidence, but it is not proof input, does not change proof
+validity, and must link rows back to saved checker result hashes.
 
 Publish metadata is not a base CLR-07 dependency. A later optional release
 template variant may add:
@@ -292,6 +315,10 @@ Common diagnostic mappings:
 | `axiom_policy_rejected` or `axiom_report_policy_violation` | A certificate or package axiom report uses an axiom outside the package policy. | Remove the unapproved axiom dependency or update the package axiom policy through review. Rerun reference verification and `npa package axiom-report --root . --check --json`. |
 | `axiom_report_stale` or `axiom_report_hash_mismatch` in `generated/axiom-report.json` | The checked axiom report no longer matches the verified certificates. | Regenerate `generated/axiom-report.json` with `npa package axiom-report --root .`, review the diff, then rerun check mode. |
 | `theorem_index_stale` or `theorem_index_hash_mismatch` in `generated/theorem-index.json` | The theorem index metadata no longer matches the verified certificates. | Regenerate `generated/theorem-index.json` with `npa package index --root .`, review the diff, then rerun check mode. |
+| missing `NPA_CHECKER_EXT_BINARY_PATH`, missing `ci/checker-binaries.json`, or `checker_binary_file_unreadable` in high-trust mode | The high-trust template cannot resolve a pinned built external checker from the fresh checkout. | Add the reviewed `npa-checker-ext` executable and matching checker registry entry. Do not depend on a runner cache or registry network lookup. |
+| `checker_binary_hash_mismatch`, `checker_identity_mismatch`, or `checker_build_hash_mismatch` | The external checker bytes or identity metadata differ from runner policy pins. | Treat the binary as changed release evidence. Review build provenance, then update runner policy, checker registry, and checker identity metadata together. |
+| `not_verified`, `checker_disagreement`, `status_disagreement`, or normalized comparison failure | Required checker profiles did not all produce the same checked release result. | Inspect the saved external and release audit JSON. Fix the certificate/checker disagreement; do not relabel fast-kernel or reference output as external success. |
+| failed `import_certificate_hash` auxiliary result | High-trust import certificate hash evidence is missing, stale, or failed. | Regenerate the auxiliary evidence from the intended import lock and rerun `npa package high-trust --check`. |
 
 Theorem index and axiom report metadata are not proof evidence. They are
 review, search, documentation, and release helper artifacts derived from
@@ -305,10 +332,12 @@ host-specific caches, and unredacted environment dumps.
 ## Template Validation
 
 `ci-templates/github-actions/validate-workflows.py` is a local, no-network
-validator for the copyable base templates. It performs cheap YAML syntax
-validation through PyYAML, checks that the PR workflow contains the full-package
-reference command set, checks that the release workflow contains both fast and
-reference verifier commands, and rejects unsupported base-template flags:
+validator for the copyable templates. It performs cheap YAML syntax validation
+through PyYAML or Ruby's bundled YAML parser, checks that the PR workflow
+contains the full-package reference command set, checks that the release
+workflow contains both fast and reference verifier commands, checks that the
+high-trust workflow contains the external checker and `package high-trust`
+command wiring, and rejects unsupported flags:
 
 ```text
 --changed
@@ -319,10 +348,10 @@ reference verifier commands, and rejects unsupported base-template flags:
 --latest
 ```
 
-The `--checker external` rejection is intentional for the base templates only.
-An opt-in high-trust template variant must validate its own pinned
-`npa-checker-ext`, runner policy, checker registry, and source-free boundary in
-the same review that adds the external job.
+The `--checker external` rejection is intentional for the PR and base release
+templates only. The opt-in high-trust template validates its own pinned
+`npa-checker-ext`, runner policy, checker registry, release audit evidence, and
+source-free boundary in the same workflow variant that adds the external job.
 
 Run it from the repository root:
 
@@ -351,6 +380,11 @@ ci-templates/github-actions/summarize-npa-diagnostics.py
 ci-templates/github-actions/validate-workflows.py
 ```
 
+`ci-templates/github-actions/npa-package-high-trust.yml` is available for a
+later high-trust seed release after the seed repository can provide pinned
+external checker bytes and release audit evidence. It is not part of the
+reference-checker-only default seed gate.
+
 If the seed repository installs workflow YAML under `.github/workflows/`, it
 should keep the helper scripts at the path the templates reference, or adjust
 the helper path in the copied workflows in the same review.
@@ -364,7 +398,10 @@ scripts/phase9-regression.sh
 
 Those scripts remain local `npa` repository checks, and the templates remain
 outside this repository's `.github/workflows`. Until a seed repository opts into
-a pinned `npa-checker-ext` binary with runner policy / checker registry and a
-separate `verified_high_trust` generator exists, `npa-mathlib-seed` release
-evidence is reference-checker-only plus the labeled fast-kernel verifier; it
-must not require `--checker external` or emit `verified_high_trust`.
+a pinned `npa-checker-ext` binary with runner policy / checker registry and
+release audit evidence consumable by `npa package high-trust`, `npa-mathlib-seed`
+release evidence is reference-checker-only plus the labeled fast-kernel
+verifier; it must not require `--checker external` or emit
+`verified_high_trust`.
+Reference / external checker benchmark evidence may be collected later as
+release audit regression metadata; it is never a substitute checker verdict.

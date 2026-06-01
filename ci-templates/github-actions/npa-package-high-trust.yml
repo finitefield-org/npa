@@ -1,0 +1,358 @@
+name: NPA Package High-Trust Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NPA_BINARY_PATH: ${{ vars.NPA_BINARY_PATH }}
+  NPA_VERSION: ${{ vars.NPA_VERSION }}
+  NPA_GIT_TAG: ${{ vars.NPA_GIT_TAG }}
+  NPA_GIT_COMMIT: ${{ vars.NPA_GIT_COMMIT }}
+  NPA_CHECKER_EXT_BINARY_PATH: ${{ vars.NPA_CHECKER_EXT_BINARY_PATH }}
+  NPA_RELEASE_POLICY_HASH: ${{ vars.NPA_RELEASE_POLICY_HASH }}
+  NPA_RUNNER_POLICY_HASH: ${{ vars.NPA_RUNNER_POLICY_HASH }}
+  NPA_CHALLENGE_RUNNER_POLICY_HASH: ${{ vars.NPA_CHALLENGE_RUNNER_POLICY_HASH }}
+
+jobs:
+  external-checker:
+    name: External checker source-free verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Locate pinned npa
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_count=0
+          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
+            if [ -n "$value" ]; then
+              source_count=$((source_count + 1))
+            fi
+          done
+          if [ "$source_count" -ne 1 ]; then
+            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+            exit 2
+          fi
+          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
+            echo "This high-trust template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
+            exit 2
+          fi
+          case "$NPA_BINARY_PATH" in
+            /*) npa_path="$NPA_BINARY_PATH" ;;
+            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
+          esac
+          if [ ! -x "$npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+            exit 2
+          fi
+          mkdir -p "$RUNNER_TEMP/npa-bin"
+          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
+          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+          "$npa_path" --version
+
+      - name: Validate high-trust inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          for required_var in NPA_RELEASE_POLICY_HASH NPA_RUNNER_POLICY_HASH NPA_CHALLENGE_RUNNER_POLICY_HASH; do
+            value="${!required_var-}"
+            if [ -z "$value" ]; then
+              echo "$required_var must pin the expected policy hash." >&2
+              exit 2
+            fi
+          done
+          for required_path in ci/release.high-trust.json ci/runner.high-trust.json ci/runner.challenge.json ci/checker-binaries.json generated/release-audit/manifest.json; do
+            if [ ! -f "$required_path" ]; then
+              echo "Required high-trust input is missing: $required_path" >&2
+              exit 2
+            fi
+          done
+          if [ -z "${NPA_CHECKER_EXT_BINARY_PATH:-}" ]; then
+            echo "NPA_CHECKER_EXT_BINARY_PATH must point to a pinned npa-checker-ext executable." >&2
+            exit 2
+          fi
+          case "$NPA_CHECKER_EXT_BINARY_PATH" in
+            /*|*..*)
+              echo "NPA_CHECKER_EXT_BINARY_PATH must be a workspace-relative path without '..' components." >&2
+              exit 2
+              ;;
+          esac
+          checker_ext_path="$GITHUB_WORKSPACE/$NPA_CHECKER_EXT_BINARY_PATH"
+          if [ ! -x "$checker_ext_path" ]; then
+            echo "Pinned npa-checker-ext is not executable: $NPA_CHECKER_EXT_BINARY_PATH" >&2
+            exit 2
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          checker_path = os.environ["NPA_CHECKER_EXT_BINARY_PATH"]
+          with open("ci/checker-binaries.json", encoding="utf-8") as handle:
+              registry = json.load(handle)
+          entries = registry.get("entries", [])
+          matches = [
+              entry
+              for entry in entries
+              if entry.get("path") == checker_path
+              and str(entry.get("binary_id", "")).startswith("npa-checker-ext")
+          ]
+          if not matches:
+              print(
+                  "NPA_CHECKER_EXT_BINARY_PATH must match a npa-checker-ext entry in ci/checker-binaries.json",
+                  file=sys.stderr,
+              )
+              sys.exit(2)
+          PY
+          sha256sum "$checker_ext_path" > ci-output/npa-checker-ext.sha256
+
+      - name: Source-free external checker verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package verify-certs --root . --checker external \
+            --runner-policy ci/runner.high-trust.json \
+            --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+            --checker-registry ci/checker-binaries.json \
+            --json > ci-output/verify-certs-external.json
+
+      - name: External checker failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA external checker diagnostics"
+            echo
+            echo "This job requires a pinned npa-checker-ext binary, runner policy, and checker registry."
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload external checker diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-external-checker-diagnostics
+          path: |
+            ci-output/*.json
+            ci-output/npa-checker-ext.sha256
+          if-no-files-found: ignore
+
+  high-trust-reference:
+    name: High-trust-reference release audit validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    needs: external-checker
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Locate pinned npa
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_count=0
+          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
+            if [ -n "$value" ]; then
+              source_count=$((source_count + 1))
+            fi
+          done
+          if [ "$source_count" -ne 1 ]; then
+            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+            exit 2
+          fi
+          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
+            echo "This high-trust template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
+            exit 2
+          fi
+          case "$NPA_BINARY_PATH" in
+            /*) npa_path="$NPA_BINARY_PATH" ;;
+            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
+          esac
+          if [ ! -x "$npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+            exit 2
+          fi
+          mkdir -p "$RUNNER_TEMP/npa-bin"
+          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
+          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+          "$npa_path" --version
+
+      - name: Validate high-trust release audit evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          for required_var in NPA_RELEASE_POLICY_HASH NPA_RUNNER_POLICY_HASH NPA_CHALLENGE_RUNNER_POLICY_HASH; do
+            value="${!required_var-}"
+            if [ -z "$value" ]; then
+              echo "$required_var must pin the expected policy hash." >&2
+              exit 2
+            fi
+          done
+          for required_path in ci/release.high-trust.json ci/runner.high-trust.json ci/runner.challenge.json ci/checker-binaries.json generated/release-audit/manifest.json; do
+            if [ ! -f "$required_path" ]; then
+              echo "Required high-trust input is missing: $required_path" >&2
+              exit 2
+            fi
+          done
+          npa package high-trust --root . \
+            --release-policy ci/release.high-trust.json \
+            --release-policy-hash "$NPA_RELEASE_POLICY_HASH" \
+            --runner-policy ci/runner.high-trust.json \
+            --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+            --challenge-runner-policy ci/runner.challenge.json \
+            --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" \
+            --checker-registry ci/checker-binaries.json \
+            --out ci-output/high-trust-reference-probe.json \
+            --json > ci-output/high-trust-reference-release-audit.json
+
+      - name: Release audit failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA high-trust-reference diagnostics"
+            echo
+            echo "This job validates release audit evidence, including the distinct high-trust-reference profile."
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-high-trust-reference-diagnostics
+          path: ci-output/*.json
+          if-no-files-found: ignore
+
+  verified-high-trust:
+    name: verified_high_trust generation and check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    needs:
+      - external-checker
+      - high-trust-reference
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Locate pinned npa
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_count=0
+          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
+            if [ -n "$value" ]; then
+              source_count=$((source_count + 1))
+            fi
+          done
+          if [ "$source_count" -ne 1 ]; then
+            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+            exit 2
+          fi
+          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
+            echo "This high-trust template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
+            exit 2
+          fi
+          case "$NPA_BINARY_PATH" in
+            /*) npa_path="$NPA_BINARY_PATH" ;;
+            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
+          esac
+          if [ ! -x "$npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+            exit 2
+          fi
+          mkdir -p "$RUNNER_TEMP/npa-bin"
+          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
+          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+          "$npa_path" --version
+
+      - name: Generate and check verified_high_trust
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output generated
+          for required_var in NPA_RELEASE_POLICY_HASH NPA_RUNNER_POLICY_HASH NPA_CHALLENGE_RUNNER_POLICY_HASH; do
+            value="${!required_var-}"
+            if [ -z "$value" ]; then
+              echo "$required_var must pin the expected policy hash." >&2
+              exit 2
+            fi
+          done
+          for required_path in ci/release.high-trust.json ci/runner.high-trust.json ci/runner.challenge.json ci/checker-binaries.json generated/release-audit/manifest.json; do
+            if [ ! -f "$required_path" ]; then
+              echo "Required high-trust input is missing: $required_path" >&2
+              exit 2
+            fi
+          done
+          npa package high-trust --root . \
+            --release-policy ci/release.high-trust.json \
+            --release-policy-hash "$NPA_RELEASE_POLICY_HASH" \
+            --runner-policy ci/runner.high-trust.json \
+            --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+            --challenge-runner-policy ci/runner.challenge.json \
+            --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" \
+            --checker-registry ci/checker-binaries.json \
+            --out generated/verified-high-trust.json \
+            --json > ci-output/verified-high-trust-generate.json
+          npa package high-trust --root . \
+            --release-policy ci/release.high-trust.json \
+            --release-policy-hash "$NPA_RELEASE_POLICY_HASH" \
+            --runner-policy ci/runner.high-trust.json \
+            --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+            --challenge-runner-policy ci/runner.challenge.json \
+            --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" \
+            --checker-registry ci/checker-binaries.json \
+            --out generated/verified-high-trust.json \
+            --check \
+            --json > ci-output/verified-high-trust-check.json
+
+      - name: verified_high_trust failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA verified_high_trust diagnostics"
+            echo
+            echo "This job emits verified_high_trust only after external and high-trust-reference release audit evidence validates."
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified_high_trust artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-verified-high-trust
+          path: |
+            generated/verified-high-trust.json
+            ci-output/*.json
+          if-no-files-found: error

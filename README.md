@@ -186,10 +186,17 @@ npa package index --root . --check --json
 fast-kernel と reference checker の source-free verification を分けて実行します。
 CLR-06 の `publish-plan` check は gated optional step です。base template は
 reference-checker-only release evidence を生成し、PR mode でも release base mode でも
-external checker を required にしません。`--checker external` を追加する template variant は、
-pinned `npa-checker-ext` binary、runner policy、checker registry を同じ review で用意する
-high-trust integration scope です。`verified_high_trust` artifact は reference-only evidence から
-生成してはいけません。これらの template はこの repo の
+external checker を required にしません。`--checker external` と
+`package high-trust` を追加する opt-in `npa-package-high-trust.yml` は、pinned
+`npa-checker-ext` binary、runner policy、checker registry、release audit evidence を
+同じ review で用意する high-trust integration scope です。
+`verified_high_trust` artifact は reference-only evidence から生成してはいけません。
+External checker benchmark collection is release/high-trust regression
+evidence only: rows link checker identity, certificate hash, module, timing,
+timeout/memory budget, and result hash back to saved checker results, but do
+not change proof validity. Reference / external checker benchmark completion is
+not a PR hot path requirement.
+これらの template はこの repo の
 `.github/workflows` ではなく、`npa-mathlib-seed` などの外部 repo が copy または reference
 するためのものです。この repo の local gate は引き続き `scripts/phase8-release-audit.sh` と
 `scripts/phase9-regression.sh` です。
@@ -308,9 +315,13 @@ release audit bundle、challenge replay、AI sidecar validation の非信頼 orc
 OCaml clean-room `npa-checker-ext` source は `checkers/npa-checker-ext/` にあります。
 release/high-trust evidence として存在すると扱うのは、build 済み binary が runner-owned
 checker registry から解決され、package `--checker external` integration と binary hash /
-identity validation が通った場合だけです。full external-checker release CI workflow と
-`verified_high_trust` artifact generation は別の high-trust integration gate であり、
-reference-only evidence から生成しません。
+identity validation が通った場合だけです。`package high-trust` は
+`verified_high_trust` artifact generator として実装済みで、copyable opt-in
+high-trust CI template は `ci-templates/github-actions/npa-package-high-trust.yml` に
+あります。ただし reference-only evidence から artifact を生成しません。
+External checker benchmark summaries are release audit metadata linked to
+checker result hashes. They may fail release/high-trust policy as regression
+evidence, but they are not checker verdicts and do not affect proof validity.
 これらの `npa-api` automation / library API は候補生成、検査要求の構成、
 監査 artifact の正規化、回帰 fixture の実行を担う非信頼層です。
 trusted base は広げません。証明の受理根拠は引き続き canonical certificate と、
@@ -318,13 +329,41 @@ Rust kernel / 独立 checker が返す deterministic result だけです。
 
 ## 開発メモ
 
-少なくとも次を通す方針です。
+通常開発では proof corpus を hot path に入れず、まず短時間の fast gate を通します。
 
 ```sh
-cargo fmt --all
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+./scripts/check-fast.sh
 ```
+
+`./scripts/check-fast.sh` は `npa-proof-corpus` と proof-corpus-backed package verifier / CLI fixture
+tests を除外して、format / clippy / workspace tests を実行します。
+proof corpus gate は次の条件に該当する変更だけで実行します。
+
+- `proofs/**` または `tools/proof-corpus/**` の変更
+- certificate の canonical encode / decode / hash / import / axiom report に関わる変更
+- kernel の core semantics、typecheck、reduction、universe、inductive に関わる変更
+- independent checker、package verifier、package lock、artifact validation に関わる変更
+- `.npcert` の生成・検査互換性に関わる変更
+- release / high-trust gate
+
+該当する場合は次を実行します。
+
+```sh
+./scripts/check-corpus.sh
+```
+
+proof corpus に定理を追加している間は、毎回 full corpus gate を回さず、対象 module だけを
+再生成・検査します。
+
+```sh
+cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --changed-only
+```
+
+`--build-module` は source から指定 module と import closure だけを再生成する authoring 用補助です。
+`--module` / `--changed-only` は checked-in certificate の source-free 検査です。詳しい AI 向け手順は
+`doc/proof-corpus-ai-workflow.md` を参照してください。
 
 Phase 9 Human 完了後の required release completion gate は次です。
 
@@ -370,3 +409,4 @@ Phase 9 Regression は workspace 全体の後続機能まで含む広い回帰 g
 - [Phase 8 AI Profile: Checker Audit Automation](doc/phase8-ai.md)
 - [Phase 9 Human Profile: Advanced Features](doc/phase9-human.md)
 - [Phase 9 AI Profile: Advanced Automation](doc/phase9-ai.md)
+- [Proof Corpus AI Workflow](doc/proof-corpus-ai-workflow.md)

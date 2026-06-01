@@ -58,9 +58,11 @@ CLR-09 excludes:
   contribution flows.
 - Any change that expands the trusted base of the kernel, certificate format, or
   checker.
-- External-checker release evidence when CLR-08 is deferred.
-- `verified_high_trust` artifacts unless CLR-08 is already complete and the
-  seed release policy explicitly enables them.
+- External-checker release evidence unless the seed repository supplies the
+  CLR-08 pinned `npa-checker-ext` binary, runner policies, checker registry,
+  and release audit bundle evidence.
+- `verified_high_trust` artifacts unless the seed release policy explicitly
+  opts into CLR-08 high-trust evidence.
 
 ## Current Repository Facts
 
@@ -214,9 +216,10 @@ npa package verify-certs --root . --checker fast --json
 ```
 
 Do not add changed-file selection, full-library selection flags, registry
-network flags, or external-checker flags to CLR-09. If CLR-08 is complete, the
-external-checker release profile is an optional extension and must remain
-separate from the base CLR-09 acceptance criteria.
+network flags, or external-checker flags to CLR-09. The CLR-08
+external-checker release profile is an optional extension only when the seed
+repository supplies high-trust inputs, and it must remain separate from the
+base CLR-09 acceptance criteria.
 
 ### Generated Artifact Contract
 
@@ -314,21 +317,24 @@ the seed library before any registry server exists. The handoff to CLR-10 is:
 The handoff must explicitly say that package metadata and registry seed entries
 are discoverability metadata. They are not trusted proof evidence.
 
-### CLR-08 Deferral Rule
+### CLR-08 High-Trust Evidence Rule
 
-CLR-09 can proceed while CLR-08 is deferred if the seed release policy is
-reference-checker-only. In that mode:
+CLR-08's command/template contract is complete, but CLR-09 can still use a
+reference-checker-only seed release when the seed repository does not yet
+provide the pinned external checker binary and high-trust release audit
+evidence. In that base mode:
 
 - no `verified_high_trust` artifact is generated;
 - no external checker is required in seed PR CI;
 - no external checker is required in seed release CI;
-- release notes state that high-trust external verification is deferred;
+- release notes state that high-trust external verification evidence is not
+  included in the seed release;
 - downstream import acceptance relies on certificate hashes and reference
   checker results.
 
-If CLR-08 is complete before CLR-09 starts, add an optional release profile for
-external verification, but keep the reference-checker-only path as the base
-acceptance test.
+The seed may add an optional release profile for external/high-trust
+verification only after it supplies the CLR-08 high-trust inputs. Keep the
+reference-checker-only path as the base acceptance test.
 
 ## Task Breakdown
 
@@ -465,8 +471,9 @@ Implementation:
 4. Configure PR CI to run the base reference-checker command sequence.
 5. Configure release CI to run the base sequence plus the optional fast checker
    command if that checker is available.
-6. Keep high-trust external verification disabled unless CLR-08 is complete and
-   the seed release policy explicitly enables it.
+6. Keep high-trust external verification disabled unless the seed repository
+   supplies the CLR-08 high-trust inputs and the seed release policy explicitly
+   enables it.
 7. Add CI documentation explaining which artifacts are uploaded or checked.
 
 Acceptance criteria:
@@ -506,7 +513,7 @@ Implementation:
    certificate hash.
 7. Ensure source-free checker result summaries are present in release metadata.
 8. Check that publish metadata does not claim external-checker or high-trust
-   evidence when CLR-08 is deferred.
+   evidence when the seed repository did not supply CLR-08 high-trust inputs.
 
 Acceptance criteria:
 
@@ -581,7 +588,8 @@ Implementation:
    changes, and downstream compatibility.
 4. Document that tactics, replay files, automation, and AI output are not
    trusted proof evidence.
-5. Document the reference-checker-only release policy when CLR-08 is deferred.
+5. Document the reference-checker-only release policy when the seed repository
+   does not supply CLR-08 high-trust inputs.
 6. Add a short handoff section explaining what CLR-10 needs from the seed
    release.
 
@@ -649,12 +657,13 @@ Fix: The repository boundary section now requires the fixture to behave like a
 standalone repository, forbids hidden relative paths, and keeps active workflow
 files out of this repository.
 
-Finding: CLR-08 can be deferred, but the seed release still needs a clear
-verification posture.
+Finding: CLR-08 high-trust evidence might be absent from the seed repository,
+but the seed release still needs a clear verification posture.
 
-Fix: The CLR-08 deferral rule requires a reference-checker-only seed release,
-forbids `verified_high_trust` output in that mode, and treats external
-verification as an optional extension only after CLR-08 is complete.
+Fix: The CLR-08 high-trust evidence rule requires a reference-checker-only seed
+release by default, forbids `verified_high_trust` output in that mode, and
+treats external verification as an optional extension only after the seed
+supplies CLR-08 high-trust inputs.
 
 Finding: The current proof corpus is much larger than the first seed should
 carry.

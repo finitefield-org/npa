@@ -21,8 +21,9 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
 - `npa-checker-ext` は build 済み executable が runner-owned checker registry から解決され、
   runner policy / binary hash / identity validation と package external mode が通ったときだけ
   release evidence として「存在する」と扱う
-- verified_high_trust artifact と full external-checker release CI はまだこの文書の
-  high-trust integration target として扱い、reference-checker-only evidence から生成しない
+- `verified_high_trust` artifact generator は `npa package high-trust` として実装済みだが、
+  full external-checker release CI はまだ high-trust integration target として扱い、
+  reference-checker-only evidence から artifact を生成しない
 - 現リポジトリでは GitHub Actions workflow は削除済みであり、
   Phase 9 Regression script は Phase 8 Release Audit fixture gate の代替ではない
 - Phase 8 の automation が crates/npa-api に存在しても、trusted boundary は
@@ -69,9 +70,9 @@ CI / release audit
 verified_high_trust artifact
 ```
 
-これは Phase 8 の target architecture です。現リポジトリで `verified_high_trust`
-artifact を生成できると解釈してはいけません。`verified_high_trust` は、external checker と
-high-trust-reference を含む required evidence が揃った future high-trust command だけが
+これは Phase 8 の target architecture です。現リポジトリの
+`npa package high-trust` は `verified_high_trust` artifact generator ですが、
+external checker と high-trust-reference を含む required evidence が揃った場合だけ
 生成でき、reference-checker-only evidence からは生成できません。最終成果物は単なる
 `.npa` ソースでも、tactic script でも、AI探索ログでもなく、**複数 checker で再検査済みの
 `.npcert`** です。
@@ -1920,7 +1921,7 @@ Phase 8 が完了したと言える条件と、現リポジトリで固定して
 | Phase 8 audit が AI candidate hot path の通常 latency を増やさない | `cargo test -p npa-api ai_search` と Phase 8 Release Audit の step 4 |
 
 現リポジトリの `scripts/phase8-release-audit.sh` は fixture gate です。
-full external-checker release audit CI と `verified_high_trust` generation は target integration として残ります。
+full external-checker release audit CI と `package high-trust` の CI 接続は target integration として残ります。
 `npa-checker-ext` は build 済み binary が runner-owned registry と package external mode で
 検証されるまで release evidence ではありません。
 AI sidecar は diagnostic / metadata であり、Phase 8 完了条件や release blocker の根拠には含めません。

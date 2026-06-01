@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prove Theorem"
+  short_description: "Fast NPA proof-corpus theorem proving"
+  default_prompt: "Use $prove-theorem to prove a named NPA proof corpus theorem quickly."

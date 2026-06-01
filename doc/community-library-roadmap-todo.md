@@ -459,7 +459,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Documentation that current `npa` repo local gates remain separate from external library CI.
 - Acceptance criteria:
   - PR mode requires package check, deterministic build/hash check, full-package reference checker fallback, axiom report check, and index check.
-  - Release/high-trust mode requires full package check and leaves external checker as target integration unless CLR-08 is complete.
+  - Release mode requires full package check and leaves external checker to the CLR-08 opt-in high-trust extension.
   - CI template does not rely on local machine state, registry network access, or hidden package cache.
   - Workflow examples match actual package CLI names and flags.
   - Base CLR-07 templates use only package commands and flags already owned by CLR-04 and CLR-05; they do not use `--changed`, `--all`, or `--checker external`.
@@ -472,7 +472,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Detailed breakdown: `doc/community-library-roadmap-clr-07-todo.md`.
   - Keep external theorem library templates outside `.github/workflows` unless this repository explicitly reintroduces active workflows.
   - Base templates use full-package reference verification as the conservative PR fallback until changed-module selection exists.
-  - Publish-plan is optional after CLR-06; external checker required mode remains CLR-08.
+  - Publish-plan is optional after CLR-06; external checker required mode is owned by the CLR-08 opt-in high-trust extension.
   - CLR-07-01 contract source: `doc/external-theorem-library-ci.md`.
   - CLR-07 template location: `ci-templates/github-actions/`.
   - CLR-09 should copy or reference `npa-package-pr.yml`, `npa-package-release.yml`,
@@ -481,11 +481,12 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
     scripts at the referenced path or adjust the copied workflow paths in the
     same review.
   - The copied seed workflow remains registry-free: no package solver, binary cache,
-    implicit latest package resolution, or required external checker before CLR-08.
+    implicit latest package resolution, or required external checker unless the
+    seed repository opts into CLR-08 high-trust evidence.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
-- Status: Partially Completed; high-trust artifact and CI template extension deferred
+- Status: Completed; high-trust command, opt-in CI template, and benchmark/audit summary contract implemented. Actual high-trust evidence still requires a pinned external checker binary in the consuming repository.
 - Depends on: CLR-03
 - Inputs:
   - `doc/phase8-human.md`
@@ -496,15 +497,15 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Code or documentation areas:
   - `crates/npa-api/src/independent_checker.rs` RunnerPolicy / ReleasePolicy / CheckerBinaryRegistry integration
   - `crates/npa-cli` `package verify-certs --checker external`
-  - future `crates/npa-cli` package high-trust command when `verified_high_trust` is implemented
-  - future `crates/npa-package` `verified_high_trust` schema
+  - `crates/npa-cli` package high-trust command
+  - `crates/npa-package` `verified_high_trust` schema
   - external checker runner integration
   - high-trust release policy tests
-  - generated `verified_high_trust` artifact schema when no longer deferred
+  - generated `verified_high_trust` artifact schema and generator
 - Deliverables:
   - Explicit contract for when `npa-checker-ext` becomes required.
   - Source-free package verification path for `--checker external`, gated by runner policy and checker binary registry.
-  - `verified_high_trust` artifact schema and generation path, or a documented target-integration placeholder if deferred.
+  - `verified_high_trust` artifact schema and generation path.
   - Release/high-trust policy tests that do not affect AI candidate hot path.
   - Benchmark / audit collection plan for external checker.
 - Acceptance criteria:
@@ -518,7 +519,8 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - `cargo test -p npa-api independent_checker`
   - `cargo test -p npa-checker-ref`
   - `cargo test -p npa-cli package_verify_external`
-  - future artifact-generator verification: `cargo test -p npa-package verified_high_trust`
+  - artifact-generator verification: `cargo test -p npa-package verified_high_trust`
+  - high-trust package command verification: `cargo test -p npa-cli package_high_trust`
   - `./scripts/phase8-release-audit.sh`
   - targeted search: `rg -n "community-library-roadmap-clr-08-todo|verified_high_trust|npa-checker-ext|external checker|high-trust-reference|CheckerBinaryRegistry" doc crates`
 - Notes:
@@ -529,8 +531,14 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
     as release evidence only after a built executable is present in a fresh
     checkout or documented CI environment and its identity/hash pass runner
     validation.
-  - `verified_high_trust` and full external-checker release/high-trust CI are
-    deferred. They must not be generated from reference-checker-only evidence.
+  - `verified_high_trust` schema/generator, `package high-trust`, and the
+    opt-in `npa-package-high-trust.yml` template are implemented.
+    `verified_high_trust` must not be generated from reference-checker-only
+    evidence.
+  - External checker benchmark summaries use deterministic release audit rows
+    linked to checker result hashes. They are regression evidence, not proof
+    validity inputs, and reference / external checker benchmark completion is
+    not on the PR hot path.
   - `npa-mathlib-seed` may proceed as a reference-checker-only release seed.
   - Policy / runner contract work can start from CLR-03, but package CLI integration depends on CLR-04 and CI integration depends on CLR-07.
 
@@ -561,7 +569,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Updating a theorem in the seed library does not require modifying `npa` kernel / checker / certificate code.
   - Downstream package import uses hash-pinned artifacts, not implicit latest registry lookup.
   - The seed library can publish release artifacts usable by another package without a registry server.
-  - If CLR-08 is still deferred, seed release evidence is explicitly reference-checker-only and does not emit `verified_high_trust`.
+  - Unless the seed repository opts into CLR-08 high-trust inputs, seed release evidence is explicitly reference-checker-only and does not emit `verified_high_trust`.
 - Verification:
   - Seed repo CI passes from fresh checkout.
   - In `npa`: package import fixture test passes.
@@ -573,7 +581,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Detailed breakdown: `doc/community-library-roadmap-clr-09-todo.md`.
   - Copy or reference the CLR-07 templates and helper scripts instead of copying
     `scripts/phase8-release-audit.sh` or `scripts/phase9-regression.sh`.
-  - CLR-09 depends on CLR-06 and CLR-07. It can proceed without CLR-08 only when the seed release policy is explicitly reference-checker-only.
+  - CLR-09 depends on CLR-06 and CLR-07. It can proceed without seed-provided CLR-08 high-trust evidence when the seed release policy is explicitly reference-checker-only.
 
 ### CLR-10 Registry Readiness Review
 
@@ -601,7 +609,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - No registry requirement asks the kernel, checker, or certificate verifier to read network data.
   - The next step can be implemented without revisiting package manifest semantics.
   - Remaining non-goals are intentionally deferred.
-  - If CLR-08 is deferred, the readiness decision explicitly distinguishes reference-checker-only release evidence from unavailable high-trust evidence.
+  - The readiness decision explicitly distinguishes reference-checker-only release evidence from optional CLR-08 high-trust evidence when the seed repository has not supplied pinned external checker artifacts.
 - Verification:
   - `rg -n "Registry 前の blocker|npa.registry.module.v0.1|npa.package.v0.1" doc/community-library-roadmap.md doc/community-library-roadmap-todo.md`
   - `rg -n "community-library-roadmap-clr-10-todo|registry readiness|Git-release-based registry seed|not checker input|reference-checker-only" doc README.md`
@@ -626,8 +634,8 @@ F2: The design originally did not fix the Cargo package that owns `npa package`.
 F3: Registry metadata could be confused with the independent checker binary registry in Phase 8 docs.
     Resolution: CLR-06 requires explicit distinction between module registry metadata and checker binary registry metadata.
 
-F4: External checker / verified_high_trust target integration could block the first seed library unnecessarily.
-    Resolution: CLR-08 is separate and may be deferred; CLR-09 depends on package CI and reference checker, not full external checker.
+F4: External checker / verified_high_trust high-trust integration could block the first seed library unnecessarily.
+    Resolution: CLR-08 is separate; CLR-09 depends on package CI and reference checker, not full external checker evidence.
 
 F5: Dependency review found that external CI requires deterministic axiom report / theorem index generation,
     and the seed library requires publish metadata before proving release artifact flow.

@@ -45,6 +45,8 @@ pub enum PackageCommand {
     CheckHashes(PackageCommonOptions),
     /// `npa package publish-plan`.
     PublishPlan(PackagePublishPlanOptions),
+    /// `npa package high-trust`.
+    HighTrust(Box<PackageHighTrustOptions>),
 }
 
 impl PackageCommand {
@@ -58,6 +60,7 @@ impl PackageCommand {
             Self::VerifyCerts(_) => "package verify-certs",
             Self::CheckHashes(_) => "package check-hashes",
             Self::PublishPlan(_) => "package publish-plan",
+            Self::HighTrust(_) => "package high-trust",
         }
     }
 
@@ -70,6 +73,7 @@ impl PackageCommand {
             Self::Index(options) => &options.common,
             Self::VerifyCerts(options) => &options.common,
             Self::PublishPlan(options) => &options.common,
+            Self::HighTrust(options) => &options.common,
         }
     }
 }
@@ -124,6 +128,31 @@ pub struct PackageIndexOptions {
 pub struct PackagePublishPlanOptions {
     /// Common package command options.
     pub common: PackageCommonOptions,
+    /// Check mode: regenerate in memory without writing files.
+    pub check: bool,
+}
+
+/// Options for `package high-trust`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageHighTrustOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
+    /// Workspace-relative release policy path.
+    pub release_policy: PathBuf,
+    /// Expected canonical release policy hash.
+    pub release_policy_hash: String,
+    /// Workspace-relative high-trust runner policy path.
+    pub runner_policy: PathBuf,
+    /// Expected canonical runner policy hash.
+    pub runner_policy_hash: String,
+    /// Workspace-relative high-trust challenge runner policy path.
+    pub challenge_runner_policy: PathBuf,
+    /// Expected canonical challenge runner policy hash.
+    pub challenge_runner_policy_hash: String,
+    /// Workspace-relative checker binary registry path.
+    pub checker_registry: PathBuf,
+    /// Optional workspace-relative output path. Defaults under package root.
+    pub out: Option<PathBuf>,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
 }
@@ -193,6 +222,8 @@ pub enum HelpTopic {
     PackageCheckHashes,
     /// `npa package publish-plan --help`.
     PackagePublishPlan,
+    /// `npa package high-trust --help`.
+    PackageHighTrust,
 }
 
 /// Stable usage error produced by the argument parser.
@@ -322,6 +353,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "verify-certs" => parse_package_verify_certs_args(&args[1..]),
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
         "publish-plan" => parse_package_publish_plan_args(&args[1..]),
+        "high-trust" => parse_package_high_trust_args(&args[1..]),
         command if command.starts_with('-') => {
             Err(flag_error(command, UsageReason::UnknownFlag).with_command("package"))
         }
@@ -475,6 +507,230 @@ fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsag
     let common = parse_common_options(&common_tokens, "package publish-plan", &["--check"])?;
     Ok(CliAction::Run(CliCommand::Package(
         PackageCommand::PublishPlan(PackagePublishPlanOptions { common, check }),
+    )))
+}
+
+fn parse_package_high_trust_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackageHighTrust));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut release_policy = None::<PathBuf>;
+    let mut release_policy_hash = None::<String>;
+    let mut runner_policy = None::<PathBuf>;
+    let mut runner_policy_hash = None::<String>;
+    let mut challenge_runner_policy = None::<PathBuf>;
+    let mut challenge_runner_policy_hash = None::<String>;
+    let mut checker_registry = None::<PathBuf>;
+    let mut out = None::<PathBuf>;
+    let mut check = false;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--release-policy" => {
+                parse_path_flag(
+                    args,
+                    &mut index,
+                    "--release-policy",
+                    "package high-trust",
+                    &mut release_policy,
+                )?;
+            }
+            token if token.starts_with("--release-policy=") => {
+                parse_path_equals_flag(
+                    token,
+                    "--release-policy",
+                    "package high-trust",
+                    &mut release_policy,
+                )?;
+                index += 1;
+            }
+            "--release-policy-hash" => {
+                parse_string_flag(
+                    args,
+                    &mut index,
+                    "--release-policy-hash",
+                    "package high-trust",
+                    &mut release_policy_hash,
+                )?;
+            }
+            token if token.starts_with("--release-policy-hash=") => {
+                parse_string_equals_flag(
+                    token,
+                    "--release-policy-hash",
+                    "package high-trust",
+                    &mut release_policy_hash,
+                )?;
+                index += 1;
+            }
+            "--runner-policy" => {
+                parse_path_flag(
+                    args,
+                    &mut index,
+                    "--runner-policy",
+                    "package high-trust",
+                    &mut runner_policy,
+                )?;
+            }
+            token if token.starts_with("--runner-policy=") => {
+                parse_path_equals_flag(
+                    token,
+                    "--runner-policy",
+                    "package high-trust",
+                    &mut runner_policy,
+                )?;
+                index += 1;
+            }
+            "--runner-policy-hash" => {
+                parse_string_flag(
+                    args,
+                    &mut index,
+                    "--runner-policy-hash",
+                    "package high-trust",
+                    &mut runner_policy_hash,
+                )?;
+            }
+            token if token.starts_with("--runner-policy-hash=") => {
+                parse_string_equals_flag(
+                    token,
+                    "--runner-policy-hash",
+                    "package high-trust",
+                    &mut runner_policy_hash,
+                )?;
+                index += 1;
+            }
+            "--challenge-runner-policy" => {
+                parse_path_flag(
+                    args,
+                    &mut index,
+                    "--challenge-runner-policy",
+                    "package high-trust",
+                    &mut challenge_runner_policy,
+                )?;
+            }
+            token if token.starts_with("--challenge-runner-policy=") => {
+                parse_path_equals_flag(
+                    token,
+                    "--challenge-runner-policy",
+                    "package high-trust",
+                    &mut challenge_runner_policy,
+                )?;
+                index += 1;
+            }
+            "--challenge-runner-policy-hash" => {
+                parse_string_flag(
+                    args,
+                    &mut index,
+                    "--challenge-runner-policy-hash",
+                    "package high-trust",
+                    &mut challenge_runner_policy_hash,
+                )?;
+            }
+            token if token.starts_with("--challenge-runner-policy-hash=") => {
+                parse_string_equals_flag(
+                    token,
+                    "--challenge-runner-policy-hash",
+                    "package high-trust",
+                    &mut challenge_runner_policy_hash,
+                )?;
+                index += 1;
+            }
+            "--checker-registry" => {
+                parse_path_flag(
+                    args,
+                    &mut index,
+                    "--checker-registry",
+                    "package high-trust",
+                    &mut checker_registry,
+                )?;
+            }
+            token if token.starts_with("--checker-registry=") => {
+                parse_path_equals_flag(
+                    token,
+                    "--checker-registry",
+                    "package high-trust",
+                    &mut checker_registry,
+                )?;
+                index += 1;
+            }
+            "--out" => {
+                parse_path_flag(args, &mut index, "--out", "package high-trust", &mut out)?;
+            }
+            token if token.starts_with("--out=") => {
+                parse_path_equals_flag(token, "--out", "package high-trust", &mut out)?;
+                index += 1;
+            }
+            "--check" => {
+                if check {
+                    return Err(flag_error("--check", UsageReason::DuplicateFlag)
+                        .with_command("package high-trust"));
+                }
+                check = true;
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(
+        &common_tokens,
+        "package high-trust",
+        &[
+            "--release-policy",
+            "--release-policy-hash",
+            "--runner-policy",
+            "--runner-policy-hash",
+            "--challenge-runner-policy",
+            "--challenge-runner-policy-hash",
+            "--checker-registry",
+            "--out",
+            "--check",
+        ],
+    )?;
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::HighTrust(Box::new(PackageHighTrustOptions {
+            common,
+            release_policy: release_policy.ok_or_else(|| {
+                flag_error("--release-policy", UsageReason::MissingRequiredFlag)
+                    .with_command("package high-trust")
+            })?,
+            release_policy_hash: release_policy_hash.ok_or_else(|| {
+                flag_error("--release-policy-hash", UsageReason::MissingRequiredFlag)
+                    .with_command("package high-trust")
+            })?,
+            runner_policy: runner_policy.ok_or_else(|| {
+                flag_error("--runner-policy", UsageReason::MissingRequiredFlag)
+                    .with_command("package high-trust")
+            })?,
+            runner_policy_hash: runner_policy_hash.ok_or_else(|| {
+                flag_error("--runner-policy-hash", UsageReason::MissingRequiredFlag)
+                    .with_command("package high-trust")
+            })?,
+            challenge_runner_policy: challenge_runner_policy.ok_or_else(|| {
+                flag_error(
+                    "--challenge-runner-policy",
+                    UsageReason::MissingRequiredFlag,
+                )
+                .with_command("package high-trust")
+            })?,
+            challenge_runner_policy_hash: challenge_runner_policy_hash.ok_or_else(|| {
+                flag_error(
+                    "--challenge-runner-policy-hash",
+                    UsageReason::MissingRequiredFlag,
+                )
+                .with_command("package high-trust")
+            })?,
+            checker_registry: checker_registry.ok_or_else(|| {
+                flag_error("--checker-registry", UsageReason::MissingRequiredFlag)
+                    .with_command("package high-trust")
+            })?,
+            out,
+            check,
+        })),
     )))
 }
 
@@ -683,6 +939,74 @@ fn parse_checker(value: &str) -> Result<PackageChecker, CliUsageError> {
     }
 }
 
+fn parse_path_flag(
+    args: &[String],
+    index: &mut usize,
+    flag: &'static str,
+    command: &'static str,
+    target: &mut Option<PathBuf>,
+) -> Result<(), CliUsageError> {
+    if target.is_some() {
+        return Err(flag_error(flag, UsageReason::DuplicateFlag).with_command(command));
+    }
+    let value = flag_value(args, *index, flag, command)?;
+    *target = Some(PathBuf::from(value));
+    *index += 2;
+    Ok(())
+}
+
+fn parse_path_equals_flag(
+    token: &str,
+    flag: &'static str,
+    command: &'static str,
+    target: &mut Option<PathBuf>,
+) -> Result<(), CliUsageError> {
+    if target.is_some() {
+        return Err(flag_error(flag, UsageReason::DuplicateFlag).with_command(command));
+    }
+    let prefix = format!("{flag}=");
+    let value = token.trim_start_matches(&prefix);
+    if value.is_empty() {
+        return Err(flag_error(flag, UsageReason::MissingFlagValue).with_command(command));
+    }
+    *target = Some(PathBuf::from(value));
+    Ok(())
+}
+
+fn parse_string_flag(
+    args: &[String],
+    index: &mut usize,
+    flag: &'static str,
+    command: &'static str,
+    target: &mut Option<String>,
+) -> Result<(), CliUsageError> {
+    if target.is_some() {
+        return Err(flag_error(flag, UsageReason::DuplicateFlag).with_command(command));
+    }
+    let value = flag_value(args, *index, flag, command)?;
+    *target = Some(value.to_owned());
+    *index += 2;
+    Ok(())
+}
+
+fn parse_string_equals_flag(
+    token: &str,
+    flag: &'static str,
+    command: &'static str,
+    target: &mut Option<String>,
+) -> Result<(), CliUsageError> {
+    if target.is_some() {
+        return Err(flag_error(flag, UsageReason::DuplicateFlag).with_command(command));
+    }
+    let prefix = format!("{flag}=");
+    let value = token.trim_start_matches(&prefix);
+    if value.is_empty() {
+        return Err(flag_error(flag, UsageReason::MissingFlagValue).with_command(command));
+    }
+    *target = Some(value.to_owned());
+    Ok(())
+}
+
 fn parse_common_options(
     args: &[String],
     command: &'static str,
@@ -814,7 +1138,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n  publish-plan\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
@@ -836,6 +1160,9 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
         }
         HelpTopic::PackagePublishPlan => {
             "Usage: npa package publish-plan [--root PATH] [--json] [--check]\n\nGenerate or check generated/publish-plan.json from source-free package release metadata."
+        }
+        HelpTopic::PackageHighTrust => {
+            "Usage: npa package high-trust [--root PATH] [--json] --release-policy PATH --release-policy-hash HASH --runner-policy PATH --runner-policy-hash HASH --challenge-runner-policy PATH --challenge-runner-policy-hash HASH --checker-registry PATH [--out PATH] [--check]\n\nGenerate or check verified_high_trust release evidence after external and high-trust-reference gates pass. The artifact is release evidence, not checker input."
         }
     }
 }
