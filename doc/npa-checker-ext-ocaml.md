@@ -266,6 +266,8 @@ stored module hash trailer の後ろに byte が残る場合は `certificate_dec
 hash input の canonical encoder は checker 内部の source-free decoded AST だけを入力にし、
 pretty printer、JSON renderer、filesystem path、source span、debug sidecar は参照しません。
 domain label は Rust `npa-cert` と byte-for-byte で一致する固定文字列として実装します。
+level / term hash recomputation は canonical table order に従い、child hash は既に解決済みの
+table entry からだけ取得します。
 
 必須再計算:
 

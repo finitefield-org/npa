@@ -546,7 +546,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-level-term
+sh checkers/npa-checker-ext/scripts/test.sh hash-level-term
 ```
 
 ### M2-03 Recompute Declaration Hashes
@@ -573,7 +573,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-declarations
+sh checkers/npa-checker-ext/scripts/test.sh hash-declarations
 ```
 
 ### M2-04 Recompute Export, Axiom, And Module Certificate Hashes
@@ -603,7 +603,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-module
+sh checkers/npa-checker-ext/scripts/test.sh hash-module
 cargo test -p npa-checker-ref hash_verifier
 ```
 
@@ -653,7 +653,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST import-store
+sh checkers/npa-checker-ext/scripts/test.sh import-store
 ```
 
 ### M3-02 Implement Normal Import Resolution

@@ -18,6 +18,10 @@ scripts/test.sh decoder-tables
 scripts/test.sh decoder-declarations
 scripts/test.sh decoder-reachability
 scripts/test.sh hash-encoder
+scripts/test.sh hash-level-term
+scripts/test.sh hash-declarations
+scripts/test.sh hash-module
+scripts/test.sh import-store
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -93,3 +97,24 @@ encoders produce domain-separated inputs for level, term, declaration
 dependency, axiom dependency, declaration payload, export block, and axiom
 report hashing without reading source spans, debug sidecars, filesystem paths,
 pretty printers, or JSON output.
+
+M2-02 makes level and term table hash recomputation table-order based. Child
+level and term references must resolve to already hashed table entries, and the
+`hash-level-term` fixture pins the expected Rust-compatible hash bytes plus
+dependent-hash mutation behavior.
+
+M2-03 recomputes stored declaration interface and declaration certificate
+hashes from decoded canonical certificate data. The `hash-declarations` fixture
+checks golden certificates and rejects mutations to declaration type, body,
+dependency, and axiom dependency material with deterministic declaration-section
+offsets.
+
+M2-04 recomputes the final export, axiom report, and module certificate hashes.
+The export hash is checked against an export block rebuilt from declaration
+interfaces, while the module certificate hash uses the exact original
+certificate bytes before the stored certificate hash.
+
+M3-01 adds an explicit source-free import store loader. `--import-dir` style
+directories are traversed only for `.npcert` files, each import certificate is
+decoded and hash-verified before its public environment is exposed, and duplicate
+module/export-hash bindings are rejected.

@@ -52,6 +52,14 @@ let bytes_of_codes codes =
 
 let string_of_codes codes = Bytes.to_string (bytes_of_codes codes)
 
+let mutate_byte text offset =
+  if offset < 0 || offset >= String.length text then
+    failwith ("cannot mutate byte at offset " ^ string_of_int offset);
+  let bytes = Bytes.of_string text in
+  let original = Char.code (Bytes.get bytes offset) in
+  Bytes.set bytes offset (Char.chr (original lxor 0x01));
+  Bytes.to_string bytes
+
 let split_tabs line =
   let length = String.length line in
   let rec loop start fields =
@@ -388,6 +396,8 @@ let encode_level_zero = one_byte 0x00
 let encode_level_succ inner = one_byte 0x01 ^ encode_uvar_int inner
 
 let encode_level_max lhs rhs = one_byte 0x02 ^ encode_uvar_int lhs ^ encode_uvar_int rhs
+
+let encode_level_imax lhs rhs = one_byte 0x03 ^ encode_uvar_int lhs ^ encode_uvar_int rhs
 
 let encode_level_param name_id = one_byte 0x04 ^ encode_uvar_int name_id
 
@@ -1142,6 +1152,79 @@ let assert_canonical_hash label expected_hex result =
 let assert_canonical_bytes label expected result =
   assert_equal label expected (assert_ok label result)
 
+let assert_hash_hexes label expected result =
+  let hashes = assert_ok label result in
+  assert_int_equal (label ^ " length") (List.length expected) (List.length hashes);
+  List.iteri
+    (fun index expected_hex ->
+      assert_equal
+        (label ^ " " ^ string_of_int index)
+        expected_hex
+        (hex_of_raw_hash (List.nth hashes index)))
+    expected;
+  hashes
+
+let located_names names =
+  List.mapi (fun offset name -> { Ext_cert.name; offset }) names
+
+let decode_level_table label names bytes =
+  match Ext_level.read_table names (Ext_bytes.of_string bytes) with
+  | Ok (levels, next) ->
+      assert_int_equal (label ^ " offset") (String.length bytes) (Ext_bytes.offset next);
+      levels
+  | Error error ->
+      failwith
+        (label ^ ": unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+
+let decode_term_table label names levels bytes =
+  match Ext_term.read_table names levels (Ext_bytes.of_string bytes) with
+  | Ok (terms, next) ->
+      assert_int_equal (label ^ " offset") (String.length bytes) (Ext_bytes.offset next);
+      terms
+  | Error error ->
+      failwith
+        (label ^ ": unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+
+let assert_export_term_hashes label decoded =
+  let level_hashes =
+    assert_ok (label ^ " level hashes") (Ext_canonical.level_hashes decoded.Ext_cert.level_table)
+  in
+  let term_hashes =
+    assert_ok (label ^ " term hashes")
+      (Ext_canonical.term_hashes decoded.Ext_cert.name_table decoded.Ext_cert.level_table
+         level_hashes decoded.Ext_cert.term_table)
+  in
+  List.iteri
+    (fun index export ->
+      let prefix = label ^ " export " ^ string_of_int index in
+      let type_hash =
+        assert_ok (prefix ^ " type hash")
+          (Ext_canonical.hash_for_term Ext_bytes.Export_block export.Ext_cert.export_offset
+             decoded.Ext_cert.name_table decoded.Ext_cert.term_table term_hashes
+             export.Ext_cert.export_ty)
+      in
+      assert_equal (prefix ^ " type hash")
+        (hex_of_raw_hash export.Ext_cert.export_type_hash)
+        (hex_of_raw_hash type_hash);
+      match (export.Ext_cert.export_body, export.Ext_cert.export_body_hash) with
+      | None, None -> ()
+      | Some body, Some expected_body_hash ->
+          let body_hash =
+            assert_ok (prefix ^ " body hash")
+              (Ext_canonical.hash_for_term Ext_bytes.Export_block export.Ext_cert.export_offset
+                 decoded.Ext_cert.name_table decoded.Ext_cert.term_table term_hashes body)
+          in
+          assert_equal (prefix ^ " body hash") (hex_of_raw_hash expected_body_hash)
+            (hex_of_raw_hash body_hash)
+      | _ -> failwith (prefix ^ ": body and body_hash option mismatch"))
+    decoded.Ext_cert.export_block
+
 let assert_declaration_hashes label decoded =
   List.iteri
     (fun index declaration ->
@@ -1162,8 +1245,8 @@ let assert_declaration_hashes label decoded =
       let certificate_payload =
         assert_ok (prefix ^ " certificate payload")
           (Ext_canonical.declaration_certificate_payload decoded.Ext_cert.name_table
-             decoded.Ext_cert.term_table declaration.Ext_cert.payload interface_hash
-             declaration.Ext_cert.dependencies declaration.Ext_cert.axiom_dependencies)
+             decoded.Ext_cert.level_table decoded.Ext_cert.term_table declaration.Ext_cert.payload
+             interface_hash declaration.Ext_cert.dependencies declaration.Ext_cert.axiom_dependencies)
       in
       let certificate_hash =
         Ext_canonical.hash_with_domain Ext_canonical.domain_decl_certificate certificate_payload
@@ -1172,6 +1255,586 @@ let assert_declaration_hashes label decoded =
         (hex_of_raw_hash declaration.Ext_cert.hashes.Ext_cert.decl_certificate_hash)
         (hex_of_raw_hash certificate_hash))
     decoded.Ext_cert.declaration_table
+
+let recompute_stored_declaration_hashes label decoded =
+  let declaration_table =
+    List.mapi
+      (fun index declaration ->
+        let prefix = label ^ " decl " ^ string_of_int index in
+        let interface_hash, certificate_hash =
+          assert_ok (prefix ^ " recomputed hashes")
+            (Ext_canonical.declaration_hashes decoded.Ext_cert.name_table
+               decoded.Ext_cert.level_table decoded.Ext_cert.term_table declaration)
+        in
+        let hashes =
+          {
+            declaration.Ext_cert.hashes with
+            Ext_cert.decl_interface_hash = interface_hash;
+            decl_certificate_hash = certificate_hash;
+          }
+        in
+        { declaration with Ext_cert.hashes = hashes })
+      decoded.Ext_cert.declaration_table
+  in
+  { decoded with Ext_cert.declaration_table }
+
+let replace_first_declaration decoded update =
+  match decoded.Ext_cert.declaration_table with
+  | declaration :: rest ->
+      { decoded with Ext_cert.declaration_table = update declaration :: rest }
+  | [] -> failwith "expected declaration fixture"
+
+let assert_declaration_hash_verifies label decoded =
+  match
+    assert_ok (label ^ " declaration hash check")
+      (Ext_canonical.verify_declaration_hashes decoded)
+  with
+  | Ext_canonical.Declaration_hashes_ok -> ()
+  | Ext_canonical.Declaration_hash_mismatch mismatch ->
+      failwith
+        (label ^ ": unexpected declaration hash mismatch at "
+       ^ string_of_int mismatch.Ext_canonical.mismatch_offset)
+
+let assert_declaration_hash_rejects label expected_kind expected_reason decoded =
+  match
+    assert_ok (label ^ " declaration hash check")
+      (Ext_canonical.verify_declaration_hashes decoded)
+  with
+  | Ext_canonical.Declaration_hashes_ok -> failwith (label ^ ": expected hash mismatch")
+  | Ext_canonical.Declaration_hash_mismatch mismatch ->
+      let kind =
+        Ext_canonical.declaration_hash_mismatch_kind_code
+          mismatch.Ext_canonical.mismatch_kind
+      in
+      let reason =
+        Ext_canonical.declaration_hash_role_reason_code
+          mismatch.Ext_canonical.mismatch_role
+      in
+      let offset = mismatch.Ext_canonical.mismatch_offset in
+      assert_equal (label ^ " kind") expected_kind kind;
+      assert_equal (label ^ " reason") expected_reason reason;
+      assert_bool (label ^ " expected differs from actual")
+        (mismatch.Ext_canonical.expected_hash <> mismatch.Ext_canonical.actual_hash);
+      let raw =
+        Ext_result.hash_mismatch_failure ~kind ~reason_code:reason
+          ~section:"declarations" ~offset
+      in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_reason ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section") "\"section\": \"declarations\"" raw;
+      assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int offset) raw
+
+let assert_module_hash_verifies label bytes decoded =
+  match
+    assert_ok (label ^ " module hash check")
+      (Ext_canonical.verify_module_hashes bytes decoded)
+  with
+  | Ext_canonical.Module_hashes_ok -> ()
+  | Ext_canonical.Module_hash_mismatch mismatch ->
+      failwith
+        (label ^ ": unexpected module hash mismatch "
+       ^ Ext_canonical.module_hash_role_kind_code
+           mismatch.Ext_canonical.module_mismatch_role
+       ^ " at "
+       ^ string_of_int mismatch.Ext_canonical.module_mismatch_offset)
+
+let assert_module_hash_rejects label expected_kind expected_offset bytes decoded =
+  match
+    assert_ok (label ^ " module hash check")
+      (Ext_canonical.verify_module_hashes bytes decoded)
+  with
+  | Ext_canonical.Module_hashes_ok -> failwith (label ^ ": expected module hash mismatch")
+  | Ext_canonical.Module_hash_mismatch mismatch ->
+      let kind =
+        Ext_canonical.module_hash_role_kind_code
+          mismatch.Ext_canonical.module_mismatch_role
+      in
+      let offset = mismatch.Ext_canonical.module_mismatch_offset in
+      assert_equal (label ^ " kind") expected_kind kind;
+      assert_int_equal (label ^ " offset") expected_offset offset;
+      assert_bool (label ^ " expected differs from actual")
+        (mismatch.Ext_canonical.module_expected_hash
+        <> mismatch.Ext_canonical.module_actual_hash);
+      let raw =
+        Ext_result.hash_mismatch_failure ~kind ~reason_code:kind ~section:"hashes"
+          ~offset
+      in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_kind ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section") "\"section\": \"hashes\"" raw;
+      assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int offset) raw
+
+let import_store_load_error_code error =
+  match error with
+  | Ext_import_store.Import_dir_unavailable -> "import_dir_unavailable"
+  | Ext_import_store.Source_or_replay_input_rejected -> "source_or_replay_input_rejected"
+  | Ext_import_store.Certificate_decode_error decode_error ->
+      "certificate_decode_error:" ^ Ext_bytes.reason_code decode_error.Ext_bytes.reason
+  | Ext_import_store.Certificate_hash_mismatch mismatch ->
+      "certificate_hash_mismatch:" ^ mismatch.Ext_import_store.hash_mismatch_kind
+  | Ext_import_store.Duplicate_import_binding _ -> "duplicate_import_binding"
+
+let assert_import_store_ok label result =
+  match result with
+  | Ok value -> value
+  | Error error ->
+      failwith (label ^ ": unexpected import store error " ^ import_store_load_error_code error)
+
+let assert_import_store_load_error label expected result =
+  match result with
+  | Ok _ -> failwith (label ^ ": expected import store error")
+  | Error error -> assert_equal (label ^ " load error") expected (import_store_load_error_code error)
+
+let assert_import_resolves label store request =
+  match Ext_import_store.resolve_normal store request with
+  | Ok value -> value
+  | Error error ->
+      failwith
+        (label ^ ": unexpected import resolution error "
+       ^ Ext_import_store.resolve_error_reason_code error.Ext_import_store.resolve_reason)
+
+let assert_import_resolve_rejects label expected_kind expected_reason expected_offset store
+    request =
+  match Ext_import_store.resolve_normal ~offset:expected_offset store request with
+  | Ok _ -> failwith (label ^ ": expected import resolution error")
+  | Error error ->
+      let kind = Ext_import_store.resolve_error_kind error in
+      let reason =
+        Ext_import_store.resolve_error_reason_code error.Ext_import_store.resolve_reason
+      in
+      assert_equal (label ^ " kind") expected_kind kind;
+      assert_equal (label ^ " reason") expected_reason reason;
+      assert_int_equal (label ^ " offset") expected_offset
+        error.Ext_import_store.resolve_offset;
+      let raw =
+        Ext_result.import_failure ~kind ~reason_code:reason ~section:"imports"
+          ~offset:expected_offset
+      in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_reason ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section") "\"section\": \"imports\"" raw;
+      assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int expected_offset) raw
+
+let theorem_payload_with_type payload decl_ty =
+  match payload with
+  | Ext_cert.TheoremDecl
+      { decl_name; decl_universe_params; decl_universe_constraints; decl_proof; decl_opacity; _ }
+    ->
+      Ext_cert.TheoremDecl
+        {
+          decl_name;
+          decl_universe_params;
+          decl_universe_constraints;
+          decl_ty;
+          decl_proof;
+          decl_opacity;
+        }
+  | _ -> failwith "expected theorem declaration"
+
+let theorem_payload_with_proof payload decl_proof =
+  match payload with
+  | Ext_cert.TheoremDecl
+      { decl_name; decl_universe_params; decl_universe_constraints; decl_ty; decl_opacity; _ }
+    ->
+      Ext_cert.TheoremDecl
+        {
+          decl_name;
+          decl_universe_params;
+          decl_universe_constraints;
+          decl_ty;
+          decl_proof;
+          decl_opacity;
+        }
+  | _ -> failwith "expected theorem declaration"
+
+let mutate_first_dependency_hash declaration hash =
+  match declaration.Ext_cert.dependencies with
+  | dependency :: rest ->
+      let dependency =
+        { dependency with Ext_cert.dependency_decl_interface_hash = hash }
+      in
+      { declaration with Ext_cert.dependencies = dependency :: rest }
+  | [] -> failwith "expected dependency fixture"
+
+let mutate_first_axiom_dependency_hash declaration hash =
+  match declaration.Ext_cert.axiom_dependencies with
+  | axiom :: rest ->
+      let axiom = { axiom with Ext_cert.axiom_decl_interface_hash = hash } in
+      { declaration with Ext_cert.axiom_dependencies = axiom :: rest }
+  | [] -> failwith "expected axiom dependency fixture"
+
+let run_hash_level_term_tests () =
+  let names = [ make_name [ "u" ]; make_name [ "Imported" ] ] in
+  let name_table = located_names names in
+  let level_bytes =
+    encode_uvar_int 4 ^ encode_level_param 0 ^ encode_level_succ 0
+    ^ encode_level_max 1 0 ^ encode_level_imax 0 0
+  in
+  let level_table = decode_level_table "hash level table" names level_bytes in
+  let level_hashes =
+    assert_hash_hexes "level hash"
+      [
+        "14ca4d271ed543507887e0ea523cefe7767b12c4c88c64db7797af8e5d60edca";
+        "3c4dc3d2830d5c7b16bf22a38bbdc0867936d8e0faa2cdfb909fbfb314e0b9ef";
+        "5ca42f83e7ab0f56fa5d53b157a5816bba36dfe71ca83d228b790dd7f52f667e";
+        "b7dff10a5ac7d0c3c25ec2f2007b12015444606e970292c103dd2239df70cc48";
+      ]
+      (Ext_canonical.level_hashes level_table)
+  in
+
+  let imported_ref = encode_global_imported 0 1 (hash_bytes 0x55) in
+  let term_bytes =
+    encode_uvar_int 8 ^ encode_term_sort 0 ^ encode_term_sort 1 ^ encode_term_bvar 0
+    ^ encode_term_const imported_ref [ 0; 1 ]
+    ^ encode_term_app 3 2 ^ encode_term_lam 0 4 ^ encode_term_pi 0 5
+    ^ encode_term_let 0 2 6
+  in
+  let term_table = decode_term_table "hash term table" names level_table term_bytes in
+  let term_hashes =
+    assert_hash_hexes "term hash"
+      [
+        "4dbd7b9567ca2c9a3014d70c03e2213e85686af92f3aa86ee57a1003de1c48d5";
+        "d4c881c652406552c33e9f7e374c0eed412f711733a4657b978d052262f19406";
+        "7f20eac79de1e58183de939cbf75e45bc92e8c8a1ac0b7c8e4fca287d201fcb7";
+        "f6aac19b5b3fbe1c698ebc7b02acd3f32d7d287fe06ad7108191d5d6cfe09c42";
+        "aa45ed6b3051ec6dd79b578d048c64711404e1434d39082d8874ad1777db8ea9";
+        "8079e8d16fa1f32538052afd5379b3107399c2964d6e43aad7082ad938b8c670";
+        "37adbeb21882f9c57f6c6f952715b9e75e8a30e53ab88269d20ec40976b3300e";
+        "9dde1d65cb02d6d632083bd28394894abb0c42b55285190f4e1d4b648433ac46";
+      ]
+      (Ext_canonical.term_hashes name_table level_table level_hashes term_table)
+  in
+
+  let mutated_level_table =
+    decode_level_table "mutated level table" names
+      (encode_uvar_int 2 ^ encode_level_zero ^ encode_level_succ 0)
+  in
+  let mutated_level_hashes =
+    assert_ok "mutated level hashes"
+      (Ext_canonical.level_hashes mutated_level_table)
+  in
+  assert_bool "mutating referenced level changes dependent level hash"
+    (List.nth level_hashes 1 <> List.nth mutated_level_hashes 1);
+  let mutated_term_table =
+    decode_term_table "mutated term table" names level_table
+      (encode_uvar_int 5 ^ encode_term_sort 0 ^ encode_term_sort 1
+      ^ encode_term_bvar 1 ^ encode_term_const imported_ref [ 0; 1 ]
+      ^ encode_term_app 3 2)
+  in
+  let mutated_term_hashes =
+    assert_ok "mutated term hashes"
+      (Ext_canonical.term_hashes name_table level_table level_hashes mutated_term_table)
+  in
+  assert_bool "mutating referenced term changes dependent term hash"
+    (List.nth term_hashes 4 <> List.nth mutated_term_hashes 4);
+
+  let dangling_level_table = [ { Ext_level.level = Ext_level.Succ Ext_level.Zero; offset = 7 } ] in
+  assert_decode_error "level hash dangling child" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Level_table 7
+    (Ext_canonical.level_hashes dangling_level_table);
+  let dangling_term_table =
+    [ { Ext_term.term = Ext_term.App (Ext_term.BVar 0, Ext_term.BVar 0); offset = 9 } ]
+  in
+  assert_decode_error "term hash dangling child" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 9
+    (Ext_canonical.term_hashes [] [] [] dangling_term_table);
+  let missing_level_term_table =
+    [ { Ext_term.term = Ext_term.Sort Ext_level.Zero; offset = 11 } ]
+  in
+  assert_decode_error "term hash dangling level" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 11
+    (Ext_canonical.term_hashes [] [] [] missing_level_term_table);
+
+  let assert_golden_export_terms label path =
+    let decoded =
+      decode_module_bytes (label ^ " hash level-term golden") (read_binary_file path)
+    in
+    assert_export_term_hashes label decoded
+  in
+  assert_golden_export_terms "nat"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert");
+  assert_golden_export_terms "eq"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert")
+
+let run_hash_declarations_tests () =
+  let assert_golden_declarations label path =
+    let decoded =
+      decode_module_bytes (label ^ " declaration hash golden") (read_binary_file path)
+    in
+    assert_declaration_hash_verifies label decoded
+  in
+  assert_golden_declarations "nat"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert");
+  assert_golden_declarations "eq"
+    (Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert");
+
+  let simple_theorem_decl =
+    encode_decl_cert (encode_theorem_decl_payload 0x02 0 [] 0 1) [] []
+      (hash_bytes 0x41) (hash_bytes 0x42)
+  in
+  let simple_theorem_export =
+    encode_export_entry_full 0 0x02 [] 0 None (hash_bytes 0x31) None None
+      (Some encode_opacity_opaque) (hash_bytes 0x32) []
+  in
+  let simple_theorem_module =
+    encode_module [ [ "A" ] ] [ encode_level_zero ]
+      [ encode_term_sort 0; encode_term_bvar 0 ]
+      [ simple_theorem_decl ] [ simple_theorem_export ]
+  in
+  let simple_theorem =
+    recompute_stored_declaration_hashes "simple theorem declaration hashes"
+      (decode_module_bytes "simple theorem declaration hashes" simple_theorem_module)
+  in
+  assert_declaration_hash_verifies "simple theorem valid declaration hashes"
+    simple_theorem;
+  let mutated_type =
+    replace_first_declaration simple_theorem (fun declaration ->
+        {
+          declaration with
+          Ext_cert.payload =
+            theorem_payload_with_type declaration.Ext_cert.payload (Ext_term.BVar 0);
+        })
+  in
+  assert_declaration_hash_rejects "mutated declaration type"
+    "declaration_hash_mismatch" "decl_interface_hash_mismatch" mutated_type;
+  let mutated_body =
+    replace_first_declaration simple_theorem (fun declaration ->
+        {
+          declaration with
+          Ext_cert.payload =
+            theorem_payload_with_proof declaration.Ext_cert.payload
+              Ext_term.(Sort Ext_level.Zero);
+        })
+  in
+  assert_declaration_hash_rejects "mutated declaration body"
+    "declaration_hash_mismatch" "decl_certificate_hash_mismatch" mutated_body;
+
+  let imported_ref = encode_global_imported 0 1 (hash_bytes 0x55) in
+  let dependency_theorem_decl =
+    encode_decl_cert
+      (encode_theorem_decl_payload 0x02 0 [] 0 1)
+      [ (imported_ref, hash_bytes 0x55) ] [] (hash_bytes 0x51) (hash_bytes 0x52)
+  in
+  let dependency_theorem_export =
+    encode_export_entry_full 0 0x02 [] 0 None (hash_bytes 0x31) None None
+      (Some encode_opacity_opaque) (hash_bytes 0x32) []
+  in
+  let dependency_module =
+    encode_module ~imports:[ ([ "Dep" ], hash_bytes 0x71, None) ]
+      [ [ "A" ]; [ "Imported" ] ] [ encode_level_zero ]
+      [ encode_term_sort 0; encode_term_const imported_ref [] ]
+      [ dependency_theorem_decl ] [ dependency_theorem_export ]
+  in
+  let dependency_theorem =
+    recompute_stored_declaration_hashes "dependency declaration hashes"
+      (decode_module_bytes "dependency declaration hashes" dependency_module)
+  in
+  assert_declaration_hash_verifies "dependency valid declaration hashes"
+    dependency_theorem;
+  let mutated_dependency =
+    replace_first_declaration dependency_theorem (fun declaration ->
+        mutate_first_dependency_hash declaration (hash_bytes 0x56))
+  in
+  assert_declaration_hash_rejects "mutated declaration dependency"
+    "dependency_hash_mismatch" "decl_certificate_hash_mismatch" mutated_dependency;
+
+  let axiom_dependency_ref = encode_global_imported 0 1 (hash_bytes 0x44) in
+  let axiom_dependency_decl =
+    encode_decl_cert (encode_axiom_decl_payload 0 [] 0) []
+      [ (axiom_dependency_ref, 1, hash_bytes 0x44) ] (hash_bytes 0x61)
+      (hash_bytes 0x62)
+  in
+  let axiom_dependency_export =
+    encode_export_entry_full 0 0x00 [] 0 None (hash_bytes 0x31) None None None
+      (hash_bytes 0x32) []
+  in
+  let axiom_dependency_module =
+    encode_module ~imports:[ ([ "Dep" ], hash_bytes 0x71, None) ]
+      [ [ "A" ]; [ "Imported" ] ] [ encode_level_zero ] [ encode_term_sort 0 ]
+      [ axiom_dependency_decl ] [ axiom_dependency_export ]
+  in
+  let axiom_dependency =
+    recompute_stored_declaration_hashes "axiom dependency declaration hashes"
+      (decode_module_bytes "axiom dependency declaration hashes" axiom_dependency_module)
+  in
+  assert_declaration_hash_verifies "axiom dependency valid declaration hashes"
+    axiom_dependency;
+  let mutated_axiom_dependency =
+    replace_first_declaration axiom_dependency (fun declaration ->
+        mutate_first_axiom_dependency_hash declaration (hash_bytes 0x45))
+  in
+  assert_declaration_hash_rejects "mutated declaration axiom dependency"
+    "dependency_hash_mismatch" "decl_certificate_hash_mismatch"
+    mutated_axiom_dependency
+
+let run_hash_module_tests () =
+  let golden_paths =
+    [
+      ( "nat",
+        Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+      );
+      ( "eq",
+        Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+      );
+    ]
+  in
+  let decoded_golden label path =
+    let bytes = read_binary_file path in
+    (bytes, decode_module_bytes (label ^ " module hash golden") bytes)
+  in
+  List.iter
+    (fun (label, path) ->
+      let bytes, decoded = decoded_golden label path in
+      assert_module_hash_verifies (label ^ " valid module hashes") bytes decoded)
+    golden_paths;
+
+  let bytes, decoded = decoded_golden "nat mutation corpus" (List.assoc "nat" golden_paths) in
+  let hashes = decoded.Ext_cert.hashes in
+  let assert_mutated_hash label expected_kind offset =
+    let mutated = mutate_byte bytes offset in
+    let decoded_mutated =
+      decode_module_bytes (label ^ " mutated module hash") mutated
+    in
+    assert_module_hash_rejects label expected_kind offset mutated decoded_mutated
+  in
+  assert_mutated_hash "mutated export hash" "export_hash_mismatch"
+    hashes.Ext_cert.export_hash_offset;
+  assert_mutated_hash "mutated axiom report hash" "axiom_report_mismatch"
+    hashes.Ext_cert.axiom_report_hash_offset;
+  assert_mutated_hash "mutated certificate hash" "certificate_hash_mismatch"
+    hashes.Ext_cert.certificate_hash_offset;
+
+  let prefix_mutated = mutate_byte bytes 0 in
+  assert_module_hash_rejects "module certificate hash uses exact input prefix"
+    "certificate_hash_mismatch" hashes.Ext_cert.certificate_hash_offset prefix_mutated
+    decoded;
+
+  let mutated_export_block =
+    match decoded.Ext_cert.export_block with
+    | export :: rest ->
+        {
+          export with
+          Ext_cert.export_type_hash = mutate_byte export.Ext_cert.export_type_hash 0;
+        }
+        :: rest
+    | [] -> failwith "expected golden export block"
+  in
+  let decoded_with_stored_export_block = { decoded with Ext_cert.export_block = mutated_export_block } in
+  let forged_export_hash =
+    assert_ok "stored export block hash"
+      (Ext_canonical.export_hash decoded_with_stored_export_block)
+  in
+  let forged_hashes =
+    { decoded.Ext_cert.hashes with Ext_cert.export_hash = forged_export_hash }
+  in
+  let decoded_with_forged_export_hash =
+    { decoded_with_stored_export_block with Ext_cert.hashes = forged_hashes }
+  in
+  assert_module_hash_rejects
+    "module hash verifier rebuilds expected export block from declarations"
+    "export_hash_mismatch" hashes.Ext_cert.export_hash_offset bytes
+    decoded_with_forged_export_hash
+
+let run_import_store_tests () =
+  let nat_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let nat_dir = Filename.dirname nat_path in
+  let nat_store =
+    assert_import_store_ok "nat import dir" (Ext_import_store.load_import_dir nat_dir)
+  in
+  assert_int_equal "nat import store entry count" 1
+    (List.length (Ext_import_store.entries nat_store));
+  let nat_module =
+    match Ext_import_store.entries nat_store with
+    | [ entry ] -> entry
+    | _ -> failwith "expected one nat import entry"
+  in
+  assert_equal "nat import module name" "Std.Nat.Basic"
+    (Ext_name.to_string nat_module.Ext_import_store.import_entry.Ext_import.module_name);
+  assert_bool "nat import exposes public exports"
+    (List.length
+       nat_module.Ext_import_store.public_environment.Ext_import_store.public_exports
+    > 0);
+  assert_bool "import store source certificates are not high-trust checked"
+    (not nat_module.Ext_import_store.checked_by_ext_checker);
+
+  let request_without_certificate_hash =
+    {
+      Ext_import.module_name =
+        nat_module.Ext_import_store.import_entry.Ext_import.module_name;
+      export_hash = nat_module.Ext_import_store.import_entry.Ext_import.export_hash;
+      certificate_hash = None;
+    }
+  in
+  ignore
+    (assert_import_resolves "normal import resolves by module and export hash"
+       nat_store request_without_certificate_hash);
+  let request_with_certificate_hash =
+    {
+      request_without_certificate_hash with
+      Ext_import.certificate_hash =
+        nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash;
+    }
+  in
+  ignore
+    (assert_import_resolves "normal import resolves with matching certificate hash"
+       nat_store request_with_certificate_hash);
+  assert_import_resolve_rejects "missing import store entry" "import_not_found"
+    "missing_import" 17 Ext_import_store.empty request_without_certificate_hash;
+  let wrong_export_request =
+    {
+      request_without_certificate_hash with
+      Ext_import.export_hash = mutate_byte request_without_certificate_hash.Ext_import.export_hash 0;
+    }
+  in
+  assert_import_resolve_rejects "normal import rejects export hash mismatch"
+    "import_hash_mismatch" "import_export_hash_mismatch" 23 nat_store
+    wrong_export_request;
+  let wrong_certificate_request =
+    {
+      request_without_certificate_hash with
+      Ext_import.certificate_hash =
+        Option.map
+          (fun hash -> mutate_byte hash 0)
+          nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash;
+    }
+  in
+  assert_import_resolve_rejects "normal import rejects certificate hash mismatch"
+    "import_hash_mismatch" "import_certificate_hash_mismatch" 29 nat_store
+    wrong_certificate_request;
+
+  let nat_bytes = read_binary_file nat_path in
+  assert_import_store_load_error "duplicate module export binding rejects"
+    "duplicate_import_binding"
+    (Ext_import_store.from_source_free_certificates [ nat_bytes; nat_bytes ]);
+  let decoded_nat = decode_module_bytes "import store hash mutation fixture" nat_bytes in
+  let mutated_import_hash =
+    mutate_byte nat_bytes decoded_nat.Ext_cert.hashes.Ext_cert.export_hash_offset
+  in
+  assert_import_store_load_error "import cert hash verification runs before exposure"
+    "certificate_hash_mismatch:export_hash_mismatch"
+    (Ext_import_store.from_source_free_certificates [ mutated_import_hash ]);
+
+  let source_replay_fixture =
+    Filename.concat (root_dir ()) "test/fixtures/import_store"
+  in
+  let ignored_store =
+    assert_import_store_ok "source and replay files are ignored"
+      (Ext_import_store.load_import_dir source_replay_fixture)
+  in
+  assert_int_equal "source and replay fixtures are not read" 0
+    (List.length (Ext_import_store.entries ignored_store));
+  assert_import_store_load_error "source import dir path is rejected"
+    "source_or_replay_input_rejected"
+    (Ext_import_store.load_import_dir
+       (Filename.concat source_replay_fixture "ignored.npa"))
 
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
@@ -1212,8 +1875,9 @@ let run_hash_encoder_tests () =
   assert_canonical_bytes "axiom declaration certificate payload"
     (axiom_iface_hash ^ encode_axiom_refs [])
     (Ext_canonical.declaration_certificate_payload axiom_decoded.Ext_cert.name_table
-       axiom_decoded.Ext_cert.term_table axiom_decl.Ext_cert.payload axiom_iface_hash
-       axiom_decl.Ext_cert.dependencies axiom_decl.Ext_cert.axiom_dependencies);
+       axiom_decoded.Ext_cert.level_table axiom_decoded.Ext_cert.term_table
+       axiom_decl.Ext_cert.payload axiom_iface_hash axiom_decl.Ext_cert.dependencies
+       axiom_decl.Ext_cert.axiom_dependencies);
 
   let imported_ref = encode_global_imported 0 1 (hash_bytes 0x55) in
   let theorem_decl_bytes =
@@ -1266,8 +1930,9 @@ let run_hash_encoder_tests () =
     (theorem_iface_hash ^ theorem_proof_hash
     ^ encode_dependency_entries [ (imported_ref, hash_bytes 0x55) ])
     (Ext_canonical.declaration_certificate_payload theorem_decoded.Ext_cert.name_table
-       theorem_decoded.Ext_cert.term_table theorem_decl.Ext_cert.payload theorem_iface_hash
-       theorem_decl.Ext_cert.dependencies theorem_decl.Ext_cert.axiom_dependencies);
+       theorem_decoded.Ext_cert.level_table theorem_decoded.Ext_cert.term_table
+       theorem_decl.Ext_cert.payload theorem_iface_hash theorem_decl.Ext_cert.dependencies
+       theorem_decl.Ext_cert.axiom_dependencies);
 
   let import_decl =
     encode_decl_cert
@@ -1353,7 +2018,11 @@ let () =
                "decoder-reachability";
                "decoder-tables";
                "feature-policy";
+               "hash-declarations";
                "hash-encoder";
+               "hash-level-term";
+               "hash-module";
+               "import-store";
                "sha256";
              ])
       then
@@ -1366,5 +2035,9 @@ let () =
   if should_run selected "decoder-declarations" then run_decoder_declarations_tests ();
   if should_run selected "decoder-reachability" then run_decoder_reachability_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
+  if should_run selected "hash-level-term" then run_hash_level_term_tests ();
+  if should_run selected "hash-declarations" then run_hash_declarations_tests ();
+  if should_run selected "hash-module" then run_hash_module_tests ();
+  if should_run selected "import-store" then run_import_store_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
