@@ -2881,6 +2881,113 @@ let run_subst_tests () =
     "type_mismatch" "invalid_bvar"
     (substitute (Ext_term.BVar 0) (-1) Ext_env.nat_zero)
 
+let run_reduce_tests () =
+  let nat = Ext_env.nat in
+  let nat_zero = Ext_env.nat_zero in
+  let nat_rec level =
+    Ext_env.builtin_const "Nat.rec" [ level ]
+  in
+  let whnf term =
+    Ext_typecheck.whnf Ext_env.empty Ext_typecheck.empty_context term
+  in
+  let beta_term = Ext_term.App (Ext_term.Lam (nat, Ext_term.BVar 0), nat_zero) in
+  assert_term_result "reduce beta lambda application" nat_zero (whnf beta_term);
+  assert_term_result "reduce zeta let value" nat_zero
+    (whnf (Ext_term.Let (nat, nat_zero, Ext_term.BVar 0)));
+
+  let alias_decl =
+    declaration_fixture Ext_cert.Definition
+      (Ext_cert.DefDecl
+         {
+           decl_name = make_name [ "AliasNatReduce" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_env.level_type0;
+           decl_value = nat;
+           decl_reducibility = Ext_cert.Reducible;
+         })
+  in
+  let alias_env =
+    assert_declaration_check_ok "reduce adds reducible alias"
+      (Ext_typecheck.check_declarations [ alias_decl ])
+  in
+  let alias_ref = Ext_term.Const (Ext_term.Local { decl_index = 0 }, []) in
+  assert_term_result "reduce delta unfolds reducible definition" nat
+    (Ext_typecheck.whnf alias_env Ext_typecheck.empty_context alias_ref);
+  assert_typecheck_ok "reduce delta supports checking through reducible definition"
+    (Ext_typecheck.check alias_env Ext_typecheck.empty_context nat_zero alias_ref);
+
+  let theorem_decl =
+    declaration_fixture Ext_cert.Theorem
+      (Ext_cert.TheoremDecl
+         {
+           decl_name = make_name [ "TheoremAliasReduce" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_env.level_type0;
+           decl_proof = nat;
+           decl_opacity = Ext_cert.Opaque;
+         })
+  in
+  let theorem_env =
+    assert_declaration_check_ok "reduce adds opaque theorem alias"
+      (Ext_typecheck.check_declarations [ theorem_decl ])
+  in
+  let theorem_ref = Ext_term.Const (Ext_term.Local { decl_index = 0 }, []) in
+  assert_typecheck_rejects "reduce forbids theorem proof unfolding"
+    "type_mismatch" "type_mismatch"
+    (Ext_typecheck.check theorem_env Ext_typecheck.empty_context nat_zero theorem_ref);
+
+  let opaque_decl =
+    declaration_fixture Ext_cert.Definition
+      (Ext_cert.DefDecl
+         {
+           decl_name = make_name [ "OpaqueAliasReduce" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort Ext_env.level_type0;
+           decl_value = nat;
+           decl_reducibility = Ext_cert.Opaque_reducibility;
+         })
+  in
+  let opaque_env =
+    assert_declaration_check_ok "reduce adds opaque definition alias"
+      (Ext_typecheck.check_declarations [ opaque_decl ])
+  in
+  let opaque_ref = Ext_term.Const (Ext_term.Local { decl_index = 0 }, []) in
+  assert_typecheck_rejects "reduce forbids opaque definition unfolding"
+    "type_mismatch" "type_mismatch"
+    (Ext_typecheck.check opaque_env Ext_typecheck.empty_context nat_zero opaque_ref);
+
+  let motive = Ext_term.Lam (nat, nat) in
+  let step = Ext_term.Lam (nat, Ext_term.Lam (nat, Ext_term.BVar 1)) in
+  let recursor_zero =
+    Ext_env.apps (nat_rec Ext_env.level_type0) [ motive; nat_zero; step; nat_zero ]
+  in
+  assert_term_result "reduce Nat.rec zero iota" nat_zero (whnf recursor_zero);
+  assert_typecheck_ok "reduce Nat.rec zero checks through iota"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context recursor_zero nat);
+  let recursor_succ =
+    Ext_env.apps (nat_rec Ext_env.level_type0)
+      [ motive; nat_zero; step; Ext_env.nat_succ nat_zero ]
+  in
+  assert_term_result "reduce Nat.rec succ iota" nat_zero (whnf recursor_succ);
+  assert_typecheck_ok "reduce Nat.rec succ checks through iota"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context recursor_succ nat);
+
+  assert_typecheck_rejects "reduce fuel exhaustion uses conversion failure kind"
+    "conversion_failure" "resource_limit"
+    (Ext_typecheck.whnf_with_fuel_budget ~fuel_budget:0 Ext_env.empty
+       Ext_typecheck.empty_context nat_zero);
+  assert_typecheck_rejects "reduce negative fuel budget is deterministic"
+    "conversion_failure" "resource_limit"
+    (Ext_typecheck.whnf_with_fuel_budget ~fuel_budget:(-1) Ext_env.empty
+       Ext_typecheck.empty_context nat_zero);
+  assert_typecheck_rejects "reduce recursive fuel exhaustion is deterministic"
+    "conversion_failure" "resource_limit"
+    (Ext_typecheck.whnf_with_fuel_budget ~fuel_budget:1 Ext_env.empty
+       Ext_typecheck.empty_context beta_term)
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -3070,6 +3177,7 @@ let () =
                "import-high-trust";
                "import-normal";
                "import-store";
+               "reduce";
                "sha256";
                "subst";
                "type-core";
@@ -3092,6 +3200,7 @@ let () =
   if should_run selected "import-store" then run_import_store_tests ();
   if should_run selected "import-normal" then run_import_normal_tests ();
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
+  if should_run selected "reduce" then run_reduce_tests ();
   if should_run selected "subst" then run_subst_tests ();
   if should_run selected "type-env" then run_type_env_tests ();
   if should_run selected "type-core" then run_type_core_tests ();

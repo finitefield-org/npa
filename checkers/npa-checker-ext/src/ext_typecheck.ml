@@ -61,8 +61,9 @@ let error_kind error =
   | Bad_universe_arity | Duplicate_universe_param | Unresolved_metavariable ->
       "universe_inconsistency"
   | Unknown_reference | Invalid_bvar | Expected_sort | Expected_function | Type_mismatch
-  | Unsupported_declaration | Resource_limit ->
+  | Unsupported_declaration ->
       "type_mismatch"
+  | Resource_limit -> "conversion_failure"
 
 let error_of_env_error (env_error : Ext_env.error) =
   let reason =
@@ -265,6 +266,24 @@ let global_ref_equal left right =
       Ext_name.equal left_name right_name && left_hash = right_hash
   | _ -> false
 
+let collect_apps term =
+  let rec loop current args =
+    match current with
+    | Ext_term.App (fn, arg) -> loop fn (arg :: args)
+    | _ -> (current, args)
+  in
+  loop term []
+
+let rec apply_args fn args =
+  match args with
+  | [] -> fn
+  | arg :: rest -> apply_args (Ext_term.App (fn, arg)) rest
+
+let builtin_name_is dotted global_ref =
+  match global_ref with
+  | Ext_term.Builtin { name; _ } -> Ext_name.to_string name = dotted
+  | _ -> false
+
 let rec whnf_with_fuel env context section offset delta term fuel =
   bind (spend_fuel section offset fuel) (fun () ->
       match term with
@@ -291,15 +310,58 @@ let rec whnf_with_fuel env context section offset delta term fuel =
             | Ext_term.Lam (_, body) ->
                 bind (instantiate section offset body arg) (fun instantiated ->
                     whnf_with_fuel env context section offset delta instantiated fuel)
-            | whnf_fn -> Ok (Ext_term.App (whnf_fn, arg)))
+            | whnf_fn ->
+                let app = Ext_term.App (whnf_fn, arg) in
+                bind
+                  (reduce_nat_rec_iota env context section offset delta app fuel)
+                  (function
+                    | None -> Ok app
+                    | Some reduced ->
+                        whnf_with_fuel env context section offset delta reduced fuel))
       | Ext_term.Let (_, value, body) ->
           bind (instantiate section offset body value) (fun instantiated ->
               whnf_with_fuel env context section offset delta instantiated fuel)
       | Ext_term.Sort _ | Ext_term.Lam _ | Ext_term.Pi _ -> Ok term)
 
+and reduce_nat_rec_iota env context section offset delta term fuel =
+  let head, args = collect_apps term in
+  match head with
+  | Ext_term.Const (global_ref, levels) when builtin_name_is "Nat.rec" global_ref -> (
+      match args with
+      | motive :: z_case :: s_case :: major :: rest ->
+          bind
+            (whnf_with_fuel env context section offset delta major fuel)
+            (fun major_whnf ->
+              let ctor_head, ctor_args = collect_apps major_whnf in
+              match ctor_head with
+              | Ext_term.Const (zero_ref, _) when builtin_name_is "Nat.zero" zero_ref ->
+                  if ctor_args = [] then Ok (Some (apply_args z_case rest))
+                  else Ok None
+              | Ext_term.Const (succ_ref, _) when builtin_name_is "Nat.succ" succ_ref -> (
+                  match ctor_args with
+                  | [ predecessor ] ->
+                      let recursor =
+                        apply_args
+                          (Ext_term.Const (global_ref, levels))
+                          [ motive; z_case; s_case; predecessor ]
+                      in
+                      let reduced = apply_args s_case [ predecessor; recursor ] in
+                      Ok (Some (apply_args reduced rest))
+                  | _ -> Ok None)
+              | _ -> Ok None)
+      | _ -> Ok None)
+  | _ -> Ok None
+
 let whnf ?(section = Ext_bytes.Declarations) ?(offset = 0) ?(delta = []) env context term =
   let fuel = ref max_fuel in
   whnf_with_fuel env context section offset delta term fuel
+
+let whnf_with_fuel_budget ?(section = Ext_bytes.Declarations) ?(offset = 0) ?(delta = [])
+    ~fuel_budget env context term =
+  if fuel_budget < 0 then error section offset Resource_limit
+  else
+    let fuel = ref fuel_budget in
+    whnf_with_fuel env context section offset delta term fuel
 
 let rec is_defeq_with_fuel env context section offset delta lhs rhs fuel =
   bind (spend_fuel section offset fuel) (fun () ->
