@@ -176,3 +176,41 @@ also records a labeled fast-kernel source-free verification job when the
 checked-in `npa` CLI supports it. The workflows do not run `--checker external`,
 do not generate `verified_high_trust`, and do not use registry lookup, package
 solver, network package resolution, or implicit latest-version package imports.
+
+## Contributor Workflow And Review Policy
+
+The contributor workflow for theorem-only changes is documented in
+`CONTRIBUTING.md`. In short, contributors edit the selected `Proofs/Ai/*`
+source modules, regenerate certificates and generated metadata when canonical
+certificate bytes or public exports change, and rerun the local package command
+sequence in check mode.
+
+Review focuses on theorem statement clarity, module naming, import direction,
+axiom report changes, deterministic generated-hash drift, and downstream import
+compatibility. Tactics, replay files, automation, AI output, package metadata,
+theorem indexes, publish plans, CI results, and future registry entries are not
+trusted proof evidence. They may explain how certificates were produced or
+discovered, but they do not replace canonical certificate bytes and source-free
+checker verdicts.
+
+The base release stays reference-checker-only until the seed repository adds
+the CLR-08 pinned external checker binary, runner policies, checker registry,
+and release audit evidence. No `verified_high_trust` artifact is produced by
+the base CLR-09 seed release.
+
+## CLR-10 Handoff
+
+CLR-10 registry work should consume this seed release as a checksum-pinned
+artifact set before any registry server exists. The handoff inputs are:
+
+- `generated/publish-plan.json`, including module registry seed entries and the
+  `downstream_import_bundle`;
+- `generated/package-lock.json`;
+- `generated/axiom-report.json`;
+- `generated/theorem-index.json`;
+- local seed certificate artifacts;
+- vendored `npa-std` certificate artifacts;
+- reference-checker-only CI diagnostics.
+
+Those registry seed entries are discoverability metadata. Downstream packages
+still need hash-pinned certificate artifacts and source-free verification.

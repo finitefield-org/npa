@@ -7,7 +7,22 @@ directory is copied out of the `npa` checkout.
 
 ## Theorem-Only Changes
 
-For CLR-09-03, contributors should run the base package command sequence:
+A theorem-only pull request changes `Proofs/Ai/*/source.npa` declarations and
+the generated artifacts that follow from those declarations. It should not
+change kernel, checker, certificate canonicalization, package import trust
+rules, CI trust policy, or registry behavior.
+
+To add or update a theorem:
+
+1. Edit the relevant `source.npa` file under `Proofs/Ai/`.
+2. Keep imports directed at the existing closed seed module set or the declared
+   `npa-std` certificate artifacts.
+3. Rebuild certificates when the source theorem text or imported theorem
+   dependency changes.
+4. Refresh generated package artifacts when certificates, source hashes, export
+   hashes, certificate hashes, axiom report content, theorem index entries, or
+   publish-plan downstream metadata change.
+5. Run the base package command sequence from this package root:
 
 ```sh
 npa package check --root . --json
@@ -28,6 +43,29 @@ cargo run -p npa-cli -- package check --root fixtures/npa-mathlib-seed --json
 Check mode must fail when generated artifacts are stale. If a theorem-only
 change intentionally updates certificates or hashes, regenerate the affected
 artifacts first and then rerun the sequence above.
+
+For an intentional theorem update, refresh artifacts in this order:
+
+```sh
+npa package build-certs --root . --json
+npa package axiom-report --root . --json
+npa package index --root . --json
+npa package publish-plan --root . --json
+```
+
+If the manifest hash pins are stale, update them deliberately as part of the
+same theorem-only change and rerun the write-mode command that reported the
+mismatch. Expected artifact drift is:
+
+- source theorem edit: certificate, source hash, certificate file hash, export
+  hash, certificate hash, and package lock may change;
+- axiom dependency edit: `generated/axiom-report.json` and each affected
+  module's axiom report hash may change;
+- public declaration add, remove, or rename: `generated/theorem-index.json`,
+  `generated/publish-plan.json`, downstream import bundle entries, and
+  downstream compatibility may change;
+- replay, meta, automation, or AI sidecar change only: no proof artifact hash
+  should change unless the canonical certificate bytes also changed.
 
 ## Package Boundary
 
@@ -61,6 +99,62 @@ reference-checker-only; fast-kernel output is labeled separately and is not a
 reference checker verdict. High-trust external verification remains disabled
 until the seed repository supplies the CLR-08 pinned external checker binary,
 runner policies, checker registry, and release audit evidence.
+
+## Review Policy
+
+Review theorem-only pull requests for:
+
+- theorem statement clarity, including whether names describe the exported
+  proposition rather than the proof technique;
+- module placement and dependency direction, especially whether new imports keep
+  the initial seed set closed over declared `npa-std` artifacts;
+- declaration summaries in `npa-package.toml`, including theorem names and any
+  intentional module export changes;
+- axiom report changes, with every new or removed axiom dependency called out
+  explicitly in review;
+- generated hash drift, confirming it follows from source or certificate
+  artifact changes rather than manual metadata edits;
+- downstream compatibility, especially changes to exported declaration names,
+  export hashes, certificate hashes, certificate artifact paths, or
+  `downstream_import_bundle` entries.
+
+Do not accept package metadata, theorem indexes, publish-plan metadata, replay
+files, tactics, automation logs, AI output, or CI success as proof evidence.
+They are useful review inputs, but they are not trusted proof evidence.
+Acceptance still comes from canonical certificate bytes and source-free checker
+verdicts.
+
+## Reference-Checker-Only Release Policy
+
+The base seed release remains reference-checker-only until the seed repository
+supplies the CLR-08 high-trust inputs: a pinned external checker binary, runner
+policies, checker registry, and release audit bundle evidence. In the base
+profile:
+
+- `npa package verify-certs --root . --checker reference --json` is the required
+  source-free proof gate;
+- fast-kernel output may be uploaded as labeled supplemental diagnostics, but
+  it is not the reference checker verdict;
+- no `verified_high_trust` artifact is generated;
+- downstream users must pin certificate bytes and rerun source-free verification
+  locally.
+
+## CLR-10 Registry Handoff
+
+CLR-10 should consume this release as registry input, not as an already
+available registry service. The handoff bundle is:
+
+- `generated/publish-plan.json`, including `module_registry_entries` and
+  `downstream_import_bundle`;
+- `generated/package-lock.json`;
+- `generated/axiom-report.json`;
+- `generated/theorem-index.json`;
+- checked certificate artifacts under `Proofs/Ai/**/certificate.npcert` and
+  vendored `npa-std` certificate artifacts;
+- CI command JSON diagnostics from the reference-checker-only release.
+
+Registry seed entries are discoverability metadata. They must not become
+trusted proof evidence or an implicit latest-version resolver.
 
 ## Trust Boundary
 
