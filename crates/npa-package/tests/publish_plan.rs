@@ -605,7 +605,7 @@ fn publish_plan_schema_constants_and_rejections() {
 }
 
 #[test]
-fn registry_module_schema_constants_and_checker_schema_separation() {
+fn publish_plan_registry_module_schema_constants_and_checker_schema_separation() {
     let entry = registry_module("Proofs.A", "Proofs/A/certificate.npcert", D_HASH);
     let canonical = entry.canonical_json().unwrap();
     let parsed = parse_registry_module_json(&canonical).unwrap();
@@ -620,6 +620,14 @@ fn registry_module_schema_constants_and_checker_schema_separation() {
         PackageArtifactErrorKind::ArtifactSchema,
         PackageArtifactErrorReason::UnsupportedSchema,
         Some("schema"),
+    );
+
+    let checker_binary_registry = r#"{"schema":"npa.independent-checker.checker_binary_registry.v1","root_kind":"workspace","entries":[{"binary_id":"npa-checker-ref","path":"tools/checkers/npa-checker-ref"}]}"#;
+    assert_artifact_error(
+        parse_registry_module_json(checker_binary_registry).unwrap_err(),
+        PackageArtifactErrorKind::ArtifactSchema,
+        PackageArtifactErrorReason::UnknownField,
+        Some("entries"),
     );
 
     let registry_url = canonical.replacen(

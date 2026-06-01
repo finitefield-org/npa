@@ -866,7 +866,7 @@ remaining registry-server requirements
 
 ### CLR-06-07 Add End-To-End Publish Metadata Tests
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-06
 - Inputs:
   - proof-corpus package fixture
