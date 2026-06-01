@@ -16,6 +16,8 @@ scripts/test.sh decoder-bytes
 scripts/test.sh decoder-header
 scripts/test.sh decoder-tables
 scripts/test.sh decoder-declarations
+scripts/test.sh decoder-reachability
+scripts/test.sh hash-encoder
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -79,3 +81,15 @@ payloads, dependencies, axiom references, export entries, and hash fields are
 kept as structured OCaml values. Duplicate declaration names and export-local
 dangling term/declaration references reject deterministically; axiom report
 length mismatches are decoded and preserved for later axiom-report validation.
+
+M1-05 validates decoded module table reachability and canonical order before a
+module is accepted. The validator marks roots from the header, imports,
+declarations, exports, and axiom report, traverses reachable terms and levels,
+rejects unused name/level/term table entries, enforces canonical table ordering,
+and rejects bytes after the module hash trailer.
+
+M2-01 adds canonical hash input encoders in `src/ext_canonical.ml`. These
+encoders produce domain-separated inputs for level, term, declaration
+dependency, axiom dependency, declaration payload, export block, and axiom
+report hashing without reading source spans, debug sidecars, filesystem paths,
+pretty printers, or JSON output.

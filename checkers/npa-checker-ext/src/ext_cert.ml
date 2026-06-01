@@ -985,7 +985,7 @@ let read_hashes reader =
                   },
                   next ))))
 
-let read_module reader =
+let read_module_sections reader =
   bind (read_header reader) (fun (header, after_header) ->
       bind (read_imports after_header) (fun (imports, after_imports) ->
           bind (read_name_table after_imports) (fun (name_table, after_names) ->
@@ -1036,3 +1036,471 @@ let read_module reader =
                                                 hashes;
                                               },
                                               next )))))))))))
+
+let add_unique equal value values =
+  if List.exists (fun existing -> equal existing value) values then values else value :: values
+
+let list_contains equal value values = List.exists (fun existing -> equal existing value) values
+
+type used_tables = {
+  mutable used_names : Ext_name.t list;
+  mutable used_levels : Ext_level.t list;
+  mutable used_terms : Ext_term.t list;
+}
+
+let empty_used_tables () = { used_names = []; used_levels = []; used_terms = [] }
+
+let mark_name used name =
+  used.used_names <- add_unique Ext_name.equal name used.used_names
+
+let byte value = String.make 1 (Char.chr value)
+
+let encode_usize value = Ext_bytes.encode_uvar (Int64.of_int value)
+
+let encode_name_key name =
+  let components = Ext_name.components name in
+  encode_usize (List.length components)
+  ^ String.concat ""
+      (List.map (fun component -> encode_usize (String.length component) ^ component) components)
+
+let hash_with_domain domain payload =
+  Bytes.to_string (Ext_hash.sha256_raw_string (domain ^ payload))
+
+let name_index section offset name_table name =
+  let rec loop index entries =
+    match entries with
+    | [] -> Ext_bytes.error section offset Ext_bytes.Dangling_reference
+    | entry :: rest ->
+        if Ext_name.equal entry.name name then Ok index else loop (index + 1) rest
+  in
+  loop 0 name_table
+
+let global_ref_payload section offset name_table global_ref =
+  match global_ref with
+  | Ext_term.Imported { import_index; name; decl_interface_hash } ->
+      bind (name_index section offset name_table name) (fun name_id ->
+          Ok
+            (byte 0x00 ^ encode_usize import_index ^ encode_usize name_id
+           ^ decl_interface_hash))
+  | Ext_term.Local { decl_index } -> Ok (byte 0x01 ^ encode_usize decl_index)
+  | Ext_term.LocalGenerated { decl_index; name } ->
+      bind (name_index section offset name_table name) (fun name_id ->
+          Ok (byte 0x02 ^ encode_usize decl_index ^ encode_usize name_id))
+  | Ext_term.Builtin { name; decl_interface_hash } ->
+      bind (name_index section offset name_table name) (fun name_id ->
+          Ok (byte 0x03 ^ encode_usize name_id ^ decl_interface_hash))
+
+let rec level_height level =
+  match level with
+  | Ext_level.Zero | Ext_level.Param _ -> 0
+  | Ext_level.Succ inner -> level_height inner + 1
+  | Ext_level.Max (lhs, rhs) | Ext_level.Imax (lhs, rhs) ->
+      max (level_height lhs) (level_height rhs) + 1
+
+let rec level_payload level =
+  match level with
+  | Ext_level.Zero -> byte 0x00
+  | Ext_level.Succ inner -> byte 0x01 ^ level_hash inner
+  | Ext_level.Max (lhs, rhs) -> byte 0x02 ^ level_hash lhs ^ level_hash rhs
+  | Ext_level.Imax (lhs, rhs) -> byte 0x03 ^ level_hash lhs ^ level_hash rhs
+  | Ext_level.Param name -> byte 0x04 ^ encode_name_key name
+
+and level_hash level = hash_with_domain "NPA-LEVEL-0.1" (level_payload level)
+
+let level_order_key level = (level_height level, level_payload level)
+
+let rec term_height term =
+  match term with
+  | Ext_term.Sort _ | Ext_term.BVar _ | Ext_term.Const _ -> 0
+  | Ext_term.App (fn, arg) -> max (term_height fn) (term_height arg) + 1
+  | Ext_term.Lam (ty, body) | Ext_term.Pi (ty, body) ->
+      max (term_height ty) (term_height body) + 1
+  | Ext_term.Let (ty, value, body) ->
+      max (term_height ty) (max (term_height value) (term_height body)) + 1
+
+let rec term_payload name_table offset term =
+  match term with
+  | Ext_term.Sort level -> Ok (byte 0x00 ^ level_hash level)
+  | Ext_term.BVar index -> Ok (byte 0x01 ^ encode_usize index)
+  | Ext_term.Const (global_ref, levels) ->
+      bind (global_ref_payload Ext_bytes.Term_table offset name_table global_ref)
+        (fun global_ref_bytes ->
+          Ok
+            (byte 0x02 ^ global_ref_bytes ^ encode_usize (List.length levels)
+           ^ String.concat "" (List.map level_hash levels)))
+  | Ext_term.App (fn, arg) ->
+      bind (term_hash name_table offset fn) (fun fn_hash ->
+          bind (term_hash name_table offset arg) (fun arg_hash ->
+              Ok (byte 0x03 ^ fn_hash ^ arg_hash)))
+  | Ext_term.Lam (ty, body) ->
+      bind (term_hash name_table offset ty) (fun ty_hash ->
+          bind (term_hash name_table offset body) (fun body_hash ->
+              Ok (byte 0x04 ^ ty_hash ^ body_hash)))
+  | Ext_term.Pi (ty, body) ->
+      bind (term_hash name_table offset ty) (fun ty_hash ->
+          bind (term_hash name_table offset body) (fun body_hash ->
+              Ok (byte 0x05 ^ ty_hash ^ body_hash)))
+  | Ext_term.Let (ty, value, body) ->
+      bind (term_hash name_table offset ty) (fun ty_hash ->
+          bind (term_hash name_table offset value) (fun value_hash ->
+              bind (term_hash name_table offset body) (fun body_hash ->
+                  Ok (byte 0x06 ^ ty_hash ^ value_hash ^ body_hash))))
+
+and term_hash name_table offset term =
+  bind (term_payload name_table offset term) (fun payload ->
+      Ok (hash_with_domain "NPA-TERM-0.1" payload))
+
+let term_order_key name_table offset term =
+  bind (term_payload name_table offset term) (fun payload -> Ok (term_height term, payload))
+
+let validate_strict_order section offset_of value_of key_of entries =
+  let rec loop previous entries =
+    match entries with
+    | [] -> Ok ()
+    | entry :: rest ->
+        let current = key_of (value_of entry) in
+        if Stdlib.compare previous current >= 0 then
+          Ext_bytes.error section (offset_of entry) Ext_bytes.Noncanonical_order
+        else loop current rest
+  in
+  match entries with
+  | [] -> Ok ()
+  | entry :: rest -> loop (key_of (value_of entry)) rest
+
+let validate_name_table_order name_table =
+  validate_strict_order Ext_bytes.Name_table
+    (fun (entry : located_name) -> entry.offset)
+    (fun entry -> entry.name)
+    (fun name -> name) name_table
+
+let validate_level_table_order level_table =
+  validate_strict_order Ext_bytes.Level_table
+    (fun (entry : Ext_level.located) -> entry.offset)
+    (fun entry -> entry.Ext_level.level)
+    level_order_key level_table
+
+let validate_term_table_order name_table term_table =
+  let rec loop previous entries =
+    match entries with
+    | [] -> Ok ()
+    | entry :: rest ->
+        bind (term_order_key name_table entry.Ext_term.offset entry.Ext_term.term)
+          (fun current ->
+            if Stdlib.compare previous current >= 0 then
+              Ext_bytes.error Ext_bytes.Term_table entry.Ext_term.offset
+                Ext_bytes.Noncanonical_order
+            else loop current rest)
+  in
+  match term_table with
+  | [] -> Ok ()
+  | entry :: rest ->
+      bind (term_order_key name_table entry.Ext_term.offset entry.Ext_term.term) (fun first ->
+          loop first rest)
+
+let rec mark_level used level =
+  if list_contains ( = ) level used.used_levels then Ok ()
+  else (
+    used.used_levels <- level :: used.used_levels;
+    match level with
+    | Ext_level.Zero -> Ok ()
+    | Ext_level.Param name ->
+        mark_name used name;
+        Ok ()
+    | Ext_level.Succ inner -> mark_level used inner
+    | Ext_level.Max (lhs, rhs) | Ext_level.Imax (lhs, rhs) ->
+        bind (mark_level used lhs) (fun () -> mark_level used rhs))
+
+let mark_global_ref used import_count declaration_count section offset global_ref =
+  bind (validate_global_ref section import_count declaration_count offset global_ref) (fun () ->
+      match global_ref with
+      | Ext_term.Imported { name; _ } | Ext_term.Builtin { name; _ } ->
+          mark_name used name;
+          Ok ()
+      | Ext_term.LocalGenerated { name; _ } ->
+          mark_name used name;
+          Ok ()
+      | Ext_term.Local _ -> Ok ())
+
+let rec mark_term used import_count declaration_count section offset term =
+  if list_contains ( = ) term used.used_terms then Ok ()
+  else (
+    used.used_terms <- term :: used.used_terms;
+    match term with
+    | Ext_term.Sort level -> mark_level used level
+    | Ext_term.BVar _ -> Ok ()
+    | Ext_term.Const (global_ref, levels) ->
+        bind (mark_global_ref used import_count declaration_count section offset global_ref)
+          (fun () ->
+            List.fold_left
+              (fun result level -> bind result (fun () -> mark_level used level))
+              (Ok ()) levels)
+    | Ext_term.App (fn, arg) ->
+        bind (mark_term used import_count declaration_count section offset fn)
+          (fun () -> mark_term used import_count declaration_count section offset arg)
+    | Ext_term.Lam (ty, body) | Ext_term.Pi (ty, body) ->
+        bind (mark_term used import_count declaration_count section offset ty)
+          (fun () -> mark_term used import_count declaration_count section offset body)
+    | Ext_term.Let (ty, value, body) ->
+        bind (mark_term used import_count declaration_count section offset ty)
+          (fun () ->
+            bind (mark_term used import_count declaration_count section offset value) (fun () ->
+                mark_term used import_count declaration_count section offset body)))
+
+let mark_names used names =
+  List.iter (mark_name used) names;
+  Ok ()
+
+let mark_universe_constraints used constraints =
+  List.fold_left
+    (fun result constraint_ ->
+      bind result (fun () ->
+          bind (mark_level used constraint_.constraint_lhs) (fun () ->
+              mark_level used constraint_.constraint_rhs)))
+    (Ok ()) constraints
+
+let mark_binder_types used import_count declaration_count section offset binders =
+  List.fold_left
+    (fun result binder ->
+      bind result (fun () ->
+          mark_term used import_count declaration_count section offset binder.binder_ty))
+    (Ok ()) binders
+
+let mark_constructor_specs used import_count declaration_count section offset constructors =
+  List.fold_left
+    (fun result constructor ->
+      bind result (fun () ->
+          mark_name used constructor.constructor_name;
+          mark_term used import_count declaration_count section offset constructor.constructor_ty))
+    (Ok ()) constructors
+
+let mark_recursor_spec used import_count declaration_count section offset recursor =
+  match recursor with
+  | None -> Ok ()
+  | Some recursor ->
+      mark_name used recursor.recursor_name;
+      bind (mark_names used recursor.recursor_universe_params) (fun () ->
+          mark_term used import_count declaration_count section offset recursor.recursor_ty)
+
+let mark_axiom_refs used import_count declaration_count section offset axioms =
+  List.fold_left
+    (fun result axiom ->
+      bind result (fun () ->
+          bind
+            (mark_global_ref used import_count declaration_count section offset
+               axiom.axiom_global_ref)
+            (fun () ->
+              mark_name used axiom.axiom_name;
+              Ok ())))
+    (Ok ()) axioms
+
+let mark_dependency_entries used import_count declaration_count section offset dependencies =
+  List.fold_left
+    (fun result dependency ->
+      bind result (fun () ->
+          mark_global_ref used import_count declaration_count section offset
+            dependency.dependency_global_ref))
+    (Ok ()) dependencies
+
+let mark_decl_payload used import_count declaration_count payload offset =
+  match payload with
+  | AxiomDecl { decl_name; decl_universe_params; decl_universe_constraints; decl_ty } ->
+      mark_name used decl_name;
+      bind (mark_names used decl_universe_params) (fun () ->
+          bind (mark_universe_constraints used decl_universe_constraints) (fun () ->
+              mark_term used import_count declaration_count Ext_bytes.Declarations offset decl_ty))
+  | DefDecl
+      {
+        decl_name;
+        decl_universe_params;
+        decl_universe_constraints;
+        decl_ty;
+        decl_value;
+        _;
+      } ->
+      mark_name used decl_name;
+      bind (mark_names used decl_universe_params) (fun () ->
+          bind (mark_universe_constraints used decl_universe_constraints) (fun () ->
+              bind
+                (mark_term used import_count declaration_count Ext_bytes.Declarations offset decl_ty)
+                (fun () ->
+                  mark_term used import_count declaration_count Ext_bytes.Declarations offset
+                    decl_value)))
+  | TheoremDecl
+      {
+        decl_name;
+        decl_universe_params;
+        decl_universe_constraints;
+        decl_ty;
+        decl_proof;
+        _;
+      } ->
+      mark_name used decl_name;
+      bind (mark_names used decl_universe_params) (fun () ->
+          bind (mark_universe_constraints used decl_universe_constraints) (fun () ->
+              bind
+                (mark_term used import_count declaration_count Ext_bytes.Declarations offset decl_ty)
+                (fun () ->
+                  mark_term used import_count declaration_count Ext_bytes.Declarations offset
+                    decl_proof)))
+  | InductiveDecl
+      {
+        decl_name;
+        decl_universe_params;
+        decl_universe_constraints;
+        ind_params;
+        ind_indices;
+        ind_sort;
+        ind_constructors;
+        ind_recursor;
+      } ->
+      mark_name used decl_name;
+      bind (mark_names used decl_universe_params) (fun () ->
+          bind (mark_universe_constraints used decl_universe_constraints) (fun () ->
+              bind (mark_level used ind_sort) (fun () ->
+                  bind
+                    (mark_binder_types used import_count declaration_count Ext_bytes.Declarations
+                       offset ind_params)
+                    (fun () ->
+                      bind
+                        (mark_binder_types used import_count declaration_count
+                           Ext_bytes.Declarations offset ind_indices)
+                        (fun () ->
+                          bind
+                            (mark_constructor_specs used import_count declaration_count
+                               Ext_bytes.Declarations offset ind_constructors)
+                            (fun () ->
+                              mark_recursor_spec used import_count declaration_count
+                                Ext_bytes.Declarations offset ind_recursor))))))
+  | MutualInductiveBlockDecl
+      { decl_name; decl_universe_params; decl_universe_constraints; mutual_inductives } ->
+      mark_name used decl_name;
+      bind (mark_names used decl_universe_params) (fun () ->
+          bind (mark_universe_constraints used decl_universe_constraints) (fun () ->
+              List.fold_left
+                (fun result inductive ->
+                  bind result (fun () ->
+                      mark_name used inductive.mutual_name;
+                      bind (mark_level used inductive.mutual_sort) (fun () ->
+                          bind
+                            (mark_binder_types used import_count declaration_count
+                               Ext_bytes.Declarations offset inductive.mutual_params)
+                            (fun () ->
+                              bind
+                                (mark_binder_types used import_count declaration_count
+                                   Ext_bytes.Declarations offset inductive.mutual_indices)
+                                (fun () ->
+                                  bind
+                                    (mark_constructor_specs used import_count declaration_count
+                                       Ext_bytes.Declarations offset
+                                       inductive.mutual_constructors)
+                                    (fun () ->
+                                      mark_recursor_spec used import_count declaration_count
+                                        Ext_bytes.Declarations offset
+                                        inductive.mutual_recursor))))))
+                (Ok ()) mutual_inductives))
+
+let mark_declaration used import_count declaration_count declaration =
+  bind
+    (mark_decl_payload used import_count declaration_count declaration.payload declaration.offset)
+    (fun () ->
+      bind
+        (mark_dependency_entries used import_count declaration_count Ext_bytes.Declarations
+           declaration.offset declaration.dependencies)
+        (fun () ->
+          mark_axiom_refs used import_count declaration_count Ext_bytes.Declarations
+            declaration.offset declaration.axiom_dependencies))
+
+let mark_export used import_count declaration_count export =
+  mark_name used export.export_name;
+  bind (mark_names used export.export_universe_params) (fun () ->
+      bind
+        (mark_term used import_count declaration_count Ext_bytes.Export_block export.export_offset
+           export.export_ty)
+        (fun () ->
+          bind
+            (match export.export_body with
+            | None -> Ok ()
+            | Some body ->
+                mark_term used import_count declaration_count Ext_bytes.Export_block
+                  export.export_offset body)
+            (fun () ->
+              mark_axiom_refs used import_count declaration_count Ext_bytes.Export_block
+                export.export_offset export.export_axiom_dependencies)))
+
+let mark_decl_axiom_report used import_count declaration_count report =
+  if report.report_decl_index >= declaration_count then
+    Ext_bytes.error Ext_bytes.Axiom_report report.report_offset Ext_bytes.Dangling_reference
+  else
+    bind
+      (mark_axiom_refs used import_count declaration_count Ext_bytes.Axiom_report
+         report.report_offset report.report_direct_axioms)
+      (fun () ->
+        mark_axiom_refs used import_count declaration_count Ext_bytes.Axiom_report
+          report.report_offset report.report_transitive_axioms)
+
+let fold_unit values f =
+  List.fold_left (fun result value -> bind result (fun () -> f value)) (Ok ()) values
+
+let collect_roots decoded =
+  let used = empty_used_tables () in
+  mark_name used decoded.header.module_name;
+  List.iter (fun import -> mark_name used import.import_entry.module_name) decoded.imports;
+  let import_count = List.length decoded.imports in
+  let declaration_count = List.length decoded.declaration_table in
+  bind
+    (fold_unit decoded.declaration_table
+       (mark_declaration used import_count declaration_count))
+    (fun () ->
+      bind
+        (fold_unit decoded.export_block (mark_export used import_count declaration_count))
+        (fun () ->
+          bind
+            (fold_unit decoded.axiom_report.per_declaration
+               (mark_decl_axiom_report used import_count declaration_count))
+            (fun () ->
+              bind
+                (mark_axiom_refs used import_count declaration_count Ext_bytes.Axiom_report
+                   decoded.axiom_report.module_axioms_offset decoded.axiom_report.module_axioms)
+                (fun () -> Ok used))))
+
+let validate_used_names name_table used_names =
+  match
+    List.find_opt (fun entry -> not (list_contains Ext_name.equal entry.name used_names)) name_table
+  with
+  | None -> Ok ()
+  | Some entry -> Ext_bytes.error Ext_bytes.Name_table entry.offset Ext_bytes.Unused_table_entry
+
+let validate_used_levels level_table used_levels =
+  let rec loop entries =
+    match entries with
+    | [] -> Ok ()
+    | entry :: rest ->
+        if list_contains ( = ) entry.Ext_level.level used_levels then loop rest
+        else Ext_bytes.error Ext_bytes.Level_table entry.offset Ext_bytes.Unused_table_entry
+  in
+  loop level_table
+
+let validate_used_terms term_table used_terms =
+  let rec loop entries =
+    match entries with
+    | [] -> Ok ()
+    | entry :: rest ->
+        if list_contains ( = ) entry.Ext_term.term used_terms then loop rest
+        else Ext_bytes.error Ext_bytes.Term_table entry.offset Ext_bytes.Unused_table_entry
+  in
+  loop term_table
+
+let validate_decoded_module decoded =
+  bind (validate_name_table_order decoded.name_table) (fun () ->
+      bind (validate_level_table_order decoded.level_table) (fun () ->
+          bind (validate_term_table_order decoded.name_table decoded.term_table) (fun () ->
+              bind (collect_roots decoded) (fun used ->
+                  bind (validate_used_names decoded.name_table used.used_names) (fun () ->
+                      bind (validate_used_levels decoded.level_table used.used_levels) (fun () ->
+                          validate_used_terms decoded.term_table used.used_terms))))))
+
+let read_module reader =
+  bind (read_module_sections reader) (fun (decoded, next) ->
+      bind (validate_decoded_module decoded) (fun () ->
+          if Ext_bytes.remaining next = 0 then Ok (decoded, next)
+          else Ext_bytes.error Ext_bytes.Full_certificate (Ext_bytes.offset next) Ext_bytes.Trailing_bytes))

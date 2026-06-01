@@ -16,10 +16,11 @@ sh "$ROOT/scripts/build.sh"
   "$BUILD_DIR/ext_result.cmo" \
   "$BUILD_DIR/ext_feature.cmo" \
   "$BUILD_DIR/ext_name.cmo" \
+  "$BUILD_DIR/ext_import.cmo" \
   "$BUILD_DIR/ext_level.cmo" \
   "$BUILD_DIR/ext_term.cmo" \
   "$BUILD_DIR/ext_cert.cmo" \
-  "$BUILD_DIR/ext_import.cmo" \
+  "$BUILD_DIR/ext_canonical.cmo" \
   "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
   "$BUILD_DIR/ext_reduce.cmo" \

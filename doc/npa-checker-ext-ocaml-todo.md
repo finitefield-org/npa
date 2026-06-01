@@ -470,7 +470,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-reachability
+sh checkers/npa-checker-ext/scripts/test.sh decoder-reachability
 ```
 
 ---
@@ -520,7 +520,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-encoder
+sh checkers/npa-checker-ext/scripts/test.sh hash-encoder
 cargo test -p npa-cert
 ```
 
