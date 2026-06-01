@@ -339,7 +339,7 @@ fresh-checkout CI expectations
 
 ### CLR-07-01 Define External CI Contract And Template Locations
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05
 - Inputs:
   - `doc/community-library-roadmap-todo.md` CLR-07

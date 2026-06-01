@@ -468,6 +468,8 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Keep external theorem library templates outside `.github/workflows` unless this repository explicitly reintroduces active workflows.
   - Base templates use full-package reference verification as the conservative PR fallback until changed-module selection exists.
   - Publish-plan is optional after CLR-06; external checker required mode remains CLR-08.
+  - CLR-07-01 contract source: `doc/external-theorem-library-ci.md`.
+  - CLR-07-01 template location: `ci-templates/github-actions/`.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
