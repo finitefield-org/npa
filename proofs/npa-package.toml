@@ -1053,6 +1053,40 @@ theorems = ["norm_sq_add_from_inner_args", "norm_sq_sub_from_inner_args", "paral
 axioms = ["Eq.rec"]
 
 [[modules]]
+module = "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"
+source = "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:5fe93167009461f873f1eccc0a192dc39a57c84bc4f39e73adb21eecb68638a8"
+expected_certificate_file_hash = "sha256:73bf38c6ac741b63efb8e6c6e9d3ac29414a95470dad1a4ab8219421a4d62278"
+expected_export_hash = "sha256:eb115fcc2e2cb3c3a72403647691eaf3246364da6f10d5c57cfe458eddd1200d"
+expected_axiom_report_hash = "sha256:2063788f68a09e221acfd75e39218342ec4717d3681b27559a0cc98bca62e44f"
+expected_certificate_hash = "sha256:bd5f9e8a5b1bfff25ef680bf01368e139b3763683a6df9fd067e723c19cc5be6"
+imports = ["Std.Logic.Eq"]
+definitions = ["MatrixMulAssocLaw", "MatrixLeftUnitLaw", "MatrixRightUnitLaw", "MatrixAdjointMulLaw", "MatrixAdjointInvolutiveLaw", "MatrixStarAlgebraLawArgs", "NormalMatrix", "UnitaryMatrix", "DiagonalMatrix", "DiagonalizationEquation", "UnitaryDiagonalization", "NormalMatrixDiagonalizes", "SpectralConstructionArgs", "FiniteDimensionalSpectralTheorem"]
+theorems = ["normal_matrix_intro", "normal_matrix_commutes_with_adjoint", "unitary_matrix_intro", "unitary_matrix_left_inverse", "unitary_matrix_right_inverse", "diagonal_matrix_intro", "diagonal_matrix_property", "diagonalization_equation_intro", "unitary_diagonalization_intro", "unitary_diagonalization_unitary", "unitary_diagonalization_diagonal", "unitary_diagonalization_equation", "spectral_construction_args_intro", "spectral_construction_finite_dimensional", "spectral_construction_complex_field", "spectral_construction_diagonalizes", "finite_dimensional_normal_matrix_unitarily_diagonalizable", "finite_dimensional_spectral_theorem"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.FunctionalAnalysis.AbstractHilbertSpaceSpectralTheorem"
+source = "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/source.npa"
+certificate = "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/certificate.npcert"
+meta = "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/meta.json"
+replay = "Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:0c7de1c89bc56ff7d9b082056965ec9fb6f4da1b8acc8f71415b623c34c5f2b4"
+expected_certificate_file_hash = "sha256:8000306e11505a07ef87ac904a901c22caaae88ac6aab0ba007cd1700f60e123"
+expected_export_hash = "sha256:70b21ee7c9430ba243d62d7268bf727c089ff01a2605fcf431525e76414063ea"
+expected_axiom_report_hash = "sha256:de65050017913cf6300419ff16a288a339749ed2b36c92e2ce8c98ccfd96e81d"
+expected_certificate_hash = "sha256:e0b79356351a87ff44e36b71bbfea0fe7e6095ad3f08843a975f0212bccc7b30"
+imports = ["Std.Logic.Eq"]
+definitions = ["BoundedHilbertOperator", "NormalHilbertOperator", "SelfAdjointHilbertOperator", "ProjectionValuedMeasure", "RealSupportedProjectionValuedMeasure", "SpectralIntegralEquation", "MultiplicationOperatorModel", "DirectIntegralDecomposition", "BoundedNormalSpectralData", "BoundedSelfAdjointSpectralData", "BoundedNormalSpectralResolution", "BoundedSelfAdjointSpectralResolution", "HilbertSpaceSpectralConstructionArgs", "HilbertSpaceSpectralTheorem"]
+theorems = ["bounded_hilbert_operator_intro", "normal_hilbert_operator_intro", "self_adjoint_hilbert_operator_intro", "bounded_normal_spectral_data_intro", "bounded_normal_spectral_data_pvm", "bounded_normal_spectral_data_integral_eq", "bounded_normal_spectral_data_multiplication_model", "bounded_normal_spectral_data_direct_integral", "bounded_self_adjoint_spectral_data_intro", "bounded_self_adjoint_spectral_data_real_support", "bounded_self_adjoint_spectral_data_pvm", "bounded_self_adjoint_spectral_data_integral_eq", "bounded_self_adjoint_spectral_data_multiplication_model", "bounded_self_adjoint_spectral_data_direct_integral", "hilbert_space_spectral_construction_args_intro", "spectral_construction_normal_resolution", "spectral_construction_self_adjoint_resolution", "bounded_normal_operator_spectral_theorem", "bounded_self_adjoint_operator_spectral_theorem", "hilbert_space_spectral_theorem"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Geometry.Affine"
 source = "Proofs/Ai/Geometry/Affine/source.npa"
 certificate = "Proofs/Ai/Geometry/Affine/certificate.npcert"

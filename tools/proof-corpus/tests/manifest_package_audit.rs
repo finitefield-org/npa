@@ -561,7 +561,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
     assert_eq!(string_field(&manifest, "schema"), LEGACY_MANIFEST_SCHEMA);
 
     let modules = array_field(&manifest, "proof_modules");
-    assert_eq!(modules.len(), 66);
+    assert_eq!(modules.len(), 68);
 
     let mut local_modules = BTreeSet::new();
     for module in modules {
@@ -617,7 +617,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
     }
 
     assert_eq!(local_import_reference_count, 261);
-    assert_eq!(external_import_reference_count, 66);
+    assert_eq!(external_import_reference_count, 68);
     assert_eq!(
         discovered_external_imports,
         planned_external_imports
@@ -635,7 +635,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
 
     assert_eq!(
         modules_importing(&external_imports_by_module, "Std.Logic.Eq"),
-        63
+        65
     );
     assert_eq!(
         modules_importing(&external_imports_by_module, "Std.Nat.Basic"),

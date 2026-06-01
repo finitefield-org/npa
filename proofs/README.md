@@ -61,6 +61,13 @@ Current bundles:
 - `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion, parallelogram,
   polarization, Cauchy-Schwarz, and squared Minkowski derivations from explicit scalar, vector, and
   inner-product law packages.
+- `Proofs/Ai/LinearAlgebra/AbstractSpectralTheorem/`: certificate-backed finite-dimensional
+  spectral theorem package for normal matrices, exposing unitary diagonalization `A = U D U*` with
+  finite-dimensional and complex spectral-field assumptions kept as explicit evidence.
+- `Proofs/Ai/FunctionalAnalysis/AbstractHilbertSpaceSpectralTheorem/`: certificate-backed
+  Hilbert-space spectral theorem package for bounded normal and self-adjoint operators, exposing
+  projection-valued measure representations, multiplication-operator models, and direct-integral
+  decompositions with analytic construction evidence kept explicit.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/AffineDerive/`: checked affine displacement orientation and point-distance
@@ -993,6 +1000,8 @@ EqReasoning
   -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
   -> Algebra.AbstractScalarDerive
   -> Vector.AbstractSpace -> Vector.AbstractInnerProduct -> Vector.AbstractInnerProductDerive
+  -> LinearAlgebra.AbstractSpectralTheorem
+  -> FunctionalAnalysis.AbstractHilbertSpaceSpectralTheorem
   -> Geometry.Affine -> Geometry.AffineDerive
   -> Geometry.AbstractRightTriangle -> Geometry.AbstractRightTriangleDerive
   -> Geometry.AbstractMetric
@@ -1607,6 +1616,72 @@ inequality theorem yet.
 | `norm_sq_nonneg_from_inner_args` | projects `0 <= normSq x` from `InnerProductLawArgs` for later order proofs |
 | `dot_le_mul_sqrt_norm_sq_from_cauchy` | derives `dot x y <= sqrt(normSq x) * sqrt(normSq y)` from checked Cauchy-Schwarz and scalar square-root order support |
 | `norm_sq_add_le_square_sum_norms_from_cauchy` | derives `normSq (x + y) <= sq (sqrt(normSq x) + sqrt(normSq y))` without using triangle inequality |
+
+#### `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem`
+
+This module records the finite-dimensional spectral theorem in the normal-matrix form: a normal
+matrix over a finite-dimensional complex spectral setting has a unitary diagonalization
+`A = U D U*`. It is intentionally matrix-level rather than tied to a concrete `n x n` representation:
+the finite-dimensional index/basis evidence and the complex eigenvalue construction are explicit
+proof inputs, and the kernel only checks the canonical certificate that packages and projects them.
+
+| Declaration | Purpose |
+| --- | --- |
+| `MatrixMulAssocLaw`, `MatrixLeftUnitLaw`, `MatrixRightUnitLaw` | matrix multiplication associativity and identity laws |
+| `MatrixAdjointMulLaw`, `MatrixAdjointInvolutiveLaw` | adjoint compatibility laws used by the star-algebra package |
+| `MatrixStarAlgebraLawArgs` | Church-encoded star-algebra laws for matrix multiplication, identity, and adjoint |
+| `NormalMatrix` | normality predicate `A A* = A* A` |
+| `UnitaryMatrix` | unitary predicate with both `U* U = I` and `U U* = I` |
+| `DiagonalMatrix` | abstract diagonal-matrix predicate supplied by the finite-dimensional model |
+| `DiagonalizationEquation` | matrix equation `A = U D U*` |
+| `UnitaryDiagonalization` | packaged unitary `U`, diagonal `D`, and diagonalization equation |
+| `NormalMatrixDiagonalizes` | theorem-shaped choice principle assigning a unitary diagonalization to each normal matrix |
+| `SpectralConstructionArgs` | explicit finite-dimensional, complex spectral-field, and normal-to-diagonalization construction evidence |
+| `FiniteDimensionalSpectralTheorem` | public theorem package exposing the spectral theorem data |
+
+The final theorem export is `finite_dimensional_normal_matrix_unitarily_diagonalizable`, which
+returns a Church-encoded choice of `U` and `D` from a normal matrix, and
+`finite_dimensional_spectral_theorem`, which bundles the same result with the finite-dimensional and
+complex-field evidence. The module has an empty axiom report; the non-kernel mathematical
+construction is represented by `SpectralConstructionArgs` rather than a trusted axiom.
+
+#### `Proofs.Ai.FunctionalAnalysis.AbstractHilbertSpaceSpectralTheorem`
+
+This module records the general Hilbert-space spectral theorem for bounded normal and self-adjoint
+operators. For a bounded normal operator it exposes a projection-valued measure `E`, the spectral
+integral equation `T = spectral_integral E`, a multiplication-operator model, and a direct-integral
+decomposition. For a bounded self-adjoint operator it exposes the same data plus real spectral
+support for the projection-valued measure. The analytic measure-theoretic construction is explicit
+evidence in `HilbertSpaceSpectralConstructionArgs`; the trusted artifact is the canonical certificate
+that packages and projects the theorem data.
+
+| Declaration | Purpose |
+| --- | --- |
+| `BoundedHilbertOperator` | boundedness predicate wrapper for Hilbert-space operators |
+| `NormalHilbertOperator` | normality equation `T T* = T* T` |
+| `SelfAdjointHilbertOperator` | self-adjointness equation `T* = T` |
+| `ProjectionValuedMeasure` | projection-valued measure law package supplied by the analytic model |
+| `RealSupportedProjectionValuedMeasure` | real spectral support predicate for self-adjoint spectral measures |
+| `SpectralIntegralEquation` | equation `T = spectral_integral E` abstracting `T = integral z dE(z)` |
+| `MultiplicationOperatorModel` | predicate that `T` is represented as multiplication on the spectral model |
+| `DirectIntegralDecomposition` | predicate that `T` has the associated direct-integral decomposition |
+| `BoundedNormalSpectralData` | Church-encoded package of PVM, spectral integral equation, multiplication model, and direct integral for a bounded normal operator |
+| `BoundedSelfAdjointSpectralData` | bounded self-adjoint spectral package, adding real support for the PVM |
+| `BoundedNormalSpectralResolution` | choice-style resolution assigning spectral data to every bounded normal operator |
+| `BoundedSelfAdjointSpectralResolution` | choice-style resolution assigning real-supported spectral data to every bounded self-adjoint operator |
+| `HilbertSpaceSpectralConstructionArgs` | explicit Hilbert/operator laws and analytic spectral construction evidence |
+| `HilbertSpaceSpectralTheorem` | public package bundling the normal and self-adjoint spectral resolutions |
+| `bounded_normal_operator_spectral_theorem` | final bounded-normal theorem returning spectral data with PVM, multiplication model, and direct integral |
+| `bounded_self_adjoint_operator_spectral_theorem` | final bounded-self-adjoint theorem returning real-supported spectral data |
+| `hilbert_space_spectral_theorem` | bundled general Hilbert-space spectral theorem package |
+
+Projection lemmas expose the normal and self-adjoint data fields separately, including the PVM,
+spectral-integral equation, multiplication model, direct integral, and self-adjoint real-support
+field.
+
+The module has an empty axiom report. It deliberately keeps measure theory, functional calculus, and
+direct-integral construction evidence outside the trusted kernel while still certificate-checking the
+general theorem interface requested by downstream modules.
 
 #### `Proofs.Ai.Geometry.Affine`
 
