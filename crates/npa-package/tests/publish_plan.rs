@@ -1,16 +1,19 @@
 use npa_cert::Name;
 use npa_package::{
-    compute_package_publish_plan_hash, format_package_hash, parse_package_hash,
-    parse_package_publish_plan_json, parse_registry_module_json, PackageArtifactError,
-    PackageArtifactErrorKind, PackageArtifactErrorReason, PackageArtifactOrigin,
+    build_package_publish_artifacts, compute_package_publish_plan_hash, format_package_hash,
+    package_checksum_only_signature_policy, parse_package_hash, parse_package_publish_plan_json,
+    parse_registry_module_json, PackageArtifactError, PackageArtifactErrorKind,
+    PackageArtifactErrorReason, PackageArtifactFileReference, PackageArtifactOrigin,
     PackageCheckerMode, PackageCheckerSummary, PackageDownstreamImportBundle,
-    PackageDownstreamImportModule, PackageHash, PackageId, PackagePath, PackagePublishArtifact,
-    PackagePublishArtifactRole, PackagePublishPlan, PackagePublishRelease,
-    PackagePublishReleaseReference, PackagePublishSummary, PackageRegistryArtifactHashes,
-    PackageRegistryCheckerResult, PackageRegistryCheckerStatus, PackageRegistryImport,
-    PackageRegistryModule, PackageSignaturePolicy, PackageVersion, PACKAGE_AXIOM_REPORT_SCHEMA,
-    PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA, PACKAGE_PUBLISH_PLAN_PATH,
-    PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA, REGISTRY_MODULE_SCHEMA,
+    PackageDownstreamImportModule, PackageHash, PackageId, PackageLockEntry,
+    PackageLockEntryOrigin, PackageLockManifest, PackageLockManifestReference, PackagePath,
+    PackagePublishArtifact, PackagePublishArtifactListInput, PackagePublishArtifactRole,
+    PackagePublishPlan, PackagePublishRelease, PackagePublishReleaseReference,
+    PackagePublishSummary, PackageRegistryArtifactHashes, PackageRegistryCheckerResult,
+    PackageRegistryCheckerStatus, PackageRegistryImport, PackageRegistryModule,
+    PackageSignaturePolicy, PackageVersion, PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA,
+    PACKAGE_MANIFEST_SCHEMA, PACKAGE_PUBLISH_PLAN_PATH, PACKAGE_PUBLISH_PLAN_SCHEMA,
+    PACKAGE_THEOREM_INDEX_SCHEMA, REGISTRY_MODULE_SCHEMA,
 };
 
 const CHECKER_BINARY_REGISTRY_SCHEMA: &str = "npa.independent-checker.checker_binary_registry.v1";
@@ -50,6 +53,13 @@ fn release_ref(
     }
 }
 
+fn artifact_ref(path: &str, file_hash: &str) -> PackageArtifactFileReference {
+    PackageArtifactFileReference {
+        path: PackagePath::new(path),
+        file_hash: hash(file_hash),
+    }
+}
+
 fn checker_summary(module: &str) -> PackageCheckerSummary {
     PackageCheckerSummary {
         module: name(module),
@@ -60,6 +70,39 @@ fn checker_summary(module: &str) -> PackageCheckerSummary {
         export_hash: hash(THREE_HASH),
         certificate_hash: hash(FOUR_HASH),
         axiom_report_hash: hash(FIVE_HASH),
+    }
+}
+
+fn lock_manifest(entries: Vec<PackageLockEntry>) -> PackageLockManifest {
+    PackageLockManifest {
+        schema: PACKAGE_LOCK_SCHEMA.to_owned(),
+        package: PackageId::new("npa-proof-corpus"),
+        version: PackageVersion::new("0.1.0"),
+        manifest: PackageLockManifestReference {
+            path: PackagePath::new("npa-package.toml"),
+            file_hash: hash(ZERO_HASH),
+        },
+        entries,
+    }
+}
+
+fn lock_entry(
+    module: &str,
+    origin: PackageLockEntryOrigin,
+    certificate: &str,
+    certificate_file_hash: &str,
+) -> PackageLockEntry {
+    PackageLockEntry {
+        module: name(module),
+        origin,
+        certificate: PackagePath::new(certificate),
+        certificate_file_hash: hash(certificate_file_hash),
+        export_hash: hash(THREE_HASH),
+        axiom_report_hash: hash(FIVE_HASH),
+        certificate_hash: hash(FOUR_HASH),
+        imports: Vec::new(),
+        package: (origin == PackageLockEntryOrigin::External).then(|| PackageId::new("npa-std")),
+        version: (origin == PackageLockEntryOrigin::External).then(|| PackageVersion::new("0.1.0")),
     }
 }
 
@@ -239,6 +282,142 @@ fn assert_artifact_error(
     assert_eq!(error.reason_code, reason);
     assert_eq!(error.reason_code.as_str(), reason.as_str());
     assert_eq!(error.field.as_deref(), field);
+}
+
+#[test]
+fn publish_plan_artifacts_build_canonical_release_list_and_checksum_policy() {
+    let lock = lock_manifest(vec![
+        lock_entry(
+            "Proofs.Z",
+            PackageLockEntryOrigin::Local,
+            "Proofs/Z/certificate.npcert",
+            E_HASH,
+        ),
+        lock_entry(
+            "Std.Logic.Eq",
+            PackageLockEntryOrigin::External,
+            "vendor/std/Std/Logic/Eq/certificate.npcert",
+            SEVEN_HASH,
+        ),
+        lock_entry(
+            "Proofs.A",
+            PackageLockEntryOrigin::Local,
+            "Proofs/A/certificate.npcert",
+            D_HASH,
+        ),
+    ]);
+
+    let artifacts = build_package_publish_artifacts(PackagePublishArtifactListInput {
+        manifest: artifact_ref("npa-package.toml", ZERO_HASH),
+        package_lock: artifact_ref("generated/package-lock.json", ONE_HASH),
+        axiom_report: artifact_ref("generated/axiom-report.json", TWO_HASH),
+        theorem_index: artifact_ref("generated/theorem-index.json", THREE_HASH),
+        package_lock_manifest: &lock,
+    })
+    .unwrap();
+
+    let keys = artifacts
+        .iter()
+        .map(|artifact| {
+            format!(
+                "{}|{}|{}",
+                artifact.role.as_str(),
+                artifact
+                    .module
+                    .as_ref()
+                    .map(Name::as_dotted)
+                    .unwrap_or_default(),
+                artifact.path.as_str()
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        keys,
+        vec![
+            "axiom_report||generated/axiom-report.json",
+            "external_import_certificate|Std.Logic.Eq|vendor/std/Std/Logic/Eq/certificate.npcert",
+            "local_certificate|Proofs.A|Proofs/A/certificate.npcert",
+            "local_certificate|Proofs.Z|Proofs/Z/certificate.npcert",
+            "package_lock||generated/package-lock.json",
+            "package_manifest||npa-package.toml",
+            "theorem_index||generated/theorem-index.json",
+        ]
+    );
+    assert!(!artifacts
+        .iter()
+        .any(|artifact| artifact.path.as_str() == PACKAGE_PUBLISH_PLAN_PATH));
+
+    let external = artifacts
+        .iter()
+        .find(|artifact| artifact.role == PackagePublishArtifactRole::ExternalImportCertificate)
+        .unwrap();
+    assert_eq!(external.file_hash, hash(SEVEN_HASH));
+    assert_eq!(external.origin, Some(PackageArtifactOrigin::External));
+
+    let policy = package_checksum_only_signature_policy();
+    assert_eq!(policy.mode, "checksum-only");
+    assert_eq!(policy.hash_algorithm, "sha256");
+    assert!(!policy.signature_required);
+    assert!(policy.signatures.is_empty());
+}
+
+#[test]
+fn publish_plan_artifacts_reject_missing_or_mismatched_release_entries() {
+    let mut missing_manifest = base_publish_plan();
+    missing_manifest
+        .artifacts
+        .retain(|artifact| artifact.role != PackagePublishArtifactRole::PackageManifest);
+    assert_artifact_error(
+        missing_manifest.with_computed_hash().unwrap_err(),
+        PackageArtifactErrorKind::ArtifactSchema,
+        PackageArtifactErrorReason::MissingField,
+        Some("package_manifest"),
+    );
+
+    let mut missing_local_certificate = base_publish_plan();
+    missing_local_certificate
+        .artifacts
+        .retain(|artifact| artifact.module.as_ref() != Some(&name("Proofs.A")));
+    assert_artifact_error(
+        missing_local_certificate.with_computed_hash().unwrap_err(),
+        PackageArtifactErrorKind::ArtifactSchema,
+        PackageArtifactErrorReason::MissingField,
+        Some("Proofs.A"),
+    );
+
+    let mut mismatched_lock = base_publish_plan();
+    mismatched_lock
+        .artifacts
+        .iter_mut()
+        .find(|artifact| artifact.role == PackagePublishArtifactRole::PackageLock)
+        .unwrap()
+        .file_hash = hash(B_HASH);
+    assert_artifact_error(
+        mismatched_lock.with_computed_hash().unwrap_err(),
+        PackageArtifactErrorKind::Domain,
+        PackageArtifactErrorReason::InvalidEnumValue,
+        Some("file_hash"),
+    );
+
+    let lock = lock_manifest(vec![lock_entry(
+        "Proofs.Cycle",
+        PackageLockEntryOrigin::Local,
+        PACKAGE_PUBLISH_PLAN_PATH,
+        D_HASH,
+    )]);
+    assert_artifact_error(
+        build_package_publish_artifacts(PackagePublishArtifactListInput {
+            manifest: artifact_ref("npa-package.toml", ZERO_HASH),
+            package_lock: artifact_ref("generated/package-lock.json", ONE_HASH),
+            axiom_report: artifact_ref("generated/axiom-report.json", TWO_HASH),
+            theorem_index: artifact_ref("generated/theorem-index.json", THREE_HASH),
+            package_lock_manifest: &lock,
+        })
+        .unwrap_err(),
+        PackageArtifactErrorKind::ArtifactSchema,
+        PackageArtifactErrorReason::ReleaseArtifactSelfReference,
+        Some("artifacts"),
+    );
 }
 
 #[test]

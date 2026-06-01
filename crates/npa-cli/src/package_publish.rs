@@ -1,8 +1,9 @@
 //! Publish-plan input collection for CLR-06.
 //!
 //! This module loads and validates the source-free inputs that later CLR-06
-//! milestones use to build `generated/publish-plan.json`. It intentionally does
-//! not generate registry entries, release artifact lists, downstream bundles, or
+//! milestones use to build `generated/publish-plan.json`. It also projects the
+//! deterministic release artifact list and checksum-only signature policy. It
+//! intentionally does not generate registry entries, downstream bundles, or
 //! write the publish-plan file yet.
 
 use std::path::Path;
@@ -13,10 +14,12 @@ use npa_api::{
     PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 use npa_package::{
-    format_package_hash, package_file_hash, parse_package_axiom_report_json,
-    parse_package_theorem_index_json, PackageArtifactError, PackageArtifactErrorReason,
-    PackageArtifactFileReference, PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary,
-    PackageHash, PackageLockManifest, PackagePath, PackageTheoremIndex, ValidatedPackageManifest,
+    build_package_publish_artifacts, format_package_hash, package_checksum_only_signature_policy,
+    package_file_hash, parse_package_axiom_report_json, parse_package_theorem_index_json,
+    PackageArtifactError, PackageArtifactErrorReason, PackageArtifactFileReference,
+    PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary, PackageHash,
+    PackageLockManifest, PackagePath, PackagePublishArtifact, PackagePublishArtifactListInput,
+    PackageSignaturePolicy, PackageTheoremIndex, ValidatedPackageManifest,
 };
 
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
@@ -126,6 +129,31 @@ pub fn load_package_publish_inputs(
         checker_summaries: reference_loaded.extraction.checker_summaries,
         reference_verification_report,
     })
+}
+
+/// Build the deterministic release artifact list from loaded publish inputs.
+pub fn collect_package_publish_artifacts(
+    inputs: &LoadedPackagePublishInputs,
+) -> Result<Vec<PackagePublishArtifact>, CommandResult> {
+    build_package_publish_artifacts(PackagePublishArtifactListInput {
+        manifest: inputs.manifest.clone(),
+        package_lock: inputs.package_lock.clone(),
+        axiom_report: inputs.axiom_report_file.clone(),
+        theorem_index: inputs.theorem_index_file.clone(),
+        package_lock_manifest: &inputs.package_lock_manifest,
+    })
+    .map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            inputs.root_display.clone(),
+            vec![publish_artifact_error_diagnostic(error)],
+        )
+    })
+}
+
+/// Return the explicit CLR-06 checksum-only signature policy.
+pub fn checksum_only_signature_policy() -> PackageSignaturePolicy {
+    package_checksum_only_signature_policy()
 }
 
 /// Validate publish-plan checker summaries against the package lock.
@@ -510,6 +538,29 @@ fn metadata_extraction_diagnostic(
         .with_path(artifact_path)
         .with_field(error.path)
         .with_actual_value(message)
+}
+
+fn publish_artifact_error_diagnostic(error: PackageArtifactError) -> CommandDiagnostic {
+    let mut diagnostic = CommandDiagnostic::error(
+        DiagnosticKind::GeneratedArtifact,
+        error.reason_code.as_str(),
+    )
+    .with_path("artifacts");
+    if let Some(field) = error.field.clone().or_else(|| {
+        if error.path == "$" {
+            None
+        } else {
+            Some(error.path.clone())
+        }
+    }) {
+        diagnostic = diagnostic.with_field(field);
+    }
+    if let (Some(expected), Some(actual)) = (error.expected_value, error.actual_value) {
+        diagnostic = diagnostic
+            .with_expected_value(expected)
+            .with_actual_value(actual);
+    }
+    diagnostic
 }
 
 fn certificate_file_references(lock: &PackageLockManifest) -> Vec<PackageArtifactFileReference> {

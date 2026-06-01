@@ -15,12 +15,13 @@ use crate::{
         parse_artifact_json, parse_checker_summary, reject_unknown_fields, required_array,
         required_bool, required_hash, required_name, required_path, required_string, required_u64,
         validate_artifact_path, validate_checker_summaries, validate_module_name,
-        validate_package_identity, validate_plain_string, PackageArtifactOrigin,
-        PackageCheckerSummary,
+        validate_package_identity, validate_plain_string, PackageArtifactFileReference,
+        PackageArtifactOrigin, PackageCheckerSummary,
     },
     error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
     hash::{format_package_hash, package_file_hash, PackageHash},
     json::{JsonMember, JsonValue},
+    lock::{PackageLockEntryOrigin, PackageLockManifest},
     manifest::PackageVersion,
     name::PackageId,
     path::PackagePath,
@@ -225,6 +226,20 @@ pub struct PackageSignaturePolicy {
     pub signatures: Vec<String>,
 }
 
+/// Input references used to build a deterministic publish-plan artifact list.
+pub struct PackagePublishArtifactListInput<'a> {
+    /// Exact package manifest file identity.
+    pub manifest: PackageArtifactFileReference,
+    /// Exact package-lock file identity.
+    pub package_lock: PackageArtifactFileReference,
+    /// Exact package axiom-report file identity.
+    pub axiom_report: PackageArtifactFileReference,
+    /// Exact package theorem-index file identity.
+    pub theorem_index: PackageArtifactFileReference,
+    /// Parsed package lock whose entries provide certificate artifact identities.
+    pub package_lock_manifest: &'a PackageLockManifest,
+}
+
 /// Deterministic publish-plan summary counts.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackagePublishSummary {
@@ -238,6 +253,88 @@ pub struct PackagePublishSummary {
     pub registry_entry_count: u64,
     /// Number of checker summaries.
     pub checker_summary_count: u64,
+}
+
+/// Return the explicit CLR-06 checksum-only MVP signature policy.
+pub fn package_checksum_only_signature_policy() -> PackageSignaturePolicy {
+    PackageSignaturePolicy {
+        mode: "checksum-only".to_owned(),
+        hash_algorithm: "sha256".to_owned(),
+        signature_required: false,
+        signatures: Vec::new(),
+    }
+}
+
+/// Build the deterministic release artifact list for a publish plan.
+///
+/// The function is pure: callers provide exact file identities and the parsed
+/// package lock. It does not read files, walk the filesystem, contact a
+/// registry, or inspect source/replay/metadata sidecars.
+pub fn build_package_publish_artifacts(
+    input: PackagePublishArtifactListInput<'_>,
+) -> PackageArtifactResult<Vec<PackagePublishArtifact>> {
+    let mut artifacts = vec![
+        schema_artifact(
+            PackagePublishArtifactRole::PackageManifest,
+            input.manifest,
+            PACKAGE_MANIFEST_SCHEMA,
+        ),
+        schema_artifact(
+            PackagePublishArtifactRole::PackageLock,
+            input.package_lock,
+            PACKAGE_LOCK_SCHEMA,
+        ),
+        schema_artifact(
+            PackagePublishArtifactRole::AxiomReport,
+            input.axiom_report,
+            PACKAGE_AXIOM_REPORT_SCHEMA,
+        ),
+        schema_artifact(
+            PackagePublishArtifactRole::TheoremIndex,
+            input.theorem_index,
+            PACKAGE_THEOREM_INDEX_SCHEMA,
+        ),
+    ];
+
+    artifacts.extend(input.package_lock_manifest.entries.iter().map(|entry| {
+        let (role, origin) = match entry.origin {
+            PackageLockEntryOrigin::Local => (
+                PackagePublishArtifactRole::LocalCertificate,
+                PackageArtifactOrigin::Local,
+            ),
+            PackageLockEntryOrigin::External => (
+                PackagePublishArtifactRole::ExternalImportCertificate,
+                PackageArtifactOrigin::External,
+            ),
+        };
+        PackagePublishArtifact {
+            role,
+            path: entry.certificate.clone(),
+            file_hash: entry.certificate_file_hash,
+            module: Some(entry.module.clone()),
+            origin: Some(origin),
+            schema: None,
+        }
+    }));
+
+    artifacts.sort_by_key(publish_artifact_sort_key);
+    validate_publish_artifacts(&artifacts, None)?;
+    Ok(artifacts)
+}
+
+fn schema_artifact(
+    role: PackagePublishArtifactRole,
+    reference: PackageArtifactFileReference,
+    schema: &'static str,
+) -> PackagePublishArtifact {
+    PackagePublishArtifact {
+        role,
+        path: reference.path,
+        file_hash: reference.file_hash,
+        module: None,
+        origin: None,
+        schema: Some(schema.to_owned()),
+    }
 }
 
 /// Parse and validate a checked-in package publish-plan JSON artifact.
@@ -303,13 +400,14 @@ fn validate_publish_plan_shape_without_self_hash(
     }
     validate_package_identity(&plan.package, &plan.version)?;
     validate_release(&plan.release)?;
-    validate_publish_artifacts(&plan.artifacts)?;
+    validate_publish_artifacts(&plan.artifacts, Some(&plan.release))?;
     validate_registry_entries(&plan.module_registry_entries, &plan.package, &plan.version)?;
     validate_downstream_import_bundle(
         &plan.downstream_import_bundle,
         &plan.package,
         &plan.version,
     )?;
+    validate_downstream_certificate_artifacts(&plan.artifacts, &plan.downstream_import_bundle)?;
     validate_checker_summaries(&plan.checker_summaries)?;
     validate_signature_policy(&plan.signature_policy)?;
     validate_publish_summary(plan)?;
@@ -475,8 +573,12 @@ fn validate_release_reference(
     Ok(())
 }
 
-fn validate_publish_artifacts(artifacts: &[PackagePublishArtifact]) -> PackageArtifactResult<()> {
+fn validate_publish_artifacts(
+    artifacts: &[PackagePublishArtifact],
+    release: Option<&PackagePublishRelease>,
+) -> PackageArtifactResult<()> {
     let mut keys = BTreeSet::<String>::new();
+    let mut singleton_roles = BTreeSet::<&'static str>::new();
     for (index, artifact) in artifacts.iter().enumerate() {
         let path = format!("artifacts[{index}]");
         validate_artifact_path(&artifact.path, field_path(&path, "path"))?;
@@ -492,6 +594,18 @@ fn validate_publish_artifacts(artifacts: &[PackagePublishArtifact]) -> PackageAr
         if let Some(schema) = &artifact.schema {
             validate_plain_string(schema, field_path(&path, "schema"))?;
         }
+        validate_publish_artifact_role_fields(artifact, &path)?;
+        if is_singleton_artifact_role(artifact.role) {
+            let role = artifact.role.as_str();
+            if !singleton_roles.insert(role) {
+                return Err(PackageArtifactError::duplicate(
+                    field_path(&path, "role"),
+                    "artifacts",
+                    PackageArtifactErrorReason::DuplicateArtifact,
+                    role,
+                ));
+            }
+        }
         let key = artifact.path.as_str().to_owned();
         if !keys.insert(key.clone()) {
             return Err(PackageArtifactError::duplicate(
@@ -502,7 +616,174 @@ fn validate_publish_artifacts(artifacts: &[PackagePublishArtifact]) -> PackageAr
             ));
         }
     }
+    if let Some(release) = release {
+        validate_required_release_artifact(
+            artifacts,
+            PackagePublishArtifactRole::PackageManifest,
+            &release.manifest,
+        )?;
+        validate_required_release_artifact(
+            artifacts,
+            PackagePublishArtifactRole::PackageLock,
+            &release.package_lock,
+        )?;
+        validate_required_release_artifact(
+            artifacts,
+            PackagePublishArtifactRole::AxiomReport,
+            &release.axiom_report,
+        )?;
+        validate_required_release_artifact(
+            artifacts,
+            PackagePublishArtifactRole::TheoremIndex,
+            &release.theorem_index,
+        )?;
+    }
     Ok(())
+}
+
+fn validate_publish_artifact_role_fields(
+    artifact: &PackagePublishArtifact,
+    path: &str,
+) -> PackageArtifactResult<()> {
+    match artifact.role {
+        PackagePublishArtifactRole::PackageManifest => {
+            validate_schema_artifact_fields(artifact, path, PACKAGE_MANIFEST_SCHEMA)
+        }
+        PackagePublishArtifactRole::PackageLock => {
+            validate_schema_artifact_fields(artifact, path, PACKAGE_LOCK_SCHEMA)
+        }
+        PackagePublishArtifactRole::AxiomReport => {
+            validate_schema_artifact_fields(artifact, path, PACKAGE_AXIOM_REPORT_SCHEMA)
+        }
+        PackagePublishArtifactRole::TheoremIndex => {
+            validate_schema_artifact_fields(artifact, path, PACKAGE_THEOREM_INDEX_SCHEMA)
+        }
+        PackagePublishArtifactRole::LocalCertificate => {
+            validate_certificate_artifact_fields(artifact, path, PackageArtifactOrigin::Local)
+        }
+        PackagePublishArtifactRole::ExternalImportCertificate => {
+            validate_certificate_artifact_fields(artifact, path, PackageArtifactOrigin::External)
+        }
+    }
+}
+
+fn validate_schema_artifact_fields(
+    artifact: &PackagePublishArtifact,
+    path: &str,
+    expected_schema: &'static str,
+) -> PackageArtifactResult<()> {
+    if artifact.module.is_some() {
+        return Err(unexpected_publish_artifact_field(path, "module", "absent"));
+    }
+    if artifact.origin.is_some() {
+        return Err(unexpected_publish_artifact_field(path, "origin", "absent"));
+    }
+    match &artifact.schema {
+        Some(schema) if schema == expected_schema => Ok(()),
+        Some(schema) => Err(PackageArtifactError::unsupported_schema(
+            field_path(path, "schema"),
+            "schema",
+            expected_schema,
+            schema,
+        )),
+        None => Err(PackageArtifactError::missing_field(path, "schema")),
+    }
+}
+
+fn validate_certificate_artifact_fields(
+    artifact: &PackagePublishArtifact,
+    path: &str,
+    expected_origin: PackageArtifactOrigin,
+) -> PackageArtifactResult<()> {
+    if artifact.module.is_none() {
+        return Err(PackageArtifactError::missing_field(path, "module"));
+    }
+    match artifact.origin {
+        Some(origin) if origin == expected_origin => {}
+        Some(origin) => {
+            return Err(PackageArtifactError::invalid_enum_value(
+                field_path(path, "origin"),
+                "origin",
+                expected_origin.as_str(),
+                origin.as_str(),
+            ));
+        }
+        None => return Err(PackageArtifactError::missing_field(path, "origin")),
+    }
+    if artifact.schema.is_some() {
+        return Err(unexpected_publish_artifact_field(path, "schema", "absent"));
+    }
+    Ok(())
+}
+
+fn unexpected_publish_artifact_field(
+    path: &str,
+    field: &'static str,
+    expected: &'static str,
+) -> PackageArtifactError {
+    PackageArtifactError::invalid_enum_value(field_path(path, field), field, expected, "present")
+}
+
+fn is_singleton_artifact_role(role: PackagePublishArtifactRole) -> bool {
+    matches!(
+        role,
+        PackagePublishArtifactRole::PackageManifest
+            | PackagePublishArtifactRole::PackageLock
+            | PackagePublishArtifactRole::AxiomReport
+            | PackagePublishArtifactRole::TheoremIndex
+    )
+}
+
+fn validate_required_release_artifact(
+    artifacts: &[PackagePublishArtifact],
+    role: PackagePublishArtifactRole,
+    reference: &PackagePublishReleaseReference,
+) -> PackageArtifactResult<()> {
+    let path = format!("artifacts.{}", role.as_str());
+    let Some(artifact) = artifacts.iter().find(|artifact| artifact.role == role) else {
+        return Err(PackageArtifactError::missing_field(
+            "artifacts",
+            role.as_str(),
+        ));
+    };
+    assert_release_artifact_field(
+        &path,
+        "path",
+        reference.path.as_str(),
+        artifact.path.as_str(),
+    )?;
+    assert_release_artifact_field(
+        &path,
+        "file_hash",
+        format_package_hash(&reference.file_hash),
+        format_package_hash(&artifact.file_hash),
+    )?;
+    assert_release_artifact_field(
+        &path,
+        "schema",
+        reference.schema.as_deref().unwrap_or("absent"),
+        artifact.schema.as_deref().unwrap_or("absent"),
+    )
+}
+
+fn assert_release_artifact_field(
+    path: &str,
+    field: &'static str,
+    expected: impl Into<String>,
+    actual: impl Into<String>,
+) -> PackageArtifactResult<()> {
+    let expected = expected.into();
+    let actual = actual.into();
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageArtifactError::invalid_enum_value(
+            field_path(path, field),
+            field,
+            expected,
+            actual,
+        ))
+    }
 }
 
 fn validate_registry_entries(
@@ -567,6 +848,37 @@ fn validate_downstream_import_bundle(
                 key,
             ));
         }
+    }
+    Ok(())
+}
+
+fn validate_downstream_certificate_artifacts(
+    artifacts: &[PackagePublishArtifact],
+    bundle: &PackageDownstreamImportBundle,
+) -> PackageArtifactResult<()> {
+    for module in &bundle.modules {
+        let path = format!("artifacts.local_certificate.{}", module.module.as_dotted());
+        let Some(artifact) = artifacts.iter().find(|artifact| {
+            artifact.role == PackagePublishArtifactRole::LocalCertificate
+                && artifact.module.as_ref() == Some(&module.module)
+        }) else {
+            return Err(PackageArtifactError::missing_field(
+                "artifacts",
+                module.module.as_dotted(),
+            ));
+        };
+        assert_release_artifact_field(
+            &path,
+            "path",
+            module.certificate.as_str(),
+            artifact.path.as_str(),
+        )?;
+        assert_release_artifact_field(
+            &path,
+            "file_hash",
+            format_package_hash(&module.certificate_file_hash),
+            format_package_hash(&artifact.file_hash),
+        )?;
     }
     Ok(())
 }

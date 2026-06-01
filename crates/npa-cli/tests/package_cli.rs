@@ -13,11 +13,15 @@ use npa_cli::package_artifacts::{
     load_package_artifact_extraction, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
     PACKAGE_THEOREM_INDEX_PATH,
 };
-use npa_cli::package_publish::{load_package_publish_inputs, validate_publish_checker_summaries};
+use npa_cli::package_publish::{
+    checksum_only_signature_policy, collect_package_publish_artifacts, load_package_publish_inputs,
+    validate_publish_checker_summaries,
+};
 use npa_package::{
-    build_package_lock_from_package_root, format_package_hash, parse_and_validate_manifest_str,
-    parse_package_axiom_report_json, parse_package_theorem_index_json, PackageCheckerMode,
-    PackageModule, PackagePath,
+    build_package_lock_from_package_root, format_package_hash, package_file_hash,
+    parse_and_validate_manifest_str, parse_package_axiom_report_json,
+    parse_package_theorem_index_json, PackageArtifactOrigin, PackageCheckerMode, PackageModule,
+    PackagePath, PackagePublishArtifactRole, PACKAGE_PUBLISH_PLAN_PATH,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -284,6 +288,77 @@ fn package_publish_inputs_rejects_stale_lock_metadata_certificate_and_checker_su
     assert_eq!(mislabeled.kind.as_str(), "ReferenceVerifier");
     assert_eq!(mislabeled.reason_code, "checker_summary_stale");
     assert_eq!(mislabeled.field.as_deref(), Some("mode"));
+}
+
+#[test]
+fn package_publish_artifact_hashes_match_release_files_and_checksum_policy() {
+    let package = build_basic_package("publish-artifact-hashes", false);
+    write_publish_input_metadata(&package);
+
+    let loaded = load_package_publish_inputs(package.path()).unwrap();
+    let artifacts = collect_package_publish_artifacts(&loaded).unwrap();
+
+    assert_eq!(artifacts.len(), 5);
+    assert!(!artifacts
+        .iter()
+        .any(|artifact| artifact.path.as_str() == PACKAGE_PUBLISH_PLAN_PATH));
+    assert!(artifacts
+        .iter()
+        .any(|artifact| artifact.role == PackagePublishArtifactRole::PackageManifest));
+    assert!(artifacts
+        .iter()
+        .any(|artifact| artifact.role == PackagePublishArtifactRole::PackageLock));
+    assert!(artifacts
+        .iter()
+        .any(|artifact| artifact.role == PackagePublishArtifactRole::AxiomReport));
+    assert!(artifacts
+        .iter()
+        .any(|artifact| artifact.role == PackagePublishArtifactRole::TheoremIndex));
+
+    let certificate = artifacts
+        .iter()
+        .find(|artifact| artifact.role == PackagePublishArtifactRole::LocalCertificate)
+        .unwrap();
+    assert_eq!(
+        certificate.module.as_ref().unwrap().as_dotted(),
+        "Proofs.Ai.Basic"
+    );
+    assert_eq!(certificate.origin, Some(PackageArtifactOrigin::Local));
+
+    for artifact in &artifacts {
+        let bytes = fs::read(package.artifact_path(artifact.path.as_str())).unwrap();
+        assert_eq!(
+            artifact.file_hash,
+            package_file_hash(&bytes),
+            "{}",
+            artifact.path.as_str()
+        );
+    }
+
+    let keys = artifacts
+        .iter()
+        .map(|artifact| {
+            format!(
+                "{}|{}|{}",
+                artifact.role.as_str(),
+                artifact
+                    .module
+                    .as_ref()
+                    .map(|module| module.as_dotted())
+                    .unwrap_or_default(),
+                artifact.path.as_str()
+            )
+        })
+        .collect::<Vec<_>>();
+    let mut sorted = keys.clone();
+    sorted.sort();
+    assert_eq!(keys, sorted);
+
+    let policy = checksum_only_signature_policy();
+    assert_eq!(policy.mode, "checksum-only");
+    assert_eq!(policy.hash_algorithm, "sha256");
+    assert!(!policy.signature_required);
+    assert!(policy.signatures.is_empty());
 }
 
 #[test]

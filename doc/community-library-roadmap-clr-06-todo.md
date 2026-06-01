@@ -742,7 +742,7 @@ remaining registry-server requirements
 
 ### CLR-06-03 Generate Release Artifact List And Checksum Policy
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-02
 - Inputs:
   - publish input collection output
