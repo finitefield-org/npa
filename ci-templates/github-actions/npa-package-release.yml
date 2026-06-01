@@ -1,0 +1,259 @@
+name: NPA Package Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  NPA_BINARY_PATH: ${{ vars.NPA_BINARY_PATH }}
+  NPA_VERSION: ${{ vars.NPA_VERSION }}
+  NPA_GIT_TAG: ${{ vars.NPA_GIT_TAG }}
+  NPA_GIT_COMMIT: ${{ vars.NPA_GIT_COMMIT }}
+  NPA_ENABLE_PUBLISH_PLAN: ${{ vars.NPA_ENABLE_PUBLISH_PLAN }}
+
+jobs:
+  package-release:
+    name: Package artifact checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Locate pinned npa
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_count=0
+          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
+            if [ -n "$value" ]; then
+              source_count=$((source_count + 1))
+            fi
+          done
+          if [ "$source_count" -ne 1 ]; then
+            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+            exit 2
+          fi
+          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
+            echo "This release template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
+            exit 2
+          fi
+          case "$NPA_BINARY_PATH" in
+            /*) npa_path="$NPA_BINARY_PATH" ;;
+            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
+          esac
+          if [ ! -x "$npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+            exit 2
+          fi
+          mkdir -p "$RUNNER_TEMP/npa-bin"
+          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
+          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+          "$npa_path" --version
+
+      - name: Package check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package check --root . --json > ci-output/package-check.json
+
+      - name: Build certificates check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package build-certs --root . --check --json > ci-output/build-certs.json
+
+      - name: Check hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package check-hashes --root . --json > ci-output/check-hashes.json
+
+      - name: Axiom report check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package axiom-report --root . --check --json > ci-output/axiom-report.json
+
+      - name: Theorem index check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package index --root . --check --json > ci-output/index.json
+
+      - name: Publish plan check
+        if: ${{ env.NPA_ENABLE_PUBLISH_PLAN == 'true' && hashFiles('generated/publish-plan.json') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package publish-plan --root . --check --json > ci-output/publish-plan.json
+
+      - name: Publish plan requested without CLR-06 artifact
+        if: ${{ env.NPA_ENABLE_PUBLISH_PLAN == 'true' && hashFiles('generated/publish-plan.json') == '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "NPA_ENABLE_PUBLISH_PLAN requires generated/publish-plan.json." >&2
+          exit 2
+
+      - name: Failure summary
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA package release diagnostics"
+            echo
+            echo "Package artifact checks failed. See saved JSON diagnostics."
+            echo
+            echo "Saved JSON diagnostics:"
+            if [ -d ci-output ]; then
+              find ci-output -maxdepth 1 -type f -name '*.json' | sort | sed 's/^/- /'
+            else
+              echo "- no ci-output directory was created"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-release-artifacts
+          path: |
+            generated/package-lock.json
+            generated/axiom-report.json
+            generated/theorem-index.json
+            generated/publish-plan.json
+            **/certificate.npcert
+            ci-output/*.json
+          if-no-files-found: warn
+
+  verify-fast-kernel:
+    name: Fast-kernel source-free verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Locate pinned npa
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_count=0
+          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
+            if [ -n "$value" ]; then
+              source_count=$((source_count + 1))
+            fi
+          done
+          if [ "$source_count" -ne 1 ]; then
+            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+            exit 2
+          fi
+          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
+            echo "This release template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
+            exit 2
+          fi
+          case "$NPA_BINARY_PATH" in
+            /*) npa_path="$NPA_BINARY_PATH" ;;
+            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
+          esac
+          if [ ! -x "$npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+            exit 2
+          fi
+          mkdir -p "$RUNNER_TEMP/npa-bin"
+          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
+          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+          "$npa_path" --version
+
+      - name: Source-free fast-kernel verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package verify-certs --root . --checker fast --json > ci-output/verify-certs-fast-kernel.json
+
+      - name: Fast-kernel summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA fast-kernel verification"
+            echo
+            echo "This job records fast-kernel verifier output. It is not a reference checker verdict."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload fast-kernel diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-fast-kernel-diagnostics
+          path: ci-output/*.json
+          if-no-files-found: ignore
+
+  verify-reference:
+    name: Reference checker source-free verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Locate pinned npa
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_count=0
+          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
+            if [ -n "$value" ]; then
+              source_count=$((source_count + 1))
+            fi
+          done
+          if [ "$source_count" -ne 1 ]; then
+            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+            exit 2
+          fi
+          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
+            echo "This release template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
+            exit 2
+          fi
+          case "$NPA_BINARY_PATH" in
+            /*) npa_path="$NPA_BINARY_PATH" ;;
+            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
+          esac
+          if [ ! -x "$npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
+            exit 2
+          fi
+          mkdir -p "$RUNNER_TEMP/npa-bin"
+          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
+          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+          "$npa_path" --version
+
+      - name: Source-free reference checker verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package verify-certs --root . --checker reference --json > ci-output/verify-certs-reference.json
+
+      - name: Upload reference checker diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-reference-diagnostics
+          path: ci-output/*.json
+          if-no-files-found: ignore

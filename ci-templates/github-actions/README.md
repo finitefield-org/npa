@@ -8,11 +8,11 @@ Template files:
 
 ```text
 npa-package-pr.yml          available
-npa-package-release.yml
+npa-package-release.yml     available
 ```
 
-CLR-07-03 adds the PR template. Later CLR-07 milestones add the release
-template. The contract source is:
+CLR-07-03 adds the PR template. CLR-07-04 adds the release template. The
+contract source is:
 
 ```text
 doc/external-theorem-library-ci.md
@@ -75,6 +75,10 @@ test -x "$NPA_BINARY_PATH" || {
 `NPA_BINARY_PATH` only and fails clearly if a later installer-mode variable is
 selected.
 
+`npa-package-release.yml` uses the same pinned source variables. For CLR-07-04
+it also accepts `NPA_BINARY_PATH` only and fails clearly if a later
+installer-mode variable is selected.
+
 When Rust is used to build `npa-cli`, templates must use a checked-in
 `rust-toolchain.toml` or exact `RUST_TOOLCHAIN_VERSION`, then print:
 
@@ -116,6 +120,7 @@ Validate workflow syntax with `actionlint` when it is installed:
 
 ```sh
 actionlint ci-templates/github-actions/npa-package-pr.yml
+actionlint ci-templates/github-actions/npa-package-release.yml
 ```
 
 If `actionlint` is unavailable, use a local YAML parser as a cheap syntax
@@ -123,12 +128,27 @@ fallback:
 
 ```sh
 python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' ci-templates/github-actions/npa-package-pr.yml
+python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' ci-templates/github-actions/npa-package-release.yml
 ```
 
 Release templates may add the fast verifier as a labeled non-reference gate:
 
 ```sh
 npa package verify-certs --root . --checker fast --json
+```
+
+`npa-package-release.yml` runs package artifact checks, a fast-kernel
+source-free verification job, and a reference checker source-free verification
+job. Fast-kernel output is labeled fast-kernel and is not reported as reference
+checker success. The template uploads checked package artifacts, certificate
+artifacts, and JSON diagnostics; it does not upload AI traces, prompt metadata,
+host-specific caches, or environment dumps.
+
+The CLR-06 publish-plan check is optional. Set `NPA_ENABLE_PUBLISH_PLAN` to
+`true` and check in `generated/publish-plan.json` to run:
+
+```sh
+npa package publish-plan --root . --check --json
 ```
 
 Base CLR-07 templates must not use `--changed`, `--all`, `--checker external`,

@@ -181,8 +181,8 @@ Required behavior:
 - Run the base package checks.
 - Run both fast and reference source-free verification.
 - Run axiom-report and theorem-index check mode.
-- Upload deterministic diagnostics and checked release artifacts useful for
-  review.
+- Upload deterministic diagnostics, package lock, checked certificates, axiom
+  report, theorem index, and optional publish metadata useful for review.
 
 The base CLR-07 release template must not require the external checker.
 `--checker external`, external checker disagreement gates, and
@@ -243,6 +243,6 @@ host-specific caches, and unredacted environment dumps.
 ## Later Handoff
 
 CLR-07-03 adds the concrete `npa-package-pr` workflow template under
-`ci-templates/github-actions/`. CLR-07-04 adds the `npa-package-release`
-workflow template. CLR-09 copies or references those templates for the seed
-theorem library.
+`ci-templates/github-actions/`. CLR-07-04 adds the concrete
+`npa-package-release` workflow template. CLR-09 copies or references those
+templates for the seed theorem library.

@@ -427,7 +427,7 @@ fresh-checkout CI expectations
 
 ### CLR-07-04 Create Release/High-Trust GitHub Actions Template
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-07-03
 - Inputs:
   - release mode command list from this document
