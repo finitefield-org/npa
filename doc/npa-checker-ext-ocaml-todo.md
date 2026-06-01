@@ -61,8 +61,9 @@ Current implementation facts:
   parsing, MachineCheckResult adoption, normalization, and release bundle
   substrate.
 - standalone npa-checker-ext binary is still target integration.
-- exact in-repository OCaml directory and exact vendored SHA-256 file layout
-  are first milestone decisions.
+- M0-01 fixes the in-repository OCaml directory as
+  `checkers/npa-checker-ext/`.
+- exact vendored SHA-256 file layout remains a first milestone decision.
 ```
 
 Recommended validation baseline:
@@ -77,7 +78,7 @@ Milestone verification command notation:
 
 ```text
 OCAML_EXT_DIR:
-  repository-local OCaml project directory selected by M0-01
+  checkers/npa-checker-ext/
 
 OCAML_EXT_TEST:
   stable OCaml test command selected by M0-02
@@ -130,6 +131,7 @@ Implementation spec:
 
 ```text
 1. Choose the exact repository-local directory for the OCaml project.
+   The selected directory is `checkers/npa-checker-ext/`.
 2. Record the decision in doc/npa-checker-ext-ocaml.md section 16.
 3. Ensure the chosen path is outside Rust workspace crate membership unless a
    future decision explicitly adds OCaml build integration.
@@ -144,6 +146,8 @@ Acceptance criteria:
 - The task document and design doc use the same path.
 - `rg -n "別 repository|exact in-repository directory" doc/npa-checker-ext-ocaml.md`
   has no stale path-decision hit.
+- Section 16 reserves `src/`, `test/fixtures/`, `test/golden/`, and
+  `scripts/` under `checkers/npa-checker-ext/`.
 ```
 
 Verification:
@@ -1432,11 +1436,11 @@ rg -n "npa-checker-ext|verified_high_trust|reference-checker-only|--checker exte
 Review pass 1 findings:
 
 ```text
-F1: The source design leaves the exact OCaml project directory and vendored
-SHA-256 file layout open. The task breakdown must not pretend those are
-already decided.
-Resolution: M0-01 and M0-03 include explicit decision/fixture tasks before
-dependent implementation work.
+F1: The original source design left the exact OCaml project directory and
+vendored SHA-256 file layout open. The task breakdown must not pretend those
+are already decided before their milestone tasks.
+Resolution: M0-01 now fixes `checkers/npa-checker-ext/`; M0-03 still includes
+the vendored SHA-256 layout and fixture decision before dependent hash work.
 
 F2: The source design makes checker identity manifest signatures non-required
 for first release. Runner integration tasks must not require signatures.
