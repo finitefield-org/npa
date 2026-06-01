@@ -11,6 +11,7 @@ scripts/build.sh
 _build/npa-checker-ext --version
 scripts/test.sh
 scripts/test.sh sha256
+scripts/test.sh feature-policy
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -42,3 +43,12 @@ M0-04 fixes the first-release CLI boundary:
 
 `--version` must be used alone and prints deterministic build identity fields.
 Check-shaped invocations write only checker raw result JSON to stdout.
+
+M0-05 pins the first-release core feature policy. The supported core feature set
+is empty, so `quotient_v1`, `quotient_v2`, and `quotient_v3` certificate feature
+reports fail deterministically with `unsupported_core_feature`. This policy is
+driven only by the canonical certificate feature report; AI sidecars, package
+metadata, and source-derived data cannot enable features. Adding quotient support
+requires expanding fast-kernel, reference-checker, and external-checker golden
+corpora before the feature is enabled. The feature policy contract is included
+in `--version` build identity material.

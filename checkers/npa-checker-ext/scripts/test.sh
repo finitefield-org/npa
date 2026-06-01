@@ -13,6 +13,7 @@ OCAMLC=$("$ROOT/scripts/ocamlc.sh")
   "$BUILD_DIR/ext_sha256.cmo" \
   "$BUILD_DIR/ext_hash.cmo" \
   "$BUILD_DIR/ext_result.cmo" \
+  "$BUILD_DIR/ext_feature.cmo" \
   "$BUILD_DIR/ext_bytes.cmo" \
   "$BUILD_DIR/ext_name.cmo" \
   "$BUILD_DIR/ext_level.cmo" \

@@ -361,6 +361,15 @@ First release では quotient feature profile を実装せず、quotient certifi
 feature gate を増やす場合は、fast kernel、reference checker、external checker の3者で
 golden corpus を追加してから有効化します。
 
+M0-05 では first-release supported core feature set を空集合として実装します。
+このため canonical certificate の feature report に `quotient_v1`, `quotient_v2`,
+`quotient_v3` のいずれかが現れた時点で、外部 checker は
+`checker_raw.error.kind = unsupported_core_feature` を返します。空の feature report を持つ
+MVP certificate はこの gate では拒否しません。feature policy の入力は canonical certificate
+feature report のみであり、AI sidecar、package metadata、source-derived environment は
+feature enablement に使いません。quotient support を導入する場合は、fast kernel /
+reference checker / external checker の golden corpus を同時に拡張してから supported set に追加します。
+
 ---
 
 ## 10. Axiom report and policy
@@ -702,11 +711,33 @@ checker_build_hash material:
   implementation_profile
   project_directory
   CLI contract version
+  feature policy contract version
   vendored SHA-256 source identity
 ```
 
 First release では checker identity manifest signature は required identity material に含めず、
 `checker_identity_manifest_signature_required false` として version output に固定します。
+
+M0-05 で first-release feature policy を次のように固定します。
+
+```text
+supported_core_features:
+  []
+
+rejected quotient feature profiles:
+  quotient_v1
+  quotient_v2
+  quotient_v3
+
+error kind:
+  unsupported_core_feature
+
+policy input:
+  canonical certificate feature report only
+
+build identity material:
+  feature_policy_contract = m0-05:first-release-empty-core-feature-set
+```
 
 この配置は clean-room 境界を狭く保つためのものです。OCaml project は同一 repository 内の
 公開仕様、canonical certificate fixture、JSON schema contract、差分 test result を入力としてよい一方、

@@ -17,6 +17,7 @@ for src in \
   src/ext_sha256.ml \
   src/ext_hash.ml \
   src/ext_result.ml \
+  src/ext_feature.ml \
   src/ext_bytes.ml \
   src/ext_name.ml \
   src/ext_level.ml \
@@ -39,6 +40,7 @@ done
   "$BUILD_DIR/ext_sha256.cmo" \
   "$BUILD_DIR/ext_hash.cmo" \
   "$BUILD_DIR/ext_result.cmo" \
+  "$BUILD_DIR/ext_feature.cmo" \
   "$BUILD_DIR/ext_bytes.cmo" \
   "$BUILD_DIR/ext_name.cmo" \
   "$BUILD_DIR/ext_level.cmo" \

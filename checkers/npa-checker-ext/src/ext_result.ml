@@ -14,6 +14,8 @@ let project_directory = "checkers/npa-checker-ext/"
 
 let cli_contract = "m0-04:first-release-cli"
 
+let feature_policy_contract = "m0-05:first-release-empty-core-feature-set"
+
 let checker_identity_manifest_signature_required = false
 
 let build_identity_inputs sha256_source_identity =
@@ -25,6 +27,7 @@ let build_identity_inputs sha256_source_identity =
     "implementation_profile:" ^ implementation_profile;
     "project_directory:" ^ project_directory;
     "cli_contract:" ^ cli_contract;
+    "feature_policy_contract:" ^ feature_policy_contract;
     "vendored_sha256_source_identity:" ^ sha256_source_identity;
   ]
 
@@ -47,6 +50,7 @@ let version_text =
       "core_spec " ^ core_spec;
       "implementation_profile " ^ implementation_profile;
       "project_directory " ^ project_directory;
+      "feature_policy_contract " ^ feature_policy_contract;
       "vendored_sha256_source_identity " ^ Ext_hash.vendored_sha256_source_identity;
       "checker_identity_manifest_signature_required "
       ^ string_of_bool checker_identity_manifest_signature_required;
@@ -114,4 +118,13 @@ let skeleton_failure () =
       reason_code = Some "checker_reported_internal_error";
       section = Some "skeleton";
       offset = Some 0;
+    }
+
+let unsupported_core_feature ?offset _feature =
+  render_failed
+    {
+      kind = "unsupported_core_feature";
+      reason_code = Some "unsupported_core_feature";
+      section = Some "core_features";
+      offset;
     }

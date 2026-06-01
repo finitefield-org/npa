@@ -143,6 +143,8 @@ let run_cli_tests () =
   assert_contains "version core spec" "core_spec NPA-Core-0.1\n" version.stdout;
   assert_contains "version implementation profile" "implementation_profile ocaml-clean-room\n"
     version.stdout;
+  assert_contains "version feature policy contract"
+    "feature_policy_contract m0-05:first-release-empty-core-feature-set\n" version.stdout;
   assert_contains "version source identity"
     ("vendored_sha256_source_identity " ^ Ext_sha256.source_identity ^ "\n")
     version.stdout;
@@ -202,13 +204,64 @@ let run_cli_tests () =
   assert_contains "check shape error" "\"kind\": \"checker_internal_error\""
     check_shape.stdout
 
+let assert_feature_policy_rejects_quotient feature offset expected_kind =
+  assert_bool (feature ^ " is a quotient feature profile")
+    (Ext_feature.is_quotient_feature_profile feature);
+  assert_bool (feature ^ " is not supported in first release")
+    (not (Ext_feature.is_supported_first_release feature));
+  assert_equal (feature ^ " fixture expected kind") "unsupported_core_feature" expected_kind;
+  let report = [ { Ext_feature.feature; offset = Some offset } ] in
+  match Ext_feature.raw_result_for_first_release_report report with
+  | None -> failwith (feature ^ ": expected unsupported_core_feature raw result")
+  | Some raw ->
+      assert_contains (feature ^ " failed status") "\"status\": \"failed\"" raw;
+      assert_contains (feature ^ " unsupported kind")
+        ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (feature ^ " unsupported reason")
+        ("\"reason_code\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (feature ^ " section") "\"section\": \"core_features\"" raw;
+      assert_contains (feature ^ " offset") ("\"offset\": " ^ string_of_int offset) raw
+
+let run_feature_policy_fixture_tests () =
+  let path = Filename.concat (root_dir ()) "test/fixtures/feature_policy.tsv" in
+  let channel = open_in path in
+  let count = ref 0 in
+  (try
+     while true do
+       let line = input_line channel in
+       if String.length line > 0 && line.[0] <> '#' then
+         match split_tabs line with
+         | [ feature; offset_text; expected_kind ] ->
+             assert_feature_policy_rejects_quotient feature (int_of_string offset_text)
+               expected_kind;
+             incr count
+         | _ -> failwith ("malformed feature policy fixture line: " ^ line)
+     done
+   with End_of_file -> close_in channel);
+  assert_int_equal "feature policy fixture count" 3 !count
+
+let run_feature_policy_tests () =
+  assert_equal "feature policy input shape"
+    "canonical-certificate-feature-report-only" Ext_feature.policy_input_shape;
+  assert_bool "first-release supported core features are empty"
+    (Ext_feature.supported_core_features = []);
+  (match Ext_feature.check_first_release_report [] with
+  | Ext_feature.Feature_policy_ok -> ()
+  | Ext_feature.Unsupported_core_feature _ ->
+      failwith "empty MVP feature report must not be rejected");
+  assert_bool "empty MVP report has no raw failure"
+    (Ext_feature.raw_result_for_first_release_report [] = None);
+  run_feature_policy_fixture_tests ()
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
   let selected = Array.to_list Sys.argv |> List.tl in
   List.iter
     (fun name ->
-      if not (List.mem name [ "cli"; "sha256" ]) then failwith ("unknown test filter " ^ name))
+      if not (List.mem name [ "cli"; "feature-policy"; "sha256" ]) then
+        failwith ("unknown test filter " ^ name))
     selected;
   if should_run selected "sha256" then run_sha256_tests ();
+  if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "cli" then run_cli_tests ()

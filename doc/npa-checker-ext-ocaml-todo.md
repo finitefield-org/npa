@@ -298,7 +298,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST feature-policy
+checkers/npa-checker-ext/scripts/test.sh feature-policy
 cargo test -p npa-checker-ref quotient_feature
 ```
 
