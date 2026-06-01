@@ -15,6 +15,9 @@ pub const INDEPENDENT_CHECKER_CHECKER_IDENTITY_MANIFEST_SCHEMA: &str =
     "npa.independent-checker.checker_identity_manifest.v1";
 pub const INDEPENDENT_CHECKER_CHECKER_BINARY_REGISTRY_SCHEMA: &str =
     "npa.independent-checker.checker_binary_registry.v1";
+const NPA_CHECKER_EXT_PROFILE: &str = "external";
+const NPA_CHECKER_EXT_CHECKER_ID: &str = "npa-checker-ext";
+const NPA_CHECKER_EXT_BINARY_ID_PREFIX: &str = "npa-checker-ext-";
 pub const INDEPENDENT_CHECKER_IMPORT_LOCK_MANIFEST_SCHEMA: &str =
     "npa.independent-checker.import_lock_manifest.v1";
 pub const INDEPENDENT_CHECKER_MACHINE_CHECK_REQUEST_SCHEMA: &str =
@@ -18180,6 +18183,7 @@ fn parse_independent_checker_runner_policy_value(
         &optional_checker_profiles,
         &checker_allowlist,
     )?;
+    validate_external_checker_policy_domain(&checker_allowlist, &checker_identity_manifest)?;
     let budgets = validate_runner_budgets_domain(
         &required_checker_profiles,
         &optional_checker_profiles,
@@ -25366,6 +25370,45 @@ fn validate_checker_allowlist_domain(
     validate_allowed_args_domain(checker_allowlist)
 }
 
+fn validate_external_checker_policy_domain(
+    checker_allowlist: &[IndependentCheckerAllowlistEntry],
+    checker_identity_manifest: &Option<IndependentCheckerIdentityManifestReference>,
+) -> Result<(), IndependentCheckerPolicyValidationError> {
+    let mut has_external = false;
+    for (index, entry) in checker_allowlist.iter().enumerate() {
+        if entry.profile != NPA_CHECKER_EXT_PROFILE {
+            continue;
+        }
+        has_external = true;
+        if entry.checker_id != NPA_CHECKER_EXT_CHECKER_ID {
+            return Err(IndependentCheckerPolicyValidationError::new(
+                format!("checker_allowlist[{index}].checker_id"),
+                NPA_CHECKER_EXT_CHECKER_ID,
+                &entry.checker_id,
+            ));
+        }
+        if !entry
+            .binary_id
+            .starts_with(NPA_CHECKER_EXT_BINARY_ID_PREFIX)
+            || entry.binary_id == NPA_CHECKER_EXT_BINARY_ID_PREFIX
+        {
+            return Err(IndependentCheckerPolicyValidationError::new(
+                format!("checker_allowlist[{index}].binary_id"),
+                "npa-checker-ext-<platform>",
+                &entry.binary_id,
+            ));
+        }
+    }
+    if has_external && checker_identity_manifest.is_none() {
+        return Err(IndependentCheckerPolicyValidationError::new(
+            "checker_identity_manifest",
+            "pinned_checker_identity_manifest",
+            "missing",
+        ));
+    }
+    Ok(())
+}
+
 fn validate_allowed_args_domain(
     checker_allowlist: &[IndependentCheckerAllowlistEntry],
 ) -> Result<(), IndependentCheckerPolicyValidationError> {
@@ -28840,6 +28883,23 @@ mod tests {
     }
 
     fn pr_runner_policy_with_optional_external_json() -> String {
+        pr_runner_policy_with_optional_external_and_identity_json(true)
+    }
+
+    fn pr_runner_policy_with_optional_external_and_identity_json(include_identity: bool) -> String {
+        let checker_identity_manifest = if include_identity {
+            format!(
+                r#",
+              "checker_identity_manifest":{{
+                "kind":"file",
+                "path":"ci/checker-identity-manifest.json",
+                "manifest_hash":"{}"
+              }}"#,
+                hash_wire(12)
+            )
+        } else {
+            String::new()
+        };
         format!(
             r#"{{
               "schema":"npa.independent-checker.runner_policy.v1",
@@ -28865,12 +28925,7 @@ mod tests {
                   "build_hash":"{}",
                   "allowed_args":["--json","--canonical-only"]
                 }}
-              ],
-              "checker_identity_manifest":{{
-                "kind":"file",
-                "path":"ci/checker-identity-manifest.json",
-                "manifest_hash":"{}"
-              }},
+              ]{checker_identity_manifest},
               "import_policy":{{
                 "mode":"locked_store",
                 "network":"forbidden",
@@ -28892,7 +28947,6 @@ mod tests {
             hash_wire(15),
             hash_wire(10),
             hash_wire(11),
-            hash_wire(12),
             hash_wire(13)
         )
     }
@@ -28916,6 +28970,64 @@ mod tests {
               }}]
             }}"#,
             hash_wire(20),
+            hash_wire(10),
+            hash_wire(11)
+        )
+    }
+
+    fn external_binary_registry_json() -> String {
+        r#"{
+          "schema":"npa.independent-checker.checker_binary_registry.v1",
+          "root_kind":"workspace",
+          "entries":[
+            {
+              "binary_id":"npa-checker-ext-linux-aarch64",
+              "path":"tools/checkers/npa-checker-ext/linux-aarch64/npa-checker-ext"
+            },
+            {
+              "binary_id":"npa-checker-ext-linux-x86_64",
+              "path":"tools/checkers/npa-checker-ext/linux-x86_64/npa-checker-ext"
+            },
+            {
+              "binary_id":"npa-checker-ext-macos-aarch64",
+              "path":"tools/checkers/npa-checker-ext/macos-aarch64/npa-checker-ext"
+            }
+          ]
+        }"#
+        .to_owned()
+    }
+
+    fn valid_external_identity_manifest_json() -> String {
+        format!(
+            r#"{{
+              "schema":"npa.independent-checker.checker_identity_manifest.v1",
+              "generated_by":{{
+                "runner_id":"npa-check-runner",
+                "runner_version":"0.8.0",
+                "runner_build_hash":"{}"
+              }},
+              "checkers":[
+                {{
+                  "profile":"external",
+                  "checker_id":"npa-checker-ext",
+                  "checker_version":"0.1.0",
+                  "binary_id":"npa-checker-ext-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }},
+                {{
+                  "profile":"reference",
+                  "checker_id":"npa-checker-ref",
+                  "checker_version":"0.8.0",
+                  "binary_id":"npa-checker-ref-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }}
+              ]
+            }}"#,
+            hash_wire(20),
+            hash_wire(14),
+            hash_wire(15),
             hash_wire(10),
             hash_wire(11)
         )
@@ -29401,11 +29513,36 @@ mod tests {
         assert_eq!(policy.required_checker_profiles, ["reference"]);
         assert_eq!(policy.optional_checker_profiles, ["external"]);
         assert!(policy.selected_checker_policy("reference").is_some());
-        assert!(policy.selected_checker_policy("external").is_some());
+        let selected_external = policy.selected_checker_policy("external").unwrap();
+        assert_eq!(selected_external.checker_id, "npa-checker-ext");
+        assert_eq!(selected_external.binary_id, "npa-checker-ext-macos-aarch64");
+        assert_eq!(selected_external.binary_hash, test_hash(14));
+        assert!(policy.checker_identity_manifest.is_some());
         assert_eq!(
             independent_checker_policy_profiles_in_replay_order(&policy),
             ["reference", "external"]
         );
+
+        let registry =
+            parse_independent_checker_binary_registry(&external_binary_registry_json()).unwrap();
+        let resolved_external = independent_checker_resolve_checker_executable(
+            &registry,
+            selected_external,
+            test_hash(14),
+        )
+        .unwrap();
+        assert_eq!(
+            resolved_external.path,
+            "tools/checkers/npa-checker-ext/macos-aarch64/npa-checker-ext"
+        );
+        let external_manifest =
+            parse_independent_checker_identity_manifest(&valid_external_identity_manifest_json())
+                .unwrap();
+        independent_checker_validate_selected_checker_identity_manifest(
+            selected_external,
+            &external_manifest,
+        )
+        .unwrap();
 
         let imports_json = valid_import_lock_manifest_json();
         let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
@@ -29428,6 +29565,41 @@ mod tests {
             on_demand_external.request.trust_mode,
             IndependentCheckerTrustMode::Pr
         );
+        let request_with_binary_override = on_demand_external.request.canonical_json().replacen(
+            r#""checker_profile":"external""#,
+            r#""checker_binary_id":"npa-checker-ext-linux-x86_64","checker_profile":"external""#,
+            1,
+        );
+        let request_override_err =
+            parse_independent_checker_machine_check_request(&request_with_binary_override)
+                .unwrap_err();
+        assert_eq!(request_override_err.field.as_ref(), "checker_binary_id");
+        assert_eq!(
+            request_override_err.actual_value.as_deref(),
+            Some("unknown_field")
+        );
+        let ai_result = m6_checked_result();
+        let ai_policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let ai_input_policy =
+            parse_independent_checker_ai_audit_input_policy(&ai_policy_json).unwrap();
+        let ai_sidecar_json = m6_machine_sidecar_with_prompt_hash(&ai_result, &ai_input_policy, "");
+        let ai_sidecar_with_binary_override = ai_sidecar_json.replacen(
+            r#""status":"summarized""#,
+            r#""checker_binary_id":"npa-checker-ext-linux-x86_64","status":"summarized""#,
+            1,
+        );
+        let ai_sidecar_override_err =
+            parse_independent_checker_ai_audit_sidecar(&ai_sidecar_with_binary_override)
+                .unwrap_err();
+        assert_eq!(
+            ai_sidecar_override_err.reason_code,
+            IndependentCheckerAuditSidecarValidationReasonCode::SidecarSchemaInvalid
+        );
+        assert_eq!(ai_sidecar_override_err.field, "checker_binary_id");
+        assert_eq!(
+            ai_sidecar_override_err.actual_value.as_deref(),
+            Some("unknown_field")
+        );
 
         let required_external_pr = pr_runner_policy_with_optional_external_json()
             .replace(
@@ -29445,6 +29617,85 @@ mod tests {
                 "required_checker_profiles",
                 "profiles_for_trust_mode:pr",
                 "profile_set_mismatch"
+            )
+        );
+
+        let missing_binary_hash = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json()
+                .replace(&format!(r#""binary_hash":"{}","#, hash_wire(14)), ""),
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_binary_hash,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].binary_hash",
+                "sha256:<lower-hex>",
+                "missing"
+            )
+        );
+
+        let missing_identity = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_and_identity_json(false),
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_identity,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_identity_manifest",
+                "pinned_checker_identity_manifest",
+                "missing"
+            )
+        );
+
+        let missing_manifest_hash = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json().replace(
+                &format!(
+                    r#",
+                "manifest_hash":"{}""#,
+                    hash_wire(12)
+                ),
+                "",
+            ),
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_manifest_hash,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_identity_manifest.manifest_hash",
+                "sha256:<lower-hex>",
+                "missing"
+            )
+        );
+
+        let wrong_external_checker = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json().replace(
+                r#""checker_id":"npa-checker-ext""#,
+                r#""checker_id":"other-checker""#,
+            ),
+        )
+        .unwrap_err();
+        assert_eq!(
+            wrong_external_checker,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].checker_id",
+                "npa-checker-ext",
+                "other-checker"
+            )
+        );
+
+        let ai_override_policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json().replace(
+                r#""on_profile_requested_by_ai":"ignore_unless_policy_allows""#,
+                r#""on_profile_requested_by_ai":"select_checker_binary""#,
+            ),
+        )
+        .unwrap_err();
+        assert_eq!(
+            ai_override_policy,
+            IndependentCheckerPolicyValidationError::new(
+                "on_profile_requested_by_ai",
+                "ignore_unless_policy_allows",
+                "invalid_fixed_value"
             )
         );
     }
