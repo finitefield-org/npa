@@ -29,8 +29,8 @@ for src in \
   src/ext_axiom.ml \
   src/ext_env.ml \
   src/ext_reduce.ml \
-  src/ext_typecheck.ml \
   src/ext_inductive.ml \
+  src/ext_typecheck.ml \
   src/ext_cli.ml \
   src/main.ml
 do
@@ -54,7 +54,7 @@ done
   "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
   "$BUILD_DIR/ext_reduce.cmo" \
-  "$BUILD_DIR/ext_typecheck.cmo" \
   "$BUILD_DIR/ext_inductive.cmo" \
+  "$BUILD_DIR/ext_typecheck.cmo" \
   "$BUILD_DIR/ext_cli.cmo" \
   "$BUILD_DIR/main.cmo"

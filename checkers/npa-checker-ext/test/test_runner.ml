@@ -2793,6 +2793,9 @@ let binder_type ty = { Ext_cert.binder_ty = ty }
 let constructor_spec constructor_name constructor_ty =
   { Ext_cert.constructor_name; constructor_ty }
 
+let local_family ?(decl_index = 0) levels =
+  Ext_term.Const (Ext_term.Local { decl_index }, levels)
+
 let generated_signature_names env =
   String.concat ","
     (List.map
@@ -2800,9 +2803,6 @@ let generated_signature_names env =
        env.Ext_env.generated_signatures)
 
 let run_inductive_constructor_tests () =
-  let local_family ?(decl_index = 0) levels =
-    Ext_term.Const (Ext_term.Local { decl_index }, levels)
-  in
   let nat_like_name = make_name [ "NatLike" ] in
   let nat_like_zero_name = make_name [ "NatLike"; "zero" ] in
   let nat_like_succ_name = make_name [ "NatLike"; "succ" ] in
@@ -2955,6 +2955,159 @@ let run_inductive_constructor_tests () =
     "inductive-constructors rejects malformed generated interface"
     "inductive_invalid" "inductive_invalid"
     (Ext_typecheck.check_declarations [ malformed_interface_decl ])
+
+let run_positivity_tests () =
+  let positive_name = make_name [ "Positive" ] in
+  let positive_family = local_family [] in
+  let positive_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = positive_name;
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "Positive"; "zero" ]) positive_family;
+               constructor_spec (make_name [ "Positive"; "succ" ])
+                 (Ext_term.Pi (positive_family, positive_family));
+             ];
+           ind_recursor = None;
+         })
+  in
+  ignore
+    (assert_declaration_check_ok "positivity accepts direct recursive domain"
+       (Ext_typecheck.check_declarations [ positive_decl ]));
+
+  let positive_function_name = make_name [ "PositiveFunction" ] in
+  let positive_function_family = local_family [] in
+  let positive_function_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = positive_function_name;
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "PositiveFunction"; "mk" ])
+                 (Ext_term.Pi
+                    ( Ext_term.Pi (Ext_env.nat, positive_function_family),
+                      positive_function_family ));
+             ];
+           ind_recursor = None;
+         })
+  in
+  ignore
+    (assert_declaration_check_ok
+       "positivity accepts recursive occurrence in function codomain"
+       (Ext_typecheck.check_declarations [ positive_function_decl ]));
+
+  let u_name = make_name [ "u" ] in
+  let u_level = Ext_level.Param u_name in
+  let sort_u = Ext_term.Sort u_level in
+  let list_like = local_family [ u_level ] in
+  let list_like_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "ListPositive" ];
+           decl_universe_params = [ u_name ];
+           decl_universe_constraints = [];
+           ind_params = [ binder_type sort_u ];
+           ind_indices = [];
+           ind_sort = u_level;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "ListPositive"; "nil" ])
+                 (Ext_term.Pi (sort_u, Ext_term.App (list_like, Ext_term.BVar 0)));
+               constructor_spec (make_name [ "ListPositive"; "cons" ])
+                 (Ext_term.Pi
+                    ( sort_u,
+                      Ext_term.Pi
+                        ( Ext_term.BVar 0,
+                          Ext_term.Pi
+                            ( Ext_term.App (list_like, Ext_term.BVar 1),
+                              Ext_term.App (list_like, Ext_term.BVar 2) ) )
+                    ));
+             ];
+           ind_recursor = None;
+         })
+  in
+  ignore
+    (assert_declaration_check_ok "positivity accepts List-like direct recursion"
+       (Ext_typecheck.check_declarations [ list_like_decl ]));
+
+  let bad_family = local_family [] in
+  let bad_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "BadNegative" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "BadNegative"; "mk" ])
+                 (Ext_term.Pi
+                    ( Ext_term.Pi (bad_family, Ext_env.nat),
+                      bad_family ));
+             ];
+           ind_recursor = None;
+         })
+  in
+  assert_typecheck_rejects
+    "positivity rejects recursive occurrence in function domain"
+    "positivity_failure" "positivity_failure"
+    (Ext_typecheck.check_declarations [ bad_decl ]);
+
+  let wrapper_decl =
+    declaration_fixture Ext_cert.Axiom
+      (Ext_cert.AxiomDecl
+         {
+           decl_name = make_name [ "Wrapper" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty =
+             Ext_term.Pi
+               (Ext_term.Sort Ext_env.level_type0, Ext_term.Sort Ext_env.level_type0);
+         })
+  in
+  let nested_family = local_family ~decl_index:1 [] in
+  let nested_decl =
+    declaration_fixture Ext_cert.Inductive
+      (Ext_cert.InductiveDecl
+         {
+           decl_name = make_name [ "BadNested" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           ind_params = [];
+           ind_indices = [];
+           ind_sort = Ext_env.level_type0;
+           ind_constructors =
+             [
+               constructor_spec (make_name [ "BadNested"; "mk" ])
+                 (Ext_term.Pi
+                    ( Ext_term.App
+                        (Ext_term.Const (Ext_term.Local { decl_index = 0 }, []), nested_family),
+                      nested_family ));
+             ];
+           ind_recursor = None;
+         })
+  in
+  assert_typecheck_rejects
+    "positivity rejects unsupported nested recursive occurrence"
+    "positivity_failure" "positivity_failure"
+    (Ext_typecheck.check_declarations [ wrapper_decl; nested_decl ])
 
 let run_subst_tests () =
   let section = Ext_bytes.Declarations in
@@ -3424,6 +3577,7 @@ let () =
                "import-normal";
                "import-store";
                "inductive-constructors";
+               "positivity";
                "reduce";
                "sha256";
                "subst";
@@ -3450,6 +3604,7 @@ let () =
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
   if should_run selected "inductive-constructors" then
     run_inductive_constructor_tests ();
+  if should_run selected "positivity" then run_positivity_tests ();
   if should_run selected "reduce" then run_reduce_tests ();
   if should_run selected "subst" then run_subst_tests ();
   if should_run selected "type-env" then run_type_env_tests ();

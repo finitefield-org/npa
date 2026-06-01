@@ -13,6 +13,7 @@ type error_reason =
   | Type_mismatch
   | Unsupported_declaration
   | Inductive_invalid
+  | Positivity_failure
   | Resource_limit
 
 type error = {
@@ -56,6 +57,7 @@ let error_reason_code reason =
   | Type_mismatch -> "type_mismatch"
   | Unsupported_declaration -> "unsupported_declaration"
   | Inductive_invalid -> "inductive_invalid"
+  | Positivity_failure -> "positivity_failure"
   | Resource_limit -> "resource_limit"
 
 let error_kind error =
@@ -66,6 +68,7 @@ let error_kind error =
   | Unsupported_declaration ->
       "type_mismatch"
   | Inductive_invalid -> "inductive_invalid"
+  | Positivity_failure -> "positivity_failure"
   | Resource_limit -> "conversion_failure"
 
 let error_of_env_error (env_error : Ext_env.error) =
@@ -631,9 +634,18 @@ let check_constructor section offset env delta decl_index params indices constru
        constructor.Ext_cert.constructor_ty)
     (fun _ ->
       let domains, result = peel_pi_domains constructor.Ext_cert.constructor_ty in
-      bind (whnf ~section ~offset ~delta env empty_context result) (fun result ->
-          check_constructor_result section offset decl_index delta
-            (List.length params) (List.length indices) (List.length domains) result))
+      let family =
+        Ext_inductive.family ~decl_index ~universe_params:delta
+          ~param_count:(List.length params) ~index_count:(List.length indices)
+      in
+      match Ext_inductive.check_constructor_domains family domains with
+      | Error Ext_inductive.Non_positive_occurrence ->
+          error section offset Positivity_failure
+      | Ok () ->
+          bind (whnf ~section ~offset ~delta env empty_context result) (fun result ->
+              check_constructor_result section offset decl_index delta
+                (List.length params) (List.length indices) (List.length domains)
+                result))
 
 let rec check_constructors section offset env delta decl_index params indices constructors =
   match constructors with
