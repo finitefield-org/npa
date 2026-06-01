@@ -44,6 +44,8 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 - AI 探索: `doc/phase7-ai.md`
 - 独立 checker: `doc/phase8-human.md`, `doc/phase8-ai.md`
 - 高度化: `doc/phase9-human.md`, `doc/phase9-ai.md`
+- proof corpus を AI で拡大する作業: `doc/proof-corpus-ai-workflow.md`
+- 定理証明用 repo-local skill: `skills/prove-theorem/SKILL.md`
 
 ## Rust kernel の設計ルール
 
@@ -56,12 +58,62 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 
 ## テスト方針
 
-変更に応じて以下を使います。
+通常の開発では proof corpus を hot path に入れません。corpus 以外の変更では、まず
+短時間で終わる fast gate を使います。
 
 ```sh
-cargo fmt --all
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+./scripts/check-fast.sh
+```
+
+これは内部で次を実行します。
+
+```sh
+cargo fmt --all -- --check
+cargo clippy --workspace --exclude npa-proof-corpus --all-targets -- -D warnings
+cargo test --workspace --exclude npa-proof-corpus -- \
+  --skip proof_corpus \
+  --skip proof_package \
+  --skip package_fast_verifier_ \
+  --skip package_reference_verifier_ \
+  --skip package_phase8_ \
+  --skip package_source_free_
+```
+
+proof corpus gate は、次のいずれかに該当する変更だけで実行します。
+
+- `proofs/**` を変更した場合。
+- `tools/proof-corpus/**` を変更した場合。
+- certificate の canonical encode / decode / hash / import / axiom report に関わる変更。
+- kernel の core semantics、typecheck、reduction、universe、inductive に関わる変更。
+- independent checker、package verifier、package lock、artifact validation に関わる変更。
+- `.npcert` の生成・検査互換性に関わる変更。
+- release / high-trust gate を実行する場合。
+
+該当する場合は次を実行します。
+
+```sh
+./scripts/check-corpus.sh
+```
+
+proof corpus に定理を追加している作業中は、full corpus gate を毎回走らせず、
+`doc/proof-corpus-ai-workflow.md` の局所確認コマンドを優先します。
+
+```sh
+cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.X::theorem_name proofs/generated/replay-X-theorem.json
+```
+
+`--build-module` は指定 module と import closure だけを source から再生成する authoring 用補助です。
+`--module` / `--changed-only` は checked-in certificate を source-free に検査する補助であり、
+source 変更を certificate に反映する用途には `--build-module` を先に使います。
+
+AI theorem index が必要な場合は次で更新します。この index は未信頼 sidecar であり、
+証明の受理根拠にはしません。
+
+```sh
+cargo run -p npa-proof-corpus -- --write-ai-index
 ```
 
 kernel 周辺では、少なくとも次のケースを追加してください。

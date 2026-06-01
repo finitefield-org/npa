@@ -318,13 +318,41 @@ Rust kernel / 独立 checker が返す deterministic result だけです。
 
 ## 開発メモ
 
-少なくとも次を通す方針です。
+通常開発では proof corpus を hot path に入れず、まず短時間の fast gate を通します。
 
 ```sh
-cargo fmt --all
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+./scripts/check-fast.sh
 ```
+
+`./scripts/check-fast.sh` は `npa-proof-corpus` と proof-corpus-backed package verifier / CLI fixture
+tests を除外して、format / clippy / workspace tests を実行します。
+proof corpus gate は次の条件に該当する変更だけで実行します。
+
+- `proofs/**` または `tools/proof-corpus/**` の変更
+- certificate の canonical encode / decode / hash / import / axiom report に関わる変更
+- kernel の core semantics、typecheck、reduction、universe、inductive に関わる変更
+- independent checker、package verifier、package lock、artifact validation に関わる変更
+- `.npcert` の生成・検査互換性に関わる変更
+- release / high-trust gate
+
+該当する場合は次を実行します。
+
+```sh
+./scripts/check-corpus.sh
+```
+
+proof corpus に定理を追加している間は、毎回 full corpus gate を回さず、対象 module だけを
+再生成・検査します。
+
+```sh
+cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --changed-only
+```
+
+`--build-module` は source から指定 module と import closure だけを再生成する authoring 用補助です。
+`--module` / `--changed-only` は checked-in certificate の source-free 検査です。詳しい AI 向け手順は
+`doc/proof-corpus-ai-workflow.md` を参照してください。
 
 Phase 9 Human 完了後の required release completion gate は次です。
 
@@ -370,3 +398,4 @@ Phase 9 Regression は workspace 全体の後続機能まで含む広い回帰 g
 - [Phase 8 AI Profile: Checker Audit Automation](doc/phase8-ai.md)
 - [Phase 9 Human Profile: Advanced Features](doc/phase9-human.md)
 - [Phase 9 AI Profile: Advanced Automation](doc/phase9-ai.md)
+- [Proof Corpus AI Workflow](doc/proof-corpus-ai-workflow.md)
