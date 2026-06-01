@@ -20364,6 +20364,8 @@ struct IndependentCheckerReleaseBundleNormalizedEntryView {
     artifact_hash: Hash,
     checker_profile: String,
     status: IndependentCheckerMachineCheckStatus,
+    certificate_hash: Option<Hash>,
+    export_hash: Option<Hash>,
     axiom_report_hash: Option<Hash>,
 }
 
@@ -22217,6 +22219,18 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
             &format!("{path}.axiom_report_hash"),
             "sha256:<lower-hex>",
         )?;
+        let certificate_hash = optional_hash_field(
+            result_members,
+            "certificate_hash",
+            &format!("{path}.certificate_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let export_hash = optional_hash_field(
+            result_members,
+            "export_hash",
+            &format!("{path}.export_hash"),
+            "sha256:<lower-hex>",
+        )?;
         results.push(IndependentCheckerReleaseBundleNormalizedEntryView {
             result_hash,
             request_hash,
@@ -22224,6 +22238,8 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
             artifact_hash: entry_artifact_hash,
             checker_profile,
             status,
+            certificate_hash,
+            export_hash,
             axiom_report_hash,
         });
     }
@@ -22241,6 +22257,94 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
         comparison_status_reasons_len: status_reasons.len(),
         results,
     })
+}
+
+fn independent_checker_release_bundle_required_entry_hash(
+    entry: &IndependentCheckerReleaseBundleNormalizedEntryView,
+    field: &str,
+    hash: Option<Hash>,
+) -> Result<Hash, IndependentCheckerReleaseAuditBundleError> {
+    hash.ok_or_else(|| {
+        IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!(
+                "normalized_check_result.artifact.results[{}].{}",
+                entry.checker_profile, field
+            ),
+            "sha256:<lower-hex>",
+            "missing",
+        )
+    })
+}
+
+fn independent_checker_release_bundle_validate_required_checked_hashes(
+    target: &IndependentCheckerReleaseBundleNormalizedResultView,
+    required_entries: &[&IndependentCheckerReleaseBundleNormalizedEntryView],
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let Some(baseline) = required_entries.first().copied() else {
+        return Ok(());
+    };
+
+    let baseline_export_hash = independent_checker_release_bundle_required_entry_hash(
+        baseline,
+        "export_hash",
+        baseline.export_hash,
+    )?;
+    let baseline_axiom_report_hash = independent_checker_release_bundle_required_entry_hash(
+        baseline,
+        "axiom_report_hash",
+        baseline.axiom_report_hash,
+    )?;
+
+    for entry in required_entries {
+        let certificate_hash = independent_checker_release_bundle_required_entry_hash(
+            entry,
+            "certificate_hash",
+            entry.certificate_hash,
+        )?;
+        if certificate_hash != target.expected_certificate_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!(
+                    "normalized_check_result.artifact.results[{}].certificate_hash",
+                    entry.checker_profile
+                ),
+                target.expected_certificate_hash,
+                certificate_hash,
+            ));
+        }
+
+        let export_hash = independent_checker_release_bundle_required_entry_hash(
+            entry,
+            "export_hash",
+            entry.export_hash,
+        )?;
+        if export_hash != baseline_export_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!(
+                    "normalized_check_result.artifact.results[{}].export_hash",
+                    entry.checker_profile
+                ),
+                baseline_export_hash,
+                export_hash,
+            ));
+        }
+
+        let axiom_report_hash = independent_checker_release_bundle_required_entry_hash(
+            entry,
+            "axiom_report_hash",
+            entry.axiom_report_hash,
+        )?;
+        if axiom_report_hash != baseline_axiom_report_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!(
+                    "normalized_check_result.artifact.results[{}].axiom_report_hash",
+                    entry.checker_profile
+                ),
+                baseline_axiom_report_hash,
+                axiom_report_hash,
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn independent_checker_release_bundle_validate_target_normalized_result(
@@ -22272,6 +22376,7 @@ fn independent_checker_release_bundle_validate_target_normalized_result(
             target.policy_hash,
         ));
     }
+    let mut required_entries = Vec::new();
     for profile in &runner_policy.required_checker_profiles {
         let entries = target
             .results
@@ -22316,7 +22421,9 @@ fn independent_checker_release_bundle_validate_target_normalized_result(
                 entry.artifact_hash,
             ));
         }
+        required_entries.push(entry);
     }
+    independent_checker_release_bundle_validate_required_checked_hashes(target, &required_entries)?;
     Ok(())
 }
 
@@ -30452,6 +30559,79 @@ mod tests {
             .all(|gate| !gate.proof_acceptance_boundary));
     }
 
+    fn m9_high_trust_runner_policy() -> IndependentCheckerRunnerPolicy {
+        let mut policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let reference_checker = policy
+            .checker_allowlist
+            .iter()
+            .find(|entry| entry.profile == "reference")
+            .unwrap()
+            .clone();
+        let reference_budget = policy.budgets.get("reference").unwrap().clone();
+        policy.id = "independent-checker-high-trust".to_owned();
+        policy.trust_mode = IndependentCheckerTrustMode::HighTrust;
+        policy.required_checker_profiles = IndependentCheckerTrustMode::HighTrust
+            .required_checker_profiles()
+            .iter()
+            .map(|profile| (*profile).to_owned())
+            .collect();
+        policy
+            .checker_allowlist
+            .push(IndependentCheckerAllowlistEntry {
+                profile: "high-trust-reference".to_owned(),
+                checker_id: "npa-checker-ref-high-trust".to_owned(),
+                binary_id: "npa-checker-ref-high-trust-macos-aarch64".to_owned(),
+                binary_hash: test_hash(34),
+                build_hash: test_hash(35),
+                allowed_args: reference_checker.allowed_args,
+            });
+        policy
+            .checker_allowlist
+            .sort_by(|left, right| left.profile.cmp(&right.profile));
+        policy
+            .budgets
+            .insert("high-trust-reference".to_owned(), reference_budget);
+
+        parse_independent_checker_runner_policy(&policy.canonical_json()).unwrap()
+    }
+
+    fn m9_target_view(
+        policy: &IndependentCheckerRunnerPolicy,
+        profiles: &[&str],
+    ) -> IndependentCheckerReleaseBundleNormalizedResultView {
+        let artifact_hash = test_hash(2);
+        IndependentCheckerReleaseBundleNormalizedResultView {
+            normalized_result_hash: test_hash(3),
+            artifact_hash,
+            module: "Std.Nat".to_owned(),
+            input_file_hash: test_hash(69),
+            expected_certificate_hash: test_hash(70),
+            policy_hash: policy.policy_hash(),
+            import_lock_hash: test_hash(5),
+            comparison_status: IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked,
+            comparison_missing_checker_profiles: Vec::new(),
+            comparison_disagreements_len: 0,
+            comparison_status_reasons_len: 0,
+            results: profiles
+                .iter()
+                .enumerate()
+                .map(
+                    |(index, profile)| IndependentCheckerReleaseBundleNormalizedEntryView {
+                        result_hash: test_hash(100 + index as u8),
+                        request_hash: test_hash(110 + index as u8),
+                        policy_hash: policy.policy_hash(),
+                        artifact_hash,
+                        checker_profile: (*profile).to_owned(),
+                        status: IndependentCheckerMachineCheckStatus::Checked,
+                        certificate_hash: Some(test_hash(70)),
+                        export_hash: Some(test_hash(90)),
+                        axiom_report_hash: Some(test_hash(91)),
+                    },
+                )
+                .collect(),
+        }
+    }
+
     #[test]
     fn p8h14_release_and_high_trust_pass_requirements_are_closed() {
         assert!(independent_checker_ci_pass_requires(
@@ -30502,6 +30682,165 @@ mod tests {
             IndependentCheckerTrustMode::Pr,
             IndependentCheckerCiPassRequirement::ReleaseAuditBundleGenerated
         ));
+
+        let release_policy =
+            parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let release_target =
+            m9_target_view(&release_policy, &["fast-kernel", "reference", "external"]);
+        independent_checker_release_bundle_validate_target_normalized_result(
+            &release_target,
+            &release_policy,
+        )
+        .unwrap();
+
+        let missing_external = m9_target_view(&release_policy, &["fast-kernel", "reference"]);
+        let missing_external_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &missing_external,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            missing_external_error.field.as_ref(),
+            "normalized_check_result.artifact.results[].checker_profile"
+        );
+        assert_eq!(
+            missing_external_error.expected_value.as_deref(),
+            Some("required_profile:external")
+        );
+
+        let mut failed_external = release_target.clone();
+        failed_external
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "external")
+            .unwrap()
+            .status = IndependentCheckerMachineCheckStatus::Failed;
+        let failed_external_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &failed_external,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            failed_external_error.field.as_ref(),
+            "normalized_check_result.artifact.results[external].status"
+        );
+
+        let mut missing_external_hash = release_target.clone();
+        missing_external_hash
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "external")
+            .unwrap()
+            .export_hash = None;
+        let missing_external_hash_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &missing_external_hash,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            missing_external_hash_error.field.as_ref(),
+            "normalized_check_result.artifact.results[external].export_hash"
+        );
+
+        let mut divergent_external_hash = release_target.clone();
+        divergent_external_hash
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "external")
+            .unwrap()
+            .axiom_report_hash = Some(test_hash(92));
+        let divergent_external_hash_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &divergent_external_hash,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            divergent_external_hash_error.field.as_ref(),
+            "normalized_check_result.artifact.results[external].axiom_report_hash"
+        );
+
+        let mut wrong_certificate_hash = release_target.clone();
+        wrong_certificate_hash
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "reference")
+            .unwrap()
+            .certificate_hash = Some(test_hash(93));
+        let wrong_certificate_hash_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &wrong_certificate_hash,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            wrong_certificate_hash_error.field.as_ref(),
+            "normalized_check_result.artifact.results[reference].certificate_hash"
+        );
+        assert_eq!(
+            wrong_certificate_hash_error.expected_hash,
+            Some(Box::new(test_hash(70)))
+        );
+
+        let mut inconclusive_external = release_target.clone();
+        inconclusive_external.comparison_status =
+            IndependentCheckerNormalizedComparisonStatus::Inconclusive;
+        let inconclusive_external_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &inconclusive_external,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            inconclusive_external_error.field.as_ref(),
+            "normalized_check_result.artifact.comparison.status"
+        );
+
+        let high_trust_policy = m9_high_trust_runner_policy();
+        let high_trust_target = m9_target_view(
+            &high_trust_policy,
+            &[
+                "fast-kernel",
+                "reference",
+                "external",
+                "high-trust-reference",
+            ],
+        );
+        independent_checker_release_bundle_validate_target_normalized_result(
+            &high_trust_target,
+            &high_trust_policy,
+        )
+        .unwrap();
+
+        let release_only_evidence = m9_target_view(
+            &high_trust_policy,
+            &["fast-kernel", "reference", "external"],
+        );
+        let release_only_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &release_only_evidence,
+                &high_trust_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            release_only_error.expected_value.as_deref(),
+            Some("required_profile:high-trust-reference")
+        );
+
+        let reference_only_evidence = m9_target_view(&high_trust_policy, &["reference"]);
+        let reference_only_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &reference_only_evidence,
+                &high_trust_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            reference_only_error.expected_value.as_deref(),
+            Some("required_profile:fast-kernel")
+        );
     }
 
     #[test]
