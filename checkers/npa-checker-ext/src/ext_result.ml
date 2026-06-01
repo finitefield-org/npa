@@ -138,6 +138,15 @@ let decode_failure ~kind ~reason_code ~section ~offset =
       offset = Some offset;
     }
 
+let hash_mismatch_failure ~kind ~reason_code ~section ~offset =
+  render_failed
+    {
+      kind;
+      reason_code = Some reason_code;
+      section = Some section;
+      offset = Some offset;
+    }
+
 let decode_error_kind error =
   match error.Ext_bytes.reason with
   | Ext_bytes.Noncanonical_uvar

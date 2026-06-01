@@ -573,7 +573,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST hash-declarations
+sh checkers/npa-checker-ext/scripts/test.sh hash-declarations
 ```
 
 ### M2-04 Recompute Export, Axiom, And Module Certificate Hashes

@@ -646,6 +646,121 @@ let declaration_certificate_payload name_table level_table term_table payload in
               bind deps (fun deps ->
                   bind axioms (fun axioms -> Ok (interface_hash ^ deps ^ axioms)))))
 
+type declaration_hash_role =
+  | Decl_interface_hash
+  | Decl_certificate_hash
+
+type declaration_hash_mismatch_kind =
+  | Declaration_hash_material_mismatch
+  | Dependency_hash_material_mismatch
+
+type declaration_hash_mismatch = {
+  mismatch_kind : declaration_hash_mismatch_kind;
+  mismatch_role : declaration_hash_role;
+  mismatch_decl_index : int;
+  mismatch_offset : Ext_bytes.offset;
+  expected_hash : string;
+  actual_hash : string;
+}
+
+type declaration_hash_check_result =
+  | Declaration_hashes_ok
+  | Declaration_hash_mismatch of declaration_hash_mismatch
+
+let declaration_hash_mismatch_kind_code kind =
+  match kind with
+  | Declaration_hash_material_mismatch -> "declaration_hash_mismatch"
+  | Dependency_hash_material_mismatch -> "dependency_hash_mismatch"
+
+let declaration_hash_role_reason_code role =
+  match role with
+  | Decl_interface_hash -> "decl_interface_hash_mismatch"
+  | Decl_certificate_hash -> "decl_certificate_hash_mismatch"
+
+let declaration_hash_role_offset (declaration : Ext_cert.declaration) role =
+  match role with
+  | Decl_interface_hash -> declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash_offset
+  | Decl_certificate_hash -> declaration.Ext_cert.hashes.Ext_cert.decl_certificate_hash_offset
+
+let declaration_hashes name_table level_table term_table
+    (declaration : Ext_cert.declaration) =
+  bind
+    (declaration_interface_payload name_table level_table term_table declaration.Ext_cert.payload
+       declaration.Ext_cert.dependencies declaration.Ext_cert.axiom_dependencies)
+    (fun interface_payload ->
+      let interface_hash = hash_with_domain domain_decl_interface interface_payload in
+      bind
+        (declaration_certificate_payload name_table level_table term_table
+           declaration.Ext_cert.payload interface_hash declaration.Ext_cert.dependencies
+           declaration.Ext_cert.axiom_dependencies)
+        (fun certificate_payload ->
+          Ok (interface_hash, hash_with_domain domain_decl_certificate certificate_payload)))
+
+let interface_payload_has_dependency_material (declaration : Ext_cert.declaration) =
+  interface_dependencies_for_decl declaration.Ext_cert.payload declaration.Ext_cert.dependencies <> []
+  ||
+  match declaration.Ext_cert.payload with
+  | Ext_cert.AxiomDecl _ -> false
+  | Ext_cert.DefDecl _ | Ext_cert.TheoremDecl _ | Ext_cert.InductiveDecl _
+  | Ext_cert.MutualInductiveBlockDecl _ ->
+      declaration.Ext_cert.axiom_dependencies <> []
+
+let certificate_payload_has_dependency_material (declaration : Ext_cert.declaration) =
+  match declaration.Ext_cert.payload with
+  | Ext_cert.AxiomDecl _ -> declaration.Ext_cert.axiom_dependencies <> []
+  | Ext_cert.TheoremDecl _ -> declaration.Ext_cert.dependencies <> []
+  | Ext_cert.DefDecl _ | Ext_cert.InductiveDecl _ | Ext_cert.MutualInductiveBlockDecl _ ->
+      declaration.Ext_cert.dependencies <> [] || declaration.Ext_cert.axiom_dependencies <> []
+
+let declaration_hash_mismatch_kind (declaration : Ext_cert.declaration) role =
+  let has_dependency_material =
+    match role with
+    | Decl_interface_hash -> interface_payload_has_dependency_material declaration
+    | Decl_certificate_hash -> certificate_payload_has_dependency_material declaration
+  in
+  if has_dependency_material then Dependency_hash_material_mismatch
+  else Declaration_hash_material_mismatch
+
+let make_declaration_hash_mismatch decl_index (declaration : Ext_cert.declaration) role
+    expected_hash actual_hash =
+  {
+    mismatch_kind = declaration_hash_mismatch_kind declaration role;
+    mismatch_role = role;
+    mismatch_decl_index = decl_index;
+    mismatch_offset = declaration_hash_role_offset declaration role;
+    expected_hash;
+    actual_hash;
+  }
+
+let verify_declaration_hashes (decoded : Ext_cert.decoded_module) =
+  let rec loop index remaining =
+    match remaining with
+    | [] -> Ok Declaration_hashes_ok
+    | declaration :: rest ->
+        bind
+          (declaration_hashes decoded.Ext_cert.name_table decoded.Ext_cert.level_table
+             decoded.Ext_cert.term_table declaration)
+          (fun (interface_hash, certificate_hash) ->
+            let stored_interface =
+              declaration.Ext_cert.hashes.Ext_cert.decl_interface_hash
+            in
+            let stored_certificate =
+              declaration.Ext_cert.hashes.Ext_cert.decl_certificate_hash
+            in
+            if interface_hash <> stored_interface then
+              Ok
+                (Declaration_hash_mismatch
+                   (make_declaration_hash_mismatch index declaration Decl_interface_hash
+                      stored_interface interface_hash))
+            else if certificate_hash <> stored_certificate then
+              Ok
+                (Declaration_hash_mismatch
+                   (make_declaration_hash_mismatch index declaration Decl_certificate_hash
+                      stored_certificate certificate_hash))
+            else loop (index + 1) rest)
+  in
+  loop 0 decoded.Ext_cert.declaration_table
+
 let encode_export_kind kind =
   match kind with
   | Ext_cert.Export_axiom -> byte 0x00
