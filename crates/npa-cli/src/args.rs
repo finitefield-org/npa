@@ -135,15 +135,30 @@ pub struct PackageVerifyCertsOptions {
     pub common: PackageCommonOptions,
     /// Checker mode selected for source-free verification.
     pub checker: PackageChecker,
+    /// Required external checker runner inputs when `checker = external`.
+    pub external: Option<PackageExternalCheckerOptions>,
 }
 
-/// Supported package certificate checker modes for CLR-04.
+/// Options required by `package verify-certs --checker external`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageExternalCheckerOptions {
+    /// Package-relative runner policy path.
+    pub runner_policy: PathBuf,
+    /// Expected canonical runner policy hash.
+    pub runner_policy_hash: String,
+    /// Package-relative checker binary registry path.
+    pub checker_registry: PathBuf,
+}
+
+/// Supported package certificate checker modes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PackageChecker {
     /// CLR-03 source-free reference checker path.
     Reference,
     /// CLR-03 fast kernel verifier path for local development.
     Fast,
+    /// CLR-08 external checker runner path.
+    External,
 }
 
 impl PackageChecker {
@@ -152,6 +167,7 @@ impl PackageChecker {
         match self {
             Self::Reference => "reference",
             Self::Fast => "fast",
+            Self::External => "external",
         }
     }
 }
@@ -252,6 +268,8 @@ pub enum UsageReason {
     MissingFlagValue,
     /// Flag was provided more than once.
     DuplicateFlag,
+    /// A selected mode requires a flag that was not provided.
+    MissingRequiredFlag,
     /// Known flag is outside CLR-04 scope or the selected command.
     UnsupportedFlag,
     /// Checker mode is outside CLR-04 scope.
@@ -266,6 +284,7 @@ impl UsageReason {
             Self::UnknownFlag => "unknown_flag",
             Self::MissingFlagValue => "missing_flag_value",
             Self::DuplicateFlag => "duplicate_flag",
+            Self::MissingRequiredFlag => "missing_required_flag",
             Self::UnsupportedFlag => "unsupported_flag",
             Self::UnsupportedChecker => "unsupported_checker",
         }
@@ -466,6 +485,9 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
 
     let mut common_tokens = Vec::new();
     let mut checker = None::<PackageChecker>;
+    let mut runner_policy = None::<PathBuf>;
+    let mut runner_policy_hash = None::<String>;
+    let mut checker_registry = None::<PathBuf>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -494,6 +516,14 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                 checker = Some(PackageChecker::Fast);
                 index += 1;
             }
+            "--checker=external" => {
+                if checker.is_some() {
+                    return Err(flag_error("--checker", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                checker = Some(PackageChecker::External);
+                index += 1;
+            }
             token if token.starts_with("--checker=") => {
                 if checker.is_some() {
                     return Err(flag_error("--checker", UsageReason::DuplicateFlag)
@@ -507,6 +537,81 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                 checker = Some(parse_checker(value)?);
                 index += 1;
             }
+            "--runner-policy" => {
+                if runner_policy.is_some() {
+                    return Err(flag_error("--runner-policy", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--runner-policy", "package verify-certs")?;
+                runner_policy = Some(PathBuf::from(value));
+                index += 2;
+            }
+            token if token.starts_with("--runner-policy=") => {
+                if runner_policy.is_some() {
+                    return Err(flag_error("--runner-policy", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--runner-policy=");
+                if value.is_empty() {
+                    return Err(flag_error("--runner-policy", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                runner_policy = Some(PathBuf::from(value));
+                index += 1;
+            }
+            "--runner-policy-hash" => {
+                if runner_policy_hash.is_some() {
+                    return Err(
+                        flag_error("--runner-policy-hash", UsageReason::DuplicateFlag)
+                            .with_command("package verify-certs"),
+                    );
+                }
+                let value =
+                    flag_value(args, index, "--runner-policy-hash", "package verify-certs")?;
+                runner_policy_hash = Some(value.to_owned());
+                index += 2;
+            }
+            token if token.starts_with("--runner-policy-hash=") => {
+                if runner_policy_hash.is_some() {
+                    return Err(
+                        flag_error("--runner-policy-hash", UsageReason::DuplicateFlag)
+                            .with_command("package verify-certs"),
+                    );
+                }
+                let value = token.trim_start_matches("--runner-policy-hash=");
+                if value.is_empty() {
+                    return Err(
+                        flag_error("--runner-policy-hash", UsageReason::MissingFlagValue)
+                            .with_command("package verify-certs"),
+                    );
+                }
+                runner_policy_hash = Some(value.to_owned());
+                index += 1;
+            }
+            "--checker-registry" => {
+                if checker_registry.is_some() {
+                    return Err(flag_error("--checker-registry", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--checker-registry", "package verify-certs")?;
+                checker_registry = Some(PathBuf::from(value));
+                index += 2;
+            }
+            token if token.starts_with("--checker-registry=") => {
+                if checker_registry.is_some() {
+                    return Err(flag_error("--checker-registry", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--checker-registry=");
+                if value.is_empty() {
+                    return Err(
+                        flag_error("--checker-registry", UsageReason::MissingFlagValue)
+                            .with_command("package verify-certs"),
+                    );
+                }
+                checker_registry = Some(PathBuf::from(value));
+                index += 1;
+            }
             token => {
                 common_tokens.push(token.to_owned());
                 index += 1;
@@ -514,11 +619,54 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
         }
     }
 
-    let common = parse_common_options(&common_tokens, "package verify-certs", &["--checker"])?;
+    let common = parse_common_options(
+        &common_tokens,
+        "package verify-certs",
+        &[
+            "--checker",
+            "--runner-policy",
+            "--runner-policy-hash",
+            "--checker-registry",
+        ],
+    )?;
+    let checker = checker.unwrap_or(PackageChecker::Reference);
+    let has_external_options =
+        runner_policy.is_some() || runner_policy_hash.is_some() || checker_registry.is_some();
+    let external = if checker == PackageChecker::External {
+        Some(PackageExternalCheckerOptions {
+            runner_policy: runner_policy.ok_or_else(|| {
+                flag_error("--runner-policy", UsageReason::MissingRequiredFlag)
+                    .with_command("package verify-certs")
+            })?,
+            runner_policy_hash: runner_policy_hash.ok_or_else(|| {
+                flag_error("--runner-policy-hash", UsageReason::MissingRequiredFlag)
+                    .with_command("package verify-certs")
+            })?,
+            checker_registry: checker_registry.ok_or_else(|| {
+                flag_error("--checker-registry", UsageReason::MissingRequiredFlag)
+                    .with_command("package verify-certs")
+            })?,
+        })
+    } else {
+        if has_external_options {
+            let flag = if runner_policy.is_some() {
+                "--runner-policy"
+            } else if runner_policy_hash.is_some() {
+                "--runner-policy-hash"
+            } else {
+                "--checker-registry"
+            };
+            return Err(
+                flag_error(flag, UsageReason::UnsupportedFlag).with_command("package verify-certs")
+            );
+        }
+        None
+    };
     Ok(CliAction::Run(CliCommand::Package(
         PackageCommand::VerifyCerts(PackageVerifyCertsOptions {
             common,
-            checker: checker.unwrap_or(PackageChecker::Reference),
+            checker,
+            external,
         }),
     )))
 }
@@ -527,6 +675,7 @@ fn parse_checker(value: &str) -> Result<PackageChecker, CliUsageError> {
     match value {
         "reference" => Ok(PackageChecker::Reference),
         "fast" => Ok(PackageChecker::Fast),
+        "external" => Ok(PackageChecker::External),
         other => Err(CliUsageError::new(UsageReason::UnsupportedChecker)
             .with_command("package verify-certs")
             .with_flag("--checker")
@@ -631,6 +780,9 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--registry"
             | "--network"
             | "--latest"
+            | "--runner-policy"
+            | "--runner-policy-hash"
+            | "--checker-registry"
             | "--upload"
             | "--sign"
             | "--update-manifest-hashes"
@@ -643,6 +795,9 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--registry=")
         || flag.starts_with("--network=")
         || flag.starts_with("--latest=")
+        || flag.starts_with("--runner-policy=")
+        || flag.starts_with("--runner-policy-hash=")
+        || flag.starts_with("--checker-registry=")
         || flag.starts_with("--upload=")
         || flag.starts_with("--sign=")
         || flag.starts_with("--update-manifest-hashes=")
@@ -674,7 +829,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package index [--root PATH] [--json] [--check]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast]\n\nVerify certificates through the CLR-03 source-free package verifier. The default checker is reference."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference; external mode requires explicit runner policy and checker registry inputs."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

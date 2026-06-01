@@ -131,12 +131,46 @@ fn package_cli_args_parses_verify_certs_fast_checker() {
 }
 
 #[test]
-fn package_cli_args_rejects_external_checker_as_unsupported() {
+fn package_cli_args_parses_verify_certs_external_checker_with_runner_inputs() {
+    let action = parse(&[
+        "package",
+        "verify-certs",
+        "--checker",
+        "external",
+        "--runner-policy",
+        "ci/runner.release.json",
+        "--runner-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.checker, PackageChecker::External);
+    let external = options.external.as_ref().unwrap();
+    assert_eq!(
+        external.runner_policy,
+        PathBuf::from("ci/runner.release.json")
+    );
+    assert_eq!(
+        external.runner_policy_hash,
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    );
+    assert_eq!(
+        external.checker_registry,
+        PathBuf::from("ci/checker-binaries.json")
+    );
+}
+
+#[test]
+fn package_cli_args_rejects_external_checker_without_runner_inputs() {
     let error = parse_error(&["package", "verify-certs", "--checker", "external"]);
 
-    assert_eq!(error.reason, UsageReason::UnsupportedChecker);
-    assert_eq!(error.flag.as_deref(), Some("--checker"));
-    assert_eq!(error.value.as_deref(), Some("external"));
+    assert_eq!(error.reason, UsageReason::MissingRequiredFlag);
+    assert_eq!(error.flag.as_deref(), Some("--runner-policy"));
+    assert!(error.value.is_none());
 }
 
 #[test]
@@ -171,6 +205,13 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
     let checker_error = parse_error(&["package", "axiom-report", "--checker=external"]);
     assert_eq!(checker_error.reason, UsageReason::UnsupportedFlag);
     assert_eq!(checker_error.flag.as_deref(), Some("--checker=external"));
+
+    let runner_policy_error = parse_error(&["package", "check", "--runner-policy=ci/policy.json"]);
+    assert_eq!(runner_policy_error.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(
+        runner_policy_error.flag.as_deref(),
+        Some("--runner-policy=ci/policy.json")
+    );
 }
 
 #[test]
@@ -277,7 +318,7 @@ fn package_cli_args_binary_reports_deterministic_usage_error() {
     assert!(output.stdout.is_empty());
     assert_eq!(
         String::from_utf8(output.stderr).unwrap(),
-        "package verify-certs: failed\nerror Usage unsupported_checker field=--checker actual=external\n"
+        "package verify-certs: failed\nerror Usage missing_required_flag field=--runner-policy\n"
     );
 }
 

@@ -892,12 +892,12 @@ fn package_cli_temp_fixture_rejects_stale_source_certificate_and_lock() {
 
 #[test]
 fn package_cli_usage_failures_return_exit_two() {
-    let unsupported_checker =
+    let unconfigured_external =
         run_cli(&["package", "verify-certs", "--checker", "external", "--json"]);
     assert_usage_failure(
-        unsupported_checker,
+        unconfigured_external,
         "package verify-certs",
-        "unsupported_checker",
+        "missing_required_flag",
     );
 
     for flag in ["--latest", "--network", "--upload", "--sign"] {

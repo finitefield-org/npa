@@ -25,9 +25,9 @@ fn package_cli_diagnostics_maps_usage_errors_to_exit_two() {
     assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
     let json = result.render_json();
     assert!(json.contains("\"kind\":\"Usage\""));
-    assert!(json.contains("\"reason_code\":\"unsupported_checker\""));
-    assert!(json.contains("\"field\":\"--checker\""));
-    assert!(json.contains("\"actual_value\":\"external\""));
+    assert!(json.contains("\"reason_code\":\"missing_required_flag\""));
+    assert!(json.contains("\"field\":\"--runner-policy\""));
+    assert!(!json.contains("\"actual_value\""));
 }
 
 #[test]

@@ -3,15 +3,20 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use npa_api::{
+    format_hash_string, independent_checker_file_hash, parse_independent_checker_runner_policy,
+};
 use npa_cert::Name;
-use npa_cli::args::{PackageChecker, PackageCommonOptions, PackageVerifyCertsOptions};
+use npa_cli::args::{
+    PackageChecker, PackageCommonOptions, PackageExternalCheckerOptions, PackageVerifyCertsOptions,
+};
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, DiagnosticSeverity};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
 use npa_cli::package_verify::run_package_verify_certs;
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
-    parse_and_validate_manifest_str, PackageExternalImport, PackageHash, PackageModule,
-    PackagePath,
+    parse_and_validate_manifest_str, parse_package_lock_json, PackageExternalImport, PackageHash,
+    PackageModule, PackagePath,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -159,6 +164,114 @@ fn package_verify_certs_fast_cli_succeeds_json() {
 }
 
 #[test]
+fn package_verify_external_succeeds_with_explicit_policy_registry_imports_and_no_source() {
+    let package =
+        build_source_free_fixture("external-source-free", "Proofs.Ai.Eq", true, &["Eq.rec"]);
+    assert!(!package.artifact_path("Proofs/Ai/Eq/source.npa").exists());
+    assert!(package
+        .artifact_path("vendor/npa-std/Std/Logic/Eq/certificate.npcert")
+        .exists());
+    let external = write_external_runner_fixture(&package, true);
+
+    let result = run_verify_external(&package, external);
+
+    assert_eq!(result.exit_code(), CommandExitCode::Success);
+    assert_eq!(result.artifacts.len(), 3);
+    assert!(result
+        .artifacts
+        .iter()
+        .all(|artifact| artifact.kind == "machine_check_result"));
+    assert!(result.artifacts.iter().any(|artifact| artifact.path
+        == "generated/checker-results/fixture-package/0.1.0/Proofs.Ai.Eq/external/result.json"));
+    assert!(result.artifacts.iter().any(|artifact| artifact.path
+        == "generated/checker-results/fixture-package/0.1.0/Std.Logic.Eq/external/result.json"));
+    assert!(
+        package
+            .artifact_path(
+                "generated/checker-imports/fixture-package/0.1.0/Proofs.Ai.Eq/external/vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+            )
+            .exists()
+    );
+    assert!(result
+        .artifacts
+        .iter()
+        .all(|artifact| package.artifact_path(&artifact.path).exists()));
+    assert_eq!(result.diagnostics.len(), 4);
+    assert_info(
+        &result.diagnostics[0],
+        DiagnosticKind::ExternalVerifier,
+        "package_verified",
+        Some("npa-checker-ext"),
+    );
+    assert!(result.diagnostics[0]
+        .actual_value
+        .as_deref()
+        .unwrap()
+        .contains("mode=external"));
+    assert_eq!(
+        result
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.reason_code == "module_verified")
+            .count(),
+        3
+    );
+    let local_result = result
+        .artifacts
+        .iter()
+        .find(|artifact| artifact.path.contains("Proofs.Ai.Eq"))
+        .unwrap();
+    let result_json = fs::read_to_string(package.artifact_path(&local_result.path)).unwrap();
+    assert!(result_json.contains("\"schema\":\"npa.independent-checker.machine_check_result.v1\""));
+    assert!(result_json.contains("\"profile\":\"external\""));
+    assert!(result_json.contains("\"status\":\"checked\""));
+    assert!(!result
+        .render_json()
+        .contains(&package.path().to_string_lossy().to_string()));
+}
+
+#[test]
+fn package_verify_external_rejects_missing_checker_binary_with_structured_diagnostic() {
+    let package = build_source_free_fixture(
+        "external-missing-binary",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec"],
+    );
+    let external = write_external_runner_fixture(&package, false);
+
+    let result = run_verify_external(&package, external);
+
+    assert_eq!(result.exit_code(), CommandExitCode::PackageFailure);
+    assert_eq!(result.diagnostics.len(), 1);
+    let diagnostic = &result.diagnostics[0];
+    assert_eq!(diagnostic.kind, DiagnosticKind::ArtifactIo);
+    assert_eq!(diagnostic.reason_code, "checker_binary_file_unreadable");
+    assert_eq!(
+        diagnostic.path.as_deref(),
+        Some("tools/checkers/npa-checker-ext")
+    );
+    assert!(diagnostic.checker.is_none());
+    assert!(!result.render_json().contains("/tmp/"));
+}
+
+#[test]
+fn package_verify_external_requires_explicit_policy_and_registry() {
+    let output = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "verify-certs", "--checker", "external", "--json"])
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("\"command\":\"package verify-certs\""));
+    assert!(stdout.contains("\"kind\":\"Usage\""));
+    assert!(stdout.contains("\"reason_code\":\"missing_required_flag\""));
+    assert!(stdout.contains("\"field\":\"--runner-policy\""));
+}
+
+#[test]
 fn package_verify_certs_rejects_stale_package_lock_before_checker_status() {
     let package = build_source_free_fixture("stale-lock", "Proofs.Ai.Basic", false, &["Eq.rec"]);
     let lock_path = package.artifact_path(LOCK_PATH);
@@ -244,7 +357,142 @@ fn run_verify(
             json: true,
         },
         checker,
+        external: None,
     })
+}
+
+fn run_verify_external(
+    package: &TestPackage,
+    external: PackageExternalCheckerOptions,
+) -> npa_cli::diagnostic::CommandResult {
+    run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker: PackageChecker::External,
+        external: Some(external),
+    })
+}
+
+fn write_external_runner_fixture(
+    package: &TestPackage,
+    create_binary: bool,
+) -> PackageExternalCheckerOptions {
+    let checker_build_hash = test_hash(0x55);
+    let lock_source = fs::read_to_string(package.artifact_path(LOCK_PATH)).unwrap();
+    let lock = parse_package_lock_json(&lock_source).unwrap();
+    let mut checker_script = "#!/bin/sh\ncase \"$2\" in\n".to_owned();
+    for entry in &lock.entries {
+        checker_script.push_str(&format!(
+            "  '{}')\n    cat <<'JSON'\n{{\"schema\":\"npa.independent-checker.checker_raw_result.v1\",\"checker_id\":\"npa-checker-ext\",\"checker_version\":\"0.1.0\",\"checker_build_hash\":\"{}\",\"status\":\"checked\",\"module\":\"{}\",\"certificate_hash\":\"{}\",\"export_hash\":\"{}\",\"axiom_report_hash\":\"{}\"}}\nJSON\n    ;;\n",
+            entry.certificate.as_str(),
+            format_hash_string(&checker_build_hash),
+            entry.module.as_dotted(),
+            format_package_hash(&entry.certificate_hash),
+            format_package_hash(&entry.export_hash),
+            format_package_hash(&entry.axiom_report_hash),
+        ));
+    }
+    checker_script
+        .push_str("  *)\n    echo 'unknown certificate path' >&2\n    exit 2\n    ;;\nesac\n");
+    let checker_path = package.artifact_path("tools/checkers/npa-checker-ext");
+    let binary_hash = if create_binary {
+        fs::create_dir_all(checker_path.parent().unwrap()).unwrap();
+        fs::write(&checker_path, checker_script.as_bytes()).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            let mut permissions = fs::metadata(&checker_path).unwrap().permissions();
+            permissions.set_mode(0o755);
+            fs::set_permissions(&checker_path, permissions).unwrap();
+        }
+        independent_checker_file_hash(checker_script.as_bytes())
+    } else {
+        independent_checker_file_hash(b"missing external checker fixture")
+    };
+
+    let axiom_policy_path = package.artifact_path("ci/axiom-policy.toml");
+    let axiom_policy_bytes = b"allow_custom_axioms = false\nallowed_axioms = [\"Eq.rec\"]\n";
+    fs::create_dir_all(axiom_policy_path.parent().unwrap()).unwrap();
+    fs::write(&axiom_policy_path, axiom_policy_bytes).unwrap();
+    let axiom_policy_hash = independent_checker_file_hash(axiom_policy_bytes);
+
+    let registry_source = r#"{"schema":"npa.independent-checker.checker_binary_registry.v1","root_kind":"workspace","entries":[{"binary_id":"npa-checker-ext-macos-aarch64","path":"tools/checkers/npa-checker-ext"}]}"#;
+    let registry_path = package.artifact_path("ci/checker-binaries.json");
+    fs::write(&registry_path, registry_source).unwrap();
+
+    let policy_source = format!(
+        r#"{{
+          "schema":"npa.independent-checker.runner_policy.v1",
+          "id":"package-external-pr",
+          "version":1,
+          "trust_mode":"pr",
+          "required_checker_profiles":["reference"],
+          "optional_checker_profiles":["external"],
+          "checker_allowlist":[
+            {{
+              "profile":"external",
+              "checker_id":"npa-checker-ext",
+              "binary_id":"npa-checker-ext-macos-aarch64",
+              "binary_hash":"{}",
+              "build_hash":"{}",
+              "allowed_args":[]
+            }},
+            {{
+              "profile":"reference",
+              "checker_id":"npa-checker-ref",
+              "binary_id":"npa-checker-ref-macos-aarch64",
+              "binary_hash":"{}",
+              "build_hash":"{}",
+              "allowed_args":["--json","--canonical-only"]
+            }}
+          ],
+          "checker_identity_manifest":{{
+            "kind":"file",
+            "path":"ci/checker-identity.json",
+            "manifest_hash":"{}"
+          }},
+          "import_policy":{{
+            "mode":"locked_store",
+            "network":"forbidden",
+            "require_import_lock_hash":true
+          }},
+          "axiom_policy":{{
+            "path":"ci/axiom-policy.toml",
+            "hash":"{}"
+          }},
+          "budgets":{{
+            "external":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}},
+            "reference":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}}
+          }},
+          "on_resource_exhausted":"fail",
+          "on_missing_required_checker":"fail",
+          "on_profile_requested_by_ai":"ignore_unless_policy_allows"
+        }}"#,
+        format_hash_string(&binary_hash),
+        format_hash_string(&checker_build_hash),
+        format_hash_string(&test_hash(0x10)),
+        format_hash_string(&test_hash(0x11)),
+        format_hash_string(&test_hash(0x12)),
+        format_hash_string(&axiom_policy_hash),
+    );
+    let policy_hash = parse_independent_checker_runner_policy(&policy_source)
+        .unwrap()
+        .policy_hash();
+    let policy_path = package.artifact_path("ci/runner.release.json");
+    fs::write(&policy_path, policy_source).unwrap();
+
+    PackageExternalCheckerOptions {
+        runner_policy: PathBuf::from("ci/runner.release.json"),
+        runner_policy_hash: format_hash_string(&policy_hash),
+        checker_registry: PathBuf::from("ci/checker-binaries.json"),
+    }
+}
+
+fn test_hash(byte: u8) -> npa_cert::Hash {
+    [byte; 32]
 }
 
 fn assert_info(

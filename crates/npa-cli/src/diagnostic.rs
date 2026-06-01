@@ -71,6 +71,8 @@ pub enum DiagnosticKind {
     FastVerifier,
     /// Reference verifier rejection.
     ReferenceVerifier,
+    /// External checker runner rejection.
+    ExternalVerifier,
     /// Package axiom report generation or checking.
     AxiomReport,
     /// Package theorem index generation or checking.
@@ -97,6 +99,7 @@ impl DiagnosticKind {
             Self::SourceFreeBoundary => "SourceFreeBoundary",
             Self::FastVerifier => "FastVerifier",
             Self::ReferenceVerifier => "ReferenceVerifier",
+            Self::ExternalVerifier => "ExternalVerifier",
             Self::AxiomReport => "AxiomReport",
             Self::TheoremIndex => "TheoremIndex",
             Self::GeneratedArtifact => "GeneratedArtifact",
@@ -117,6 +120,7 @@ impl DiagnosticKind {
             | Self::SourceFreeBoundary
             | Self::FastVerifier
             | Self::ReferenceVerifier
+            | Self::ExternalVerifier
             | Self::AxiomReport
             | Self::TheoremIndex
             | Self::GeneratedArtifact

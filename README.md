@@ -90,6 +90,17 @@ cargo run -p npa-cli -- package index --root proofs --check
 cargo run -p npa-cli -- package publish-plan --root proofs --check
 ```
 
+CLR-08 以降の external checker gate は、runner policy と checker binary registry を明示した
+場合だけ有効です。
+
+```sh
+npa package verify-certs --root . --checker external \
+  --runner-policy ci/runner.release.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --json
+```
+
 Contributor-facing examples use the installed `npa` binary:
 
 ```sh
@@ -114,6 +125,9 @@ package check-hashes
 package verify-certs
   source-free verification path。`generated/package-lock.json` と certificate artifacts を読み、
   `.npa` source、replay、meta、theorem index、AI trace、out-of-package state は checker input にしない。
+  `--checker external` は `--runner-policy`、`--runner-policy-hash`、
+  `--checker-registry` を必須にし、MachineCheckResult JSON diagnostics を
+  `generated/checker-results/.../external/result.json` に保存する。
 
 package axiom-report
   `npa.package.axiom_report.v0.1` の package metadata を生成または `--check` する。
