@@ -9,6 +9,7 @@ Template files:
 ```text
 npa-package-pr.yml          available
 npa-package-release.yml     available
+summarize-npa-diagnostics.py available
 ```
 
 CLR-07-03 adds the PR template. CLR-07-04 adds the release template. The
@@ -143,6 +144,31 @@ job. Fast-kernel output is labeled fast-kernel and is not reported as reference
 checker success. The template uploads checked package artifacts, certificate
 artifacts, and JSON diagnostics; it does not upload AI traces, prompt metadata,
 host-specific caches, or environment dumps.
+
+Failure summaries use package command JSON diagnostics when
+`ci-templates/github-actions/summarize-npa-diagnostics.py` is copied with the
+workflow. The summary table is deterministic and intentionally limited to:
+
+```text
+file | command | status | exit_code | kind | reason_code | module | path | expected_hash | actual_hash
+```
+
+The table uses package-relative paths and omits raw runner stderr, absolute host
+paths, environment variables, and caches.
+
+Contributor failure mapping:
+
+| Diagnostic | Action |
+| --- | --- |
+| `source_hash_mismatch` | Review the source change, then update package metadata through the normal package update flow. Do not edit expected hashes blindly. |
+| `certificate_hash_mismatch` or `certificate_file_hash_mismatch` | Rebuild/check certificates explicitly, review the certificate and package-lock diffs, then rerun hash and verifier checks. |
+| `reference_checker_rejected` | Treat the `.npcert` as rejected proof evidence; fix the theorem or certificate generation path and rerun reference verification. |
+| `axiom_policy_rejected` or `axiom_report_policy_violation` | Remove the unapproved axiom dependency or update package axiom policy through review. |
+| `axiom_report_stale` or `axiom_report_hash_mismatch` | Regenerate `generated/axiom-report.json`, review the diff, then rerun `npa package axiom-report --root . --check --json`. |
+| `theorem_index_stale` or `theorem_index_hash_mismatch` | Regenerate `generated/theorem-index.json`, review the diff, then rerun `npa package index --root . --check --json`. |
+
+Theorem index and axiom report metadata are not proof evidence; they are derived
+review/search artifacts.
 
 The CLR-06 publish-plan check is optional. Set `NPA_ENABLE_PUBLISH_PLAN` to
 `true` and check in `generated/publish-plan.json` to run:

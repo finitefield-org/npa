@@ -110,6 +110,13 @@ jobs:
             else
               echo "- no ci-output directory was created"
             fi
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload package diagnostics

@@ -459,7 +459,7 @@ fresh-checkout CI expectations
 
 ### CLR-07-05 Add Contributor Failure Guidance And Diagnostic Mapping
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-07-03, CLR-07-04
 - Inputs:
   - `npa.package.command_result.v0.1` diagnostics from CLR-04

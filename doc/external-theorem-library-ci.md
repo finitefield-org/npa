@@ -36,6 +36,7 @@ Reserved template names are:
 ```text
 ci-templates/github-actions/npa-package-pr.yml
 ci-templates/github-actions/npa-package-release.yml
+ci-templates/github-actions/summarize-npa-diagnostics.py
 ci-templates/github-actions/README.md
 ```
 
@@ -234,6 +235,43 @@ Human-readable workflow summaries may show the failed command, exit code,
 diagnostic kind, reason code, module, package-relative path, and expected or
 actual hashes when available. Summaries are review aids only; structured JSON
 is the stable CI output.
+
+Copyable templates may use
+`ci-templates/github-actions/summarize-npa-diagnostics.py` to render a summary
+table from `npa.package.command_result.v0.1` JSON:
+
+```text
+file | command | status | exit_code | kind | reason_code | module | path | expected_hash | actual_hash
+```
+
+The table must use package-relative paths from diagnostics such as
+`generated/package-lock.json` or `Proofs/A/certificate.npcert`. It must not
+include absolute host paths, environment dumps, or raw stderr with local runner
+state. If a command fails before writing JSON, the workflow should still point
+to the missing `ci-output/*.json` file and the failed GitHub Actions step.
+
+## Contributor Failure Guide
+
+When CI fails, contributors should fix the source package state and regenerate
+owned artifacts with `npa package ...` commands. They should not edit expected
+hashes blindly to match CI output. Expected hashes are package pins; changing
+them is correct only after reviewing the corresponding source, certificate, or
+generated artifact change.
+
+Common diagnostic mappings:
+
+| Diagnostic | Likely cause | Contributor action |
+| --- | --- | --- |
+| `source_hash_mismatch` from `package check-hashes` | A checked source file changed but `expected_source_hash` still pins the old bytes. | Review the source change, then update package metadata through the normal package update flow. Rerun `npa package check-hashes --root . --json`. |
+| `certificate_hash_mismatch`, `certificate_file_hash_mismatch`, `export_hash_mismatch`, or `axiom_report_hash_mismatch` | A certificate artifact is stale, missing from the package lock, or no longer matches the manifest pins. | Rebuild/check certificates explicitly with `npa package build-certs --root .` followed by `npa package build-certs --root . --check --json`, `npa package check-hashes --root . --json`, and source-free verification. For external imports, intentionally update the pinned imported certificate and its manifest hashes. |
+| `reference_checker_rejected` from `package verify-certs --checker reference` | The canonical `.npcert` bytes are not accepted by the independent reference checker. | Treat this as a proof/certificate failure. Fix the theorem or certificate generation path, rebuild certificates, and rerun `npa package verify-certs --root . --checker reference --json`. Do not treat fast-kernel success as reference checker success. |
+| `axiom_policy_rejected` or `axiom_report_policy_violation` | A certificate or package axiom report uses an axiom outside the package policy. | Remove the unapproved axiom dependency or update the package axiom policy through review. Rerun reference verification and `npa package axiom-report --root . --check --json`. |
+| `axiom_report_stale` or `axiom_report_hash_mismatch` in `generated/axiom-report.json` | The checked axiom report no longer matches the verified certificates. | Regenerate `generated/axiom-report.json` with `npa package axiom-report --root .`, review the diff, then rerun check mode. |
+| `theorem_index_stale` or `theorem_index_hash_mismatch` in `generated/theorem-index.json` | The theorem index metadata no longer matches the verified certificates. | Regenerate `generated/theorem-index.json` with `npa package index --root .`, review the diff, then rerun check mode. |
+
+Theorem index and axiom report metadata are not proof evidence. They are
+review, search, documentation, and release helper artifacts derived from
+canonical certificates and source-free checker results.
 
 Allowed uploads include generated package metadata, checked local
 certificates, command JSON diagnostics, and plain text summary logs. Default

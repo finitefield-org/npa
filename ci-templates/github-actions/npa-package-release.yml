@@ -123,6 +123,13 @@ jobs:
             else
               echo "- no ci-output directory was created"
             fi
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload release artifacts
@@ -196,6 +203,21 @@ jobs:
             echo "This job records fast-kernel verifier output. It is not a reference checker verdict."
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Fast-kernel failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload fast-kernel diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -249,6 +271,22 @@ jobs:
           set -euo pipefail
           mkdir -p ci-output
           npa package verify-certs --root . --checker reference --json > ci-output/verify-certs-reference.json
+
+      - name: Reference checker failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA reference checker diagnostics"
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found; copy ci-templates/github-actions/summarize-npa-diagnostics.py for mapped summaries"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload reference checker diagnostics
         if: always()
