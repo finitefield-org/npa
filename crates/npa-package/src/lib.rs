@@ -149,10 +149,10 @@ pub use schema::{
     PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA, REGISTRY_MODULE_SCHEMA,
 };
 pub use theorem_index::{
-    compute_package_theorem_index_hash, parse_package_theorem_index_json,
-    validate_package_theorem_index, PackageTheoremIndex, PackageTheoremIndexArtifact,
-    PackageTheoremIndexEntry, PackageTheoremIndexKind, PackageTheoremIndexMode,
-    PackageTheoremIndexSummary, PackageTheoremStatement,
+    compute_package_theorem_index_hash, package_theorem_index_summary,
+    parse_package_theorem_index_json, validate_package_theorem_index, PackageTheoremIndex,
+    PackageTheoremIndexArtifact, PackageTheoremIndexEntry, PackageTheoremIndexKind,
+    PackageTheoremIndexMode, PackageTheoremIndexSummary, PackageTheoremStatement,
     PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
 };
 pub use validate::{

@@ -265,6 +265,13 @@ pub fn compute_package_theorem_index_hash(
     ))
 }
 
+/// Compute deterministic package theorem index summary counts for entries.
+pub fn package_theorem_index_summary(
+    entries: &[PackageTheoremIndexEntry],
+) -> PackageTheoremIndexSummary {
+    expected_theorem_index_summary(entries)
+}
+
 fn validate_theorem_index_shape_without_self_hash(
     index: &PackageTheoremIndex,
 ) -> PackageArtifactResult<()> {

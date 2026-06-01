@@ -863,7 +863,7 @@ external checker disagreement gates
 
 ### CLR-05-05 Generate Package Theorem Index Values
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-02
 - Inputs:
   - source-free extraction output

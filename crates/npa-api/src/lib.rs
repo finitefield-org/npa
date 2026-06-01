@@ -457,10 +457,11 @@ pub use json::{
 };
 pub use package_artifacts::{
     extract_package_artifacts_source_free, project_package_axiom_report_from_extraction,
-    project_package_axiom_report_source_free, PackageArtifactExtraction,
+    project_package_axiom_report_source_free, project_package_theorem_index_from_extraction,
+    project_package_theorem_index_source_free, PackageArtifactExtraction,
     PackageArtifactExtractionInput, PackageArtifactReferenceSummaryMode,
     PackageArtifactVerifiedModule, PackageArtifactVerifiedModuleKey,
-    PackageAxiomReportProjectionInput,
+    PackageAxiomReportProjectionInput, PackageTheoremIndexProjectionInput,
 };
 pub use package_verifier::{
     materialize_package_phase8_import_locks, materialize_package_phase8_requests,

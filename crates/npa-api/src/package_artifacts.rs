@@ -1,16 +1,23 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use npa_cert::{AxiomRef, DeclPayload, ExportKind, GlobalRef, Name, VerifiedModule};
+use npa_cert::{
+    AxiomRef, DeclPayload, ExportEntry, ExportKind, GlobalRef, Hash, Name, NameId, TermId,
+    TermNode, VerifiedModule,
+};
 use npa_package::{
     build_package_lock_from_artifacts, format_package_hash, package_axiom_report_summary,
-    package_file_hash, PackageArtifactError, PackageArtifactFileReference, PackageArtifactOrigin,
-    PackageArtifactPolicy, PackageArtifactResult, PackageAxiomPolicyStatus,
-    PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
-    PackageAxiomReference, PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode,
-    PackageCheckerSummary, PackageHash, PackageId, PackageLockArtifact, PackageLockEntryOrigin,
-    PackageLockError, PackageLockErrorKind, PackageLockErrorReason, PackageLockManifest,
-    PackageLockManifestReference, PackagePath, PackageVersion, ValidatedPackageManifest,
-    PACKAGE_AXIOM_REPORT_SCHEMA,
+    package_file_hash, package_theorem_index_summary, PackageArtifactError,
+    PackageArtifactFileReference, PackageArtifactOrigin, PackageArtifactPolicy,
+    PackageArtifactResult, PackageAxiomPolicyStatus, PackageAxiomPolicyStatusKind,
+    PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason, PackageAxiomReference,
+    PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode, PackageCheckerSummary,
+    PackageGlobalRef, PackageGlobalRefView, PackageHash, PackageId, PackageLockArtifact,
+    PackageLockEntryOrigin, PackageLockError, PackageLockErrorKind, PackageLockErrorReason,
+    PackageLockManifest, PackageLockManifestReference, PackagePath, PackageTheoremIndex,
+    PackageTheoremIndexArtifact, PackageTheoremIndexEntry, PackageTheoremIndexKind,
+    PackageTheoremIndexMode, PackageTheoremStatement, PackageVersion, ValidatedPackageManifest,
+    PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
+    PACKAGE_THEOREM_INDEX_SCHEMA,
 };
 
 use crate::package_verifier::{
@@ -99,6 +106,19 @@ pub struct PackageAxiomReportProjectionInput<'a> {
     pub version: PackageVersion,
     /// Package axiom policy copied from the validated package manifest.
     pub policy: PackageArtifactPolicy,
+    /// Exact generated package lock file identity used for extraction.
+    pub package_lock: PackageArtifactFileReference,
+    /// Source-free verified module extraction.
+    pub extraction: &'a PackageArtifactExtraction,
+}
+
+/// Source-free input for projecting a package theorem index artifact.
+#[derive(Clone, Debug)]
+pub struct PackageTheoremIndexProjectionInput<'a> {
+    /// Package id copied from the validated package manifest.
+    pub package: PackageId,
+    /// Package version copied from the validated package manifest.
+    pub version: PackageVersion,
     /// Exact generated package lock file identity used for extraction.
     pub package_lock: PackageArtifactFileReference,
     /// Source-free verified module extraction.
@@ -204,6 +224,50 @@ pub fn project_package_axiom_report_from_extraction(
             allow_custom_axioms: manifest.policy.allow_custom_axioms,
             allowed_axioms: manifest.policy.allowed_axioms.clone(),
         },
+        package_lock,
+        extraction,
+    })
+}
+
+/// Project `npa.package.theorem_index.v0.1` from verified package modules.
+///
+/// The projection reads only source-free extraction output: verified
+/// certificates, package-lock identities, and checker summaries. It does not
+/// read source, replay, meta, theorem graph scores, AI traces, registry data,
+/// or theorem-search sidecars.
+pub fn project_package_theorem_index_source_free(
+    input: PackageTheoremIndexProjectionInput<'_>,
+) -> PackageArtifactResult<PackageTheoremIndex> {
+    let entries = project_package_theorem_index_entries(input.extraction)?;
+    PackageTheoremIndex {
+        schema: PACKAGE_THEOREM_INDEX_SCHEMA.to_owned(),
+        package: input.package,
+        version: input.version,
+        manifest: PackageArtifactFileReference {
+            path: input.extraction.manifest.path.clone(),
+            file_hash: input.extraction.manifest.file_hash,
+        },
+        package_lock: input.package_lock,
+        index_profile: PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE.to_owned(),
+        summary: package_theorem_index_summary(&entries),
+        entries,
+        checker_summaries: input.extraction.checker_summaries.clone(),
+        theorem_index_hash: PackageHash::new([0_u8; 32]),
+    }
+    .with_computed_hash()
+}
+
+/// Project `npa.package.theorem_index.v0.1` using package identity from a
+/// validated manifest.
+pub fn project_package_theorem_index_from_extraction(
+    validated: &ValidatedPackageManifest,
+    extraction: &PackageArtifactExtraction,
+    package_lock: PackageArtifactFileReference,
+) -> PackageArtifactResult<PackageTheoremIndex> {
+    let manifest = validated.manifest();
+    project_package_theorem_index_source_free(PackageTheoremIndexProjectionInput {
+        package: manifest.package.clone(),
+        version: manifest.version.clone(),
         package_lock,
         extraction,
     })
@@ -416,6 +480,398 @@ fn project_package_axiom_report_modules(
     Ok(modules)
 }
 
+fn project_package_theorem_index_entries(
+    extraction: &PackageArtifactExtraction,
+) -> PackageArtifactResult<Vec<PackageTheoremIndexEntry>> {
+    let mut entries = Vec::new();
+    for key in &extraction.topological_order {
+        let module = extraction.verified_modules.get(key).ok_or_else(|| {
+            projection_error(
+                &key.module,
+                "module",
+                "verified module present in extraction",
+                key.module.as_dotted(),
+            )
+        })?;
+        for export in module.verified_module.export_block() {
+            if matches!(export.kind, ExportKind::Theorem | ExportKind::Axiom) {
+                entries.push(project_package_theorem_index_entry(
+                    extraction, module, export,
+                )?);
+            }
+        }
+    }
+    Ok(entries)
+}
+
+fn project_package_theorem_index_entry(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    export: &ExportEntry,
+) -> PackageArtifactResult<PackageTheoremIndexEntry> {
+    let name = export_name(module, export.name)?;
+    let kind = match export.kind {
+        ExportKind::Theorem => PackageTheoremIndexKind::Theorem,
+        ExportKind::Axiom => PackageTheoremIndexKind::Axiom,
+        _ => {
+            return Err(theorem_projection_error(
+                module,
+                "kind",
+                "theorem or axiom export",
+            ));
+        }
+    };
+    Ok(PackageTheoremIndexEntry {
+        global_ref: PackageGlobalRef {
+            module: module.key.module.clone(),
+            name,
+            export_hash: module.key.export_hash,
+            certificate_hash: module.key.certificate_hash,
+            decl_interface_hash: PackageHash::from(export.decl_interface_hash),
+        },
+        kind,
+        statement: project_theorem_statement(extraction, module, export)?,
+        modes: theorem_index_modes(module, export.ty)?,
+        tags: Vec::new(),
+        axiom_dependencies: project_export_axiom_dependencies(extraction, module, export)?,
+        module_axiom_report_hash: module.axiom_report_hash,
+        artifact: PackageTheoremIndexArtifact {
+            origin: module.origin,
+            certificate: module.certificate.path.clone(),
+        },
+    })
+}
+
+fn project_theorem_statement(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    export: &ExportEntry,
+) -> PackageArtifactResult<PackageTheoremStatement> {
+    Ok(PackageTheoremStatement {
+        core_hash: PackageHash::from(export.type_hash),
+        head: theorem_statement_head(extraction, module, export.ty)?,
+        constants: theorem_statement_constants(extraction, module, export.ty)?,
+    })
+}
+
+fn theorem_statement_head(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    ty: TermId,
+) -> PackageArtifactResult<Option<PackageGlobalRefView>> {
+    let mut conclusion = ty;
+    while let TermNode::Pi { body, .. } = term_node(module, conclusion)? {
+        conclusion = *body;
+    }
+    let Some(global_ref) = syntactic_term_head(module, conclusion)? else {
+        return Ok(None);
+    };
+    project_global_ref_view(extraction, module, &global_ref).map(Some)
+}
+
+fn syntactic_term_head(
+    module: &PackageArtifactVerifiedModule,
+    term: TermId,
+) -> PackageArtifactResult<Option<GlobalRef>> {
+    let mut current = term;
+    while let TermNode::App(func, _) = term_node(module, current)? {
+        current = *func;
+    }
+    Ok(match term_node(module, current)? {
+        TermNode::Const { global_ref, .. } => Some(global_ref.clone()),
+        _ => None,
+    })
+}
+
+fn theorem_statement_constants(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    ty: TermId,
+) -> PackageArtifactResult<Vec<PackageGlobalRefView>> {
+    let mut constants = BTreeMap::new();
+    let mut visited = BTreeSet::new();
+    collect_term_constants(extraction, module, ty, &mut visited, &mut constants)?;
+    Ok(constants.into_values().collect())
+}
+
+fn collect_term_constants(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    term: TermId,
+    visited: &mut BTreeSet<TermId>,
+    constants: &mut BTreeMap<(Name, Name, PackageHash, PackageHash), PackageGlobalRefView>,
+) -> PackageArtifactResult<()> {
+    if !visited.insert(term) {
+        return Ok(());
+    }
+    match term_node(module, term)? {
+        TermNode::Sort(_) | TermNode::BVar(_) => Ok(()),
+        TermNode::Const { global_ref, .. } => {
+            let view = project_global_ref_view(extraction, module, global_ref)?;
+            constants.insert(global_ref_view_key(&view), view);
+            Ok(())
+        }
+        TermNode::App(func, arg) => {
+            collect_term_constants(extraction, module, *func, visited, constants)?;
+            collect_term_constants(extraction, module, *arg, visited, constants)
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            collect_term_constants(extraction, module, *ty, visited, constants)?;
+            collect_term_constants(extraction, module, *body, visited, constants)
+        }
+        TermNode::Let { ty, value, body } => {
+            collect_term_constants(extraction, module, *ty, visited, constants)?;
+            collect_term_constants(extraction, module, *value, visited, constants)?;
+            collect_term_constants(extraction, module, *body, visited, constants)
+        }
+    }
+}
+
+fn theorem_index_modes(
+    module: &PackageArtifactVerifiedModule,
+    ty: TermId,
+) -> PackageArtifactResult<Vec<PackageTheoremIndexMode>> {
+    let mut modes = vec![PackageTheoremIndexMode::Exact];
+    if matches!(term_node(module, ty)?, TermNode::Pi { .. }) {
+        modes.push(PackageTheoremIndexMode::Apply);
+    }
+    Ok(modes)
+}
+
+fn project_export_axiom_dependencies(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    export: &ExportEntry,
+) -> PackageArtifactResult<Vec<PackageAxiomReference>> {
+    let mut projected = BTreeMap::new();
+    for axiom in &export.axiom_dependencies {
+        insert_projected_axiom(&mut projected, extraction, module, axiom)?;
+    }
+    Ok(projected.into_values().collect())
+}
+
+fn project_global_ref_view(
+    extraction: &PackageArtifactExtraction,
+    owner: &PackageArtifactVerifiedModule,
+    global_ref: &GlobalRef,
+) -> PackageArtifactResult<PackageGlobalRefView> {
+    match global_ref {
+        GlobalRef::Builtin { .. } => Err(theorem_projection_error(
+            owner,
+            "global_ref",
+            "package-exported declaration reference",
+        )),
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            let imported = imported_module_for_global_ref(extraction, owner, *import_index)?;
+            let name = export_name(owner, *name)?;
+            unique_export_by_name_and_hash(imported, &name, *decl_interface_hash).ok_or_else(
+                || theorem_projection_error(owner, "global_ref", "imported public export"),
+            )?;
+            Ok(PackageGlobalRefView {
+                module: imported.key.module.clone(),
+                name,
+                export_hash: imported.key.export_hash,
+                decl_interface_hash: PackageHash::from(*decl_interface_hash),
+            })
+        }
+        GlobalRef::Local { decl_index } => {
+            let decl = owner
+                .verified_module
+                .declarations()
+                .get(*decl_index)
+                .ok_or_else(|| {
+                    theorem_projection_error(owner, "global_ref", "local declaration")
+                })?;
+            let name = decl_payload_name(owner, &decl.decl)?;
+            unique_export_by_name_and_hash(owner, &name, decl.hashes.decl_interface_hash)
+                .ok_or_else(|| {
+                    theorem_projection_error(owner, "global_ref", "local public export")
+                })?;
+            Ok(PackageGlobalRefView {
+                module: owner.key.module.clone(),
+                name,
+                export_hash: owner.key.export_hash,
+                decl_interface_hash: PackageHash::from(decl.hashes.decl_interface_hash),
+            })
+        }
+        GlobalRef::LocalGenerated { decl_index, name } => {
+            let decl = owner
+                .verified_module
+                .declarations()
+                .get(*decl_index)
+                .ok_or_else(|| {
+                    theorem_projection_error(owner, "global_ref", "local generated source")
+                })?;
+            let name = export_name(owner, *name)?;
+            if !decl_contains_generated_name(owner, &decl.decl, &name)? {
+                return Err(theorem_projection_error(
+                    owner,
+                    "global_ref",
+                    "generated declaration owned by referenced source declaration",
+                ));
+            }
+            let export =
+                unique_export_by_name_and_hash(owner, &name, decl.hashes.decl_interface_hash)
+                    .ok_or_else(|| {
+                        theorem_projection_error(
+                            owner,
+                            "global_ref",
+                            "local generated public export",
+                        )
+                    })?;
+            if !matches!(export.kind, ExportKind::Constructor | ExportKind::Recursor) {
+                return Err(theorem_projection_error(
+                    owner,
+                    "global_ref",
+                    "constructor or recursor export",
+                ));
+            }
+            Ok(PackageGlobalRefView {
+                module: owner.key.module.clone(),
+                name,
+                export_hash: owner.key.export_hash,
+                decl_interface_hash: PackageHash::from(export.decl_interface_hash),
+            })
+        }
+    }
+}
+
+fn unique_export_by_name_and_hash<'a>(
+    module: &'a PackageArtifactVerifiedModule,
+    name: &Name,
+    decl_interface_hash: Hash,
+) -> Option<&'a ExportEntry> {
+    let mut matches = module
+        .verified_module
+        .export_block()
+        .iter()
+        .filter(|entry| {
+            entry.decl_interface_hash == decl_interface_hash
+                && module
+                    .verified_module
+                    .name_table()
+                    .get(entry.name)
+                    .is_some_and(|entry_name| entry_name == name)
+        });
+    let first = matches.next()?;
+    if matches.next().is_none() {
+        Some(first)
+    } else {
+        None
+    }
+}
+
+fn decl_contains_generated_name(
+    module: &PackageArtifactVerifiedModule,
+    decl: &DeclPayload,
+    generated_name: &Name,
+) -> PackageArtifactResult<bool> {
+    match decl {
+        DeclPayload::Inductive {
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
+            constructors,
+            recursor,
+            ..
+        } => generated_specs_contain_name(module, constructors, recursor.as_ref(), generated_name),
+        DeclPayload::MutualInductiveBlock { inductives, .. } => {
+            for inductive in inductives {
+                if generated_specs_contain_name(
+                    module,
+                    &inductive.constructors,
+                    inductive.recursor.as_ref(),
+                    generated_name,
+                )? {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
+        _ => Ok(false),
+    }
+}
+
+fn generated_specs_contain_name(
+    module: &PackageArtifactVerifiedModule,
+    constructors: &[npa_cert::ConstructorSpec],
+    recursor: Option<&npa_cert::RecursorSpec>,
+    generated_name: &Name,
+) -> PackageArtifactResult<bool> {
+    for constructor in constructors {
+        if export_name(module, constructor.name)? == *generated_name {
+            return Ok(true);
+        }
+    }
+    if let Some(recursor) = recursor {
+        if export_name(module, recursor.name)? == *generated_name {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn term_node(
+    module: &PackageArtifactVerifiedModule,
+    term: TermId,
+) -> PackageArtifactResult<&TermNode> {
+    module
+        .verified_module
+        .term_table()
+        .get(term)
+        .ok_or_else(|| {
+            theorem_projection_error(module, "statement", "valid certificate term reference")
+        })
+}
+
+fn export_name(
+    module: &PackageArtifactVerifiedModule,
+    name_id: NameId,
+) -> PackageArtifactResult<Name> {
+    module
+        .verified_module
+        .name_table()
+        .get(name_id)
+        .cloned()
+        .ok_or_else(|| theorem_projection_error(module, "name", "valid certificate name"))
+}
+
+fn decl_payload_name(
+    module: &PackageArtifactVerifiedModule,
+    decl: &DeclPayload,
+) -> PackageArtifactResult<Name> {
+    export_name(module, decl_payload_name_id(decl))
+}
+
+fn decl_payload_name_id(decl: &DeclPayload) -> NameId {
+    match decl {
+        DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
+        | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
+        | DeclPayload::Theorem { name, .. }
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
+    }
+}
+
+fn global_ref_view_key(view: &PackageGlobalRefView) -> (Name, Name, PackageHash, PackageHash) {
+    (
+        view.module.clone(),
+        view.name.clone(),
+        view.export_hash,
+        view.decl_interface_hash,
+    )
+}
+
 fn project_direct_axioms(
     extraction: &PackageArtifactExtraction,
     module: &PackageArtifactVerifiedModule,
@@ -551,6 +1007,42 @@ fn module_exports_declared_axiom(
     })
 }
 
+fn imported_module_for_global_ref<'a>(
+    extraction: &'a PackageArtifactExtraction,
+    owner: &PackageArtifactVerifiedModule,
+    import_index: usize,
+) -> PackageArtifactResult<&'a PackageArtifactVerifiedModule> {
+    let Some(import) = owner.verified_module.imports().get(import_index) else {
+        return Err(theorem_projection_error(
+            owner,
+            "global_ref",
+            "valid import binding",
+        ));
+    };
+    let mut matches = extraction.verified_modules.values().filter(|candidate| {
+        candidate.key.module == import.module
+            && candidate.key.export_hash == PackageHash::from(import.export_hash)
+            && import
+                .certificate_hash
+                .is_none_or(|hash| candidate.key.certificate_hash == PackageHash::from(hash))
+    });
+    let Some(imported) = matches.next() else {
+        return Err(theorem_projection_error(
+            owner,
+            "global_ref",
+            "verified imported module",
+        ));
+    };
+    if matches.next().is_some() {
+        return Err(theorem_projection_error(
+            owner,
+            "global_ref",
+            "unique verified imported module",
+        ));
+    }
+    Ok(imported)
+}
+
 fn imported_module_for_axiom<'a>(
     extraction: &'a PackageArtifactExtraction,
     owner: &PackageArtifactVerifiedModule,
@@ -629,6 +1121,19 @@ fn axiom_projection_error(module: &PackageArtifactVerifiedModule) -> PackageArti
     )
 }
 
+fn theorem_projection_error(
+    module: &PackageArtifactVerifiedModule,
+    field: &str,
+    expected: impl Into<String>,
+) -> PackageArtifactError {
+    projection_error(
+        &module.key.module,
+        field,
+        expected,
+        module.key.module.as_dotted(),
+    )
+}
+
 fn projection_error(
     module: &Name,
     field: &str,
@@ -683,7 +1188,8 @@ mod tests {
 
     use npa_package::{
         build_package_lock_from_artifacts, parse_and_validate_manifest_str,
-        parse_package_axiom_report_json, parse_package_lock_json, PackageLockImport,
+        parse_package_axiom_report_json, parse_package_lock_json, parse_package_theorem_index_json,
+        PackageLockImport, PackageTheoremIndexMode, PACKAGE_THEOREM_INDEX_SCHEMA,
     };
 
     use super::*;
@@ -898,6 +1404,46 @@ axioms = ["Eq.rec"]
         buffers
     }
 
+    fn verified_module<'a>(
+        extraction: &'a PackageArtifactExtraction,
+        module: &str,
+    ) -> &'a PackageArtifactVerifiedModule {
+        extraction
+            .verified_modules
+            .values()
+            .find(|verified| verified.key.module.as_dotted() == module)
+            .unwrap()
+    }
+
+    fn export_by_name<'a>(
+        module: &'a PackageArtifactVerifiedModule,
+        declaration: &str,
+    ) -> &'a ExportEntry {
+        module
+            .verified_module
+            .export_block()
+            .iter()
+            .find(|export| {
+                module
+                    .verified_module
+                    .name_table()
+                    .get(export.name)
+                    .is_some_and(|name| name.as_dotted() == declaration)
+            })
+            .unwrap()
+    }
+
+    fn theorem_entry_sort_key(entry: &PackageTheoremIndexEntry) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"name\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"decl_interface_hash\":\"{}\"}}",
+            entry.global_ref.module.as_dotted(),
+            entry.global_ref.name.as_dotted(),
+            format_package_hash(&entry.global_ref.export_hash),
+            format_package_hash(&entry.global_ref.certificate_hash),
+            format_package_hash(&entry.global_ref.decl_interface_hash),
+        )
+    }
+
     #[test]
     fn package_artifact_extraction_collects_verified_modules_and_fast_summaries_source_free() {
         let manifest_source = basic_manifest_source();
@@ -1040,6 +1586,103 @@ axioms = ["Eq.rec"]
 
         let json = report.canonical_json().unwrap();
         assert_eq!(parse_package_axiom_report_json(&json).unwrap(), report);
+    }
+
+    #[test]
+    fn package_theorem_index_projection_projects_public_theorems_axioms_statement_and_ordering() {
+        let (validated, extraction, package_lock) = eq_reasoning_projection_fixture();
+
+        let index =
+            project_package_theorem_index_from_extraction(&validated, &extraction, package_lock)
+                .unwrap();
+
+        assert_eq!(index.schema, PACKAGE_THEOREM_INDEX_SCHEMA);
+        assert_eq!(index.package, validated.manifest().package.clone());
+        assert_eq!(index.version, validated.manifest().version.clone());
+        assert_eq!(index.summary.entry_count as usize, index.entries.len());
+        assert_eq!(
+            index.summary.entry_count,
+            index.summary.theorem_count + index.summary.axiom_count
+        );
+        let expected_theorem_count = extraction
+            .verified_modules
+            .values()
+            .flat_map(|module| module.verified_module.export_block())
+            .filter(|export| export.kind == ExportKind::Theorem)
+            .count() as u64;
+        let expected_axiom_count = extraction
+            .verified_modules
+            .values()
+            .flat_map(|module| module.verified_module.export_block())
+            .filter(|export| export.kind == ExportKind::Axiom)
+            .count() as u64;
+        assert_eq!(index.summary.theorem_count, expected_theorem_count);
+        assert_eq!(index.summary.axiom_count, expected_axiom_count);
+        assert!(index
+            .entries
+            .iter()
+            .all(|entry| entry.modes.contains(&PackageTheoremIndexMode::Exact)));
+        assert!(index
+            .entries
+            .iter()
+            .any(|entry| entry.modes.contains(&PackageTheoremIndexMode::Apply)));
+        assert!(!index
+            .entries
+            .iter()
+            .any(|entry| entry.modes.iter().any(|mode| matches!(
+                mode,
+                PackageTheoremIndexMode::Rw | PackageTheoremIndexMode::Simp
+            ))));
+        assert!(index.entries.iter().all(|entry| entry.tags.is_empty()));
+
+        let mut sorted = index.entries.clone();
+        sorted.sort_by_key(theorem_entry_sort_key);
+        assert_eq!(index.entries, sorted);
+
+        let eq_reasoning = verified_module(&extraction, "Proofs.Ai.EqReasoning");
+        let eq_symm_export = export_by_name(eq_reasoning, "eq_symm");
+        let eq_symm = index
+            .entries
+            .iter()
+            .find(|entry| {
+                entry.global_ref.module.as_dotted() == "Proofs.Ai.EqReasoning"
+                    && entry.global_ref.name.as_dotted() == "eq_symm"
+            })
+            .unwrap();
+        assert_eq!(eq_symm.kind, PackageTheoremIndexKind::Theorem);
+        assert_eq!(eq_symm.global_ref.export_hash, eq_reasoning.key.export_hash);
+        assert_eq!(
+            eq_symm.global_ref.certificate_hash,
+            eq_reasoning.key.certificate_hash
+        );
+        assert_eq!(
+            eq_symm.global_ref.decl_interface_hash,
+            PackageHash::from(eq_symm_export.decl_interface_hash)
+        );
+        assert_eq!(
+            eq_symm.statement.core_hash,
+            PackageHash::from(eq_symm_export.type_hash)
+        );
+        assert!(eq_symm.statement.head.is_some());
+        assert!(!eq_symm.statement.constants.is_empty());
+        assert_eq!(
+            eq_symm.module_axiom_report_hash,
+            eq_reasoning.axiom_report_hash
+        );
+        assert_eq!(
+            eq_symm.artifact.certificate.as_str(),
+            EQ_REASONING_CERTIFICATE_PATH
+        );
+
+        assert!(index.entries.iter().any(|entry| {
+            entry
+                .axiom_dependencies
+                .iter()
+                .any(|axiom| axiom.name.as_dotted() == "Eq.rec")
+        }));
+
+        let json = index.canonical_json().unwrap();
+        assert_eq!(parse_package_theorem_index_json(&json).unwrap(), index);
     }
 
     #[test]
