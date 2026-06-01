@@ -486,7 +486,7 @@ fresh-checkout CI expectations
 
 ### CLR-07-06 Validate Template Syntax And Command Drift
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-07-03, CLR-07-04, CLR-07-05
 - Inputs:
   - CI templates

@@ -37,6 +37,7 @@ Reserved template names are:
 ci-templates/github-actions/npa-package-pr.yml
 ci-templates/github-actions/npa-package-release.yml
 ci-templates/github-actions/summarize-npa-diagnostics.py
+ci-templates/github-actions/validate-workflows.py
 ci-templates/github-actions/README.md
 ```
 
@@ -277,6 +278,34 @@ Allowed uploads include generated package metadata, checked local
 certificates, command JSON diagnostics, and plain text summary logs. Default
 uploads must exclude AI traces, tactic traces, prompt metadata, secrets,
 host-specific caches, and unredacted environment dumps.
+
+## Template Validation
+
+`ci-templates/github-actions/validate-workflows.py` is a local, no-network
+validator for the copyable base templates. It performs cheap YAML syntax
+validation through PyYAML, checks that the PR workflow contains the full-package
+reference command set, checks that the release workflow contains both fast and
+reference verifier commands, and rejects unsupported base-template flags:
+
+```text
+--changed
+--all
+--checker external
+--registry
+--network
+--latest
+```
+
+Run it from the repository root:
+
+```sh
+python3 ci-templates/github-actions/validate-workflows.py
+```
+
+`actionlint` remains the preferred GitHub Actions-specific validator when it is
+installed, but it is optional because it may not be available on every
+developer machine. If `actionlint` is unavailable, run the local validator and
+the PyYAML fallback documented in `ci-templates/github-actions/README.md`.
 
 ## Later Handoff
 

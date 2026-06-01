@@ -10,6 +10,7 @@ Template files:
 npa-package-pr.yml          available
 npa-package-release.yml     available
 summarize-npa-diagnostics.py available
+validate-workflows.py       available
 ```
 
 CLR-07-03 adds the PR template. CLR-07-04 adds the release template. The
@@ -132,6 +133,18 @@ python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
 python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' ci-templates/github-actions/npa-package-release.yml
 ```
 
+Run the local no-network validator to combine YAML parsing with package-command
+drift checks:
+
+```sh
+python3 ci-templates/github-actions/validate-workflows.py
+```
+
+The validator checks that PR and release workflows still contain the required
+full-package package commands. It also fails if a base template adds unsupported
+changed/all selectors, external checker mode, registry or network package
+resolution, or implicit latest package resolution.
+
 Release templates may add the fast verifier as a labeled non-reference gate:
 
 ```sh
@@ -177,10 +190,10 @@ The CLR-06 publish-plan check is optional. Set `NPA_ENABLE_PUBLISH_PLAN` to
 npa package publish-plan --root . --check --json
 ```
 
-Base CLR-07 templates must not use `--changed`, `--all`, `--checker external`,
-`--registry`, `--network`, or `--latest`. They must not contact an NPA package
-registry, use hidden package caches, or resolve imports by implicit latest
-version.
+Base CLR-07 templates must not add unsupported changed/all selectors, external
+checker mode, registry or network package resolution, or implicit latest
+package resolution. They must not contact an NPA package registry, use hidden
+package caches, or resolve imports by implicit latest version.
 
 CI output is not proof evidence. The proof boundary remains canonical
 certificate artifacts plus source-free checker or kernel verifier verdicts.
