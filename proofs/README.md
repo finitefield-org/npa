@@ -193,7 +193,114 @@ Current bundles:
 - `Proofs/Ai/Algebra/AbstractScalarDerive/`: scalar rewrite derivations from `RingLawArgs` and
   equality transport, including the zero cross-term cancellation needed by the abstract
   Pythagorean route.
-- `manifest.toml`: stable index for the corpus and expected hashes.
+- `manifest.toml`: legacy `npa-ai-proof-corpus-v0.1` compatibility index for the corpus and
+  expected hashes.
+- `npa-package.toml`: `npa.package.v0.1` fixture for package-level tooling. CLR-03/CLR-04
+  source-free checker import locks are derived from this fixture, not from
+  `manifest.toml` or `tools/proof-corpus` Rust constants.
+- `generated/package-lock.json`: CLR-03 `npa.package.lock.v0.1` fixture derived from
+  `npa-package.toml` and checked-in certificate bytes. It is package metadata, not proof
+  evidence; accepted proof evidence remains canonical `.npcert` bytes plus the selected checker
+  verdict.
+- `generated/axiom-report.json`: CLR-05 `npa.package.axiom_report.v0.1` fixture derived from
+  package metadata, the package lock, certificate artifacts, and source-free verifier output. It is
+  package metadata, not proof evidence, and it is distinct from
+  `npa.independent-checker.axiom_report.v1` and Std-only axiom report schemas.
+- `generated/theorem-index.json`: CLR-05 `npa.package.theorem_index.v0.1` fixture derived from
+  checked certificates for theorem search, documentation, and later registry metadata. It is
+  metadata, not proof evidence, and it is distinct from Std-only theorem index schemas.
+- `generated/publish-plan.json`: CLR-06 `npa.package.publish_plan.v0.1` fixture derived from
+  the manifest, package lock, axiom report, theorem index, certificate artifacts, and source-free
+  checker summaries. It records release artifact hashes, `npa.registry.module.v0.1` theorem
+  package module registry seed entries, downstream import bundle data, and checksum-only SHA-256
+  signature policy. It is release metadata, not proof evidence, and it is distinct from
+  `npa.independent-checker.checker_binary_registry.v1`.
+
+Package fixture handoff data for CLR-03:
+
+- Local `[[modules]]` entries provide module names, package-relative source and certificate paths,
+  direct imports, `expected_source_hash`, `expected_certificate_file_hash`,
+  `expected_export_hash`, `expected_axiom_report_hash`, and `expected_certificate_hash`.
+- Top-level `[[imports]]` entries provide external Std module identity. The current fixture pins
+  `Std.Logic.Eq` at `vendor/npa-std/Std/Logic/Eq/certificate.npcert` and `Std.Nat.Basic` at
+  `vendor/npa-std/Std/Nat/Basic/certificate.npcert`, with exact `export_hash` and
+  `certificate_hash` values. CLR-03 derives external import `axiom_report_hash` values from those
+  pinned certificate artifacts when it builds the package lock.
+- CLR-03/CLR-04 source-free verification reads certificates through these package-relative paths;
+  source, replay, meta, theorem index, AI traces, and out-of-package state are not checker inputs.
+- `proofs/generated/package-lock.json` records package graph identity, certificate paths,
+  certificate file hashes, export hashes, certificate hashes, direct imports, and axiom report
+  hashes. It must not be treated as source-free proof evidence or augmented with source, replay,
+  meta, theorem index, AI trace, or out-of-package state.
+- `proofs/generated/axiom-report.json` records package policy, module axiom usage, checker
+  summaries, and deterministic report hashes. `proofs/generated/theorem-index.json` records
+  certificate-derived theorem/axiom entries, statement/interface hashes, dependency constants,
+  axiom dependencies, artifact paths, checker summaries, and deterministic index hashes. Neither
+  file is checker input.
+- Fast and reference source-free library verification examples are
+  `cargo test -p npa-api package_fast_verifier`,
+  `cargo test -p npa-api package_reference_verifier`,
+  `cargo test -p npa-proof-corpus package_fast_source_free`, and
+  `cargo test -p npa-proof-corpus package_reference_source_free`.
+- CLR-04 repository verification examples for this fixture are:
+
+  ```sh
+  cargo run -p npa-cli -- package check --root proofs
+  cargo run -p npa-cli -- package build-certs --root proofs --check
+  cargo run -p npa-cli -- package verify-certs --root proofs --checker reference
+  cargo run -p npa-cli -- package check-hashes --root proofs
+  cargo run -p npa-cli -- package axiom-report --root proofs --check
+  cargo run -p npa-cli -- package index --root proofs --check
+  cargo run -p npa-cli -- package publish-plan --root proofs --check
+  ```
+
+- The equivalent contributor-facing commands use the installed `npa` binary:
+
+  ```sh
+  npa package check --root .
+  npa package build-certs --root . --check
+  npa package verify-certs --root . --checker reference
+  npa package check-hashes --root .
+  npa package axiom-report --root . --check
+  npa package index --root . --check
+  npa package publish-plan --root . --check
+  ```
+
+- `package check` is a manifest metadata gate. `package build-certs` may read local
+  `source.npa` and replay/helper data to rebuild certificates. `package check-hashes`
+  reads checked-in source, certificate, and generated package-lock bytes to compare
+  manifest-pinned hashes. `package verify-certs` is source-free: it reads
+  `generated/package-lock.json` and certificate artifacts, not `.npa` source,
+  replay, meta, theorem index, AI traces, or out-of-package state.
+- `package axiom-report` and `package index` are source-free CLR-05 metadata commands. They read
+  package metadata, the package lock, certificate artifacts, and checked generated artifacts in
+  `--check` mode. They do not require source, replay, meta, theorem graph score, prompt metadata,
+  AI traces, or out-of-package state.
+- `package publish-plan` is the CLR-06 release metadata command. It reads package metadata,
+  generated package artifacts, certificate artifacts, checker summaries, and the checked
+  `generated/publish-plan.json` in `--check` mode. It does not contact a registry server, resolve
+  latest versions, read registry URLs, upload release files, or sign artifacts. The signature
+  policy is checksum-only SHA-256 in CLR-06; cryptographic signing remains later release workflow
+  work.
+- CLR-04 `npa package verify-certs` wraps
+  `npa_package::build_package_lock_from_package_root`,
+  `npa_package::parse_package_lock_json`, `npa_api::verify_package_fast_source_free`,
+  `npa_api::verify_package_reference_source_free`,
+  `npa_api::materialize_package_phase8_import_locks`, and
+  `npa_api::materialize_package_phase8_requests`; it does not redefine graph traversal or
+  checker policy mapping.
+- Package CLI output and generated package metadata are review/CI diagnostics, not proof
+  evidence. Accepted proof evidence remains canonical `.npcert` bytes plus the selected
+  checker verdict.
+- CLR-06 publish metadata and `npa.registry.module.v0.1` seed entries are helper data for release
+  review, search, and downstream hash-pinned imports. They are not checker input and do not replace
+  source-free local verification in downstream packages.
+- Raw `npa-checker-ref` CLI import scanning is not enough for high-trust package graph verification
+  by itself. Package verification also needs the CLR-03 package lock, pinned import identity,
+  dependency-topological order, and imports accepted earlier by the same checker run.
+- Current package fixture checks are `cargo test -p npa-proof-corpus package_fixture`,
+  `cargo test -p npa-proof-corpus package_manifest_parity`, and
+  `cargo test -p npa-proof-corpus package_fixture_hashes`.
 
 Planning documents:
 
@@ -210,6 +317,9 @@ Planning documents:
   theorem route.
 - `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
   implicit-function theorem route.
+- `fermats-last-theorem-proof-phases.md`: FLT0-FLT8 plan for a certificate-first Fermat's Last
+  Theorem project, including bridge-axiom policy, elementary reduction, Frey/Ribet/modularity
+  layers, and final high-trust audit criteria.
 
 ## Completed Inner-Product To Metric Route
 

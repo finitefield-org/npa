@@ -1,0 +1,4 @@
+# feature	offset	expected_error_kind
+quotient_v1	17	unsupported_core_feature
+quotient_v2	23	unsupported_core_feature
+quotient_v3	31	unsupported_core_feature

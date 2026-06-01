@@ -1,8 +1,31 @@
 use sha2::{Digest, Sha256};
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 const MANIFEST_PATH: &str = "manifest.toml";
+const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
+const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
+const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
+const PROOF_CORPUS_VERSION: &str = "0.1.0";
+const PROOF_CORPUS_LICENSE: &str = "MIT";
+const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
+const NPA_STD_PACKAGE: &str = "npa-std";
+const NPA_STD_VERSION: &str = "0.1.0";
+const EXTERNAL_STD_IMPORT_PLANS: &[ExternalImportPlan] = &[
+    ExternalImportPlan {
+        module: "Std.Logic.Eq",
+        package: NPA_STD_PACKAGE,
+        version: NPA_STD_VERSION,
+        certificate_path: "vendor/npa-std/Std/Logic/Eq/certificate.npcert",
+    },
+    ExternalImportPlan {
+        module: "Std.Nat.Basic",
+        package: NPA_STD_PACKAGE,
+        version: NPA_STD_VERSION,
+        certificate_path: "vendor/npa-std/Std/Nat/Basic/certificate.npcert",
+    },
+];
 
 struct ModuleArtifact {
     module: &'static str,
@@ -51,6 +74,25 @@ struct GeneratedModule {
     axiom_report_hash: String,
     certificate_hash: String,
     axioms: Vec<String>,
+    verified_module: npa_cert::VerifiedModule,
+    source_interface: npa_frontend::HumanImportedSourceInterface,
+}
+
+struct ExternalImportPlan {
+    module: &'static str,
+    package: &'static str,
+    version: &'static str,
+    certificate_path: &'static str,
+}
+
+struct GeneratedExternalImport {
+    module: &'static str,
+    package: &'static str,
+    version: &'static str,
+    certificate_path: &'static str,
+    export_hash: String,
+    certificate_hash: String,
+    certificate_bytes: Vec<u8>,
     verified_module: npa_cert::VerifiedModule,
     source_interface: npa_frontend::HumanImportedSourceInterface,
 }
@@ -18675,15 +18717,33 @@ fn main() {
 }
 
 fn run() -> Result<(), String> {
+    let mut args = std::env::args().skip(1);
+    match (args.next().as_deref(), args.next()) {
+        (None, None) => run_full(),
+        (Some("--package-lock-only"), None) => {
+            let repo_root = repo_root()?;
+            let proof_root = repo_root.join("proofs");
+            write_package_lock_fixture(&proof_root)
+        }
+        (Some(arg), _) => Err(format!("unknown npa-proof-corpus argument: {arg}")),
+        (None, Some(_)) => unreachable!("second CLI argument cannot exist without first"),
+    }
+}
+
+fn run_full() -> Result<(), String> {
     let repo_root = repo_root()?;
     let proof_root = repo_root.join("proofs");
     fs::create_dir_all(&proof_root)
         .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
 
-    let (eq_import, eq_source_interface) =
-        verified_core_import_with_source_interface(std_logic_eq_module(), EQ_IMPORT_SOURCE)?;
-    let (nat_import, nat_source_interface) =
-        verified_core_import_with_source_interface(std_nat_basic_module(), NAT_IMPORT_SOURCE)?;
+    let external_imports = generated_external_std_imports()?;
+    write_external_import_artifacts(&proof_root, &external_imports)?;
+    let eq_external_import = generated_external_import(&external_imports, "Std.Logic.Eq")?;
+    let nat_external_import = generated_external_import(&external_imports, "Std.Nat.Basic")?;
+    let eq_import = eq_external_import.verified_module.clone();
+    let eq_source_interface = eq_external_import.source_interface.clone();
+    let nat_import = nat_external_import.verified_module.clone();
+    let nat_source_interface = nat_external_import.source_interface.clone();
     let eq_imports = vec![eq_import.clone(), nat_import.clone()];
     let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let eq_reasoning_imports = vec![eq_import.clone()];
@@ -19947,79 +20007,108 @@ fn run() -> Result<(), String> {
         &pythagorean_source_interfaces,
     )?;
 
+    let generated_modules = [
+        basic,
+        eq,
+        nat,
+        prop,
+        reduction,
+        eq_reasoning,
+        abstract_metric_topology,
+        ring,
+        square,
+        ordered_field,
+        vector_basic,
+        vector_dot,
+        right_triangle,
+        metric,
+        iff,
+        abstract_group,
+        abstract_group_kernel,
+        abstract_group_image,
+        abstract_group_quotient,
+        abstract_group_quotient_mul,
+        abstract_group_quotient_group,
+        abstract_group_quotient_hom,
+        abstract_group_first_iso_full,
+        abstract_group_first_iso_image,
+        abstract_group_first_iso,
+        abstract_group_subgroup,
+        abstract_group_subgroup_order,
+        abstract_group_normal_quotient,
+        abstract_group_normal_quotient_mul,
+        abstract_group_normal_quotient_group,
+        abstract_group_second_iso_phi,
+        abstract_group_second_iso_kernel,
+        abstract_group_second_iso_image,
+        abstract_group_second_iso_final,
+        abstract_group_third_iso,
+        abstract_group_correspondence,
+        abstract_group_correspondence_order,
+        abstract_group_correspondence_final,
+        abstract_group_correspondence_order_final,
+        abstract_ring,
+        abstract_ring_first_iso_base,
+        abstract_ring_first_iso,
+        abstract_ring_chinese_remainder,
+        abstract_ufd_prime_factorization,
+        abstract_hilbert_basis_theorem,
+        abstract_hilbert_nullstellensatz,
+        abstract_krull_theorem,
+        abstract_ordered_field,
+        abstract_square_normalize,
+        abstract_scalar_derive,
+        abstract_vector_space,
+        abstract_normed_space,
+        abstract_linear_map,
+        abstract_derivative,
+        abstract_fixed_point,
+        abstract_inverse_function,
+        abstract_implicit_phi,
+        abstract_implicit_function,
+        abstract_inner_product,
+        abstract_inner_product_derive,
+        abstract_spectral_theorem,
+        abstract_hilbert_space_spectral_theorem,
+        affine,
+        affine_derive,
+        abstract_right_triangle,
+        abstract_right_triangle_derive,
+        abstract_metric,
+        pythagorean,
+    ];
+
+    let manifest = manifest_toml(&generated_modules);
+    let package_manifest = package_manifest_toml(&generated_modules, &external_imports)?;
+    write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
     write(
-        proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[
-            basic,
-            eq,
-            nat,
-            prop,
-            reduction,
-            eq_reasoning,
-            abstract_metric_topology,
-            ring,
-            square,
-            ordered_field,
-            vector_basic,
-            vector_dot,
-            right_triangle,
-            metric,
-            iff,
-            abstract_group,
-            abstract_group_kernel,
-            abstract_group_image,
-            abstract_group_quotient,
-            abstract_group_quotient_mul,
-            abstract_group_quotient_group,
-            abstract_group_quotient_hom,
-            abstract_group_first_iso_full,
-            abstract_group_first_iso_image,
-            abstract_group_first_iso,
-            abstract_group_subgroup,
-            abstract_group_subgroup_order,
-            abstract_group_normal_quotient,
-            abstract_group_normal_quotient_mul,
-            abstract_group_normal_quotient_group,
-            abstract_group_second_iso_phi,
-            abstract_group_second_iso_kernel,
-            abstract_group_second_iso_image,
-            abstract_group_second_iso_final,
-            abstract_group_third_iso,
-            abstract_group_correspondence,
-            abstract_group_correspondence_order,
-            abstract_group_correspondence_final,
-            abstract_group_correspondence_order_final,
-            abstract_ring,
-            abstract_ring_first_iso_base,
-            abstract_ring_first_iso,
-            abstract_ring_chinese_remainder,
-            abstract_ufd_prime_factorization,
-            abstract_hilbert_basis_theorem,
-            abstract_hilbert_nullstellensatz,
-            abstract_krull_theorem,
-            abstract_ordered_field,
-            abstract_square_normalize,
-            abstract_scalar_derive,
-            abstract_vector_space,
-            abstract_normed_space,
-            abstract_linear_map,
-            abstract_derivative,
-            abstract_fixed_point,
-            abstract_inverse_function,
-            abstract_implicit_phi,
-            abstract_implicit_function,
-            abstract_inner_product,
-            abstract_inner_product_derive,
-            abstract_spectral_theorem,
-            abstract_hilbert_space_spectral_theorem,
-            affine,
-            affine_derive,
-            abstract_right_triangle,
-            abstract_right_triangle_derive,
-            abstract_metric,
-            pythagorean,
-        ])
-        .as_bytes(),
+        proof_root.join(PACKAGE_MANIFEST_PATH),
+        package_manifest.as_bytes(),
+    )?;
+    write_package_lock_fixture(&proof_root)?;
+
+    Ok(())
+}
+
+fn write_package_lock_fixture(proof_root: &Path) -> Result<(), String> {
+    let package_manifest = fs::read_to_string(proof_root.join(PACKAGE_MANIFEST_PATH))
+        .map_err(|err| format!("failed to read {PACKAGE_MANIFEST_PATH}: {err}"))?;
+    let validated_package_manifest =
+        npa_package::parse_and_validate_manifest_str(&package_manifest).map_err(|err| {
+            format!("generated {PACKAGE_MANIFEST_PATH} did not validate before lock build: {err:?}")
+        })?;
+    let package_lock = npa_package::build_package_lock_from_package_root(
+        &validated_package_manifest,
+        proof_root,
+        npa_package::PackagePath::new(PACKAGE_MANIFEST_PATH),
+    )
+    .map_err(|err| format!("generated {PACKAGE_LOCK_PATH} did not build: {err:?}"))?;
+    let package_lock_json = package_lock.canonical_json().map_err(|err| {
+        format!("generated {PACKAGE_LOCK_PATH} did not serialize canonically: {err:?}")
+    })?;
+    write(
+        proof_root.join(PACKAGE_LOCK_PATH),
+        package_lock_json.as_bytes(),
     )?;
 
     Ok(())
@@ -20214,17 +20303,35 @@ fn human_imported_source_interface(
     }
 }
 
+fn generated_external_std_imports() -> Result<Vec<GeneratedExternalImport>, String> {
+    let imports = vec![
+        verified_core_import_with_source_interface(
+            &EXTERNAL_STD_IMPORT_PLANS[0],
+            std_logic_eq_module(),
+            EQ_IMPORT_SOURCE,
+        )?,
+        verified_core_import_with_source_interface(
+            &EXTERNAL_STD_IMPORT_PLANS[1],
+            std_nat_basic_module(),
+            NAT_IMPORT_SOURCE,
+        )?,
+    ];
+    validate_external_imports(&imports)?;
+    Ok(imports)
+}
+
 fn verified_core_import_with_source_interface(
+    plan: &'static ExternalImportPlan,
     module: npa_cert::CoreModule,
     source: &str,
-) -> Result<
-    (
-        npa_cert::VerifiedModule,
-        npa_frontend::HumanImportedSourceInterface,
-    ),
-    String,
-> {
+) -> Result<GeneratedExternalImport, String> {
     let module_name = module.name.as_dotted();
+    if module_name != plan.module {
+        return Err(format!(
+            "external import plan for {} cannot build module {module_name}",
+            plan.module
+        ));
+    }
     let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces(
         npa_frontend::FileId(0),
         module.name.clone(),
@@ -20247,8 +20354,107 @@ fn verified_core_import_with_source_interface(
     )
     .map_err(|err| format!("import {module_name} did not verify: {err:?}"))?;
     let source_interface = human_imported_source_interface(&verified, &source_interface);
+    let export_hash = tagged_hash(verified.export_hash());
+    let certificate_hash = tagged_hash(verified.certificate_hash());
 
-    Ok((verified, source_interface))
+    Ok(GeneratedExternalImport {
+        module: plan.module,
+        package: plan.package,
+        version: plan.version,
+        certificate_path: plan.certificate_path,
+        export_hash,
+        certificate_hash,
+        certificate_bytes: bytes,
+        verified_module: verified,
+        source_interface,
+    })
+}
+
+fn validate_external_imports(imports: &[GeneratedExternalImport]) -> Result<(), String> {
+    let mut seen_modules = BTreeSet::new();
+    for import in imports {
+        if !seen_modules.insert(import.module) {
+            return Err(format!(
+                "duplicate generated external package import {}",
+                import.module
+            ));
+        }
+        let plan = external_import_plan(import.module).ok_or_else(|| {
+            format!(
+                "unexpected generated external package import {} at {}",
+                import.module, import.certificate_path
+            )
+        })?;
+        if import.package != plan.package
+            || import.version != plan.version
+            || import.certificate_path != plan.certificate_path
+        {
+            return Err(format!(
+                "generated external package import {} does not match planned package identity",
+                import.module
+            ));
+        }
+        if import.source_interface.module.as_dotted() != import.module {
+            return Err(format!(
+                "generated external package import {} has source interface for {}",
+                import.module,
+                import.source_interface.module.as_dotted()
+            ));
+        }
+        if import.export_hash != tagged_hash(import.verified_module.export_hash()) {
+            return Err(format!(
+                "generated external package import {} has stale export hash",
+                import.module
+            ));
+        }
+        if import.certificate_hash != tagged_hash(import.verified_module.certificate_hash()) {
+            return Err(format!(
+                "generated external package import {} has stale certificate hash",
+                import.module
+            ));
+        }
+    }
+
+    for plan in EXTERNAL_STD_IMPORT_PLANS {
+        if !seen_modules.contains(plan.module) {
+            return Err(format!(
+                "missing planned external package import output {}",
+                plan.module
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn external_import_plan(module: &str) -> Option<&'static ExternalImportPlan> {
+    EXTERNAL_STD_IMPORT_PLANS
+        .iter()
+        .find(|plan| plan.module == module)
+}
+
+fn generated_external_import<'a>(
+    imports: &'a [GeneratedExternalImport],
+    module: &str,
+) -> Result<&'a GeneratedExternalImport, String> {
+    imports
+        .iter()
+        .find(|import| import.module == module)
+        .ok_or_else(|| format!("missing generated external package import {module}"))
+}
+
+fn write_external_import_artifacts(
+    proof_root: &Path,
+    imports: &[GeneratedExternalImport],
+) -> Result<(), String> {
+    validate_external_imports(imports)?;
+    for import in imports {
+        write(
+            proof_root.join(import.certificate_path),
+            &import.certificate_bytes,
+        )?;
+    }
+    Ok(())
 }
 
 fn clear_source_interface_hashes(source_interface: &mut npa_frontend::HumanSourceInterface) {
@@ -20567,6 +20773,141 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
         ));
     }
     manifest
+}
+
+fn package_manifest_toml(
+    modules: &[GeneratedModule],
+    external_imports: &[GeneratedExternalImport],
+) -> Result<String, String> {
+    let mut manifest = String::new();
+    manifest.push_str(&format!(
+        "schema = \"{}\"\n",
+        npa_package::PACKAGE_MANIFEST_SCHEMA
+    ));
+    manifest.push_str(&format!("package = \"{}\"\n", PROOF_CORPUS_PACKAGE));
+    manifest.push_str(&format!("version = \"{}\"\n", PROOF_CORPUS_VERSION));
+    manifest.push_str(&format!("license = \"{}\"\n\n", PROOF_CORPUS_LICENSE));
+    manifest.push_str(&format!(
+        "core_spec = \"{}\"\n",
+        npa_package::CORE_SPEC_V0_1
+    ));
+    manifest.push_str(&format!(
+        "kernel_profile = \"{}\"\n",
+        npa_package::KERNEL_PROFILE_V0_1
+    ));
+    manifest.push_str(&format!(
+        "certificate_format = \"{}\"\n",
+        npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1
+    ));
+    manifest.push_str(&format!(
+        "checker_profile = \"{}\"\n\n",
+        npa_package::CHECKER_PROFILE_REFERENCE_V0_1
+    ));
+    manifest.push_str("[policy]\n");
+    manifest.push_str("allow_custom_axioms = false\n");
+    manifest.push_str(&format!(
+        "allowed_axioms = [{}]\n",
+        quoted_items(PACKAGE_POLICY_ALLOWED_AXIOMS)
+    ));
+
+    let mut sorted_external_imports = external_imports.iter().collect::<Vec<_>>();
+    sorted_external_imports.sort_by_key(|import| import.module);
+    for import in sorted_external_imports {
+        manifest.push('\n');
+        manifest.push_str("[[imports]]\n");
+        manifest.push_str(&format!("module = \"{}\"\n", import.module));
+        manifest.push_str(&format!("package = \"{}\"\n", import.package));
+        manifest.push_str(&format!("version = \"{}\"\n", import.version));
+        manifest.push_str(&format!("certificate = \"{}\"\n", import.certificate_path));
+        manifest.push_str(&format!("export_hash = \"{}\"\n", import.export_hash));
+        manifest.push_str(&format!(
+            "certificate_hash = \"{}\"\n",
+            import.certificate_hash
+        ));
+    }
+
+    for module in modules {
+        manifest.push('\n');
+        manifest.push_str("[[modules]]\n");
+        manifest.push_str(&format!("module = \"{}\"\n", module.config.module));
+        manifest.push_str(&format!("source = \"{}\"\n", module.config.source_path));
+        manifest.push_str(&format!(
+            "certificate = \"{}\"\n",
+            module.config.certificate_path
+        ));
+        manifest.push_str(&format!("meta = \"{}\"\n", module.config.meta_path));
+        manifest.push_str(&format!("replay = \"{}\"\n", module.config.replay_path));
+        manifest.push_str("producer_profile = \"human-surface-explicit-term\"\n");
+        manifest.push_str(&format!(
+            "expected_source_hash = \"{}\"\n",
+            module.source_sha256
+        ));
+        manifest.push_str(&format!(
+            "expected_certificate_file_hash = \"{}\"\n",
+            module.certificate_file_sha256
+        ));
+        manifest.push_str(&format!(
+            "expected_export_hash = \"{}\"\n",
+            module.export_hash
+        ));
+        manifest.push_str(&format!(
+            "expected_axiom_report_hash = \"{}\"\n",
+            module.axiom_report_hash
+        ));
+        manifest.push_str(&format!(
+            "expected_certificate_hash = \"{}\"\n",
+            module.certificate_hash
+        ));
+        manifest.push_str(&format!(
+            "imports = [{}]\n",
+            quoted_items(module.config.imports)
+        ));
+        if !module.config.inductives.is_empty() {
+            manifest.push_str(&format!(
+                "inductives = [{}]\n",
+                quoted_items(
+                    &module
+                        .config
+                        .inductives
+                        .iter()
+                        .map(|inductive| inductive.name)
+                        .collect::<Vec<_>>()
+                )
+            ));
+        }
+        manifest.push_str(&format!(
+            "definitions = [{}]\n",
+            quoted_items(
+                &module
+                    .config
+                    .definitions
+                    .iter()
+                    .map(|definition| definition.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+        manifest.push_str(&format!(
+            "theorems = [{}]\n",
+            quoted_items(
+                &module
+                    .config
+                    .theorems
+                    .iter()
+                    .map(|theorem| theorem.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+        manifest.push_str(&format!(
+            "axioms = [{}]\n",
+            quoted_owned_items(&module.axioms)
+        ));
+    }
+
+    npa_package::parse_and_validate_manifest_str(&manifest).map_err(|err| {
+        format!("generated {PACKAGE_MANIFEST_PATH} did not validate with npa-package: {err:?}")
+    })?;
+
+    Ok(manifest)
 }
 
 fn meta_json(module: &GeneratedModule) -> String {

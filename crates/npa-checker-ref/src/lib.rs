@@ -1058,6 +1058,7 @@ mod tests {
         Reducibility, UniverseConstraint,
     };
     use sha2::{Digest, Sha256};
+    use std::{fs, path::Path};
 
     fn encode_uvar(mut value: u64) -> Vec<u8> {
         let mut out = Vec::new();
@@ -3960,6 +3961,39 @@ mod tests {
         assert!(
             result.is_checked(),
             "imported Eq.refl type must not resolve its Eq reference as a Std.Nat local"
+        );
+    }
+
+    #[test]
+    fn proof_corpus_eq_reasoning_uses_checked_std_logic_eq_builtin_bridge() {
+        let repo = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("checker crate lives under crates/");
+        let logic_bytes =
+            fs::read(repo.join("proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert"))
+                .expect("proof corpus Std.Logic.Eq certificate fixture is readable");
+        let eq_reasoning_bytes =
+            fs::read(repo.join("proofs/Proofs/Ai/EqReasoning/certificate.npcert"))
+                .expect("proof corpus EqReasoning certificate fixture is readable");
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            allowed_axioms: vec!["Eq.rec".to_owned()],
+            deny_custom_axioms: true,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let ReferenceCheckResult::Checked(logic) =
+            check_certificate(&logic_bytes, &ReferenceImportStore::default(), &policy)
+        else {
+            panic!("Std.Logic.Eq fixture must check before it can be imported");
+        };
+        let store = ReferenceImportStore::from_checked_modules([logic]).unwrap();
+
+        let result = check_certificate(&eq_reasoning_bytes, &store, &policy);
+
+        assert!(
+            result.is_checked(),
+            "checked Std.Logic.Eq exports must bridge Eq, Eq.refl, and Eq.rec to canonical builtins"
         );
     }
 

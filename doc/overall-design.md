@@ -109,6 +109,10 @@ independent checker(s)
 verified_high_trust
 ```
 
+これは target high-trust flow です。現リポジトリで `verified_high_trust` artifact を
+reference-checker-only evidence から生成してよい、または external checker を PR mode の
+必須条件にする、という意味ではありません。
+
 この境界は、automation や machine API を `crates/npa-api` に実装しても変わりません。
 `npa-api` は proof search controller、checker audit automation、advanced automation endpoint substrate を
 提供できますが、それらは producer / orchestrator / validator-facing library であり trusted checker ではありません。
@@ -1702,12 +1706,17 @@ NPAには通常モードと高信頼モードを分けます。
   "checker_set": [
     "npa-kernel-rust",
     "npa-checker-ref",
-    "npa-checker-lean"
+    "npa-checker-ext"
   ],
   "axioms_used": [],
   "imports_verified": true
 }
 ```
+
+この JSON は target artifact shape です。実際の release evidence として扱うには、
+build 済み `npa-checker-ext` executable が runner-owned registry / policy から解決され、
+external checker と high-trust-reference を含む required evidence が揃っている必要があります。
+reference-only evidence から `verified_high_trust` を近似生成してはいけません。
 
 ---
 
@@ -1735,7 +1744,12 @@ fast kernel:
   Rust
 
 reference checker:
-  小さな関数型実装。OCamlまたはHaskellでもよい。
+  現リポジトリでは小さな Rust 別実装 npa-checker-ref。
+  将来は OCaml / Haskell 実装に置き換えてもよい。
+
+external checker:
+  OCaml clean-room npa-checker-ext。
+  Rust workspace crate には依存させない。
 
 verified checker:
   NPA自身またはLean/Rocqで後から形式検証。
@@ -1903,8 +1917,8 @@ NPA Core Spec v0.1
 ```
 
 Phase 9 Human の target scope は、現リポジトリでは Rust crates と deterministic fixtures として
-実装済みです。完了後の required gate は `./scripts/phase9-regression.sh` で、GitHub Actions の
-`Phase 9 Regression / phase9-regression` と同じ内容を実行します。
+実装済みです。完了後の required gate は `./scripts/phase9-regression.sh` です。
+現リポジトリでは GitHub Actions workflow は削除済みであり、この gate は必要に応じてローカルで実行します。
 
 この gate は Phase 9 AI M9 fixture、format、clippy、workspace tests を通し、
 checker result と deterministic artifact だけで release / high-trust の pass/fail を決める方針を固定します。

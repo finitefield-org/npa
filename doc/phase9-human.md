@@ -26,8 +26,8 @@ Phase 9 は、ここまで作った小さく安全な証明支援系を、実用
   `p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定する
 - production LLM / RAG / online theorem graph store / external SMT solver service operation は
   target integration として残し、実装済みとは書かない
-- Phase 9 完了後の回帰確認は ./scripts/phase9-regression.sh と
-  GitHub Actions の Phase 9 Regression で固定している
+- Phase 9 完了後の回帰確認は ./scripts/phase9-regression.sh で固定している。
+  現リポジトリでは GitHub Actions workflow は削除済みであり、この gate は必要に応じてローカルで実行する
 ```
 
 Phase 9 の基本方針はこれです。
@@ -126,9 +126,6 @@ gate contents:
   cargo fmt --all -- --check
   cargo clippy --workspace --all-targets -- -D warnings
   cargo test --workspace
-
-also wired as:
-  GitHub Actions: Phase 9 Regression / phase9-regression
 ```
 
 この gate は release / high-trust の pass/fail を、checker result と deterministic artifact だけで

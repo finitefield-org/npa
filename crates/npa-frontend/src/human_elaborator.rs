@@ -35,6 +35,7 @@ pub struct HumanCoreCompileOutput {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCertificateCompileOutput {
     pub certificate: npa_cert::ModuleCert,
+    pub verified_module: npa_cert::VerifiedModule,
     pub source_interface: HumanSourceInterface,
 }
 
@@ -830,17 +831,19 @@ pub fn compile_human_source_to_certificate_output_with_source_interfaces_and_axi
     for import in &certificate_imports {
         session.register_verified_module(import.clone());
     }
-    npa_cert::verify_module_cert(&bytes, &mut session, axiom_policy).map_err(|err| {
-        HumanDiagnostic::error(
-            HumanDiagnosticKind::KernelRejected,
-            source_span(file_id, source),
-            format!("certificate certificate verification rejected Human source: {err:?}"),
-        )
-        .with_phase(HumanDiagnosticPhase::CertificateHandoff)
-    })?;
+    let verified_module = npa_cert::verify_module_cert(&bytes, &mut session, axiom_policy)
+        .map_err(|err| {
+            HumanDiagnostic::error(
+                HumanDiagnosticKind::KernelRejected,
+                source_span(file_id, source),
+                format!("certificate certificate verification rejected Human source: {err:?}"),
+            )
+            .with_phase(HumanDiagnosticPhase::CertificateHandoff)
+        })?;
     let source_interface = source_interface_with_certificate_hashes(source_interface, &cert);
     Ok(HumanCertificateCompileOutput {
         certificate: cert,
+        verified_module,
         source_interface,
     })
 }

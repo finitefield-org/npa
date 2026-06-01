@@ -15,6 +15,9 @@ pub const INDEPENDENT_CHECKER_CHECKER_IDENTITY_MANIFEST_SCHEMA: &str =
     "npa.independent-checker.checker_identity_manifest.v1";
 pub const INDEPENDENT_CHECKER_CHECKER_BINARY_REGISTRY_SCHEMA: &str =
     "npa.independent-checker.checker_binary_registry.v1";
+const NPA_CHECKER_EXT_PROFILE: &str = "external";
+const NPA_CHECKER_EXT_CHECKER_ID: &str = "npa-checker-ext";
+const NPA_CHECKER_EXT_BINARY_ID_PREFIX: &str = "npa-checker-ext-";
 pub const INDEPENDENT_CHECKER_IMPORT_LOCK_MANIFEST_SCHEMA: &str =
     "npa.independent-checker.import_lock_manifest.v1";
 pub const INDEPENDENT_CHECKER_MACHINE_CHECK_REQUEST_SCHEMA: &str =
@@ -82,6 +85,8 @@ pub const INDEPENDENT_CHECKER_CHALLENGE_REPLAY_STORE_MANIFEST_SCHEMA: &str =
     "npa.independent-checker.challenge_replay_store_manifest.v1";
 pub const INDEPENDENT_CHECKER_CHALLENGE_COVERAGE_SUMMARY_SCHEMA: &str =
     "npa.independent-checker.challenge_coverage_summary.v1";
+pub const INDEPENDENT_CHECKER_PERFORMANCE_BENCHMARK_SUMMARY_SCHEMA: &str =
+    "npa.independent-checker.performance_benchmark_summary.v1";
 pub const INDEPENDENT_CHECKER_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.independent-checker.machine_check_request_error_result.v1";
 pub const INDEPENDENT_CHECKER_NORMALIZE_ERROR_RESULT_SCHEMA: &str =
@@ -105,6 +110,7 @@ pub const INDEPENDENT_CHECKER_RUNNER_FIXED_ENVIRONMENT: &[(&str, &str)] =
 
 pub const INDEPENDENT_CHECKER_RUNNER_DYNAMIC_FLAGS: &[&str] = &[
     "--cert",
+    "--import-dir",
     "--imports",
     "--imports-hash",
     "--policy",
@@ -133,6 +139,8 @@ const INDEPENDENT_CHECKER_RUNNER_FORBIDDEN_CONTROL_ARG_FLAGS: &[&str] = &[
     "--plugins",
     "--network",
 ];
+pub const INDEPENDENT_CHECKER_NPA_CHECKER_EXT_DYNAMIC_FLAGS: &[&str] =
+    &["--cert", "--import-dir", "--policy", "--output"];
 
 const REQUEST_HASH_EXCLUDED_FIELDS: &[&str] = &["request_id", "request_hash"];
 const MACHINE_CHECK_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &[
@@ -382,6 +390,7 @@ pub enum IndependentCheckerArtifactKind {
     AuxiliaryResult,
     ChallengeReplayResult,
     ChallengeCoverageSummary,
+    PerformanceBenchmarkSummary,
     AxiomReport,
     AiAuditSidecar,
     CompareValidationResult,
@@ -406,6 +415,7 @@ impl IndependentCheckerArtifactKind {
             | Self::AuxiliaryResult
             | Self::ChallengeReplayResult
             | Self::ChallengeCoverageSummary
+            | Self::PerformanceBenchmarkSummary
             | Self::AxiomReport => IndependentCheckerArtifactClassification::SavedArtifact,
             Self::AiAuditSidecar => IndependentCheckerArtifactClassification::UntrustedSidecar,
             Self::CompareValidationResult
@@ -1538,6 +1548,18 @@ impl IndependentCheckerPerformanceBenchmarkClass {
             Self::AiBenchmark => "ai-benchmark",
             Self::ReferenceChecker => "reference-checker",
             Self::ExternalChecker => "external-checker",
+        }
+    }
+
+    fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "fast-kernel" => Some(Self::FastKernel),
+            "machine-api" => Some(Self::MachineApi),
+            "theorem-index-build" => Some(Self::TheoremIndexBuild),
+            "ai-benchmark" => Some(Self::AiBenchmark),
+            "reference-checker" => Some(Self::ReferenceChecker),
+            "external-checker" => Some(Self::ExternalChecker),
+            _ => None,
         }
     }
 }
@@ -3703,6 +3725,212 @@ impl IndependentCheckerMachineCheckResult {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerPerformanceBenchmarkRow {
+    pub module: String,
+    pub checker_profile: String,
+    pub checker_id: Option<String>,
+    pub checker_binary_id: Option<String>,
+    pub checker_binary_hash: Option<Hash>,
+    pub checker_build_hash: Option<Hash>,
+    pub certificate_hash: Option<Hash>,
+    pub result_hash: Hash,
+    pub run_artifact_hash: Hash,
+    pub elapsed_ms: u64,
+    pub timeout_budget_ms: u64,
+    pub timeout_exceeded: bool,
+    pub memory_peak_mb: u64,
+    pub memory_budget_mb: u64,
+    pub memory_exceeded: bool,
+    pub declarations_checked: Option<u64>,
+    pub status: IndependentCheckerMachineCheckStatus,
+}
+
+impl IndependentCheckerPerformanceBenchmarkRow {
+    fn from_machine_result(
+        result: &IndependentCheckerMachineCheckResult,
+        budget: &IndependentCheckerRunnerBudget,
+    ) -> Self {
+        Self {
+            module: result.module.clone(),
+            checker_profile: result.checker.profile.clone(),
+            checker_id: result.checker.id.clone(),
+            checker_binary_id: result.checker.binary_id.clone(),
+            checker_binary_hash: result.checker.binary_hash,
+            checker_build_hash: result.checker.build_hash,
+            certificate_hash: result.certificate_hash,
+            result_hash: result.result_hash(),
+            run_artifact_hash: result.run_artifact_hash(),
+            elapsed_ms: result.resource_usage.elapsed_ms,
+            timeout_budget_ms: budget.timeout_ms,
+            timeout_exceeded: result.resource_usage.elapsed_ms > budget.timeout_ms,
+            memory_peak_mb: result.resource_usage.memory_peak_mb,
+            memory_budget_mb: budget.max_memory_mb,
+            memory_exceeded: result.resource_usage.memory_peak_mb > budget.max_memory_mb,
+            declarations_checked: result.declarations_checked,
+            status: result.status,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "checker_profile".to_owned(),
+                independent_checker_json_string_literal(&self.checker_profile),
+            ),
+            ("elapsed_ms".to_owned(), self.elapsed_ms.to_string()),
+            (
+                "memory_budget_mb".to_owned(),
+                self.memory_budget_mb.to_string(),
+            ),
+            (
+                "memory_exceeded".to_owned(),
+                self.memory_exceeded.to_string(),
+            ),
+            ("memory_peak_mb".to_owned(), self.memory_peak_mb.to_string()),
+            (
+                "module".to_owned(),
+                independent_checker_json_string_literal(&self.module),
+            ),
+            (
+                "result_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.result_hash),
+            ),
+            (
+                "run_artifact_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.run_artifact_hash),
+            ),
+            (
+                "status".to_owned(),
+                independent_checker_json_string_literal(self.status.as_str()),
+            ),
+            (
+                "timeout_budget_ms".to_owned(),
+                self.timeout_budget_ms.to_string(),
+            ),
+            (
+                "timeout_exceeded".to_owned(),
+                self.timeout_exceeded.to_string(),
+            ),
+        ];
+        push_optional_string_pair(&mut pairs, "checker_id", self.checker_id.as_deref());
+        push_optional_string_pair(
+            &mut pairs,
+            "checker_binary_id",
+            self.checker_binary_id.as_deref(),
+        );
+        push_optional_hash_pair(&mut pairs, "checker_binary_hash", self.checker_binary_hash);
+        push_optional_hash_pair(&mut pairs, "checker_build_hash", self.checker_build_hash);
+        push_optional_hash_pair(&mut pairs, "certificate_hash", self.certificate_hash);
+        if let Some(declarations_checked) = self.declarations_checked {
+            pairs.push((
+                "declarations_checked".to_owned(),
+                declarations_checked.to_string(),
+            ));
+        }
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerPerformanceBenchmarkSummary {
+    pub summary_id: String,
+    pub summary_hash: Hash,
+    pub benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub target_normalized_result_hash: Hash,
+    pub proof_acceptance_boundary: bool,
+    pub rows: Vec<IndependentCheckerPerformanceBenchmarkRow>,
+}
+
+impl IndependentCheckerPerformanceBenchmarkSummary {
+    pub fn new(
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+        policy_hash: Hash,
+        artifact_hash: Hash,
+        target_normalized_result_hash: Hash,
+        mut rows: Vec<IndependentCheckerPerformanceBenchmarkRow>,
+    ) -> Self {
+        rows.sort_by(independent_checker_performance_benchmark_row_cmp);
+        let mut summary = Self {
+            summary_id: String::new(),
+            summary_hash: [0; 32],
+            benchmark_class,
+            policy_hash,
+            artifact_hash,
+            target_normalized_result_hash,
+            proof_acceptance_boundary: false,
+            rows,
+        };
+        summary.summary_hash = summary.compute_summary_hash();
+        summary.summary_id =
+            independent_checker_performance_benchmark_summary_id(summary.summary_hash);
+        summary
+    }
+
+    pub fn compute_summary_hash(&self) -> Hash {
+        independent_checker_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(self.hash_input_pairs())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = self.hash_input_pairs();
+        pairs.push((
+            "summary_hash".to_owned(),
+            independent_checker_hash_json_literal(&self.summary_hash),
+        ));
+        pairs.push((
+            "summary_id".to_owned(),
+            independent_checker_json_string_literal(&self.summary_id),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn hash_input_pairs(&self) -> Vec<(String, String)> {
+        vec![
+            (
+                "artifact_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "benchmark_class".to_owned(),
+                independent_checker_json_string_literal(self.benchmark_class.as_str()),
+            ),
+            (
+                "policy_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "proof_acceptance_boundary".to_owned(),
+                self.proof_acceptance_boundary.to_string(),
+            ),
+            (
+                "rows".to_owned(),
+                canonical_json_array(
+                    self.rows
+                        .iter()
+                        .map(IndependentCheckerPerformanceBenchmarkRow::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                independent_checker_json_string_literal(
+                    INDEPENDENT_CHECKER_PERFORMANCE_BENCHMARK_SUMMARY_SCHEMA,
+                ),
+            ),
+            (
+                "target_normalized_result_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.target_normalized_result_hash),
+            ),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndependentCheckerRawResult {
     pub status: IndependentCheckerMachineCheckStatus,
     pub checker_id: Option<String>,
@@ -4621,6 +4849,7 @@ pub enum IndependentCheckerReleaseBundleArtifactKind {
     ChallengeOutputStoreManifest,
     ChallengeReplayResult,
     ChallengeCoverageSummary,
+    PerformanceBenchmarkSummary,
     AuxiliaryResult,
     AiAuditInputPolicy,
     AiAuditSidecar,
@@ -4647,6 +4876,7 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             Self::ChallengeOutputStoreManifest => "challenge_output_store_manifest",
             Self::ChallengeReplayResult => "challenge_replay_result",
             Self::ChallengeCoverageSummary => "challenge_coverage_summary",
+            Self::PerformanceBenchmarkSummary => "performance_benchmark_summary",
             Self::AuxiliaryResult => "auxiliary_result",
             Self::AiAuditInputPolicy => "ai_audit_input_policy",
             Self::AiAuditSidecar => "ai_audit_sidecar",
@@ -4673,6 +4903,7 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             "challenge_output_store_manifest" => Some(Self::ChallengeOutputStoreManifest),
             "challenge_replay_result" => Some(Self::ChallengeReplayResult),
             "challenge_coverage_summary" => Some(Self::ChallengeCoverageSummary),
+            "performance_benchmark_summary" => Some(Self::PerformanceBenchmarkSummary),
             "auxiliary_result" => Some(Self::AuxiliaryResult),
             "ai_audit_input_policy" => Some(Self::AiAuditInputPolicy),
             "ai_audit_sidecar" => Some(Self::AiAuditSidecar),
@@ -4711,6 +4942,7 @@ impl IndependentCheckerReleaseBundleArtifactKind {
                     | Self::ChallengeManifest
                     | Self::ChallengeReplayResult
                     | Self::ChallengeCoverageSummary
+                    | Self::PerformanceBenchmarkSummary
                     | Self::AuxiliaryResult
                     | Self::AiAuditInputPolicy
                     | Self::AiAuditSidecar
@@ -4737,6 +4969,7 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             Self::NormalizedCheckResult => &["artifact_hash", "normalized_result_hash"],
             Self::ChallengeReplayResult | Self::AuxiliaryResult => &["result_hash"],
             Self::ChallengeCoverageSummary => &["summary_hash"],
+            Self::PerformanceBenchmarkSummary => &["summary_hash"],
             Self::AiAuditInputPolicy => &["input_policy_hash"],
             Self::AiAuditSidecar
             | Self::CompareValidationResponse
@@ -7402,10 +7635,26 @@ pub struct IndependentCheckerResolvedCheckerExecutable {
 pub struct IndependentCheckerRunnerSandboxPolicy {
     pub network: String,
     pub certificate_mount: String,
+    pub import_mount: String,
     pub source_mount: String,
     pub plugin_loading: String,
     pub cwd: String,
     pub environment: Vec<(String, String)>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerNpaCheckerExtDynamicArgs {
+    pub certificate_path: String,
+    pub import_dir: String,
+    pub policy_path: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerRunnerLaunchPlan {
+    pub argv: Vec<String>,
+    pub environment: Vec<(String, String)>,
+    pub sandbox: IndependentCheckerRunnerSandboxPolicy,
+    pub budget: IndependentCheckerRunnerBudget,
 }
 
 pub fn parse_independent_checker_runner_policy(
@@ -7568,6 +7817,41 @@ pub fn independent_checker_argv(
     argv
 }
 
+pub fn independent_checker_npa_checker_ext_argv(
+    executable_path: &str,
+    dynamic: &IndependentCheckerNpaCheckerExtDynamicArgs,
+) -> Vec<String> {
+    vec![
+        executable_path.to_owned(),
+        "--cert".to_owned(),
+        dynamic.certificate_path.clone(),
+        "--import-dir".to_owned(),
+        dynamic.import_dir.clone(),
+        "--policy".to_owned(),
+        dynamic.policy_path.clone(),
+        "--output".to_owned(),
+        "json".to_owned(),
+    ]
+}
+
+pub fn independent_checker_npa_checker_ext_launch_plan(
+    resolved: &IndependentCheckerResolvedCheckerExecutable,
+    request: &IndependentCheckerMachineCheckRequest,
+    import_dir: impl Into<String>,
+) -> IndependentCheckerRunnerLaunchPlan {
+    let dynamic = IndependentCheckerNpaCheckerExtDynamicArgs {
+        certificate_path: request.certificate.path.clone(),
+        import_dir: import_dir.into(),
+        policy_path: request.axiom_policy.clone(),
+    };
+    IndependentCheckerRunnerLaunchPlan {
+        argv: independent_checker_npa_checker_ext_argv(&resolved.path, &dynamic),
+        environment: independent_checker_runner_fixed_environment(),
+        sandbox: independent_checker_runner_sandbox_policy(),
+        budget: request.budget.clone(),
+    }
+}
+
 pub fn independent_checker_runner_fixed_environment() -> Vec<(String, String)> {
     INDEPENDENT_CHECKER_RUNNER_FIXED_ENVIRONMENT
         .iter()
@@ -7579,6 +7863,7 @@ pub fn independent_checker_runner_sandbox_policy() -> IndependentCheckerRunnerSa
     IndependentCheckerRunnerSandboxPolicy {
         network: "forbidden".to_owned(),
         certificate_mount: "read_only".to_owned(),
+        import_mount: "read_only".to_owned(),
         source_mount: "forbidden".to_owned(),
         plugin_loading: "forbidden".to_owned(),
         cwd: "runner_owned".to_owned(),
@@ -7710,6 +7995,20 @@ pub fn parse_independent_checker_challenge_coverage_summary(
         )
     })?;
     parse_independent_checker_challenge_coverage_summary_value(document.root(), "$")
+}
+
+pub fn parse_independent_checker_performance_benchmark_summary(
+    source: &str,
+) -> Result<IndependentCheckerPerformanceBenchmarkSummary, IndependentCheckerRequestValidationError>
+{
+    let document = JsonDocument::parse(source).map_err(|_| {
+        IndependentCheckerRequestValidationError::value_failure(
+            "performance_benchmark_summary",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_independent_checker_performance_benchmark_summary_value(document.root(), "$")
 }
 
 pub fn independent_checker_machine_check_request_hash(
@@ -8752,6 +9051,85 @@ fn independent_checker_challenge_coverage_summary_id(summary_hash: Hash) -> Stri
         wire.strip_prefix("sha256:")
             .expect("format_hash_string always prefixes sha256")
     )
+}
+
+pub fn independent_checker_performance_benchmark_summary(
+    runner_policy: &IndependentCheckerRunnerPolicy,
+    artifact_hash: Hash,
+    target_normalized_result_hash: Hash,
+    benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+    machine_results: &[IndependentCheckerMachineCheckResult],
+) -> Result<IndependentCheckerPerformanceBenchmarkSummary, IndependentCheckerPolicyValidationError>
+{
+    let mut rows = Vec::new();
+    for result in machine_results {
+        if !independent_checker_performance_benchmark_class_matches_profile(
+            benchmark_class,
+            &result.checker.profile,
+        ) {
+            continue;
+        }
+        let Some(budget) = runner_policy.budgets.get(&result.checker.profile) else {
+            return Err(IndependentCheckerPolicyValidationError::new(
+                format_budget_key_path(&result.checker.profile),
+                "runner_budget_for_benchmark_profile",
+                "missing",
+            ));
+        };
+        rows.push(IndependentCheckerPerformanceBenchmarkRow::from_machine_result(result, budget));
+    }
+
+    Ok(IndependentCheckerPerformanceBenchmarkSummary::new(
+        benchmark_class,
+        runner_policy.policy_hash(),
+        artifact_hash,
+        target_normalized_result_hash,
+        rows,
+    ))
+}
+
+pub fn independent_checker_performance_benchmark_summary_hash(
+    source: &str,
+) -> Result<Hash, IndependentCheckerRequestValidationError> {
+    Ok(parse_independent_checker_performance_benchmark_summary(source)?.summary_hash)
+}
+
+fn independent_checker_performance_benchmark_class_matches_profile(
+    benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+    profile: &str,
+) -> bool {
+    match benchmark_class {
+        IndependentCheckerPerformanceBenchmarkClass::FastKernel => profile == "fast-kernel",
+        IndependentCheckerPerformanceBenchmarkClass::ReferenceChecker => {
+            matches!(profile, "reference" | "high-trust-reference")
+        }
+        IndependentCheckerPerformanceBenchmarkClass::ExternalChecker => {
+            profile == NPA_CHECKER_EXT_PROFILE
+        }
+        IndependentCheckerPerformanceBenchmarkClass::MachineApi
+        | IndependentCheckerPerformanceBenchmarkClass::TheoremIndexBuild
+        | IndependentCheckerPerformanceBenchmarkClass::AiBenchmark => false,
+    }
+}
+
+fn independent_checker_performance_benchmark_summary_id(summary_hash: Hash) -> String {
+    let wire = format_hash_string(&summary_hash);
+    format!(
+        "bench_{}",
+        wire.strip_prefix("sha256:")
+            .expect("format_hash_string always prefixes sha256")
+    )
+}
+
+fn independent_checker_performance_benchmark_row_cmp(
+    left: &IndependentCheckerPerformanceBenchmarkRow,
+    right: &IndependentCheckerPerformanceBenchmarkRow,
+) -> Ordering {
+    left.module
+        .cmp(&right.module)
+        .then_with(|| left.checker_profile.cmp(&right.checker_profile))
+        .then_with(|| left.result_hash.cmp(&right.result_hash))
+        .then_with(|| left.run_artifact_hash.cmp(&right.run_artifact_hash))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -16143,16 +16521,8 @@ fn raw_optional_error(
             ));
         }
         error.reason_code = Some(reason_code);
-    } else if duplicate_member(error_members, "reason_code")
-        || error_members
-            .iter()
-            .any(|member| member.key() == "reason_code")
-    {
-        return Err(IndependentCheckerRawResultSchemaError::new(
-            "checker_raw.error.reason_code",
-            "absent_for_error_kind",
-            "forbidden_field",
-        ));
+    } else if let Some(reason_code) = raw_optional_reason_code(error_members)? {
+        error.reason_code = Some(reason_code);
     }
     if let Some(declaration) = raw_optional_module(
         error_members,
@@ -16253,6 +16623,47 @@ fn raw_optional_core_path(
     Ok(Some(out))
 }
 
+fn raw_optional_reason_code(
+    members: &[JsonMember<'_>],
+) -> Result<Option<String>, IndependentCheckerRawResultSchemaError> {
+    if duplicate_member(members, "reason_code") {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == "reason_code")
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "checker_raw_error_reason_code",
+            "null_not_allowed",
+        ));
+    }
+    let Some(reason_code) = value.string_value() else {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "checker_raw_error_reason_code",
+            "wrong_type",
+        ));
+    };
+    if !independent_checker_valid_checker_reason_code(reason_code) {
+        return Err(IndependentCheckerRawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "checker_raw_error_reason_code",
+            "invalid_name_format",
+        ));
+    }
+    Ok(Some(reason_code.to_owned()))
+}
+
 fn raw_optional_u64(
     members: &[JsonMember<'_>],
     name: &str,
@@ -16305,6 +16716,7 @@ fn independent_checker_raw_checker_error_kind_allowed(kind: &str) -> bool {
         "certificate_decode_error"
             | "noncanonical_encoding"
             | "unsupported_schema_version"
+            | "unsupported_core_feature"
             | "import_not_found"
             | "import_hash_mismatch"
             | "certificate_hash_mismatch"
@@ -17663,6 +18075,365 @@ fn parse_independent_checker_challenge_coverage_summary_value(
     Ok(summary)
 }
 
+fn parse_independent_checker_performance_benchmark_summary_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<IndependentCheckerPerformanceBenchmarkSummary, IndependentCheckerRequestValidationError>
+{
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &independent_checker_join_json_path(root_path, "schema"),
+        INDEPENDENT_CHECKER_PERFORMANCE_BENCHMARK_SUMMARY_SCHEMA,
+        INDEPENDENT_CHECKER_PERFORMANCE_BENCHMARK_SUMMARY_SCHEMA,
+    )?;
+    let summary_id = required_string_field(
+        members,
+        "summary_id",
+        &independent_checker_join_json_path(root_path, "summary_id"),
+        "bench_<64-lower-hex>",
+    )?;
+    if !independent_checker_valid_performance_benchmark_summary_id(&summary_id) {
+        return Err(IndependentCheckerRequestValidationError::value_failure(
+            independent_checker_join_json_path(root_path, "summary_id"),
+            "bench_<64-lower-hex>",
+            "invalid_name_format",
+        ));
+    }
+    let parsed_summary_hash = required_hash_field(
+        members,
+        "summary_hash",
+        &independent_checker_join_json_path(root_path, "summary_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let benchmark_class_raw = required_string_field(
+        members,
+        "benchmark_class",
+        &independent_checker_join_json_path(root_path, "benchmark_class"),
+        "performance_benchmark_class",
+    )?;
+    let benchmark_class = IndependentCheckerPerformanceBenchmarkClass::parse(&benchmark_class_raw)
+        .ok_or_else(|| {
+            IndependentCheckerRequestValidationError::value_failure(
+                independent_checker_join_json_path(root_path, "benchmark_class"),
+                "performance_benchmark_class",
+                "invalid_enum",
+            )
+        })?;
+    let policy_hash = required_hash_field(
+        members,
+        "policy_hash",
+        &independent_checker_join_json_path(root_path, "policy_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let artifact_hash = required_hash_field(
+        members,
+        "artifact_hash",
+        &independent_checker_join_json_path(root_path, "artifact_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let target_normalized_result_hash = required_hash_field(
+        members,
+        "target_normalized_result_hash",
+        &independent_checker_join_json_path(root_path, "target_normalized_result_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let proof_acceptance_boundary = required_bool_field(
+        members,
+        "proof_acceptance_boundary",
+        &independent_checker_join_json_path(root_path, "proof_acceptance_boundary"),
+        "false",
+    )?;
+    let rows = parse_independent_checker_performance_benchmark_rows(
+        members,
+        &independent_checker_join_json_path(root_path, "rows"),
+    )?;
+    reject_unknown_fields(members, PERFORMANCE_BENCHMARK_SUMMARY_FIELDS, root_path)?;
+    validate_performance_benchmark_summary_domain(
+        benchmark_class,
+        proof_acceptance_boundary,
+        &rows,
+        root_path,
+    )?;
+    let summary = IndependentCheckerPerformanceBenchmarkSummary {
+        summary_id,
+        summary_hash: parsed_summary_hash,
+        benchmark_class,
+        policy_hash,
+        artifact_hash,
+        target_normalized_result_hash,
+        proof_acceptance_boundary,
+        rows,
+    };
+    let recomputed = summary.compute_summary_hash();
+    if recomputed != parsed_summary_hash {
+        return Err(IndependentCheckerRequestValidationError::hash_failure(
+            independent_checker_join_json_path(root_path, "summary_hash"),
+            recomputed,
+            parsed_summary_hash,
+        ));
+    }
+    let expected_summary_id =
+        independent_checker_performance_benchmark_summary_id(parsed_summary_hash);
+    if summary.summary_id != expected_summary_id {
+        return Err(IndependentCheckerRequestValidationError::value_failure(
+            independent_checker_join_json_path(root_path, "summary_id"),
+            expected_summary_id,
+            summary.summary_id,
+        ));
+    }
+    Ok(summary)
+}
+
+fn parse_independent_checker_performance_benchmark_rows(
+    members: &[JsonMember<'_>],
+    field: &str,
+) -> Result<Vec<IndependentCheckerPerformanceBenchmarkRow>, IndependentCheckerRequestValidationError>
+{
+    let rows_value = required_field_value(members, "rows", field, "array")?;
+    let Some(row_values) = rows_value.array_elements() else {
+        return Err(IndependentCheckerRequestValidationError::value_failure(
+            field,
+            "array",
+            "wrong_type",
+        ));
+    };
+    let mut rows = Vec::new();
+    for (index, row_value) in row_values.iter().enumerate() {
+        let path = format!("{field}[{index}]");
+        let row_members = object_members_or_policy_error(row_value, &path, "object")?;
+        let module = required_string_field(
+            row_members,
+            "module",
+            &format!("{path}.module"),
+            "module_name",
+        )?;
+        let checker_profile = required_string_field(
+            row_members,
+            "checker_profile",
+            &format!("{path}.checker_profile"),
+            "checker_profile_name",
+        )?;
+        if !independent_checker_valid_checker_profile_name(&checker_profile) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!("{path}.checker_profile"),
+                "checker_profile_name",
+                "invalid_name_format",
+            ));
+        }
+        let checker_id = optional_string_field(
+            row_members,
+            "checker_id",
+            &format!("{path}.checker_id"),
+            "checker_id",
+        )?;
+        if checker_id
+            .as_deref()
+            .is_some_and(|value| !independent_checker_valid_checker_id(value))
+        {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!("{path}.checker_id"),
+                "checker_id",
+                "invalid_name_format",
+            ));
+        }
+        let checker_binary_id = optional_string_field(
+            row_members,
+            "checker_binary_id",
+            &format!("{path}.checker_binary_id"),
+            "checker_binary_id",
+        )?;
+        if checker_binary_id
+            .as_deref()
+            .is_some_and(|value| !independent_checker_valid_checker_id(value))
+        {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!("{path}.checker_binary_id"),
+                "checker_binary_id",
+                "invalid_name_format",
+            ));
+        }
+        let checker_binary_hash = optional_hash_field(
+            row_members,
+            "checker_binary_hash",
+            &format!("{path}.checker_binary_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let checker_build_hash = optional_hash_field(
+            row_members,
+            "checker_build_hash",
+            &format!("{path}.checker_build_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let certificate_hash = optional_hash_field(
+            row_members,
+            "certificate_hash",
+            &format!("{path}.certificate_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let result_hash = required_hash_field(
+            row_members,
+            "result_hash",
+            &format!("{path}.result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let run_artifact_hash = required_hash_field(
+            row_members,
+            "run_artifact_hash",
+            &format!("{path}.run_artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let elapsed_ms = required_nonnegative_u64_field(
+            row_members,
+            "elapsed_ms",
+            &format!("{path}.elapsed_ms"),
+        )?;
+        let timeout_budget_ms = required_nonnegative_u64_field(
+            row_members,
+            "timeout_budget_ms",
+            &format!("{path}.timeout_budget_ms"),
+        )?;
+        let timeout_exceeded = required_bool_field(
+            row_members,
+            "timeout_exceeded",
+            &format!("{path}.timeout_exceeded"),
+            "boolean",
+        )?;
+        let memory_peak_mb = required_nonnegative_u64_field(
+            row_members,
+            "memory_peak_mb",
+            &format!("{path}.memory_peak_mb"),
+        )?;
+        let memory_budget_mb = required_nonnegative_u64_field(
+            row_members,
+            "memory_budget_mb",
+            &format!("{path}.memory_budget_mb"),
+        )?;
+        let memory_exceeded = required_bool_field(
+            row_members,
+            "memory_exceeded",
+            &format!("{path}.memory_exceeded"),
+            "boolean",
+        )?;
+        let declarations_checked = optional_nonnegative_u64_field(
+            row_members,
+            "declarations_checked",
+            &format!("{path}.declarations_checked"),
+        )?;
+        let status_raw = required_string_field(
+            row_members,
+            "status",
+            &format!("{path}.status"),
+            "MachineCheckResult.status",
+        )?;
+        let status = match status_raw.as_str() {
+            "checked" => IndependentCheckerMachineCheckStatus::Checked,
+            "failed" => IndependentCheckerMachineCheckStatus::Failed,
+            _ => {
+                return Err(IndependentCheckerRequestValidationError::value_failure(
+                    format!("{path}.status"),
+                    "MachineCheckResult.status",
+                    "invalid_enum",
+                ))
+            }
+        };
+        reject_unknown_fields(row_members, PERFORMANCE_BENCHMARK_ROW_FIELDS, &path)?;
+        rows.push(IndependentCheckerPerformanceBenchmarkRow {
+            module,
+            checker_profile,
+            checker_id,
+            checker_binary_id,
+            checker_binary_hash,
+            checker_build_hash,
+            certificate_hash,
+            result_hash,
+            run_artifact_hash,
+            elapsed_ms,
+            timeout_budget_ms,
+            timeout_exceeded,
+            memory_peak_mb,
+            memory_budget_mb,
+            memory_exceeded,
+            declarations_checked,
+            status,
+        });
+    }
+    Ok(rows)
+}
+
+fn validate_performance_benchmark_summary_domain(
+    benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+    proof_acceptance_boundary: bool,
+    rows: &[IndependentCheckerPerformanceBenchmarkRow],
+    root_path: &str,
+) -> Result<(), IndependentCheckerRequestValidationError> {
+    if proof_acceptance_boundary {
+        return Err(IndependentCheckerRequestValidationError::value_failure(
+            independent_checker_join_json_path(root_path, "proof_acceptance_boundary"),
+            "false",
+            "true",
+        ));
+    }
+    let mut seen_run_artifact_hashes = BTreeSet::new();
+    for (index, row) in rows.iter().enumerate() {
+        if index > 0 {
+            let previous = &rows[index - 1];
+            if independent_checker_performance_benchmark_row_cmp(previous, row) != Ordering::Less {
+                return Err(IndependentCheckerRequestValidationError::value_failure(
+                    format!("{}.rows[{index}]", root_path.trim_end_matches('.')),
+                    "module_checker_profile_result_hash_run_artifact_hash_ascending",
+                    "order_violation",
+                ));
+            }
+        }
+        if !independent_checker_performance_benchmark_class_matches_profile(
+            benchmark_class,
+            &row.checker_profile,
+        ) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!(
+                    "{}.rows[{index}].checker_profile",
+                    root_path.trim_end_matches('.')
+                ),
+                benchmark_class.as_str(),
+                &row.checker_profile,
+            ));
+        }
+        if !seen_run_artifact_hashes.insert(row.run_artifact_hash) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!(
+                    "{}.rows[{index}].run_artifact_hash",
+                    root_path.trim_end_matches('.')
+                ),
+                "unique_run_artifact_hash",
+                "duplicate",
+            ));
+        }
+        if row.timeout_exceeded != (row.elapsed_ms > row.timeout_budget_ms) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!(
+                    "{}.rows[{index}].timeout_exceeded",
+                    root_path.trim_end_matches('.')
+                ),
+                (row.elapsed_ms > row.timeout_budget_ms).to_string(),
+                row.timeout_exceeded.to_string(),
+            ));
+        }
+        if row.memory_exceeded != (row.memory_peak_mb > row.memory_budget_mb) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!(
+                    "{}.rows[{index}].memory_exceeded",
+                    root_path.trim_end_matches('.')
+                ),
+                (row.memory_peak_mb > row.memory_budget_mb).to_string(),
+                row.memory_exceeded.to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn parse_independent_checker_challenge_coverage_entries(
     members: &[JsonMember<'_>],
     field: &str,
@@ -18180,6 +18951,8 @@ fn parse_independent_checker_runner_policy_value(
         &optional_checker_profiles,
         &checker_allowlist,
     )?;
+    validate_external_checker_policy_domain(&checker_allowlist, &checker_identity_manifest)?;
+    validate_allowed_args_domain(&checker_allowlist)?;
     let budgets = validate_runner_budgets_domain(
         &required_checker_profiles,
         &optional_checker_profiles,
@@ -18942,6 +19715,36 @@ const CHALLENGE_COVERAGE_SUMMARY_ENTRY_FIELDS: &[&str] = &[
     "replay_result_hash",
     "comparison_status",
 ];
+const PERFORMANCE_BENCHMARK_SUMMARY_FIELDS: &[&str] = &[
+    "schema",
+    "summary_id",
+    "summary_hash",
+    "benchmark_class",
+    "policy_hash",
+    "artifact_hash",
+    "target_normalized_result_hash",
+    "proof_acceptance_boundary",
+    "rows",
+];
+const PERFORMANCE_BENCHMARK_ROW_FIELDS: &[&str] = &[
+    "module",
+    "checker_profile",
+    "checker_id",
+    "checker_binary_id",
+    "checker_binary_hash",
+    "checker_build_hash",
+    "certificate_hash",
+    "result_hash",
+    "run_artifact_hash",
+    "elapsed_ms",
+    "timeout_budget_ms",
+    "timeout_exceeded",
+    "memory_peak_mb",
+    "memory_budget_mb",
+    "memory_exceeded",
+    "declarations_checked",
+    "status",
+];
 const MACHINE_RESULT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "results"];
 const MACHINE_RESULT_STORE_ENTRY_FIELDS: &[&str] = &[
     "result_hash",
@@ -18997,6 +19800,16 @@ struct IndependentCheckerReleaseBundleMachineResultSummary {
     request_hash: Hash,
     run_artifact_hash: Hash,
     checker_profile: String,
+    checker_id: Option<String>,
+    checker_binary_id: Option<String>,
+    checker_binary_hash: Option<Hash>,
+    checker_build_hash: Option<Hash>,
+    module: String,
+    status: IndependentCheckerMachineCheckStatus,
+    certificate_hash: Option<Hash>,
+    elapsed_ms: u64,
+    memory_peak_mb: u64,
+    declarations_checked: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -19624,6 +20437,24 @@ fn independent_checker_release_validate_direct_artifact(
                 index,
                 "summary_hash",
                 summary.summary_hash(),
+            )
+        }
+        IndependentCheckerReleaseBundleArtifactKind::PerformanceBenchmarkSummary => {
+            let summary = parse_independent_checker_performance_benchmark_summary(source).map_err(
+                |error| {
+                    independent_checker_release_stage_artifact_request_error(
+                        "input_schema_invalid",
+                        index,
+                        input.kind,
+                        error,
+                    )
+                },
+            )?;
+            independent_checker_release_validate_planned_hash(
+                input,
+                index,
+                "summary_hash",
+                summary.summary_hash,
             )
         }
         IndependentCheckerReleaseBundleArtifactKind::AuxiliaryResult => {
@@ -20270,6 +21101,8 @@ struct IndependentCheckerReleaseBundleNormalizedEntryView {
     artifact_hash: Hash,
     checker_profile: String,
     status: IndependentCheckerMachineCheckStatus,
+    certificate_hash: Option<Hash>,
+    export_hash: Option<Hash>,
     axiom_report_hash: Option<Hash>,
 }
 
@@ -20942,6 +21775,12 @@ fn independent_checker_release_bundle_artifact_hashes(
                 })?;
             hashes.insert("summary_hash".to_owned(), summary.summary_hash());
         }
+        IndependentCheckerReleaseBundleArtifactKind::PerformanceBenchmarkSummary => {
+            let summary = parse_independent_checker_performance_benchmark_summary(source).map_err(
+                |error| independent_checker_release_bundle_request_error(index, kind, error),
+            )?;
+            hashes.insert("summary_hash".to_owned(), summary.summary_hash);
+        }
         IndependentCheckerReleaseBundleArtifactKind::AuxiliaryResult => {
             let result = parse_independent_checker_auxiliary_result(source).map_err(|error| {
                 independent_checker_release_bundle_request_error(index, kind, error)
@@ -21458,6 +22297,13 @@ fn independent_checker_validate_release_audit_bundle_closed_set(
         manifest,
         bundle_files,
         &release_policy,
+        runner_policy,
+        target,
+        &machine_results,
+    )?;
+    independent_checker_release_bundle_validate_performance_benchmarks(
+        manifest,
+        bundle_files,
         runner_policy,
         target,
         &machine_results,
@@ -22123,6 +22969,18 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
             &format!("{path}.axiom_report_hash"),
             "sha256:<lower-hex>",
         )?;
+        let certificate_hash = optional_hash_field(
+            result_members,
+            "certificate_hash",
+            &format!("{path}.certificate_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let export_hash = optional_hash_field(
+            result_members,
+            "export_hash",
+            &format!("{path}.export_hash"),
+            "sha256:<lower-hex>",
+        )?;
         results.push(IndependentCheckerReleaseBundleNormalizedEntryView {
             result_hash,
             request_hash,
@@ -22130,6 +22988,8 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
             artifact_hash: entry_artifact_hash,
             checker_profile,
             status,
+            certificate_hash,
+            export_hash,
             axiom_report_hash,
         });
     }
@@ -22147,6 +23007,94 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
         comparison_status_reasons_len: status_reasons.len(),
         results,
     })
+}
+
+fn independent_checker_release_bundle_required_entry_hash(
+    entry: &IndependentCheckerReleaseBundleNormalizedEntryView,
+    field: &str,
+    hash: Option<Hash>,
+) -> Result<Hash, IndependentCheckerReleaseAuditBundleError> {
+    hash.ok_or_else(|| {
+        IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!(
+                "normalized_check_result.artifact.results[{}].{}",
+                entry.checker_profile, field
+            ),
+            "sha256:<lower-hex>",
+            "missing",
+        )
+    })
+}
+
+fn independent_checker_release_bundle_validate_required_checked_hashes(
+    target: &IndependentCheckerReleaseBundleNormalizedResultView,
+    required_entries: &[&IndependentCheckerReleaseBundleNormalizedEntryView],
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let Some(baseline) = required_entries.first().copied() else {
+        return Ok(());
+    };
+
+    let baseline_export_hash = independent_checker_release_bundle_required_entry_hash(
+        baseline,
+        "export_hash",
+        baseline.export_hash,
+    )?;
+    let baseline_axiom_report_hash = independent_checker_release_bundle_required_entry_hash(
+        baseline,
+        "axiom_report_hash",
+        baseline.axiom_report_hash,
+    )?;
+
+    for entry in required_entries {
+        let certificate_hash = independent_checker_release_bundle_required_entry_hash(
+            entry,
+            "certificate_hash",
+            entry.certificate_hash,
+        )?;
+        if certificate_hash != target.expected_certificate_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!(
+                    "normalized_check_result.artifact.results[{}].certificate_hash",
+                    entry.checker_profile
+                ),
+                target.expected_certificate_hash,
+                certificate_hash,
+            ));
+        }
+
+        let export_hash = independent_checker_release_bundle_required_entry_hash(
+            entry,
+            "export_hash",
+            entry.export_hash,
+        )?;
+        if export_hash != baseline_export_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!(
+                    "normalized_check_result.artifact.results[{}].export_hash",
+                    entry.checker_profile
+                ),
+                baseline_export_hash,
+                export_hash,
+            ));
+        }
+
+        let axiom_report_hash = independent_checker_release_bundle_required_entry_hash(
+            entry,
+            "axiom_report_hash",
+            entry.axiom_report_hash,
+        )?;
+        if axiom_report_hash != baseline_axiom_report_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!(
+                    "normalized_check_result.artifact.results[{}].axiom_report_hash",
+                    entry.checker_profile
+                ),
+                baseline_axiom_report_hash,
+                axiom_report_hash,
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn independent_checker_release_bundle_validate_target_normalized_result(
@@ -22178,6 +23126,7 @@ fn independent_checker_release_bundle_validate_target_normalized_result(
             target.policy_hash,
         ));
     }
+    let mut required_entries = Vec::new();
     for profile in &runner_policy.required_checker_profiles {
         let entries = target
             .results
@@ -22222,7 +23171,9 @@ fn independent_checker_release_bundle_validate_target_normalized_result(
                 entry.artifact_hash,
             ));
         }
+        required_entries.push(entry);
     }
+    independent_checker_release_bundle_validate_required_checked_hashes(target, &required_entries)?;
     Ok(())
 }
 
@@ -22852,6 +23803,244 @@ fn independent_checker_release_bundle_validate_required_auxiliary_common(
             artifact_hash,
             result.artifact_hash,
         ));
+    }
+    Ok(())
+}
+
+fn independent_checker_release_bundle_validate_performance_benchmarks(
+    manifest: &IndependentCheckerReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    runner_policy: &IndependentCheckerRunnerPolicy,
+    target: &IndependentCheckerReleaseBundleNormalizedResultView,
+    machine_results: &BTreeMap<Hash, IndependentCheckerReleaseBundleMachineResultSummary>,
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let mut external_summary_count = 0usize;
+    for index in independent_checker_release_bundle_indices(
+        &manifest.artifacts,
+        IndependentCheckerReleaseBundleArtifactKind::PerformanceBenchmarkSummary,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let source =
+            independent_checker_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let summary =
+            parse_independent_checker_performance_benchmark_summary(source).map_err(|error| {
+                independent_checker_release_bundle_request_error(index, artifact.kind, error)
+            })?;
+        independent_checker_release_bundle_validate_performance_benchmark_common(
+            index,
+            &summary,
+            runner_policy,
+            target,
+            machine_results,
+        )?;
+        if summary.benchmark_class == IndependentCheckerPerformanceBenchmarkClass::ExternalChecker {
+            external_summary_count += 1;
+            independent_checker_release_bundle_validate_external_benchmark_summary(
+                index, &summary, target,
+            )?;
+        }
+    }
+    match external_summary_count {
+        1 => Ok(()),
+        0 => Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            "artifacts[performance_benchmark_summary]",
+            "external checker benchmark",
+            "missing",
+        )),
+        count => Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            "artifacts[performance_benchmark_summary]",
+            "unique_external_checker_benchmark",
+            format!("count:{count}"),
+        )),
+    }
+}
+
+fn independent_checker_release_bundle_validate_performance_benchmark_common(
+    index: usize,
+    summary: &IndependentCheckerPerformanceBenchmarkSummary,
+    runner_policy: &IndependentCheckerRunnerPolicy,
+    target: &IndependentCheckerReleaseBundleNormalizedResultView,
+    machine_results: &BTreeMap<Hash, IndependentCheckerReleaseBundleMachineResultSummary>,
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let runner_policy_hash = runner_policy.policy_hash();
+    if summary.policy_hash != runner_policy_hash {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.policy_hash"),
+            runner_policy_hash,
+            summary.policy_hash,
+        ));
+    }
+    if summary.artifact_hash != target.artifact_hash {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.artifact_hash"),
+            target.artifact_hash,
+            summary.artifact_hash,
+        ));
+    }
+    if summary.target_normalized_result_hash != target.normalized_result_hash {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.target_normalized_result_hash"),
+            target.normalized_result_hash,
+            summary.target_normalized_result_hash,
+        ));
+    }
+    if summary.proof_acceptance_boundary {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.proof_acceptance_boundary"),
+            "false",
+            "true",
+        ));
+    }
+    for (row_index, row) in summary.rows.iter().enumerate() {
+        independent_checker_release_bundle_validate_performance_benchmark_row(
+            index,
+            row_index,
+            row,
+            runner_policy,
+            machine_results,
+        )?;
+    }
+    Ok(())
+}
+
+fn independent_checker_release_bundle_validate_performance_benchmark_row(
+    artifact_index: usize,
+    row_index: usize,
+    row: &IndependentCheckerPerformanceBenchmarkRow,
+    runner_policy: &IndependentCheckerRunnerPolicy,
+    machine_results: &BTreeMap<Hash, IndependentCheckerReleaseBundleMachineResultSummary>,
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let path = format!("artifacts[{artifact_index}].artifact.rows[{row_index}]");
+    let Some(machine_result) = machine_results.get(&row.run_artifact_hash) else {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.run_artifact_hash"),
+            "included_machine_check_result",
+            format_hash_string(&row.run_artifact_hash),
+        ));
+    };
+    if machine_result.result_hash != row.result_hash {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+            format!("{path}.result_hash"),
+            machine_result.result_hash,
+            row.result_hash,
+        ));
+    }
+    if machine_result.checker_profile != row.checker_profile {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.checker_profile"),
+            &machine_result.checker_profile,
+            &row.checker_profile,
+        ));
+    }
+    if machine_result.module != row.module {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.module"),
+            &machine_result.module,
+            &row.module,
+        ));
+    }
+    if machine_result.status != row.status {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.status"),
+            machine_result.status.as_str(),
+            row.status.as_str(),
+        ));
+    }
+    if machine_result.certificate_hash != row.certificate_hash {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.certificate_hash"),
+            machine_result
+                .certificate_hash
+                .map(|hash| format_hash_string(&hash))
+                .unwrap_or_else(|| "absent".to_owned()),
+            row.certificate_hash
+                .map(|hash| format_hash_string(&hash))
+                .unwrap_or_else(|| "absent".to_owned()),
+        ));
+    }
+    if machine_result.checker_id != row.checker_id
+        || machine_result.checker_binary_id != row.checker_binary_id
+        || machine_result.checker_binary_hash != row.checker_binary_hash
+        || machine_result.checker_build_hash != row.checker_build_hash
+    {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.checker_id"),
+            "matching_checker_identity",
+            "mismatch",
+        ));
+    }
+    if machine_result.elapsed_ms != row.elapsed_ms {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.elapsed_ms"),
+            machine_result.elapsed_ms.to_string(),
+            row.elapsed_ms.to_string(),
+        ));
+    }
+    if machine_result.memory_peak_mb != row.memory_peak_mb {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.memory_peak_mb"),
+            machine_result.memory_peak_mb.to_string(),
+            row.memory_peak_mb.to_string(),
+        ));
+    }
+    if machine_result.declarations_checked != row.declarations_checked {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.declarations_checked"),
+            machine_result
+                .declarations_checked
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "absent".to_owned()),
+            row.declarations_checked
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "absent".to_owned()),
+        ));
+    }
+    let Some(budget) = runner_policy.budgets.get(&row.checker_profile) else {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.checker_profile"),
+            "runner_policy_budget",
+            "missing",
+        ));
+    };
+    if row.timeout_budget_ms != budget.timeout_ms {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.timeout_budget_ms"),
+            budget.timeout_ms.to_string(),
+            row.timeout_budget_ms.to_string(),
+        ));
+    }
+    if row.memory_budget_mb != budget.max_memory_mb {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("{path}.memory_budget_mb"),
+            budget.max_memory_mb.to_string(),
+            row.memory_budget_mb.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn independent_checker_release_bundle_validate_external_benchmark_summary(
+    index: usize,
+    summary: &IndependentCheckerPerformanceBenchmarkSummary,
+    target: &IndependentCheckerReleaseBundleNormalizedResultView,
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    for entry in target
+        .results
+        .iter()
+        .filter(|entry| entry.checker_profile == NPA_CHECKER_EXT_PROFILE)
+    {
+        if !summary.rows.iter().any(|row| {
+            row.checker_profile == NPA_CHECKER_EXT_PROFILE && row.result_hash == entry.result_hash
+        }) {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.rows[].result_hash"),
+                format!(
+                    "external_result_hash:{}",
+                    format_hash_string(&entry.result_hash)
+                ),
+                "missing",
+            ));
+        }
     }
     Ok(())
 }
@@ -23941,19 +25130,35 @@ fn parse_independent_checker_machine_check_result_summary(
         &independent_checker_join_json_path(root_path, "request_hash"),
         "sha256:<lower-hex>",
     )?;
-    let status = required_string_field(
+    let status_raw = required_string_field(
         members,
         "status",
         &independent_checker_join_json_path(root_path, "status"),
         "MachineCheckResult.status",
     )?;
-    if !matches!(status.as_str(), "checked" | "failed") {
-        return Err(IndependentCheckerRequestValidationError::value_failure(
-            independent_checker_join_json_path(root_path, "status"),
-            "MachineCheckResult.status",
-            "invalid_enum",
-        ));
-    }
+    let status = match status_raw.as_str() {
+        "checked" => IndependentCheckerMachineCheckStatus::Checked,
+        "failed" => IndependentCheckerMachineCheckStatus::Failed,
+        _ => {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                independent_checker_join_json_path(root_path, "status"),
+                "MachineCheckResult.status",
+                "invalid_enum",
+            ))
+        }
+    };
+    let module = required_string_field(
+        members,
+        "module",
+        &independent_checker_join_json_path(root_path, "module"),
+        "module_name",
+    )?;
+    let certificate_hash = optional_hash_field(
+        members,
+        "certificate_hash",
+        &independent_checker_join_json_path(root_path, "certificate_hash"),
+        "sha256:<lower-hex>",
+    )?;
     let checker_value = required_field_value(
         members,
         "checker",
@@ -23978,6 +25183,56 @@ fn parse_independent_checker_machine_check_result_summary(
             "invalid_name_format",
         ));
     }
+    let checker_id = optional_string_field(
+        checker_members,
+        "id",
+        &independent_checker_join_json_path(root_path, "checker.id"),
+        "checker_id",
+    )?;
+    let checker_binary_id = optional_string_field(
+        checker_members,
+        "binary_id",
+        &independent_checker_join_json_path(root_path, "checker.binary_id"),
+        "checker_binary_id",
+    )?;
+    let checker_binary_hash = optional_hash_field(
+        checker_members,
+        "binary_hash",
+        &independent_checker_join_json_path(root_path, "checker.binary_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let checker_build_hash = optional_hash_field(
+        checker_members,
+        "build_hash",
+        &independent_checker_join_json_path(root_path, "checker.build_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let resource_usage_value = required_field_value(
+        members,
+        "resource_usage",
+        &independent_checker_join_json_path(root_path, "resource_usage"),
+        "object",
+    )?;
+    let resource_usage_members = object_members_or_policy_error(
+        resource_usage_value,
+        &independent_checker_join_json_path(root_path, "resource_usage"),
+        "object",
+    )?;
+    let elapsed_ms = required_nonnegative_u64_field(
+        resource_usage_members,
+        "elapsed_ms",
+        &independent_checker_join_json_path(root_path, "resource_usage.elapsed_ms"),
+    )?;
+    let memory_peak_mb = required_nonnegative_u64_field(
+        resource_usage_members,
+        "memory_peak_mb",
+        &independent_checker_join_json_path(root_path, "resource_usage.memory_peak_mb"),
+    )?;
+    let declarations_checked = optional_nonnegative_u64_field(
+        members,
+        "declarations_checked",
+        &independent_checker_join_json_path(root_path, "declarations_checked"),
+    )?;
     if let Some(raw_output) = optional_string_field(
         members,
         "raw_checker_output_hex",
@@ -24037,6 +25292,16 @@ fn parse_independent_checker_machine_check_result_summary(
         request_hash,
         run_artifact_hash,
         checker_profile,
+        checker_id,
+        checker_binary_id,
+        checker_binary_hash,
+        checker_build_hash,
+        module,
+        status,
+        certificate_hash,
+        elapsed_ms,
+        memory_peak_mb,
+        declarations_checked,
     })
 }
 
@@ -25363,13 +26628,64 @@ fn validate_checker_allowlist_domain(
             ));
         }
     }
-    validate_allowed_args_domain(checker_allowlist)
+    Ok(())
+}
+
+fn validate_external_checker_policy_domain(
+    checker_allowlist: &[IndependentCheckerAllowlistEntry],
+    checker_identity_manifest: &Option<IndependentCheckerIdentityManifestReference>,
+) -> Result<(), IndependentCheckerPolicyValidationError> {
+    let mut has_external = false;
+    for (index, entry) in checker_allowlist.iter().enumerate() {
+        if entry.profile != NPA_CHECKER_EXT_PROFILE {
+            continue;
+        }
+        has_external = true;
+        if entry.checker_id != NPA_CHECKER_EXT_CHECKER_ID {
+            return Err(IndependentCheckerPolicyValidationError::new(
+                format!("checker_allowlist[{index}].checker_id"),
+                NPA_CHECKER_EXT_CHECKER_ID,
+                &entry.checker_id,
+            ));
+        }
+        if !entry
+            .binary_id
+            .starts_with(NPA_CHECKER_EXT_BINARY_ID_PREFIX)
+            || entry.binary_id == NPA_CHECKER_EXT_BINARY_ID_PREFIX
+        {
+            return Err(IndependentCheckerPolicyValidationError::new(
+                format!("checker_allowlist[{index}].binary_id"),
+                "npa-checker-ext-<platform>",
+                &entry.binary_id,
+            ));
+        }
+    }
+    if has_external && checker_identity_manifest.is_none() {
+        return Err(IndependentCheckerPolicyValidationError::new(
+            "checker_identity_manifest",
+            "pinned_checker_identity_manifest",
+            "missing",
+        ));
+    }
+    Ok(())
 }
 
 fn validate_allowed_args_domain(
     checker_allowlist: &[IndependentCheckerAllowlistEntry],
 ) -> Result<(), IndependentCheckerPolicyValidationError> {
     for (checker_index, entry) in checker_allowlist.iter().enumerate() {
+        if entry.profile == NPA_CHECKER_EXT_PROFILE
+            && entry.checker_id == NPA_CHECKER_EXT_CHECKER_ID
+        {
+            if let Some((arg_index, arg)) = entry.allowed_args.iter().enumerate().next() {
+                return Err(IndependentCheckerPolicyValidationError::new(
+                    format!("checker_allowlist[{checker_index}].allowed_args[{arg_index}]"),
+                    "empty_for_npa_checker_ext",
+                    arg.as_str(),
+                ));
+            }
+            continue;
+        }
         for (arg_index, arg) in entry.allowed_args.iter().enumerate() {
             if !independent_checker_visible_ascii_nonempty(arg) || !arg.starts_with("--") {
                 return Err(IndependentCheckerPolicyValidationError::new(
@@ -25405,6 +26721,11 @@ fn validate_allowed_args_domain(
     }
 
     for (checker_index, entry) in checker_allowlist.iter().enumerate() {
+        if entry.profile == NPA_CHECKER_EXT_PROFILE
+            && entry.checker_id == NPA_CHECKER_EXT_CHECKER_ID
+        {
+            continue;
+        }
         let json_positions = entry
             .allowed_args
             .iter()
@@ -27911,6 +29232,37 @@ fn required_nonnegative_u64_field(
     Ok(value)
 }
 
+fn optional_nonnegative_u64_field(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<Option<u64>, IndependentCheckerPolicyValidationError> {
+    let Some(value) = unique_optional_field_value(members, name, field, "non_negative_i64")? else {
+        return Ok(None);
+    };
+    let Some(raw) = value.number_raw() else {
+        return Err(wrong_type_error(field, "non_negative_i64", value.kind()));
+    };
+    if raw.contains('.') || raw.contains('e') || raw.contains('E') {
+        return Err(wrong_type_error(field, "non_negative_i64", value.kind()));
+    }
+    let value = raw.parse::<u64>().map_err(|_| {
+        IndependentCheckerPolicyValidationError::new(
+            field,
+            "non_negative_i64",
+            "integer_out_of_range",
+        )
+    })?;
+    if value > i64::MAX as u64 {
+        return Err(IndependentCheckerPolicyValidationError::new(
+            field,
+            "non_negative_i64",
+            "integer_out_of_range",
+        ));
+    }
+    Ok(Some(value))
+}
+
 fn parse_required_independent_checker_normalized_comparison_status_field(
     members: &[JsonMember<'_>],
     name: &str,
@@ -28101,6 +29453,10 @@ fn independent_checker_valid_checker_id(value: &str) -> bool {
     })
 }
 
+fn independent_checker_valid_checker_reason_code(value: &str) -> bool {
+    independent_checker_valid_checker_id(value)
+}
+
 fn independent_checker_visible_ascii_nonempty(value: &str) -> bool {
     !value.is_empty() && value.bytes().all(|byte| (0x21..=0x7e).contains(&byte))
 }
@@ -28132,6 +29488,16 @@ fn independent_checker_valid_challenge_id(value: &str) -> bool {
 
 fn independent_checker_valid_challenge_coverage_summary_id(value: &str) -> bool {
     let Some(hex) = value.strip_prefix("chcov_") else {
+        return false;
+    };
+    hex.len() == 64
+        && hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn independent_checker_valid_performance_benchmark_summary_id(value: &str) -> bool {
+    let Some(hex) = value.strip_prefix("bench_") else {
         return false;
     };
     hex.len() == 64
@@ -28840,6 +30206,23 @@ mod tests {
     }
 
     fn pr_runner_policy_with_optional_external_json() -> String {
+        pr_runner_policy_with_optional_external_and_identity_json(true)
+    }
+
+    fn pr_runner_policy_with_optional_external_and_identity_json(include_identity: bool) -> String {
+        let checker_identity_manifest = if include_identity {
+            format!(
+                r#",
+              "checker_identity_manifest":{{
+                "kind":"file",
+                "path":"ci/checker-identity-manifest.json",
+                "manifest_hash":"{}"
+              }}"#,
+                hash_wire(12)
+            )
+        } else {
+            String::new()
+        };
         format!(
             r#"{{
               "schema":"npa.independent-checker.runner_policy.v1",
@@ -28855,7 +30238,7 @@ mod tests {
                   "binary_id":"npa-checker-ext-macos-aarch64",
                   "binary_hash":"{}",
                   "build_hash":"{}",
-                  "allowed_args":["--json","--canonical-only"]
+                  "allowed_args":[]
                 }},
                 {{
                   "profile":"reference",
@@ -28865,12 +30248,7 @@ mod tests {
                   "build_hash":"{}",
                   "allowed_args":["--json","--canonical-only"]
                 }}
-              ],
-              "checker_identity_manifest":{{
-                "kind":"file",
-                "path":"ci/checker-identity-manifest.json",
-                "manifest_hash":"{}"
-              }},
+              ]{checker_identity_manifest},
               "import_policy":{{
                 "mode":"locked_store",
                 "network":"forbidden",
@@ -28892,7 +30270,6 @@ mod tests {
             hash_wire(15),
             hash_wire(10),
             hash_wire(11),
-            hash_wire(12),
             hash_wire(13)
         )
     }
@@ -28916,6 +30293,64 @@ mod tests {
               }}]
             }}"#,
             hash_wire(20),
+            hash_wire(10),
+            hash_wire(11)
+        )
+    }
+
+    fn external_binary_registry_json() -> String {
+        r#"{
+          "schema":"npa.independent-checker.checker_binary_registry.v1",
+          "root_kind":"workspace",
+          "entries":[
+            {
+              "binary_id":"npa-checker-ext-linux-aarch64",
+              "path":"tools/checkers/npa-checker-ext/linux-aarch64/npa-checker-ext"
+            },
+            {
+              "binary_id":"npa-checker-ext-linux-x86_64",
+              "path":"tools/checkers/npa-checker-ext/linux-x86_64/npa-checker-ext"
+            },
+            {
+              "binary_id":"npa-checker-ext-macos-aarch64",
+              "path":"tools/checkers/npa-checker-ext/macos-aarch64/npa-checker-ext"
+            }
+          ]
+        }"#
+        .to_owned()
+    }
+
+    fn valid_external_identity_manifest_json() -> String {
+        format!(
+            r#"{{
+              "schema":"npa.independent-checker.checker_identity_manifest.v1",
+              "generated_by":{{
+                "runner_id":"npa-check-runner",
+                "runner_version":"0.8.0",
+                "runner_build_hash":"{}"
+              }},
+              "checkers":[
+                {{
+                  "profile":"external",
+                  "checker_id":"npa-checker-ext",
+                  "checker_version":"0.1.0",
+                  "binary_id":"npa-checker-ext-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }},
+                {{
+                  "profile":"reference",
+                  "checker_id":"npa-checker-ref",
+                  "checker_version":"0.8.0",
+                  "binary_id":"npa-checker-ref-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }}
+              ]
+            }}"#,
+            hash_wire(20),
+            hash_wire(14),
+            hash_wire(15),
             hash_wire(10),
             hash_wire(11)
         )
@@ -29277,6 +30712,7 @@ mod tests {
             IndependentCheckerArtifactKind::AuxiliaryResult,
             IndependentCheckerArtifactKind::ChallengeReplayResult,
             IndependentCheckerArtifactKind::ChallengeCoverageSummary,
+            IndependentCheckerArtifactKind::PerformanceBenchmarkSummary,
             IndependentCheckerArtifactKind::AiAuditSidecar,
             IndependentCheckerArtifactKind::CompareValidationResult,
             IndependentCheckerArtifactKind::AuditSidecarValidationResult,
@@ -29401,11 +30837,36 @@ mod tests {
         assert_eq!(policy.required_checker_profiles, ["reference"]);
         assert_eq!(policy.optional_checker_profiles, ["external"]);
         assert!(policy.selected_checker_policy("reference").is_some());
-        assert!(policy.selected_checker_policy("external").is_some());
+        let selected_external = policy.selected_checker_policy("external").unwrap();
+        assert_eq!(selected_external.checker_id, "npa-checker-ext");
+        assert_eq!(selected_external.binary_id, "npa-checker-ext-macos-aarch64");
+        assert_eq!(selected_external.binary_hash, test_hash(14));
+        assert!(policy.checker_identity_manifest.is_some());
         assert_eq!(
             independent_checker_policy_profiles_in_replay_order(&policy),
             ["reference", "external"]
         );
+
+        let registry =
+            parse_independent_checker_binary_registry(&external_binary_registry_json()).unwrap();
+        let resolved_external = independent_checker_resolve_checker_executable(
+            &registry,
+            selected_external,
+            test_hash(14),
+        )
+        .unwrap();
+        assert_eq!(
+            resolved_external.path,
+            "tools/checkers/npa-checker-ext/macos-aarch64/npa-checker-ext"
+        );
+        let external_manifest =
+            parse_independent_checker_identity_manifest(&valid_external_identity_manifest_json())
+                .unwrap();
+        independent_checker_validate_selected_checker_identity_manifest(
+            selected_external,
+            &external_manifest,
+        )
+        .unwrap();
 
         let imports_json = valid_import_lock_manifest_json();
         let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
@@ -29428,6 +30889,41 @@ mod tests {
             on_demand_external.request.trust_mode,
             IndependentCheckerTrustMode::Pr
         );
+        let request_with_binary_override = on_demand_external.request.canonical_json().replacen(
+            r#""checker_profile":"external""#,
+            r#""checker_binary_id":"npa-checker-ext-linux-x86_64","checker_profile":"external""#,
+            1,
+        );
+        let request_override_err =
+            parse_independent_checker_machine_check_request(&request_with_binary_override)
+                .unwrap_err();
+        assert_eq!(request_override_err.field.as_ref(), "checker_binary_id");
+        assert_eq!(
+            request_override_err.actual_value.as_deref(),
+            Some("unknown_field")
+        );
+        let ai_result = m6_checked_result();
+        let ai_policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let ai_input_policy =
+            parse_independent_checker_ai_audit_input_policy(&ai_policy_json).unwrap();
+        let ai_sidecar_json = m6_machine_sidecar_with_prompt_hash(&ai_result, &ai_input_policy, "");
+        let ai_sidecar_with_binary_override = ai_sidecar_json.replacen(
+            r#""status":"summarized""#,
+            r#""checker_binary_id":"npa-checker-ext-linux-x86_64","status":"summarized""#,
+            1,
+        );
+        let ai_sidecar_override_err =
+            parse_independent_checker_ai_audit_sidecar(&ai_sidecar_with_binary_override)
+                .unwrap_err();
+        assert_eq!(
+            ai_sidecar_override_err.reason_code,
+            IndependentCheckerAuditSidecarValidationReasonCode::SidecarSchemaInvalid
+        );
+        assert_eq!(ai_sidecar_override_err.field, "checker_binary_id");
+        assert_eq!(
+            ai_sidecar_override_err.actual_value.as_deref(),
+            Some("unknown_field")
+        );
 
         let required_external_pr = pr_runner_policy_with_optional_external_json()
             .replace(
@@ -29447,6 +30943,624 @@ mod tests {
                 "profile_set_mismatch"
             )
         );
+
+        let missing_binary_hash = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json()
+                .replace(&format!(r#""binary_hash":"{}","#, hash_wire(14)), ""),
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_binary_hash,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].binary_hash",
+                "sha256:<lower-hex>",
+                "missing"
+            )
+        );
+
+        let missing_identity = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_and_identity_json(false),
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_identity,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_identity_manifest",
+                "pinned_checker_identity_manifest",
+                "missing"
+            )
+        );
+
+        let missing_manifest_hash = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json().replace(
+                &format!(
+                    r#",
+                "manifest_hash":"{}""#,
+                    hash_wire(12)
+                ),
+                "",
+            ),
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_manifest_hash,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_identity_manifest.manifest_hash",
+                "sha256:<lower-hex>",
+                "missing"
+            )
+        );
+
+        let wrong_external_checker = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json().replace(
+                r#""checker_id":"npa-checker-ext""#,
+                r#""checker_id":"other-checker""#,
+            ),
+        )
+        .unwrap_err();
+        assert_eq!(
+            wrong_external_checker,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].checker_id",
+                "npa-checker-ext",
+                "other-checker"
+            )
+        );
+
+        let ai_override_policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json().replace(
+                r#""on_profile_requested_by_ai":"ignore_unless_policy_allows""#,
+                r#""on_profile_requested_by_ai":"select_checker_binary""#,
+            ),
+        )
+        .unwrap_err();
+        assert_eq!(
+            ai_override_policy,
+            IndependentCheckerPolicyValidationError::new(
+                "on_profile_requested_by_ai",
+                "ignore_unless_policy_allows",
+                "invalid_fixed_value"
+            )
+        );
+    }
+
+    #[test]
+    fn m8_external_checker_launch_plan_is_closed_and_resource_failures_are_runner_owned() {
+        let policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        let selected_external = policy.selected_checker_policy("external").unwrap();
+        let registry =
+            parse_independent_checker_binary_registry(&external_binary_registry_json()).unwrap();
+        let resolved = independent_checker_resolve_checker_executable(
+            &registry,
+            selected_external,
+            test_hash(14),
+        )
+        .unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let materialized = independent_checker_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            independent_checker_file_hash(imports_json.as_bytes()),
+            "external",
+            "mchkreq_m8_external",
+            "build/check-requests/Std.Nat.external.json",
+            None,
+        )
+        .unwrap();
+
+        let launch = independent_checker_npa_checker_ext_launch_plan(
+            &resolved,
+            &materialized.request,
+            "build/import-certs",
+        );
+        assert_eq!(
+            launch.argv,
+            vec![
+                "tools/checkers/npa-checker-ext/macos-aarch64/npa-checker-ext".to_owned(),
+                "--cert".to_owned(),
+                "build/certs/Std/Nat.npcert".to_owned(),
+                "--import-dir".to_owned(),
+                "build/import-certs".to_owned(),
+                "--policy".to_owned(),
+                "ci/axiom-policy.toml".to_owned(),
+                "--output".to_owned(),
+                "json".to_owned(),
+            ]
+        );
+        let launch_flags = launch
+            .argv
+            .iter()
+            .skip(1)
+            .step_by(2)
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            launch_flags,
+            INDEPENDENT_CHECKER_NPA_CHECKER_EXT_DYNAMIC_FLAGS
+        );
+        assert!(!launch.argv.iter().any(|arg| arg == "--json"));
+        assert_eq!(
+            launch.environment,
+            independent_checker_runner_fixed_environment()
+        );
+        assert_eq!(launch.sandbox.network, "forbidden");
+        assert_eq!(launch.sandbox.certificate_mount, "read_only");
+        assert_eq!(launch.sandbox.import_mount, "read_only");
+        assert_eq!(launch.sandbox.source_mount, "forbidden");
+        assert_eq!(launch.sandbox.plugin_loading, "forbidden");
+        assert_eq!(
+            launch.budget.max_memory_mb,
+            materialized.request.budget.max_memory_mb
+        );
+        assert_eq!(
+            launch.budget.timeout_ms,
+            materialized.request.budget.timeout_ms
+        );
+
+        let unknown_static_flag = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json()
+                .replace(r#""allowed_args":[]"#, r#""allowed_args":["--debug"]"#),
+        )
+        .unwrap_err();
+        assert_eq!(
+            unknown_static_flag,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].allowed_args[0]",
+                "empty_for_npa_checker_ext",
+                "--debug"
+            )
+        );
+
+        let timeout = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_timeout".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::terminated("timeout"),
+                resource_usage: IndependentCheckerMachineCheckResourceUsage {
+                    steps: 0,
+                    memory_peak_mb: 0,
+                    elapsed_ms: materialized.request.budget.timeout_ms + 1,
+                },
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let timeout_error = timeout.error.as_ref().unwrap();
+        assert_eq!(timeout.status, IndependentCheckerMachineCheckStatus::Failed);
+        assert_eq!(timeout_error.kind, "timeout");
+        assert_eq!(
+            timeout_error.reason_code.as_deref(),
+            Some("checker_timeout")
+        );
+
+        let resource_exhausted = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_resource_exhausted".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::terminated("resource_exhausted"),
+                resource_usage: IndependentCheckerMachineCheckResourceUsage {
+                    steps: 0,
+                    memory_peak_mb: materialized.request.budget.max_memory_mb + 1,
+                    elapsed_ms: 10,
+                },
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let resource_error = resource_exhausted.error.as_ref().unwrap();
+        assert_eq!(
+            resource_exhausted.status,
+            IndependentCheckerMachineCheckStatus::Failed
+        );
+        assert_eq!(resource_error.kind, "resource_exhausted");
+        assert_eq!(
+            resource_error.reason_code.as_deref(),
+            Some("checker_resource_exhausted")
+        );
+    }
+
+    #[test]
+    fn m8_external_checker_raw_results_adopt_and_reject_runner_owned_raw_kinds() {
+        let policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let materialized = independent_checker_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            independent_checker_file_hash(imports_json.as_bytes()),
+            "external",
+            "mchkreq_m8_external_raw",
+            "build/check-requests/Std.Nat.external.json",
+            None,
+        )
+        .unwrap();
+
+        let checked_raw = format!(
+            r#"{{
+              "schema":"npa.independent-checker.checker_raw_result.v1",
+              "checker_id":"npa-checker-ext",
+              "checker_version":"0.1.0",
+              "checker_build_hash":"{}",
+              "status":"checked",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "export_hash":"{}",
+              "axiom_report_hash":"{}"
+            }}"#,
+            hash_wire(15),
+            hash_wire(70),
+            hash_wire(90),
+            hash_wire(91)
+        );
+        let checked = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_external_checked_raw".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(20),
+                stdout: checked_raw.into_bytes(),
+                stderr: b"human-only diagnostic".to_vec(),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            checked.status,
+            IndependentCheckerMachineCheckStatus::Checked
+        );
+        assert_eq!(checked.error, None);
+        assert_eq!(checked.checker.id.as_deref(), Some("npa-checker-ext"));
+        assert_eq!(checked.checker.version.as_deref(), Some("0.1.0"));
+        assert_eq!(checked.checker.build_hash, Some(test_hash(15)));
+        assert_eq!(checked.certificate_hash, Some(test_hash(70)));
+        assert_eq!(checked.export_hash, Some(test_hash(90)));
+        assert_eq!(checked.axiom_report_hash, Some(test_hash(91)));
+        assert_eq!(
+            checked.diagnostics,
+            vec!["checker_process:stderr_present".to_owned()]
+        );
+        let checked_summary =
+            parse_independent_checker_machine_check_result_summary(&checked.canonical_json(), "$")
+                .unwrap();
+        assert_eq!(checked_summary.result_hash, checked.result_hash());
+        assert_eq!(
+            checked_summary.run_artifact_hash,
+            checked.run_artifact_hash()
+        );
+
+        let unsupported_raw = format!(
+            r#"{{
+              "schema":"npa.independent-checker.checker_raw_result.v1",
+              "checker_id":"npa-checker-ext",
+              "checker_version":"0.1.0",
+              "checker_build_hash":"{}",
+              "status":"failed",
+              "error":{{
+                "kind":"unsupported_core_feature",
+                "reason_code":"unsupported_core_feature",
+                "section":"core_features",
+                "offset":17
+              }}
+            }}"#,
+            hash_wire(15)
+        );
+        let unsupported = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_external_unsupported_raw".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::exited(1),
+                resource_usage: m3_resource_usage(21),
+                stdout: unsupported_raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let unsupported_error = unsupported.error.as_ref().unwrap();
+        assert_eq!(
+            unsupported.status,
+            IndependentCheckerMachineCheckStatus::Failed
+        );
+        assert_eq!(unsupported_error.kind, "unsupported_core_feature");
+        assert_eq!(
+            unsupported_error.reason_code.as_deref(),
+            Some("unsupported_core_feature")
+        );
+        assert_eq!(unsupported_error.section.as_deref(), Some("core_features"));
+        assert_eq!(unsupported_error.offset, Some(17));
+        assert_eq!(unsupported.checker.id.as_deref(), Some("npa-checker-ext"));
+        assert_eq!(unsupported.checker.build_hash, Some(test_hash(15)));
+        assert_eq!(unsupported.certificate_hash, None);
+        let unsupported_summary = parse_independent_checker_machine_check_result_summary(
+            &unsupported.canonical_json(),
+            "$",
+        )
+        .unwrap();
+        assert_eq!(unsupported_summary.result_hash, unsupported.result_hash());
+        assert_eq!(
+            unsupported_summary.run_artifact_hash,
+            unsupported.run_artifact_hash()
+        );
+
+        for kind in ["policy_failure", "timeout", "resource_exhausted"] {
+            let raw = format!(
+                r#"{{
+                  "schema":"npa.independent-checker.checker_raw_result.v1",
+                  "checker_id":"npa-checker-ext",
+                  "checker_version":"0.1.0",
+                  "checker_build_hash":"{}",
+                  "status":"failed",
+                  "error":{{"kind":"{}"}}
+                }}"#,
+                hash_wire(15),
+                kind
+            );
+            let result = independent_checker_machine_check_run(
+                &materialized.request,
+                &policy,
+                IndependentCheckerRunObservation {
+                    result_id: format!("mchkres_m8_external_forbidden_{kind}"),
+                    attempt: 1,
+                    runner: m3_runner(),
+                    process: IndependentCheckerMachineCheckProcess::exited(1),
+                    resource_usage: m3_resource_usage(22),
+                    stdout: raw.into_bytes(),
+                    stderr: Vec::new(),
+                },
+            )
+            .unwrap();
+            let error = result.error.as_ref().unwrap();
+            assert_eq!(result.status, IndependentCheckerMachineCheckStatus::Failed);
+            assert_eq!(error.kind, "checker_internal_error");
+            assert_eq!(
+                error.reason_code.as_deref(),
+                Some("malformed_rejection_output")
+            );
+            assert_eq!(error.field.as_deref(), Some("checker_raw.error.kind"));
+            assert_eq!(
+                error.expected_value.as_deref(),
+                Some("checker_raw_error_kind")
+            );
+            assert_eq!(error.actual_value.as_deref(), Some("invalid_enum"));
+        }
+    }
+
+    #[test]
+    fn m8_external_results_participate_in_release_comparison() {
+        assert_eq!(
+            IndependentCheckerTrustMode::Release.required_checker_profiles(),
+            ["fast-kernel", "reference", "external"]
+        );
+        assert_eq!(
+            IndependentCheckerTrustMode::HighTrust.required_checker_profiles(),
+            [
+                "fast-kernel",
+                "reference",
+                "external",
+                "high-trust-reference"
+            ]
+        );
+
+        let policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_m8_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_m8_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_m8_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+
+        let fast_checked = m4_checked_result(&fast.request, &policy, "mchkres_m8_fast_checked");
+        let reference_checked =
+            m4_checked_result(&reference.request, &policy, "mchkres_m8_ref_checked");
+        let external_checked =
+            m4_checked_result(&external.request, &policy, "mchkres_m8_ext_checked");
+        let checked_results = vec![
+            fast_checked.clone(),
+            reference_checked.clone(),
+            external_checked.clone(),
+        ];
+        let checked = independent_checker_normalize_results(
+            "norm_Std.Nat_m8_checked",
+            "normerr_Std.Nat_m8_checked",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &checked_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            checked
+                .results
+                .iter()
+                .map(|entry| entry.checker_profile.as_str())
+                .collect::<Vec<_>>(),
+            vec!["fast-kernel", "reference", "external"]
+        );
+        assert_eq!(
+            checked.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked
+        );
+        assert!(independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &checked,
+            &checked_results
+        ));
+
+        let external_failed = m5_failed_result(
+            &external.request,
+            &policy,
+            "mchkres_m8_ext_failed",
+            "Std.Nat",
+        );
+        let status_results = vec![
+            fast_checked.clone(),
+            reference_checked.clone(),
+            external_failed.clone(),
+        ];
+        let status_disagreement = independent_checker_normalize_results(
+            "norm_Std.Nat_m8_status_disagreement",
+            "normerr_Std.Nat_m8_status_disagreement",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &status_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            status_disagreement.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
+        assert!(status_disagreement.comparison.disagreements.iter().any(
+            |disagreement| disagreement.field == "status"
+                && disagreement.checker_profile == "external"
+                && disagreement.baseline_checker_profile.as_deref() == Some("fast-kernel")
+        ));
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &status_disagreement,
+            &status_results
+        ));
+
+        let mut external_hash_mismatch =
+            m4_checked_result(&external.request, &policy, "mchkres_m8_ext_hash");
+        external_hash_mismatch.export_hash = Some(test_hash(192));
+        let hash_results = vec![
+            fast_checked.clone(),
+            reference_checked.clone(),
+            external_hash_mismatch.clone(),
+        ];
+        let hash_disagreement = independent_checker_normalize_results(
+            "norm_Std.Nat_m8_hash_disagreement",
+            "normerr_Std.Nat_m8_hash_disagreement",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &hash_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            hash_disagreement.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
+        assert!(hash_disagreement
+            .comparison
+            .disagreements
+            .iter()
+            .any(|disagreement| disagreement.field == "export_hash"
+                && disagreement.checker_profile == "external"));
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &hash_disagreement,
+            &hash_results
+        ));
+
+        let external_timeout = independent_checker_machine_check_run(
+            &external.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_ext_timeout".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::terminated("timeout"),
+                resource_usage: IndependentCheckerMachineCheckResourceUsage {
+                    steps: 0,
+                    memory_peak_mb: 0,
+                    elapsed_ms: external.request.budget.timeout_ms + 1,
+                },
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let inconclusive_results = vec![fast_checked, reference_checked, external_timeout];
+        let inconclusive = independent_checker_normalize_results(
+            "norm_Std.Nat_m8_inconclusive",
+            "normerr_Std.Nat_m8_inconclusive",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &inconclusive_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            inconclusive.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Inconclusive
+        );
+        assert!(inconclusive
+            .comparison
+            .status_reasons
+            .iter()
+            .any(|reason| reason.kind == "inconclusive"
+                && reason.error_kind == "timeout"
+                && reason.reason_code == "checker_timeout"
+                && reason.checker_profile.as_deref() == Some("external")));
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &inconclusive,
+            &inconclusive_results
+        ));
+
+        let pr_policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        assert_eq!(pr_policy.required_checker_profiles, ["reference"]);
+        assert_eq!(pr_policy.optional_checker_profiles, ["external"]);
+        let pr_reference = m4_stored_request(&pr_policy, "reference", "mchkreq_m8_pr_reference");
+        let pr_request_store = m4_request_store_manifest(std::slice::from_ref(&pr_reference));
+        let pr_reference_result =
+            m4_checked_result(&pr_reference.request, &pr_policy, "mchkres_m8_pr_reference");
+        let pr_results = vec![pr_reference_result];
+        let pr_normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_m8_pr_reference",
+            "normerr_Std.Nat_m8_pr_reference",
+            &pr_policy,
+            &pr_request_store,
+            std::slice::from_ref(&pr_reference),
+            &pr_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            pr_normalized.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked
+        );
+        assert!(pr_normalized.comparison.missing_checker_profiles.is_empty());
+        assert!(independent_checker_normalized_result_passes_ci_gate(
+            &pr_policy,
+            &pr_normalized,
+            &pr_results
+        ));
     }
 
     #[test]
@@ -29552,6 +31666,176 @@ mod tests {
     }
 
     #[test]
+    fn independent_checker_performance_benchmark_summary_is_audit_only_and_deterministic() {
+        let policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_bench_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_bench_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_bench_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_bench_fast");
+        let reference_result = m4_checked_result(&reference.request, &policy, "mchkres_bench_ref");
+        let external_result = m4_checked_result(&external.request, &policy, "mchkres_bench_ext");
+        let machine_results = vec![
+            fast_result.clone(),
+            reference_result.clone(),
+            external_result.clone(),
+        ];
+        let normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_bench",
+            "normerr_Std.Nat_bench",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &machine_results,
+            None,
+        )
+        .unwrap();
+        let summary = independent_checker_performance_benchmark_summary(
+            &policy,
+            normalized.artifact_hash(),
+            normalized.normalized_result_hash(),
+            IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+            &machine_results,
+        )
+        .unwrap();
+
+        assert_eq!(
+            summary.benchmark_class,
+            IndependentCheckerPerformanceBenchmarkClass::ExternalChecker
+        );
+        assert!(!summary.proof_acceptance_boundary);
+        assert_eq!(summary.rows.len(), 1);
+        let row = &summary.rows[0];
+        assert_eq!(row.module, "Std.Nat");
+        assert_eq!(row.checker_profile, "external");
+        assert_eq!(row.checker_id.as_deref(), Some("npa-checker-ext"));
+        assert_eq!(row.checker_binary_hash, Some(test_hash(30)));
+        assert_eq!(row.certificate_hash, Some(test_hash(70)));
+        assert_eq!(row.result_hash, external_result.result_hash());
+        assert_eq!(row.run_artifact_hash, external_result.run_artifact_hash());
+        assert_eq!(row.elapsed_ms, 100);
+        assert_eq!(row.timeout_budget_ms, 60_000);
+        assert_eq!(row.memory_budget_mb, 2048);
+        assert!(!row.timeout_exceeded);
+        assert!(!row.memory_exceeded);
+
+        let canonical = summary.canonical_json();
+        let parsed = parse_independent_checker_performance_benchmark_summary(&canonical).unwrap();
+        assert_eq!(parsed, summary);
+        assert_eq!(
+            independent_checker_performance_benchmark_summary_hash(&canonical).unwrap(),
+            summary.summary_hash
+        );
+        assert!(canonical.contains(INDEPENDENT_CHECKER_PERFORMANCE_BENCHMARK_SUMMARY_SCHEMA));
+        assert!(canonical.contains(r#""proof_acceptance_boundary":false"#));
+
+        let mut slower_external = external_result.clone();
+        slower_external.resource_usage = IndependentCheckerMachineCheckResourceUsage {
+            steps: external_result.resource_usage.steps,
+            memory_peak_mb: external_result.resource_usage.memory_peak_mb,
+            elapsed_ms: external_result.resource_usage.elapsed_ms + 1,
+        };
+        assert_eq!(external_result.result_hash(), slower_external.result_hash());
+        let slower_summary = independent_checker_performance_benchmark_summary(
+            &policy,
+            normalized.artifact_hash(),
+            normalized.normalized_result_hash(),
+            IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+            &[fast_result, reference_result, slower_external],
+        )
+        .unwrap();
+        assert_ne!(summary.summary_hash, slower_summary.summary_hash);
+
+        let external_gate = independent_checker_performance_gate(
+            IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+        )
+        .unwrap();
+        assert_eq!(
+            external_gate.pr_placement,
+            IndependentCheckerPerformanceGatePrPlacement::BackgroundOrCachedAudit
+        );
+        assert!(!external_gate.proof_acceptance_boundary);
+        assert!(!IndependentCheckerArtifactKind::PerformanceBenchmarkSummary.is_checker_verdict());
+        assert!(
+            !IndependentCheckerArtifactKind::PerformanceBenchmarkSummary.is_normalization_input()
+        );
+    }
+
+    fn m9_high_trust_runner_policy() -> IndependentCheckerRunnerPolicy {
+        let mut policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let reference_checker = policy
+            .checker_allowlist
+            .iter()
+            .find(|entry| entry.profile == "reference")
+            .unwrap()
+            .clone();
+        let reference_budget = policy.budgets.get("reference").unwrap().clone();
+        policy.id = "independent-checker-high-trust".to_owned();
+        policy.trust_mode = IndependentCheckerTrustMode::HighTrust;
+        policy.required_checker_profiles = IndependentCheckerTrustMode::HighTrust
+            .required_checker_profiles()
+            .iter()
+            .map(|profile| (*profile).to_owned())
+            .collect();
+        policy
+            .checker_allowlist
+            .push(IndependentCheckerAllowlistEntry {
+                profile: "high-trust-reference".to_owned(),
+                checker_id: "npa-checker-ref-high-trust".to_owned(),
+                binary_id: "npa-checker-ref-high-trust-macos-aarch64".to_owned(),
+                binary_hash: test_hash(34),
+                build_hash: test_hash(35),
+                allowed_args: reference_checker.allowed_args,
+            });
+        policy
+            .checker_allowlist
+            .sort_by(|left, right| left.profile.cmp(&right.profile));
+        policy
+            .budgets
+            .insert("high-trust-reference".to_owned(), reference_budget);
+
+        parse_independent_checker_runner_policy(&policy.canonical_json()).unwrap()
+    }
+
+    fn m9_target_view(
+        policy: &IndependentCheckerRunnerPolicy,
+        profiles: &[&str],
+    ) -> IndependentCheckerReleaseBundleNormalizedResultView {
+        let artifact_hash = test_hash(2);
+        IndependentCheckerReleaseBundleNormalizedResultView {
+            normalized_result_hash: test_hash(3),
+            artifact_hash,
+            module: "Std.Nat".to_owned(),
+            input_file_hash: test_hash(69),
+            expected_certificate_hash: test_hash(70),
+            policy_hash: policy.policy_hash(),
+            import_lock_hash: test_hash(5),
+            comparison_status: IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked,
+            comparison_missing_checker_profiles: Vec::new(),
+            comparison_disagreements_len: 0,
+            comparison_status_reasons_len: 0,
+            results: profiles
+                .iter()
+                .enumerate()
+                .map(
+                    |(index, profile)| IndependentCheckerReleaseBundleNormalizedEntryView {
+                        result_hash: test_hash(100 + index as u8),
+                        request_hash: test_hash(110 + index as u8),
+                        policy_hash: policy.policy_hash(),
+                        artifact_hash,
+                        checker_profile: (*profile).to_owned(),
+                        status: IndependentCheckerMachineCheckStatus::Checked,
+                        certificate_hash: Some(test_hash(70)),
+                        export_hash: Some(test_hash(90)),
+                        axiom_report_hash: Some(test_hash(91)),
+                    },
+                )
+                .collect(),
+        }
+    }
+
+    #[test]
     fn p8h14_release_and_high_trust_pass_requirements_are_closed() {
         assert!(independent_checker_ci_pass_requires(
             IndependentCheckerTrustMode::Release,
@@ -29601,6 +31885,165 @@ mod tests {
             IndependentCheckerTrustMode::Pr,
             IndependentCheckerCiPassRequirement::ReleaseAuditBundleGenerated
         ));
+
+        let release_policy =
+            parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let release_target =
+            m9_target_view(&release_policy, &["fast-kernel", "reference", "external"]);
+        independent_checker_release_bundle_validate_target_normalized_result(
+            &release_target,
+            &release_policy,
+        )
+        .unwrap();
+
+        let missing_external = m9_target_view(&release_policy, &["fast-kernel", "reference"]);
+        let missing_external_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &missing_external,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            missing_external_error.field.as_ref(),
+            "normalized_check_result.artifact.results[].checker_profile"
+        );
+        assert_eq!(
+            missing_external_error.expected_value.as_deref(),
+            Some("required_profile:external")
+        );
+
+        let mut failed_external = release_target.clone();
+        failed_external
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "external")
+            .unwrap()
+            .status = IndependentCheckerMachineCheckStatus::Failed;
+        let failed_external_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &failed_external,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            failed_external_error.field.as_ref(),
+            "normalized_check_result.artifact.results[external].status"
+        );
+
+        let mut missing_external_hash = release_target.clone();
+        missing_external_hash
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "external")
+            .unwrap()
+            .export_hash = None;
+        let missing_external_hash_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &missing_external_hash,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            missing_external_hash_error.field.as_ref(),
+            "normalized_check_result.artifact.results[external].export_hash"
+        );
+
+        let mut divergent_external_hash = release_target.clone();
+        divergent_external_hash
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "external")
+            .unwrap()
+            .axiom_report_hash = Some(test_hash(92));
+        let divergent_external_hash_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &divergent_external_hash,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            divergent_external_hash_error.field.as_ref(),
+            "normalized_check_result.artifact.results[external].axiom_report_hash"
+        );
+
+        let mut wrong_certificate_hash = release_target.clone();
+        wrong_certificate_hash
+            .results
+            .iter_mut()
+            .find(|entry| entry.checker_profile == "reference")
+            .unwrap()
+            .certificate_hash = Some(test_hash(93));
+        let wrong_certificate_hash_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &wrong_certificate_hash,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            wrong_certificate_hash_error.field.as_ref(),
+            "normalized_check_result.artifact.results[reference].certificate_hash"
+        );
+        assert_eq!(
+            wrong_certificate_hash_error.expected_hash,
+            Some(Box::new(test_hash(70)))
+        );
+
+        let mut inconclusive_external = release_target.clone();
+        inconclusive_external.comparison_status =
+            IndependentCheckerNormalizedComparisonStatus::Inconclusive;
+        let inconclusive_external_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &inconclusive_external,
+                &release_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            inconclusive_external_error.field.as_ref(),
+            "normalized_check_result.artifact.comparison.status"
+        );
+
+        let high_trust_policy = m9_high_trust_runner_policy();
+        let high_trust_target = m9_target_view(
+            &high_trust_policy,
+            &[
+                "fast-kernel",
+                "reference",
+                "external",
+                "high-trust-reference",
+            ],
+        );
+        independent_checker_release_bundle_validate_target_normalized_result(
+            &high_trust_target,
+            &high_trust_policy,
+        )
+        .unwrap();
+
+        let release_only_evidence = m9_target_view(
+            &high_trust_policy,
+            &["fast-kernel", "reference", "external"],
+        );
+        let release_only_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &release_only_evidence,
+                &high_trust_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            release_only_error.expected_value.as_deref(),
+            Some("required_profile:high-trust-reference")
+        );
+
+        let reference_only_evidence = m9_target_view(&high_trust_policy, &["reference"]);
+        let reference_only_error =
+            independent_checker_release_bundle_validate_target_normalized_result(
+                &reference_only_evidence,
+                &high_trust_policy,
+            )
+            .unwrap_err();
+        assert_eq!(
+            reference_only_error.expected_value.as_deref(),
+            Some("required_profile:fast-kernel")
+        );
     }
 
     #[test]
@@ -29789,6 +32232,7 @@ mod tests {
             IndependentCheckerRunnerSandboxPolicy {
                 network: "forbidden".to_owned(),
                 certificate_mount: "read_only".to_owned(),
+                import_mount: "read_only".to_owned(),
                 source_mount: "forbidden".to_owned(),
                 plugin_loading: "forbidden".to_owned(),
                 cwd: "runner_owned".to_owned(),
@@ -30295,7 +32739,7 @@ mod tests {
               "certificate_hash":"{}",
               "error":{{
                 "kind":"type_mismatch",
-                "reason_code":"checker_reported_internal_error"
+                "reason_code":"Bad Reason"
               }}
             }}"#,
             hash_wire(11),
@@ -30303,8 +32747,8 @@ mod tests {
         );
         let error = parse_independent_checker_raw_result(&raw).unwrap_err();
         assert_eq!(error.field, "checker_raw.error.reason_code");
-        assert_eq!(error.expected_value, "absent_for_error_kind");
-        assert_eq!(error.actual_value, "forbidden_field");
+        assert_eq!(error.expected_value, "checker_raw_error_reason_code");
+        assert_eq!(error.actual_value, "invalid_name_format");
     }
 
     #[test]
@@ -30542,7 +32986,7 @@ mod tests {
                   "binary_id":"npa-checker-ext-macos-aarch64",
                   "binary_hash":"{}",
                   "build_hash":"{}",
-                  "allowed_args":["--json","--canonical-only"]
+                  "allowed_args":[]
                 }},
                 {{
                   "profile":"fast-kernel",
@@ -34683,6 +37127,21 @@ mod tests {
             &mut artifacts,
             &mut files,
         );
+        let benchmark = independent_checker_performance_benchmark_summary(
+            &runner_policy,
+            artifact_hash,
+            normalized.normalized_result_hash(),
+            IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+            &machine_results,
+        )
+        .unwrap();
+        m12_add_artifact(
+            IndependentCheckerReleaseBundleArtifactKind::PerformanceBenchmarkSummary,
+            benchmark.canonical_json(),
+            &[("summary_hash", benchmark.summary_hash)],
+            &mut artifacts,
+            &mut files,
+        );
 
         M12BundleFixture {
             artifact_hash,
@@ -34765,6 +37224,35 @@ mod tests {
         )
         .unwrap();
         assert!(!adopted_validation.out_rewrite_required);
+    }
+
+    #[test]
+    fn m12_release_bundle_requires_external_checker_benchmark_summary() {
+        let mut fixture = m12_fixture(true);
+        fixture.artifacts.retain(|artifact| {
+            artifact.kind
+                != IndependentCheckerReleaseBundleArtifactKind::PerformanceBenchmarkSummary
+        });
+
+        let err = independent_checker_release_bundle(
+            "dist/release-bundle",
+            "dist/release-bundle/manifest.json",
+            fixture.artifact_hash,
+            &fixture.artifacts,
+            &fixture.files,
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err.reason_code.as_ref(), "release_bundle_generation_failed");
+        assert_eq!(
+            err.field.as_deref(),
+            Some("artifacts[performance_benchmark_summary]")
+        );
+        assert_eq!(
+            err.expected_value.as_deref(),
+            Some("external checker benchmark")
+        );
+        assert_eq!(err.actual_value.as_deref(), Some("missing"));
     }
 
     #[test]
