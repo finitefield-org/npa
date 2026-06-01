@@ -1,0 +1,111 @@
+name: Setup pinned npa
+description: Locate a pinned npa binary or build npa-cli from a pinned git commit.
+
+inputs:
+  npa-binary-path:
+    description: Existing executable npa path, absolute or package-root relative.
+    required: false
+    default: ""
+  npa-version:
+    description: Reserved exact npa release version input.
+    required: false
+    default: ""
+  npa-git-tag:
+    description: Reserved exact npa git tag input.
+    required: false
+    default: ""
+  npa-git-commit:
+    description: Full npa git commit SHA to build.
+    required: false
+    default: ""
+  default-git-commit:
+    description: Checked-in full npa git commit SHA used when no source input is set.
+    required: true
+  rust-toolchain-version:
+    description: Exact Rust toolchain version for git-commit builds.
+    required: false
+    default: "1.95.0"
+
+runs:
+  using: composite
+  steps:
+    - name: Locate or build pinned npa
+      shell: bash
+      env:
+        INPUT_NPA_BINARY_PATH: ${{ inputs.npa-binary-path }}
+        INPUT_NPA_VERSION: ${{ inputs.npa-version }}
+        INPUT_NPA_GIT_TAG: ${{ inputs.npa-git-tag }}
+        INPUT_NPA_GIT_COMMIT: ${{ inputs.npa-git-commit }}
+        INPUT_NPA_DEFAULT_GIT_COMMIT: ${{ inputs.default-git-commit }}
+        INPUT_RUST_TOOLCHAIN_VERSION: ${{ inputs.rust-toolchain-version }}
+      run: |
+        set -euo pipefail
+
+        npa_binary_path="${INPUT_NPA_BINARY_PATH:-}"
+        npa_version="${INPUT_NPA_VERSION:-}"
+        npa_git_tag="${INPUT_NPA_GIT_TAG:-}"
+        npa_git_commit="${INPUT_NPA_GIT_COMMIT:-}"
+        default_git_commit="${INPUT_NPA_DEFAULT_GIT_COMMIT:-}"
+        rust_toolchain="${INPUT_RUST_TOOLCHAIN_VERSION:-1.95.0}"
+
+        if [ -z "$npa_binary_path" ] && [ -z "$npa_version" ] && [ -z "$npa_git_tag" ] && [ -z "$npa_git_commit" ]; then
+          npa_git_commit="$default_git_commit"
+        fi
+
+        source_count=0
+        for value in "$npa_binary_path" "$npa_version" "$npa_git_tag" "$npa_git_commit"; do
+          if [ -n "$value" ]; then
+            source_count=$((source_count + 1))
+          fi
+        done
+        if [ "$source_count" -ne 1 ]; then
+          echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
+          exit 2
+        fi
+        if [ -n "$npa_version" ] || [ -n "$npa_git_tag" ]; then
+          echo "This seed workflow currently accepts NPA_BINARY_PATH or NPA_GIT_COMMIT only." >&2
+          exit 2
+        fi
+
+        mkdir -p "$RUNNER_TEMP/npa-bin"
+        if [ -n "$npa_binary_path" ]; then
+          case "$npa_binary_path" in
+            /*) resolved_npa_path="$npa_binary_path" ;;
+            *) resolved_npa_path="$GITHUB_WORKSPACE/$npa_binary_path" ;;
+          esac
+          if [ ! -x "$resolved_npa_path" ]; then
+            echo "NPA_BINARY_PATH is not executable: $npa_binary_path" >&2
+            exit 2
+          fi
+          ln -sf "$resolved_npa_path" "$RUNNER_TEMP/npa-bin/npa"
+        else
+          if [[ ! "$npa_git_commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "NPA_GIT_COMMIT must be a full lowercase 40-hex commit SHA." >&2
+            exit 2
+          fi
+          if [[ ! "$rust_toolchain" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]; then
+            echo "RUST_TOOLCHAIN_VERSION must be an exact version such as 1.95.0." >&2
+            exit 2
+          fi
+
+          npa_source="$RUNNER_TEMP/npa-source"
+          rm -rf "$npa_source"
+          git init "$npa_source"
+          git -C "$npa_source" remote add origin https://github.com/finitefield-org/npa.git
+          git -C "$npa_source" fetch --depth 1 origin "$npa_git_commit"
+          git -C "$npa_source" checkout --detach FETCH_HEAD
+          actual_commit="$(git -C "$npa_source" rev-parse HEAD)"
+          if [ "$actual_commit" != "$npa_git_commit" ]; then
+            echo "Fetched npa commit mismatch: expected $npa_git_commit, got $actual_commit" >&2
+            exit 2
+          fi
+
+          rustup toolchain install "$rust_toolchain" --profile minimal
+          cargo "+$rust_toolchain" build --manifest-path "$npa_source/Cargo.toml" -p npa-cli --locked --release
+          ln -sf "$npa_source/target/release/npa" "$RUNNER_TEMP/npa-bin/npa"
+          cargo "+$rust_toolchain" --version
+          rustc "+$rust_toolchain" --version
+        fi
+
+        echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
+        "$RUNNER_TEMP/npa-bin/npa" --help >/dev/null

@@ -129,3 +129,33 @@ When running from the parent `npa` workspace before installing `npa`, replace
 ```sh
 cargo run -p npa-cli -- package check --root fixtures/npa-mathlib-seed --json
 ```
+
+## CI
+
+The seed fixture includes inactive-in-this-repository workflow files under
+`.github/workflows/`. They become active only after this fixture is copied to a
+standalone `npa-mathlib-seed` repository.
+
+The workflows locate `npa` deterministically. Repository variables may set
+`NPA_BINARY_PATH` to an executable package-local or absolute binary path, or
+`NPA_GIT_COMMIT` to a full 40-hex `npa` commit SHA. If neither is set, the
+checked-in workflow default builds `npa-cli` from the pinned commit recorded in
+the workflow. Git-tag and release-version installer modes are intentionally
+reserved until their download strategy is fixed. Rust builds use an exact
+`RUST_TOOLCHAIN_VERSION`, defaulting to `1.95.0`.
+
+PR CI runs the full package check sequence, including source-free reference
+verification and `generated/publish-plan.json` check. Release CI uploads:
+
+- `generated/package-lock.json`
+- `generated/axiom-report.json`
+- `generated/theorem-index.json`
+- `generated/publish-plan.json`
+- checked certificate artifacts
+- package command JSON diagnostics under `ci-output/`
+
+The base release profile is reference-checker-only for proof acceptance. It
+also records a labeled fast-kernel source-free verification job when the
+checked-in `npa` CLI supports it. The workflows do not run `--checker external`,
+do not generate `verified_high_trust`, and do not use registry lookup, package
+solver, network package resolution, or implicit latest-version package imports.

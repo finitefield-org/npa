@@ -48,6 +48,20 @@ Adding larger proof-corpus modules, changing the axiom policy, adding
 `Eq.rec`-dependent modules, or renaming the public namespace is outside
 the current seed command wiring scope.
 
+## CI Review
+
+PR CI checks `package-lock.json`, `axiom-report.json`, `theorem-index.json`,
+and `publish-plan.json` in check mode. A stale generated artifact should be
+regenerated through the corresponding package command and reviewed as ordinary
+metadata drift.
+
+Release CI uploads the generated package artifacts, checked certificates, and
+JSON diagnostics needed by downstream packages. The release profile is
+reference-checker-only; fast-kernel output is labeled separately and is not a
+reference checker verdict. High-trust external verification remains disabled
+until the seed repository supplies the CLR-08 pinned external checker binary,
+runner policies, checker registry, and release audit evidence.
+
 ## Trust Boundary
 
 Source files, replay files, metadata, package manifests, generated indexes,

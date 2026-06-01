@@ -1,0 +1,116 @@
+name: NPA Package PR
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  NPA_BINARY_PATH: ${{ vars.NPA_BINARY_PATH }}
+  NPA_VERSION: ${{ vars.NPA_VERSION }}
+  NPA_GIT_TAG: ${{ vars.NPA_GIT_TAG }}
+  NPA_GIT_COMMIT: ${{ vars.NPA_GIT_COMMIT }}
+  NPA_DEFAULT_GIT_COMMIT: 6243e0f210e3b9bbf49c2c83eb2537c10cb5ccd0
+  RUST_TOOLCHAIN_VERSION: ${{ vars.RUST_TOOLCHAIN_VERSION }}
+
+jobs:
+  package-pr:
+    name: Full-package reference check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout theorem package
+        uses: actions/checkout@v4
+
+      - name: Setup pinned npa
+        uses: ./.github/actions/setup-npa
+        with:
+          npa-binary-path: ${{ env.NPA_BINARY_PATH }}
+          npa-version: ${{ env.NPA_VERSION }}
+          npa-git-tag: ${{ env.NPA_GIT_TAG }}
+          npa-git-commit: ${{ env.NPA_GIT_COMMIT }}
+          default-git-commit: ${{ env.NPA_DEFAULT_GIT_COMMIT }}
+          rust-toolchain-version: ${{ env.RUST_TOOLCHAIN_VERSION }}
+
+      - name: Package check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package check --root . --json > ci-output/package-check.json
+
+      - name: Build certificates check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package build-certs --root . --check --json > ci-output/build-certs.json
+
+      - name: Check hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package check-hashes --root . --json > ci-output/check-hashes.json
+
+      - name: Source-free reference verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package verify-certs --root . --checker reference --json > ci-output/verify-certs-reference.json
+
+      - name: Axiom report check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package axiom-report --root . --check --json > ci-output/axiom-report.json
+
+      - name: Theorem index check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package index --root . --check --json > ci-output/index.json
+
+      - name: Publish plan check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-output
+          npa package publish-plan --root . --check --json > ci-output/publish-plan.json
+
+      - name: Failure summary
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "## NPA package PR diagnostics"
+            echo
+            echo "Full-package reference verification is the PR acceptance gate."
+            echo
+            echo "Saved JSON diagnostics:"
+            if [ -d ci-output ]; then
+              find ci-output -maxdepth 1 -type f -name '*.json' | sort | sed 's/^/- /'
+            else
+              echo "- no ci-output directory was created"
+            fi
+            echo
+            echo "Structured diagnostic summary:"
+            if [ -f ci-templates/github-actions/summarize-npa-diagnostics.py ]; then
+              python3 ci-templates/github-actions/summarize-npa-diagnostics.py ci-output
+            else
+              echo "- diagnostic summary helper not found"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload package diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npa-package-pr-diagnostics
+          path: ci-output/*.json
+          if-no-files-found: ignore
