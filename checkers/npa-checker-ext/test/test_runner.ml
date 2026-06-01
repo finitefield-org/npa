@@ -365,6 +365,42 @@ let encode_raw_string text = encode_uvar_int (String.length text) ^ text
 let encode_name components =
   encode_uvar_int (List.length components) ^ String.concat "" (List.map encode_string components)
 
+let make_name components =
+  match Ext_name.of_components components with
+  | None -> failwith "test fixture constructed an invalid name"
+  | Some name -> name
+
+let one_byte code = String.make 1 (Char.chr code)
+
+let hash_bytes fill = String.make 32 (Char.chr fill)
+
+let encode_level_zero = one_byte 0x00
+
+let encode_level_succ inner = one_byte 0x01 ^ encode_uvar_int inner
+
+let encode_level_max lhs rhs = one_byte 0x02 ^ encode_uvar_int lhs ^ encode_uvar_int rhs
+
+let encode_level_param name_id = one_byte 0x04 ^ encode_uvar_int name_id
+
+let encode_term_sort level_id = one_byte 0x00 ^ encode_uvar_int level_id
+
+let encode_term_bvar index = one_byte 0x01 ^ encode_uvar_int index
+
+let encode_term_const global_ref levels =
+  one_byte 0x02 ^ global_ref ^ encode_uvar_int (List.length levels)
+  ^ String.concat "" (List.map encode_uvar_int levels)
+
+let encode_term_app fn arg = one_byte 0x03 ^ encode_uvar_int fn ^ encode_uvar_int arg
+
+let encode_term_lam ty body = one_byte 0x04 ^ encode_uvar_int ty ^ encode_uvar_int body
+
+let encode_term_pi ty body = one_byte 0x05 ^ encode_uvar_int ty ^ encode_uvar_int body
+
+let encode_term_let ty value body =
+  one_byte 0x06 ^ encode_uvar_int ty ^ encode_uvar_int value ^ encode_uvar_int body
+
+let encode_global_builtin name_id hash = one_byte 0x03 ^ encode_uvar_int name_id ^ hash
+
 let encode_header ?(format = Ext_cert.expected_format)
     ?(core_spec = Ext_cert.expected_core_spec) module_components =
   encode_string format ^ encode_string core_spec ^ encode_name module_components
@@ -456,6 +492,128 @@ let run_decoder_header_tests () =
     Ext_bytes.Name_table (String.length (encode_uvar_int 2 ^ duplicate_entry))
     (Ext_cert.read_name_table (Ext_bytes.of_string duplicate_name_table))
 
+let level_value (entry : Ext_level.located) = entry.level
+
+let term_value (entry : Ext_term.located) = entry.term
+
+let run_decoder_tables_tests () =
+  let universe_name = make_name [ "u" ] in
+  let nat_name = make_name [ "Nat" ] in
+  let names = [ universe_name; nat_name ] in
+  let valid_level_table =
+    encode_uvar_int 3 ^ encode_level_zero ^ encode_level_param 0 ^ encode_level_succ 0
+  in
+  let levels =
+    match Ext_level.read_table names (Ext_bytes.of_string valid_level_table) with
+    | Error error ->
+        failwith
+          ("valid level table: unexpected decode error "
+         ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+    | Ok (levels, next) ->
+        assert_int_equal "valid level table offset" (String.length valid_level_table)
+          (Ext_bytes.offset next);
+        assert_int_equal "valid level table length" 3 (List.length levels);
+        levels
+  in
+  (match List.map level_value levels with
+  | [ Ext_level.Zero; Ext_level.Param name; Ext_level.Succ Ext_level.Zero ] ->
+      assert_equal "valid level param name" "u" (Ext_name.to_string name)
+  | _ -> failwith "valid level table did not decode into structured level AST");
+
+  let builtin_nat = encode_global_builtin 1 (hash_bytes 0x42) in
+  let valid_term_table =
+    encode_uvar_int 7 ^ encode_term_sort 0 ^ encode_term_bvar 0
+    ^ encode_term_const builtin_nat [ 0; 1 ]
+    ^ encode_term_app 2 1 ^ encode_term_lam 0 3 ^ encode_term_pi 0 4
+    ^ encode_term_let 0 1 5
+  in
+  let terms =
+    match Ext_term.read_table names levels (Ext_bytes.of_string valid_term_table) with
+    | Error error ->
+        failwith
+          ("valid term table: unexpected decode error "
+         ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+    | Ok (terms, next) ->
+        assert_int_equal "valid term table offset" (String.length valid_term_table)
+          (Ext_bytes.offset next);
+        assert_int_equal "valid term table length" 7 (List.length terms);
+        terms
+  in
+  (match List.map term_value terms with
+  | [
+   Ext_term.Sort Ext_level.Zero;
+   Ext_term.BVar 0;
+   Ext_term.Const
+     (Ext_term.Builtin { name; decl_interface_hash }, [ Ext_level.Zero; Ext_level.Param _ ]);
+   Ext_term.App (_, _);
+   Ext_term.Lam (_, _);
+   Ext_term.Pi (_, _);
+   Ext_term.Let (_, _, _);
+  ] ->
+      assert_equal "valid term const builtin name" "Nat" (Ext_name.to_string name);
+      assert_int_equal "valid term const hash length" 32 (String.length decl_interface_hash)
+  | _ -> failwith "valid term table did not decode into structured term AST");
+
+  assert_decode_error "unknown level tag" "certificate_decode_error"
+    (Ext_bytes.Unknown_tag 0xff) Ext_bytes.Level_table 1
+    (Ext_level.read_table names (Ext_bytes.of_string (encode_uvar_int 1 ^ one_byte 0xff)));
+  assert_decode_error "level table length exceeds payload" "certificate_decode_error"
+    Ext_bytes.Unexpected_eof Ext_bytes.Level_table 1
+    (Ext_level.read_table names (Ext_bytes.of_string (encode_uvar_int 2 ^ encode_level_zero)));
+  assert_decode_error "dangling level self reference" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Level_table 1
+    (Ext_level.read_table names (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_level_succ 0)));
+  assert_decode_error "dangling level name reference" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Level_table 1
+    (Ext_level.read_table [ universe_name ]
+       (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_level_param 1)));
+  assert_decode_error "non-normalized max zero" "noncanonical_encoding"
+    Ext_bytes.Non_normalized_level Ext_bytes.Level_table 4
+    (Ext_level.read_table [ universe_name ]
+       (Ext_bytes.of_string
+          (encode_uvar_int 3 ^ encode_level_zero ^ encode_level_param 0
+         ^ encode_level_max 0 1)));
+  assert_decode_error "duplicate level entry" "noncanonical_encoding"
+    Ext_bytes.Noncanonical_order Ext_bytes.Level_table 2
+    (Ext_level.read_table names
+       (Ext_bytes.of_string (encode_uvar_int 2 ^ encode_level_zero ^ encode_level_zero)));
+  assert_decode_error "unresolved universe metavariable" "certificate_decode_error"
+    Ext_bytes.Unresolved_metavariable Ext_bytes.Level_table 1
+    (Ext_level.read_table [ make_name [ "z?meta" ] ]
+       (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_level_param 0)));
+  assert_decode_error "unresolved human universe metavariable" "certificate_decode_error"
+    Ext_bytes.Unresolved_metavariable Ext_bytes.Level_table 1
+    (Ext_level.read_table [ make_name [ "__npa_internal_human_universe_meta#0" ] ]
+       (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_level_param 0)));
+
+  assert_decode_error "unknown term tag" "certificate_decode_error"
+    (Ext_bytes.Unknown_tag 0xff) Ext_bytes.Term_table 1
+    (Ext_term.read_table names levels (Ext_bytes.of_string (encode_uvar_int 1 ^ one_byte 0xff)));
+  assert_decode_error "term table length exceeds payload" "certificate_decode_error"
+    Ext_bytes.Unexpected_eof Ext_bytes.Term_table 1
+    (Ext_term.read_table names levels
+       (Ext_bytes.of_string (encode_uvar_int 2 ^ one_byte 0x01)));
+  assert_decode_error "dangling term level reference" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 1
+    (Ext_term.read_table names [] (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_term_sort 0)));
+  assert_decode_error "dangling term self reference" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 1
+    (Ext_term.read_table names levels
+       (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_term_app 0 0)));
+  assert_decode_error "unknown global ref tag" "certificate_decode_error"
+    (Ext_bytes.Unknown_tag 0xfe) Ext_bytes.Term_table 2
+    (Ext_term.read_table names levels
+       (Ext_bytes.of_string (encode_uvar_int 1 ^ one_byte 0x02 ^ one_byte 0xfe)));
+  assert_decode_error "dangling global ref name" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Term_table 1
+    (Ext_term.read_table names levels
+       (Ext_bytes.of_string
+          (encode_uvar_int 1 ^ encode_term_const (encode_global_builtin 9 (hash_bytes 0x01)) [])));
+  assert_decode_error "duplicate term entry" "noncanonical_encoding"
+    Ext_bytes.Non_normalized_term Ext_bytes.Term_table 3
+    (Ext_term.read_table names levels
+       (Ext_bytes.of_string (encode_uvar_int 2 ^ encode_term_sort 0 ^ encode_term_sort 0)))
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
@@ -465,12 +623,20 @@ let () =
       if
         not
           (List.mem name
-             [ "cli"; "decoder-bytes"; "decoder-header"; "feature-policy"; "sha256" ])
+             [
+               "cli";
+               "decoder-bytes";
+               "decoder-header";
+               "decoder-tables";
+               "feature-policy";
+               "sha256";
+             ])
       then
         failwith ("unknown test filter " ^ name))
     selected;
   if should_run selected "sha256" then run_sha256_tests ();
   if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
   if should_run selected "decoder-header" then run_decoder_header_tests ();
+  if should_run selected "decoder-tables" then run_decoder_tables_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "cli" then run_cli_tests ()

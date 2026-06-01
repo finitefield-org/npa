@@ -14,6 +14,7 @@ scripts/test.sh sha256
 scripts/test.sh feature-policy
 scripts/test.sh decoder-bytes
 scripts/test.sh decoder-header
+scripts/test.sh decoder-tables
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -64,3 +65,9 @@ M1-02 adds source-free header and name grammar decoding. The decoder requires
 `NPA-CERT-0.1` and `NPA-Core-0.1`, decodes names into structured components,
 and rejects invalid UTF-8, empty names, empty components, dotted components,
 and duplicate name table entries with structured reasons.
+
+M1-03 adds source-free level and term table decoding. Level and term nodes are
+kept as OCaml algebraic data types, not source text. The decoder rejects
+unknown tags, dangling table references, non-normalized level entries,
+duplicate term entries, and unresolved universe metavariable names before
+semantic checking.

@@ -27,6 +27,12 @@ type decode_error_reason =
   | Empty_name_component
   | Dotted_name_component
   | Duplicate_name
+  | Unknown_tag of int
+  | Dangling_reference
+  | Non_normalized_level
+  | Non_normalized_term
+  | Noncanonical_order
+  | Unresolved_metavariable
 
 type decode_error = {
   section : certificate_section;
@@ -82,6 +88,12 @@ let reason_code reason =
   | Empty_name_component -> "empty_name_component"
   | Dotted_name_component -> "dotted_name_component"
   | Duplicate_name -> "duplicate_name"
+  | Unknown_tag _ -> "unknown_tag"
+  | Dangling_reference -> "dangling_reference"
+  | Non_normalized_level -> "non_normalized_level"
+  | Non_normalized_term -> "non_normalized_term"
+  | Noncanonical_order -> "noncanonical_order"
+  | Unresolved_metavariable -> "unresolved_metavariable"
 
 let error section offset reason = Error { section; offset; reason }
 
