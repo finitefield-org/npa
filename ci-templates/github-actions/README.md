@@ -20,9 +20,8 @@ contract source is:
 doc/external-theorem-library-ci.md
 ```
 
-External theorem libraries should copy templates from this directory once later
-CLR-07 milestones add them. They should not copy local `npa` repository gates
-such as:
+External theorem libraries should copy or reference templates from this
+directory. They should not copy local `npa` repository gates such as:
 
 ```sh
 scripts/phase8-release-audit.sh
@@ -30,6 +29,11 @@ scripts/phase9-regression.sh
 ```
 
 Those scripts are repository development gates, not external theorem library CI.
+CLR-09 should use these files for `npa-mathlib-seed`: `npa-package-pr.yml`,
+`npa-package-release.yml`, `summarize-npa-diagnostics.py`, and
+`validate-workflows.py`. If the seed repository installs the workflow YAML
+under `.github/workflows/`, keep helper scripts at the path referenced by the
+templates or update the copied workflow paths in the same change.
 
 ## Pinned Setup Inputs
 
@@ -197,3 +201,7 @@ package caches, or resolve imports by implicit latest version.
 
 CI output is not proof evidence. The proof boundary remains canonical
 certificate artifacts plus source-free checker or kernel verifier verdicts.
+External checker required mode and `verified_high_trust` wait for CLR-08; base
+CLR-07 templates remain reference-checker-only for PR acceptance and do not use
+registry access, a package solver, a binary cache, or implicit latest package
+resolution.

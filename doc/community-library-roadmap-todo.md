@@ -435,7 +435,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-07 Add External Theorem Library CI Template
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05
 - Inputs:
   - local gates in `scripts/phase8-release-audit.sh` and `scripts/phase9-regression.sh`
@@ -448,9 +448,12 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - package CLI examples
   - `doc/community-library-roadmap.md` if workflow names are fixed
 - Deliverables:
-  - PR-mode CI template for external theorem libraries.
-  - Release/high-trust CI template that runs full package verification and artifact checks.
-  - Contributor-facing failure messages or troubleshooting guidance.
+  - PR-mode CI template for external theorem libraries: `ci-templates/github-actions/npa-package-pr.yml`.
+  - Release/high-trust CI template that runs full package verification and artifact checks:
+    `ci-templates/github-actions/npa-package-release.yml`.
+  - Contributor-facing failure messages and troubleshooting guidance in
+    `doc/external-theorem-library-ci.md` and `ci-templates/github-actions/README.md`.
+  - Local workflow/command drift validator: `ci-templates/github-actions/validate-workflows.py`.
   - Documentation that current `npa` repo local gates remain separate from external library CI.
 - Acceptance criteria:
   - PR mode requires package check, deterministic build/hash check, full-package reference checker fallback, axiom report check, and index check.
@@ -469,7 +472,14 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - Base templates use full-package reference verification as the conservative PR fallback until changed-module selection exists.
   - Publish-plan is optional after CLR-06; external checker required mode remains CLR-08.
   - CLR-07-01 contract source: `doc/external-theorem-library-ci.md`.
-  - CLR-07-01 template location: `ci-templates/github-actions/`.
+  - CLR-07 template location: `ci-templates/github-actions/`.
+  - CLR-09 should copy or reference `npa-package-pr.yml`, `npa-package-release.yml`,
+    `summarize-npa-diagnostics.py`, and `validate-workflows.py` for `npa-mathlib-seed`.
+    If workflow YAML is installed under `.github/workflows/`, keep helper
+    scripts at the referenced path or adjust the copied workflow paths in the
+    same review.
+  - The copied seed workflow remains registry-free: no package solver, binary cache,
+    implicit latest package resolution, or required external checker before CLR-08.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
@@ -520,7 +530,9 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Inputs:
   - package CLI and artifacts from CLR-04/CLR-05/CLR-06
   - current proof corpus modules such as `Proofs.Ai.Basic`, `Proofs.Ai.Eq`, `Proofs.Ai.Nat`
-  - external CI template from CLR-07
+  - external CI templates from CLR-07:
+    `ci-templates/github-actions/npa-package-pr.yml` and
+    `ci-templates/github-actions/npa-package-release.yml`
   - detailed task breakdown in `doc/community-library-roadmap-clr-09-todo.md`
 - Code or documentation areas:
   - separate `npa-mathlib-seed` repository, or a local fixture that models that external repository boundary
@@ -548,6 +560,8 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Notes:
   - Start with a small subset. Do not move the entire proof corpus until package ergonomics are proven.
   - Detailed breakdown: `doc/community-library-roadmap-clr-09-todo.md`.
+  - Copy or reference the CLR-07 templates and helper scripts instead of copying
+    `scripts/phase8-release-audit.sh` or `scripts/phase9-regression.sh`.
   - CLR-09 depends on CLR-06 and CLR-07. It can proceed without CLR-08 only when the seed release policy is explicitly reference-checker-only.
 
 ### CLR-10 Registry Readiness Review

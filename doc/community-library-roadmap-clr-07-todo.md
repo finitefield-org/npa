@@ -515,7 +515,7 @@ fresh-checkout CI expectations
 
 ### CLR-07-07 Update Roadmap And Seed-Repo Handoff Documentation
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-07-06
 - Inputs:
   - `doc/community-library-roadmap-todo.md`

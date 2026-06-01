@@ -147,6 +147,26 @@ source-free local verification を再実行します。
 `npa package publish-plan` は CLR-06 の release metadata command です。package commands は
 explicit local package root だけを対象にし、network access や binary cache lookup を行いません。
 
+外部 theorem library 用の copyable CI template は `ci-templates/github-actions/` にあります。
+`npa-package-pr.yml` は PR 用に次を実行します。
+
+```sh
+npa package check --root . --json
+npa package build-certs --root . --check --json
+npa package check-hashes --root . --json
+npa package verify-certs --root . --checker reference --json
+npa package axiom-report --root . --check --json
+npa package index --root . --check --json
+```
+
+`npa-package-release.yml` は release/high-trust base 用に同じ artifact checks に加えて、
+fast-kernel と reference checker の source-free verification を分けて実行します。
+CLR-06 の `publish-plan` check は gated optional step です。外部 checker required mode と
+`verified_high_trust` は CLR-08 まで入りません。これらの template はこの repo の
+`.github/workflows` ではなく、`npa-mathlib-seed` などの外部 repo が copy または reference
+するためのものです。この repo の local gate は引き続き `scripts/phase8-release-audit.sh` と
+`scripts/phase9-regression.sh` です。
+
 `npa-kernel`、`npa-cert`、`npa-checker-ref` は package CLI の責務を持ちません。
 package command の filesystem access、registry metadata handling、CI orchestration は
 非信頼層に閉じ、trusted base は canonical certificate、Rust kernel verdict、

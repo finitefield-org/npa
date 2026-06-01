@@ -311,5 +311,31 @@ the PyYAML fallback documented in `ci-templates/github-actions/README.md`.
 
 CLR-07-03 adds the concrete `npa-package-pr` workflow template under
 `ci-templates/github-actions/`. CLR-07-04 adds the concrete
-`npa-package-release` workflow template. CLR-09 copies or references those
-templates for the seed theorem library.
+`npa-package-release` workflow template. CLR-07-05 adds
+`summarize-npa-diagnostics.py`, and CLR-07-06 adds `validate-workflows.py`.
+
+CLR-09 should copy or reference these files for `npa-mathlib-seed`:
+
+```text
+ci-templates/github-actions/npa-package-pr.yml
+ci-templates/github-actions/npa-package-release.yml
+ci-templates/github-actions/summarize-npa-diagnostics.py
+ci-templates/github-actions/validate-workflows.py
+```
+
+If the seed repository installs workflow YAML under `.github/workflows/`, it
+should keep the helper scripts at the path the templates reference, or adjust
+the helper path in the copied workflows in the same review.
+
+The seed repository should not copy this repository's local development gates:
+
+```sh
+scripts/phase8-release-audit.sh
+scripts/phase9-regression.sh
+```
+
+Those scripts remain local `npa` repository checks, and the templates remain
+outside this repository's `.github/workflows`. Until CLR-08 is complete,
+`npa-mathlib-seed` release evidence is reference-checker-only plus the labeled
+fast-kernel verifier; it must not require `--checker external` or emit
+`verified_high_trust`.

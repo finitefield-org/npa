@@ -154,16 +154,18 @@ local package contract として実装済みです。
 - `verified_high_trust` artifact
 - standalone `npa-checker-ext` binary
 - external checker benchmark / release audit collection job
-- 外部 theorem library 用 CI template
 ```
 
 `crates/npa-checker-ref` の source-free reference checker binary はありますが、
 `npa-checker-ext`、full external-checker release audit CI、`verified_high_trust` artifact は
 まだ target integration です。
 
-GitHub Actions workflow も現状では削除済みで、`scripts/phase8-release-audit.sh` と
-`scripts/phase9-regression.sh` を必要に応じてローカル実行する状態です。
-外部 community library を受け入れる段階では、fresh checkout で動く CI workflow を再導入する必要があります。
+この repository の GitHub Actions workflow は現状では削除済みで、
+`scripts/phase8-release-audit.sh` と `scripts/phase9-regression.sh` を必要に応じて
+ローカル実行する状態です。外部 theorem library 用の copyable workflow template は
+`ci-templates/github-actions/npa-package-pr.yml` と
+`ci-templates/github-actions/npa-package-release.yml` にありますが、この repository の
+active gate ではありません。
 
 ## 4.2 Registry 前の blocker
 
@@ -178,11 +180,11 @@ registry server より先に必要な blocker は次です。
 2. package CLI
    `npa package check`、`build-certs`、`verify-certs`、`check-hashes`、
    `axiom-report`、`index`、`publish-plan` は実装済み。外部 library CI template は
-   CLR-07 の後続 milestone。
+   CLR-07 で `ci-templates/github-actions/` に固定済み。
 
 3. CI contract
    theorem-only PR で何を required にし、release / high-trust で何を required にするかを
-   外部 repo 用 workflow として固定できていない。
+   `doc/external-theorem-library-ci.md` と `doc/community-library-roadmap-clr-07-todo.md` に固定済み。
 
 4. external package import resolution
    package 間 import は `module + export_hash + certificate_hash` で lock する。
@@ -190,7 +192,7 @@ registry server より先に必要な blocker は次です。
 
 5. source-free package verification
    package graph 全体を dependency-topological order で source なし検査する CLI contract は
-   `npa package verify-certs` で実装済み。external repo CI template への組み込みは CLR-07。
+   `npa package verify-certs` で実装済み。external repo CI template への組み込みは CLR-07 で完了。
 
 6. deterministic public artifacts
    theorem index、axiom report、package lock、publish metadata を registry / docs / downstream package 用に
@@ -414,6 +416,8 @@ explicit local package root だけを対象にし、network access や binary ca
 
 PR mode では、現時点の base contract として full-package reference check を使います。
 changed-module selection は便利ですが、package command の必須 contract にはまだ入れません。
+Copyable templates は `ci-templates/github-actions/` にあり、詳細 task breakdown は
+`doc/community-library-roadmap-clr-07-todo.md` です。
 
 ```sh
 npa package check --root . --json
@@ -450,6 +454,10 @@ base release mode でも、CLR-08 が完了するまでは external checker を 
 CLR-08 完了後にだけ、runner policy と checker binary registry で明示的に gated された
 `--checker external` と `verified_high_trust` を high-trust release profile に追加します。
 `--changed`、`--all`、`--registry`、`--network`、`--latest` は base contract には入りません。
+`npa-package-pr.yml` と `npa-package-release.yml` は外部 repository が copy または reference
+する template であり、この repository の `.github/workflows` として有効化するものではありません。
+`npa-mathlib-seed` は CLR-09 でこれらの template と
+`summarize-npa-diagnostics.py` / `validate-workflows.py` を取り込みます。
 
 ## 5.4 artifact layout
 
@@ -645,6 +653,7 @@ M3: deterministic public artifacts and CI template
      axiom report / theorem index、external theorem library CI templates。
      Base CI は full-package reference check を使い、changed-module selection は後続。
      CLR-05 の詳細 breakdown は `doc/community-library-roadmap-clr-05-todo.md`。
+     CLR-07 の詳細 breakdown は `doc/community-library-roadmap-clr-07-todo.md`。
 
 M4: publish metadata / registry seed
   -> CLR-06
@@ -655,6 +664,7 @@ M5: npa-mathlib-seed dogfood
   -> CLR-09
      `Proofs.Ai.Basic`, `Proofs.Ai.Prop`, `Proofs.Ai.Eq`,
      `Proofs.Ai.Nat`, `Proofs.Ai.Reduction` から始める。
+     CLR-07 の `npa-package-pr.yml` / `npa-package-release.yml` を copy または reference する。
      大きな algebra / geometry / analysis corpus は package ergonomics 確認後。
 
 Registry readiness
