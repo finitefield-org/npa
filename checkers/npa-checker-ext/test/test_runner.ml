@@ -401,6 +401,163 @@ let encode_term_let ty value body =
 
 let encode_global_builtin name_id hash = one_byte 0x03 ^ encode_uvar_int name_id ^ hash
 
+let encode_global_local decl_index = one_byte 0x01 ^ encode_uvar_int decl_index
+
+let encode_usize_vec values =
+  encode_uvar_int (List.length values) ^ String.concat "" (List.map encode_uvar_int values)
+
+let encode_option payload =
+  match payload with
+  | None -> one_byte 0x00
+  | Some value -> one_byte 0x01 ^ value
+
+let encode_option_usize value =
+  match value with
+  | None -> encode_option None
+  | Some value -> encode_option (Some (encode_uvar_int value))
+
+let encode_option_hash value = encode_option value
+
+let encode_reducibility reducibility =
+  match reducibility with
+  | `Reducible -> one_byte 0x00
+  | `Opaque -> one_byte 0x01
+
+let encode_opacity_opaque = one_byte 0x00
+
+let encode_imports imports =
+  encode_uvar_int (List.length imports)
+  ^ String.concat ""
+      (List.map
+         (fun (module_components, export_hash, certificate_hash) ->
+           encode_name module_components ^ export_hash ^ encode_option_hash certificate_hash)
+         imports)
+
+let encode_name_table names =
+  encode_uvar_int (List.length names) ^ String.concat "" (List.map encode_name names)
+
+let encode_level_table entries = encode_uvar_int (List.length entries) ^ String.concat "" entries
+
+let encode_term_table entries = encode_uvar_int (List.length entries) ^ String.concat "" entries
+
+let encode_dependency_entries entries =
+  encode_uvar_int (List.length entries)
+  ^ String.concat ""
+      (List.map
+         (fun (global_ref, decl_interface_hash) -> global_ref ^ decl_interface_hash)
+         entries)
+
+let encode_axiom_refs refs =
+  encode_uvar_int (List.length refs)
+  ^ String.concat ""
+      (List.map
+         (fun (global_ref, name_id, decl_interface_hash) ->
+           global_ref ^ encode_uvar_int name_id ^ decl_interface_hash)
+         refs)
+
+let encode_axiom_decl_payload name_id universe_params ty =
+  one_byte 0x00 ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+  ^ encode_uvar_int ty
+
+let encode_universe_constraints constraints =
+  encode_uvar_int (List.length constraints)
+  ^ String.concat ""
+      (List.map
+         (fun (lhs, relation_tag, rhs) ->
+           encode_uvar_int lhs ^ one_byte relation_tag ^ encode_uvar_int rhs)
+         constraints)
+
+let encode_constrained_axiom_decl_payload name_id universe_params constraints ty =
+  one_byte 0x10 ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+  ^ encode_universe_constraints constraints ^ encode_uvar_int ty
+
+let encode_def_decl_payload tag name_id universe_params ?(constraints = None) ty value
+    reducibility =
+  one_byte tag ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+  ^ (match constraints with
+    | None -> ""
+    | Some constraints -> encode_universe_constraints constraints)
+  ^ encode_uvar_int ty ^ encode_uvar_int value ^ encode_reducibility reducibility
+
+let encode_theorem_decl_payload tag name_id universe_params ?(constraints = None) ty proof =
+  one_byte tag ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+  ^ (match constraints with
+    | None -> ""
+    | Some constraints -> encode_universe_constraints constraints)
+  ^ encode_uvar_int ty ^ encode_uvar_int proof ^ encode_opacity_opaque
+
+let encode_binder_types term_ids =
+  encode_uvar_int (List.length term_ids) ^ String.concat "" (List.map encode_uvar_int term_ids)
+
+let encode_constructor_specs constructors =
+  encode_uvar_int (List.length constructors)
+  ^ String.concat ""
+      (List.map
+         (fun (name_id, ty) -> encode_uvar_int name_id ^ encode_uvar_int ty)
+         constructors)
+
+let encode_recursor_spec spec =
+  match spec with
+  | None -> one_byte 0x00
+  | Some (name_id, universe_params, ty, minor_start, major_index) ->
+      one_byte 0x01 ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+      ^ encode_uvar_int ty ^ encode_uvar_int minor_start ^ encode_uvar_int major_index
+
+let encode_inductive_decl_payload tag name_id universe_params ?(constraints = None) params
+    indices sort constructors recursor =
+  one_byte tag ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+  ^ (match constraints with
+    | None -> ""
+    | Some constraints -> encode_universe_constraints constraints)
+  ^ encode_binder_types params ^ encode_binder_types indices ^ encode_uvar_int sort
+  ^ encode_constructor_specs constructors ^ encode_recursor_spec recursor
+
+let encode_mutual_inductive_spec name_id params indices sort constructors recursor =
+  encode_uvar_int name_id ^ encode_binder_types params ^ encode_binder_types indices
+  ^ encode_uvar_int sort ^ encode_constructor_specs constructors ^ encode_recursor_spec recursor
+
+let encode_mutual_inductive_block_payload name_id universe_params constraints inductives =
+  one_byte 0x04 ^ encode_uvar_int name_id ^ encode_usize_vec universe_params
+  ^ encode_universe_constraints constraints ^ encode_uvar_int (List.length inductives)
+  ^ String.concat "" inductives
+
+let encode_decl_cert payload dependencies axiom_dependencies interface_hash certificate_hash =
+  payload ^ encode_dependency_entries dependencies ^ encode_axiom_refs axiom_dependencies
+  ^ interface_hash ^ certificate_hash
+
+let encode_declarations entries =
+  encode_uvar_int (List.length entries) ^ String.concat "" entries
+
+let encode_export_kind tag = one_byte tag
+
+let encode_export_entry_prefix name_id kind_tag universe_params ty body =
+  encode_uvar_int name_id ^ encode_export_kind kind_tag ^ encode_usize_vec universe_params
+  ^ encode_uvar_int ty ^ encode_option_usize body ^ hash_bytes 0x31 ^ encode_option_hash None
+  ^ encode_option None ^ encode_option None ^ hash_bytes 0x32
+
+let encode_export_entry name_id kind_tag universe_params ty body axiom_dependencies =
+  encode_export_entry_prefix name_id kind_tag universe_params ty body
+  ^ encode_axiom_refs axiom_dependencies
+
+let encode_export_block entries =
+  encode_uvar_int (List.length entries) ^ String.concat "" entries
+
+let encode_axiom_report per_declaration module_axioms =
+  encode_uvar_int (List.length per_declaration)
+  ^ String.concat ""
+      (List.map
+         (fun (decl_index, direct_axioms, transitive_axioms) ->
+           encode_uvar_int decl_index ^ encode_axiom_refs direct_axioms
+           ^ encode_axiom_refs transitive_axioms)
+         per_declaration)
+  ^ encode_axiom_refs module_axioms
+
+let encode_core_features features =
+  encode_string "core_features" ^ encode_uvar_int (List.length features)
+  ^ String.concat "" (List.map encode_string features)
+
+let encode_hashes = hash_bytes 0xa1 ^ hash_bytes 0xa2 ^ hash_bytes 0xa3
+
 let encode_header ?(format = Ext_cert.expected_format)
     ?(core_spec = Ext_cert.expected_core_spec) module_components =
   encode_string format ^ encode_string core_spec ^ encode_name module_components
@@ -614,6 +771,169 @@ let run_decoder_tables_tests () =
     (Ext_term.read_table names levels
        (Ext_bytes.of_string (encode_uvar_int 2 ^ encode_term_sort 0 ^ encode_term_sort 0)))
 
+let simple_level_table = [ { Ext_level.level = Ext_level.Zero; offset = 0 } ]
+
+let simple_term_table = [ { Ext_term.term = Ext_term.Sort Ext_level.Zero; offset = 0 } ]
+
+let encode_minimal_module ?(core_features = []) ?(axiom_report = encode_axiom_report [] [])
+    declarations export_entries =
+  encode_header [ "M" ] ^ encode_imports [] ^ encode_name_table [ [ "A" ] ]
+  ^ encode_level_table [ encode_level_zero ] ^ encode_term_table [ encode_term_sort 0 ]
+  ^ encode_declarations declarations ^ encode_export_block export_entries ^ axiom_report
+  ^ (if core_features = [] then "" else encode_core_features core_features)
+  ^ encode_hashes
+
+let minimal_axiom_decl =
+  encode_decl_cert (encode_axiom_decl_payload 0 [] 0) [] [] (hash_bytes 0x11) (hash_bytes 0x12)
+
+let minimal_export_entry = encode_export_entry 0 0x00 [] 0 None []
+
+let assert_decoded_minimal label decoded expected_feature_count =
+  assert_equal (label ^ " module") "M"
+    (Ext_name.to_string decoded.Ext_cert.header.Ext_cert.module_name);
+  assert_int_equal (label ^ " imports") 0 (List.length decoded.Ext_cert.imports);
+  assert_int_equal (label ^ " names") 1 (List.length decoded.Ext_cert.name_table);
+  assert_int_equal (label ^ " levels") 1 (List.length decoded.Ext_cert.level_table);
+  assert_int_equal (label ^ " terms") 1 (List.length decoded.Ext_cert.term_table);
+  assert_int_equal (label ^ " declarations") 1
+    (List.length decoded.Ext_cert.declaration_table);
+  assert_int_equal (label ^ " exports") 1 (List.length decoded.Ext_cert.export_block);
+  assert_int_equal (label ^ " axiom report mismatch preserved") 0
+    (List.length decoded.Ext_cert.axiom_report.Ext_cert.per_declaration);
+  assert_int_equal (label ^ " feature count") expected_feature_count
+    (List.length decoded.Ext_cert.axiom_report.Ext_cert.core_features);
+  assert_int_equal (label ^ " export hash length") 32
+    (String.length decoded.Ext_cert.hashes.Ext_cert.export_hash);
+  assert_int_equal (label ^ " axiom report hash length") 32
+    (String.length decoded.Ext_cert.hashes.Ext_cert.axiom_report_hash);
+  assert_int_equal (label ^ " certificate hash length") 32
+    (String.length decoded.Ext_cert.hashes.Ext_cert.certificate_hash)
+
+let run_decoder_declarations_tests () =
+  let golden_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let golden = read_binary_file golden_path in
+  (match Ext_cert.read_module (Ext_bytes.of_string golden) with
+  | Error error ->
+      failwith
+        ("golden module: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+  | Ok (decoded, next) ->
+      assert_bool "golden module has declarations"
+        (List.length decoded.Ext_cert.declaration_table > 0);
+      assert_bool "golden module has exports" (List.length decoded.Ext_cert.export_block > 0);
+      assert_int_equal "golden module offset" (String.length golden) (Ext_bytes.offset next));
+
+  let minimal = encode_minimal_module [ minimal_axiom_decl ] [ minimal_export_entry ] in
+  (match Ext_cert.read_module (Ext_bytes.of_string minimal) with
+  | Error error ->
+      failwith
+        ("minimal module: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (decoded, next) ->
+      assert_decoded_minimal "minimal module" decoded 0;
+      assert_int_equal "minimal module offset" (String.length minimal) (Ext_bytes.offset next));
+
+  let feature_module =
+    encode_minimal_module ~core_features:[ "quotient_v1" ] [ minimal_axiom_decl ]
+      [ minimal_export_entry ]
+  in
+  (match Ext_cert.read_module (Ext_bytes.of_string feature_module) with
+  | Error error ->
+      failwith
+        ("feature module: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (decoded, next) ->
+      assert_decoded_minimal "feature module" decoded 1;
+      assert_equal "feature name" "quotient_v1"
+        (List.hd decoded.Ext_cert.axiom_report.Ext_cert.core_features).Ext_feature.feature;
+      assert_int_equal "feature module offset" (String.length feature_module)
+        (Ext_bytes.offset next));
+
+  let variant_names =
+    List.map
+      (fun name -> make_name [ name ])
+      [ "A0"; "A1"; "D0"; "D1"; "T0"; "T1"; "I0"; "I1"; "M0"; "C"; "R" ]
+  in
+  let constraints = [ (0, 0x00, 0) ] in
+  let constructor = [ (9, 0) ] in
+  let recursor = Some (10, [], 0, 0, 0) in
+  let variant_payloads =
+    [
+      encode_axiom_decl_payload 0 [] 0;
+      encode_constrained_axiom_decl_payload 1 [] constraints 0;
+      encode_def_decl_payload 0x01 2 [] 0 0 `Reducible;
+      encode_def_decl_payload 0x11 3 [] ~constraints:(Some constraints) 0 0 `Opaque;
+      encode_theorem_decl_payload 0x02 4 [] 0 0;
+      encode_theorem_decl_payload 0x12 5 [] ~constraints:(Some constraints) 0 0;
+      encode_inductive_decl_payload 0x03 6 [] [] [] 0 constructor recursor;
+      encode_inductive_decl_payload 0x13 7 [] ~constraints:(Some constraints) [] [] 0
+        constructor recursor;
+      encode_mutual_inductive_block_payload 8 [] constraints
+        [ encode_mutual_inductive_spec 6 [] [] 0 constructor recursor ];
+    ]
+  in
+  let variant_declarations =
+    encode_declarations
+      (List.mapi
+         (fun index payload ->
+           encode_decl_cert payload [] [] (hash_bytes (0x60 + index)) (hash_bytes (0x70 + index)))
+         variant_payloads)
+  in
+  (match
+     Ext_cert.read_declarations 0 variant_names simple_level_table simple_term_table
+       (Ext_bytes.of_string variant_declarations)
+   with
+  | Error error ->
+      failwith
+        ("variant declarations: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (declarations, next) ->
+      assert_int_equal "variant declaration count" 9 (List.length declarations);
+      assert_int_equal "variant declaration offset" (String.length variant_declarations)
+        (Ext_bytes.offset next);
+      assert_bool "variant declarations include mutual block"
+        (List.exists
+           (fun declaration -> declaration.Ext_cert.kind = Ext_cert.Mutual_inductive)
+           declarations));
+
+  let duplicate_declarations =
+    encode_declarations [ minimal_axiom_decl; minimal_axiom_decl ]
+  in
+  assert_decode_error "duplicate declaration name" "noncanonical_encoding"
+    Ext_bytes.Duplicate_declaration Ext_bytes.Declarations
+    (String.length (encode_uvar_int 2 ^ minimal_axiom_decl))
+    (Ext_cert.read_declarations 0 [ make_name [ "A" ] ] simple_level_table simple_term_table
+       (Ext_bytes.of_string duplicate_declarations));
+
+  let dangling_term_export =
+    encode_uvar_int 1 ^ encode_uvar_int 0 ^ encode_export_kind 0x00 ^ encode_usize_vec []
+    ^ encode_uvar_int 1
+  in
+  assert_decode_error "export dangling term" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Export_block 4
+    (Ext_cert.read_export_block 0
+       (Array.of_list [ make_name [ "A" ] ])
+       (Array.of_list simple_term_table) 1
+       (Ext_bytes.of_string dangling_term_export));
+
+  let export_prefix = encode_export_entry_prefix 0 0x00 [] 0 None in
+  let axiom_ref_len = encode_uvar_int 1 in
+  let dangling_decl_offset = String.length (encode_uvar_int 1 ^ export_prefix ^ axiom_ref_len) in
+  let dangling_decl_export =
+    encode_uvar_int 1 ^ export_prefix ^ axiom_ref_len ^ encode_global_local 99
+    ^ encode_uvar_int 0 ^ hash_bytes 0x51
+  in
+  assert_decode_error "export dangling declaration" "certificate_decode_error"
+    Ext_bytes.Dangling_reference Ext_bytes.Export_block dangling_decl_offset
+    (Ext_cert.read_export_block 0
+       (Array.of_list [ make_name [ "A" ] ])
+       (Array.of_list simple_term_table) 1
+       (Ext_bytes.of_string dangling_decl_export))
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
@@ -626,6 +946,7 @@ let () =
              [
                "cli";
                "decoder-bytes";
+               "decoder-declarations";
                "decoder-header";
                "decoder-tables";
                "feature-policy";
@@ -638,5 +959,6 @@ let () =
   if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
   if should_run selected "decoder-header" then run_decoder_header_tests ();
   if should_run selected "decoder-tables" then run_decoder_tables_tests ();
+  if should_run selected "decoder-declarations" then run_decoder_declarations_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "cli" then run_cli_tests ()

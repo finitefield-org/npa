@@ -442,7 +442,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-declarations
+sh checkers/npa-checker-ext/scripts/test.sh decoder-declarations
 ```
 
 ### M1-05 Validate Reachability And Canonical Ordering

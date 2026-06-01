@@ -27,6 +27,7 @@ type decode_error_reason =
   | Empty_name_component
   | Dotted_name_component
   | Duplicate_name
+  | Duplicate_declaration
   | Unknown_tag of int
   | Dangling_reference
   | Non_normalized_level
@@ -88,6 +89,7 @@ let reason_code reason =
   | Empty_name_component -> "empty_name_component"
   | Dotted_name_component -> "dotted_name_component"
   | Duplicate_name -> "duplicate_name"
+  | Duplicate_declaration -> "duplicate_declaration"
   | Unknown_tag _ -> "unknown_tag"
   | Dangling_reference -> "dangling_reference"
   | Non_normalized_level -> "non_normalized_level"

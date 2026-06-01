@@ -15,6 +15,7 @@ scripts/test.sh feature-policy
 scripts/test.sh decoder-bytes
 scripts/test.sh decoder-header
 scripts/test.sh decoder-tables
+scripts/test.sh decoder-declarations
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -71,3 +72,10 @@ kept as OCaml algebraic data types, not source text. The decoder rejects
 unknown tags, dangling table references, non-normalized level entries,
 duplicate term entries, and unresolved universe metavariable names before
 semantic checking.
+
+M1-04 adds source-free decoding for imports, declarations, export block, axiom
+report, optional core feature report, and stored module hash trailer. Declaration
+payloads, dependencies, axiom references, export entries, and hash fields are
+kept as structured OCaml values. Duplicate declaration names and export-local
+dangling term/declaration references reject deterministically; axiom report
+length mismatches are decoded and preserved for later axiom-report validation.
