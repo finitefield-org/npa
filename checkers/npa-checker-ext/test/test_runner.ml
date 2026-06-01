@@ -775,13 +775,19 @@ let simple_level_table = [ { Ext_level.level = Ext_level.Zero; offset = 0 } ]
 
 let simple_term_table = [ { Ext_term.term = Ext_term.Sort Ext_level.Zero; offset = 0 } ]
 
-let encode_minimal_module ?(core_features = []) ?(axiom_report = encode_axiom_report [] [])
+let encode_module ?(core_features = []) ?(axiom_report = encode_axiom_report [] [])
+    ?(module_name = [ "M" ]) ?(imports = []) name_entries level_entries term_entries
     declarations export_entries =
-  encode_header [ "M" ] ^ encode_imports [] ^ encode_name_table [ [ "A" ] ]
-  ^ encode_level_table [ encode_level_zero ] ^ encode_term_table [ encode_term_sort 0 ]
+  encode_header module_name ^ encode_imports imports ^ encode_name_table name_entries
+  ^ encode_level_table level_entries ^ encode_term_table term_entries
   ^ encode_declarations declarations ^ encode_export_block export_entries ^ axiom_report
   ^ (if core_features = [] then "" else encode_core_features core_features)
   ^ encode_hashes
+
+let encode_minimal_module ?(core_features = []) ?(axiom_report = encode_axiom_report [] [])
+    declarations export_entries =
+  encode_module ~core_features ~axiom_report [ [ "A" ] ] [ encode_level_zero ]
+    [ encode_term_sort 0 ] declarations export_entries
 
 let minimal_axiom_decl =
   encode_decl_cert (encode_axiom_decl_payload 0 [] 0) [] [] (hash_bytes 0x11) (hash_bytes 0x12)
@@ -934,6 +940,132 @@ let run_decoder_declarations_tests () =
        (Array.of_list simple_term_table) 1
        (Ext_bytes.of_string dangling_decl_export))
 
+let run_decoder_reachability_tests () =
+  let golden_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let golden = read_binary_file golden_path in
+  (match Ext_cert.read_module (Ext_bytes.of_string golden) with
+  | Error error ->
+      failwith
+        ("reachability golden module: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason ^ " at "
+       ^ Ext_bytes.section_name error.Ext_bytes.section ^ ":"
+       ^ string_of_int error.Ext_bytes.offset)
+  | Ok (_, next) ->
+      assert_int_equal "reachability golden offset" (String.length golden)
+        (Ext_bytes.offset next));
+
+  let minimal = encode_minimal_module [ minimal_axiom_decl ] [ minimal_export_entry ] in
+  (match Ext_cert.read_module (Ext_bytes.of_string minimal) with
+  | Error error ->
+      failwith
+        ("reachability minimal module: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (_, next) ->
+      assert_int_equal "reachability minimal offset" (String.length minimal)
+        (Ext_bytes.offset next));
+
+  let axiom_report_root =
+    encode_module ~axiom_report:(encode_axiom_report [] [ (encode_global_local 0, 1, hash_bytes 0x44) ])
+      [ [ "A" ]; [ "B" ] ] [ encode_level_zero ] [ encode_term_sort 0 ]
+      [ minimal_axiom_decl ] [ minimal_export_entry ]
+  in
+  (match Ext_cert.read_module (Ext_bytes.of_string axiom_report_root) with
+  | Error error ->
+      failwith
+        ("axiom report root module: unexpected decode error "
+       ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (_, next) ->
+      assert_int_equal "axiom report root offset" (String.length axiom_report_root)
+        (Ext_bytes.offset next));
+
+  let unused_name_prefix =
+    encode_header [ "M" ] ^ encode_imports [] ^ encode_uvar_int 2 ^ encode_name [ "A" ]
+  in
+  let unused_name =
+    encode_module [ [ "A" ]; [ "Z" ] ] [ encode_level_zero ] [ encode_term_sort 0 ]
+      [ minimal_axiom_decl ] [ minimal_export_entry ]
+  in
+  assert_decode_error "unused name table entry" "noncanonical_encoding"
+    Ext_bytes.Unused_table_entry Ext_bytes.Name_table (String.length unused_name_prefix)
+    (Ext_cert.read_module (Ext_bytes.of_string unused_name));
+
+  let reordered_name_prefix =
+    encode_header [ "M" ] ^ encode_imports [] ^ encode_uvar_int 2 ^ encode_name [ "Z" ]
+  in
+  let reordered_name_decl =
+    encode_decl_cert (encode_axiom_decl_payload 1 [] 0) [] [] (hash_bytes 0x19) (hash_bytes 0x1a)
+  in
+  let reordered_name_export = encode_export_entry 1 0x00 [] 0 None [] in
+  let reordered_name =
+    encode_module [ [ "Z" ]; [ "A" ] ] [ encode_level_zero ] [ encode_term_sort 0 ]
+      [ reordered_name_decl ] [ reordered_name_export ]
+  in
+  assert_decode_error "reordered name table" "noncanonical_encoding"
+    Ext_bytes.Noncanonical_order Ext_bytes.Name_table (String.length reordered_name_prefix)
+    (Ext_cert.read_module (Ext_bytes.of_string reordered_name));
+
+  let unused_level_prefix =
+    encode_header [ "M" ] ^ encode_imports [] ^ encode_name_table [ [ "A" ] ]
+    ^ encode_uvar_int 2 ^ encode_level_zero
+  in
+  let unused_level =
+    encode_module [ [ "A" ] ] [ encode_level_zero; encode_level_param 0 ] [ encode_term_sort 0 ]
+      [ minimal_axiom_decl ] [ minimal_export_entry ]
+  in
+  assert_decode_error "unused level table entry" "noncanonical_encoding"
+    Ext_bytes.Unused_table_entry Ext_bytes.Level_table (String.length unused_level_prefix)
+    (Ext_cert.read_module (Ext_bytes.of_string unused_level));
+
+  let unused_term_prefix =
+    encode_header [ "M" ] ^ encode_imports [] ^ encode_name_table [ [ "A" ] ]
+    ^ encode_level_table [ encode_level_zero ] ^ encode_uvar_int 2 ^ encode_term_sort 0
+  in
+  let unused_term =
+    encode_module [ [ "A" ] ] [ encode_level_zero ] [ encode_term_sort 0; encode_term_bvar 0 ]
+      [ minimal_axiom_decl ] [ minimal_export_entry ]
+  in
+  assert_decode_error "unused term table entry" "noncanonical_encoding"
+    Ext_bytes.Unused_table_entry Ext_bytes.Term_table (String.length unused_term_prefix)
+    (Ext_cert.read_module (Ext_bytes.of_string unused_term));
+
+  let reordered_level_prefix =
+    encode_header [ "M" ] ^ encode_imports [] ^ encode_name_table [ [ "A" ] ]
+    ^ encode_uvar_int 2 ^ encode_level_param 0
+  in
+  let reordered_level_decl =
+    encode_decl_cert (encode_axiom_decl_payload 0 [] 0) [] [] (hash_bytes 0x21) (hash_bytes 0x22)
+  in
+  let reordered_level_export = encode_export_entry 0 0x00 [] 0 None [] in
+  let reordered_level =
+    encode_module [ [ "A" ] ] [ encode_level_param 0; encode_level_zero ] [ encode_term_sort 1 ]
+      [ reordered_level_decl ] [ reordered_level_export ]
+  in
+  assert_decode_error "reordered level table" "noncanonical_encoding"
+    Ext_bytes.Noncanonical_order Ext_bytes.Level_table (String.length reordered_level_prefix)
+    (Ext_cert.read_module (Ext_bytes.of_string reordered_level));
+
+  let reordered_term_prefix =
+    encode_header [ "M" ] ^ encode_imports [] ^ encode_name_table [ [ "A" ] ]
+    ^ encode_level_table [ encode_level_zero ] ^ encode_uvar_int 2 ^ encode_term_bvar 0
+  in
+  let reordered_term_decl =
+    encode_decl_cert (encode_axiom_decl_payload 0 [] 1) [] [] (hash_bytes 0x23) (hash_bytes 0x24)
+  in
+  let reordered_term_export = encode_export_entry 0 0x00 [] 1 None [] in
+  let reordered_term =
+    encode_module [ [ "A" ] ] [ encode_level_zero ] [ encode_term_bvar 0; encode_term_sort 0 ]
+      [ reordered_term_decl ] [ reordered_term_export ]
+  in
+  assert_decode_error "reordered term table" "noncanonical_encoding"
+    Ext_bytes.Noncanonical_order Ext_bytes.Term_table (String.length reordered_term_prefix)
+    (Ext_cert.read_module (Ext_bytes.of_string reordered_term));
+
+  assert_decode_error "trailing bytes after hashes" "certificate_decode_error"
+    Ext_bytes.Trailing_bytes Ext_bytes.Full_certificate (String.length minimal)
+    (Ext_cert.read_module (Ext_bytes.of_string (minimal ^ "x")))
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
@@ -948,6 +1080,7 @@ let () =
                "decoder-bytes";
                "decoder-declarations";
                "decoder-header";
+               "decoder-reachability";
                "decoder-tables";
                "feature-policy";
                "sha256";
@@ -960,5 +1093,6 @@ let () =
   if should_run selected "decoder-header" then run_decoder_header_tests ();
   if should_run selected "decoder-tables" then run_decoder_tables_tests ();
   if should_run selected "decoder-declarations" then run_decoder_declarations_tests ();
+  if should_run selected "decoder-reachability" then run_decoder_reachability_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "cli" then run_cli_tests ()

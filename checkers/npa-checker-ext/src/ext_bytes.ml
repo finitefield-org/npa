@@ -33,6 +33,8 @@ type decode_error_reason =
   | Non_normalized_level
   | Non_normalized_term
   | Noncanonical_order
+  | Unused_table_entry
+  | Trailing_bytes
   | Unresolved_metavariable
 
 type decode_error = {
@@ -95,6 +97,8 @@ let reason_code reason =
   | Non_normalized_level -> "non_normalized_level"
   | Non_normalized_term -> "non_normalized_term"
   | Noncanonical_order -> "noncanonical_order"
+  | Unused_table_entry -> "unused_table_entry"
+  | Trailing_bytes -> "trailing_bytes"
   | Unresolved_metavariable -> "unresolved_metavariable"
 
 let error section offset reason = Error { section; offset; reason }

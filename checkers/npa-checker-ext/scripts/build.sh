@@ -20,10 +20,10 @@ for src in \
   src/ext_result.ml \
   src/ext_feature.ml \
   src/ext_name.ml \
+  src/ext_import.ml \
   src/ext_level.ml \
   src/ext_term.ml \
   src/ext_cert.ml \
-  src/ext_import.ml \
   src/ext_axiom.ml \
   src/ext_env.ml \
   src/ext_reduce.ml \
@@ -43,10 +43,10 @@ done
   "$BUILD_DIR/ext_result.cmo" \
   "$BUILD_DIR/ext_feature.cmo" \
   "$BUILD_DIR/ext_name.cmo" \
+  "$BUILD_DIR/ext_import.cmo" \
   "$BUILD_DIR/ext_level.cmo" \
   "$BUILD_DIR/ext_term.cmo" \
   "$BUILD_DIR/ext_cert.cmo" \
-  "$BUILD_DIR/ext_import.cmo" \
   "$BUILD_DIR/ext_axiom.cmo" \
   "$BUILD_DIR/ext_env.cmo" \
   "$BUILD_DIR/ext_reduce.cmo" \

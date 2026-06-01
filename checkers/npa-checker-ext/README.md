@@ -16,6 +16,7 @@ scripts/test.sh decoder-bytes
 scripts/test.sh decoder-header
 scripts/test.sh decoder-tables
 scripts/test.sh decoder-declarations
+scripts/test.sh decoder-reachability
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -79,3 +80,9 @@ payloads, dependencies, axiom references, export entries, and hash fields are
 kept as structured OCaml values. Duplicate declaration names and export-local
 dangling term/declaration references reject deterministically; axiom report
 length mismatches are decoded and preserved for later axiom-report validation.
+
+M1-05 validates decoded module table reachability and canonical order before a
+module is accepted. The validator marks roots from the header, imports,
+declarations, exports, and axiom report, traverses reachable terms and levels,
+rejects unused name/level/term table entries, enforces canonical table ordering,
+and rejects bytes after the module hash trailer.

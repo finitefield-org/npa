@@ -149,7 +149,8 @@ let decode_error_kind error =
   | Ext_bytes.Duplicate_declaration
   | Ext_bytes.Non_normalized_level
   | Ext_bytes.Non_normalized_term
-  | Ext_bytes.Noncanonical_order ->
+  | Ext_bytes.Noncanonical_order
+  | Ext_bytes.Unused_table_entry ->
       "noncanonical_encoding"
   | Ext_bytes.Unexpected_eof
   | Ext_bytes.Uvar_overflow
@@ -158,6 +159,7 @@ let decode_error_kind error =
   | Ext_bytes.Core_spec_mismatch
   | Ext_bytes.Unknown_tag _
   | Ext_bytes.Dangling_reference
+  | Ext_bytes.Trailing_bytes
   | Ext_bytes.Unresolved_metavariable ->
       "certificate_decode_error"
 

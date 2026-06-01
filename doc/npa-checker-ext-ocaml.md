@@ -251,6 +251,12 @@ decoder は次を拒否します。
 
 OCaml 実装では decoded AST を文字列ではなく algebraic data type として保持します。
 de Bruijn index、level expression、global reference、declaration payload はすべて構造化して扱います。
+module decode の受理前に、header / imports / declarations / export block /
+axiom report から reachability root を作り、term / level を構造的に走査します。
+name / level / term table に root から到達不能な entry が残る場合は
+`noncanonical_encoding` として拒否します。level / term DAG の order 検査は
+canonical payload と domain-separated SHA-256 hash を用いた deterministic order で行い、
+stored module hash trailer の後ろに byte が残る場合は `certificate_decode_error` として拒否します。
 
 ---
 
