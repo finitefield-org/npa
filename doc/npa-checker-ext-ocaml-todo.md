@@ -63,7 +63,7 @@ Current implementation facts:
 - standalone npa-checker-ext binary is still target integration.
 - M0-01 fixes the in-repository OCaml directory as
   `checkers/npa-checker-ext/`.
-- exact vendored SHA-256 file layout remains a first milestone decision.
+- M0-03 fixes vendored SHA-256 implementation and fixture layout.
 ```
 
 Recommended validation baseline:
@@ -228,7 +228,7 @@ Verification:
 
 ```sh
 git diff --check
-$OCAML_EXT_TEST sha256
+checkers/npa-checker-ext/scripts/test.sh sha256
 ```
 
 ### M0-04 Implement CLI Boundary And Identity
@@ -1440,8 +1440,8 @@ Review pass 1 findings:
 F1: The original source design left the exact OCaml project directory and
 vendored SHA-256 file layout open. The task breakdown must not pretend those
 are already decided before their milestone tasks.
-Resolution: M0-01 now fixes `checkers/npa-checker-ext/`; M0-03 still includes
-the vendored SHA-256 layout and fixture decision before dependent hash work.
+Resolution: M0-01 now fixes `checkers/npa-checker-ext/`; M0-03 now fixes
+`src/ext_sha256.ml`, `src/ext_hash.ml`, and `test/golden/sha256_vectors.tsv`.
 
 F2: The source design makes checker identity manifest signatures non-required
 for first release. Runner integration tasks must not require signatures.

@@ -4,8 +4,17 @@ let checker_id = "npa-checker-ext"
 
 let checker_version = "0.1.0"
 
-let checker_build_hash =
-  "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+let checker_build_material =
+  String.concat "\000"
+    [
+      checker_id;
+      checker_version;
+      "format:NPA-CERT-0.1";
+      "core:NPA-Core-0.1";
+      Ext_hash.vendored_sha256_source_identity;
+    ]
+
+let checker_build_hash = Ext_hash.sha256_prefixed_hex_of_string checker_build_material
 
 type checker_error = {
   kind : string;
