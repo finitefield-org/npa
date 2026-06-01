@@ -45,9 +45,9 @@ let read_u32 section reader =
       if value > 0xffff_ffffL then Ext_bytes.error section start Ext_bytes.Length_overflow
       else Ok (Int64.to_int value, next)
 
-let name_at names id offset =
+let name_at section names id offset =
   if id < 0 || id >= Array.length names then
-    Ext_bytes.error Ext_bytes.Term_table offset Ext_bytes.Dangling_reference
+    Ext_bytes.error section offset Ext_bytes.Dangling_reference
   else Ok names.(id)
 
 let level_at levels id offset =
@@ -63,11 +63,11 @@ let previous_term values index id offset =
     | None -> Ext_bytes.error Ext_bytes.Term_table offset Ext_bytes.Dangling_reference
     | Some located -> Ok located.term
 
-let read_hash reader = Ext_bytes.take Ext_bytes.Term_table 32 reader
+let read_hash section reader = Ext_bytes.take section 32 reader
 
-let read_name_id names offset reader =
-  bind (Ext_bytes.read_usize Ext_bytes.Term_table reader) (fun (id, next) ->
-      bind (name_at names id offset) (fun name -> Ok (name, next)))
+let read_name_id section names offset reader =
+  bind (Ext_bytes.read_usize section reader) (fun (id, next) ->
+      bind (name_at section names id offset) (fun name -> Ok (name, next)))
 
 let read_level_id levels offset reader =
   bind (Ext_bytes.read_usize Ext_bytes.Term_table reader) (fun (id, next) ->
@@ -87,32 +87,31 @@ let read_level_vec levels offset reader =
       in
       loop count after_count [])
 
-let read_global_ref names offset reader =
+let read_global_ref section names offset reader =
   let tag_offset = Ext_bytes.offset reader in
-  match Ext_bytes.read_byte Ext_bytes.Term_table reader with
+  match Ext_bytes.read_byte section reader with
   | Error err -> Error err
   | Ok (tag, after_tag) -> (
       match tag with
       | 0x00 ->
-          bind (Ext_bytes.read_usize Ext_bytes.Term_table after_tag)
+          bind (Ext_bytes.read_usize section after_tag)
             (fun (import_index, after_import) ->
-              bind (read_name_id names offset after_import) (fun (name, after_name) ->
-                  bind (read_hash after_name) (fun (decl_interface_hash, next) ->
+              bind (read_name_id section names offset after_import) (fun (name, after_name) ->
+                  bind (read_hash section after_name) (fun (decl_interface_hash, next) ->
                       Ok (Imported { import_index; name; decl_interface_hash }, next))))
       | 0x01 ->
-          bind (Ext_bytes.read_usize Ext_bytes.Term_table after_tag)
+          bind (Ext_bytes.read_usize section after_tag)
             (fun (decl_index, next) -> Ok (Local { decl_index }, next))
       | 0x02 ->
-          bind (Ext_bytes.read_usize Ext_bytes.Term_table after_tag)
+          bind (Ext_bytes.read_usize section after_tag)
             (fun (decl_index, after_decl) ->
-              bind (read_name_id names offset after_decl) (fun (name, next) ->
+              bind (read_name_id section names offset after_decl) (fun (name, next) ->
                   Ok (LocalGenerated { decl_index; name }, next)))
       | 0x03 ->
-          bind (read_name_id names offset after_tag) (fun (name, after_name) ->
-              bind (read_hash after_name) (fun (decl_interface_hash, next) ->
+          bind (read_name_id section names offset after_tag) (fun (name, after_name) ->
+              bind (read_hash section after_name) (fun (decl_interface_hash, next) ->
                   Ok (Builtin { name; decl_interface_hash }, next)))
-      | tag ->
-          Ext_bytes.error Ext_bytes.Term_table tag_offset (Ext_bytes.Unknown_tag tag))
+      | tag -> Ext_bytes.error section tag_offset (Ext_bytes.Unknown_tag tag))
 
 let has_previous_term values index term =
   let rec loop cursor =
@@ -150,7 +149,7 @@ let read_table names levels reader =
                       bind (read_u32 Ext_bytes.Term_table after_tag)
                         (fun (index, next) -> Ok (BVar index, next))
                   | 0x02 ->
-                      bind (read_global_ref name_values entry_offset after_tag)
+                      bind (read_global_ref Ext_bytes.Term_table name_values entry_offset after_tag)
                         (fun (global_ref, after_ref) ->
                           bind
                             (read_level_vec level_values entry_offset after_ref)

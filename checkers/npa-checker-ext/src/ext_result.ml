@@ -146,6 +146,7 @@ let decode_error_kind error =
   | Ext_bytes.Empty_name_component
   | Ext_bytes.Dotted_name_component
   | Ext_bytes.Duplicate_name
+  | Ext_bytes.Duplicate_declaration
   | Ext_bytes.Non_normalized_level
   | Ext_bytes.Non_normalized_term
   | Ext_bytes.Noncanonical_order ->
