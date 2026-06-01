@@ -48,7 +48,9 @@ CLR-10 excludes:
 - Adding implicit latest-version import resolution.
 - Implementing production LLM, RAG, online theorem graph, browser IDE, or
   online theorem proving services.
-- Requiring external-checker high-trust evidence when CLR-08 is deferred.
+- Requiring external-checker high-trust evidence when the seed repository has
+  not supplied the CLR-08 pinned external checker artifacts and release audit
+  evidence.
 
 ## Trusted Boundary
 
@@ -105,9 +107,11 @@ and downstream import bundle needed for the readiness review. CLR-09 provides
 the seed theorem library release, downstream import fixture, contributor
 workflow, and dogfood gaps.
 
-CLR-08 is optional for the first readiness decision. If CLR-08 remains
-deferred, CLR-10 must record that the evidence is reference-checker-only and
-that `verified_high_trust` is unavailable.
+CLR-08's command/template contract is complete, but its high-trust evidence is
+optional for the first readiness decision. If the seed repository has not
+supplied pinned external checker artifacts and release audit evidence, CLR-10
+must record that the seed release evidence is reference-checker-only and that
+`verified_high_trust` is unavailable for that seed release.
 
 ## Readiness Evidence Model
 
@@ -534,8 +538,9 @@ Acceptance criteria:
 
 - The checklist has a trusted-boundary result for every blocker.
 - No registry requirement expands the trusted base.
-- If CLR-08 is deferred, `verified_high_trust` is marked unavailable rather
-  than approximated from reference-checker-only evidence.
+- If the seed repository lacks CLR-08 high-trust evidence, `verified_high_trust`
+  is marked unavailable rather than approximated from reference-checker-only
+  evidence.
 - Non-goals are explicitly deferred or moved to later follow-up work.
 
 Verification:
@@ -704,8 +709,8 @@ Finding: CLR-08 high-trust evidence might incorrectly block the first registry
 readiness decision or be faked from reference-checker-only results.
 
 Fix: CLR-10 records CLR-08 evidence separately, allows a reference-checker-only
-decision when CLR-08 is deferred, and forbids approximating
-`verified_high_trust`.
+decision when the seed repository has not supplied high-trust evidence, and
+forbids approximating `verified_high_trust`.
 
 Finding: A decision of "continue Git release artifacts" could be treated as a
 non-decision.
