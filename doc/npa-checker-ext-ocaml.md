@@ -650,6 +650,14 @@ checkers/npa-checker-ext/test/golden/
 checkers/npa-checker-ext/scripts/
 ```
 
+M0-02 で skeleton build / test command を次のように固定します。
+
+```sh
+checkers/npa-checker-ext/scripts/build.sh
+checkers/npa-checker-ext/_build/npa-checker-ext --version
+checkers/npa-checker-ext/scripts/test.sh
+```
+
 この配置は clean-room 境界を狭く保つためのものです。OCaml project は同一 repository 内の
 公開仕様、canonical certificate fixture、JSON schema contract、差分 test result を入力としてよい一方、
 Rust workspace crate を build dependency として参照してはいけません。

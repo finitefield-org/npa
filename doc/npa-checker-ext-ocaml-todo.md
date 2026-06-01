@@ -81,7 +81,7 @@ OCAML_EXT_DIR:
   checkers/npa-checker-ext/
 
 OCAML_EXT_TEST:
-  stable OCaml test command selected by M0-02
+  checkers/npa-checker-ext/scripts/test.sh
 ```
 
 ---
@@ -115,7 +115,7 @@ existing Phase 8 orchestration and package/release workflows.
   - `doc/phase8-ai.md` RunnerPolicy / CheckerBinaryRegistry / raw result sections
   - `crates/npa-api/src/independent_checker.rs`
 - Likely touched areas:
-  - new in-repository OCaml project directory
+  - `checkers/npa-checker-ext/`
   - repository build scripts or local checker scripts
   - documentation for selected OCaml directory
 - Deliverables:
@@ -178,6 +178,7 @@ Acceptance criteria:
 
 ```text
 - A fresh checkout can build npa-checker-ext with the documented OCaml command.
+  The M0-02 command is `checkers/npa-checker-ext/scripts/build.sh`.
 - The executable runs with --version and exits successfully.
 - The executable with no arguments emits deterministic checker_raw_result
   failure JSON or a deterministic CLI error as specified by the chosen CLI
