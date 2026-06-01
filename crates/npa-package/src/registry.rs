@@ -15,11 +15,13 @@ use crate::{
         reject_unknown_fields, required_array, required_hash, required_name, required_string,
         validate_artifact_file_reference, validate_module_name, validate_package_identity,
         validate_plain_string, PackageArtifactFileReference, PackageArtifactOrigin,
+        PackageCheckerMode, PackageCheckerSummary,
     },
     error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
-    hash::PackageHash,
+    hash::{format_package_hash, PackageHash},
     json::{JsonMember, JsonValue},
-    manifest::PackageVersion,
+    lock::{PackageLockEntry, PackageLockEntryOrigin, PackageLockImport, PackageLockManifest},
+    manifest::{PackageManifest, PackageVersion},
     name::PackageId,
     schema::REGISTRY_MODULE_SCHEMA,
 };
@@ -150,6 +152,44 @@ pub struct PackageRegistryArtifactHashes {
     pub theorem_index_file_hash: PackageHash,
 }
 
+/// Inputs used to project module registry seed entries for a package release.
+pub struct PackageRegistryModuleSeedInput<'a> {
+    /// Validated package manifest metadata.
+    pub manifest: &'a PackageManifest,
+    /// Fresh package lock metadata.
+    pub package_lock: &'a PackageLockManifest,
+    /// Source-free checker summaries collected for publish metadata.
+    pub checker_summaries: &'a [PackageCheckerSummary],
+    /// Release artifact hashes copied into each registry entry.
+    pub artifact_hashes: PackageRegistryArtifactHashes,
+}
+
+/// Build deterministic `npa.registry.module.v0.1` seed entries for local modules.
+///
+/// External package imports are included only as dependency pins in local
+/// modules' direct import lists. No registry lookup, filesystem traversal, or
+/// checker execution happens here.
+pub fn build_package_registry_modules(
+    input: PackageRegistryModuleSeedInput<'_>,
+) -> PackageArtifactResult<Vec<PackageRegistryModule>> {
+    ensure_lock_matches_manifest(input.manifest, input.package_lock)?;
+    ensure_manifest_modules_locked(input.manifest, input.package_lock)?;
+    let mut entries = input
+        .package_lock
+        .entries
+        .iter()
+        .filter(|entry| entry.origin == PackageLockEntryOrigin::Local)
+        .map(|entry| registry_module_from_lock_entry(&input, entry))
+        .collect::<PackageArtifactResult<Vec<_>>>()?;
+    validate_unique_registry_seed_modules(&entries)?;
+    for entry in &mut entries {
+        normalize_registry_module(entry);
+        validate_registry_module(entry)?;
+    }
+    entries.sort_by_key(registry_module_sort_key);
+    Ok(entries)
+}
+
 /// Parse and validate a checked-in registry module JSON artifact.
 pub fn parse_registry_module_json(source: &str) -> PackageArtifactResult<PackageRegistryModule> {
     let root = parse_artifact_json(source)?;
@@ -184,6 +224,313 @@ pub fn validate_registry_module(entry: &PackageRegistryModule) -> PackageArtifac
     validate_registry_imports(&entry.imports)?;
     validate_registry_checker_results(&entry.checker_results)?;
     Ok(())
+}
+
+fn validate_unique_registry_seed_modules(
+    entries: &[PackageRegistryModule],
+) -> PackageArtifactResult<()> {
+    let mut modules = BTreeSet::<String>::new();
+    for (index, entry) in entries.iter().enumerate() {
+        let module = entry.module.as_dotted();
+        if modules.insert(module.clone()) {
+            continue;
+        }
+        return Err(PackageArtifactError::duplicate(
+            format!("module_registry_entries[{index}].module"),
+            "module_registry_entries",
+            PackageArtifactErrorReason::DuplicateModule,
+            module,
+        ));
+    }
+    Ok(())
+}
+
+fn ensure_manifest_modules_locked(
+    manifest: &PackageManifest,
+    lock: &PackageLockManifest,
+) -> PackageArtifactResult<()> {
+    for module in &manifest.modules {
+        if lock.entries.iter().any(|entry| {
+            entry.origin == PackageLockEntryOrigin::Local && entry.module == module.module
+        }) {
+            continue;
+        }
+        return Err(PackageArtifactError::missing_field(
+            "package_lock.entries",
+            module.module.as_dotted(),
+        ));
+    }
+    Ok(())
+}
+
+fn ensure_lock_matches_manifest(
+    manifest: &PackageManifest,
+    lock: &PackageLockManifest,
+) -> PackageArtifactResult<()> {
+    if lock.package != manifest.package {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "package_lock.package",
+            "package",
+            manifest.package.as_str(),
+            lock.package.as_str(),
+        ));
+    }
+    if lock.version != manifest.version {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "package_lock.version",
+            "version",
+            manifest.version.as_str(),
+            lock.version.as_str(),
+        ));
+    }
+    Ok(())
+}
+
+fn registry_module_from_lock_entry(
+    input: &PackageRegistryModuleSeedInput<'_>,
+    entry: &PackageLockEntry,
+) -> PackageArtifactResult<PackageRegistryModule> {
+    ensure_local_entry_declared(input.manifest, entry)?;
+    let module_path = format!("module_registry_entries.{}", entry.module.as_dotted());
+    Ok(PackageRegistryModule {
+        schema: REGISTRY_MODULE_SCHEMA.to_owned(),
+        package: input.manifest.package.clone(),
+        package_version: input.manifest.version.clone(),
+        module: entry.module.clone(),
+        core_spec: input.manifest.core_spec.clone(),
+        kernel_profile: input.manifest.kernel_profile.clone(),
+        certificate_format: input.manifest.certificate_format.clone(),
+        export_hash: entry.export_hash,
+        certificate_hash: entry.certificate_hash,
+        axiom_report_hash: entry.axiom_report_hash,
+        certificate: PackageArtifactFileReference {
+            path: entry.certificate.clone(),
+            file_hash: entry.certificate_file_hash,
+        },
+        imports: entry
+            .imports
+            .iter()
+            .enumerate()
+            .map(|(index, import)| {
+                registry_import_from_lock_import(
+                    input.package_lock,
+                    import,
+                    &format!("{module_path}.imports[{index}]"),
+                )
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
+        checker_results: registry_checker_results_for_entry(
+            entry,
+            input.checker_summaries,
+            &input.manifest.checker_profile,
+            &module_path,
+        )?,
+        artifact_hashes: input.artifact_hashes.clone(),
+    })
+}
+
+fn ensure_local_entry_declared(
+    manifest: &PackageManifest,
+    entry: &PackageLockEntry,
+) -> PackageArtifactResult<()> {
+    let Some(module) = manifest
+        .modules
+        .iter()
+        .find(|module| module.module == entry.module)
+    else {
+        return Err(PackageArtifactError::missing_field(
+            "modules",
+            entry.module.as_dotted(),
+        ));
+    };
+    if module.certificate != entry.certificate {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "modules.certificate",
+            "certificate",
+            module.certificate.as_str(),
+            entry.certificate.as_str(),
+        ));
+    }
+    assert_registry_hash(
+        "modules.expected_certificate_file_hash",
+        "expected_certificate_file_hash",
+        module.expected_certificate_file_hash,
+        entry.certificate_file_hash,
+    )?;
+    assert_registry_hash(
+        "modules.expected_export_hash",
+        "expected_export_hash",
+        module.expected_export_hash,
+        entry.export_hash,
+    )?;
+    assert_registry_hash(
+        "modules.expected_certificate_hash",
+        "expected_certificate_hash",
+        module.expected_certificate_hash,
+        entry.certificate_hash,
+    )?;
+    assert_registry_hash(
+        "modules.expected_axiom_report_hash",
+        "expected_axiom_report_hash",
+        module.expected_axiom_report_hash,
+        entry.axiom_report_hash,
+    )
+}
+
+fn registry_import_from_lock_import(
+    lock: &PackageLockManifest,
+    import: &PackageLockImport,
+    path: &str,
+) -> PackageArtifactResult<PackageRegistryImport> {
+    let Some(entry) = lock.entries.iter().find(|entry| {
+        entry.module == import.module
+            && entry.export_hash == import.export_hash
+            && entry.certificate_hash == import.certificate_hash
+    }) else {
+        if let Some(entry) = lock
+            .entries
+            .iter()
+            .find(|entry| entry.module == import.module)
+        {
+            assert_registry_hash(
+                field_path(path, "export_hash"),
+                "export_hash",
+                entry.export_hash,
+                import.export_hash,
+            )?;
+            assert_registry_hash(
+                field_path(path, "certificate_hash"),
+                "certificate_hash",
+                entry.certificate_hash,
+                import.certificate_hash,
+            )?;
+        }
+        return Err(PackageArtifactError::missing_field(
+            path,
+            format!("{} identity", import.module.as_dotted()),
+        ));
+    };
+    let (origin, package, version) = match entry.origin {
+        PackageLockEntryOrigin::Local => (PackageArtifactOrigin::Local, None, None),
+        PackageLockEntryOrigin::External => (
+            PackageArtifactOrigin::External,
+            Some(
+                entry
+                    .package
+                    .clone()
+                    .ok_or_else(|| PackageArtifactError::missing_field(path, "package"))?,
+            ),
+            Some(
+                entry
+                    .version
+                    .clone()
+                    .ok_or_else(|| PackageArtifactError::missing_field(path, "version"))?,
+            ),
+        ),
+    };
+    Ok(PackageRegistryImport {
+        module: import.module.clone(),
+        origin,
+        package,
+        version,
+        export_hash: import.export_hash,
+        certificate_hash: import.certificate_hash,
+    })
+}
+
+fn registry_checker_results_for_entry(
+    entry: &PackageLockEntry,
+    summaries: &[PackageCheckerSummary],
+    checker_profile: &str,
+    path: &str,
+) -> PackageArtifactResult<Vec<PackageRegistryCheckerResult>> {
+    let mut found_reference = false;
+    let mut results = Vec::new();
+    for summary in summaries
+        .iter()
+        .filter(|summary| summary.module == entry.module)
+    {
+        let summary_path = format!("{}.checker_results.{}", path, summary.mode.as_str());
+        assert_registry_hash(
+            field_path(&summary_path, "export_hash"),
+            "export_hash",
+            entry.export_hash,
+            summary.export_hash,
+        )?;
+        assert_registry_hash(
+            field_path(&summary_path, "certificate_hash"),
+            "certificate_hash",
+            entry.certificate_hash,
+            summary.certificate_hash,
+        )?;
+        assert_registry_hash(
+            field_path(&summary_path, "axiom_report_hash"),
+            "axiom_report_hash",
+            entry.axiom_report_hash,
+            summary.axiom_report_hash,
+        )?;
+        if summary.status != "passed" {
+            return Err(PackageArtifactError::invalid_enum_value(
+                field_path(&summary_path, "status"),
+                "status",
+                "passed",
+                &summary.status,
+            ));
+        }
+        if summary.mode == PackageCheckerMode::Reference {
+            if summary.checker != "npa-checker-ref" {
+                return Err(PackageArtifactError::invalid_enum_value(
+                    field_path(&summary_path, "checker"),
+                    "checker",
+                    "npa-checker-ref",
+                    &summary.checker,
+                ));
+            }
+            if summary.profile != checker_profile {
+                return Err(PackageArtifactError::invalid_enum_value(
+                    field_path(&summary_path, "profile"),
+                    "profile",
+                    checker_profile,
+                    &summary.profile,
+                ));
+            }
+            found_reference = true;
+        }
+        results.push(PackageRegistryCheckerResult {
+            checker: summary.checker.clone(),
+            profile: summary.profile.clone(),
+            mode: summary.mode.as_str().to_owned(),
+            status: PackageRegistryCheckerStatus::Accepted,
+            export_hash: summary.export_hash,
+            certificate_hash: summary.certificate_hash,
+            axiom_report_hash: summary.axiom_report_hash,
+        });
+    }
+    if !found_reference {
+        return Err(PackageArtifactError::missing_field(
+            format!("{path}.checker_results"),
+            "reference",
+        ));
+    }
+    Ok(results)
+}
+
+fn assert_registry_hash(
+    path: impl Into<String>,
+    field: impl Into<String>,
+    expected: PackageHash,
+    actual: PackageHash,
+) -> PackageArtifactResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageArtifactError::invalid_enum_value(
+            path,
+            field,
+            format_package_hash(&expected),
+            format_package_hash(&actual),
+        ))
+    }
 }
 
 pub(crate) fn parse_registry_module_value(

@@ -772,7 +772,7 @@ remaining registry-server requirements
 
 ### CLR-06-04 Generate Module Registry Seed Entries
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-02
 - Inputs:
   - package lock local module entries

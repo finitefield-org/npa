@@ -14,14 +14,16 @@ use npa_cli::package_artifacts::{
     PACKAGE_THEOREM_INDEX_PATH,
 };
 use npa_cli::package_publish::{
-    checksum_only_signature_policy, collect_package_publish_artifacts, load_package_publish_inputs,
+    checksum_only_signature_policy, collect_package_publish_artifacts,
+    collect_package_publish_registry_entries, load_package_publish_inputs,
     validate_publish_checker_summaries,
 };
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
     parse_and_validate_manifest_str, parse_package_axiom_report_json,
     parse_package_theorem_index_json, PackageArtifactOrigin, PackageCheckerMode, PackageModule,
-    PackagePath, PackagePublishArtifactRole, PACKAGE_PUBLISH_PLAN_PATH,
+    PackagePath, PackagePublishArtifactRole, PackageRegistryCheckerStatus,
+    PACKAGE_PUBLISH_PLAN_PATH,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -359,6 +361,73 @@ fn package_publish_artifact_hashes_match_release_files_and_checksum_policy() {
     assert_eq!(policy.hash_algorithm, "sha256");
     assert!(!policy.signature_required);
     assert!(policy.signatures.is_empty());
+}
+
+#[test]
+fn package_publish_registry_entries_link_artifacts_imports_and_checker_results() {
+    let package = build_basic_package("publish-registry-entries", false);
+    write_publish_input_metadata(&package);
+
+    let loaded = load_package_publish_inputs(package.path()).unwrap();
+    let entries = collect_package_publish_registry_entries(&loaded).unwrap();
+
+    assert_eq!(entries.len(), 1);
+    let entry = &entries[0];
+    assert_eq!(entry.schema, "npa.registry.module.v0.1");
+    assert_eq!(entry.package.as_str(), "fixture-package");
+    assert_eq!(entry.package_version.as_str(), "0.1.0");
+    assert_eq!(entry.module.as_dotted(), "Proofs.Ai.Basic");
+    assert_eq!(entry.core_spec, loaded.validated.manifest().core_spec);
+    assert_eq!(
+        entry.kernel_profile,
+        loaded.validated.manifest().kernel_profile
+    );
+    assert_eq!(
+        entry.certificate_format,
+        loaded.validated.manifest().certificate_format
+    );
+    assert!(entry.imports.is_empty());
+    assert_eq!(
+        entry.artifact_hashes.package_lock_file_hash,
+        loaded.package_lock.file_hash
+    );
+    assert_eq!(
+        entry.artifact_hashes.axiom_report_file_hash,
+        loaded.axiom_report_file.file_hash
+    );
+    assert_eq!(
+        entry.artifact_hashes.theorem_index_file_hash,
+        loaded.theorem_index_file.file_hash
+    );
+
+    let reference = entry
+        .checker_results
+        .iter()
+        .find(|result| result.mode == "reference")
+        .expect("reference checker result is published");
+    assert_eq!(reference.checker, "npa-checker-ref");
+    assert_eq!(reference.profile, "npa.checker.reference.v0.1");
+    assert_eq!(reference.status, PackageRegistryCheckerStatus::Accepted);
+    assert_eq!(reference.export_hash, entry.export_hash);
+    assert_eq!(reference.certificate_hash, entry.certificate_hash);
+    assert_eq!(reference.axiom_report_hash, entry.axiom_report_hash);
+
+    let mut missing_reference = loaded.clone();
+    missing_reference
+        .checker_summaries
+        .retain(|summary| summary.mode != PackageCheckerMode::Reference);
+    let missing = collect_package_publish_registry_entries(&missing_reference).unwrap_err();
+    assert_command_result_failure(missing, "GeneratedArtifact", "missing_field");
+
+    let mut stale_reference = loaded;
+    stale_reference
+        .checker_summaries
+        .iter_mut()
+        .find(|summary| summary.mode == PackageCheckerMode::Reference)
+        .unwrap()
+        .export_hash = package_file_hash(b"stale registry checker summary");
+    let stale = collect_package_publish_registry_entries(&stale_reference).unwrap_err();
+    assert_command_result_failure(stale, "GeneratedArtifact", "invalid_enum_value");
 }
 
 #[test]

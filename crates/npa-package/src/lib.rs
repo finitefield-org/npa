@@ -154,9 +154,9 @@ pub use publish_plan::{
     PackagePublishSummary, PackageSignaturePolicy, PACKAGE_PUBLISH_PLAN_PATH,
 };
 pub use registry::{
-    parse_registry_module_json, validate_registry_module, PackageRegistryArtifactHashes,
-    PackageRegistryCheckerResult, PackageRegistryCheckerStatus, PackageRegistryImport,
-    PackageRegistryModule,
+    build_package_registry_modules, parse_registry_module_json, validate_registry_module,
+    PackageRegistryArtifactHashes, PackageRegistryCheckerResult, PackageRegistryCheckerStatus,
+    PackageRegistryImport, PackageRegistryModule, PackageRegistryModuleSeedInput,
 };
 pub use schema::{
     CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
