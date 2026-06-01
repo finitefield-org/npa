@@ -1,3 +1,5 @@
+use std::{fs, path::PathBuf};
+
 use npa_cert::Name;
 use npa_package::{
     compute_package_axiom_report_hash, compute_package_theorem_index_hash, format_package_hash,
@@ -216,6 +218,38 @@ fn assert_artifact_error(
 }
 
 #[test]
+fn package_artifacts_checked_in_generated_axiom_report_and_theorem_index_parse_source_free() {
+    let root = repo_root().join("proofs/generated");
+    let report_source = fs::read_to_string(root.join("axiom-report.json")).unwrap();
+    let index_source = fs::read_to_string(root.join("theorem-index.json")).unwrap();
+    let report = parse_package_axiom_report_json(&report_source).unwrap();
+    let index = parse_package_theorem_index_json(&index_source).unwrap();
+
+    assert_eq!(report.schema, PACKAGE_AXIOM_REPORT_SCHEMA);
+    assert_eq!(index.schema, PACKAGE_THEOREM_INDEX_SCHEMA);
+    assert_eq!(report.package, index.package);
+    assert_eq!(report.version, index.version);
+    assert_eq!(
+        u64::try_from(report.modules.len()).unwrap(),
+        report.summary.module_count
+    );
+    assert_eq!(
+        u64::try_from(index.entries.len()).unwrap(),
+        index.summary.entry_count
+    );
+    assert_eq!(
+        report.package_lock.path.as_str(),
+        "generated/package-lock.json"
+    );
+    assert_eq!(
+        index.package_lock.path.as_str(),
+        "generated/package-lock.json"
+    );
+    assert_no_source_boundary_fields(&report_source);
+    assert_no_source_boundary_fields(&index_source);
+}
+
+#[test]
 fn package_axiom_report_schema_constants_and_rejections() {
     let report = base_axiom_report().with_computed_hash().unwrap();
     let canonical = report.canonical_json().unwrap();
@@ -375,4 +409,28 @@ fn package_artifact_canonical_json_sorts_and_hashes() {
 
     assert_ne!(format_package_hash(&report_hash), E_HASH);
     assert_ne!(format_package_hash(&index_hash), E_HASH);
+}
+
+fn assert_no_source_boundary_fields(source: &str) {
+    for forbidden in [
+        r#""source""#,
+        r#""replay""#,
+        r#""meta""#,
+        "manifest.toml",
+        ".npa\"",
+        "/root/",
+        "/tmp/",
+    ] {
+        assert!(
+            !source.contains(forbidden),
+            "generated artifact leaked boundary field or host path: {forbidden}"
+        );
+    }
+}
+
+fn repo_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .components()
+        .collect()
 }

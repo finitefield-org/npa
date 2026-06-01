@@ -17,6 +17,10 @@ use npa_package::{
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
+const PROOF_CORPUS_TEST_STACK_SIZE: usize = 64 * 1024 * 1024;
+const STALE_HASH: &str = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+const OTHER_STALE_HASH: &str =
+    "sha256:2222222222222222222222222222222222222222222222222222222222222222";
 
 static NEXT_TEMP_DIR: AtomicUsize = AtomicUsize::new(0);
 
@@ -101,6 +105,20 @@ fn package_axiom_report_write_creates_only_report_from_source_free_inputs() {
 }
 
 #[test]
+fn package_axiom_report_write_mode_is_idempotent_in_source_free_package() {
+    let package =
+        build_source_free_fixture("write-idempotent", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+
+    let first = run_write(&package);
+    assert_eq!(first.exit_code(), CommandExitCode::Success);
+    let after_first = collect_files(package.path());
+
+    let second = run_write(&package);
+    assert_eq!(second.exit_code(), CommandExitCode::Success);
+    assert_eq!(collect_files(package.path()), after_first);
+}
+
+#[test]
 fn package_axiom_report_check_succeeds_and_writes_no_files() {
     let package =
         build_source_free_fixture("check-no-write", "Proofs.Ai.Basic", false, &["Eq.rec"]);
@@ -112,6 +130,43 @@ fn package_axiom_report_check_succeeds_and_writes_no_files() {
     assert_eq!(result.exit_code(), CommandExitCode::Success);
     assert!(result.diagnostics.is_empty());
     assert_eq!(collect_files(package.path()), before);
+}
+
+#[test]
+fn package_axiom_report_proof_corpus_check_mode_succeeds_without_mutating_generated_artifacts() {
+    let root = repo_root().join("proofs");
+    let report_path = root.join(PACKAGE_AXIOM_REPORT_PATH);
+    let index_path = root.join(PACKAGE_THEOREM_INDEX_PATH);
+    let before_report = fs::read(&report_path).unwrap();
+    let before_index = fs::read(&index_path).unwrap();
+
+    let root_for_run = root.clone();
+    let result = run_with_proof_corpus_stack(move || {
+        run_package_axiom_report(PackageAxiomReportOptions {
+            common: PackageCommonOptions {
+                root: root_for_run,
+                json: true,
+            },
+            check: true,
+        })
+    });
+
+    assert_eq!(result.exit_code(), CommandExitCode::Success);
+    assert!(result.diagnostics.is_empty());
+    assert_eq!(result.artifacts.len(), 1);
+    assert_eq!(result.artifacts[0].kind, "package_axiom_report");
+    assert_eq!(result.artifacts[0].path, PACKAGE_AXIOM_REPORT_PATH);
+
+    let json = result.render_json();
+    assert!(json.starts_with(&format!(
+        "{{\"schema\":\"{PACKAGE_COMMAND_RESULT_SCHEMA}\",\"command\":\"package axiom-report\","
+    )));
+    assert!(json.contains("\"root\":\"<absolute-root>\""));
+    assert!(json.contains("\"status\":\"passed\""));
+    assert!(!json.contains(&repo_root().to_string_lossy().to_string()));
+
+    assert_eq!(fs::read(report_path).unwrap(), before_report);
+    assert_eq!(fs::read(index_path).unwrap(), before_index);
 }
 
 #[test]
@@ -150,6 +205,65 @@ fn package_axiom_report_check_rejects_missing_stale_and_noncanonical_reports() {
         DiagnosticKind::AxiomReport,
         "axiom_report_non_canonical_order",
     );
+}
+
+#[test]
+fn package_axiom_report_check_rejects_stale_self_hash() {
+    let package =
+        build_source_free_fixture("stale-self-hash", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+    assert_eq!(run_write(&package).exit_code(), CommandExitCode::Success);
+    replace_json_hash_field(
+        &package.artifact_path(PACKAGE_AXIOM_REPORT_PATH),
+        "package_axiom_report_hash",
+        STALE_HASH,
+    );
+
+    let result = run_check(&package);
+
+    assert_failure(
+        &result,
+        DiagnosticKind::AxiomReport,
+        "axiom_report_hash_mismatch",
+    );
+    assert_eq!(
+        result.diagnostics[0].field.as_deref(),
+        Some("package_axiom_report_hash")
+    );
+    let json = result.render_json();
+    assert!(json.contains("\"expected_hash\":\"sha256:"));
+    assert!(json.contains("\"actual_hash\":\"sha256:"));
+    assert!(!json.contains(&package.path().to_string_lossy().to_string()));
+}
+
+#[test]
+fn package_axiom_report_rejects_missing_certificate() {
+    let package =
+        build_source_free_fixture("missing-certificate", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+    fs::remove_file(package.artifact_path("Proofs/Ai/Basic/certificate.npcert")).unwrap();
+
+    let result = run_write(&package);
+
+    assert_failure(&result, DiagnosticKind::ArtifactIo, "certificate_missing");
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some("Proofs/Ai/Basic/certificate.npcert")
+    );
+    assert!(!package.artifact_path(PACKAGE_AXIOM_REPORT_PATH).exists());
+}
+
+#[test]
+fn package_axiom_report_rejects_stale_package_lock() {
+    let package =
+        build_source_free_fixture("stale-package-lock", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+    replace_lock_manifest_file_hash(&package);
+
+    let result = run_write(&package);
+
+    assert_failure(&result, DiagnosticKind::PackageLock, "package_lock_stale");
+    assert_eq!(result.diagnostics[0].path.as_deref(), Some(LOCK_PATH));
+    assert_eq!(result.diagnostics[0].field.as_deref(), Some("package_lock"));
+    assert!(result.diagnostics[0].expected_hash.is_some());
+    assert!(result.diagnostics[0].actual_hash.is_some());
 }
 
 #[test]
@@ -229,6 +343,17 @@ fn assert_failure(result: &npa_cli::diagnostic::CommandResult, kind: DiagnosticK
     assert_eq!(result.diagnostics.len(), 1);
     assert_eq!(result.diagnostics[0].kind, kind);
     assert_eq!(result.diagnostics[0].reason_code, reason);
+}
+
+fn run_with_proof_corpus_stack(
+    run: impl FnOnce() -> npa_cli::diagnostic::CommandResult + Send + 'static,
+) -> npa_cli::diagnostic::CommandResult {
+    std::thread::Builder::new()
+        .stack_size(PROOF_CORPUS_TEST_STACK_SIZE)
+        .spawn(run)
+        .unwrap()
+        .join()
+        .unwrap()
 }
 
 fn build_source_free_fixture(
@@ -398,6 +523,39 @@ fn collect_files_inner(root: &Path, current: &Path, files: &mut BTreeMap<String,
                 .replace('\\', "/");
             files.insert(relative, fs::read(path).unwrap());
         }
+    }
+}
+
+fn replace_json_hash_field(path: &Path, field: &str, replacement: &'static str) {
+    let mut source = fs::read_to_string(path).unwrap();
+    let prefix = format!("\"{field}\":\"");
+    let value_start = source.find(&prefix).unwrap() + prefix.len();
+    let value_end = value_start + replacement.len();
+    assert!(source[value_start..value_end].starts_with("sha256:"));
+    let current = &source[value_start..value_end];
+    let replacement = replacement_hash(current, replacement);
+    source.replace_range(value_start..value_end, replacement);
+    fs::write(path, source).unwrap();
+}
+
+fn replace_lock_manifest_file_hash(package: &TestPackage) {
+    let path = package.artifact_path(LOCK_PATH);
+    let mut source = fs::read_to_string(&path).unwrap();
+    let prefix = r#""manifest":{"path":"npa-package.toml","file_hash":""#;
+    let value_start = source.find(prefix).unwrap() + prefix.len();
+    let value_end = value_start + STALE_HASH.len();
+    assert!(source[value_start..value_end].starts_with("sha256:"));
+    let current = &source[value_start..value_end];
+    let replacement = replacement_hash(current, STALE_HASH);
+    source.replace_range(value_start..value_end, replacement);
+    fs::write(path, source).unwrap();
+}
+
+fn replacement_hash<'a>(current: &str, preferred: &'a str) -> &'a str {
+    if current == preferred {
+        OTHER_STALE_HASH
+    } else {
+        preferred
     }
 }
 

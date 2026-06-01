@@ -928,7 +928,7 @@ external checker disagreement gates
 
 ### CLR-05-07 Add Determinism, Boundary, And Negative Fixture Tests
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-04, CLR-05-06
 - Inputs:
   - proof-corpus package fixture
