@@ -762,7 +762,7 @@ external checker disagreement gates
 
 ### CLR-05-02 Implement Source-Free Package Artifact Extraction
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-01
 - Inputs:
   - CLR-03 package lock and source-free verifier APIs

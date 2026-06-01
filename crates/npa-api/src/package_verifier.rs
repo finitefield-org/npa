@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use npa_cert::{
     decode_module_cert, verify_module_cert, AxiomPolicy, CertError, CoreFeature, Name,
-    VerifierSession,
+    VerifiedModule, VerifierSession,
 };
 use npa_checker_ref::{
     check_certificate, verify_certificate_hashes, ReferenceCertificateSection, ReferenceCheckError,
@@ -13,8 +13,8 @@ use npa_checker_ref::{
 use npa_package::{
     build_package_lock_graph, format_package_hash, package_file_hash,
     validate_package_lock_against_manifest_graph, PackageHash, PackageLockEntry,
-    PackageLockManifest, PackageLockResolvedImport, PackagePath, ValidatedPackageManifest,
-    CHECKER_PROFILE_REFERENCE_V0_1,
+    PackageLockEntryOrigin, PackageLockManifest, PackageLockResolvedImport, PackagePath,
+    ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
 };
 
 use crate::independent_checker::{
@@ -161,6 +161,36 @@ pub struct PackageModuleVerificationResult {
     pub error: Option<PackageVerificationError>,
 }
 
+/// Verified module payload accepted by the fast source-free package verifier.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageVerifiedModuleRecord {
+    /// Module name from the package lock entry.
+    pub module: Name,
+    /// Whether this module is local to the package or an external hash-pinned import.
+    pub origin: PackageLockEntryOrigin,
+    /// Package-relative certificate path.
+    pub certificate: PackagePath,
+    /// Exact SHA-256 hash of the certificate file bytes.
+    pub certificate_file_hash: PackageHash,
+    /// Verified module export hash.
+    pub export_hash: PackageHash,
+    /// Verified module axiom report hash.
+    pub axiom_report_hash: PackageHash,
+    /// Verified module certificate hash.
+    pub certificate_hash: PackageHash,
+    /// Kernel-verified module data used by later certificate-derived projections.
+    pub verified_module: VerifiedModule,
+}
+
+/// Fast source-free package verification report with collected verified modules.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageFastSourceFreeVerification {
+    /// Fast verifier summary.
+    pub report: PackageVerificationReport,
+    /// Verified modules in package-lock topological order.
+    pub verified_modules: Vec<PackageVerifiedModuleRecord>,
+}
+
 /// Per-module Phase 8 import lock derived from a package lock entry.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackagePhase8ImportLockMaterialization {
@@ -243,6 +273,21 @@ pub struct PackageVerificationCheckerError {
 }
 
 impl PackageVerificationError {
+    pub(crate) fn package_lock_stale(
+        path: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageVerificationErrorKind::Input,
+            path,
+            Some("package_lock".to_owned()),
+            PackageVerificationErrorReason::PackageLockStale,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
     fn package_identity_mismatch(
         path: impl Into<String>,
         field: impl Into<String>,
@@ -558,6 +603,8 @@ pub enum PackageVerificationErrorKind {
 pub enum PackageVerificationErrorReason {
     /// Manifest and lock package identity differ.
     PackageIdentityMismatch,
+    /// Checked package lock no longer matches manifest and certificate artifacts.
+    PackageLockStale,
     /// Lock graph or manifest import accountability validation failed.
     LockGraphInvalid,
     /// Caller supplied duplicate artifact bytes for one certificate path.
@@ -597,6 +644,7 @@ impl PackageVerificationErrorReason {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::PackageIdentityMismatch => "package_identity_mismatch",
+            Self::PackageLockStale => "package_lock_stale",
             Self::LockGraphInvalid => "lock_graph_invalid",
             Self::DuplicateCertificateArtifact => "duplicate_certificate_artifact",
             Self::CertificateArtifactMissing => "certificate_artifact_missing",
@@ -631,6 +679,21 @@ pub fn verify_package_fast_source_free<'a>(
     lock: &PackageLockManifest,
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
+    Ok(verify_package_fast_source_free_with_modules(validated, lock, artifacts)?.report)
+}
+
+/// Verify package certificates source-free with the fast kernel verifier and
+/// return the verified module collection.
+///
+/// The returned modules are the `npa_cert::VerifiedModule` values produced by
+/// the same source-free fast verifier used for the report. No source, replay,
+/// metadata, theorem-index, AI trace, registry, or checker-result files are
+/// read by this API.
+pub fn verify_package_fast_source_free_with_modules<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+) -> PackageVerificationResult<PackageFastSourceFreeVerification> {
     validate_manifest_lock_identity(validated, lock)?;
     let graph = validate_package_lock_against_manifest_graph(validated, lock)
         .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
@@ -643,6 +706,7 @@ pub fn verify_package_fast_source_free<'a>(
     let policy = package_fast_kernel_policy(validated);
     let mut session = VerifierSession::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
+    let mut verified_modules = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
 
     for module in &graph.topological_order {
@@ -663,12 +727,24 @@ pub fn verify_package_fast_source_free<'a>(
         }
 
         match verify_lock_entry(*entry_index, entry, &artifact_bytes, &mut session, &policy) {
-            Ok(()) => results.push(module_result(
-                entry,
-                PackageModuleVerificationStatus::Passed,
-                None,
-                PackageVerificationMode::FastKernel,
-            )),
+            Ok(verified_module) => {
+                verified_modules.push(PackageVerifiedModuleRecord {
+                    module: entry.module.clone(),
+                    origin: entry.origin,
+                    certificate: entry.certificate.clone(),
+                    certificate_file_hash: entry.certificate_file_hash,
+                    export_hash: entry.export_hash,
+                    axiom_report_hash: entry.axiom_report_hash,
+                    certificate_hash: entry.certificate_hash,
+                    verified_module,
+                });
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Passed,
+                    None,
+                    PackageVerificationMode::FastKernel,
+                ));
+            }
             Err(error) => {
                 failed_module = Some(entry.module.clone());
                 results.push(module_result(
@@ -688,13 +764,18 @@ pub fn verify_package_fast_source_free<'a>(
     };
     let verdict_source = PackageVerificationVerdictSource::FastKernelCertificateVerifier;
 
-    Ok(PackageVerificationReport {
+    let report = PackageVerificationReport {
         mode: PackageVerificationMode::FastKernel,
         verdict_source,
         reference_checker_verdict: verdict_source.is_reference_checker_verdict(),
         status,
         topological_order: graph.topological_order,
         modules: results,
+    };
+
+    Ok(PackageFastSourceFreeVerification {
+        report,
+        verified_modules,
     })
 }
 
@@ -1154,7 +1235,7 @@ fn verify_lock_entry(
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     session: &mut VerifierSession,
     policy: &AxiomPolicy,
-) -> PackageVerificationResult<()> {
+) -> PackageVerificationResult<VerifiedModule> {
     let entry_path = format!("entries[{entry_index}]");
     let bytes = artifact_bytes
         .get(&entry.certificate)
@@ -1216,7 +1297,7 @@ fn verify_lock_entry(
         ));
     }
 
-    Ok(())
+    Ok(verified)
 }
 
 fn verify_reference_lock_entry(

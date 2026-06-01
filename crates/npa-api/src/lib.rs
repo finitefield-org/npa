@@ -29,6 +29,7 @@ mod human;
 mod human_ide;
 mod independent_checker;
 mod json;
+mod package_artifacts;
 mod package_verifier;
 mod projection;
 mod prompt;
@@ -454,15 +455,22 @@ pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
     JsonValue, JsonValueKind,
 };
+pub use package_artifacts::{
+    extract_package_artifacts_source_free, PackageArtifactExtraction,
+    PackageArtifactExtractionInput, PackageArtifactReferenceSummaryMode,
+    PackageArtifactVerifiedModule, PackageArtifactVerifiedModuleKey,
+};
 pub use package_verifier::{
     materialize_package_phase8_import_locks, materialize_package_phase8_requests,
-    verify_package_fast_source_free, verify_package_reference_source_free,
-    PackageCertificateArtifact, PackageModuleVerificationResult, PackageModuleVerificationStatus,
-    PackagePhase8ImportLockMaterialization, PackagePhase8RequestMaterialization,
-    PackagePhase8RequestMaterializationReport, PackageVerificationCheckerError,
-    PackageVerificationError, PackageVerificationErrorKind, PackageVerificationErrorReason,
-    PackageVerificationMode, PackageVerificationReport, PackageVerificationResult,
-    PackageVerificationStatus, PackageVerificationVerdictSource,
+    verify_package_fast_source_free, verify_package_fast_source_free_with_modules,
+    verify_package_reference_source_free, PackageCertificateArtifact,
+    PackageFastSourceFreeVerification, PackageModuleVerificationResult,
+    PackageModuleVerificationStatus, PackagePhase8ImportLockMaterialization,
+    PackagePhase8RequestMaterialization, PackagePhase8RequestMaterializationReport,
+    PackageVerificationCheckerError, PackageVerificationError, PackageVerificationErrorKind,
+    PackageVerificationErrorReason, PackageVerificationMode, PackageVerificationReport,
+    PackageVerificationResult, PackageVerificationStatus, PackageVerificationVerdictSource,
+    PackageVerifiedModuleRecord,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,

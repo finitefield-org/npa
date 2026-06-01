@@ -71,6 +71,14 @@ pub enum DiagnosticKind {
     FastVerifier,
     /// Reference verifier rejection.
     ReferenceVerifier,
+    /// Package axiom report generation or checking.
+    AxiomReport,
+    /// Package theorem index generation or checking.
+    TheoremIndex,
+    /// Generated package artifact freshness or filesystem operation.
+    GeneratedArtifact,
+    /// Package artifact policy evaluation.
+    PackagePolicy,
     /// Unexpected internal command failure.
     Internal,
 }
@@ -89,6 +97,10 @@ impl DiagnosticKind {
             Self::SourceFreeBoundary => "SourceFreeBoundary",
             Self::FastVerifier => "FastVerifier",
             Self::ReferenceVerifier => "ReferenceVerifier",
+            Self::AxiomReport => "AxiomReport",
+            Self::TheoremIndex => "TheoremIndex",
+            Self::GeneratedArtifact => "GeneratedArtifact",
+            Self::PackagePolicy => "PackagePolicy",
             Self::Internal => "Internal",
         }
     }
@@ -104,7 +116,11 @@ impl DiagnosticKind {
             | Self::Build
             | Self::SourceFreeBoundary
             | Self::FastVerifier
-            | Self::ReferenceVerifier => CommandExitCode::PackageFailure,
+            | Self::ReferenceVerifier
+            | Self::AxiomReport
+            | Self::TheoremIndex
+            | Self::GeneratedArtifact
+            | Self::PackagePolicy => CommandExitCode::PackageFailure,
         }
     }
 }
