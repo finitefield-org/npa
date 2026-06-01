@@ -1702,7 +1702,7 @@ NPAには通常モードと高信頼モードを分けます。
   "checker_set": [
     "npa-kernel-rust",
     "npa-checker-ref",
-    "npa-checker-lean"
+    "npa-checker-ext"
   ],
   "axioms_used": [],
   "imports_verified": true
@@ -1735,7 +1735,12 @@ fast kernel:
   Rust
 
 reference checker:
-  小さな関数型実装。OCamlまたはHaskellでもよい。
+  現リポジトリでは小さな Rust 別実装 npa-checker-ref。
+  将来は OCaml / Haskell 実装に置き換えてもよい。
+
+external checker:
+  OCaml clean-room npa-checker-ext。
+  Rust workspace crate には依存させない。
 
 verified checker:
   NPA自身またはLean/Rocqで後から形式検証。

@@ -18,6 +18,8 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
   Phase 8 Release Audit fixture gate である
 - standalone external checker binary、verified_high_trust artifact、
   full independent checker comparison CI はまだこの文書の integration target として扱う
+- external checker は OCaml clean-room `npa-checker-ext` として設計し、
+  詳細仕様は `doc/npa-checker-ext-ocaml.md` に置く
 - 現リポジトリでは GitHub Actions workflow は削除済みであり、
   Phase 9 Regression script は Phase 8 Release Audit fixture gate の代替ではない
 - Phase 8 の automation が crates/npa-api に存在しても、trusted boundary は
@@ -95,9 +97,10 @@ Phase 8 では、少なくとも3種類の checker を想定します。
 ただし Phase 8 MVP では、まず次で十分です。
 
 ```text
-fast kernel      : Rust
-reference checker: OCaml / Haskell / 小さなRust別実装
-external checker : reference checker を独立バイナリとして運用
+fast kernel             : Rust
+reference checker       : crates/npa-checker-ref の小さな Rust 別実装
+external checker profile: crates/npa-api の runner / comparison fixtures
+target external checker : OCaml clean-room npa-checker-ext
 ```
 
 ---
@@ -843,33 +846,34 @@ external checker は「運用上、本体から切り離されている検査器
 target integration の standalone external checker binary は次の contract です。
 現リポジトリでは `npa-checker-ext` binary はまだなく、`crates/npa-api` の
 `external` checker profile と release audit fixtures で runner contract を固定します。
+target binary 本体は OCaml clean-room 実装として `doc/npa-checker-ext-ocaml.md` に定義します。
 
 ```bash
 npa-checker-ext \
   --cert build/Std/Nat.npcert \
   --import-dir build/certs \
-  --policy policies/high_trust.json \
+  --policy policies/high_trust.toml \
   --output json
 ```
 
-出力：
+checker raw result 出力：
 
 ```json
 {
-  "status": "checked",
-  "checker": "npa-checker-ext",
+  "schema": "npa.independent-checker.checker_raw_result.v1",
+  "checker_id": "npa-checker-ext",
   "checker_version": "0.1.0",
-  "core_spec": "NPA-Core-0.1",
-  "certificate_format": "NPA-CERT-0.1",
+  "checker_build_hash": "sha256:...",
+  "status": "checked",
   "module": "Std.Nat",
-  "export_hash": "sha256:...",
   "certificate_hash": "sha256:...",
-  "axiom_report_hash": "sha256:...",
-  "axioms_used": [],
-  "checked_declarations": 84,
-  "time_ms": 913
+  "export_hash": "sha256:...",
+  "axiom_report_hash": "sha256:..."
 }
 ```
+
+process metadata、resource usage、diagnostics は runner-owned `MachineCheckResult` に入れ、
+checker raw result の semantic identity には入れません。
 
 ---
 
@@ -948,24 +952,12 @@ audit/
   checker-output-ext.json
 ```
 
-external checker はこの bundle だけで検査できます。
+audit runner はこの bundle だけから external checker の入力を構成できます。
 
-```bash
-npa-checker-ext --audit-bundle audit/
-```
-
-成功時：
-
-```json
-{
-  "status": "verified_audit_bundle",
-  "challenge_statement_match": true,
-  "imports_checked": true,
-  "proof_checked": true,
-  "policy_satisfied": true,
-  "axioms_used": []
-}
-```
+ただし `npa-checker-ext` 本体の必須 CLI contract は `--cert` / `--import-dir` /
+`--policy` / `--output json` です。audit runner は bundle からこの source-free
+checker invocation を materialize し、bundle validation や challenge coverage は runner /
+audit command 側の責務にします。
 
 ---
 
@@ -1165,7 +1157,8 @@ target integration の standalone external checker command は次です。
 npa-checker-ext \
   --cert build/Std/Nat.npcert \
   --import-dir build \
-  --policy policies/std.json
+  --policy policies/std.toml \
+  --output json
 ```
 
 external checker は、できれば別 container で実行します。
@@ -1571,11 +1564,12 @@ fast kernel:
   Rust
 
 reference checker:
-  OCaml / Haskell / 別Rust実装
+  現リポジトリでは crates/npa-checker-ref の小さな Rust 別実装
+  将来は OCaml / Haskell などへの置換も可能
 
 external checker:
-  reference checker の独立バイナリ
-  または別言語実装
+  OCaml clean-room npa-checker-ext
+  Rust workspace crate に依存しない別プロセス / 別ビルド実装
 
 future verified checker:
   NPA自身 / Lean / Rocq
@@ -1690,6 +1684,8 @@ cargo run -p npa-checker-ref -- \
 ```
 
 external checker runner / release blocker fixture は `crates/npa-api` で固定します。
+OCaml clean-room external checker 本体の target specification は
+`doc/npa-checker-ext-ocaml.md` です。
 
 ```bash
 cargo test -p npa-api independent_checker::tests::p8h00_pr_mode_requires_reference_and_keeps_external_on_demand_only

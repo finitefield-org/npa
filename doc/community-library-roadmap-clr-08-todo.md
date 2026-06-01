@@ -94,6 +94,9 @@ Still target integration:
 - external checker benchmark collection job
 ```
 
+`npa-checker-ext` は OCaml clean-room 実装として設計する。
+外部 checker 本体の target specification は `doc/npa-checker-ext-ocaml.md` に置く。
+
 Important dependency split:
 
 ```text
