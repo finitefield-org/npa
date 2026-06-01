@@ -788,7 +788,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST type-core
+sh checkers/npa-checker-ext/scripts/test.sh type-core
 cargo test -p npa-checker-ref type_check
 ```
 

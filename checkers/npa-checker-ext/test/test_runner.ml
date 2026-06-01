@@ -1472,6 +1472,33 @@ let assert_env_rejects label expected_kind expected_reason env global_ref =
       assert_equal (label ^ " section") "declarations"
         (Ext_bytes.section_name error.Ext_env.section)
 
+let assert_typecheck_ok label result =
+  match result with
+  | Ok () -> ()
+  | Error error ->
+      failwith
+        (label ^ ": unexpected typecheck error "
+       ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
+
+let assert_typecheck_rejects label expected_kind expected_reason result =
+  match result with
+  | Ok _ -> failwith (label ^ ": expected typecheck error")
+  | Error error ->
+      assert_equal (label ^ " kind") expected_kind (Ext_typecheck.error_kind error);
+      assert_equal (label ^ " reason") expected_reason
+        (Ext_typecheck.error_reason_code error.Ext_typecheck.reason);
+      assert_equal (label ^ " section") "declarations"
+        (Ext_bytes.section_name error.Ext_typecheck.section)
+
+let assert_infers_term label expected result =
+  match result with
+  | Ok actual ->
+      if actual <> expected then failwith (label ^ ": inferred unexpected term")
+  | Error error ->
+      failwith
+        (label ^ ": unexpected typecheck error "
+       ^ Ext_typecheck.error_reason_code error.Ext_typecheck.reason)
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -2530,6 +2557,78 @@ let run_type_env_tests () =
     "unknown_reference" env_with_inductive
     (Ext_term.LocalGenerated { decl_index = 0; name = make_name [ "Missing" ] })
 
+let run_type_core_tests () =
+  let nat = Ext_env.nat in
+  let nat_zero = Ext_env.nat_zero in
+  let theorem_ty = Ext_term.Pi (nat, nat) in
+  let theorem_proof = Ext_term.Lam (nat, Ext_term.BVar 0) in
+  assert_typecheck_ok "type-core well-typed theorem proof"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context theorem_proof
+       theorem_ty);
+  assert_infers_term "type-core lambda inference" theorem_ty
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context theorem_proof);
+  assert_infers_term "type-core Pi inference"
+    (Ext_term.Sort
+       (Ext_level.Imax (Ext_level.Succ Ext_level.Zero, Ext_level.Succ Ext_level.Zero)))
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context theorem_ty);
+  assert_typecheck_ok "type-core well-typed application"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context
+       (Ext_term.App (theorem_proof, nat_zero))
+       nat);
+
+  let alias_decl =
+    declaration_fixture Ext_cert.Definition
+      (Ext_cert.DefDecl
+         {
+           decl_name = make_name [ "AliasNat" ];
+           decl_universe_params = [];
+           decl_universe_constraints = [];
+           decl_ty = Ext_term.Sort (Ext_level.Succ Ext_level.Zero);
+           decl_value = nat;
+           decl_reducibility = Ext_cert.Reducible;
+         })
+  in
+  let alias_env =
+    match Ext_env.add_checked_declaration Ext_env.empty alias_decl with
+    | Ok env -> env
+    | Error error ->
+        failwith
+          ("unexpected add alias error "
+         ^ Ext_env.error_reason_code error.Ext_env.reason)
+  in
+  let alias_ref = Ext_term.Const (Ext_term.Local { decl_index = 0 }, []) in
+  assert_typecheck_ok "type-core reducible definition unfolds in expected type"
+    (Ext_typecheck.check alias_env Ext_typecheck.empty_context nat_zero alias_ref);
+
+  let let_term = Ext_term.Let (nat, nat_zero, Ext_term.BVar 0) in
+  assert_infers_term "type-core let inference" nat
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context let_term);
+  assert_typecheck_ok "type-core let checks value and body"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context let_term nat);
+
+  assert_typecheck_rejects "type-core rejects ill-typed application" "type_mismatch"
+    "expected_function"
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context
+       (Ext_term.App (nat_zero, nat_zero)));
+  assert_typecheck_rejects "type-core rejects out-of-scope bvar" "type_mismatch"
+    "invalid_bvar"
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context (Ext_term.BVar 0));
+  assert_typecheck_rejects "type-core rejects sort/type mismatch" "type_mismatch"
+    "type_mismatch"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context nat_zero
+       (Ext_term.Sort Ext_level.Zero));
+  assert_typecheck_rejects "type-core rejects lambda against non-Pi expected type"
+    "type_mismatch" "type_mismatch"
+    (Ext_typecheck.check Ext_env.empty Ext_typecheck.empty_context theorem_proof nat);
+  assert_typecheck_rejects "type-core rejects non-sort Pi domain" "type_mismatch"
+    "expected_sort"
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context
+       (Ext_term.Pi (nat_zero, nat)));
+  assert_typecheck_rejects "type-core rejects bad let value" "type_mismatch"
+    "type_mismatch"
+    (Ext_typecheck.infer Ext_env.empty Ext_typecheck.empty_context
+       (Ext_term.Let (nat, Ext_term.Sort Ext_level.Zero, Ext_term.BVar 0)))
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -2720,6 +2819,7 @@ let () =
                "import-normal";
                "import-store";
                "sha256";
+               "type-core";
                "type-env";
              ])
       then
@@ -2739,5 +2839,6 @@ let () =
   if should_run selected "import-normal" then run_import_normal_tests ();
   if should_run selected "import-high-trust" then run_import_high_trust_tests ();
   if should_run selected "type-env" then run_type_env_tests ();
+  if should_run selected "type-core" then run_type_core_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
