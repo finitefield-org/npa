@@ -634,7 +634,7 @@ Benchmarks are regression signals. They do not change proof validity.
 
 ### CLR-08-06 Extend Release/High-Trust CI Templates
 
-- Status: Deferred
+- Status: Completed
 - Depends on: CLR-08-04, CLR-08-05, CLR-07
 - Inputs:
   - CLR-07 CI templates
@@ -643,9 +643,10 @@ Benchmarks are regression signals. They do not change proof validity.
   - RunnerPolicy and checker registry fixtures
 - Code or documentation areas:
   - `ci-templates/github-actions/npa-package-release.yml`
+  - `ci-templates/github-actions/npa-package-high-trust.yml`
   - `ci-templates/github-actions/README.md`
   - `doc/external-theorem-library-ci.md`
-  - optional high-trust workflow snippet
+  - high-trust workflow validation
 - Deliverables:
   - Release/high-trust CI extension with external checker job.
   - High-trust-reference job.
@@ -664,10 +665,23 @@ Benchmarks are regression signals. They do not change proof validity.
   - `actionlint ci-templates/github-actions/*.yml` when available
   - `git diff --check`
 - Notes:
-  - If no workflow files exist yet, update template docs and keep executable workflow creation inside CLR-07 implementation.
-  - Deferred until a documented CI environment pins a built `npa-checker-ext`
-    executable and provides runner policy / checker registry fixtures in the
-    same template variant. Base CLR-07 templates remain reference-checker-only.
+  - Implemented as `ci-templates/github-actions/npa-package-high-trust.yml`,
+    an opt-in workflow template outside this repository's active
+    `.github/workflows` directory. Base CLR-07 PR and release templates remain
+    reference-checker-only by default.
+  - The high-trust template fails before verifier execution unless a pinned
+    workspace-relative `NPA_CHECKER_EXT_BINARY_PATH`, high-trust runner policy,
+    challenge runner policy, release policy, checker registry, policy hashes,
+    and release audit manifest are present.
+  - The template runs source-free external verification, validates
+    high-trust-reference release audit evidence through `npa package
+    high-trust`, then generates and checks `generated/verified-high-trust.json`.
+    Uploads are limited to deterministic JSON diagnostics, the generated
+    `verified_high_trust` artifact, and the external checker SHA-256 summary.
+  - `validate-workflows.py` now treats `--checker external` as forbidden only
+    for the PR and base release templates, while requiring explicit
+    `checker-registry`, runner-policy, and `package high-trust` wiring in the
+    high-trust template.
 
 ### CLR-08-07 Add External Checker Benchmark And Audit Collection
 

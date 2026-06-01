@@ -485,7 +485,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-08 Define And Gate High-Trust External Checker Integration
 
-- Status: Partially Completed; high-trust artifact generator implemented, CI template extension deferred
+- Status: Partially Completed; high-trust command and opt-in CI template implemented, benchmark/audit collection remains
 - Depends on: CLR-03
 - Inputs:
   - `doc/phase8-human.md`
@@ -530,8 +530,8 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
     as release evidence only after a built executable is present in a fresh
     checkout or documented CI environment and its identity/hash pass runner
     validation.
-  - `verified_high_trust` schema/generator and `package high-trust` are
-    implemented. Full external-checker release/high-trust CI is deferred, and
+  - `verified_high_trust` schema/generator, `package high-trust`, and the
+    opt-in `npa-package-high-trust.yml` template are implemented.
     `verified_high_trust` must not be generated from reference-checker-only
     evidence.
   - `npa-mathlib-seed` may proceed as a reference-checker-only release seed.

@@ -9,12 +9,13 @@ Template files:
 ```text
 npa-package-pr.yml          available
 npa-package-release.yml     available
+npa-package-high-trust.yml  available
 summarize-npa-diagnostics.py available
 validate-workflows.py       available
 ```
 
-CLR-07-03 adds the PR template. CLR-07-04 adds the release template. The
-contract source is:
+CLR-07-03 adds the PR template. CLR-07-04 adds the base release template.
+CLR-08-06 adds the opt-in high-trust release template. The contract source is:
 
 ```text
 doc/external-theorem-library-ci.md
@@ -29,11 +30,14 @@ scripts/phase9-regression.sh
 ```
 
 Those scripts are repository development gates, not external theorem library CI.
-CLR-09 should use these files for `npa-mathlib-seed`: `npa-package-pr.yml`,
-`npa-package-release.yml`, `summarize-npa-diagnostics.py`, and
-`validate-workflows.py`. If the seed repository installs the workflow YAML
-under `.github/workflows/`, keep helper scripts at the path referenced by the
-templates or update the copied workflow paths in the same change.
+CLR-09 should use `npa-package-pr.yml`, `npa-package-release.yml`,
+`summarize-npa-diagnostics.py`, and `validate-workflows.py` for the
+reference-checker-only seed release. Copy `npa-package-high-trust.yml` only
+after the seed repository also provides the pinned high-trust checker binary,
+runner policies, checker registry, and release audit evidence. If a seed
+repository installs workflow YAML under `.github/workflows/`, keep helper
+scripts at the path referenced by the templates or update the copied workflow
+paths in the same change.
 
 ## Pinned Setup Inputs
 
@@ -125,16 +129,17 @@ ci-output/index.json
 Validate workflow syntax with `actionlint` when it is installed:
 
 ```sh
-actionlint ci-templates/github-actions/npa-package-pr.yml
-actionlint ci-templates/github-actions/npa-package-release.yml
+actionlint ci-templates/github-actions/*.yml
 ```
 
 If `actionlint` is unavailable, use a local YAML parser as a cheap syntax
-fallback:
+fallback. The validator uses PyYAML when available and Ruby's bundled YAML
+parser otherwise:
 
 ```sh
-python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' ci-templates/github-actions/npa-package-pr.yml
-python3 -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding="utf-8"))' ci-templates/github-actions/npa-package-release.yml
+for workflow in ci-templates/github-actions/*.yml; do
+  ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0))' "$workflow"
+done
 ```
 
 Run the local no-network validator to combine YAML parsing with package-command
@@ -145,9 +150,12 @@ python3 ci-templates/github-actions/validate-workflows.py
 ```
 
 The validator checks that PR and release workflows still contain the required
-full-package package commands. It also fails if a base template adds unsupported
-changed/all selectors, external checker mode, registry or network package
-resolution, or implicit latest package resolution.
+full-package package commands, and that the opt-in high-trust workflow keeps
+the external checker, release audit validation, and `verified_high_trust`
+commands wired to explicit policy and checker-registry inputs. It also fails if
+any workflow adds unsupported changed/all selectors, registry or network
+package resolution, or implicit latest package resolution. External checker
+mode remains forbidden in the PR and base release workflows.
 
 Release templates may add the fast verifier as a labeled non-reference gate:
 
@@ -205,26 +213,67 @@ Base CLR-07 templates remain reference-checker-only for PR acceptance and do
 not use registry access, a package solver, a binary cache, or implicit latest
 package resolution. Release base mode adds only the labeled fast-kernel gate.
 
-The implemented external checker package command is an opt-in high-trust
-extension, not a base-template requirement:
+`npa-package-high-trust.yml` is the implemented opt-in high-trust extension,
+not a base-template requirement. It adds separate jobs for external checker
+source-free verification, high-trust-reference release audit validation, and
+`verified_high_trust` generation/check. It requires all of these inputs to be
+present before it runs verifier commands:
+
+```text
+NPA_CHECKER_EXT_BINARY_PATH
+NPA_RELEASE_POLICY_HASH
+NPA_RUNNER_POLICY_HASH
+NPA_CHALLENGE_RUNNER_POLICY_HASH
+ci/release.high-trust.json
+ci/runner.high-trust.json
+ci/runner.challenge.json
+ci/checker-binaries.json
+generated/release-audit/manifest.json
+```
+
+The external checker command is:
 
 ```sh
 npa package verify-certs --root . --checker external \
-  --runner-policy ci/runner.release.json \
+  --runner-policy ci/runner.high-trust.json \
   --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
   --checker-registry ci/checker-binaries.json \
   --json
 ```
 
-That extension requires a pinned built `npa-checker-ext` executable in the
-fresh-checkout or documented CI environment, plus runner-owned policy and
-checker registry entries that validate binary identity and hash. The source-free
-boundary stays the same: the checker path reads package metadata, package lock,
-canonical certificates, import certificates, runner policy, checker registry,
-checker executable bytes, and axiom policy, not `.npa` source, replay/meta
-files, theorem index, AI traces, registry network data, hidden caches, or
-plugins.
+The template also runs:
+
+```sh
+npa package high-trust --root . \
+  --release-policy ci/release.high-trust.json \
+  --release-policy-hash "$NPA_RELEASE_POLICY_HASH" \
+  --runner-policy ci/runner.high-trust.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --challenge-runner-policy ci/runner.challenge.json \
+  --challenge-runner-policy-hash "$NPA_CHALLENGE_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --out generated/verified-high-trust.json \
+  --check \
+  --json
+```
+
+That extension requires a pinned built `npa-checker-ext` executable in the fresh
+checkout, plus runner-owned policy and checker registry entries that validate
+binary identity and hash. The source-free boundary stays the same: the checker
+path reads package metadata, package lock, canonical certificates, import
+certificates, runner policy, checker registry, checker executable bytes, and
+axiom policy, not `.npa` source, replay/meta files, theorem index, AI traces,
+registry network data, hidden caches, or plugins.
 
 `verified_high_trust` is generated by `npa package high-trust` only after
 external and high-trust-reference release audit evidence exists. It must not be
 emitted from reference-checker-only release evidence.
+
+High-trust failure mapping:
+
+| Diagnostic | Action |
+| --- | --- |
+| missing `NPA_CHECKER_EXT_BINARY_PATH`, missing `ci/checker-binaries.json`, or `checker_binary_file_unreadable` | Pin a built `npa-checker-ext` executable in the fresh checkout and add the matching checker registry entry. Do not fall back to a runner cache. |
+| `checker_binary_hash_mismatch`, `checker_identity_mismatch`, or `checker_build_hash_mismatch` | Treat the checker binary as changed release evidence. Review the binary build provenance, then update runner policy and checker identity metadata in the same review. |
+| `not_verified`, `checker_disagreement`, `status_disagreement`, or normalized comparison failure | Inspect the saved external and release audit JSON. Fix the certificate/checker disagreement; do not relabel fast-kernel or reference output as external success. |
+| failed `import_certificate_hash` auxiliary result | Regenerate the high-trust import certificate hash auxiliary evidence from the intended import lock and rerun `npa package high-trust --check`. |
