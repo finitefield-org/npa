@@ -5,8 +5,8 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum JsonValue {
     Null,
-    Bool,
-    Number,
+    Bool(bool),
+    Number(String),
     String(String),
     Array(Vec<JsonValue>),
     Object(Vec<JsonMember>),
@@ -16,8 +16,8 @@ impl JsonValue {
     pub(crate) fn kind(&self) -> JsonValueKind {
         match self {
             Self::Null => JsonValueKind::Null,
-            Self::Bool => JsonValueKind::Bool,
-            Self::Number => JsonValueKind::Number,
+            Self::Bool(_) => JsonValueKind::Bool,
+            Self::Number(_) => JsonValueKind::Number,
             Self::String(_) => JsonValueKind::String,
             Self::Array(_) => JsonValueKind::Array,
             Self::Object(_) => JsonValueKind::Object,
@@ -27,6 +27,20 @@ impl JsonValue {
     pub(crate) fn string_value(&self) -> Option<&str> {
         match self {
             Self::String(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn bool_value(&self) -> Option<bool> {
+        match self {
+            Self::Bool(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn number_value(&self) -> Option<&str> {
+        match self {
+            Self::Number(value) => Some(value),
             _ => None,
         }
     }
@@ -143,15 +157,12 @@ impl<'src> Parser<'src> {
 
         match byte {
             b'n' => self.parse_literal(b"null", JsonValue::Null),
-            b't' => self.parse_literal(b"true", JsonValue::Bool),
-            b'f' => self.parse_literal(b"false", JsonValue::Bool),
+            b't' => self.parse_literal(b"true", JsonValue::Bool(true)),
+            b'f' => self.parse_literal(b"false", JsonValue::Bool(false)),
             b'"' => self.parse_string().map(JsonValue::String),
             b'[' => self.parse_array(),
             b'{' => self.parse_object(),
-            b'-' | b'0'..=b'9' => {
-                self.parse_number()?;
-                Ok(JsonValue::Number)
-            }
+            b'-' | b'0'..=b'9' => self.parse_number().map(JsonValue::Number),
             _ => Err(self.error(JsonParseErrorKind::ExpectedValue)),
         }
     }
@@ -324,7 +335,8 @@ impl<'src> Parser<'src> {
         }
     }
 
-    fn parse_number(&mut self) -> Result<(), JsonParseError> {
+    fn parse_number(&mut self) -> Result<String, JsonParseError> {
+        let start = self.offset;
         if self.peek() == Some(b'-') {
             self.offset += 1;
         }
@@ -365,7 +377,7 @@ impl<'src> Parser<'src> {
             }
         }
 
-        Ok(())
+        Ok(self.source[start..self.offset].to_owned())
     }
 
     fn consume_expected_byte(

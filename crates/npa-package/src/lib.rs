@@ -89,6 +89,8 @@
 
 #![deny(missing_docs)]
 
+pub mod artifacts;
+pub mod axiom_report;
 pub mod error;
 pub mod graph;
 pub mod hash;
@@ -98,11 +100,24 @@ pub mod manifest;
 pub mod name;
 pub mod path;
 pub mod schema;
+pub mod theorem_index;
 pub mod validate;
 
+pub use artifacts::{
+    PackageArtifactFileReference, PackageArtifactOrigin, PackageArtifactPolicy,
+    PackageAxiomReference, PackageCheckerMode, PackageCheckerSummary, PackageGlobalRef,
+    PackageGlobalRefView,
+};
+pub use axiom_report::{
+    compute_package_axiom_report_hash, parse_package_axiom_report_json,
+    validate_package_axiom_report, PackageAxiomPolicyStatus, PackageAxiomPolicyStatusKind,
+    PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason, PackageAxiomReport,
+    PackageAxiomReportModule, PackageAxiomReportSummary,
+};
 pub use error::{
-    PackageLockError, PackageLockErrorKind, PackageLockErrorReason, PackageLockResult,
-    PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
+    PackageArtifactError, PackageArtifactErrorKind, PackageArtifactErrorReason,
+    PackageArtifactResult, PackageLockError, PackageLockErrorKind, PackageLockErrorReason,
+    PackageLockResult, PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
     PackageManifestResult,
 };
 pub use graph::{
@@ -132,6 +147,13 @@ pub use schema::{
     CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
     KERNEL_PROFILE_V0_1, PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,
     PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA, REGISTRY_MODULE_SCHEMA,
+};
+pub use theorem_index::{
+    compute_package_theorem_index_hash, parse_package_theorem_index_json,
+    validate_package_theorem_index, PackageTheoremIndex, PackageTheoremIndexArtifact,
+    PackageTheoremIndexEntry, PackageTheoremIndexKind, PackageTheoremIndexMode,
+    PackageTheoremIndexSummary, PackageTheoremStatement,
+    PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
 };
 pub use validate::{
     parse_and_validate_manifest_str, validate_manifest, validate_manifest_report,

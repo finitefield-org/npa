@@ -726,7 +726,7 @@ external checker disagreement gates
 
 ### CLR-05-01 Define Package Artifact Schemas And Canonical Models
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-04
 - Inputs:
   - schema constants from CLR-00 and CLR-01

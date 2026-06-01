@@ -6,6 +6,9 @@ pub type PackageManifestResult<T> = Result<T, PackageManifestError>;
 /// Result type for package lock parsing and validation.
 pub type PackageLockResult<T> = Result<T, PackageLockError>;
 
+/// Result type for generated package artifact parsing and validation.
+pub type PackageArtifactResult<T> = Result<T, PackageArtifactError>;
+
 /// Stable package manifest error payload.
 ///
 /// Tests should assert these structured fields instead of matching display text.
@@ -1152,6 +1155,402 @@ impl PackageLockErrorReason {
             Self::LockImportCertificateHashMismatch => "lock_import_certificate_hash_mismatch",
             Self::ExternalImportDependsOnLocal => "external_import_depends_on_local",
             Self::LockImportCycle => "lock_import_cycle",
+        }
+    }
+}
+
+/// Stable generated package artifact error payload.
+///
+/// Package axiom reports and theorem indexes are generated metadata, separate
+/// from package manifests, package locks, and proof evidence. Tests should
+/// assert these structured fields instead of matching display text.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageArtifactError {
+    /// Stable error category.
+    pub kind: PackageArtifactErrorKind,
+    /// Stable artifact-local path, for example `$`, `modules[0].module`, or
+    /// `entries[0].global_ref.name`.
+    pub path: String,
+    /// Field name when the error is attached to one object field.
+    pub field: Option<String>,
+    /// Stable machine-readable reason code.
+    pub reason_code: PackageArtifactErrorReason,
+    /// Expected value or type when useful.
+    pub expected_value: Option<String>,
+    /// Actual value or type when useful.
+    pub actual_value: Option<String>,
+}
+
+impl PackageArtifactError {
+    /// Build a JSON syntax error.
+    pub fn invalid_json(message: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            "$",
+            None,
+            PackageArtifactErrorReason::InvalidJson,
+            Some("valid JSON object".to_owned()),
+            Some(message.into()),
+        )
+    }
+
+    /// Build a duplicate JSON object field error.
+    pub fn duplicate_field(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::DuplicateField,
+            Some("unique object field".to_owned()),
+            None,
+        )
+    }
+
+    /// Build an unknown-field error.
+    pub fn unknown_field(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::UnknownField,
+            None,
+            None,
+        )
+    }
+
+    /// Build a missing-field error.
+    pub fn missing_field(path: impl Into<String>, field: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::MissingField,
+            None,
+            None,
+        )
+    }
+
+    /// Build a wrong-type error.
+    pub fn wrong_type(
+        path: impl Into<String>,
+        field: Option<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            path,
+            field,
+            PackageArtifactErrorReason::WrongType,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an unsupported artifact schema error.
+    pub fn unsupported_schema(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::UnsupportedSchema,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-hash-format error.
+    pub fn invalid_hash_format(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Hash,
+            path,
+            None,
+            PackageArtifactErrorReason::InvalidHashFormat,
+            Some("sha256:<64 lowercase hex>".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-package-id error.
+    pub fn invalid_package_id(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Domain,
+            path,
+            None,
+            PackageArtifactErrorReason::InvalidPackageId,
+            Some("lowercase ASCII package id".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-version error.
+    pub fn invalid_version(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Domain,
+            path,
+            None,
+            PackageArtifactErrorReason::InvalidVersion,
+            Some("MAJOR.MINOR.PATCH without leading zeroes".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-module-name error.
+    pub fn invalid_module_name(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Domain,
+            path,
+            None,
+            PackageArtifactErrorReason::InvalidModuleName,
+            Some("canonical dotted module name".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-declaration-name error.
+    pub fn invalid_declaration_name(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Domain,
+            path,
+            None,
+            PackageArtifactErrorReason::InvalidDeclarationName,
+            Some("canonical dotted declaration name".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid-path error.
+    pub fn invalid_path(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Path,
+            path,
+            None,
+            PackageArtifactErrorReason::InvalidPath,
+            Some("lexical package-relative path".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build an invalid enum value error.
+    pub fn invalid_enum_value(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Domain,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::InvalidEnumValue,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a duplicate identity error.
+    pub fn duplicate(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        reason_code: PackageArtifactErrorReason,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Duplicate,
+            path,
+            Some(field.into()),
+            reason_code,
+            Some("unique value".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a non-canonical generated artifact error.
+    pub fn non_canonical(path: impl Into<String>, actual: impl Into<String>) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::CanonicalJson,
+            path,
+            None,
+            PackageArtifactErrorReason::NonCanonicalOrder,
+            Some("schema-defined canonical JSON bytes".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a stale self-hash error.
+    pub fn self_hash_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::SelfHash,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::SelfHashMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    /// Build a deterministic summary mismatch error.
+    pub fn summary_mismatch(
+        path: impl Into<String>,
+        field: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::Summary,
+            path,
+            Some(field.into()),
+            PackageArtifactErrorReason::SummaryMismatch,
+            Some(expected.into()),
+            Some(actual.into()),
+        )
+    }
+
+    fn new(
+        kind: PackageArtifactErrorKind,
+        path: impl Into<String>,
+        field: Option<String>,
+        reason_code: PackageArtifactErrorReason,
+        expected_value: Option<String>,
+        actual_value: Option<String>,
+    ) -> Self {
+        Self {
+            kind,
+            path: path.into(),
+            field,
+            reason_code,
+            expected_value,
+            actual_value,
+        }
+    }
+}
+
+impl std::fmt::Display for PackageArtifactError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:?} at {}: {}",
+            self.kind,
+            self.path,
+            self.reason_code.as_str()
+        )
+    }
+}
+
+impl std::error::Error for PackageArtifactError {}
+
+/// Stable generated package artifact error category.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageArtifactErrorKind {
+    /// JSON syntax, closed-object schema, required field, or type validation failure.
+    ArtifactSchema,
+    /// Scalar domain validation failure.
+    Domain,
+    /// Duplicate generated artifact identity failure.
+    Duplicate,
+    /// Package-relative path validation failure.
+    Path,
+    /// Hash grammar validation failure.
+    Hash,
+    /// Generated JSON bytes do not match canonical schema order.
+    CanonicalJson,
+    /// Generated artifact self-hash does not match canonical bytes excluding the self-hash field.
+    SelfHash,
+    /// Deterministic summary counts do not match artifact contents.
+    Summary,
+}
+
+/// Stable generated package artifact error reason code.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageArtifactErrorReason {
+    /// JSON syntax is invalid.
+    InvalidJson,
+    /// A duplicate object field was rejected.
+    DuplicateField,
+    /// A field is not part of the closed schema.
+    UnknownField,
+    /// A required field is absent.
+    MissingField,
+    /// A field has the wrong JSON type.
+    WrongType,
+    /// The schema field has the wrong value.
+    UnsupportedSchema,
+    /// Hash string grammar is invalid.
+    InvalidHashFormat,
+    /// Package id grammar is invalid.
+    InvalidPackageId,
+    /// Package version grammar is invalid.
+    InvalidVersion,
+    /// Module name grammar is invalid.
+    InvalidModuleName,
+    /// Declaration name grammar is invalid.
+    InvalidDeclarationName,
+    /// Package path grammar is invalid.
+    InvalidPath,
+    /// An enum-like string field has an unsupported value.
+    InvalidEnumValue,
+    /// Module entry is duplicated.
+    DuplicateModule,
+    /// Axiom reference is duplicated.
+    DuplicateAxiom,
+    /// Checker summary is duplicated.
+    DuplicateCheckerSummary,
+    /// Theorem index entry is duplicated.
+    DuplicateTheoremEntry,
+    /// Theorem index mode is duplicated.
+    DuplicateMode,
+    /// Theorem index tag is duplicated.
+    DuplicateTag,
+    /// Statement constant reference is duplicated.
+    DuplicateConstant,
+    /// Policy violation entry is duplicated.
+    DuplicateViolation,
+    /// Generated JSON object or array order is not canonical.
+    NonCanonicalOrder,
+    /// Self hash field differs from canonical bytes excluding that field.
+    SelfHashMismatch,
+    /// Summary count differs from deterministic contents.
+    SummaryMismatch,
+}
+
+impl PackageArtifactErrorReason {
+    /// Return the stable wire reason code.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::InvalidJson => "invalid_json",
+            Self::DuplicateField => "duplicate_field",
+            Self::UnknownField => "unknown_field",
+            Self::MissingField => "missing_field",
+            Self::WrongType => "wrong_type",
+            Self::UnsupportedSchema => "unsupported_schema",
+            Self::InvalidHashFormat => "invalid_hash_format",
+            Self::InvalidPackageId => "invalid_package_id",
+            Self::InvalidVersion => "invalid_version",
+            Self::InvalidModuleName => "invalid_module_name",
+            Self::InvalidDeclarationName => "invalid_declaration_name",
+            Self::InvalidPath => "invalid_path",
+            Self::InvalidEnumValue => "invalid_enum_value",
+            Self::DuplicateModule => "duplicate_module",
+            Self::DuplicateAxiom => "duplicate_axiom",
+            Self::DuplicateCheckerSummary => "duplicate_checker_summary",
+            Self::DuplicateTheoremEntry => "duplicate_theorem_entry",
+            Self::DuplicateMode => "duplicate_mode",
+            Self::DuplicateTag => "duplicate_tag",
+            Self::DuplicateConstant => "duplicate_constant",
+            Self::DuplicateViolation => "duplicate_violation",
+            Self::NonCanonicalOrder => "non_canonical_order",
+            Self::SelfHashMismatch => "self_hash_mismatch",
+            Self::SummaryMismatch => "summary_mismatch",
         }
     }
 }
