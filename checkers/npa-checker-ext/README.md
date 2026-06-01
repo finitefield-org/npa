@@ -13,6 +13,7 @@ scripts/test.sh
 scripts/test.sh sha256
 scripts/test.sh feature-policy
 scripts/test.sh decoder-bytes
+scripts/test.sh decoder-header
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -58,3 +59,8 @@ M1-01 adds the source-free byte reader foundation. `src/ext_bytes.ml` tracks
 certificate section and byte offsets, keeps input bytes immutable after reader
 construction, and rejects malformed canonical unsigned LEB128 with structured
 decode errors. The byte reader has no filesystem or JSON output dependency.
+
+M1-02 adds source-free header and name grammar decoding. The decoder requires
+`NPA-CERT-0.1` and `NPA-Core-0.1`, decodes names into structured components,
+and rejects invalid UTF-8, empty names, empty components, dotted components,
+and duplicate name table entries with structured reasons.

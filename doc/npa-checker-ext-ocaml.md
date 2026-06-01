@@ -556,6 +556,12 @@ byte offset、reason code を持ちます。canonical unsigned varint は minima
 unexpected EOF、non-minimal encoding、u64 overflow、host length overflow を拒否します。
 この層は filesystem、source parser、JSON rendering を参照しません。
 
+M1-02 では header と name grammar を source-free に decode します。
+header は `NPA-CERT-0.1` と `NPA-Core-0.1` を必須とし、module name と name table entry は
+`Ext_name.t` の structured component list として保持します。empty name、empty component、
+dotted component、invalid UTF-8、duplicate name table entry は reason code 付きの decode error
+として拒否します。
+
 M2: hash verifier
 
 ```text

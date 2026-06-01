@@ -20,6 +20,13 @@ type decode_error_reason =
   | Noncanonical_uvar
   | Uvar_overflow
   | Length_overflow
+  | Invalid_utf8
+  | Format_mismatch
+  | Core_spec_mismatch
+  | Empty_name
+  | Empty_name_component
+  | Dotted_name_component
+  | Duplicate_name
 
 type decode_error = {
   section : certificate_section;
@@ -68,6 +75,13 @@ let reason_code reason =
   | Noncanonical_uvar -> "noncanonical_uvar"
   | Uvar_overflow -> "uvar_overflow"
   | Length_overflow -> "length_overflow"
+  | Invalid_utf8 -> "invalid_utf8"
+  | Format_mismatch -> "format_mismatch"
+  | Core_spec_mismatch -> "core_spec_mismatch"
+  | Empty_name -> "empty_name"
+  | Empty_name_component -> "empty_name_component"
+  | Dotted_name_component -> "dotted_name_component"
+  | Duplicate_name -> "duplicate_name"
 
 let error section offset reason = Error { section; offset; reason }
 
@@ -86,6 +100,87 @@ let take section count reader =
     let finish = reader.offset + count in
     if finish > length reader then error section (length reader) Unexpected_eof
     else Ok (String.sub reader.data reader.offset count, advance reader finish)
+
+let is_utf8_continuation byte = byte >= 0x80 && byte <= 0xbf
+
+let utf8_invalid_offset text =
+  let length = String.length text in
+  let byte index = Char.code text.[index] in
+  let continuation index =
+    if index >= length then Some (length - 1)
+    else if is_utf8_continuation (byte index) then None
+    else Some index
+  in
+  let two_continuations second =
+    match continuation second with
+    | Some offset -> Some offset
+    | None -> continuation (second + 1)
+  in
+  let three_continuations second =
+    match continuation second with
+    | Some offset -> Some offset
+    | None -> two_continuations (second + 1)
+  in
+  let rec loop index =
+    if index >= length then None
+    else
+      let first = byte index in
+      if first <= 0x7f then loop (index + 1)
+      else if first >= 0xc2 && first <= 0xdf then (
+        match continuation (index + 1) with
+        | Some offset -> Some offset
+        | None -> loop (index + 2))
+      else if first = 0xe0 then (
+        let second = index + 1 in
+        if second >= length then Some index
+        else
+          let second_byte = byte second in
+          if second_byte < 0xa0 || second_byte > 0xbf then Some second
+          else
+            match continuation (index + 2) with
+            | Some offset -> Some offset
+            | None -> loop (index + 3))
+      else if (first >= 0xe1 && first <= 0xec) || (first >= 0xee && first <= 0xef) then (
+        match two_continuations (index + 1) with
+        | Some offset -> Some offset
+        | None -> loop (index + 3))
+      else if first = 0xed then (
+        let second = index + 1 in
+        if second >= length then Some index
+        else
+          let second_byte = byte second in
+          if second_byte < 0x80 || second_byte > 0x9f then Some second
+          else
+            match continuation (index + 2) with
+            | Some offset -> Some offset
+            | None -> loop (index + 3))
+      else if first = 0xf0 then (
+        let second = index + 1 in
+        if second >= length then Some index
+        else
+          let second_byte = byte second in
+          if second_byte < 0x90 || second_byte > 0xbf then Some second
+          else
+            match two_continuations (index + 2) with
+            | Some offset -> Some offset
+            | None -> loop (index + 4))
+      else if first >= 0xf1 && first <= 0xf3 then (
+        match three_continuations (index + 1) with
+        | Some offset -> Some offset
+        | None -> loop (index + 4))
+      else if first = 0xf4 then (
+        let second = index + 1 in
+        if second >= length then Some index
+        else
+          let second_byte = byte second in
+          if second_byte < 0x80 || second_byte > 0x8f then Some second
+          else
+            match two_continuations (index + 2) with
+            | Some offset -> Some offset
+            | None -> loop (index + 4))
+      else Some index
+  in
+  loop 0
 
 let encode_uvar value =
   let buffer = Buffer.create 10 in
@@ -128,3 +223,20 @@ let read_usize section reader =
       if value < 0L || value > Int64.of_int max_int then
         error section (max start (next.offset - 1)) Length_overflow
       else Ok (Int64.to_int value, next)
+
+let read_string_with_offset section reader =
+  match read_usize section reader with
+  | Error err -> Error err
+  | Ok (byte_length, after_length) -> (
+      let content_offset = after_length.offset in
+      match take section byte_length after_length with
+      | Error err -> Error err
+      | Ok (text, next) -> (
+          match utf8_invalid_offset text with
+          | None -> Ok ((text, content_offset), next)
+          | Some relative_offset -> error section (content_offset + relative_offset) Invalid_utf8))
+
+let read_string section reader =
+  match read_string_with_offset section reader with
+  | Error err -> Error err
+  | Ok ((text, _content_offset), next) -> Ok (text, next)

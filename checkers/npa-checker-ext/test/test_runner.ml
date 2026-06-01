@@ -41,6 +41,8 @@ let bytes_of_codes codes =
   List.iteri (fun index code -> Bytes.set bytes index (Char.chr code)) codes;
   bytes
 
+let string_of_codes codes = Bytes.to_string (bytes_of_codes codes)
+
 let split_tabs line =
   let length = String.length line in
   let rec loop start fields =
@@ -354,16 +356,121 @@ let run_decoder_bytes_tests () =
     Ext_bytes.Imports (String.length usize_overflow - 1)
     (Ext_bytes.read_usize Ext_bytes.Imports (Ext_bytes.of_string usize_overflow))
 
+let encode_uvar_int value = Ext_bytes.encode_uvar (Int64.of_int value)
+
+let encode_string text = encode_uvar_int (String.length text) ^ text
+
+let encode_raw_string text = encode_uvar_int (String.length text) ^ text
+
+let encode_name components =
+  encode_uvar_int (List.length components) ^ String.concat "" (List.map encode_string components)
+
+let encode_header ?(format = Ext_cert.expected_format)
+    ?(core_spec = Ext_cert.expected_core_spec) module_components =
+  encode_string format ^ encode_string core_spec ^ encode_name module_components
+
+let read_binary_file path =
+  let channel = open_in_bin path in
+  let length = in_channel_length channel in
+  let contents = really_input_string channel length in
+  close_in channel;
+  contents
+
+let assert_header label expected_module header =
+  assert_equal (label ^ " format") Ext_cert.expected_format header.Ext_cert.format;
+  assert_equal (label ^ " core spec") Ext_cert.expected_core_spec header.Ext_cert.core_spec;
+  assert_equal (label ^ " module") expected_module (Ext_name.to_string header.Ext_cert.module_name)
+
+let run_decoder_header_tests () =
+  let golden_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let golden = read_binary_file golden_path in
+  (match Ext_cert.read_header (Ext_bytes.of_string golden) with
+  | Error error ->
+      failwith ("golden header: unexpected decode error " ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (header, next) ->
+      assert_equal "golden header format" Ext_cert.expected_format header.Ext_cert.format;
+      assert_equal "golden header core spec" Ext_cert.expected_core_spec header.Ext_cert.core_spec;
+      assert_bool "golden header module is structured"
+        (String.length (Ext_name.to_string header.Ext_cert.module_name) > 0);
+      assert_bool "golden header advances reader" (Ext_bytes.offset next > 0));
+
+  let valid_header = encode_header [ "Std"; "Nat" ] in
+  (match Ext_cert.read_header (Ext_bytes.of_string valid_header) with
+  | Error error ->
+      failwith ("valid header: unexpected decode error " ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (header, next) ->
+      assert_header "valid header" "Std.Nat" header;
+      assert_int_equal "valid header offset" (String.length valid_header) (Ext_bytes.offset next));
+
+  let bad_format = encode_header ~format:"BAD-CERT" [ "Std"; "Nat" ] in
+  assert_decode_error "format mismatch" "certificate_decode_error" Ext_bytes.Format_mismatch
+    Ext_bytes.Header_format (String.length (encode_string "BAD-CERT"))
+    (Ext_cert.read_header (Ext_bytes.of_string bad_format));
+
+  let core_prefix = encode_string Ext_cert.expected_format ^ encode_string "NPA-Core-X" in
+  let bad_core = core_prefix ^ encode_name [ "Std"; "Nat" ] in
+  assert_decode_error "core spec mismatch" "certificate_decode_error"
+    Ext_bytes.Core_spec_mismatch Ext_bytes.Header_core_spec (String.length core_prefix)
+    (Ext_cert.read_header (Ext_bytes.of_string bad_core));
+
+  let invalid_utf8 = encode_raw_string (string_of_codes [ 0xff ]) in
+  assert_decode_error "invalid utf8 header" "noncanonical_encoding" Ext_bytes.Invalid_utf8
+    Ext_bytes.Header_format 1
+    (Ext_cert.read_header (Ext_bytes.of_string invalid_utf8));
+
+  let empty_module_prefix =
+    encode_string Ext_cert.expected_format ^ encode_string Ext_cert.expected_core_spec
+  in
+  let empty_module = empty_module_prefix ^ encode_uvar_int 0 in
+  assert_decode_error "empty module name" "noncanonical_encoding" Ext_bytes.Empty_name
+    Ext_bytes.Header_module (String.length empty_module_prefix)
+    (Ext_cert.read_header (Ext_bytes.of_string empty_module));
+
+  let empty_component_prefix = empty_module_prefix ^ encode_uvar_int 1 in
+  let empty_component = empty_component_prefix ^ encode_string "" in
+  assert_decode_error "empty name component" "noncanonical_encoding"
+    Ext_bytes.Empty_name_component Ext_bytes.Header_module (String.length empty_component_prefix)
+    (Ext_cert.read_header (Ext_bytes.of_string empty_component));
+
+  let dotted_component_prefix = empty_module_prefix ^ encode_uvar_int 1 ^ encode_uvar_int 7 in
+  let dotted_component = dotted_component_prefix ^ "Std.Nat" in
+  assert_decode_error "dotted name component" "noncanonical_encoding"
+    Ext_bytes.Dotted_name_component Ext_bytes.Header_module
+    (String.length dotted_component_prefix + 3)
+    (Ext_cert.read_header (Ext_bytes.of_string dotted_component));
+
+  let name_table = encode_uvar_int 2 ^ encode_name [ "A" ] ^ encode_name [ "Std"; "Nat" ] in
+  (match Ext_cert.read_name_table (Ext_bytes.of_string name_table) with
+  | Error error ->
+      failwith ("name table: unexpected decode error " ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (entries, next) ->
+      assert_int_equal "name table length" 2 (List.length entries);
+      assert_equal "name table first name" "A" (Ext_name.to_string (List.hd entries).Ext_cert.name);
+      assert_int_equal "name table offset" (String.length name_table) (Ext_bytes.offset next));
+
+  let duplicate_entry = encode_name [ "A" ] in
+  let duplicate_name_table = encode_uvar_int 2 ^ duplicate_entry ^ duplicate_entry in
+  assert_decode_error "duplicate name table entry" "noncanonical_encoding" Ext_bytes.Duplicate_name
+    Ext_bytes.Name_table (String.length (encode_uvar_int 2 ^ duplicate_entry))
+    (Ext_cert.read_name_table (Ext_bytes.of_string duplicate_name_table))
+
 let should_run selected name = selected = [] || List.mem name selected
 
 let () =
   let selected = Array.to_list Sys.argv |> List.tl in
   List.iter
     (fun name ->
-      if not (List.mem name [ "cli"; "decoder-bytes"; "feature-policy"; "sha256" ]) then
+      if
+        not
+          (List.mem name
+             [ "cli"; "decoder-bytes"; "decoder-header"; "feature-policy"; "sha256" ])
+      then
         failwith ("unknown test filter " ^ name))
     selected;
   if should_run selected "sha256" then run_sha256_tests ();
   if should_run selected "decoder-bytes" then run_decoder_bytes_tests ();
+  if should_run selected "decoder-header" then run_decoder_header_tests ();
   if should_run selected "feature-policy" then run_feature_policy_tests ();
   if should_run selected "cli" then run_cli_tests ()

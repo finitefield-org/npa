@@ -140,8 +140,18 @@ let decode_failure ~kind ~reason_code ~section ~offset =
 
 let decode_error_kind error =
   match error.Ext_bytes.reason with
-  | Ext_bytes.Noncanonical_uvar -> "noncanonical_encoding"
-  | Ext_bytes.Unexpected_eof | Ext_bytes.Uvar_overflow | Ext_bytes.Length_overflow ->
+  | Ext_bytes.Noncanonical_uvar
+  | Ext_bytes.Invalid_utf8
+  | Ext_bytes.Empty_name
+  | Ext_bytes.Empty_name_component
+  | Ext_bytes.Dotted_name_component
+  | Ext_bytes.Duplicate_name ->
+      "noncanonical_encoding"
+  | Ext_bytes.Unexpected_eof
+  | Ext_bytes.Uvar_overflow
+  | Ext_bytes.Length_overflow
+  | Ext_bytes.Format_mismatch
+  | Ext_bytes.Core_spec_mismatch ->
       "certificate_decode_error"
 
 let decode_error error =

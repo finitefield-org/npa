@@ -380,7 +380,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST decoder-header
+sh checkers/npa-checker-ext/scripts/test.sh decoder-header
 ```
 
 ### M1-03 Decode Level And Term Tables
