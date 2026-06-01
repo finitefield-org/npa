@@ -84,6 +84,24 @@ fn package_cli_args_parses_package_index_check_mode() {
 }
 
 #[test]
+fn package_cli_args_parses_publish_plan_check_mode() {
+    let action = parse(&[
+        "package",
+        "publish-plan",
+        "--root=proofs",
+        "--check",
+        "--json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::PublishPlan(options))) = action else {
+        panic!("expected package publish-plan command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert!(options.check);
+}
+
+#[test]
 fn package_cli_args_defaults_verify_certs_checker_to_reference() {
     let action = parse(&["package", "verify-certs"]);
 
@@ -132,6 +150,12 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
         "--registry=local",
         "--network",
         "--network=on",
+        "--latest",
+        "--latest=true",
+        "--upload",
+        "--upload=true",
+        "--sign",
+        "--sign=true",
         "--include-source",
         "--include-source=true",
         "--include-replay",
@@ -151,12 +175,9 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
 
 #[test]
 fn package_cli_args_rejects_unknown_commands_and_flags() {
-    let command_error = parse_error(&["package", "publish-plan"]);
+    let command_error = parse_error(&["package", "publish"]);
     assert_eq!(command_error.reason, UsageReason::UnknownCommand);
-    assert_eq!(
-        command_error.command.as_deref(),
-        Some("package publish-plan")
-    );
+    assert_eq!(command_error.command.as_deref(), Some("package publish"));
 
     let flag_error = parse_error(&["package", "check", "--mystery"]);
     assert_eq!(flag_error.reason, UsageReason::UnknownFlag);
@@ -195,6 +216,10 @@ fn package_cli_args_rejects_duplicate_flags() {
     let index_error = parse_error(&["package", "index", "--check", "--check"]);
     assert_eq!(index_error.reason, UsageReason::DuplicateFlag);
     assert_eq!(index_error.flag.as_deref(), Some("--check"));
+
+    let publish_plan_error = parse_error(&["package", "publish-plan", "--check", "--check"]);
+    assert_eq!(publish_plan_error.reason, UsageReason::DuplicateFlag);
+    assert_eq!(publish_plan_error.flag.as_deref(), Some("--check"));
 }
 
 #[test]
@@ -234,6 +259,10 @@ fn package_cli_args_parses_help_topics() {
     assert_eq!(
         parse(&["package", "index", "--help"]),
         CliAction::Help(HelpTopic::PackageIndex)
+    );
+    assert_eq!(
+        parse(&["package", "publish-plan", "--help"]),
+        CliAction::Help(HelpTopic::PackagePublishPlan)
     );
 }
 

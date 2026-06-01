@@ -832,7 +832,7 @@ remaining registry-server requirements
 
 ### CLR-06-06 Implement `package publish-plan`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06-03, CLR-06-04, CLR-06-05
 - Inputs:
   - CLR-04 `npa-cli` package command framework

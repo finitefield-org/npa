@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -21,9 +22,9 @@ use npa_cli::package_publish::{
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
     parse_and_validate_manifest_str, parse_package_axiom_report_json,
-    parse_package_theorem_index_json, PackageArtifactOrigin, PackageCheckerMode, PackageModule,
-    PackagePath, PackagePublishArtifactRole, PackageRegistryCheckerStatus,
-    PACKAGE_PUBLISH_PLAN_PATH,
+    parse_package_publish_plan_json, parse_package_theorem_index_json, PackageArtifactOrigin,
+    PackageCheckerMode, PackageModule, PackagePath, PackagePublishArtifactRole,
+    PackageRegistryCheckerStatus, PACKAGE_PUBLISH_PLAN_PATH,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -517,6 +518,113 @@ axioms = []
 }
 
 #[test]
+fn package_publish_plan_check_write_and_registry_mismatch_diagnostics() {
+    let package = build_basic_package("publish-plan", false);
+    write_publish_input_metadata(&package);
+    let publish_plan_path = package.artifact_path(PACKAGE_PUBLISH_PLAN_PATH);
+    assert!(!publish_plan_path.exists());
+
+    let missing_check = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "publish-plan", "--root"])
+        .arg(package.path())
+        .args(["--check", "--json"])
+        .output()
+        .unwrap();
+    assert_json_failure(
+        missing_check,
+        &package,
+        1,
+        "package publish-plan",
+        "GeneratedArtifact",
+        "publish_plan_missing",
+    );
+    assert!(!publish_plan_path.exists());
+
+    let before_write = package_file_hashes(package.path());
+    let write = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "publish-plan", "--root"])
+        .arg(package.path())
+        .output()
+        .unwrap();
+    assert_eq!(write.status.code(), Some(0));
+    assert!(write.stderr.is_empty());
+    let stdout = String::from_utf8(write.stdout).unwrap();
+    assert!(stdout.starts_with("package publish-plan: passed\n"));
+
+    let publish_plan_bytes = fs::read(&publish_plan_path).unwrap();
+    let publish_plan_json = String::from_utf8(publish_plan_bytes.clone()).unwrap();
+    let publish_plan = parse_package_publish_plan_json(&publish_plan_json).unwrap();
+    assert_eq!(publish_plan.package.as_str(), "fixture-package");
+    assert_eq!(publish_plan.module_registry_entries.len(), 1);
+    assert_eq!(publish_plan.downstream_import_bundle.modules.len(), 1);
+
+    let mut expected_after_write = before_write;
+    expected_after_write.insert(
+        PACKAGE_PUBLISH_PLAN_PATH.to_owned(),
+        package_file_hash(&publish_plan_bytes),
+    );
+    assert_eq!(package_file_hashes(package.path()), expected_after_write);
+
+    let check_json = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "publish-plan", "--root"])
+        .arg(package.path())
+        .args(["--check", "--json"])
+        .output()
+        .unwrap();
+    assert_eq!(check_json.status.code(), Some(0));
+    assert!(check_json.stderr.is_empty());
+    let stdout = String::from_utf8(check_json.stdout).unwrap();
+    assert!(stdout.starts_with(&format!(
+        "{{\"schema\":\"{PACKAGE_COMMAND_RESULT_SCHEMA}\",\"command\":\"package publish-plan\","
+    )));
+    assert!(stdout.contains("\"status\":\"passed\""));
+    assert!(stdout.contains("\"artifacts\":[{\"kind\":\"package_publish_plan\""));
+    assert!(stdout.contains("\"schema\":\"npa.package.command_result.v0.1\""));
+
+    let mut stale_plan = publish_plan.clone();
+    stale_plan.checker_summaries[0].status = "stale".to_owned();
+    let stale_plan = stale_plan.with_computed_hash().unwrap();
+    fs::write(&publish_plan_path, stale_plan.canonical_json().unwrap()).unwrap();
+    let stale_plan_check = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "publish-plan", "--root"])
+        .arg(package.path())
+        .args(["--check"])
+        .output()
+        .unwrap();
+    assert_eq!(stale_plan_check.status.code(), Some(1));
+    assert!(stale_plan_check.stdout.is_empty());
+    let stderr = String::from_utf8(stale_plan_check.stderr).unwrap();
+    assert!(stderr.starts_with("package publish-plan: failed\n"));
+    assert!(stderr
+        .contains("error GeneratedArtifact publish_plan_stale path=generated/publish-plan.json"));
+    assert!(stderr.contains("expected_hash=sha256:"));
+    assert!(stderr.contains("actual_hash=sha256:"));
+    fs::write(&publish_plan_path, publish_plan_json.as_bytes()).unwrap();
+
+    let mut stale_registry = publish_plan;
+    stale_registry.module_registry_entries[0].export_hash =
+        package_file_hash(b"stale registry export hash");
+    stale_registry.downstream_import_bundle.modules[0].export_hash =
+        stale_registry.module_registry_entries[0].export_hash;
+    let stale_registry = stale_registry.with_computed_hash().unwrap();
+    fs::write(&publish_plan_path, stale_registry.canonical_json().unwrap()).unwrap();
+    let stale_check = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "publish-plan", "--root"])
+        .arg(package.path())
+        .args(["--check", "--json"])
+        .output()
+        .unwrap();
+    assert_json_failure(
+        stale_check,
+        &package,
+        1,
+        "package publish-plan",
+        "GeneratedArtifact",
+        "registry_entry_mismatch",
+    );
+}
+
+#[test]
 fn package_publish_source_free_boundary_ignores_source_replay_meta_ai_and_publish_plan() {
     let package = build_basic_package("publish-source-free", false);
     write_publish_input_metadata(&package);
@@ -634,6 +742,13 @@ fn package_cli_usage_failures_return_exit_two() {
         unsupported_checker,
         "package verify-certs",
         "unsupported_checker",
+    );
+
+    let unsupported_latest = run_cli(&["package", "publish-plan", "--latest", "--json"]);
+    assert_usage_failure(
+        unsupported_latest,
+        "package publish-plan",
+        "unsupported_flag",
     );
 
     let unsupported_flag = run_cli(&["package", "check", "--changed", "--json"]);
@@ -804,6 +919,33 @@ fn copy_artifact(package: &TestPackage, relative: &str) {
     let target = package.artifact_path(relative);
     fs::create_dir_all(target.parent().unwrap()).unwrap();
     fs::copy(source, target).unwrap();
+}
+
+fn package_file_hashes(root: &Path) -> BTreeMap<String, npa_package::PackageHash> {
+    fn collect(
+        root: &Path,
+        current: &Path,
+        hashes: &mut BTreeMap<String, npa_package::PackageHash>,
+    ) {
+        for entry in fs::read_dir(current).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                collect(root, &path, hashes);
+                continue;
+            }
+            let relative = path
+                .strip_prefix(root)
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/");
+            hashes.insert(relative, package_file_hash(&fs::read(path).unwrap()));
+        }
+    }
+
+    let mut hashes = BTreeMap::new();
+    collect(root, root, &mut hashes);
+    hashes
 }
 
 fn assert_command_result_failure(result: CommandResult, kind: &str, reason: &str) {

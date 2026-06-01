@@ -13,6 +13,7 @@ use crate::package_build::run_package_build_certs;
 use crate::package_check::run_package_check;
 use crate::package_hashes::run_package_check_hashes;
 use crate::package_index::run_package_index;
+use crate::package_publish::run_package_publish_plan;
 use crate::package_verify::run_package_verify_certs;
 
 /// Package-relative manifest path used by CLR-04 package commands.
@@ -106,5 +107,6 @@ pub fn run_package_command(command: PackageCommand) -> CommandResult {
         PackageCommand::Index(options) => run_package_index(options),
         PackageCommand::VerifyCerts(options) => run_package_verify_certs(options),
         PackageCommand::CheckHashes(options) => run_package_check_hashes(options),
+        PackageCommand::PublishPlan(options) => run_package_publish_plan(options),
     }
 }

@@ -1,12 +1,11 @@
 //! Publish-plan input collection for CLR-06.
 //!
 //! This module loads and validates the source-free inputs that later CLR-06
-//! milestones use to build `generated/publish-plan.json`. It also projects the
-//! deterministic release artifact list, module registry seed entries,
-//! downstream import bundle, and checksum-only signature policy. It
-//! intentionally does not write the publish-plan file yet.
+//! milestones use to build `generated/publish-plan.json`. It also implements
+//! the check/write `package publish-plan` command over that source-free
+//! metadata.
 
-use std::path::Path;
+use std::{fs, io, path::Path};
 
 use npa_api::{
     project_package_axiom_report_from_extraction, project_package_theorem_index_from_extraction,
@@ -16,16 +15,22 @@ use npa_api::{
 use npa_package::{
     build_package_downstream_import_bundle, build_package_publish_artifacts,
     build_package_registry_modules, format_package_hash, package_checksum_only_signature_policy,
-    package_file_hash, parse_package_axiom_report_json, parse_package_theorem_index_json,
-    PackageArtifactError, PackageArtifactErrorReason, PackageArtifactFileReference,
-    PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary, PackageDownstreamImportBundle,
-    PackageDownstreamImportBundleInput, PackageHash, PackageLockManifest, PackagePath,
-    PackagePublishArtifact, PackagePublishArtifactListInput, PackageRegistryArtifactHashes,
+    package_file_hash, parse_package_axiom_report_json, parse_package_publish_plan_json,
+    parse_package_theorem_index_json, PackageArtifactError, PackageArtifactErrorReason,
+    PackageArtifactFileReference, PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary,
+    PackageDownstreamImportBundle, PackageDownstreamImportBundleInput, PackageHash,
+    PackageLockManifest, PackagePath, PackagePublishArtifact, PackagePublishArtifactListInput,
+    PackagePublishArtifactRole, PackagePublishPlan, PackagePublishRelease,
+    PackagePublishReleaseReference, PackagePublishSummary, PackageRegistryArtifactHashes,
     PackageRegistryModule, PackageRegistryModuleSeedInput, PackageSignaturePolicy,
-    PackageTheoremIndex, ValidatedPackageManifest,
+    PackageTheoremIndex, ValidatedPackageManifest, PACKAGE_AXIOM_REPORT_SCHEMA,
+    PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA, PACKAGE_PUBLISH_PLAN_PATH,
+    PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA,
 };
 
+use crate::args::{PackageCommonOptions, PackagePublishPlanOptions};
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
+use crate::fs::join_package_path;
 use crate::package_artifacts::{
     load_package_artifact_extraction, LoadedPackageArtifactExtraction,
     PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH, PACKAGE_LOCK_PATH,
@@ -64,6 +69,150 @@ pub struct LoadedPackagePublishInputs {
     pub checker_summaries: Vec<PackageCheckerSummary>,
     /// Source-free reference checker report used to validate release metadata.
     pub reference_verification_report: PackageVerificationReport,
+}
+
+/// Run `package publish-plan`.
+pub fn run_package_publish_plan(options: PackagePublishPlanOptions) -> CommandResult {
+    if options.check {
+        return run_package_publish_plan_check(options.common);
+    }
+
+    run_package_publish_plan_write(options.common)
+}
+
+fn run_package_publish_plan_check(options: PackageCommonOptions) -> CommandResult {
+    let (inputs, generated_plan, generated_json) = match generate_package_publish_plan(&options) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
+    let checked_json = match read_checked_publish_plan(&options) {
+        Ok(json) => json,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, inputs.root_display, vec![*diagnostic]);
+        }
+    };
+    let checked_plan = match parse_package_publish_plan_json(&checked_json) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                inputs.root_display,
+                vec![publish_plan_error_diagnostic(&error)],
+            );
+        }
+    };
+
+    if checked_plan.module_registry_entries != generated_plan.module_registry_entries {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_stale_diagnostic(
+                "registry_entry_mismatch",
+                Some("module_registry_entries"),
+                &checked_json,
+                &generated_json,
+            )],
+        );
+    }
+    if checked_plan.downstream_import_bundle != generated_plan.downstream_import_bundle {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_stale_diagnostic(
+                "downstream_import_bundle_mismatch",
+                Some("downstream_import_bundle"),
+                &checked_json,
+                &generated_json,
+            )],
+        );
+    }
+    if checked_json != generated_json {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_stale_diagnostic(
+                "publish_plan_stale",
+                None,
+                &checked_json,
+                &generated_json,
+            )],
+        );
+    }
+
+    passed_result(inputs.root_display)
+}
+
+fn run_package_publish_plan_write(options: PackageCommonOptions) -> CommandResult {
+    let (inputs, _plan, generated_json) = match generate_package_publish_plan(&options) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
+    if let Err(error) = parse_package_publish_plan_json(&generated_json) {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_error_diagnostic(&error)],
+        );
+    }
+    if let Err(diagnostic) = write_publish_plan(&options, generated_json.as_bytes()) {
+        return CommandResult::failed(COMMAND, inputs.root_display, vec![*diagnostic]);
+    }
+
+    passed_result(inputs.root_display)
+}
+
+fn generate_package_publish_plan(
+    options: &PackageCommonOptions,
+) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
+    let inputs = load_package_publish_inputs(&options.root)?;
+    let artifacts = collect_package_publish_artifacts(&inputs)?;
+    let module_registry_entries = collect_package_publish_registry_entries(&inputs)?;
+    let downstream_import_bundle =
+        build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
+            package: &inputs.validated.manifest().package,
+            version: &inputs.validated.manifest().version,
+            module_registry_entries: &module_registry_entries,
+        })
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                inputs.root_display.clone(),
+                vec![publish_downstream_import_bundle_error_diagnostic(error)],
+            )
+        })?;
+    let plan = PackagePublishPlan {
+        schema: PACKAGE_PUBLISH_PLAN_SCHEMA.to_owned(),
+        package: inputs.validated.manifest().package.clone(),
+        version: inputs.validated.manifest().version.clone(),
+        release: publish_release(&inputs),
+        summary: publish_summary(
+            &artifacts,
+            &module_registry_entries,
+            &inputs.checker_summaries,
+        ),
+        artifacts,
+        module_registry_entries,
+        downstream_import_bundle,
+        checker_summaries: inputs.checker_summaries.clone(),
+        signature_policy: package_checksum_only_signature_policy(),
+        publish_plan_hash: package_file_hash(b""),
+    }
+    .with_computed_hash()
+    .map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            inputs.root_display.clone(),
+            vec![publish_plan_error_diagnostic(&error)],
+        )
+    })?;
+    let plan_json = plan.canonical_json().map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            inputs.root_display.clone(),
+            vec![publish_plan_error_diagnostic(&error)],
+        )
+    })?;
+    Ok((inputs, plan, plan_json))
 }
 
 /// Load and freshness-check the CLR-06 publish inputs.
@@ -194,6 +343,63 @@ pub fn collect_package_publish_downstream_import_bundle(
             vec![publish_downstream_import_bundle_error_diagnostic(error)],
         )
     })
+}
+
+fn publish_release(inputs: &LoadedPackagePublishInputs) -> PackagePublishRelease {
+    let manifest = inputs.validated.manifest();
+    PackagePublishRelease {
+        core_spec: manifest.core_spec.clone(),
+        kernel_profile: manifest.kernel_profile.clone(),
+        certificate_format: manifest.certificate_format.clone(),
+        checker_profile: manifest.checker_profile.clone(),
+        manifest: release_reference(inputs.manifest.clone(), None, PACKAGE_MANIFEST_SCHEMA),
+        package_lock: release_reference(inputs.package_lock.clone(), None, PACKAGE_LOCK_SCHEMA),
+        axiom_report: release_reference(
+            inputs.axiom_report_file.clone(),
+            Some(inputs.axiom_report.package_axiom_report_hash),
+            PACKAGE_AXIOM_REPORT_SCHEMA,
+        ),
+        theorem_index: release_reference(
+            inputs.theorem_index_file.clone(),
+            Some(inputs.theorem_index.theorem_index_hash),
+            PACKAGE_THEOREM_INDEX_SCHEMA,
+        ),
+    }
+}
+
+fn release_reference(
+    reference: PackageArtifactFileReference,
+    content_hash: Option<PackageHash>,
+    schema: &'static str,
+) -> PackagePublishReleaseReference {
+    PackagePublishReleaseReference {
+        path: reference.path,
+        file_hash: reference.file_hash,
+        content_hash,
+        schema: Some(schema.to_owned()),
+    }
+}
+
+fn publish_summary(
+    artifacts: &[PackagePublishArtifact],
+    registry_entries: &[PackageRegistryModule],
+    checker_summaries: &[PackageCheckerSummary],
+) -> PackagePublishSummary {
+    PackagePublishSummary {
+        local_module_count: u64::try_from(registry_entries.len()).unwrap(),
+        external_import_count: u64::try_from(
+            artifacts
+                .iter()
+                .filter(|artifact| {
+                    artifact.role == PackagePublishArtifactRole::ExternalImportCertificate
+                })
+                .count(),
+        )
+        .unwrap(),
+        artifact_count: u64::try_from(artifacts.len()).unwrap(),
+        registry_entry_count: u64::try_from(registry_entries.len()).unwrap(),
+        checker_summary_count: u64::try_from(checker_summaries.len()).unwrap(),
+    }
 }
 
 /// Return the explicit CLR-06 checksum-only signature policy.
@@ -536,6 +742,67 @@ fn checker_summary_stale(
     )
 }
 
+fn read_checked_publish_plan(
+    options: &PackageCommonOptions,
+) -> Result<String, Box<CommandDiagnostic>> {
+    let package_path = PackagePath::new(PACKAGE_PUBLISH_PLAN_PATH);
+    let full_path = join_package_path(&options.root, &package_path, "publish_plan.path")?;
+    fs::read_to_string(full_path).map_err(|error| {
+        let reason = if error.kind() == io::ErrorKind::NotFound {
+            "publish_plan_missing"
+        } else {
+            "generated_artifact_read_failed"
+        };
+        Box::new(
+            CommandDiagnostic::error(DiagnosticKind::GeneratedArtifact, reason)
+                .with_path(PACKAGE_PUBLISH_PLAN_PATH),
+        )
+    })
+}
+
+fn write_publish_plan(
+    options: &PackageCommonOptions,
+    publish_plan_json: &[u8],
+) -> Result<(), Box<CommandDiagnostic>> {
+    let package_path = PackagePath::new(PACKAGE_PUBLISH_PLAN_PATH);
+    let full_path = join_package_path(&options.root, &package_path, "publish_plan.path")?;
+    match fs::read(&full_path) {
+        Ok(existing) if existing == publish_plan_json => return Ok(()),
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(_) => return Err(Box::new(write_failed_diagnostic())),
+    }
+    if let Some(parent) = full_path.parent() {
+        fs::create_dir_all(parent).map_err(|_| Box::new(write_failed_diagnostic()))?;
+    }
+    let temp_path = temporary_write_path(&full_path);
+    if fs::write(&temp_path, publish_plan_json).is_err() {
+        return Err(Box::new(write_failed_diagnostic()));
+    }
+    if fs::rename(&temp_path, &full_path).is_err() {
+        let _ = fs::remove_file(&temp_path);
+        return Err(Box::new(write_failed_diagnostic()));
+    }
+    Ok(())
+}
+
+fn temporary_write_path(path: &Path) -> std::path::PathBuf {
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("publish-plan.json");
+    path.with_file_name(format!(".{file_name}.npa-publish-plan.tmp"))
+}
+
+fn passed_result(root_display: String) -> CommandResult {
+    let mut result = CommandResult::passed(COMMAND, root_display);
+    result.artifacts.push(crate::diagnostic::CommandArtifact {
+        kind: "package_publish_plan".to_owned(),
+        path: PACKAGE_PUBLISH_PLAN_PATH.to_owned(),
+    });
+    result
+}
+
 fn artifact_error_diagnostic(
     error: &PackageArtifactError,
     kind: DiagnosticKind,
@@ -571,6 +838,64 @@ fn artifact_error_diagnostic(
         }
     }
     diagnostic
+}
+
+fn publish_plan_error_diagnostic(error: &PackageArtifactError) -> CommandDiagnostic {
+    let reason_code = match error.reason_code {
+        PackageArtifactErrorReason::NonCanonicalOrder => "publish_plan_non_canonical_order",
+        PackageArtifactErrorReason::SelfHashMismatch => "publish_plan_hash_mismatch",
+        _ => error.reason_code.as_str(),
+    };
+    let mut diagnostic = CommandDiagnostic::error(DiagnosticKind::GeneratedArtifact, reason_code)
+        .with_path(PACKAGE_PUBLISH_PLAN_PATH);
+    if let Some(field) = error.field.clone().or_else(|| {
+        if error.path == "$" {
+            None
+        } else {
+            Some(error.path.clone())
+        }
+    }) {
+        diagnostic = diagnostic.with_field(field);
+    }
+    if error.reason_code == PackageArtifactErrorReason::SelfHashMismatch {
+        if let (Some(expected), Some(actual)) = (&error.expected_value, &error.actual_value) {
+            diagnostic = diagnostic.with_hashes(expected.clone(), actual.clone());
+        }
+    } else {
+        if let Some(expected) = &error.expected_value {
+            diagnostic = diagnostic.with_expected_value(expected.clone());
+        }
+        if let Some(actual) = &error.actual_value {
+            diagnostic = diagnostic.with_actual_value(actual.clone());
+        }
+    }
+    diagnostic
+}
+
+fn publish_plan_stale_diagnostic(
+    reason_code: &'static str,
+    field: Option<&'static str>,
+    checked_json: &str,
+    generated_json: &str,
+) -> CommandDiagnostic {
+    let mut diagnostic = CommandDiagnostic::error(DiagnosticKind::GeneratedArtifact, reason_code)
+        .with_path(PACKAGE_PUBLISH_PLAN_PATH)
+        .with_hashes(
+            format_package_hash(&package_file_hash(generated_json.as_bytes())),
+            format_package_hash(&package_file_hash(checked_json.as_bytes())),
+        );
+    if let Some(field) = field {
+        diagnostic = diagnostic.with_field(field);
+    }
+    diagnostic
+}
+
+fn write_failed_diagnostic() -> CommandDiagnostic {
+    CommandDiagnostic::error(
+        DiagnosticKind::GeneratedArtifact,
+        "generated_artifact_write_failed",
+    )
+    .with_path(PACKAGE_PUBLISH_PLAN_PATH)
 }
 
 fn metadata_extraction_diagnostic(

@@ -43,6 +43,8 @@ pub enum PackageCommand {
     VerifyCerts(PackageVerifyCertsOptions),
     /// `npa package check-hashes`.
     CheckHashes(PackageCommonOptions),
+    /// `npa package publish-plan`.
+    PublishPlan(PackagePublishPlanOptions),
 }
 
 impl PackageCommand {
@@ -55,6 +57,7 @@ impl PackageCommand {
             Self::Index(_) => "package index",
             Self::VerifyCerts(_) => "package verify-certs",
             Self::CheckHashes(_) => "package check-hashes",
+            Self::PublishPlan(_) => "package publish-plan",
         }
     }
 
@@ -66,6 +69,7 @@ impl PackageCommand {
             Self::AxiomReport(options) => &options.common,
             Self::Index(options) => &options.common,
             Self::VerifyCerts(options) => &options.common,
+            Self::PublishPlan(options) => &options.common,
         }
     }
 }
@@ -109,6 +113,15 @@ pub struct PackageAxiomReportOptions {
 /// Options for `package index`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PackageIndexOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
+    /// Check mode: regenerate in memory without writing files.
+    pub check: bool,
+}
+
+/// Options for `package publish-plan`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackagePublishPlanOptions {
     /// Common package command options.
     pub common: PackageCommonOptions,
     /// Check mode: regenerate in memory without writing files.
@@ -162,6 +175,8 @@ pub enum HelpTopic {
     PackageVerifyCerts,
     /// `npa package check-hashes --help`.
     PackageCheckHashes,
+    /// `npa package publish-plan --help`.
+    PackagePublishPlan,
 }
 
 /// Stable usage error produced by the argument parser.
@@ -287,6 +302,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "index" => parse_package_index_args(&args[1..]),
         "verify-certs" => parse_package_verify_certs_args(&args[1..]),
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
+        "publish-plan" => parse_package_publish_plan_args(&args[1..]),
         command if command.starts_with('-') => {
             Err(flag_error(command, UsageReason::UnknownFlag).with_command("package"))
         }
@@ -410,6 +426,37 @@ fn parse_package_index_args(args: &[String]) -> Result<CliAction, CliUsageError>
     Ok(CliAction::Run(CliCommand::Package(PackageCommand::Index(
         PackageIndexOptions { common, check },
     ))))
+}
+
+fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackagePublishPlan));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut check = false;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--check" => {
+                if check {
+                    return Err(flag_error("--check", UsageReason::DuplicateFlag)
+                        .with_command("package publish-plan"));
+                }
+                check = true;
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(&common_tokens, "package publish-plan", &["--check"])?;
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::PublishPlan(PackagePublishPlanOptions { common, check }),
+    )))
 }
 
 fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsageError> {
@@ -583,6 +630,9 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--all"
             | "--registry"
             | "--network"
+            | "--latest"
+            | "--upload"
+            | "--sign"
             | "--update-manifest-hashes"
             | "--include-source"
             | "--include-replay"
@@ -592,6 +642,9 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
         || flag.starts_with("--network=")
+        || flag.starts_with("--latest=")
+        || flag.starts_with("--upload=")
+        || flag.starts_with("--sign=")
         || flag.starts_with("--update-manifest-hashes=")
         || flag.starts_with("--include-source=")
         || flag.starts_with("--include-replay=")
@@ -606,7 +659,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n  publish-plan\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
@@ -625,6 +678,9 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."
+        }
+        HelpTopic::PackagePublishPlan => {
+            "Usage: npa package publish-plan [--root PATH] [--json] [--check]\n\nGenerate or check generated/publish-plan.json from source-free package release metadata."
         }
     }
 }
