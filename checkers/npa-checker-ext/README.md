@@ -21,6 +21,7 @@ scripts/test.sh hash-encoder
 scripts/test.sh hash-level-term
 scripts/test.sh hash-declarations
 scripts/test.sh hash-module
+scripts/test.sh import-store
 ```
 
 `scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
@@ -112,3 +113,8 @@ M2-04 recomputes the final export, axiom report, and module certificate hashes.
 The export hash is checked against an export block rebuilt from declaration
 interfaces, while the module certificate hash uses the exact original
 certificate bytes before the stored certificate hash.
+
+M3-01 adds an explicit source-free import store loader. `--import-dir` style
+directories are traversed only for `.npcert` files, each import certificate is
+decoded and hash-verified before its public environment is exposed, and duplicate
+module/export-hash bindings are rejected.

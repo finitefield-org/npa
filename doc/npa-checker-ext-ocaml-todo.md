@@ -653,7 +653,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-$OCAML_EXT_TEST import-store
+sh checkers/npa-checker-ext/scripts/test.sh import-store
 ```
 
 ### M3-02 Implement Normal Import Resolution

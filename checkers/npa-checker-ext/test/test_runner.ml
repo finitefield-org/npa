@@ -1368,6 +1368,59 @@ let assert_module_hash_rejects label expected_kind expected_offset bytes decoded
       assert_contains (label ^ " raw section") "\"section\": \"hashes\"" raw;
       assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int offset) raw
 
+let import_store_load_error_code error =
+  match error with
+  | Ext_import_store.Import_dir_unavailable -> "import_dir_unavailable"
+  | Ext_import_store.Source_or_replay_input_rejected -> "source_or_replay_input_rejected"
+  | Ext_import_store.Certificate_decode_error decode_error ->
+      "certificate_decode_error:" ^ Ext_bytes.reason_code decode_error.Ext_bytes.reason
+  | Ext_import_store.Certificate_hash_mismatch mismatch ->
+      "certificate_hash_mismatch:" ^ mismatch.Ext_import_store.hash_mismatch_kind
+  | Ext_import_store.Duplicate_import_binding _ -> "duplicate_import_binding"
+
+let assert_import_store_ok label result =
+  match result with
+  | Ok value -> value
+  | Error error ->
+      failwith (label ^ ": unexpected import store error " ^ import_store_load_error_code error)
+
+let assert_import_store_load_error label expected result =
+  match result with
+  | Ok _ -> failwith (label ^ ": expected import store error")
+  | Error error -> assert_equal (label ^ " load error") expected (import_store_load_error_code error)
+
+let assert_import_resolves label store request =
+  match Ext_import_store.resolve_normal store request with
+  | Ok value -> value
+  | Error error ->
+      failwith
+        (label ^ ": unexpected import resolution error "
+       ^ Ext_import_store.resolve_error_reason_code error.Ext_import_store.resolve_reason)
+
+let assert_import_resolve_rejects label expected_kind expected_reason expected_offset store
+    request =
+  match Ext_import_store.resolve_normal ~offset:expected_offset store request with
+  | Ok _ -> failwith (label ^ ": expected import resolution error")
+  | Error error ->
+      let kind = Ext_import_store.resolve_error_kind error in
+      let reason =
+        Ext_import_store.resolve_error_reason_code error.Ext_import_store.resolve_reason
+      in
+      assert_equal (label ^ " kind") expected_kind kind;
+      assert_equal (label ^ " reason") expected_reason reason;
+      assert_int_equal (label ^ " offset") expected_offset
+        error.Ext_import_store.resolve_offset;
+      let raw =
+        Ext_result.import_failure ~kind ~reason_code:reason ~section:"imports"
+          ~offset:expected_offset
+      in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_reason ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section") "\"section\": \"imports\"" raw;
+      assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int expected_offset) raw
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -1688,6 +1741,101 @@ let run_hash_module_tests () =
     "export_hash_mismatch" hashes.Ext_cert.export_hash_offset bytes
     decoded_with_forged_export_hash
 
+let run_import_store_tests () =
+  let nat_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let nat_dir = Filename.dirname nat_path in
+  let nat_store =
+    assert_import_store_ok "nat import dir" (Ext_import_store.load_import_dir nat_dir)
+  in
+  assert_int_equal "nat import store entry count" 1
+    (List.length (Ext_import_store.entries nat_store));
+  let nat_module =
+    match Ext_import_store.entries nat_store with
+    | [ entry ] -> entry
+    | _ -> failwith "expected one nat import entry"
+  in
+  assert_equal "nat import module name" "Std.Nat.Basic"
+    (Ext_name.to_string nat_module.Ext_import_store.import_entry.Ext_import.module_name);
+  assert_bool "nat import exposes public exports"
+    (List.length
+       nat_module.Ext_import_store.public_environment.Ext_import_store.public_exports
+    > 0);
+  assert_bool "import store source certificates are not high-trust checked"
+    (not nat_module.Ext_import_store.checked_by_ext_checker);
+
+  let request_without_certificate_hash =
+    {
+      Ext_import.module_name =
+        nat_module.Ext_import_store.import_entry.Ext_import.module_name;
+      export_hash = nat_module.Ext_import_store.import_entry.Ext_import.export_hash;
+      certificate_hash = None;
+    }
+  in
+  ignore
+    (assert_import_resolves "normal import resolves by module and export hash"
+       nat_store request_without_certificate_hash);
+  let request_with_certificate_hash =
+    {
+      request_without_certificate_hash with
+      Ext_import.certificate_hash =
+        nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash;
+    }
+  in
+  ignore
+    (assert_import_resolves "normal import resolves with matching certificate hash"
+       nat_store request_with_certificate_hash);
+  assert_import_resolve_rejects "missing import store entry" "import_not_found"
+    "missing_import" 17 Ext_import_store.empty request_without_certificate_hash;
+  let wrong_export_request =
+    {
+      request_without_certificate_hash with
+      Ext_import.export_hash = mutate_byte request_without_certificate_hash.Ext_import.export_hash 0;
+    }
+  in
+  assert_import_resolve_rejects "normal import rejects export hash mismatch"
+    "import_hash_mismatch" "import_export_hash_mismatch" 23 nat_store
+    wrong_export_request;
+  let wrong_certificate_request =
+    {
+      request_without_certificate_hash with
+      Ext_import.certificate_hash =
+        Option.map
+          (fun hash -> mutate_byte hash 0)
+          nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash;
+    }
+  in
+  assert_import_resolve_rejects "normal import rejects certificate hash mismatch"
+    "import_hash_mismatch" "import_certificate_hash_mismatch" 29 nat_store
+    wrong_certificate_request;
+
+  let nat_bytes = read_binary_file nat_path in
+  assert_import_store_load_error "duplicate module export binding rejects"
+    "duplicate_import_binding"
+    (Ext_import_store.from_source_free_certificates [ nat_bytes; nat_bytes ]);
+  let decoded_nat = decode_module_bytes "import store hash mutation fixture" nat_bytes in
+  let mutated_import_hash =
+    mutate_byte nat_bytes decoded_nat.Ext_cert.hashes.Ext_cert.export_hash_offset
+  in
+  assert_import_store_load_error "import cert hash verification runs before exposure"
+    "certificate_hash_mismatch:export_hash_mismatch"
+    (Ext_import_store.from_source_free_certificates [ mutated_import_hash ]);
+
+  let source_replay_fixture =
+    Filename.concat (root_dir ()) "test/fixtures/import_store"
+  in
+  let ignored_store =
+    assert_import_store_ok "source and replay files are ignored"
+      (Ext_import_store.load_import_dir source_replay_fixture)
+  in
+  assert_int_equal "source and replay fixtures are not read" 0
+    (List.length (Ext_import_store.entries ignored_store));
+  assert_import_store_load_error "source import dir path is rejected"
+    "source_or_replay_input_rejected"
+    (Ext_import_store.load_import_dir
+       (Filename.concat source_replay_fixture "ignored.npa"))
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -1874,6 +2022,7 @@ let () =
                "hash-encoder";
                "hash-level-term";
                "hash-module";
+               "import-store";
                "sha256";
              ])
       then
@@ -1889,5 +2038,6 @@ let () =
   if should_run selected "hash-level-term" then run_hash_level_term_tests ();
   if should_run selected "hash-declarations" then run_hash_declarations_tests ();
   if should_run selected "hash-module" then run_hash_module_tests ();
+  if should_run selected "import-store" then run_import_store_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
