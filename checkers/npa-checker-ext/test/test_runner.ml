@@ -1421,6 +1421,39 @@ let assert_import_resolve_rejects label expected_kind expected_reason expected_o
       assert_contains (label ^ " raw section") "\"section\": \"imports\"" raw;
       assert_contains (label ^ " raw offset") ("\"offset\": " ^ string_of_int expected_offset) raw
 
+let assert_import_environment_ok ?(policy = Ext_import_store.normal_policy) label store
+    decoded =
+  match Ext_import_store.build_import_environment ~policy store decoded with
+  | Ok value -> value
+  | Error error ->
+      failwith
+        (label ^ ": unexpected import environment error "
+       ^ Ext_import_store.resolve_error_reason_code error.Ext_import_store.resolve_reason)
+
+let assert_import_environment_rejects ?(policy = Ext_import_store.normal_policy) label
+    expected_kind expected_reason store decoded =
+  match Ext_import_store.build_import_environment ~policy store decoded with
+  | Ok _ -> failwith (label ^ ": expected import environment error")
+  | Error error ->
+      let kind = Ext_import_store.resolve_error_kind error in
+      let reason =
+        Ext_import_store.resolve_error_reason_code error.Ext_import_store.resolve_reason
+      in
+      assert_equal (label ^ " kind") expected_kind kind;
+      assert_equal (label ^ " reason") expected_reason reason;
+      let raw =
+        Ext_result.import_failure ~kind ~reason_code:reason ~section:"imports"
+          ~offset:error.Ext_import_store.resolve_offset
+      in
+      assert_contains (label ^ " raw kind") ("\"kind\": \"" ^ expected_kind ^ "\"") raw;
+      assert_contains (label ^ " raw reason")
+        ("\"reason_code\": \"" ^ expected_reason ^ "\"")
+        raw;
+      assert_contains (label ^ " raw section") "\"section\": \"imports\"" raw;
+      assert_contains (label ^ " raw offset")
+        ("\"offset\": " ^ string_of_int error.Ext_import_store.resolve_offset)
+        raw
+
 let theorem_payload_with_type payload decl_ty =
   match payload with
   | Ext_cert.TheoremDecl
@@ -1836,6 +1869,346 @@ let run_import_store_tests () =
     (Ext_import_store.load_import_dir
        (Filename.concat source_replay_fixture "ignored.npa"))
 
+let decoded_import_request label module_name export_hash certificate_hash =
+  decode_module_bytes label
+    (encode_module ~module_name:[ "Use"; "Import" ]
+       ~imports:[ (Ext_name.components module_name, export_hash, certificate_hash) ]
+       [] [] [] [] [])
+
+let decoded_import_requests label imports =
+  decode_module_bytes label
+    (encode_module ~module_name:[ "Use"; "Import" ]
+       ~imports:
+         (List.map
+            (fun (module_name, export_hash, certificate_hash) ->
+              (Ext_name.components module_name, export_hash, certificate_hash))
+            imports)
+       [] [] [] [] [])
+
+let single_import_offset label decoded =
+  match decoded.Ext_cert.imports with
+  | [ import ] -> import.Ext_cert.import_offset
+  | _ -> failwith (label ^ ": expected one import request")
+
+let single_resolved_import label environment =
+  match Ext_import_store.import_environment_imports environment with
+  | [ import ] -> import
+  | _ -> failwith (label ^ ": expected one resolved import")
+
+let load_single_import_entry label path =
+  let store =
+    assert_import_store_ok label
+      (Ext_import_store.from_source_free_certificates [ read_binary_file path ])
+  in
+  match Ext_import_store.entries store with
+  | [ entry ] -> entry
+  | _ -> failwith (label ^ ": expected one import entry")
+
+let run_import_normal_tests () =
+  let nat_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let nat_store =
+    assert_import_store_ok "normal nat import dir"
+      (Ext_import_store.load_import_dir (Filename.dirname nat_path))
+  in
+  let nat_module =
+    match Ext_import_store.entries nat_store with
+    | [ entry ] -> entry
+    | _ -> failwith "expected one nat import entry"
+  in
+  let nat_request =
+    decoded_import_request "normal import request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash None
+  in
+  let nat_environment =
+    assert_import_environment_ok "normal import environment resolves" nat_store
+      nat_request
+  in
+  let nat_import = single_resolved_import "normal nat import" nat_environment in
+  assert_equal "normal import resolved module" "Std.Nat.Basic"
+    (Ext_name.to_string nat_import.Ext_import_store.resolved_module_name);
+  assert_equal "normal import resolved export hash"
+    nat_module.Ext_import_store.import_entry.Ext_import.export_hash
+    nat_import.Ext_import_store.resolved_export_hash;
+  assert_bool "normal import carries certificate hash"
+    (nat_import.Ext_import_store.resolved_certificate_hash
+    = nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash);
+  assert_bool "normal import copies public exports"
+    (List.length
+       nat_import.Ext_import_store.resolved_public_environment.Ext_import_store.public_exports
+    > 0);
+  assert_int_equal "normal import flattened exports"
+    (List.length
+       nat_import.Ext_import_store.resolved_public_environment.Ext_import_store.public_exports)
+    (List.length (Ext_import_store.import_environment_public_exports nat_environment));
+
+  let wrong_export_request =
+    decoded_import_request "normal wrong export request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      (mutate_byte nat_module.Ext_import_store.import_entry.Ext_import.export_hash 0)
+      None
+  in
+  assert_import_environment_rejects
+    "normal import environment rejects name-only match"
+    "import_hash_mismatch" "import_export_hash_mismatch" nat_store
+    wrong_export_request;
+  let missing_request =
+    decoded_import_request "normal missing request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash None
+  in
+  assert_import_environment_rejects "normal import environment missing import"
+    "import_not_found" "missing_import" Ext_import_store.empty missing_request;
+  assert_int_equal "normal missing import offset comes from certificate"
+    (single_import_offset "missing request" missing_request)
+    (match Ext_import_store.build_import_environment Ext_import_store.empty missing_request with
+    | Error error -> error.Ext_import_store.resolve_offset
+    | Ok _ -> failwith "expected missing import");
+
+  let wrong_certificate_request =
+    decoded_import_request "normal wrong certificate request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash
+      (Option.map
+         (fun hash -> mutate_byte hash 0)
+         nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash)
+  in
+  assert_import_environment_rejects
+    "normal import environment rejects certificate hash mismatch"
+    "import_hash_mismatch" "import_certificate_hash_mismatch" nat_store
+    wrong_certificate_request;
+
+  let imported_axiom_name = make_name [ "ImportedAxiom" ] in
+  let imported_axiom_hash = hash_bytes 0x7a in
+  let imported_axiom =
+    {
+      Ext_cert.axiom_global_ref =
+        Ext_term.Builtin
+          { name = imported_axiom_name; decl_interface_hash = imported_axiom_hash };
+      axiom_name = imported_axiom_name;
+      axiom_decl_interface_hash = imported_axiom_hash;
+    }
+  in
+  let public_exports =
+    match
+      nat_module.Ext_import_store.public_environment.Ext_import_store.public_exports
+    with
+    | export :: rest ->
+        {
+          export with
+          Ext_import_store.public_axiom_dependencies = [ imported_axiom ];
+        }
+        :: rest
+    | [] -> failwith "expected nat public exports"
+  in
+  let dependency_store =
+    [
+      {
+        nat_module with
+        Ext_import_store.public_environment =
+          {
+            nat_module.Ext_import_store.public_environment with
+            Ext_import_store.public_exports;
+            public_module_axioms = [ imported_axiom ];
+          };
+      };
+    ]
+  in
+  let dependency_environment =
+    assert_import_environment_ok "normal import copies axiom dependencies"
+      dependency_store nat_request
+  in
+  let dependency_import =
+    single_resolved_import "dependency import" dependency_environment
+  in
+  let dependency_public_environment =
+    dependency_import.Ext_import_store.resolved_public_environment
+  in
+  let dependency_public_export =
+    match dependency_public_environment.Ext_import_store.public_exports with
+    | export :: _ -> export
+    | [] -> failwith "expected dependency public export"
+  in
+  assert_int_equal "normal import copies export axiom dependencies" 1
+    (List.length dependency_public_export.Ext_import_store.public_axiom_dependencies);
+  assert_int_equal "normal import copies module axiom dependencies" 1
+    (List.length dependency_public_environment.Ext_import_store.public_module_axioms);
+  assert_int_equal "normal import flattens module axiom dependencies" 1
+    (List.length
+       (Ext_import_store.import_environment_module_axioms dependency_environment));
+
+  let local_axiom_dependency = (encode_global_local 0, 0, hash_bytes 0x91) in
+  let local_ref_decl =
+    encode_decl_cert (encode_axiom_decl_payload 0 [] 0) [] [] (hash_bytes 0x91)
+      (hash_bytes 0x92)
+  in
+  let local_ref_export =
+    encode_export_entry_full 0 0x00 [] 1 None (hash_bytes 0x31) None None None
+      (hash_bytes 0x91) [ local_axiom_dependency ]
+  in
+  let local_ref_module =
+    encode_module ~module_name:[ "Local"; "Provider" ]
+      ~axiom_report:(encode_axiom_report [] [ local_axiom_dependency ])
+      [ [ "A" ] ]
+      [ encode_level_zero ]
+      [ encode_term_sort 0; encode_term_const (encode_global_local 0) [] ]
+      [ local_ref_decl ] [ local_ref_export ]
+  in
+  let local_entry =
+    assert_ok "local provider module entry"
+      (Ext_import_store.module_entry_of_decoded
+         (decode_module_bytes "local provider module" local_ref_module))
+  in
+  let local_request =
+    decoded_import_request "normal local provider request"
+      local_entry.Ext_import_store.import_entry.Ext_import.module_name
+      local_entry.Ext_import_store.import_entry.Ext_import.export_hash None
+  in
+  let local_environment =
+    assert_import_environment_ok "normal local provider import"
+      [ local_entry ] local_request
+  in
+  let local_import = single_resolved_import "normal local provider" local_environment in
+  let local_public_environment =
+    local_import.Ext_import_store.resolved_public_environment
+  in
+  let local_export =
+    match local_public_environment.Ext_import_store.public_exports with
+    | [ export ] -> export
+    | _ -> failwith "expected one local provider public export"
+  in
+  let assert_public_self_axiom label axiom =
+    match axiom.Ext_cert.axiom_global_ref with
+    | Ext_term.Imported { import_index; name; decl_interface_hash } ->
+        assert_int_equal (label ^ " import index")
+          Ext_import_store.public_self_import_index import_index;
+        assert_equal (label ^ " name") "A" (Ext_name.to_string name);
+        assert_equal (label ^ " interface hash") (hash_bytes 0x91)
+          decl_interface_hash
+    | _ -> failwith (label ^ ": expected imported public self axiom ref")
+  in
+  (match local_export.Ext_import_store.public_ty with
+  | Ext_term.Const
+      ( Ext_term.Imported { import_index; name; decl_interface_hash },
+        [] ) ->
+      assert_int_equal "public environment remaps local ref import index"
+        Ext_import_store.public_self_import_index import_index;
+      assert_equal "public environment remaps local ref name" "A"
+        (Ext_name.to_string name);
+      assert_equal "public environment remaps local ref interface hash"
+        (hash_bytes 0x91) decl_interface_hash
+  | Ext_term.Const (Ext_term.Local _, _) ->
+      failwith "public environment must not expose local refs"
+  | _ -> failwith "expected public type to be an imported const");
+  (match local_export.Ext_import_store.public_axiom_dependencies with
+  | [ axiom ] -> assert_public_self_axiom "public export axiom dependency" axiom
+  | _ -> failwith "expected one public export axiom dependency");
+  match local_public_environment.Ext_import_store.public_module_axioms with
+  | [ axiom ] -> assert_public_self_axiom "public module axiom dependency" axiom
+  | _ -> failwith "expected one public module axiom dependency"
+
+let run_import_high_trust_tests () =
+  let nat_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Nat/Basic/certificate.npcert"
+  in
+  let eq_path =
+    Filename.concat (root_dir ()) "../../proofs/vendor/npa-std/Std/Logic/Eq/certificate.npcert"
+  in
+  let nat_module = load_single_import_entry "high-trust nat fixture" nat_path in
+  let eq_module = load_single_import_entry "high-trust eq fixture" eq_path in
+  assert_bool "source-free nat fixture starts unchecked"
+    (not nat_module.Ext_import_store.checked_by_ext_checker);
+  let checked_nat_store =
+    assert_import_store_ok "checked nat store"
+      (Ext_import_store.from_checked_modules [ nat_module ])
+  in
+  let checked_nat =
+    match Ext_import_store.entries checked_nat_store with
+    | [ entry ] -> entry
+    | _ -> failwith "expected checked nat entry"
+  in
+  assert_bool "from_checked_modules marks entries checked"
+    checked_nat.Ext_import_store.checked_by_ext_checker;
+  let nat_request_without_hash =
+    decoded_import_request "high-trust missing certificate hash request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash None
+  in
+  assert_import_environment_rejects ~policy:Ext_import_store.high_trust_policy
+    "high-trust rejects missing import certificate hash"
+    "import_not_found" "missing_import_certificate_hash" checked_nat_store
+    nat_request_without_hash;
+  let nat_request_with_hash =
+    decoded_import_request "high-trust nat request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash
+      nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash
+  in
+  assert_import_environment_rejects ~policy:Ext_import_store.high_trust_policy
+    "high-trust rejects unchecked source-free import"
+    "import_not_found" "unchecked_import" [ nat_module ] nat_request_with_hash;
+  let wrong_certificate_request =
+    decoded_import_request "high-trust wrong certificate request"
+      nat_module.Ext_import_store.import_entry.Ext_import.module_name
+      nat_module.Ext_import_store.import_entry.Ext_import.export_hash
+      (Option.map
+         (fun hash -> mutate_byte hash 0)
+         nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash)
+  in
+  assert_import_environment_rejects ~policy:Ext_import_store.high_trust_policy
+    "high-trust rejects certificate hash mismatch"
+    "import_hash_mismatch" "import_certificate_hash_mismatch" checked_nat_store
+    wrong_certificate_request;
+  let high_trust_environment =
+    assert_import_environment_ok ~policy:Ext_import_store.high_trust_policy
+      "high-trust accepts checked certificate import" checked_nat_store
+      nat_request_with_hash
+  in
+  let high_trust_import =
+    single_resolved_import "high-trust nat import" high_trust_environment
+  in
+  assert_equal "high-trust resolved module" "Std.Nat.Basic"
+    (Ext_name.to_string high_trust_import.Ext_import_store.resolved_module_name);
+  assert_bool "high-trust carries resolved certificate hash"
+    (high_trust_import.Ext_import_store.resolved_certificate_hash
+    = nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash);
+
+  let ordered_store =
+    assert_import_store_ok "topological checked import store"
+      (Ext_import_store.from_checked_modules [ eq_module; nat_module ])
+  in
+  let ordered_request =
+    decoded_import_requests "high-trust ordered import closure"
+      [
+        ( eq_module.Ext_import_store.import_entry.Ext_import.module_name,
+          eq_module.Ext_import_store.import_entry.Ext_import.export_hash,
+          eq_module.Ext_import_store.import_entry.Ext_import.certificate_hash );
+        ( nat_module.Ext_import_store.import_entry.Ext_import.module_name,
+          nat_module.Ext_import_store.import_entry.Ext_import.export_hash,
+          nat_module.Ext_import_store.import_entry.Ext_import.certificate_hash );
+      ]
+  in
+  let ordered_environment =
+    assert_import_environment_ok ~policy:Ext_import_store.high_trust_policy
+      "high-trust topological closure resolves" ordered_store ordered_request
+  in
+  let resolved_names =
+    List.map
+      (fun import ->
+        Ext_name.to_string import.Ext_import_store.resolved_module_name)
+      (Ext_import_store.import_environment_imports ordered_environment)
+  in
+  assert_equal "high-trust import order first" "Std.Logic.Eq"
+    (List.nth resolved_names 0);
+  assert_equal "high-trust import order second" "Std.Nat.Basic"
+    (List.nth resolved_names 1);
+  assert_bool "high-trust closure source-free exports copied"
+    (List.length
+       (Ext_import_store.import_environment_public_exports ordered_environment)
+    > 0)
+
 let run_hash_encoder_tests () =
   let empty_module = encode_module [] [] [] [] [] in
   let empty_decoded = decode_module_bytes "empty hash fixture" empty_module in
@@ -2022,6 +2395,8 @@ let () =
                "hash-encoder";
                "hash-level-term";
                "hash-module";
+               "import-high-trust";
+               "import-normal";
                "import-store";
                "sha256";
              ])
@@ -2039,5 +2414,7 @@ let () =
   if should_run selected "hash-declarations" then run_hash_declarations_tests ();
   if should_run selected "hash-module" then run_hash_module_tests ();
   if should_run selected "import-store" then run_import_store_tests ();
+  if should_run selected "import-normal" then run_import_normal_tests ();
+  if should_run selected "import-high-trust" then run_import_high_trust_tests ();
   if should_run selected "hash-encoder" then run_hash_encoder_tests ();
   if should_run selected "cli" then run_cli_tests ()
