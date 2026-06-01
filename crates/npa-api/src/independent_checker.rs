@@ -108,6 +108,7 @@ pub const INDEPENDENT_CHECKER_RUNNER_FIXED_ENVIRONMENT: &[(&str, &str)] =
 
 pub const INDEPENDENT_CHECKER_RUNNER_DYNAMIC_FLAGS: &[&str] = &[
     "--cert",
+    "--import-dir",
     "--imports",
     "--imports-hash",
     "--policy",
@@ -136,6 +137,8 @@ const INDEPENDENT_CHECKER_RUNNER_FORBIDDEN_CONTROL_ARG_FLAGS: &[&str] = &[
     "--plugins",
     "--network",
 ];
+pub const INDEPENDENT_CHECKER_NPA_CHECKER_EXT_DYNAMIC_FLAGS: &[&str] =
+    &["--cert", "--import-dir", "--policy", "--output"];
 
 const REQUEST_HASH_EXCLUDED_FIELDS: &[&str] = &["request_id", "request_hash"];
 const MACHINE_CHECK_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &[
@@ -7405,10 +7408,26 @@ pub struct IndependentCheckerResolvedCheckerExecutable {
 pub struct IndependentCheckerRunnerSandboxPolicy {
     pub network: String,
     pub certificate_mount: String,
+    pub import_mount: String,
     pub source_mount: String,
     pub plugin_loading: String,
     pub cwd: String,
     pub environment: Vec<(String, String)>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerNpaCheckerExtDynamicArgs {
+    pub certificate_path: String,
+    pub import_dir: String,
+    pub policy_path: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerRunnerLaunchPlan {
+    pub argv: Vec<String>,
+    pub environment: Vec<(String, String)>,
+    pub sandbox: IndependentCheckerRunnerSandboxPolicy,
+    pub budget: IndependentCheckerRunnerBudget,
 }
 
 pub fn parse_independent_checker_runner_policy(
@@ -7571,6 +7590,41 @@ pub fn independent_checker_argv(
     argv
 }
 
+pub fn independent_checker_npa_checker_ext_argv(
+    executable_path: &str,
+    dynamic: &IndependentCheckerNpaCheckerExtDynamicArgs,
+) -> Vec<String> {
+    vec![
+        executable_path.to_owned(),
+        "--cert".to_owned(),
+        dynamic.certificate_path.clone(),
+        "--import-dir".to_owned(),
+        dynamic.import_dir.clone(),
+        "--policy".to_owned(),
+        dynamic.policy_path.clone(),
+        "--output".to_owned(),
+        "json".to_owned(),
+    ]
+}
+
+pub fn independent_checker_npa_checker_ext_launch_plan(
+    resolved: &IndependentCheckerResolvedCheckerExecutable,
+    request: &IndependentCheckerMachineCheckRequest,
+    import_dir: impl Into<String>,
+) -> IndependentCheckerRunnerLaunchPlan {
+    let dynamic = IndependentCheckerNpaCheckerExtDynamicArgs {
+        certificate_path: request.certificate.path.clone(),
+        import_dir: import_dir.into(),
+        policy_path: request.axiom_policy.clone(),
+    };
+    IndependentCheckerRunnerLaunchPlan {
+        argv: independent_checker_npa_checker_ext_argv(&resolved.path, &dynamic),
+        environment: independent_checker_runner_fixed_environment(),
+        sandbox: independent_checker_runner_sandbox_policy(),
+        budget: request.budget.clone(),
+    }
+}
+
 pub fn independent_checker_runner_fixed_environment() -> Vec<(String, String)> {
     INDEPENDENT_CHECKER_RUNNER_FIXED_ENVIRONMENT
         .iter()
@@ -7582,6 +7636,7 @@ pub fn independent_checker_runner_sandbox_policy() -> IndependentCheckerRunnerSa
     IndependentCheckerRunnerSandboxPolicy {
         network: "forbidden".to_owned(),
         certificate_mount: "read_only".to_owned(),
+        import_mount: "read_only".to_owned(),
         source_mount: "forbidden".to_owned(),
         plugin_loading: "forbidden".to_owned(),
         cwd: "runner_owned".to_owned(),
@@ -18184,6 +18239,7 @@ fn parse_independent_checker_runner_policy_value(
         &checker_allowlist,
     )?;
     validate_external_checker_policy_domain(&checker_allowlist, &checker_identity_manifest)?;
+    validate_allowed_args_domain(&checker_allowlist)?;
     let budgets = validate_runner_budgets_domain(
         &required_checker_profiles,
         &optional_checker_profiles,
@@ -25367,7 +25423,7 @@ fn validate_checker_allowlist_domain(
             ));
         }
     }
-    validate_allowed_args_domain(checker_allowlist)
+    Ok(())
 }
 
 fn validate_external_checker_policy_domain(
@@ -25413,6 +25469,18 @@ fn validate_allowed_args_domain(
     checker_allowlist: &[IndependentCheckerAllowlistEntry],
 ) -> Result<(), IndependentCheckerPolicyValidationError> {
     for (checker_index, entry) in checker_allowlist.iter().enumerate() {
+        if entry.profile == NPA_CHECKER_EXT_PROFILE
+            && entry.checker_id == NPA_CHECKER_EXT_CHECKER_ID
+        {
+            if let Some((arg_index, arg)) = entry.allowed_args.iter().enumerate().next() {
+                return Err(IndependentCheckerPolicyValidationError::new(
+                    format!("checker_allowlist[{checker_index}].allowed_args[{arg_index}]"),
+                    "empty_for_npa_checker_ext",
+                    arg.as_str(),
+                ));
+            }
+            continue;
+        }
         for (arg_index, arg) in entry.allowed_args.iter().enumerate() {
             if !independent_checker_visible_ascii_nonempty(arg) || !arg.starts_with("--") {
                 return Err(IndependentCheckerPolicyValidationError::new(
@@ -25448,6 +25516,11 @@ fn validate_allowed_args_domain(
     }
 
     for (checker_index, entry) in checker_allowlist.iter().enumerate() {
+        if entry.profile == NPA_CHECKER_EXT_PROFILE
+            && entry.checker_id == NPA_CHECKER_EXT_CHECKER_ID
+        {
+            continue;
+        }
         let json_positions = entry
             .allowed_args
             .iter()
@@ -28915,7 +28988,7 @@ mod tests {
                   "binary_id":"npa-checker-ext-macos-aarch64",
                   "binary_hash":"{}",
                   "build_hash":"{}",
-                  "allowed_args":["--json","--canonical-only"]
+                  "allowed_args":[]
                 }},
                 {{
                   "profile":"reference",
@@ -29701,6 +29774,157 @@ mod tests {
     }
 
     #[test]
+    fn m8_external_checker_launch_plan_is_closed_and_resource_failures_are_runner_owned() {
+        let policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        let selected_external = policy.selected_checker_policy("external").unwrap();
+        let registry =
+            parse_independent_checker_binary_registry(&external_binary_registry_json()).unwrap();
+        let resolved = independent_checker_resolve_checker_executable(
+            &registry,
+            selected_external,
+            test_hash(14),
+        )
+        .unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let materialized = independent_checker_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            independent_checker_file_hash(imports_json.as_bytes()),
+            "external",
+            "mchkreq_m8_external",
+            "build/check-requests/Std.Nat.external.json",
+            None,
+        )
+        .unwrap();
+
+        let launch = independent_checker_npa_checker_ext_launch_plan(
+            &resolved,
+            &materialized.request,
+            "build/import-certs",
+        );
+        assert_eq!(
+            launch.argv,
+            vec![
+                "tools/checkers/npa-checker-ext/macos-aarch64/npa-checker-ext".to_owned(),
+                "--cert".to_owned(),
+                "build/certs/Std/Nat.npcert".to_owned(),
+                "--import-dir".to_owned(),
+                "build/import-certs".to_owned(),
+                "--policy".to_owned(),
+                "ci/axiom-policy.toml".to_owned(),
+                "--output".to_owned(),
+                "json".to_owned(),
+            ]
+        );
+        let launch_flags = launch
+            .argv
+            .iter()
+            .skip(1)
+            .step_by(2)
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            launch_flags,
+            INDEPENDENT_CHECKER_NPA_CHECKER_EXT_DYNAMIC_FLAGS
+        );
+        assert!(!launch.argv.iter().any(|arg| arg == "--json"));
+        assert_eq!(
+            launch.environment,
+            independent_checker_runner_fixed_environment()
+        );
+        assert_eq!(launch.sandbox.network, "forbidden");
+        assert_eq!(launch.sandbox.certificate_mount, "read_only");
+        assert_eq!(launch.sandbox.import_mount, "read_only");
+        assert_eq!(launch.sandbox.source_mount, "forbidden");
+        assert_eq!(launch.sandbox.plugin_loading, "forbidden");
+        assert_eq!(
+            launch.budget.max_memory_mb,
+            materialized.request.budget.max_memory_mb
+        );
+        assert_eq!(
+            launch.budget.timeout_ms,
+            materialized.request.budget.timeout_ms
+        );
+
+        let unknown_static_flag = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json()
+                .replace(r#""allowed_args":[]"#, r#""allowed_args":["--debug"]"#),
+        )
+        .unwrap_err();
+        assert_eq!(
+            unknown_static_flag,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].allowed_args[0]",
+                "empty_for_npa_checker_ext",
+                "--debug"
+            )
+        );
+
+        let timeout = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_timeout".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::terminated("timeout"),
+                resource_usage: IndependentCheckerMachineCheckResourceUsage {
+                    steps: 0,
+                    memory_peak_mb: 0,
+                    elapsed_ms: materialized.request.budget.timeout_ms + 1,
+                },
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let timeout_error = timeout.error.as_ref().unwrap();
+        assert_eq!(timeout.status, IndependentCheckerMachineCheckStatus::Failed);
+        assert_eq!(timeout_error.kind, "timeout");
+        assert_eq!(
+            timeout_error.reason_code.as_deref(),
+            Some("checker_timeout")
+        );
+
+        let resource_exhausted = independent_checker_machine_check_run(
+            &materialized.request,
+            &policy,
+            IndependentCheckerRunObservation {
+                result_id: "mchkres_m8_resource_exhausted".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: IndependentCheckerMachineCheckProcess::terminated("resource_exhausted"),
+                resource_usage: IndependentCheckerMachineCheckResourceUsage {
+                    steps: 0,
+                    memory_peak_mb: materialized.request.budget.max_memory_mb + 1,
+                    elapsed_ms: 10,
+                },
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let resource_error = resource_exhausted.error.as_ref().unwrap();
+        assert_eq!(
+            resource_exhausted.status,
+            IndependentCheckerMachineCheckStatus::Failed
+        );
+        assert_eq!(resource_error.kind, "resource_exhausted");
+        assert_eq!(
+            resource_error.reason_code.as_deref(),
+            Some("checker_resource_exhausted")
+        );
+    }
+
+    #[test]
     fn p8h14_ci_command_sets_fix_mode_scope_and_pr_reference_gate() {
         let pr_commands = independent_checker_ci_command_set(IndependentCheckerTrustMode::Pr);
         for command in [
@@ -30040,6 +30264,7 @@ mod tests {
             IndependentCheckerRunnerSandboxPolicy {
                 network: "forbidden".to_owned(),
                 certificate_mount: "read_only".to_owned(),
+                import_mount: "read_only".to_owned(),
                 source_mount: "forbidden".to_owned(),
                 plugin_loading: "forbidden".to_owned(),
                 cwd: "runner_owned".to_owned(),
@@ -30793,7 +31018,7 @@ mod tests {
                   "binary_id":"npa-checker-ext-macos-aarch64",
                   "binary_hash":"{}",
                   "build_hash":"{}",
-                  "allowed_args":["--json","--canonical-only"]
+                  "allowed_args":[]
                 }},
                 {{
                   "profile":"fast-kernel",
