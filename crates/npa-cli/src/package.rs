@@ -12,6 +12,7 @@ use crate::package_axiom_report::run_package_axiom_report;
 use crate::package_build::run_package_build_certs;
 use crate::package_check::run_package_check;
 use crate::package_hashes::run_package_check_hashes;
+use crate::package_index::run_package_index;
 use crate::package_verify::run_package_verify_certs;
 
 /// Package-relative manifest path used by CLR-04 package commands.
@@ -102,6 +103,7 @@ pub fn run_package_command(command: PackageCommand) -> CommandResult {
         PackageCommand::Check(options) => run_package_check(options),
         PackageCommand::BuildCerts(options) => run_package_build_certs(options),
         PackageCommand::AxiomReport(options) => run_package_axiom_report(options),
+        PackageCommand::Index(options) => run_package_index(options),
         PackageCommand::VerifyCerts(options) => run_package_verify_certs(options),
         PackageCommand::CheckHashes(options) => run_package_check_hashes(options),
     }

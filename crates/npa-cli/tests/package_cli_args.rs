@@ -72,6 +72,18 @@ fn package_cli_args_parses_axiom_report_check_mode() {
 }
 
 #[test]
+fn package_cli_args_parses_package_index_check_mode() {
+    let action = parse(&["package", "index", "--root=proofs", "--check", "--json"]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::Index(options))) = action else {
+        panic!("expected package index command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert!(options.check);
+}
+
+#[test]
 fn package_cli_args_defaults_verify_certs_checker_to_reference() {
     let action = parse(&["package", "verify-certs"]);
 
@@ -179,6 +191,10 @@ fn package_cli_args_rejects_duplicate_flags() {
     let axiom_report_error = parse_error(&["package", "axiom-report", "--check", "--check"]);
     assert_eq!(axiom_report_error.reason, UsageReason::DuplicateFlag);
     assert_eq!(axiom_report_error.flag.as_deref(), Some("--check"));
+
+    let index_error = parse_error(&["package", "index", "--check", "--check"]);
+    assert_eq!(index_error.reason, UsageReason::DuplicateFlag);
+    assert_eq!(index_error.flag.as_deref(), Some("--check"));
 }
 
 #[test]
@@ -214,6 +230,10 @@ fn package_cli_args_parses_help_topics() {
     assert_eq!(
         parse(&["package", "axiom-report", "--help"]),
         CliAction::Help(HelpTopic::PackageAxiomReport)
+    );
+    assert_eq!(
+        parse(&["package", "index", "--help"]),
+        CliAction::Help(HelpTopic::PackageIndex)
     );
 }
 

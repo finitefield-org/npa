@@ -895,7 +895,7 @@ external checker disagreement gates
 
 ### CLR-05-06 Implement `package index`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05-05
 - Inputs:
   - CLR-04 `npa-cli` package command framework
