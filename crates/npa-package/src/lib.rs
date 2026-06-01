@@ -99,6 +99,8 @@ pub mod lock;
 pub mod manifest;
 pub mod name;
 pub mod path;
+pub mod publish_plan;
+pub mod registry;
 pub mod schema;
 pub mod theorem_index;
 pub mod validate;
@@ -143,6 +145,18 @@ pub use name::{
     validate_canonical_module_name, validate_package_id, PackageId,
 };
 pub use path::{validate_package_path, PackagePath};
+pub use publish_plan::{
+    compute_package_publish_plan_hash, parse_package_publish_plan_json,
+    validate_package_publish_plan, PackageDownstreamImportBundle, PackageDownstreamImportModule,
+    PackagePublishArtifact, PackagePublishArtifactRole, PackagePublishPlan, PackagePublishRelease,
+    PackagePublishReleaseReference, PackagePublishSummary, PackageSignaturePolicy,
+    PACKAGE_PUBLISH_PLAN_PATH,
+};
+pub use registry::{
+    parse_registry_module_json, validate_registry_module, PackageRegistryArtifactHashes,
+    PackageRegistryCheckerResult, PackageRegistryCheckerStatus, PackageRegistryImport,
+    PackageRegistryModule,
+};
 pub use schema::{
     CERTIFICATE_FORMAT_CANONICAL_V0_1, CHECKER_PROFILE_REFERENCE_V0_1, CORE_SPEC_V0_1,
     KERNEL_PROFILE_V0_1, PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,

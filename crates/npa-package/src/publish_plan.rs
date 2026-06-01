@@ -1,0 +1,1074 @@
+//! Package publish-plan model and canonical JSON.
+//!
+//! Publish plans are untrusted release metadata. They summarize checked package
+//! artifacts and registry seed entries, but they are not checker evidence and
+//! never replace local source-free certificate verification.
+
+use std::collections::BTreeSet;
+
+use npa_cert::Name;
+
+use crate::{
+    artifacts::{
+        checker_summary_json, expect_object, field_path, hash_json, json_array, json_bool,
+        json_object_in_order, json_string, json_u64, normalize_checker_summaries,
+        parse_artifact_json, parse_checker_summary, reject_unknown_fields, required_array,
+        required_bool, required_hash, required_name, required_path, required_string, required_u64,
+        validate_artifact_path, validate_checker_summaries, validate_module_name,
+        validate_package_identity, validate_plain_string, PackageArtifactOrigin,
+        PackageCheckerSummary,
+    },
+    error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
+    hash::{format_package_hash, package_file_hash, PackageHash},
+    json::{JsonMember, JsonValue},
+    manifest::PackageVersion,
+    name::PackageId,
+    path::PackagePath,
+    registry::{
+        normalize_registry_module, parse_registry_module_value, registry_module_json_unchecked,
+        registry_module_sort_key, validate_registry_module, PackageRegistryModule,
+    },
+    schema::{
+        PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,
+        PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA,
+    },
+};
+
+/// Package-relative path owned by CLR-06 publish-plan write mode.
+pub const PACKAGE_PUBLISH_PLAN_PATH: &str = "generated/publish-plan.json";
+
+/// Generated `npa.package.publish_plan.v0.1` publish-plan artifact.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePublishPlan {
+    /// Publish-plan schema string; must equal [`PACKAGE_PUBLISH_PLAN_SCHEMA`].
+    pub schema: String,
+    /// Package identity.
+    pub package: PackageId,
+    /// Package version.
+    pub version: PackageVersion,
+    /// Release metadata references.
+    pub release: PackagePublishRelease,
+    /// Release artifact list sorted canonically.
+    pub artifacts: Vec<PackagePublishArtifact>,
+    /// Registry seed entries for local modules, sorted by module.
+    pub module_registry_entries: Vec<PackageRegistryModule>,
+    /// Embedded downstream import bundle.
+    pub downstream_import_bundle: PackageDownstreamImportBundle,
+    /// Source-free checker summaries used to validate release metadata.
+    pub checker_summaries: Vec<PackageCheckerSummary>,
+    /// MVP checksum-only signature policy.
+    pub signature_policy: PackageSignaturePolicy,
+    /// Deterministic publish-plan summary counts.
+    pub summary: PackagePublishSummary,
+    /// Self hash of canonical publish-plan bytes excluding this field.
+    pub publish_plan_hash: PackageHash,
+}
+
+impl PackagePublishPlan {
+    /// Return this publish plan with schema-defined ordering and computed self hash.
+    pub fn with_computed_hash(mut self) -> PackageArtifactResult<Self> {
+        normalize_publish_plan(&mut self);
+        self.publish_plan_hash = compute_package_publish_plan_hash(&self)?;
+        Ok(self)
+    }
+
+    /// Serialize this publish plan as deterministic canonical JSON.
+    pub fn canonical_json(&self) -> PackageArtifactResult<String> {
+        validate_package_publish_plan(self)?;
+        let mut normalized = self.clone();
+        normalize_publish_plan(&mut normalized);
+        Ok(publish_plan_json_unchecked(&normalized, true))
+    }
+}
+
+/// Release metadata references recorded in a publish plan.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePublishRelease {
+    /// Core spec profile.
+    pub core_spec: String,
+    /// Kernel profile.
+    pub kernel_profile: String,
+    /// Certificate format profile.
+    pub certificate_format: String,
+    /// Checker profile.
+    pub checker_profile: String,
+    /// Package manifest identity.
+    pub manifest: PackagePublishReleaseReference,
+    /// Package lock identity.
+    pub package_lock: PackagePublishReleaseReference,
+    /// Package axiom report identity.
+    pub axiom_report: PackagePublishReleaseReference,
+    /// Package theorem index identity.
+    pub theorem_index: PackagePublishReleaseReference,
+}
+
+/// File reference used by release metadata.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePublishReleaseReference {
+    /// Package-relative path.
+    pub path: PackagePath,
+    /// Exact SHA-256 hash of referenced file bytes.
+    pub file_hash: PackageHash,
+    /// Content self hash when the referenced artifact has one.
+    pub content_hash: Option<PackageHash>,
+    /// Schema string when applicable.
+    pub schema: Option<String>,
+}
+
+/// Publish-plan release artifact role.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum PackagePublishArtifactRole {
+    /// `npa-package.toml`.
+    PackageManifest,
+    /// `generated/package-lock.json`.
+    PackageLock,
+    /// `generated/axiom-report.json`.
+    AxiomReport,
+    /// `generated/theorem-index.json`.
+    TheoremIndex,
+    /// Local module certificate.
+    LocalCertificate,
+    /// External import certificate.
+    ExternalImportCertificate,
+}
+
+impl PackagePublishArtifactRole {
+    /// Return the publish artifact role string.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::PackageManifest => "package_manifest",
+            Self::PackageLock => "package_lock",
+            Self::AxiomReport => "axiom_report",
+            Self::TheoremIndex => "theorem_index",
+            Self::LocalCertificate => "local_certificate",
+            Self::ExternalImportCertificate => "external_import_certificate",
+        }
+    }
+
+    fn parse(value: &str, path: &str) -> PackageArtifactResult<Self> {
+        match value {
+            "package_manifest" => Ok(Self::PackageManifest),
+            "package_lock" => Ok(Self::PackageLock),
+            "axiom_report" => Ok(Self::AxiomReport),
+            "theorem_index" => Ok(Self::TheoremIndex),
+            "local_certificate" => Ok(Self::LocalCertificate),
+            "external_import_certificate" => Ok(Self::ExternalImportCertificate),
+            _ => Err(PackageArtifactError::invalid_enum_value(
+                path,
+                "role",
+                "publish artifact role",
+                value,
+            )),
+        }
+    }
+}
+
+/// One artifact listed by a publish plan.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePublishArtifact {
+    /// Artifact role.
+    pub role: PackagePublishArtifactRole,
+    /// Package-relative path.
+    pub path: PackagePath,
+    /// Exact SHA-256 file hash.
+    pub file_hash: PackageHash,
+    /// Module name when applicable.
+    pub module: Option<Name>,
+    /// Local or external origin when applicable.
+    pub origin: Option<PackageArtifactOrigin>,
+    /// Schema string when applicable.
+    pub schema: Option<String>,
+}
+
+/// Downstream import bundle embedded in a publish plan.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageDownstreamImportBundle {
+    /// Package identity.
+    pub package: PackageId,
+    /// Package version.
+    pub version: PackageVersion,
+    /// Released modules sorted by module in canonical JSON.
+    pub modules: Vec<PackageDownstreamImportModule>,
+}
+
+/// One module entry in a downstream import bundle.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageDownstreamImportModule {
+    /// Module name.
+    pub module: Name,
+    /// Package identity to pin in downstream `[[imports]]`.
+    pub package: PackageId,
+    /// Package version to pin in downstream `[[imports]]`.
+    pub version: PackageVersion,
+    /// Module export hash.
+    pub export_hash: PackageHash,
+    /// Module certificate hash.
+    pub certificate_hash: PackageHash,
+    /// Module axiom report hash.
+    pub axiom_report_hash: PackageHash,
+    /// Certificate path to fetch from release artifacts.
+    pub certificate: PackagePath,
+    /// Exact SHA-256 hash of certificate file bytes.
+    pub certificate_file_hash: PackageHash,
+}
+
+/// Checksum-only signature policy for CLR-06 MVP publish plans.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageSignaturePolicy {
+    /// Signature policy mode. CLR-06 supports only `checksum-only`.
+    pub mode: String,
+    /// Hash algorithm. CLR-06 supports only `sha256`.
+    pub hash_algorithm: String,
+    /// Whether cryptographic signatures are required.
+    pub signature_required: bool,
+    /// Signature payloads. CLR-06 requires this to be empty.
+    pub signatures: Vec<String>,
+}
+
+/// Deterministic publish-plan summary counts.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackagePublishSummary {
+    /// Number of local modules.
+    pub local_module_count: u64,
+    /// Number of external import certificate artifacts.
+    pub external_import_count: u64,
+    /// Number of release artifacts.
+    pub artifact_count: u64,
+    /// Number of registry seed entries.
+    pub registry_entry_count: u64,
+    /// Number of checker summaries.
+    pub checker_summary_count: u64,
+}
+
+/// Parse and validate a checked-in package publish-plan JSON artifact.
+pub fn parse_package_publish_plan_json(source: &str) -> PackageArtifactResult<PackagePublishPlan> {
+    let root = parse_artifact_json(source)?;
+    let plan = parse_publish_plan_value(&root)?;
+    validate_package_publish_plan(&plan)?;
+    let canonical = plan.canonical_json()?;
+    if source != canonical {
+        return Err(PackageArtifactError::non_canonical(
+            "$",
+            "package publish-plan JSON bytes",
+        ));
+    }
+    Ok(plan)
+}
+
+/// Validate a package publish plan model without reading files or contacting a registry.
+pub fn validate_package_publish_plan(plan: &PackagePublishPlan) -> PackageArtifactResult<()> {
+    if plan.schema != PACKAGE_PUBLISH_PLAN_SCHEMA {
+        return Err(PackageArtifactError::unsupported_schema(
+            "schema",
+            "schema",
+            PACKAGE_PUBLISH_PLAN_SCHEMA,
+            plan.schema.clone(),
+        ));
+    }
+    validate_publish_plan_shape_without_self_hash(plan)?;
+    let expected_hash = compute_package_publish_plan_hash(plan)?;
+    if expected_hash != plan.publish_plan_hash {
+        return Err(PackageArtifactError::self_hash_mismatch(
+            "publish_plan_hash",
+            "publish_plan_hash",
+            format_package_hash(&expected_hash),
+            format_package_hash(&plan.publish_plan_hash),
+        ));
+    }
+    Ok(())
+}
+
+/// Compute the publish-plan self hash over canonical bytes excluding the self-hash field.
+pub fn compute_package_publish_plan_hash(
+    plan: &PackagePublishPlan,
+) -> PackageArtifactResult<PackageHash> {
+    let mut normalized = plan.clone();
+    normalize_publish_plan(&mut normalized);
+    validate_publish_plan_shape_without_self_hash(&normalized)?;
+    Ok(package_file_hash(
+        publish_plan_json_unchecked(&normalized, false).as_bytes(),
+    ))
+}
+
+fn validate_publish_plan_shape_without_self_hash(
+    plan: &PackagePublishPlan,
+) -> PackageArtifactResult<()> {
+    if plan.schema != PACKAGE_PUBLISH_PLAN_SCHEMA {
+        return Err(PackageArtifactError::unsupported_schema(
+            "schema",
+            "schema",
+            PACKAGE_PUBLISH_PLAN_SCHEMA,
+            plan.schema.clone(),
+        ));
+    }
+    validate_package_identity(&plan.package, &plan.version)?;
+    validate_release(&plan.release)?;
+    validate_publish_artifacts(&plan.artifacts)?;
+    validate_registry_entries(&plan.module_registry_entries, &plan.package, &plan.version)?;
+    validate_downstream_import_bundle(
+        &plan.downstream_import_bundle,
+        &plan.package,
+        &plan.version,
+    )?;
+    validate_checker_summaries(&plan.checker_summaries)?;
+    validate_signature_policy(&plan.signature_policy)?;
+    validate_publish_summary(plan)?;
+    Ok(())
+}
+
+fn parse_publish_plan_value(value: &JsonValue) -> PackageArtifactResult<PackagePublishPlan> {
+    let path = "$";
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, PUBLISH_PLAN_FIELDS)?;
+    Ok(PackagePublishPlan {
+        schema: required_string(members, path, "schema")?,
+        package: PackageId::new(required_string(members, path, "package")?),
+        version: PackageVersion::new(required_string(members, path, "version")?),
+        release: parse_release(required_value(members, path, "release")?)?,
+        artifacts: required_array(members, path, "artifacts")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| parse_publish_artifact(value, &format!("artifacts[{index}]")))
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
+        module_registry_entries: required_array(members, path, "module_registry_entries")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                parse_registry_module_value(value, &format!("module_registry_entries[{index}]"))
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
+        downstream_import_bundle: parse_downstream_import_bundle(required_value(
+            members,
+            path,
+            "downstream_import_bundle",
+        )?)?,
+        checker_summaries: required_array(members, path, "checker_summaries")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| parse_checker_summary(index, value))
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
+        signature_policy: parse_signature_policy(required_value(
+            members,
+            path,
+            "signature_policy",
+        )?)?,
+        summary: parse_publish_summary(required_value(members, path, "summary")?)?,
+        publish_plan_hash: required_hash(members, path, "publish_plan_hash")?,
+    })
+}
+
+fn normalize_publish_plan(plan: &mut PackagePublishPlan) {
+    plan.artifacts.sort_by_key(publish_artifact_sort_key);
+    for entry in &mut plan.module_registry_entries {
+        normalize_registry_module(entry);
+    }
+    plan.module_registry_entries
+        .sort_by_key(registry_module_sort_key);
+    plan.downstream_import_bundle
+        .modules
+        .sort_by_key(downstream_import_module_sort_key);
+    normalize_checker_summaries(&mut plan.checker_summaries);
+}
+
+fn publish_plan_json_unchecked(plan: &PackagePublishPlan, include_hash: bool) -> String {
+    let mut fields = vec![
+        ("schema", json_string(&plan.schema)),
+        ("package", json_string(plan.package.as_str())),
+        ("version", json_string(plan.version.as_str())),
+        ("release", release_json(&plan.release)),
+        (
+            "artifacts",
+            json_array(plan.artifacts.iter().map(publish_artifact_json).collect()),
+        ),
+        (
+            "module_registry_entries",
+            json_array(
+                plan.module_registry_entries
+                    .iter()
+                    .map(registry_module_json_unchecked)
+                    .collect(),
+            ),
+        ),
+        (
+            "downstream_import_bundle",
+            downstream_import_bundle_json(&plan.downstream_import_bundle),
+        ),
+        (
+            "checker_summaries",
+            json_array(
+                plan.checker_summaries
+                    .iter()
+                    .map(checker_summary_json)
+                    .collect(),
+            ),
+        ),
+        (
+            "signature_policy",
+            signature_policy_json(&plan.signature_policy),
+        ),
+        ("summary", publish_summary_json(&plan.summary)),
+    ];
+    if include_hash {
+        fields.push(("publish_plan_hash", hash_json(plan.publish_plan_hash)));
+    }
+    json_object_in_order(fields)
+}
+
+fn validate_release(release: &PackagePublishRelease) -> PackageArtifactResult<()> {
+    validate_plain_string(&release.core_spec, "release.core_spec")?;
+    validate_plain_string(&release.kernel_profile, "release.kernel_profile")?;
+    validate_plain_string(&release.certificate_format, "release.certificate_format")?;
+    validate_plain_string(&release.checker_profile, "release.checker_profile")?;
+    validate_release_reference(
+        &release.manifest,
+        "release.manifest",
+        Some(PACKAGE_MANIFEST_SCHEMA),
+        false,
+    )?;
+    validate_release_reference(
+        &release.package_lock,
+        "release.package_lock",
+        Some(PACKAGE_LOCK_SCHEMA),
+        false,
+    )?;
+    validate_release_reference(
+        &release.axiom_report,
+        "release.axiom_report",
+        Some(PACKAGE_AXIOM_REPORT_SCHEMA),
+        true,
+    )?;
+    validate_release_reference(
+        &release.theorem_index,
+        "release.theorem_index",
+        Some(PACKAGE_THEOREM_INDEX_SCHEMA),
+        true,
+    )
+}
+
+fn validate_release_reference(
+    reference: &PackagePublishReleaseReference,
+    path: &str,
+    expected_schema: Option<&str>,
+    content_hash_required: bool,
+) -> PackageArtifactResult<()> {
+    validate_artifact_path(&reference.path, field_path(path, "path"))?;
+    if content_hash_required && reference.content_hash.is_none() {
+        return Err(PackageArtifactError::missing_field(path, "content_hash"));
+    }
+    if let Some(expected_schema) = expected_schema {
+        match &reference.schema {
+            Some(actual) if actual == expected_schema => {}
+            Some(actual) => {
+                return Err(PackageArtifactError::unsupported_schema(
+                    field_path(path, "schema"),
+                    "schema",
+                    expected_schema,
+                    actual,
+                ));
+            }
+            None => return Err(PackageArtifactError::missing_field(path, "schema")),
+        }
+    }
+    if let Some(schema) = &reference.schema {
+        validate_plain_string(schema, field_path(path, "schema"))?;
+    }
+    Ok(())
+}
+
+fn validate_publish_artifacts(artifacts: &[PackagePublishArtifact]) -> PackageArtifactResult<()> {
+    let mut keys = BTreeSet::<String>::new();
+    for (index, artifact) in artifacts.iter().enumerate() {
+        let path = format!("artifacts[{index}]");
+        validate_artifact_path(&artifact.path, field_path(&path, "path"))?;
+        if artifact.path.as_str() == PACKAGE_PUBLISH_PLAN_PATH {
+            return Err(PackageArtifactError::release_artifact_self_reference(
+                field_path(&path, "path"),
+                artifact.path.as_str(),
+            ));
+        }
+        if let Some(module) = &artifact.module {
+            validate_module_name(module, field_path(&path, "module"))?;
+        }
+        if let Some(schema) = &artifact.schema {
+            validate_plain_string(schema, field_path(&path, "schema"))?;
+        }
+        let key = artifact.path.as_str().to_owned();
+        if !keys.insert(key.clone()) {
+            return Err(PackageArtifactError::duplicate(
+                field_path(&path, "path"),
+                "artifacts",
+                PackageArtifactErrorReason::DuplicateArtifact,
+                key,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_registry_entries(
+    entries: &[PackageRegistryModule],
+    package: &PackageId,
+    version: &PackageVersion,
+) -> PackageArtifactResult<()> {
+    let mut keys = BTreeSet::<String>::new();
+    for (index, entry) in entries.iter().enumerate() {
+        validate_registry_module(entry)?;
+        if &entry.package != package || &entry.package_version != version {
+            return Err(PackageArtifactError::invalid_enum_value(
+                format!("module_registry_entries[{index}].package"),
+                "package",
+                format!("{} {}", package.as_str(), version.as_str()),
+                format!(
+                    "{} {}",
+                    entry.package.as_str(),
+                    entry.package_version.as_str()
+                ),
+            ));
+        }
+        let key = entry.module.as_dotted();
+        if !keys.insert(key.clone()) {
+            return Err(PackageArtifactError::duplicate(
+                format!("module_registry_entries[{index}].module"),
+                "module_registry_entries",
+                PackageArtifactErrorReason::DuplicateModule,
+                key,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_downstream_import_bundle(
+    bundle: &PackageDownstreamImportBundle,
+    package: &PackageId,
+    version: &PackageVersion,
+) -> PackageArtifactResult<()> {
+    validate_package_identity(&bundle.package, &bundle.version)?;
+    if &bundle.package != package || &bundle.version != version {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "downstream_import_bundle.package",
+            "package",
+            format!("{} {}", package.as_str(), version.as_str()),
+            format!("{} {}", bundle.package.as_str(), bundle.version.as_str()),
+        ));
+    }
+    let mut keys = BTreeSet::<String>::new();
+    for (index, module) in bundle.modules.iter().enumerate() {
+        let path = format!("downstream_import_bundle.modules[{index}]");
+        validate_module_name(&module.module, field_path(&path, "module"))?;
+        validate_package_identity(&module.package, &module.version)?;
+        validate_artifact_path(&module.certificate, field_path(&path, "certificate"))?;
+        let key = module.module.as_dotted();
+        if !keys.insert(key.clone()) {
+            return Err(PackageArtifactError::duplicate(
+                field_path(&path, "module"),
+                "modules",
+                PackageArtifactErrorReason::DuplicateModule,
+                key,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_signature_policy(policy: &PackageSignaturePolicy) -> PackageArtifactResult<()> {
+    if policy.mode != "checksum-only" {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "signature_policy.mode",
+            "mode",
+            "checksum-only",
+            policy.mode.clone(),
+        ));
+    }
+    if policy.hash_algorithm != "sha256" {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "signature_policy.hash_algorithm",
+            "hash_algorithm",
+            "sha256",
+            policy.hash_algorithm.clone(),
+        ));
+    }
+    if policy.signature_required {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "signature_policy.signature_required",
+            "signature_required",
+            "false",
+            "true",
+        ));
+    }
+    if !policy.signatures.is_empty() {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "signature_policy.signatures",
+            "signatures",
+            "empty array",
+            "signature payloads",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_publish_summary(plan: &PackagePublishPlan) -> PackageArtifactResult<()> {
+    let expected = PackagePublishSummary {
+        local_module_count: u64::try_from(plan.module_registry_entries.len()).unwrap(),
+        external_import_count: u64::try_from(
+            plan.artifacts
+                .iter()
+                .filter(|artifact| {
+                    artifact.role == PackagePublishArtifactRole::ExternalImportCertificate
+                })
+                .count(),
+        )
+        .unwrap(),
+        artifact_count: u64::try_from(plan.artifacts.len()).unwrap(),
+        registry_entry_count: u64::try_from(plan.module_registry_entries.len()).unwrap(),
+        checker_summary_count: u64::try_from(plan.checker_summaries.len()).unwrap(),
+    };
+    assert_summary_field(
+        "summary.local_module_count",
+        "local_module_count",
+        expected.local_module_count,
+        plan.summary.local_module_count,
+    )?;
+    assert_summary_field(
+        "summary.external_import_count",
+        "external_import_count",
+        expected.external_import_count,
+        plan.summary.external_import_count,
+    )?;
+    assert_summary_field(
+        "summary.artifact_count",
+        "artifact_count",
+        expected.artifact_count,
+        plan.summary.artifact_count,
+    )?;
+    assert_summary_field(
+        "summary.registry_entry_count",
+        "registry_entry_count",
+        expected.registry_entry_count,
+        plan.summary.registry_entry_count,
+    )?;
+    assert_summary_field(
+        "summary.checker_summary_count",
+        "checker_summary_count",
+        expected.checker_summary_count,
+        plan.summary.checker_summary_count,
+    )
+}
+
+fn assert_summary_field(
+    path: &str,
+    field: &str,
+    expected: u64,
+    actual: u64,
+) -> PackageArtifactResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(PackageArtifactError::summary_mismatch(
+            path,
+            field,
+            expected.to_string(),
+            actual.to_string(),
+        ))
+    }
+}
+
+fn parse_release(value: &JsonValue) -> PackageArtifactResult<PackagePublishRelease> {
+    let path = "release";
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, RELEASE_FIELDS)?;
+    Ok(PackagePublishRelease {
+        core_spec: required_string(members, path, "core_spec")?,
+        kernel_profile: required_string(members, path, "kernel_profile")?,
+        certificate_format: required_string(members, path, "certificate_format")?,
+        checker_profile: required_string(members, path, "checker_profile")?,
+        manifest: parse_release_reference(
+            required_value(members, path, "manifest")?,
+            "release.manifest",
+        )?,
+        package_lock: parse_release_reference(
+            required_value(members, path, "package_lock")?,
+            "release.package_lock",
+        )?,
+        axiom_report: parse_release_reference(
+            required_value(members, path, "axiom_report")?,
+            "release.axiom_report",
+        )?,
+        theorem_index: parse_release_reference(
+            required_value(members, path, "theorem_index")?,
+            "release.theorem_index",
+        )?,
+    })
+}
+
+fn parse_release_reference(
+    value: &JsonValue,
+    path: &str,
+) -> PackageArtifactResult<PackagePublishReleaseReference> {
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, RELEASE_REFERENCE_FIELDS)?;
+    Ok(PackagePublishReleaseReference {
+        path: required_path(members, path, "path")?,
+        file_hash: required_hash(members, path, "file_hash")?,
+        content_hash: optional_hash(members, path, "content_hash")?,
+        schema: optional_string(members, path, "schema")?,
+    })
+}
+
+fn parse_publish_artifact(
+    value: &JsonValue,
+    path: &str,
+) -> PackageArtifactResult<PackagePublishArtifact> {
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, PUBLISH_ARTIFACT_FIELDS)?;
+    let role_path = field_path(path, "role");
+    Ok(PackagePublishArtifact {
+        role: PackagePublishArtifactRole::parse(
+            &required_string(members, path, "role")?,
+            &role_path,
+        )?,
+        path: required_path(members, path, "path")?,
+        file_hash: required_hash(members, path, "file_hash")?,
+        module: optional_name(members, path, "module")?,
+        origin: optional_origin(members, path, "origin")?,
+        schema: optional_string(members, path, "schema")?,
+    })
+}
+
+fn parse_downstream_import_bundle(
+    value: &JsonValue,
+) -> PackageArtifactResult<PackageDownstreamImportBundle> {
+    let path = "downstream_import_bundle";
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, DOWNSTREAM_IMPORT_BUNDLE_FIELDS)?;
+    Ok(PackageDownstreamImportBundle {
+        package: PackageId::new(required_string(members, path, "package")?),
+        version: PackageVersion::new(required_string(members, path, "version")?),
+        modules: required_array(members, path, "modules")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                parse_downstream_import_module(
+                    value,
+                    &format!("downstream_import_bundle.modules[{index}]"),
+                )
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
+    })
+}
+
+fn parse_downstream_import_module(
+    value: &JsonValue,
+    path: &str,
+) -> PackageArtifactResult<PackageDownstreamImportModule> {
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, DOWNSTREAM_IMPORT_MODULE_FIELDS)?;
+    Ok(PackageDownstreamImportModule {
+        module: required_name(members, path, "module")?,
+        package: PackageId::new(required_string(members, path, "package")?),
+        version: PackageVersion::new(required_string(members, path, "version")?),
+        export_hash: required_hash(members, path, "export_hash")?,
+        certificate_hash: required_hash(members, path, "certificate_hash")?,
+        axiom_report_hash: required_hash(members, path, "axiom_report_hash")?,
+        certificate: required_path(members, path, "certificate")?,
+        certificate_file_hash: required_hash(members, path, "certificate_file_hash")?,
+    })
+}
+
+fn parse_signature_policy(value: &JsonValue) -> PackageArtifactResult<PackageSignaturePolicy> {
+    let path = "signature_policy";
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, SIGNATURE_POLICY_FIELDS)?;
+    Ok(PackageSignaturePolicy {
+        mode: required_string(members, path, "mode")?,
+        hash_algorithm: required_string(members, path, "hash_algorithm")?,
+        signature_required: required_bool(members, path, "signature_required")?,
+        signatures: required_array(members, path, "signatures")?
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                value.string_value().map(ToOwned::to_owned).ok_or_else(|| {
+                    PackageArtifactError::wrong_type(
+                        format!("signature_policy.signatures[{index}]"),
+                        Some("signatures".to_owned()),
+                        "string",
+                        value.kind().as_str(),
+                    )
+                })
+            })
+            .collect::<PackageArtifactResult<Vec<_>>>()?,
+    })
+}
+
+fn parse_publish_summary(value: &JsonValue) -> PackageArtifactResult<PackagePublishSummary> {
+    let path = "summary";
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, PUBLISH_SUMMARY_FIELDS)?;
+    Ok(PackagePublishSummary {
+        local_module_count: required_u64(members, path, "local_module_count")?,
+        external_import_count: required_u64(members, path, "external_import_count")?,
+        artifact_count: required_u64(members, path, "artifact_count")?,
+        registry_entry_count: required_u64(members, path, "registry_entry_count")?,
+        checker_summary_count: required_u64(members, path, "checker_summary_count")?,
+    })
+}
+
+fn release_json(release: &PackagePublishRelease) -> String {
+    json_object_in_order(vec![
+        ("core_spec", json_string(&release.core_spec)),
+        ("kernel_profile", json_string(&release.kernel_profile)),
+        (
+            "certificate_format",
+            json_string(&release.certificate_format),
+        ),
+        ("checker_profile", json_string(&release.checker_profile)),
+        ("manifest", release_reference_json(&release.manifest)),
+        (
+            "package_lock",
+            release_reference_json(&release.package_lock),
+        ),
+        (
+            "axiom_report",
+            release_reference_json(&release.axiom_report),
+        ),
+        (
+            "theorem_index",
+            release_reference_json(&release.theorem_index),
+        ),
+    ])
+}
+
+fn release_reference_json(reference: &PackagePublishReleaseReference) -> String {
+    let mut fields = vec![
+        ("path", json_string(reference.path.as_str())),
+        ("file_hash", hash_json(reference.file_hash)),
+    ];
+    if let Some(content_hash) = reference.content_hash {
+        fields.push(("content_hash", hash_json(content_hash)));
+    }
+    if let Some(schema) = &reference.schema {
+        fields.push(("schema", json_string(schema)));
+    }
+    json_object_in_order(fields)
+}
+
+fn publish_artifact_json(artifact: &PackagePublishArtifact) -> String {
+    let mut fields = vec![
+        ("role", json_string(artifact.role.as_str())),
+        ("path", json_string(artifact.path.as_str())),
+        ("file_hash", hash_json(artifact.file_hash)),
+    ];
+    if let Some(module) = &artifact.module {
+        fields.push(("module", json_string(&module.as_dotted())));
+    }
+    if let Some(origin) = artifact.origin {
+        fields.push(("origin", json_string(origin.as_str())));
+    }
+    if let Some(schema) = &artifact.schema {
+        fields.push(("schema", json_string(schema)));
+    }
+    json_object_in_order(fields)
+}
+
+fn downstream_import_bundle_json(bundle: &PackageDownstreamImportBundle) -> String {
+    json_object_in_order(vec![
+        ("package", json_string(bundle.package.as_str())),
+        ("version", json_string(bundle.version.as_str())),
+        (
+            "modules",
+            json_array(
+                bundle
+                    .modules
+                    .iter()
+                    .map(downstream_import_module_json)
+                    .collect(),
+            ),
+        ),
+    ])
+}
+
+fn downstream_import_module_json(module: &PackageDownstreamImportModule) -> String {
+    json_object_in_order(vec![
+        ("module", json_string(&module.module.as_dotted())),
+        ("package", json_string(module.package.as_str())),
+        ("version", json_string(module.version.as_str())),
+        ("export_hash", hash_json(module.export_hash)),
+        ("certificate_hash", hash_json(module.certificate_hash)),
+        ("axiom_report_hash", hash_json(module.axiom_report_hash)),
+        ("certificate", json_string(module.certificate.as_str())),
+        (
+            "certificate_file_hash",
+            hash_json(module.certificate_file_hash),
+        ),
+    ])
+}
+
+fn signature_policy_json(policy: &PackageSignaturePolicy) -> String {
+    json_object_in_order(vec![
+        ("mode", json_string(&policy.mode)),
+        ("hash_algorithm", json_string(&policy.hash_algorithm)),
+        ("signature_required", json_bool(policy.signature_required)),
+        (
+            "signatures",
+            json_array(
+                policy
+                    .signatures
+                    .iter()
+                    .map(|signature| json_string(signature))
+                    .collect(),
+            ),
+        ),
+    ])
+}
+
+fn publish_summary_json(summary: &PackagePublishSummary) -> String {
+    json_object_in_order(vec![
+        ("local_module_count", json_u64(summary.local_module_count)),
+        (
+            "external_import_count",
+            json_u64(summary.external_import_count),
+        ),
+        ("artifact_count", json_u64(summary.artifact_count)),
+        (
+            "registry_entry_count",
+            json_u64(summary.registry_entry_count),
+        ),
+        (
+            "checker_summary_count",
+            json_u64(summary.checker_summary_count),
+        ),
+    ])
+}
+
+fn publish_artifact_sort_key(artifact: &PackagePublishArtifact) -> String {
+    [
+        artifact.role.as_str().to_owned(),
+        artifact
+            .module
+            .as_ref()
+            .map(Name::as_dotted)
+            .unwrap_or_default(),
+        artifact.path.as_str().to_owned(),
+    ]
+    .join("\u{001f}")
+}
+
+fn downstream_import_module_sort_key(module: &PackageDownstreamImportModule) -> String {
+    module.module.as_dotted()
+}
+
+fn optional_string(
+    members: &[JsonMember],
+    path: &str,
+    field: &str,
+) -> PackageArtifactResult<Option<String>> {
+    members
+        .iter()
+        .find(|member| member.key() == field)
+        .map(|member| {
+            member
+                .value()
+                .string_value()
+                .map(ToOwned::to_owned)
+                .ok_or_else(|| {
+                    PackageArtifactError::wrong_type(
+                        field_path(path, field),
+                        Some(field.to_owned()),
+                        "string",
+                        member.value().kind().as_str(),
+                    )
+                })
+        })
+        .transpose()
+}
+
+fn optional_hash(
+    members: &[JsonMember],
+    path: &str,
+    field: &str,
+) -> PackageArtifactResult<Option<PackageHash>> {
+    optional_string(members, path, field)?
+        .map(|value| {
+            crate::parse_package_hash(&value, field_path(path, field)).map_err(|_| {
+                PackageArtifactError::invalid_hash_format(field_path(path, field), value)
+            })
+        })
+        .transpose()
+}
+
+fn optional_name(
+    members: &[JsonMember],
+    path: &str,
+    field: &str,
+) -> PackageArtifactResult<Option<Name>> {
+    optional_string(members, path, field).map(|value| value.map(Name::from_dotted))
+}
+
+fn optional_origin(
+    members: &[JsonMember],
+    path: &str,
+    field: &str,
+) -> PackageArtifactResult<Option<PackageArtifactOrigin>> {
+    optional_string(members, path, field)?
+        .map(|value| PackageArtifactOrigin::parse(&value, &field_path(path, field)))
+        .transpose()
+}
+
+fn required_value<'a>(
+    members: &'a [JsonMember],
+    path: &str,
+    field: &str,
+) -> PackageArtifactResult<&'a JsonValue> {
+    members
+        .iter()
+        .find(|member| member.key() == field)
+        .map(JsonMember::value)
+        .ok_or_else(|| PackageArtifactError::missing_field(path, field))
+}
+
+const PUBLISH_PLAN_FIELDS: &[&str] = &[
+    "schema",
+    "package",
+    "version",
+    "release",
+    "artifacts",
+    "module_registry_entries",
+    "downstream_import_bundle",
+    "checker_summaries",
+    "signature_policy",
+    "summary",
+    "publish_plan_hash",
+];
+const RELEASE_FIELDS: &[&str] = &[
+    "core_spec",
+    "kernel_profile",
+    "certificate_format",
+    "checker_profile",
+    "manifest",
+    "package_lock",
+    "axiom_report",
+    "theorem_index",
+];
+const RELEASE_REFERENCE_FIELDS: &[&str] = &["path", "file_hash", "content_hash", "schema"];
+const PUBLISH_ARTIFACT_FIELDS: &[&str] =
+    &["role", "path", "file_hash", "module", "origin", "schema"];
+const DOWNSTREAM_IMPORT_BUNDLE_FIELDS: &[&str] = &["package", "version", "modules"];
+const DOWNSTREAM_IMPORT_MODULE_FIELDS: &[&str] = &[
+    "module",
+    "package",
+    "version",
+    "export_hash",
+    "certificate_hash",
+    "axiom_report_hash",
+    "certificate",
+    "certificate_file_hash",
+];
+const SIGNATURE_POLICY_FIELDS: &[&str] =
+    &["mode", "hash_algorithm", "signature_required", "signatures"];
+const PUBLISH_SUMMARY_FIELDS: &[&str] = &[
+    "local_module_count",
+    "external_import_count",
+    "artifact_count",
+    "registry_entry_count",
+    "checker_summary_count",
+];

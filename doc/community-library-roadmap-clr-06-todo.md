@@ -674,7 +674,7 @@ remaining registry-server requirements
 
 ### CLR-06-01 Define Publish Plan And Registry Seed Schemas
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-05
 - Inputs:
   - schema constants from CLR-00 and CLR-01

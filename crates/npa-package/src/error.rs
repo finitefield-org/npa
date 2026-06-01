@@ -1416,6 +1416,21 @@ impl PackageArtifactError {
         )
     }
 
+    /// Build a release-artifact self-reference error.
+    pub fn release_artifact_self_reference(
+        path: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PackageArtifactErrorKind::ArtifactSchema,
+            path,
+            Some("artifacts".to_owned()),
+            PackageArtifactErrorReason::ReleaseArtifactSelfReference,
+            Some("artifact list without generated/publish-plan.json".to_owned()),
+            Some(actual.into()),
+        )
+    }
+
     fn new(
         kind: PackageArtifactErrorKind,
         path: impl Into<String>,
@@ -1515,6 +1530,10 @@ pub enum PackageArtifactErrorReason {
     DuplicateConstant,
     /// Policy violation entry is duplicated.
     DuplicateViolation,
+    /// Release artifact entry is duplicated.
+    DuplicateArtifact,
+    /// Publish-plan artifact list references the publish plan itself.
+    ReleaseArtifactSelfReference,
     /// Generated JSON object or array order is not canonical.
     NonCanonicalOrder,
     /// Self hash field differs from canonical bytes excluding that field.
@@ -1548,6 +1567,8 @@ impl PackageArtifactErrorReason {
             Self::DuplicateTag => "duplicate_tag",
             Self::DuplicateConstant => "duplicate_constant",
             Self::DuplicateViolation => "duplicate_violation",
+            Self::DuplicateArtifact => "duplicate_artifact",
+            Self::ReleaseArtifactSelfReference => "release_artifact_self_reference",
             Self::NonCanonicalOrder => "non_canonical_order",
             Self::SelfHashMismatch => "self_hash_mismatch",
             Self::SummaryMismatch => "summary_mismatch",
