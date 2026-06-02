@@ -1020,12 +1020,15 @@ external imported modules:
 ## Follow-Up Candidates
 
 - Treat `npa-mathlib v0.1.8` as the current public theorem-library baseline
-  for the next Layer 3 algebra expansion.
-- Choose the next closure audit route: first isomorphism is now possible
-  because image and kernel quotient are public; normal quotient remains a
-  separate quotient route with its own namespace decision.
+  for Layer 3D-C first isomorphism materialization.
+- Materialize the audited Layer 3D-C first isomorphism closure as
+  `npa-mathlib v0.1.9` with exactly
+  `Mathlib.Algebra.Group.FirstIsomorphism` and
+  `Mathlib.Algebra.Group.FirstIsomorphism.Image`.
 - Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic`; do not
   create a separate `Mathlib.Algebra.Group.Hom` module without a new audit.
+- Keep `Proofs.Ai.Algebra.AbstractGroupFirstIso` deferred because it exposes
+  the provisional `FirstIsoRepMvp` public surface.
 - Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
   closure has a separate audit and axiom-policy review.
 - Keep first isomorphism, normal quotient, second/third isomorphism, and

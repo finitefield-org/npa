@@ -285,11 +285,27 @@ quotient route.
 Layer 3D-B is fixed as `npa-mathlib v0.1.8`, including regenerated package
 artifacts, a release bundle, and downstream source-free smoke evidence.
 
-Layer 3D-C and later algebraic routes should remain separate audits:
+Layer 3D-C first isomorphism is selected below. Later algebraic routes should
+remain separate audits:
 
 - `Proofs.Ai.Algebra.AbstractGroupNormalQuotient*`
-- `Proofs.Ai.Algebra.AbstractGroup*Iso*`
+- `Proofs.Ai.Algebra.AbstractGroupSecondIso*`
+- `Proofs.Ai.Algebra.AbstractGroupThirdIso`
 - `Proofs.Ai.Algebra.AbstractGroupCorrespondence*`
+
+Layer 3D-C, first isomorphism-to-image route:
+
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractGroupFirstIsoFull` | `Mathlib.Algebra.Group.FirstIsomorphism` | Multiplicativity, injectivity, image membership, image-surjectivity, and aggregate image facts for the quotient-to-codomain map. |
+| `Proofs.Ai.Algebra.AbstractGroupFirstIsoImage` | `Mathlib.Algebra.Group.FirstIsomorphism.Image` | Evidence wrappers and final first-isomorphism-to-image theorem over the released image and kernel quotient foundations. |
+
+Layer 3D-C first isomorphism closure audit is fixed in
+`develop/npa-mathlib-layer3d-c-first-isomorphism-closure-audit.md`. The
+selected closure is limited to `npa-std v0.1.0`, the released
+`npa-mathlib v0.1.8` baseline, and the two new first isomorphism modules. It
+intentionally excludes `Proofs.Ai.Algebra.AbstractGroupFirstIso` because that
+module exposes the provisional `FirstIsoRepMvp` public surface.
 
 Layer 4, analysis and functional analysis:
 
@@ -736,14 +752,16 @@ Concrete task sequence:
 ## Immediate Tasks
 
 1. Treat `npa-mathlib v0.1.8` as the current public theorem-library baseline
-   for the next Layer 3 algebra expansion.
-2. Choose the next closure audit route. The immediate candidates are first
-   isomorphism now that image and kernel quotient are public, or normal
-   quotient as a separate quotient route.
+   for Layer 3D-C first isomorphism materialization.
+2. Materialize the audited Layer 3D-C first isomorphism closure as
+   `npa-mathlib v0.1.9` with exactly
+   `Mathlib.Algebra.Group.FirstIsomorphism` and
+   `Mathlib.Algebra.Group.FirstIsomorphism.Image`.
 3. Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic`; do not
    create a separate `Mathlib.Algebra.Group.Hom` module without a new audit.
-4. Keep first isomorphism, normal quotient, second/third isomorphism, and
-   correspondence routes in separate follow-on audits.
+4. Keep the MVP first-isomorphism representative module, normal quotient,
+   second/third isomorphism, and correspondence routes in separate follow-on
+   audits.
 5. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
 6. Keep CLR-08 high-trust release evidence separate from the reference-checker
