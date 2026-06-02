@@ -84,7 +84,7 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 
 ### PUB-00 Classify Public And Internal Documentation
 
-- Status: Pending
+- Status: Completed
 - Deliverables:
   - A short classification table in `doc/README.md` or `doc/index.md`.
   - Public-facing docs list.
@@ -109,6 +109,14 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 - Acceptance criteria:
   - A new contributor can tell which docs are public user docs and which docs
     are internal planning/evidence docs.
+- Evidence fixed on 2026-06-02:
+  - Added `doc/README.md` as the public/internal documentation classification
+    page.
+  - Classified public-facing docs, internal/development docs, design specs,
+    public examples/fixtures, external package CI docs, toolchain reference
+    docs, and external checker docs.
+  - Kept PUB-01 through PUB-13 pending; no root README rewrite, LICENSE file,
+    or CONTRIBUTING file was added in PUB-00.
 
 ### PUB-01 Rewrite Root README In English
 
