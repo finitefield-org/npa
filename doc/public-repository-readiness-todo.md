@@ -206,7 +206,7 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 
 ### PUB-04 Add English Documentation Index
 
-- Status: Pending
+- Status: Completed
 - Deliverables:
   - `doc/README.md` or `doc/index.md`.
 - Must categorize:
@@ -218,6 +218,15 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 - Acceptance criteria:
   - Public README can link to the docs index instead of linking directly to
     many internal Japanese docs.
+- Evidence fixed on 2026-06-02:
+  - Expanded `doc/README.md` from a classification page into the English
+    documentation index.
+  - Added explicit sections for user/package author docs, toolchain reference
+    docs, design/spec docs, release/evidence docs, and internal Japanese
+    development notes.
+  - Updated root `README.md` to route internal planning, release evidence, and
+    Japanese development notes through `doc/README.md` instead of linking them
+    directly.
 
 ### PUB-05 Clean Public CI Template Documentation
 

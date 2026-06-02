@@ -127,7 +127,7 @@ still verify hash-pinned certificate bytes with a source-free checker.
 
 Start with the documentation map:
 
-- [NPA Documentation Map](doc/README.md)
+- [NPA Documentation Index](doc/README.md)
 
 Public package-author and toolchain references:
 
@@ -135,19 +135,8 @@ Public package-author and toolchain references:
 - [External Theorem Library CI](doc/external-theorem-library-ci.md)
 - [GitHub Actions CI Templates](ci-templates/github-actions/README.md)
 
-Core design references:
-
-- [Core Specification v0.1](doc/core-spec-v0.1.md)
-- [Overall Design](doc/overall-design.md)
-- [Phase 0: Core Spec](doc/phase0.md)
-- [Phase 1: Kernel](doc/phase1.md)
-- [Phase 2: Certificate](doc/phase2.md)
-
-Internal planning and public-readiness work:
-
-- [Public Repository Readiness Todo](doc/public-repository-readiness-todo.md)
-- [Standalone Repository Activation](doc/npa-standalone-repo-activation.md)
-- [Internal README Notes](doc/internal-readme-notes-ja.md)
+Core design docs, release evidence, internal planning, and Japanese development
+notes are routed from the documentation index.
 
 ## Local Development Gates
 
