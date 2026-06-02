@@ -53,7 +53,7 @@ For those changes, run:
 ```
 
 When adding or editing proof corpus theorems, prefer the targeted authoring
-commands from `doc/proof-corpus-ai-workflow.md` before running the full corpus
+commands from `develop/proof-corpus-ai-workflow.md` before running the full corpus
 gate.
 
 ## Certificate Compatibility

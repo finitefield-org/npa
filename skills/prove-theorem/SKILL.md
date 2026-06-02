@@ -14,7 +14,7 @@ Trust boundary: never treat AI, replay, metadata, theorem index, or tactic outpu
 ## Workflow
 
 1. Parse the request as a theorem name plus optional statement/module hints.
-2. Read `AGENTS.md` and, for details, `doc/proof-corpus-ai-workflow.md` or `references/npa-proof-corpus.md`.
+2. Read `AGENTS.md` and, for details, `develop/proof-corpus-ai-workflow.md` or `references/npa-proof-corpus.md`.
 3. Locate the target:
    - Search `proofs/generated/ai-theorem-index.json` for an existing theorem name.
    - Search `tools/proof-corpus/src/main.rs` for `name: "THEOREM_NAME"` and nearby module constants.

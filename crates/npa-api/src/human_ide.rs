@@ -1,8 +1,8 @@
 //! Human IDE API boundary.
 //!
-//! Phase 5 Human (`doc/phase5-human.md`) owns IDE-facing source, display, and
-//! state APIs. Phase 5 AI (`doc/phase5-ai.md`) and Phase 7 AI
-//! (`doc/phase7-ai.md`) own the deterministic `/machine/*` fast path used by
+//! Phase 5 Human (`develop/phase5-human.md`) owns IDE-facing source, display, and
+//! state APIs. Phase 5 AI (`develop/phase5-ai.md`) and Phase 7 AI
+//! (`develop/phase7-ai.md`) own the deterministic `/machine/*` fast path used by
 //! proof search. This module is the P5H-00 boundary marker between those
 //! surfaces.
 //!

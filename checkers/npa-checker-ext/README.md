@@ -162,5 +162,5 @@ scripts/test.sh recursor
 
 The tests are local checker development tests. External theorem package CI
 should use the package workflows documented in
-`doc/external-theorem-library-ci.md` instead of copying these development
+`docs/external-theorem-library-ci.md` instead of copying these development
 commands.

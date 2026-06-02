@@ -115,7 +115,8 @@ still verify hash-pinned certificate bytes with a source-free checker.
 │   └── npa-checker-ext/  clean-room external checker prototype
 ├── ci-templates/
 │   └── github-actions/  copyable external package workflows
-├── doc/                 specifications, public docs, and internal notes
+├── docs/                user-facing documentation and package-author guides
+├── develop/             implementation specs, phase plans, and release evidence
 ├── fixtures/            package fixtures and standalone-repo materialization
 ├── proofs/              repository proof corpus
 ├── scripts/             local verification gates
@@ -125,18 +126,18 @@ still verify hash-pinned certificate bytes with a source-free checker.
 
 ## Documentation
 
-Start with the documentation map:
+Start with the user documentation:
 
-- [NPA Documentation Index](doc/README.md)
+- [NPA User Documentation](docs/README.md)
 
 Public package-author and toolchain references:
 
-- [Toolchain Reference v0.1.1](doc/npa-toolchain-reference-v0.1.1.md)
-- [External Theorem Library CI](doc/external-theorem-library-ci.md)
+- [Toolchain Reference v0.1.1](docs/npa-toolchain-reference-v0.1.1.md)
+- [External Theorem Library CI](docs/external-theorem-library-ci.md)
 - [GitHub Actions CI Templates](ci-templates/github-actions/README.md)
 
-Core design docs, release evidence, internal planning, and Japanese development
-notes are routed from the documentation index.
+Developer-facing specs, release evidence, internal planning, and Japanese
+development notes are routed from [Development Documentation](develop/README.md).
 
 The in-repo Phase 6 standard-library design documents the MVP release modules
 `Std.Logic`, `Std.Nat`, `Std.List`, and `Std.Algebra.Basic`. The current SRA-02
