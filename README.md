@@ -38,9 +38,10 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 The earlier `v0.1.0` tag is historical and should not be used as the current
 external package toolchain pin.
 
-The first split theorem package repository is:
+The split theorem package repositories are:
 
 - `npa-std`: <https://github.com/finitefield-org/npa-std>
+- `npa-mathlib`: <https://github.com/finitefield-org/npa-mathlib>
 
 ## Build From Source
 
