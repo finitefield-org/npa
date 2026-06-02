@@ -85,6 +85,7 @@ Mathlib.Algebra.Ring
 Mathlib.Algebra.Square
 Mathlib.Algebra.OrderedField
 Mathlib.Algebra.Group.Basic
+Mathlib.Algebra.Group.Subgroup
 Mathlib.Vector.Basic
 Mathlib.Geometry.Pythagorean
 ```
@@ -225,13 +226,27 @@ closure is limited to `npa-std v0.1.0`, `Mathlib.Logic.EqReasoning`, and
 `allow_custom_axioms = false`, set `allowed_axioms = ["Eq.rec"]`, and verify
 that the regenerated axiom report has zero policy violations.
 
-Layer 3B and later algebraic routes should remain separate audits:
+Layer 3B, subgroup and normal-subgroup foundation:
 
-- `Proofs.Ai.Algebra.AbstractGroupSubgroup`
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractGroupSubgroup` | `Mathlib.Algebra.Group.Subgroup` | First subgroup and normal-subgroup API: subgroup laws, normal subgroup laws, intersection/product predicates, and normal relation facts. |
+
+Layer 3B closure audit is fixed in
+`develop/npa-mathlib-layer3b-closure-audit.md`. The selected subgroup closure
+is limited to `npa-std v0.1.0`, the released `npa-mathlib v0.1.4` Layer 3A
+baseline, and `Mathlib.Algebra.Group.Subgroup`. It does not introduce a new
+axiom policy beyond the existing `Eq.rec` allowance.
+
+Layer 3C and later algebraic routes should remain separate audits:
+
+- `Proofs.Ai.Algebra.AbstractGroupSubgroupOrder`
 - `Proofs.Ai.Algebra.AbstractGroupKernel`
 - `Proofs.Ai.Algebra.AbstractGroupImage`
 - `Proofs.Ai.Algebra.AbstractGroupQuotient`
+- `Proofs.Ai.Algebra.AbstractGroupNormalQuotient*`
 - `Proofs.Ai.Algebra.AbstractGroup*Iso*`
+- `Proofs.Ai.Algebra.AbstractGroupCorrespondence*`
 
 Layer 4, analysis and functional analysis:
 
@@ -500,16 +515,49 @@ Concrete task sequence:
 9. Completed: published `npa-mathlib v0.1.4` after release bundle and
    downstream smoke evidence were fixed.
 
+## Layer 3B Expansion Tasks
+
+Status: Audit fixed for the first Layer 3B subgroup release. Materialization
+is pending for `npa-mathlib v0.1.5`.
+
+Layer 3B selected module set:
+
+```text
+Mathlib.Algebra.Group.Subgroup
+```
+
+Concrete task sequence:
+
+1. Completed: audited the selected subgroup and normal-subgroup closure in
+   `develop/npa-mathlib-layer3b-closure-audit.md`.
+2. Pending: map the source module to the `Mathlib.*` namespace according to
+   `npa-mathlib/docs/namespace-policy.md`.
+3. Pending: keep package name `npa-mathlib` and use the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Pending: add `Mathlib/Algebra/Group/Subgroup/` in the standalone
+   `npa-mathlib` repository.
+5. Pending: keep `allow_custom_axioms = false` and
+   `allowed_axioms = ["Eq.rec"]`.
+6. Pending: regenerate certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+7. Pending: update downstream source-free smoke to import the Layer 3B
+   certificate closure from release-bundle bytes.
+8. Pending: run package gates for `npa-mathlib` and the downstream smoke.
+9. Pending: publish `npa-mathlib v0.1.5` after release bundle and downstream
+   smoke evidence are fixed.
+
 ## Immediate Tasks
 
 1. Treat `npa-mathlib v0.1.4` as the current public theorem-library baseline
    for Layer 3A abstract group foundation imports.
-2. Audit Layer 3B subgroup/normal-subgroup before materializing any additional
-   `Mathlib.Algebra.Group.*` public surface.
-3. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
+2. Materialize the audited Layer 3B subgroup closure as
+   `npa-mathlib v0.1.5` with exactly
+   `Mathlib.Algebra.Group.Subgroup`.
+3. Keep subgroup order, kernel, image, quotient, normal quotient, isomorphism,
+   and correspondence routes in separate follow-on audits.
+4. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
-4. Keep later group isomorphism routes
-   separate from the Layer 3A foundation release.
 5. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
 6. Choose each later theorem expansion layer before changing package boundaries,

@@ -40,6 +40,7 @@ in [docs/](../docs/README.md).
 - [npa-mathlib Layer 2A Closure Audit](npa-mathlib-layer2a-closure-audit.md)
 - [npa-mathlib Layer 2B Closure Audit](npa-mathlib-layer2b-closure-audit.md)
 - [npa-mathlib Layer 3A Closure Audit](npa-mathlib-layer3a-closure-audit.md)
+- [npa-mathlib Layer 3B Closure Audit](npa-mathlib-layer3b-closure-audit.md)
 - [Community Library Roadmap](community-library-roadmap.md)
 
 ## Task Breakdowns
