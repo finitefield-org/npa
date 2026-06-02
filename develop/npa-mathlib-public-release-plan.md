@@ -179,9 +179,11 @@ Layer 2A, vector:
 | `Proofs.Ai.Vector.Basic` | `Mathlib.Vector.Basic` | First vector API over the released Layer 1 algebra/order baseline. |
 | `Proofs.Ai.Vector.Dot` | `Mathlib.Vector.Dot` | Dot-product layer; expected to depend on `Mathlib.Vector.Basic` and the released Layer 1 algebra/order modules. |
 
-Layer 2A must be audited first. Its closure should be limited to
-`npa-std v0.1.0`, `npa-mathlib v0.1.1`, and the selected vector modules. If it
-requires geometry, analysis, or abstract algebra modules, stop and split again.
+Layer 2A closure audit is fixed in
+`develop/npa-mathlib-layer2a-closure-audit.md`. The selected vector closure is
+limited to `npa-std v0.1.0`, the released Layer 1 algebra/order baseline, and
+the selected vector modules. It does not require geometry, analysis, abstract
+algebra, or abstract vector modules.
 
 Layer 2B, geometry:
 
@@ -351,9 +353,9 @@ Concrete task sequence:
 
 1. Treat `npa-mathlib v0.1.1` as the current public theorem-library baseline
    for Layer 1 algebra/order imports.
-2. Start Layer 2A closure audit for `Mathlib.Vector.Basic` and
-   `Mathlib.Vector.Dot`; do not materialize Layer 2B geometry until Layer 2A is
-   released and downstream-smoked source-free.
+2. Materialize Layer 2A `Mathlib.Vector.Basic` and `Mathlib.Vector.Dot` in the
+   standalone `npa-mathlib` repository; do not materialize Layer 2B geometry
+   until Layer 2A is released and downstream-smoked source-free.
 3. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
 4. Choose later theorem expansion layers before changing package boundaries,

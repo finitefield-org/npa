@@ -376,10 +376,11 @@ external imported modules:
 
 ## Follow-Up Candidates
 
-- Start Layer 2A closure audit in the standalone `npa-mathlib` repository:
-  `Mathlib.Vector.Basic` and `Mathlib.Vector.Dot`. Treat `npa-mathlib v0.1.1`
-  as the released algebra/order baseline and verify that the vector closure
-  does not require geometry, analysis, or abstract algebra modules.
+- Materialize Layer 2A in the standalone `npa-mathlib` repository:
+  `Mathlib.Vector.Basic` and `Mathlib.Vector.Dot`. The closure audit is fixed
+  in `develop/npa-mathlib-layer2a-closure-audit.md` and shows that the vector
+  closure does not require geometry, analysis, abstract algebra, or abstract
+  vector modules.
 - Start Layer 2B geometry only after Layer 2A has regenerated package
   artifacts, a release bundle, and downstream source-free smoke evidence.
   Candidate modules are `Mathlib.Geometry.RightTriangle`,
