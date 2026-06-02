@@ -6,11 +6,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use npa_api::{build_legacy_std_package_module_cert, LEGACY_STD_PACKAGE_PRODUCER_PROFILE};
 use npa_cert::{AxiomPolicy, CoreFeature, ModuleCert, Name, VerifiedModule, VerifierSession};
 use npa_frontend::{
-    compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy, FileId,
-    HumanCompileOptions, HumanImportedSourceInterface, HumanName, HumanSourceDeclarationKind,
-    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanUniverseParam, Span, VerifiedImport,
+    compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy,
+    parse_human_module, FileId, HumanCompileOptions, HumanImportedSourceInterface, HumanItem,
+    HumanName, HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
+    HumanUniverseParam, Span, VerifiedImport,
 };
 use npa_package::{
     build_package_lock_from_artifacts, format_package_hash, package_file_hash,
@@ -371,8 +373,23 @@ fn build_local_modules(
             Err(diagnostic) => return Some(*diagnostic),
         };
 
-        let output =
-            match compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
+        let (certificate, generated_bytes, verified, source_interface) = if module
+            .producer_profile
+            .as_deref()
+            == Some(LEGACY_STD_PACKAGE_PRODUCER_PROFILE)
+        {
+            match build_legacy_std_package_certificate(
+                module_index,
+                module,
+                &source,
+                &direct_verified_modules,
+                policy,
+            ) {
+                Ok(output) => output,
+                Err(diagnostic) => return Some(*diagnostic),
+            }
+        } else {
+            let output = match compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
                 file_id,
                 module.module.clone(),
                 &source,
@@ -384,34 +401,40 @@ fn build_local_modules(
                 Ok(output) => output,
                 Err(error) => return Some(frontend_build_failed(module_index, module, error)),
             };
+            let generated_bytes = match npa_cert::encode_module_cert(&output.certificate) {
+                Ok(bytes) => bytes,
+                Err(error) => {
+                    return Some(
+                        CommandDiagnostic::error(
+                            DiagnosticKind::Build,
+                            "certificate_encode_failed",
+                        )
+                        .with_module(module.module.as_dotted())
+                        .with_path(format!("modules[{module_index}].certificate"))
+                        .with_actual_value(format!("{error:?}")),
+                    );
+                }
+            };
+            (
+                output.certificate,
+                generated_bytes,
+                output.verified_module,
+                output.source_interface,
+            )
+        };
 
         if let Some(diagnostic) =
-            check_generated_axiom_policy(loaded, module_index, module, &output.certificate)
+            check_generated_axiom_policy(loaded, module_index, module, &certificate)
         {
             return Some(diagnostic);
         }
 
-        let generated_bytes = match npa_cert::encode_module_cert(&output.certificate) {
-            Ok(bytes) => bytes,
-            Err(error) => {
-                return Some(
-                    CommandDiagnostic::error(DiagnosticKind::Build, "certificate_encode_failed")
-                        .with_module(module.module.as_dotted())
-                        .with_path(format!("modules[{module_index}].certificate"))
-                        .with_actual_value(format!("{error:?}")),
-                );
-            }
-        };
-        if let Some(diagnostic) = check_generated_manifest_hashes(
-            module_index,
-            module,
-            &output.certificate,
-            &generated_bytes,
-        ) {
+        if let Some(diagnostic) =
+            check_generated_manifest_hashes(module_index, module, &certificate, &generated_bytes)
+        {
             return Some(diagnostic);
         }
 
-        let verified = output.verified_module.clone();
         if verified.module() != &module.module {
             return Some(
                 CommandDiagnostic::error(DiagnosticKind::Build, "certificate_module_mismatch")
@@ -425,9 +448,9 @@ fn build_local_modules(
 
         let imported_source_interface = HumanImportedSourceInterface {
             module: module.module.clone(),
-            export_hash: output.certificate.hashes.export_hash,
-            certificate_hash: Some(output.certificate.hashes.certificate_hash),
-            source_interface: output.source_interface,
+            export_hash: certificate.hashes.export_hash,
+            certificate_hash: Some(certificate.hashes.certificate_hash),
+            source_interface,
         };
         verified_modules.push(verified);
         source_interfaces.push(imported_source_interface);
@@ -533,6 +556,124 @@ fn direct_import_context(
     }
 
     Ok((direct_verified_modules, direct_source_interfaces))
+}
+
+fn build_legacy_std_package_certificate(
+    module_index: usize,
+    module: &PackageModule,
+    source: &str,
+    direct_verified_modules: &[VerifiedModule],
+    policy: &AxiomPolicy,
+) -> Result<(ModuleCert, Vec<u8>, VerifiedModule, HumanSourceInterface), Box<CommandDiagnostic>> {
+    validate_legacy_std_source_skeleton(module_index, module, source)?;
+    let certificate =
+        match build_legacy_std_package_module_cert(&module.module, direct_verified_modules) {
+            Some(Ok(certificate)) => certificate,
+            Some(Err(error)) => {
+                return Err(Box::new(
+                    CommandDiagnostic::error(DiagnosticKind::Build, "certificate_build_failed")
+                        .with_module(module.module.as_dotted())
+                        .with_path(format!("modules[{module_index}].certificate"))
+                        .with_actual_value(format!("{error:?}")),
+                ));
+            }
+            None => {
+                return Err(Box::new(
+                    CommandDiagnostic::error(
+                        DiagnosticKind::Build,
+                        "unsupported_legacy_std_module",
+                    )
+                    .with_module(module.module.as_dotted())
+                    .with_path(format!("modules[{module_index}].producer_profile"))
+                    .with_field("producer_profile")
+                    .with_expected_value(LEGACY_STD_PACKAGE_PRODUCER_PROFILE)
+                    .with_actual_value(
+                        module
+                            .producer_profile
+                            .as_deref()
+                            .unwrap_or("<missing-producer-profile>"),
+                    ),
+                ));
+            }
+        };
+    let generated_bytes = npa_cert::encode_module_cert(&certificate).map_err(|error| {
+        Box::new(
+            CommandDiagnostic::error(DiagnosticKind::Build, "certificate_encode_failed")
+                .with_module(module.module.as_dotted())
+                .with_path(format!("modules[{module_index}].certificate"))
+                .with_actual_value(format!("{error:?}")),
+        )
+    })?;
+
+    let mut session = VerifierSession::new();
+    for import in direct_verified_modules {
+        session.register_verified_module(import.clone());
+    }
+    let verified =
+        npa_cert::verify_module_cert(&generated_bytes, &mut session, policy).map_err(|error| {
+            Box::new(
+                CommandDiagnostic::error(DiagnosticKind::Build, "certificate_rejected")
+                    .with_module(module.module.as_dotted())
+                    .with_path(format!("modules[{module_index}].certificate"))
+                    .with_actual_value(format!("{error:?}")),
+            )
+        })?;
+    let source_interface = fallback_imported_source_interface(&verified).source_interface;
+    Ok((certificate, generated_bytes, verified, source_interface))
+}
+
+fn validate_legacy_std_source_skeleton(
+    module_index: usize,
+    module: &PackageModule,
+    source: &str,
+) -> Result<(), Box<CommandDiagnostic>> {
+    let file_id = match u32::try_from(module_index) {
+        Ok(index) => FileId(index),
+        Err(_) => {
+            return Err(Box::new(
+                CommandDiagnostic::error(DiagnosticKind::Internal, "module_index_out_of_range")
+                    .with_module(module.module.as_dotted()),
+            ));
+        }
+    };
+    let parsed = parse_human_module(file_id, source).map_err(|error| {
+        Box::new(
+            CommandDiagnostic::error(DiagnosticKind::Build, "source_skeleton_parse_failed")
+                .with_module(module.module.as_dotted())
+                .with_path(format!("modules[{module_index}].source"))
+                .with_field("source_skeleton")
+                .with_actual_value(error.message),
+        )
+    })?;
+    let mut actual_imports = Vec::new();
+    for item in parsed.items {
+        match item {
+            HumanItem::Import { module, .. } => {
+                actual_imports.push(Name::from_dotted(module.as_dotted()));
+            }
+            other => {
+                return Err(Box::new(
+                    CommandDiagnostic::error(DiagnosticKind::Build, "source_skeleton_has_items")
+                        .with_module(module.module.as_dotted())
+                        .with_path(format!("modules[{module_index}].source"))
+                        .with_field("source_skeleton")
+                        .with_expected_value("imports and comments only")
+                        .with_actual_value(format!("{:?}", other.span())),
+                ));
+            }
+        }
+    }
+    if actual_imports != module.imports {
+        return Err(Box::new(
+            CommandDiagnostic::error(DiagnosticKind::Build, "source_imports_mismatch")
+                .with_module(module.module.as_dotted())
+                .with_path(format!("modules[{module_index}].source"))
+                .with_field("imports")
+                .with_expected_value(format!("{:?}", module.imports))
+                .with_actual_value(format!("{actual_imports:?}")),
+        ));
+    }
+    Ok(())
 }
 
 fn read_source(

@@ -174,6 +174,17 @@ fn package_build_certs_check_builds_local_imports_topologically() {
     assert!(result.diagnostics.is_empty());
 }
 
+#[test]
+fn package_build_certs_check_accepts_legacy_std_producer_profile_fixture() {
+    let result = run_package_build_certs_check(PackageCommonOptions {
+        root: repo_root().join("fixtures/npa-std"),
+        json: true,
+    });
+
+    assert_eq!(result.exit_code(), CommandExitCode::Success);
+    assert!(result.diagnostics.is_empty());
+}
+
 fn run_build_check(package: &TestPackage) -> npa_cli::diagnostic::CommandResult {
     run_package_build_certs_check(PackageCommonOptions {
         root: package.path().to_path_buf(),
