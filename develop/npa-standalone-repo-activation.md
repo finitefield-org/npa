@@ -342,8 +342,7 @@ Evidence fixed on 2026-06-02:
 - Repository default branch: `main`.
 - Activation commit pushed to `main`:
   `849e8eed057e4fcf42799962245db142d50eb79a`.
-- Repository visibility is currently private. Do not publish SRA-04 public
-  release artifacts until the intended public visibility decision is made.
+- Repository visibility is public as of the 2026-06-02 PUB-11 evidence.
 - Repository variables fixed:
   - `NPA_GIT_TAG = v0.1.1`
   - `RUST_TOOLCHAIN_VERSION = 1.95.0`
@@ -384,10 +383,8 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-04 Publish `npa-std` v0.1.0 Release Artifacts
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-03
-- Current blocker: complete `develop/public-repository-readiness-todo.md`, make
-  `finitefield-org/npa` public, then rerun the `npa-std` release workflow.
 - Inputs:
   - activated `npa-std` repository
 - Deliverables:
@@ -413,6 +410,41 @@ Evidence fixed on 2026-06-02:
 npa package publish-plan --root . --check --json
 npa package verify-certs --root . --checker reference --json
 ```
+
+Evidence fixed on 2026-06-02:
+
+- `finitefield-org/npa` visibility is public:
+  `{"isPrivate":false,"nameWithOwner":"finitefield-org/npa","url":"https://github.com/finitefield-org/npa","visibility":"PUBLIC"}`.
+- Public `npa` toolchain fetch smoke passed:
+  `git ls-remote https://github.com/finitefield-org/npa.git refs/tags/v0.1.1`
+  returned `8c405babb29df985b43c69fe6c857646f11cb8b7 refs/tags/v0.1.1`.
+- `npa-std` release workflow rerun passed:
+  `https://github.com/finitefield-org/npa-std/actions/runs/26806975884`.
+- Run metadata: `attempt=2`, `status=completed`, `conclusion=success`,
+  `event=push`, `headSha=849e8eed057e4fcf42799962245db142d50eb79a`.
+- Successful workflow jobs:
+  - `Package artifact checks`
+  - `Fast-kernel source-free verification`
+  - `Reference checker source-free verification`
+- Release URL:
+  `https://github.com/finitefield-org/npa-std/releases/tag/v0.1.0`.
+- Release assets:
+  - `npa-std-v0.1.0-release-artifacts.tar.gz`
+    SHA-256 `3ed967d1870f97f7042e87a75efebd3cf553e8c86d8959c720080115a78fe85c`
+  - `npa-std-v0.1.0-release-artifacts.tar.gz.sha256`
+    SHA-256 `332ca2f07521b5b92f92aa0d8153f2156dcbbf5a98b8c79685c78e139f544ea4`
+  - `npa-std-v0.1.0-release-gate.txt`
+    SHA-256 `a732871792193515b5b69cc06034f5b5633099c380f6792af78472e38ba08457`
+- Release tarball contents:
+  - `npa-package.toml`
+  - `Std/Logic/Eq/certificate.npcert`
+  - `Std/Nat/Basic/certificate.npcert`
+  - `generated/package-lock.json`
+  - `generated/axiom-report.json`
+  - `generated/theorem-index.json`
+  - `generated/publish-plan.json`
+- Release gate file records the package gate, reference checker verification,
+  and fast-kernel verification commands as passed on 2026-06-02.
 
 ## SRA-05 Re-Pin `npa-mathlib` Against The `npa-std` Release
 

@@ -18,9 +18,10 @@ This task list prepares the `npa` repository for public visibility. It is a
 documentation and repository-presentation milestone, not a change to proof
 acceptance semantics.
 
-The immediate downstream blocker is `npa-std` SRA-04: the `npa-std v0.1.0`
-release workflow cannot fetch `finitefield-org/npa` from GitHub Actions while
-`npa` remains private.
+The immediate downstream blocker was `npa-std` SRA-04: the `npa-std v0.1.0`
+release workflow could not fetch `finitefield-org/npa` from GitHub Actions
+while `npa` remained private. That blocker was cleared on 2026-06-02 after
+`finitefield-org/npa` became public and the release workflow rerun passed.
 
 ## Scope
 
@@ -404,7 +405,7 @@ rg -n "[ぁ-んァ-ン一-龯]" README.md CONTRIBUTING.md docs/README.md docs/in
 
 ### PUB-11 Make `finitefield-org/npa` Public And Verify Fetch
 
-- Status: Pending
+- Status: Completed
 - Depends on: PUB-00 through PUB-10
 - Deliverables:
   - Repository visibility changed to public.
@@ -419,9 +420,21 @@ git ls-remote https://github.com/finitefield-org/npa.git refs/tags/v0.1.1
 - Acceptance criteria:
   - Unauthenticated GitHub Actions runners can fetch tag `v0.1.1`.
 
+Evidence fixed on 2026-06-02:
+
+- `gh repo view finitefield-org/npa --json nameWithOwner,url,isPrivate,visibility`
+  returned:
+  `{"isPrivate":false,"nameWithOwner":"finitefield-org/npa","url":"https://github.com/finitefield-org/npa","visibility":"PUBLIC"}`.
+- `git ls-remote https://github.com/finitefield-org/npa.git refs/tags/v0.1.1`
+  returned:
+  `8c405babb29df985b43c69fe6c857646f11cb8b7 refs/tags/v0.1.1`.
+- The `npa-std` GitHub Actions runner fetched/built the pinned `npa` toolchain
+  during PUB-12, which confirms the public fetch path from an external package
+  workflow.
+
 ### PUB-12 Rerun `npa-std` SRA-04 Release Workflow
 
-- Status: Pending
+- Status: Completed
 - Depends on: PUB-11
 - Inputs:
   - `finitefield-org/npa-std` release workflow run that failed while `npa` was
@@ -440,9 +453,21 @@ gh run view <run-id> --repo finitefield-org/npa-std --json status,conclusion,url
   - Fast-kernel source-free verification records diagnostics.
   - Reference checker source-free verification passes.
 
+Evidence fixed on 2026-06-02:
+
+- Rerun command: `gh run rerun 26806975884 --repo finitefield-org/npa-std`.
+- Workflow: `NPA Package Release`.
+- Run URL: `https://github.com/finitefield-org/npa-std/actions/runs/26806975884`.
+- Run metadata: `attempt=2`, `status=completed`, `conclusion=success`,
+  `event=push`, `headSha=849e8eed057e4fcf42799962245db142d50eb79a`.
+- Successful jobs:
+  - `Package artifact checks`
+  - `Fast-kernel source-free verification`
+  - `Reference checker source-free verification`
+
 ### PUB-13 Record Final Evidence
 
-- Status: Pending
+- Status: Completed
 - Depends on: PUB-12
 - Deliverables:
   - Update `develop/npa-standalone-repo-activation.md` SRA-04 evidence.
@@ -451,6 +476,19 @@ gh run view <run-id> --repo finitefield-org/npa-std --json status,conclusion,url
 - Acceptance criteria:
   - SRA-04 can be marked Completed without relying on private repository
     access or local-only evidence.
+
+Evidence fixed on 2026-06-02:
+
+- Updated `develop/npa-standalone-repo-activation.md` SRA-04 evidence.
+- Release URL:
+  `https://github.com/finitefield-org/npa-std/releases/tag/v0.1.0`.
+- Release asset SHA-256:
+  - `npa-std-v0.1.0-release-artifacts.tar.gz`:
+    `3ed967d1870f97f7042e87a75efebd3cf553e8c86d8959c720080115a78fe85c`
+  - `npa-std-v0.1.0-release-artifacts.tar.gz.sha256`:
+    `332ca2f07521b5b92f92aa0d8153f2156dcbbf5a98b8c79685c78e139f544ea4`
+  - `npa-std-v0.1.0-release-gate.txt`:
+    `a732871792193515b5b69cc06034f5b5633099c380f6792af78472e38ba08457`
 
 ## Final Acceptance Criteria
 
