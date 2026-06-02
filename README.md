@@ -166,5 +166,5 @@ or release/high-trust evidence:
 ./scripts/check-corpus.sh
 ```
 
-The public contributor workflow is tracked separately in PUB-03 and will live
-in `CONTRIBUTING.md`.
+For contribution policy and the full local-gate checklist, see
+[CONTRIBUTING.md](CONTRIBUTING.md).

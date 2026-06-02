@@ -169,7 +169,7 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 
 ### PUB-03 Add Root CONTRIBUTING In English
 
-- Status: Pending
+- Status: Completed
 - Deliverables:
   - `CONTRIBUTING.md`.
 - Must cover:
@@ -194,6 +194,15 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 - Acceptance criteria:
   - External contributors can run the correct local gate without reading
     `AGENTS.md`.
+- Evidence fixed on 2026-06-02:
+  - Added root `CONTRIBUTING.md` in English.
+  - Covered certificate-first contribution policy, trusted/untrusted boundary,
+    fast gate, proof corpus gate trigger conditions, `unsafe` Rust policy,
+    unrelated-change handling, certificate compatibility risk, and package
+    authoring checks.
+  - Updated `README.md` to link to `CONTRIBUTING.md`.
+  - Updated `doc/README.md` to mark the public repository entry contribution
+    item as added in PUB-03.
 
 ### PUB-04 Add English Documentation Index
 
