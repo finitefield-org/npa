@@ -1,21 +1,34 @@
-# NPA Toolchain Reference v0.1.0
+# Historical NPA Toolchain Reference v0.1.0
 
 This is the SRA-01 toolchain reference for external theorem package
 repositories.
 
-This ref is historical. SRA-02-compatible `npa-std` standalone activation
-should use `doc/npa-toolchain-reference-v0.1.1.md` and Git tag `v0.1.1`.
+This ref is historical. Do not use it as the current package-author toolchain
+pin. SRA-02-compatible `npa-std` standalone activation must use
+`doc/npa-toolchain-reference-v0.1.1.md` and Git tag `v0.1.1`.
 
-## Stable Ref
+## Current Recommendation
 
-Use the Git tag:
+External theorem package authors should use the current SRA-02-compatible ref:
+
+```text
+NPA_GIT_TAG = v0.1.1
+RUST_TOOLCHAIN_VERSION = 1.95.0
+```
+
+`v0.1.0` does not contain the SRA-02 `npa-std` fixture builder path and must
+not be used to build or check the SRA-02 `fixtures/npa-std` package fixture.
+
+## Historical Ref
+
+The SRA-01 Git tag was:
 
 ```text
 v0.1.0
 ```
 
-External theorem repositories should set exactly one pinned `npa` source. The
-historical SRA-01 setting was:
+For this historical SRA-01 reference, external theorem repositories set exactly
+one pinned `npa` source. The SRA-01-only setting was:
 
 ```text
 NPA_GIT_TAG = v0.1.0

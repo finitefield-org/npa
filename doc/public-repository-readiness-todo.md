@@ -268,7 +268,7 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 
 ### PUB-06 Review Toolchain Reference Docs
 
-- Status: Pending
+- Status: Completed
 - Inputs:
   - `doc/npa-toolchain-reference-v0.1.0.md`
   - `doc/npa-toolchain-reference-v0.1.1.md`
@@ -279,6 +279,15 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
   - External package authors are guided to `v0.1.1`.
   - The docs do not imply that `v0.1.0` can build/check the SRA-02
     `npa-std` package fixture.
+- Evidence fixed on 2026-06-02:
+  - Marked `doc/npa-toolchain-reference-v0.1.1.md` as the current
+    SRA-02-compatible package-author ref.
+  - Marked `doc/npa-toolchain-reference-v0.1.0.md` as historical and
+    audit-only, with an explicit redirect to `v0.1.1`.
+  - Documented that `v0.1.0` must not be used to build or check the SRA-02
+    `fixtures/npa-std` package fixture.
+  - Updated the documentation index to label the `v0.1.0` reference as
+    historical rather than a current package-author pin.
 
 ### PUB-07 Clean External Theorem Library CI Docs
 

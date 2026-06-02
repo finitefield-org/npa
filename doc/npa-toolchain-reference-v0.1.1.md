@@ -1,9 +1,10 @@
 # NPA Toolchain Reference v0.1.1
 
-This is the SRA-02-compatible toolchain reference for external theorem
-package repositories.
+This is the current SRA-02-compatible toolchain reference for external theorem
+package repositories. External package authors should use this ref for the
+first `npa-std` standalone package path.
 
-## Stable Ref
+## Current Stable Ref
 
 Use the Git tag:
 
@@ -34,6 +35,9 @@ package resolution.
 The previous `v0.1.0` ref remains the original SRA-01 toolchain reference, but
 it does not contain the SRA-02 `npa-std` fixture builder path and cannot pass
 `package build-certs --check` for `fixtures/npa-std`.
+
+Do not use `v0.1.0` as the current external package pin for SRA-02-compatible
+package fixtures.
 
 ## Setup Contract
 

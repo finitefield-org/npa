@@ -17,7 +17,7 @@ verdicts, and deterministic proof artifact hashes.
 | --- | --- | --- | --- | --- |
 | Public repository entry | Users, package authors, auditors | English | `README.md` cleaned in PUB-01; `LICENSE` added in PUB-02; `CONTRIBUTING.md` added in PUB-03 | `README.md`, `LICENSE`, `CONTRIBUTING.md` |
 | Public docs router | Users, package authors, auditors | English | Expanded documentation index in PUB-04 | `doc/README.md` |
-| Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
+| Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical and reviewed in PUB-06 | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
 | External package CI | External theorem package maintainers | English | CI template guide cleaned in PUB-05; external CI contract cleanup remains PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
 | External checker docs | High-trust checker integrators | English if included in first public user path | Pending decision in PUB-08 | `checkers/npa-checker-ext/README.md` |
 | Public examples and fixtures | Users only when explicitly linked from public docs | English for linked examples; otherwise internal label | Pending decision in PUB-09 | `fixtures/*/README.md`, `proofs/README.md` |
@@ -43,8 +43,9 @@ corresponding cleanup milestones are complete:
 
 - [Toolchain Reference v0.1.1](npa-toolchain-reference-v0.1.1.md): current
   SRA-02-compatible `npa` toolchain ref for external theorem packages.
-- [Toolchain Reference v0.1.0](npa-toolchain-reference-v0.1.0.md): historical
-  SRA-01 ref. Do not recommend it as the current external package pin.
+- [Historical Toolchain Reference v0.1.0](npa-toolchain-reference-v0.1.0.md):
+  SRA-01 ref retained for audit context. Do not recommend it as the current
+  external package pin.
 
 ## Design And Specification Docs
 
