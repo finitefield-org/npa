@@ -115,12 +115,12 @@ registry metadata, source scripts, or CI status part of proof acceptance.
   - Classified public-facing docs, internal/development docs, design specs,
     public examples/fixtures, external package CI docs, toolchain reference
     docs, and external checker docs.
-  - Kept PUB-01 through PUB-13 pending; no root README rewrite, LICENSE file,
-    or CONTRIBUTING file was added in PUB-00.
+  - At PUB-00 completion time, kept PUB-01 through PUB-13 pending; no root
+    README rewrite, LICENSE file, or CONTRIBUTING file was added in PUB-00.
 
 ### PUB-01 Rewrite Root README In English
 
-- Status: Pending
+- Status: Completed
 - Deliverables:
   - English-first `README.md`.
   - Old Japanese implementation detail moved into an internal doc if still
@@ -143,6 +143,15 @@ registry metadata, source scripts, or CI status part of proof acceptance.
     auditor in under five minutes.
   - README clearly states that parser, elaborator, tactic, automation, AI,
     CI, release pages, and registry metadata are not trusted proof evidence.
+- Evidence fixed on 2026-06-02:
+  - Rewrote `README.md` as an English-first public repository entry.
+  - Covered project purpose, experimental status, certificate-first trust
+    boundary, source build instructions, `npa --version`, package verification
+    quick start, repository layout, documentation links, and local gates.
+  - Moved the old Japanese implementation-status and development-gate notes to
+    `doc/internal-readme-notes-ja.md`.
+  - Kept PUB-02 and PUB-03 pending; no root `LICENSE` or `CONTRIBUTING.md` was
+    added in PUB-01.
 
 ### PUB-02 Add Root LICENSE
 
