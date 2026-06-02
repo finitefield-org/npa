@@ -509,7 +509,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-06 Activate `npa-mathlib` Standalone Repository
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-05
 - Inputs:
   - `fixtures/npa-mathlib/`
@@ -574,6 +574,60 @@ rg -n "Proofs\\.Ai|npa-mathlib-seed" npa-package.toml Mathlib generated fixtures
 ```
 
 The `rg` command should return no hits.
+
+Evidence fixed on 2026-06-02:
+
+- Standalone repository:
+  `https://github.com/finitefield-org/npa-mathlib`.
+- Repository visibility is `PUBLIC`; default branch is `main`.
+- Local activation root:
+  `/Users/kazuyoshitoshiya/ff/npa-mathlib`.
+- Initial standalone commit:
+  `987621ddb698c8d658a760bcc593f74cc66e6900`.
+- Package manifest declares package `npa-mathlib`, version `0.1.0`, and
+  `license = "Apache-2.0"`.
+- Local package modules are exactly:
+  - `Mathlib.Core.Reduction`
+  - `Mathlib.Data.Nat.Basic`
+  - `Mathlib.Logic.Basic`
+  - `Mathlib.Logic.Eq`
+  - `Mathlib.Logic.Prop`
+- Vendored external imports are the `npa-std v0.1.0` release certificate
+  artifacts for `Std.Logic.Eq` and `Std.Nat.Basic`.
+- GitHub repository variables are fixed as:
+  - `NPA_GIT_TAG = v0.1.1`
+  - `RUST_TOOLCHAIN_VERSION = 1.95.0`
+  - `NPA_ENABLE_PUBLISH_PLAN = true`
+- `.github/workflows/npa-package-pr.yml`,
+  `.github/workflows/npa-package-release.yml`, and
+  `.github/actions/setup-npa/action.yml` parsed as valid YAML.
+- `.github/actions/setup-npa/setup-pinned-npa.sh` passed local
+  `NPA_BINARY_PATH` smoke and printed `npa 0.1.1`.
+- Standalone package gates passed:
+  - `npa package check --root . --json`
+  - `npa package build-certs --root . --check --json`
+  - `npa package verify-certs --root . --checker reference --json`
+  - `npa package check-hashes --root . --json`
+  - `npa package axiom-report --root . --check --json`
+  - `npa package index --root . --check --json`
+  - `npa package publish-plan --root . --check --json`
+- Source-free reference verification accepted seven modules: the five local
+  `Mathlib.*` modules and the two vendored `npa-std` imports.
+- `generated/axiom-report.json` records five local modules, two external
+  modules, zero direct axioms, zero transitive axioms, and zero policy
+  violations.
+- `generated/publish-plan.json` records five module registry entries, five
+  downstream import bundle modules, five local certificate artifacts, and two
+  external `npa-std` certificate artifacts.
+- `fixtures/downstream-smoke/` passed `check`, `build-certs --check`,
+  `verify-certs --checker reference`, and `check-hashes`.
+- Downstream source-free reference verification accepted
+  `Mathlib.Logic.Basic` from the vendored certificate artifact and
+  `Downstream.MathlibBasic`.
+- The required stale-name scan for `Proofs.Ai` and `npa-mathlib-seed`
+  returned no hits across `npa-package.toml`, `Mathlib`, `generated`, and
+  `fixtures/downstream-smoke`.
+- `git diff --check` passed in the standalone repository before commit.
 
 ## SRA-07 Publish `npa-mathlib` v0.1.0 Release Artifacts
 
