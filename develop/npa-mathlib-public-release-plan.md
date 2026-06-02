@@ -250,10 +250,22 @@ closure is limited to `npa-std v0.1.0`, the released `npa-mathlib v0.1.5`
 Layer 3B baseline, and `Mathlib.Algebra.Group.Subgroup.Order`. It introduces
 no new direct or transitive axioms.
 
-Layer 3D and later algebraic routes should remain separate audits:
+Layer 3D-A, group kernel/image foundation:
 
-- `Proofs.Ai.Algebra.AbstractGroupKernel`
-- `Proofs.Ai.Algebra.AbstractGroupImage`
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractGroupKernel` | `Mathlib.Algebra.Group.Kernel` | Kernel closure under multiplication, inverse, and conjugation using the existing homomorphism surface in `Mathlib.Algebra.Group.Basic`. |
+| `Proofs.Ai.Algebra.AbstractGroupImage` | `Mathlib.Algebra.Group.Image` | Church-encoded image membership and image closure under one, multiplication, and inverse. |
+
+Layer 3D-A hom/kernel/image closure audit is fixed in
+`develop/npa-mathlib-layer3d-hom-kernel-image-closure-audit.md`. The selected
+closure is limited to `npa-std v0.1.0`, the released `npa-mathlib v0.1.6`
+Layer 3C baseline, and the two new kernel/image modules. It does not add a
+separate `Mathlib.Algebra.Group.Hom` module because the required homomorphism
+surface is already public in `Mathlib.Algebra.Group.Basic`.
+
+Layer 3D-B and later algebraic routes should remain separate audits:
+
 - `Proofs.Ai.Algebra.AbstractGroupQuotient`
 - `Proofs.Ai.Algebra.AbstractGroupNormalQuotient*`
 - `Proofs.Ai.Algebra.AbstractGroup*Iso*`
@@ -608,16 +620,56 @@ Concrete task sequence:
 9. Completed: published `npa-mathlib v0.1.6` after release bundle and downstream
    smoke evidence were fixed.
 
+## Layer 3D-A Expansion Tasks
+
+Status: Audit fixed for the first Layer 3D-A group kernel/image release.
+Materialization is pending for `npa-mathlib v0.1.7`.
+
+Layer 3D-A selected module set:
+
+```text
+Mathlib.Algebra.Group.Kernel
+Mathlib.Algebra.Group.Image
+```
+
+Concrete task sequence:
+
+1. Completed: audited the selected hom/kernel/image closure in
+   `develop/npa-mathlib-layer3d-hom-kernel-image-closure-audit.md`.
+2. Pending: map source modules to the `Mathlib.*` namespace according to
+   `npa-mathlib/docs/namespace-policy.md`.
+3. Pending: keep package name `npa-mathlib` and use the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Pending: add `Mathlib/Algebra/Group/Kernel/` and
+   `Mathlib/Algebra/Group/Image/` in the standalone `npa-mathlib` repository.
+5. Pending: do not create a separate `Mathlib.Algebra.Group.Hom` module in
+   this release.
+6. Pending: keep `allow_custom_axioms = false` and
+   `allowed_axioms = ["Eq.rec"]`, while declaring `axioms = ["Eq.rec"]` for
+   the new modules.
+7. Pending: regenerate certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+8. Pending: update downstream source-free smoke to import the Layer 3D-A
+   certificate closure from release-bundle bytes.
+9. Pending: run package gates for `npa-mathlib` and the downstream smoke.
+10. Pending: publish `npa-mathlib v0.1.7` after release bundle, downstream
+    smoke, and negative hash evidence are fixed.
+
 ## Immediate Tasks
 
 1. Treat `npa-mathlib v0.1.6` as the current public theorem-library baseline
-   for Layer 3C subgroup containment/order imports.
-2. Choose the Layer 3D route before adding more group surface.
-3. Keep kernel, image, quotient, normal quotient, isomorphism, and
-   correspondence routes in separate follow-on audits.
-4. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
+   for Layer 3D-A group kernel/image materialization.
+2. Materialize the audited Layer 3D-A group kernel/image closure as
+   `npa-mathlib v0.1.7` with exactly `Mathlib.Algebra.Group.Kernel` and
+   `Mathlib.Algebra.Group.Image`.
+3. Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic` for this
+   release; do not create a separate `Mathlib.Algebra.Group.Hom` module.
+4. Keep quotient, normal quotient, isomorphism, and correspondence routes in
+   separate follow-on audits.
+5. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
-5. Keep CLR-08 high-trust release evidence separate from the reference-checker
+6. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
-6. Choose each later theorem expansion layer before changing package boundaries,
+7. Choose each later theorem expansion layer before changing package boundaries,
    registry semantics, or import identity rules.

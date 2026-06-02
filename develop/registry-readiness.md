@@ -821,13 +821,17 @@ external imported modules:
 ## Follow-Up Candidates
 
 - Treat `npa-mathlib v0.1.6` as the current public theorem-library baseline
-  for Layer 3C subgroup containment/order imports.
-- Choose the next Layer 3D route before materializing additional group surface.
+  for Layer 3D-A group kernel/image materialization.
+- Materialize the audited Layer 3D-A group kernel/image closure as
+  `npa-mathlib v0.1.7` with exactly `Mathlib.Algebra.Group.Kernel` and
+  `Mathlib.Algebra.Group.Image`.
+- Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic` for
+  `v0.1.7`; do not create a separate `Mathlib.Algebra.Group.Hom` module.
 - Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
   closure has a separate audit and axiom-policy review.
-- Keep kernel, image, quotient, normal quotient, isomorphism, and
-  correspondence routes in separate closure audits before adding those modules
-  to standalone `npa-mathlib`.
+- Keep quotient, normal quotient, isomorphism, and correspondence routes in
+  separate closure audits before adding those modules to standalone
+  `npa-mathlib`.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, release-bundle evidence, and
   downstream import evidence.
