@@ -282,7 +282,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-03 Activate `npa-std` Standalone Repository
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-02
 - Inputs:
   - `fixtures/npa-std/`
@@ -334,6 +334,53 @@ npa package axiom-report --root . --check --json
 npa package index --root . --check --json
 npa package publish-plan --root . --check --json
 ```
+
+Evidence fixed on 2026-06-02:
+
+- Standalone repository: `finitefield-org/npa-std`
+  (`https://github.com/finitefield-org/npa-std`).
+- Repository default branch: `main`.
+- Activation commit pushed to `main`:
+  `849e8eed057e4fcf42799962245db142d50eb79a`.
+- Repository visibility is currently private. Do not publish SRA-04 public
+  release artifacts until the intended public visibility decision is made.
+- Repository variables fixed:
+  - `NPA_GIT_TAG = v0.1.1`
+  - `RUST_TOOLCHAIN_VERSION = 1.95.0`
+  - `NPA_ENABLE_PUBLISH_PLAN = true`
+- Standalone layout materialized:
+  - `README.md`
+  - `CONTRIBUTING.md`
+  - `npa-package.toml`
+  - `Std/Logic/Eq/source.npa`
+  - `Std/Logic/Eq/certificate.npcert`
+  - `Std/Nat/Basic/source.npa`
+  - `Std/Nat/Basic/certificate.npcert`
+  - `generated/package-lock.json`
+  - `generated/axiom-report.json`
+  - `generated/theorem-index.json`
+  - `generated/publish-plan.json`
+  - `.github/actions/setup-npa/action.yml`
+  - `.github/actions/setup-npa/setup-pinned-npa.sh`
+  - `.github/scripts/summarize-npa-diagnostics.py`
+  - `.github/workflows/npa-package-pr.yml`
+  - `.github/workflows/npa-package-release.yml`
+- Workflows use explicit package root `.` and do not perform registry lookup,
+  latest-version resolution, or network package fetching for proof acceptance.
+- Workflow/action YAML parsed with the local Ruby YAML parser.
+- Local standalone checkout passed:
+  - `npa package check --root . --json`
+  - `npa package build-certs --root . --check --json`
+  - `npa package verify-certs --root . --checker reference --json`
+  - `npa package check-hashes --root . --json`
+  - `npa package axiom-report --root . --check --json`
+  - `npa package index --root . --check --json`
+  - `npa package publish-plan --root . --check --json`
+- Fresh checkout from GitHub at
+  `849e8eed057e4fcf42799962245db142d50eb79a` passed the same package gate.
+- Copied setup helper fetched `finitefield-org/npa` tag `v0.1.1`, built
+  `npa-cli` with Rust `1.95.0`, and printed `npa 0.1.1`.
+- `git diff --check` passed in the standalone repository.
 
 ## SRA-04 Publish `npa-std` v0.1.0 Release Artifacts
 
