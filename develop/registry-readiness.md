@@ -465,10 +465,12 @@ imported modules:
 
 - Treat `npa-mathlib v0.1.2` as the current public theorem-library baseline
   for Layer 2A vector imports.
-- Start Layer 2B geometry closure audit next. Candidate modules are
-  `Mathlib.Geometry.RightTriangle`, `Mathlib.Geometry.Metric`, and optionally
-  `Mathlib.Geometry.Pythagorean` if the closure remains small and consumes only
-  released `npa-std`, Layer 1, and Layer 2A certificate artifacts.
+- Materialize Layer 2B concrete geometry in the standalone `npa-mathlib`
+  repository as `Mathlib.Geometry.RightTriangle` and `Mathlib.Geometry.Metric`.
+  The closure audit is fixed in
+  `develop/npa-mathlib-layer2b-closure-audit.md`.
+- Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
+  closure has a separate audit and axiom-policy review.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, release-bundle evidence, and
   downstream import evidence.

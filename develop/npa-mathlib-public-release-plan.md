@@ -191,12 +191,19 @@ Layer 2B, geometry:
 | --- | --- | --- |
 | `Proofs.Ai.Geometry.RightTriangle` | `Mathlib.Geometry.RightTriangle` | First right-triangle facts; should consume the released Layer 2A vector artifacts source-free. |
 | `Proofs.Ai.Geometry.Metric` | `Mathlib.Geometry.Metric` | Metric facts over the vector/right-triangle closure. |
-| `Proofs.Ai.Geometry.Pythagorean` | `Mathlib.Geometry.Pythagorean` | Include only if its closure stays within the already released Layer 1/Layer 2A/Layer 2B inputs. |
+| `Proofs.Ai.Geometry.Pythagorean` | `Mathlib.Geometry.Pythagorean` | Deferred. Its current proof-corpus closure imports abstract/law-package modules and uses `Eq.rec`. |
 
 Layer 2A is fixed as `npa-mathlib v0.1.2`, including package artifacts, a
-release bundle, and downstream source-free smoke evidence. The geometry
-downstream smoke should vendor only release-bundle certificate bytes from
-`npa-std`, `npa-mathlib v0.1.1`, and `npa-mathlib v0.1.2`.
+release bundle, and downstream source-free smoke evidence. The `v0.1.3`
+geometry downstream smoke should vendor only release-bundle certificate bytes
+from `npa-std v0.1.0` and the cumulative `npa-mathlib v0.1.3` release bundle.
+
+Layer 2B closure audit is fixed in
+`develop/npa-mathlib-layer2b-closure-audit.md`. The selected concrete geometry
+closure is limited to `npa-std v0.1.0`, the released Layer 1 algebra/order
+baseline, the released Layer 2A vector baseline, and
+`Mathlib.Geometry.RightTriangle` / `Mathlib.Geometry.Metric`. It does not
+include the abstract Pythagorean/law-package closure.
 
 Layer 3, algebraic structures and isomorphism routes:
 
@@ -391,10 +398,10 @@ Concrete task sequence:
 
 1. Treat `npa-mathlib v0.1.2` as the current public theorem-library baseline
    for Layer 2A vector imports.
-2. Start the Layer 2B geometry closure audit. Candidate modules are
-   `Mathlib.Geometry.RightTriangle`, `Mathlib.Geometry.Metric`, and optionally
-   `Mathlib.Geometry.Pythagorean` if the closure remains small and consumes
-   only released `npa-std`, Layer 1, and Layer 2A certificate artifacts.
+2. Materialize Layer 2B `Mathlib.Geometry.RightTriangle` and
+   `Mathlib.Geometry.Metric` in the standalone `npa-mathlib` repository; do not
+   include `Mathlib.Geometry.Pythagorean` until its abstract/law-package
+   closure has a separate audit and axiom-policy review.
 3. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
 4. Choose later theorem expansion layers before changing package boundaries,
