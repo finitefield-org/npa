@@ -1,5 +1,11 @@
 # npa-mathlib-seed downstream fixture
 
+Visibility: internal test fixture note.
+
+This fixture is retained to regression-test downstream consumption of the
+historical `npa-mathlib-seed` artifact set. It is not the public downstream
+package example; use `fixtures/npa-mathlib-downstream/` for that path.
+
 This fixture models a downstream package that consumes the local
 `npa-mathlib-seed` release artifact set without a registry server.
 

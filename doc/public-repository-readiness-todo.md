@@ -338,7 +338,7 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 
 ### PUB-09 Decide Fixture README Visibility
 
-- Status: Pending
+- Status: Completed
 - Inputs:
   - `fixtures/*/README.md`
   - `fixtures/*/CONTRIBUTING.md`
@@ -352,6 +352,18 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 - Acceptance criteria:
   - Public README does not send users to Japanese-only internal fixture notes
     without context.
+- Evidence fixed on 2026-06-02:
+  - Marked `fixtures/npa-std/README.md`,
+    `fixtures/npa-mathlib/README.md`, and
+    `fixtures/npa-mathlib-downstream/README.md` as public example fixtures.
+  - Marked `fixtures/npa-mathlib-seed/**` README/CONTRIBUTING notes,
+    `fixtures/npa-mathlib-seed-downstream/**` notes, and `proofs/README.md`
+    as internal/test documentation rather than public package-author entry
+    points.
+  - Updated `doc/README.md` with explicit public-example and internal-fixture
+    lists.
+  - Confirmed the public root README does not link readers directly to
+    internal fixture or proof-corpus notes.
 
 ### PUB-10 Stale/Private Assumption Scan
 

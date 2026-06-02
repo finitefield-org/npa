@@ -1,5 +1,11 @@
 # Generated Package Artifacts
 
+Visibility: internal generated-artifact fixture note.
+
+This directory documents generated metadata checked into the local
+`npa-mathlib-seed` regression fixture. It is not public package-author
+guidance, and these files are not proof evidence.
+
 CLR-09-03 checks in deterministic package artifacts produced by the package
 commands:
 

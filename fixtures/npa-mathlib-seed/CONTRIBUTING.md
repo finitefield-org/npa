@@ -1,5 +1,10 @@
 # Contributing To npa-mathlib-seed
 
+Visibility: internal test fixture note.
+
+This contributor note is for the local `npa-mathlib-seed` regression fixture.
+It is not the public package-author contribution guide.
+
 This fixture models a standalone theorem-library repository. Treat
 `fixtures/npa-mathlib-seed/` as the package root; package paths in
 `npa-package.toml` are relative to that root and must keep working after the

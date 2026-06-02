@@ -20,7 +20,7 @@ verdicts, and deterministic proof artifact hashes.
 | Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical and reviewed in PUB-06 | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
 | External package CI | External theorem package maintainers | English | CI template guide cleaned in PUB-05; external CI guide cleaned in PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
 | External checker docs | High-trust checker integrators | English | Cleaned in PUB-08; optional high-trust path only | `checkers/npa-checker-ext/README.md` |
-| Public examples and fixtures | Users only when explicitly linked from public docs | English for linked examples; otherwise internal label | Pending decision in PUB-09 | `fixtures/*/README.md`, `proofs/README.md` |
+| Public examples and fixtures | Users only when explicitly linked from public docs | English for linked examples; otherwise internal label | Visibility decided in PUB-09 | `fixtures/*/README.md`, `proofs/README.md` |
 | Design specifications | Implementers and auditors | English preferred, mixed internal detail accepted until cleanup | Internal/reference docs | `doc/core-spec-v0.1.md`, `doc/overall-design.md`, `doc/phase*.md` |
 | Internal milestones and evidence | Maintainers and development agents | Japanese or mixed English/Japanese allowed | Internal | `doc/*-todo.md`, `doc/npa-standalone-repo-activation.md`, `doc/registry-readiness.md` |
 
@@ -52,6 +52,27 @@ corresponding cleanup milestones are complete:
 - [npa-checker-ext README](../checkers/npa-checker-ext/README.md): optional
   high-trust external checker guidance. Cleaned in PUB-08. Base package CI
   remains reference-checker-only.
+
+## Public Examples And Fixtures
+
+These fixture README files are safe public examples:
+
+- [npa-std fixture](../fixtures/npa-std/README.md): standalone standard-library
+  package verification example.
+- [npa-mathlib fixture](../fixtures/npa-mathlib/README.md): public
+  `Mathlib.*` theorem-library package example.
+- [npa-mathlib downstream fixture](../fixtures/npa-mathlib-downstream/README.md):
+  downstream certificate-vendoring example without a registry server.
+
+These fixture and corpus notes are internal/test documentation, not public
+package-author entry points:
+
+- [npa-mathlib-seed fixture](../fixtures/npa-mathlib-seed/README.md)
+- [npa-mathlib-seed contributing note](../fixtures/npa-mathlib-seed/CONTRIBUTING.md)
+- [npa-mathlib-seed generated artifact note](../fixtures/npa-mathlib-seed/generated/README.md)
+- [npa-mathlib-seed downstream fixture](../fixtures/npa-mathlib-seed-downstream/README.md)
+- [Vendored seed artifact note](../fixtures/npa-mathlib-seed-downstream/vendor/npa-mathlib-seed/README.md)
+- [Proof corpus README](../proofs/README.md)
 
 ## Design And Specification Docs
 
@@ -101,8 +122,8 @@ implementation, or evidence records rather than the public user entry path:
   promoted to public user guidance.
 - `proofs/**` planning notes, unless a specific proof package guide is later
   promoted to public user guidance.
-- `fixtures/**` README and CONTRIBUTING files, unless PUB-09 marks a fixture
-  as a public example.
+- `fixtures/npa-mathlib-seed*/**` README and CONTRIBUTING files, because
+  PUB-09 marks them as internal/test fixture notes.
 
 ## Current Public Readiness Notes
 

@@ -1,5 +1,7 @@
 # npa-mathlib downstream fixture
 
+Visibility: public example fixture.
+
 This fixture models a downstream package that consumes the local
 `npa-mathlib` release artifact set without a registry server.
 

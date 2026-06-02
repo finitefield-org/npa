@@ -1,7 +1,10 @@
 # npa-std Fixture
 
-This is the SRA-02 local package fixture for the first standalone `npa-std`
-activation step.
+Visibility: public example fixture.
+
+This fixture models the first standalone `npa-std` package path for external
+package authors and auditors. It is safe to link from public documentation as a
+small package-verification example.
 
 The fixture intentionally contains only the legacy compatibility modules needed
 by the current proof corpus and `npa-mathlib` Layer 0:

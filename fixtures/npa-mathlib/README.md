@@ -1,7 +1,9 @@
 # npa-mathlib Fixture
 
+Visibility: public example fixture.
+
 This fixture models the first public `npa-mathlib` theorem-library package.
-It is derived from the CLR-09 `npa-mathlib-seed` Layer 0 modules, but uses the
+It is derived from the earlier seed fixture's Layer 0 modules, but uses the
 public `Mathlib.*` namespace and package name `npa-mathlib`.
 
 The fixture is reference-checker-only. Source, replay, metadata, generated

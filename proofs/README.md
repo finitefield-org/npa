@@ -1,5 +1,13 @@
 # AI Proof Corpus
 
+Visibility: internal proof-corpus documentation.
+
+This README documents the repository proof corpus and package-fixture
+regression data. It is not the public package-author entry path. Public package
+authors should start with `README.md`, `doc/README.md`,
+`doc/npa-toolchain-reference-v0.1.1.md`, and
+`doc/external-theorem-library-ci.md`.
+
 This directory stores proof artifacts intended for AI-facing proof production and regression.
 Artifact paths follow the module namespace. For example, module `Proofs.Ai.Basic` lives at
 `Proofs/Ai/Basic/`.
