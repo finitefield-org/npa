@@ -220,7 +220,10 @@ registry server より先に必要な blocker は次です。
    registry server と dependency solver はまだ作らない。
 
 8. external dogfood repo
-   `npa-mathlib-seed` のような別 repo で、fresh checkout から build / verify / CI を完走する実績がない。
+   CLR-09 で `fixtures/npa-mathlib-seed` が reference-checker-only seed release
+   fixture として固定済み。fresh checkout 相当の package command、release artifact、
+   downstream import fixture、workflow template は検証済み。standalone repo activation と
+   CLR-08 high-trust evidence は CLR-10 以降の readiness / follow-up 判断に残す。
 ```
 
 残りの CI / dogfood / registry integration を飛ばして registry server だけを作ると、
@@ -690,7 +693,12 @@ M5: npa-mathlib-seed dogfood
 Registry readiness
   -> CLR-10
      section 4.2 blocker の pass/fail evidence を揃え、
-     registry server を作るか、Git-release-based registry seed を続けるか、延期するかを決める。
+     Git-release-based registry seed を続ける判断を記録する。
+     public `npa-mathlib` Layer 0 は `fixtures/npa-mathlib/` と
+     `fixtures/npa-mathlib-downstream/` で local baseline 化済み。
+     次の作業は `doc/npa-mathlib-public-release-plan.md` に従って
+     `doc/npa-standalone-repo-activation.md` の手順で standalone repo
+     activation を進め、その後 larger theorem layer を追加する。
 ```
 
 CLR-08 は high-trust external checker integration の独立 milestone です。
@@ -755,8 +763,10 @@ AI assistant や tactic は contributor の作業を助けてよいですが、P
 5. source-free checker を package CLI の required gate にする。
 6. theorem index / axiom report / publish-plan を deterministic artifact にする。
 7. 外部 theorem library 用 CI template を作る。
-8. `npa-mathlib-seed` を別 repo として作り、小さな module で CI を通す。
-9. registry readiness review で、server 実装に進むか Git release artifact 運用を続けるか決める。
+8. `npa-mathlib-seed` で reference-checker-only dogfood release artifact と downstream fixture を固定する。
+9. registry readiness review で、server 実装ではなく Git release artifact 運用を続ける判断を記録する。
+10. `fixtures/npa-mathlib/` と `fixtures/npa-mathlib-downstream/` を public Layer 0 baseline として安定させる。
+11. `doc/npa-standalone-repo-activation.md` に従って `npa`, `npa-std`, `npa-mathlib` を activation し、larger theorem layer 追加へ進む。
 ```
 
 この順序なら、別 repo を作る前に必要な信頼境界と contributor experience をこの repo 内で検証できます。

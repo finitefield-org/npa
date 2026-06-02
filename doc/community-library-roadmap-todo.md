@@ -544,7 +544,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-09 Dogfood `npa-mathlib-seed`
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06, CLR-07
 - Inputs:
   - package CLI and artifacts from CLR-04/CLR-05/CLR-06
@@ -571,12 +571,15 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - The seed library can publish release artifacts usable by another package without a registry server.
   - Unless the seed repository opts into CLR-08 high-trust inputs, seed release evidence is explicitly reference-checker-only and does not emit `verified_high_trust`.
 - Verification:
-  - Seed repo CI passes from fresh checkout.
+  - Seed repo CI or checked-in fixture workflow validation passes from a fresh checkout-equivalent package root.
   - In `npa`: package import fixture test passes.
   - In `npa`: downstream import bundle mismatch tests reject corrupted seed hashes.
   - `cargo test --workspace` in `npa` after adding any integration fixture.
   - targeted search: `rg -n "community-library-roadmap-clr-09-todo|npa-mathlib-seed|reference-checker-only|publish-plan|downstream_import_bundle" doc README.md ci-templates crates`
 - Notes:
+  - Completed as a reference-checker-only seed release fixture. Standalone
+    repository activation and CLR-08 high-trust evidence remain deferred to
+    later work, as recorded in `fixtures/npa-mathlib-seed/DOGFOOD-AUDIT.md`.
   - Start with a small subset. Do not move the entire proof corpus until package ergonomics are proven.
   - Detailed breakdown: `doc/community-library-roadmap-clr-09-todo.md`.
   - Copy or reference the CLR-07 templates and helper scripts instead of copying
@@ -585,7 +588,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 
 ### CLR-10 Registry Readiness Review
 
-- Status: Pending
+- Status: Completed
 - Depends on: CLR-06, CLR-09
 - Inputs:
   - completed package CLI
@@ -593,6 +596,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
   - generated publish metadata
   - source-free checker results
   - detailed task breakdown in `doc/community-library-roadmap-clr-10-todo.md`
+  - public theorem-library release follow-up plan in `doc/npa-mathlib-public-release-plan.md`
 - Code or documentation areas:
   - `doc/community-library-roadmap.md`
   - `doc/registry-readiness.md` or equivalent release-readiness decision record
@@ -601,6 +605,7 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Deliverables:
   - Registry readiness checklist with pass/fail evidence.
   - Decision on whether to create registry server, continue Git-release-based registry seed, or defer.
+  - Follow-up plan for public `npa-mathlib` repository/package preparation.
   - List of registry-server requirements that are not already solved by package artifacts.
   - Trusted-boundary audit confirming registry metadata is discoverability data and not checker input.
   - Follow-up backlog for registry server, signing, dependency solving, binary cache, and UX items that remain outside the package contract.
@@ -613,10 +618,23 @@ The detailed CLR-00 breakdown is `doc/community-library-roadmap-clr-00-todo.md`.
 - Verification:
   - `rg -n "Registry 前の blocker|npa.registry.module.v0.1|npa.package.v0.1" doc/community-library-roadmap.md doc/community-library-roadmap-todo.md`
   - `rg -n "community-library-roadmap-clr-10-todo|registry readiness|Git-release-based registry seed|not checker input|reference-checker-only" doc README.md`
+  - `cargo run -q -p npa-cli -- package verify-certs --root fixtures/npa-mathlib --checker reference --json`
+  - `cargo run -q -p npa-cli -- package verify-certs --root fixtures/npa-mathlib-downstream --checker reference --json`
+  - `cargo test -q -p npa-cli package_import_fixture`
   - `git diff --check`
 - Notes:
   - This is a review / release-readiness milestone, not the registry server implementation.
   - Detailed breakdown: `doc/community-library-roadmap-clr-10-todo.md`.
+  - Completed by `doc/registry-readiness.md`: the final decision is to continue
+    Git-release-based registry seed work rather than create a registry server
+    now.
+  - Public package preparation now has a Layer 0 local fixture:
+    `fixtures/npa-mathlib/`, with downstream source-free import evidence in
+    `fixtures/npa-mathlib-downstream/`.
+  - Standalone repository activation is decomposed in
+    `doc/npa-standalone-repo-activation.md`.
+  - `verified_high_trust` remains unavailable for these fixtures until CLR-08
+    pinned external checker artifacts and release audit evidence are supplied.
 
 ---
 
