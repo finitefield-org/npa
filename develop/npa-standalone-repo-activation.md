@@ -719,7 +719,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-08 Run Downstream Source-Free Import Smoke
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-07
 - Inputs:
   - `npa-mathlib` `v0.1.0` release bundle
@@ -744,6 +744,61 @@ npa package build-certs --root . --check --json
 npa package verify-certs --root . --checker reference --json
 npa package check-hashes --root . --json
 ```
+
+Evidence fixed on 2026-06-02:
+
+- Downloaded the published release assets from
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.0`.
+- Verified the release bundle with the published SHA sidecar:
+  `npa-mathlib-v0.1.0-release-artifacts.tar.gz: OK`.
+- Verified release bundle SHA-256:
+  `d89dd2cb08ae21c20b9ca889285d9fcb50b1c133d40556e0601588a44e9632d9`.
+- Extracted release bundle contents were exactly:
+  - `npa-package.toml`
+  - `generated/package-lock.json`
+  - `generated/axiom-report.json`
+  - `generated/theorem-index.json`
+  - `generated/publish-plan.json`
+  - `Mathlib/Core/Reduction/certificate.npcert`
+  - `Mathlib/Data/Nat/Basic/certificate.npcert`
+  - `Mathlib/Logic/Basic/certificate.npcert`
+  - `Mathlib/Logic/Eq/certificate.npcert`
+  - `Mathlib/Logic/Prop/certificate.npcert`
+  - `vendor/npa-std/Std/Logic/Eq/certificate.npcert`
+  - `vendor/npa-std/Std/Nat/Basic/certificate.npcert`
+- Materialized a temporary downstream package from
+  `fixtures/npa-mathlib-downstream/` and replaced its vendored
+  `npa-mathlib` dependency with only this release-bundle certificate:
+  `vendor/npa-mathlib/Mathlib/Logic/Basic/certificate.npcert`.
+- The temporary downstream package did not vendor `npa-mathlib` source,
+  replay, meta, theorem index, publish plan, registry state, or package source
+  tree.
+- The vendored `Mathlib.Logic.Basic` certificate file hash matched the release
+  publish plan:
+  `sha256:e04584ba3e7b9e5c9206b1a5d82e136c77de980e51ac173b432007f67e3c86bf`.
+- Source-free downstream package gates passed:
+  - `npa package check --root . --json`
+  - `npa package build-certs --root . --check --json`
+  - `npa package verify-certs --root . --checker reference --json`
+  - `npa package check-hashes --root . --json`
+- `npa-checker-ref` verified:
+  - `Mathlib.Logic.Basic` from
+    `vendor/npa-mathlib/Mathlib/Logic/Basic/certificate.npcert`
+  - `Downstream.MathlibBasic` from
+    `Downstream/MathlibBasic/certificate.npcert`
+- The source-free verifier JSON did not contain `source.npa`, `replay.json`,
+  `meta.json`, `theorem-index.json`, `publish-plan.json`, or `registry`.
+- Negative checks rejected corrupted import data before proof acceptance:
+  - corrupted import package name: `package_lock_stale`
+  - corrupted import package version: `package_lock_stale`
+  - corrupted import export hash: `export_hash_mismatch` at
+    `imports[0].export_hash`
+  - corrupted import certificate hash: `certificate_hash_mismatch` at
+    `imports[0].certificate_hash`
+  - corrupted vendored certificate bytes: `certificate_decode_failed` at
+    `imports[0].certificate`
+  - corrupted certificate file-hash pin in `generated/package-lock.json`:
+    `package_lock_stale`
 
 ## SRA-09 Record Post-Activation Evidence
 

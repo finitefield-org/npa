@@ -256,13 +256,18 @@ Evidence fixed on 2026-06-02:
 - The release notes explicitly keep source, replay, theorem index, publish
   metadata, package manifest, CI status, Git tags, and release pages outside
   proof evidence.
+- A downstream source-free smoke materialized from the published release bundle
+  passed `check`, `build-certs --check`, `verify-certs --checker reference`,
+  and `check-hashes`.
+- Negative checks rejected corrupted import package name, package version,
+  export hash, certificate hash, and certificate artifact data before proof
+  acceptance.
 
 ## Immediate Tasks
 
-1. Run SRA-08 downstream source-free import smoke against the published
-   `npa-mathlib v0.1.0` release bundle.
-2. Record SRA-09 post-activation evidence after the downstream smoke passes.
-3. Add the next closed theorem layer only after the Layer 0 release bundle and
-   downstream smoke evidence remain stable.
-4. Keep CLR-08 high-trust release evidence separate from the reference-checker
+1. Record SRA-09 post-activation evidence now that the downstream smoke has
+   passed.
+2. Add the next closed theorem layer only after SRA-09 fixes the complete
+   activation evidence.
+3. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public Layer 0 fixture.
