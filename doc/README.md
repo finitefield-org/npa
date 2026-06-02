@@ -18,7 +18,7 @@ verdicts, and deterministic proof artifact hashes.
 | Public repository entry | Users, package authors, auditors | English | `README.md` cleaned in PUB-01; `LICENSE` added in PUB-02; `CONTRIBUTING.md` added in PUB-03 | `README.md`, `LICENSE`, `CONTRIBUTING.md` |
 | Public docs router | Users, package authors, auditors | English | Expanded documentation index in PUB-04 | `doc/README.md` |
 | Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
-| External package CI | External theorem package maintainers | English | Pending public-doc cleanup in PUB-05/PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
+| External package CI | External theorem package maintainers | English | CI template guide cleaned in PUB-05; external CI contract cleanup remains PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
 | External checker docs | High-trust checker integrators | English if included in first public user path | Pending decision in PUB-08 | `checkers/npa-checker-ext/README.md` |
 | Public examples and fixtures | Users only when explicitly linked from public docs | English for linked examples; otherwise internal label | Pending decision in PUB-09 | `fixtures/*/README.md`, `proofs/README.md` |
 | Design specifications | Implementers and auditors | English preferred, mixed internal detail accepted until cleanup | Internal/reference docs | `doc/core-spec-v0.1.md`, `doc/overall-design.md`, `doc/phase*.md` |
@@ -37,7 +37,7 @@ corresponding cleanup milestones are complete:
 - [External Theorem Library CI](external-theorem-library-ci.md): package CI
   contract for external theorem libraries. Cleanup target: PUB-07.
 - [GitHub Actions CI Templates](../ci-templates/github-actions/README.md):
-  copyable package workflow guidance. Cleanup target: PUB-05.
+  copyable package workflow guidance. Cleaned in PUB-05.
 
 ## Toolchain Reference Docs
 

@@ -230,7 +230,7 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 
 ### PUB-05 Clean Public CI Template Documentation
 
-- Status: Pending
+- Status: Completed
 - Inputs:
   - `ci-templates/github-actions/README.md`
   - `ci-templates/github-actions/npa-package-pr.yml`
@@ -251,6 +251,20 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
   - Docs state that package workflows do not use registry lookup,
     latest-version resolution, hidden package caches, or network package
     fetching for proof acceptance.
+- Evidence fixed on 2026-06-02:
+  - Rewrote `ci-templates/github-actions/README.md` as an English
+    package-author guide for copyable GitHub Actions templates.
+  - Documented the current default package-author variables:
+    `NPA_GIT_TAG = v0.1.1` and `RUST_TOOLCHAIN_VERSION = 1.95.0`.
+  - Documented that package workflows run package commands with explicit
+    `--root .`.
+  - Documented that package workflows do not use registry lookup,
+    latest-version resolution, hidden package caches, package solvers, or
+    network package fetching as proof acceptance input.
+  - Updated `setup-pinned-npa.sh` tag validation guidance to use `v0.1.1` as
+    the exact immutable tag example.
+  - Removed the stale `v0.1.0` setup example from the linked external theorem
+    library CI contract without otherwise broadening the PUB-07 cleanup.
 
 ### PUB-06 Review Toolchain Reference Docs
 

@@ -43,7 +43,7 @@ else
   fi
   if [ -n "$npa_git_tag" ]; then
     if [[ "$npa_git_tag" == "latest" ]] || [[ ! "$npa_git_tag" =~ ^v[0-9]+[.][0-9]+[.][0-9]+([-.][0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
-      echo "NPA_GIT_TAG must be an exact immutable tag such as v0.1.0." >&2
+      echo "NPA_GIT_TAG must be an exact immutable tag such as v0.1.1." >&2
       exit 2
     fi
   fi

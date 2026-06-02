@@ -53,6 +53,13 @@ to choose the verifier implementation.
 
 Workflow templates should support these setup inputs:
 
+For the current source-build template path, package repositories should prefer:
+
+```text
+NPA_GIT_TAG = v0.1.1
+RUST_TOOLCHAIN_VERSION = 1.95.0
+```
+
 ```text
 NPA_BINARY_PATH
   Package-relative or workspace-relative path to an existing executable `npa`
@@ -60,7 +67,7 @@ NPA_BINARY_PATH
   or package manager distribution exists.
 
 NPA_VERSION
-  Exact release version or release tag for `npa`, for example `v0.1.0`.
+  Exact release version or release tag for `npa`.
   This is allowed only when the template has a pinned release download or
   checked release artifact strategy. The value `latest` is invalid.
 
