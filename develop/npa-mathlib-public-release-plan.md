@@ -84,6 +84,7 @@ being published:
 Mathlib.Algebra.Ring
 Mathlib.Algebra.Square
 Mathlib.Algebra.OrderedField
+Mathlib.Algebra.Group.Basic
 Mathlib.Vector.Basic
 Mathlib.Geometry.Pythagorean
 ```
@@ -208,6 +209,29 @@ include the abstract Pythagorean/law-package closure.
 Layer 3, algebraic structures and isomorphism routes:
 
 - group, subgroup, quotient, image, and isomorphism modules
+
+Layer 3A, abstract group foundation:
+
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.EqReasoning` | `Mathlib.Logic.EqReasoning` | Reusable equality reasoning support module required by the abstract group foundation. |
+| `Proofs.Ai.Algebra.AbstractGroup` | `Mathlib.Algebra.Group.Basic` | First abstract group API: group law package, hom law package, kernel predicate, kernel relation, and base group/hom/kernel facts. |
+
+Layer 3A closure audit is fixed in
+`develop/npa-mathlib-layer3a-closure-audit.md`. The selected foundation
+closure is limited to `npa-std v0.1.0`, `Mathlib.Logic.EqReasoning`, and
+`Mathlib.Algebra.Group.Basic`. It introduces the first public `npa-mathlib`
+`Eq.rec` axiom surface, so materialization must keep
+`allow_custom_axioms = false`, set `allowed_axioms = ["Eq.rec"]`, and verify
+that the regenerated axiom report has zero policy violations.
+
+Layer 3B and later algebraic routes should remain separate audits:
+
+- `Proofs.Ai.Algebra.AbstractGroupSubgroup`
+- `Proofs.Ai.Algebra.AbstractGroupKernel`
+- `Proofs.Ai.Algebra.AbstractGroupImage`
+- `Proofs.Ai.Algebra.AbstractGroupQuotient`
+- `Proofs.Ai.Algebra.AbstractGroup*Iso*`
 
 Layer 4, analysis and functional analysis:
 
@@ -439,9 +463,16 @@ Concrete task sequence:
 
 1. Treat `npa-mathlib v0.1.3` as the current public theorem-library baseline
    for Layer 2B concrete geometry imports.
-2. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
+2. Materialize Layer 3A `Mathlib.Logic.EqReasoning` and
+   `Mathlib.Algebra.Group.Basic` in the standalone `npa-mathlib` repository as
+   `npa-mathlib v0.1.4`, using the axiom policy fixed in
+   `develop/npa-mathlib-layer3a-closure-audit.md` and updating the standalone
+   namespace policy before publishing.
+3. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
-3. Keep CLR-08 high-trust release evidence separate from the reference-checker
+4. Keep Layer 3B subgroup/normal-subgroup and later group isomorphism routes
+   separate from the Layer 3A foundation release.
+5. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
-4. Choose the next theorem expansion layer before changing package boundaries,
+6. Choose each later theorem expansion layer before changing package boundaries,
    registry semantics, or import identity rules.

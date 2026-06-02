@@ -555,10 +555,16 @@ imported modules:
 
 - Treat `npa-mathlib v0.1.3` as the current public theorem-library baseline
   for Layer 2B concrete geometry imports.
+- Materialize the audited Layer 3A foundation as `npa-mathlib v0.1.4` with
+  exactly `Mathlib.Logic.EqReasoning` and `Mathlib.Algebra.Group.Basic`.
+  The closure audit is fixed in
+  `develop/npa-mathlib-layer3a-closure-audit.md`; the materialization must
+  explicitly allow builtin `Eq.rec` while keeping `allow_custom_axioms = false`.
 - Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
   closure has a separate audit and axiom-policy review.
-- Choose the next theorem expansion layer through a separate closure audit
-  before adding more modules to the standalone `npa-mathlib` repository.
+- Keep Layer 3B subgroup/normal-subgroup and later group isomorphism routes in
+  separate closure audits before adding those modules to standalone
+  `npa-mathlib`.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, release-bundle evidence, and
   downstream import evidence.
