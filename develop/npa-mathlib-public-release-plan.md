@@ -238,9 +238,20 @@ is limited to `npa-std v0.1.0`, the released `npa-mathlib v0.1.4` Layer 3A
 baseline, and `Mathlib.Algebra.Group.Subgroup`. It does not introduce a new
 axiom policy beyond the existing `Eq.rec` allowance.
 
-Layer 3C and later algebraic routes should remain separate audits:
+Layer 3C, subgroup containment/order foundation:
 
-- `Proofs.Ai.Algebra.AbstractGroupSubgroupOrder`
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractGroupSubgroupOrder` | `Mathlib.Algebra.Group.Subgroup.Order` | Predicate-level subgroup inclusion, subgroup equivalence, and normal-subgroup containment API. |
+
+Layer 3C subgroup-order closure audit is fixed in
+`develop/npa-mathlib-layer3c-subgroup-order-closure-audit.md`. The selected
+closure is limited to `npa-std v0.1.0`, the released `npa-mathlib v0.1.5`
+Layer 3B baseline, and `Mathlib.Algebra.Group.Subgroup.Order`. It introduces
+no new direct or transitive axioms.
+
+Layer 3D and later algebraic routes should remain separate audits:
+
 - `Proofs.Ai.Algebra.AbstractGroupKernel`
 - `Proofs.Ai.Algebra.AbstractGroupImage`
 - `Proofs.Ai.Algebra.AbstractGroupQuotient`
@@ -556,14 +567,47 @@ Concrete task sequence:
 9. Completed: published `npa-mathlib v0.1.5` after release bundle and
    downstream smoke evidence were fixed.
 
+## Layer 3C Expansion Tasks
+
+Status: Audit fixed for the first Layer 3C subgroup containment/order release.
+Materialization is pending for `npa-mathlib v0.1.6`.
+
+Layer 3C selected module set:
+
+```text
+Mathlib.Algebra.Group.Subgroup.Order
+```
+
+Concrete task sequence:
+
+1. Completed: audited the selected subgroup containment/order closure in
+   `develop/npa-mathlib-layer3c-subgroup-order-closure-audit.md`.
+2. Pending: map the source module to the `Mathlib.*` namespace according to
+   `npa-mathlib/docs/namespace-policy.md`.
+3. Pending: keep package name `npa-mathlib` and use the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Pending: add `Mathlib/Algebra/Group/Subgroup/Order/` in the standalone
+   `npa-mathlib` repository.
+5. Pending: keep `allow_custom_axioms = false` and
+   `allowed_axioms = ["Eq.rec"]`, while declaring no axioms for the new module.
+6. Pending: regenerate certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+7. Pending: update downstream source-free smoke to import the Layer 3C
+   certificate closure from release-bundle bytes.
+8. Pending: run package gates for `npa-mathlib` and the downstream smoke.
+9. Pending: publish `npa-mathlib v0.1.6` after release bundle and downstream
+   smoke evidence are fixed.
+
 ## Immediate Tasks
 
 1. Treat `npa-mathlib v0.1.5` as the current public theorem-library baseline
    for Layer 3B subgroup and normal-subgroup imports.
-2. Select the next Layer 3C route before adding more
-   `Mathlib.Algebra.Group.*` modules.
-3. Keep subgroup order, kernel, image, quotient, normal quotient, isomorphism,
-   and correspondence routes in separate follow-on audits.
+2. Materialize the audited Layer 3C subgroup containment/order closure as
+   `npa-mathlib v0.1.6` with exactly
+   `Mathlib.Algebra.Group.Subgroup.Order`.
+3. Keep kernel, image, quotient, normal quotient, isomorphism, and
+   correspondence routes in separate follow-on audits.
 4. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
 5. Keep CLR-08 high-trust release evidence separate from the reference-checker
