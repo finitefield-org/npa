@@ -802,7 +802,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-09 Record Post-Activation Evidence
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-08
 - Inputs:
   - `npa` toolchain ref
@@ -823,9 +823,30 @@ Evidence fixed on 2026-06-02:
 - Verification:
 
 ```sh
-rg -n "npa-std|npa-mathlib|v0.1.0|Git-release-based registry seed|verified_high_trust" doc
+rg -n "npa-std|npa-mathlib|v0.1.0|Git-release-based registry seed|verified_high_trust" develop docs
 git diff --check
 ```
+
+Evidence fixed on 2026-06-02:
+
+- Post-activation evidence is recorded in
+  `develop/registry-readiness.md`.
+- `develop/npa-mathlib-public-release-plan.md` records the completed Layer 0
+  activation state and the concrete Layer 1 expansion task sequence.
+- Exact refs are recorded for:
+  - `finitefield-org/npa` toolchain tag `v0.1.1`
+  - `finitefield-org/npa-std` release tag `v0.1.0`
+  - `finitefield-org/npa-mathlib` release tag `v0.1.0`
+- Exact release artifact URLs and SHA-256 hashes are recorded for:
+  - `npa-std-v0.1.0-release-artifacts.tar.gz`
+  - `npa-mathlib-v0.1.0-release-artifacts.tar.gz`
+- Command results are recorded for package release gates, downstream
+  source-free smoke, negative corrupted import checks, and
+  `cargo test -q -p npa-cli package_import_fixture`.
+- Remaining gaps are explicit: registry server, dependency solver, signing,
+  binary cache, and CLR-08 high-trust evidence.
+- Layer 1 work can start in the standalone `npa-mathlib` repository without
+  revisiting repository split or package manifest semantics.
 
 ## Release Artifact Rule
 
@@ -873,5 +894,6 @@ Stop activation and fix the local plan if any of these occur:
   metadata to verify.
 - Public `npa-mathlib` artifacts still contain `Proofs.Ai.*` module names.
 - `verified_high_trust` is generated from reference-checker-only evidence.
-- `npa-mathlib` adds Layer 1 modules before Layer 0 standalone activation
-  evidence is recorded.
+- `npa-mathlib` adds Layer 1 modules without a closed dependency set,
+  regenerated package artifacts, release-bundle evidence, and downstream
+  source-free import evidence.

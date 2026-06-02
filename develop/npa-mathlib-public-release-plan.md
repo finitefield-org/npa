@@ -145,8 +145,8 @@ Layer 0 fixture status:
 - The `v0.1.0` release bundle hash is
   `d89dd2cb08ae21c20b9ca889285d9fcb50b1c133d40556e0601588a44e9632d9`.
 
-Layer 1 and later mappings are provisional until the Layer 0 release bundle,
-downstream source-free smoke, and post-activation evidence are fixed:
+Layer 1 can now start from the following provisional mapping candidates. Keep
+the final names aligned with the standalone `npa-mathlib` namespace policy:
 
 Layer 1, small algebra/order:
 
@@ -262,12 +262,46 @@ Evidence fixed on 2026-06-02:
 - Negative checks rejected corrupted import package name, package version,
   export hash, certificate hash, and certificate artifact data before proof
   acceptance.
+- SRA-09 post-activation evidence is recorded in
+  `develop/registry-readiness.md` and
+  `develop/npa-standalone-repo-activation.md`.
+
+## Layer 1 Expansion Tasks
+
+The repository split and package manifest semantics are fixed. Do not revisit
+them for Layer 1. Add the next theorem layer in the standalone
+`finitefield-org/npa-mathlib` repository.
+
+Layer 1 candidate module set:
+
+```text
+Mathlib.Algebra.Ring
+Mathlib.Algebra.Square
+Mathlib.Algebra.OrderedField
+```
+
+Concrete task sequence:
+
+1. Select a closed Layer 1 source set from the current proof corpus algebra and
+   ordered-field candidates.
+2. Map each source module to the `Mathlib.*` namespace according to
+   `npa-mathlib/docs/namespace-policy.md`.
+3. Keep package name `npa-mathlib`; use the existing `npa-std v0.1.0`
+   hash-pinned imports unless the selected theorems require a reviewed
+   `npa-std` release update.
+4. Add the new module directories and manifest entries in the standalone
+   `npa-mathlib` repository.
+5. Regenerate certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+6. Add or update a downstream source-free smoke that imports at least one new
+   Layer 1 certificate artifact from a release bundle.
+7. Run package gates for `npa-mathlib` and the downstream smoke.
+8. Publish the next `npa-mathlib` release only after the release bundle and
+   downstream smoke evidence are fixed.
 
 ## Immediate Tasks
 
-1. Record SRA-09 post-activation evidence now that the downstream smoke has
-   passed.
-2. Add the next closed theorem layer only after SRA-09 fixes the complete
-   activation evidence.
-3. Keep CLR-08 high-trust release evidence separate from the reference-checker
+1. Start the Layer 1 candidate selection and dependency closure audit.
+2. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public Layer 0 fixture.
