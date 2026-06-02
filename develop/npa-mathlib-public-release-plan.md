@@ -154,6 +154,19 @@ Layer 1, small algebra/order:
 - `Proofs.Ai.Algebra.Square`
 - `Proofs.Ai.OrderedField`
 
+Layer 1 closure audit is fixed in
+`develop/npa-mathlib-layer1-closure-audit.md`. The selected public mapping is:
+
+| Source corpus module | Public module |
+| --- | --- |
+| `Proofs.Ai.Algebra.Ring` | `Mathlib.Algebra.Ring` |
+| `Proofs.Ai.Algebra.Square` | `Mathlib.Algebra.Square` |
+| `Proofs.Ai.OrderedField` | `Mathlib.Algebra.OrderedField` |
+
+The selected set is closed over new internal dependencies after namespace
+renaming. It introduces no new external package dependency beyond the existing
+hash-pinned `npa-std v0.1.0` imports already used by `npa-mathlib`.
+
 Layer 2, vector and geometry:
 
 - vector basics and inner-product modules
@@ -302,6 +315,7 @@ Concrete task sequence:
 
 ## Immediate Tasks
 
-1. Start the Layer 1 candidate selection and dependency closure audit.
+1. Materialize the audited Layer 1 algebra/order set in the standalone
+   `npa-mathlib` repository.
 2. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public Layer 0 fixture.
