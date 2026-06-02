@@ -166,7 +166,9 @@ policy violations. `Eq.rec` is builtin equality eliminator surface; it is not
 plan, CI, Git tag, or registry metadata.
 
 The generated AI theorem index records 8 theorem entries for the selected
-modules, and all 8 theorem entries list zero theorem-level axiom dependencies.
+modules. The introduction/elimination/unit-image entries have no theorem-level
+axiom dependencies. The kernel closure entries and image multiplication/inverse
+closure entries list the expected `Eq.rec` equality-reasoning dependency.
 
 ## Deferred Candidates
 
@@ -273,7 +275,7 @@ external cached dependency `Std.Logic.Eq`, which is verified as an import
 artifact and is not rebuilt as a local corpus module.
 
 The generated theorem index records 8 theorem entries for the selected
-modules, and all 8 theorem entries list zero theorem-level axiom dependencies:
+modules:
 
 - `kernel_mul_closed`
 - `kernel_inv_closed`
@@ -283,6 +285,11 @@ modules, and all 8 theorem entries list zero theorem-level axiom dependencies:
 - `image_one`
 - `image_mul_closed`
 - `image_inv_closed`
+
+The entries for `image_intro`, `image_elim`, and `image_one` list no
+theorem-level axiom dependencies. The entries for `kernel_mul_closed`,
+`kernel_inv_closed`, `kernel_conj_closed`, `image_mul_closed`, and
+`image_inv_closed` list the expected `Eq.rec` equality-reasoning dependency.
 
 The generated axiom report records for both selected modules:
 
@@ -350,3 +357,91 @@ Use the next package/release version after `v0.1.6`; provisionally this is
     certificate bytes, and bad package version before proof acceptance.
 16. Create the `v0.1.7` release bundle only after generated artifacts,
     downstream evidence, and negative import hash checks are fixed.
+
+## Materialization Result
+
+Layer 3D-A was materialized in the standalone `npa-mathlib` repository as
+`npa-mathlib v0.1.7`.
+
+Release identity:
+
+- repository: `finitefield-org/npa-mathlib`
+- commit: `3239a0a0d86e7599451dfb1ff72b485716fa6047`
+- tag: `v0.1.7`
+- tag object: `3bb8ac860641d055fce59f3be3a3d9d089c9742f`
+- release URL:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.7`
+- release bundle:
+  `npa-mathlib-v0.1.7-release-artifacts.tar.gz`
+- release bundle SHA-256:
+  `a5647e21f091f71e4e390f88a7bfd2f5250fa9ba7742fc4fb77729ea9dc07444`
+
+Added public modules:
+
+| Public module | Source hash | Certificate file hash | Export hash | Axiom report hash | Certificate hash |
+| --- | --- | --- | --- | --- | --- |
+| `Mathlib.Algebra.Group.Kernel` | `sha256:962c2db5be02218d92e681a9d92035d12cd06f23515aafad793dd5612ae14736` | `sha256:66724ebc31b2a845aa5e91dc9468f5470ee1b6ecb22b7b5632dfc912b3f96d0c` | `sha256:5c1a39b0e9f82dc1014e3e63549c71eab3db6383024a87408e4e95e06bc33fbb` | `sha256:39f92e3a74edf201d900d93abeebb9c404ea8c141bfc46761f7e889c9f8cf9f7` | `sha256:8d1c72935c2c22edd3911a907df17b3e84b95ebae56fb27f4f514dcd6dbef14d` |
+| `Mathlib.Algebra.Group.Image` | `sha256:904df4b2602b8e0a7799aaeea9e6e310e61138f497c5fcc6a44d24443c9c3b9c` | `sha256:c4efe5d45e4dc167cd9137675e993d3ffe5678f4579484814736b72cfc77fa30` | `sha256:0935f963b77bb9ed124d4b38435ad2a9a19f860e1f06de11c1ab8ca3f05cdd0e` | `sha256:0869976f857fbf07454df1db004a649ae3ee9ede0e1429dbf40af6dfaac5bfeb` | `sha256:6b69557ec90109fac32db07e78f35a2150dbda092294245455d1b1b00bd2f588` |
+
+Generated artifact summary:
+
+- package version: `0.1.7`
+- package lock entries: 20
+- local modules: 18
+- external imports: 2
+- release artifact count: 24
+- module registry seed entries: 18
+- theorem index entries: 226
+- theorem index entries for the two new modules: 8
+- axiom report modules: 20
+- direct axiom count: 1
+- transitive axiom count: 5
+- policy violation count: 0
+- publish plan hash:
+  `sha256:79886bc28382a09da6d3a2508d29cd78277ecb099a10a52df3ce5d8adb7711c1`
+
+The downstream smoke fixture imports only release-bundle certificate bytes for:
+
+- `Std.Logic.Eq`
+- `Mathlib.Logic.EqReasoning`
+- `Mathlib.Algebra.Group.Basic`
+- `Mathlib.Algebra.Group.Kernel`
+- `Mathlib.Algebra.Group.Image`
+
+The downstream local theorems are:
+
+- `Downstream.GroupKernelImage::kernel_mul_closed_passthrough`
+- `Downstream.GroupKernelImage::image_intro_passthrough`
+
+The main package passed:
+
+```sh
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+```
+
+The downstream smoke fixture passed:
+
+```sh
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+```
+
+Negative checks rejected:
+
+- bad `Mathlib.Algebra.Group.Kernel` export hash
+- bad `Mathlib.Algebra.Group.Image` certificate hash
+- corrupted certificate bytes
+- bad package version
+
+The next theorem expansion should not extend `v0.1.7` in place. Start a new
+closure audit for the Layer 3D-B quotient foundation route before adding
+quotient, normal quotient, first isomorphism, or correspondence modules.
