@@ -386,6 +386,8 @@ Evidence fixed on 2026-06-02:
 
 - Status: Pending
 - Depends on: SRA-03
+- Current blocker: complete `doc/public-repository-readiness-todo.md`, make
+  `finitefield-org/npa` public, then rerun the `npa-std` release workflow.
 - Inputs:
   - activated `npa-std` repository
 - Deliverables:
