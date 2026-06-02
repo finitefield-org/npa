@@ -237,34 +237,94 @@ artifacts, and update downstream smoke fixtures before release.
 Use the next package/release version after `v0.1.3`; provisionally this is
 `v0.1.4`.
 
-## Next Materialization Steps
+## Materialization Steps
 
-Run these steps in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
+These steps were completed in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
 
-1. Add `Mathlib/Logic/EqReasoning/` and `Mathlib/Algebra/Group/Basic/` from
-   the selected corpus sources.
-2. Rename module-local imports from `Proofs.Ai.*` to `Mathlib.*`.
-3. Keep the existing `npa-std v0.1.0` hash-pinned imports for `Std.Logic.Eq`
-   and `Std.Nat.Basic`.
-4. Keep the released Layer 0, Layer 1, Layer 2A, and Layer 2B modules local in
-   `npa-mathlib`.
-5. Add manifest entries for the two new modules and bump the package version
-   to `0.1.4`.
-6. Update `docs/namespace-policy.md` in the standalone `npa-mathlib`
-   repository with the Layer 3A released module list and mapping.
-7. Set package policy to `allow_custom_axioms = false` and
+1. Completed: added `Mathlib/Logic/EqReasoning/` and
+   `Mathlib/Algebra/Group/Basic/` from the selected corpus sources.
+2. Completed: renamed module-local imports from `Proofs.Ai.*` to `Mathlib.*`.
+3. Completed: kept the existing `npa-std v0.1.0` hash-pinned imports for
+   `Std.Logic.Eq` and `Std.Nat.Basic`.
+4. Completed: kept the released Layer 0, Layer 1, Layer 2A, and Layer 2B
+   modules local in `npa-mathlib`.
+5. Completed: added manifest entries for the two new modules and bumped the
+   package version to `0.1.4`.
+6. Completed: updated `docs/namespace-policy.md` in the standalone
+   `npa-mathlib` repository with the Layer 3A released module list and
+   mapping.
+7. Completed: set package policy to `allow_custom_axioms = false` and
    `allowed_axioms = ["Eq.rec"]`; set `axioms = ["Eq.rec"]` on both new module
    entries.
-8. Regenerate certificates and generated package artifacts:
+8. Completed: regenerated certificates and generated package artifacts:
    `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
    `publish-plan.json`.
-9. Update the downstream smoke fixture so it imports at least
+9. Completed: updated the downstream smoke fixture so it imports
    `Mathlib.Algebra.Group.Basic` through a package import bundle.
-10. Run package gates for `npa-mathlib` and downstream smoke.
-11. Publish `npa-mathlib v0.1.4` only after release bundle, axiom report, and
-    downstream smoke evidence are fixed.
+10. Completed: ran package gates for `npa-mathlib` and downstream smoke.
+11. Completed: published `npa-mathlib v0.1.4` after release bundle, axiom
+    report, and downstream smoke evidence were fixed.
 
 Do not start Layer 3B subgroup/normal-subgroup materialization, isomorphism
 route materialization, Pythagorean materialization, or CLR-08 high-trust
 evidence work as part of this Layer 3A materialization. They remain separate
 release tracks.
+
+## Release Outcome
+
+Layer 3A was materialized and published as `npa-mathlib v0.1.4` on
+2026-06-03.
+
+Release identifiers:
+
+- release: `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.4`
+- tag object: `88bc4cc1addae12f1babd45eeee4caa2a302a932`
+- target commit: `e775afff5b9a2abe7709d7d66afe333c37cab955`
+- release bundle:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.4/npa-mathlib-v0.1.4-release-artifacts.tar.gz`
+- release bundle SHA-256:
+  `d216da5522a5d4cd5e37ae059387b93632a0d04aa6ea6f9b8e757c256789ee4c`
+
+Public module hashes after namespace materialization:
+
+| Public module | Source hash | Certificate file hash | Export hash | Axiom report hash | Certificate hash |
+| --- | --- | --- | --- | --- | --- |
+| `Mathlib.Logic.EqReasoning` | `sha256:676d15f72088b4f107773ad566920c02a5e29d8773a4c5c24ccb0a1b19de930f` | `sha256:d864825b1b4618bb7d04c541c74ef3d4dc78076abd458df79bc22d648ae0b23a` | `sha256:67f90711ce596378579688b337552c3ae555aada85f97c5d40eab2381e2d1679` | `sha256:5283e4bbd120c3ffa60356b600be06364c3739f9c1992538f75aa4c7df947968` | `sha256:5f4d2c7abdf117a41633f904bc11345963ee8c36cd7ea1cfc0d8369657a22bad` |
+| `Mathlib.Algebra.Group.Basic` | `sha256:566c57ad04412e8e71ec892f2817c008ce63e0966b31414dec8e5d31e5cc1ee5` | `sha256:c6407b46a7421a1a56c16270a481fa9ab4d93249ae0bfe0bbec098e7af6380f0` | `sha256:36a59f49575ead1441d64314b9f301f159d391e5dc159c874fe2e7c89416db5f` | `sha256:63c3ca0596e94ceb5c525266931264176f2096a320083864a9662bbc9db78269` | `sha256:ae0e5ac36b7f4c2729fb4f202627afd575763927db61e88f330b7a245c185756` |
+
+The regenerated package axiom report records:
+
+- `allow_custom_axioms = false`
+- `allowed_axioms = ["Eq.rec"]`
+- direct axiom count: 1
+- transitive axiom count: 2
+- policy violation count: 0
+- package axiom report hash:
+  `sha256:57994c334195fa396314537155ade05753b9838d97947aa056685536586ea4ea`
+
+The standalone package gates passed locally:
+
+```sh
+npa package check --root . --json
+npa package build-certs --root . --check --json
+npa package verify-certs --root . --checker reference --json
+npa package check-hashes --root . --json
+npa package axiom-report --root . --check --json
+npa package index --root . --check --json
+npa package publish-plan --root . --check --json
+```
+
+The downstream smoke fixture imported only release-bundle certificate bytes for
+`Std.Logic.Eq`, `Mathlib.Logic.EqReasoning`, and
+`Mathlib.Algebra.Group.Basic`, then passed:
+
+```sh
+npa package check --root fixtures/downstream-smoke --json
+npa package build-certs --root fixtures/downstream-smoke --check --json
+npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+npa package check-hashes --root fixtures/downstream-smoke --json
+```
+
+GitHub Actions status is intentionally not release evidence for `v0.1.4`.
+This release remains reference-checker-only and does not emit
+`verified_high_trust`.

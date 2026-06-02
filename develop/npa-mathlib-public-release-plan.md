@@ -317,7 +317,7 @@ The first public release may be reference-checker-only. It must include:
 CLR-08 pinned external checker artifacts, runner policies, checker registry
 data, and release audit evidence.
 
-Evidence fixed on 2026-06-02:
+Evidence fixed through 2026-06-03:
 
 - `npa-mathlib v0.1.0` is published as a public GitHub Release.
 - `npa-mathlib v0.1.1` is published as a public GitHub Release with the
@@ -326,8 +326,12 @@ Evidence fixed on 2026-06-02:
   Layer 2A vector modules.
 - `npa-mathlib v0.1.3` is published as a public GitHub Release with the
   Layer 2B concrete geometry modules.
+- `npa-mathlib v0.1.4` is published as a public GitHub Release with the
+  Layer 3A abstract group foundation modules.
 - The `v0.1.3` release bundle hash is
   `07e5cdf2ebb6e139fbe0473b6bc4372f830182a7c5bc39ed3dbf1a151f930602`.
+- The `v0.1.4` release bundle hash is
+  `d216da5522a5d4cd5e37ae059387b93632a0d04aa6ea6f9b8e757c256789ee4c`.
 - The release artifact bundle contains only the required package manifest,
   generated package artifacts, local `Mathlib.*` certificate artifacts, and
   vendored `npa-std` certificate artifacts.
@@ -352,8 +356,11 @@ Evidence fixed on 2026-06-02:
   `Mathlib.Algebra.OrderedField`, `Mathlib.Vector.Basic`,
   `Mathlib.Vector.Dot`, `Mathlib.Geometry.RightTriangle`, and
   `Mathlib.Geometry.Metric`.
-- GitHub Actions status for `npa-mathlib v0.1.1`, `v0.1.2`, and `v0.1.3` is
-  intentionally not used as release evidence in this pass.
+- The `v0.1.4` downstream smoke materialized from the published release bundle
+  imports only release-bundle certificate bytes for `Std.Logic.Eq`,
+  `Mathlib.Logic.EqReasoning`, and `Mathlib.Algebra.Group.Basic`.
+- GitHub Actions status for `npa-mathlib v0.1.1`, `v0.1.2`, `v0.1.3`, and
+  `v0.1.4` is intentionally not used as release evidence in this pass.
 - Negative checks rejected corrupted import package name, package version,
   export hash, certificate hash, and certificate artifact data before proof
   acceptance.
@@ -459,18 +466,49 @@ Concrete task sequence:
 8. Completed: published `npa-mathlib v0.1.3` after release bundle and
    downstream smoke evidence were fixed.
 
+## Layer 3A Expansion Tasks
+
+Status: Completed for the first Layer 3A abstract group foundation release in
+`npa-mathlib v0.1.4`.
+
+Layer 3A selected module set:
+
+```text
+Mathlib.Logic.EqReasoning
+Mathlib.Algebra.Group.Basic
+```
+
+Concrete task sequence:
+
+1. Completed: audited the selected abstract group foundation closure in
+   `develop/npa-mathlib-layer3a-closure-audit.md`.
+2. Completed: mapped each source module to the `Mathlib.*` namespace according
+   to `npa-mathlib/docs/namespace-policy.md`.
+3. Completed: kept package name `npa-mathlib` and used the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Completed: added `Mathlib/Logic/EqReasoning/` and
+   `Mathlib/Algebra/Group/Basic/` in the standalone `npa-mathlib` repository.
+5. Completed: set `allow_custom_axioms = false` and
+   `allowed_axioms = ["Eq.rec"]` for the first public equality eliminator
+   surface.
+6. Completed: regenerated certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+7. Completed: updated downstream source-free smoke to import the Layer 3A
+   certificate closure from release-bundle bytes.
+8. Completed: ran package gates for `npa-mathlib` and the downstream smoke.
+9. Completed: published `npa-mathlib v0.1.4` after release bundle and
+   downstream smoke evidence were fixed.
+
 ## Immediate Tasks
 
-1. Treat `npa-mathlib v0.1.3` as the current public theorem-library baseline
-   for Layer 2B concrete geometry imports.
-2. Materialize Layer 3A `Mathlib.Logic.EqReasoning` and
-   `Mathlib.Algebra.Group.Basic` in the standalone `npa-mathlib` repository as
-   `npa-mathlib v0.1.4`, using the axiom policy fixed in
-   `develop/npa-mathlib-layer3a-closure-audit.md` and updating the standalone
-   namespace policy before publishing.
+1. Treat `npa-mathlib v0.1.4` as the current public theorem-library baseline
+   for Layer 3A abstract group foundation imports.
+2. Audit Layer 3B subgroup/normal-subgroup before materializing any additional
+   `Mathlib.Algebra.Group.*` public surface.
 3. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
-4. Keep Layer 3B subgroup/normal-subgroup and later group isomorphism routes
+4. Keep later group isomorphism routes
    separate from the Layer 3A foundation release.
 5. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
