@@ -16,7 +16,7 @@ verdicts, and deterministic proof artifact hashes.
 | Area | Audience | Language target | Status | Primary paths |
 | --- | --- | --- | --- | --- |
 | Public repository entry | Users, package authors, auditors | English | `README.md` cleaned in PUB-01; `LICENSE` added in PUB-02; `CONTRIBUTING.md` added in PUB-03 | `README.md`, `LICENSE`, `CONTRIBUTING.md` |
-| Public docs router | Users, package authors, auditors | English | Expanded documentation index in PUB-04 | `doc/README.md` |
+| Public docs router | Users, package authors, auditors | English | Expanded documentation index in PUB-04; `doc/index.md` alias added in PUB-10 | `doc/README.md`, `doc/index.md` |
 | Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical and reviewed in PUB-06 | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
 | External package CI | External theorem package maintainers | English | CI template guide cleaned in PUB-05; external CI guide cleaned in PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
 | External checker docs | High-trust checker integrators | English | Cleaned in PUB-08; optional high-trust path only | `checkers/npa-checker-ext/README.md` |

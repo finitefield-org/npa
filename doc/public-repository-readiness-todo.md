@@ -367,7 +367,7 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 
 ### PUB-10 Stale/Private Assumption Scan
 
-- Status: Pending
+- Status: Completed
 - Deliverables:
   - Scan result recorded in the final evidence commit or PR description.
 - Verification:
@@ -382,6 +382,23 @@ rg -n "[ぁ-んァ-ン一-龯]" README.md CONTRIBUTING.md doc/README.md doc/inde
   - Public-facing docs do not recommend `v0.1.0` as the current toolchain ref.
   - Public-facing docs do not contain Japanese unless intentionally marked as
     internal/development context.
+- Evidence fixed on 2026-06-02:
+  - Added `doc/index.md` as an English alias for `doc/README.md` so the
+    documented public-readiness scan target exists.
+  - Ran the broad stale/private scan across `README.md`, `CONTRIBUTING.md`,
+    `doc`, `ci-templates`, `checkers`, `fixtures`, and `proofs`.
+  - The broad scan returned 205 contextual hits. Classified those hits as
+    expected context:
+    current `NPA_GIT_TAG = v0.1.1` recommendations, explicitly historical
+    `v0.1.0` references, release artifact version references, internal
+    planning/evidence notes, implementation uses of the Rust/OCaml word
+    `private`, and explicit exclusions of registry lookup or latest-version
+    resolution.
+  - Confirmed public-facing docs do not refer to `finitefield-org/npa` as
+    private.
+  - Confirmed public-facing docs do not recommend `v0.1.0` as the current
+    toolchain ref.
+  - Confirmed the documented public-facing Japanese scan has no hits.
 
 ### PUB-11 Make `finitefield-org/npa` Public And Verify Fetch
 
