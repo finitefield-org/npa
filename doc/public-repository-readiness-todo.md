@@ -314,7 +314,7 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 
 ### PUB-08 Clean External Checker README
 
-- Status: Pending
+- Status: Completed
 - Inputs:
   - `checkers/npa-checker-ext/README.md`
 - Deliverables:
@@ -324,6 +324,17 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
   - Public readers understand that external checker evidence is optional and
     high-trust only when pinned checker binaries, runner policy, checker
     registry, and release audit evidence are supplied.
+- Evidence fixed on 2026-06-02:
+  - Rewrote `checkers/npa-checker-ext/README.md` as an English external
+    checker README for high-trust integrators.
+  - Documented that `npa-checker-ext` is not part of the default public
+    package-author path and that base package CI remains
+    reference-checker-only.
+  - Documented that external checker evidence is optional high-trust release
+    evidence only when pinned checker binaries, runner policy, checker
+    registry, release policy, and release audit evidence are supplied.
+  - Updated `doc/README.md` to mark external checker docs as cleaned in PUB-08
+    and optional high-trust only.
 
 ### PUB-09 Decide Fixture README Visibility
 

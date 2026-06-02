@@ -19,7 +19,7 @@ verdicts, and deterministic proof artifact hashes.
 | Public docs router | Users, package authors, auditors | English | Expanded documentation index in PUB-04 | `doc/README.md` |
 | Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical and reviewed in PUB-06 | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
 | External package CI | External theorem package maintainers | English | CI template guide cleaned in PUB-05; external CI guide cleaned in PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
-| External checker docs | High-trust checker integrators | English if included in first public user path | Pending decision in PUB-08 | `checkers/npa-checker-ext/README.md` |
+| External checker docs | High-trust checker integrators | English | Cleaned in PUB-08; optional high-trust path only | `checkers/npa-checker-ext/README.md` |
 | Public examples and fixtures | Users only when explicitly linked from public docs | English for linked examples; otherwise internal label | Pending decision in PUB-09 | `fixtures/*/README.md`, `proofs/README.md` |
 | Design specifications | Implementers and auditors | English preferred, mixed internal detail accepted until cleanup | Internal/reference docs | `doc/core-spec-v0.1.md`, `doc/overall-design.md`, `doc/phase*.md` |
 | Internal milestones and evidence | Maintainers and development agents | Japanese or mixed English/Japanese allowed | Internal | `doc/*-todo.md`, `doc/npa-standalone-repo-activation.md`, `doc/registry-readiness.md` |
@@ -46,6 +46,12 @@ corresponding cleanup milestones are complete:
 - [Historical Toolchain Reference v0.1.0](npa-toolchain-reference-v0.1.0.md):
   SRA-01 ref retained for audit context. Do not recommend it as the current
   external package pin.
+
+## External Checker Docs
+
+- [npa-checker-ext README](../checkers/npa-checker-ext/README.md): optional
+  high-trust external checker guidance. Cleaned in PUB-08. Base package CI
+  remains reference-checker-only.
 
 ## Design And Specification Docs
 
