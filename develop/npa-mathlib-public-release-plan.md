@@ -140,8 +140,13 @@ Layer 0 fixture status:
 - `crates/npa-cli/tests/package_import_fixture.rs` checks source-free public
   downstream import, publish-plan import-bundle consistency, artifact hash
   consistency, and corrupted package/hash pin rejection.
+- Public release `v0.1.0` has been published at
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.0`.
+- The `v0.1.0` release bundle hash is
+  `d89dd2cb08ae21c20b9ca889285d9fcb50b1c133d40556e0601588a44e9632d9`.
 
-Layer 1 and later mappings are provisional until Layer 0 artifacts pass:
+Layer 1 and later mappings are provisional until the Layer 0 release bundle,
+downstream source-free smoke, and post-activation evidence are fixed:
 
 Layer 1, small algebra/order:
 
@@ -242,15 +247,22 @@ The first public release may be reference-checker-only. It must include:
 CLR-08 pinned external checker artifacts, runner policies, checker registry
 data, and release audit evidence.
 
+Evidence fixed on 2026-06-02:
+
+- `npa-mathlib v0.1.0` is published as a public GitHub Release.
+- The release artifact bundle contains only the required package manifest,
+  generated package artifacts, local `Mathlib.*` certificate artifacts, and
+  vendored `npa-std` certificate artifacts.
+- The release notes explicitly keep source, replay, theorem index, publish
+  metadata, package manifest, CI status, Git tags, and release pages outside
+  proof evidence.
+
 ## Immediate Tasks
 
-1. Use the completed SRA-00 baseline as the local public Layer 0 checkpoint.
-2. Use the SRA-02-compatible `npa` toolchain reference (`v0.1.1`) as the
-   external repository CLI pin.
-3. Continue the standalone repository activation procedure in
-   `develop/npa-standalone-repo-activation.md`, starting with SRA-02 `npa-std`
-   local package fixture materialization.
-4. Add the next closed theorem layer to `fixtures/npa-mathlib/` only after the
-   Layer 0 artifact hashes remain stable.
-5. Keep CLR-08 high-trust release evidence separate from the reference-checker
+1. Run SRA-08 downstream source-free import smoke against the published
+   `npa-mathlib v0.1.0` release bundle.
+2. Record SRA-09 post-activation evidence after the downstream smoke passes.
+3. Add the next closed theorem layer only after the Layer 0 release bundle and
+   downstream smoke evidence remain stable.
+4. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public Layer 0 fixture.

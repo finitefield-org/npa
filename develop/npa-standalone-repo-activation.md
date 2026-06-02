@@ -631,7 +631,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-07 Publish `npa-mathlib` v0.1.0 Release Artifacts
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-06
 - Inputs:
   - activated `npa-mathlib` repository
@@ -662,6 +662,60 @@ npa package verify-certs --root . --checker reference --json
 npa package axiom-report --root . --check --json
 npa package publish-plan --root . --check --json
 ```
+
+Evidence fixed on 2026-06-02:
+
+- GitHub release:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.0`.
+- Git tag `v0.1.0` is an annotated tag:
+  - tag object `66ee38a360c63cbe1723a7902cd4b188feb70bf0`
+  - target commit `8d8db311916cb3bae7fd9ce783139d17e3196747`
+- Release artifact bundle:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.0/npa-mathlib-v0.1.0-release-artifacts.tar.gz`.
+- Bundle SHA-256:
+  `d89dd2cb08ae21c20b9ca889285d9fcb50b1c133d40556e0601588a44e9632d9`.
+- SHA sidecar:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.0/npa-mathlib-v0.1.0-release-artifacts.tar.gz.sha256`.
+- Bundle contents are exactly the required proof-relevant release files:
+  - `npa-package.toml`
+  - `generated/package-lock.json`
+  - `generated/axiom-report.json`
+  - `generated/theorem-index.json`
+  - `generated/publish-plan.json`
+  - `Mathlib/Core/Reduction/certificate.npcert`
+  - `Mathlib/Data/Nat/Basic/certificate.npcert`
+  - `Mathlib/Logic/Basic/certificate.npcert`
+  - `Mathlib/Logic/Eq/certificate.npcert`
+  - `Mathlib/Logic/Prop/certificate.npcert`
+  - `vendor/npa-std/Std/Logic/Eq/certificate.npcert`
+  - `vendor/npa-std/Std/Nat/Basic/certificate.npcert`
+- The bundle intentionally excludes `source.npa`, `replay.json`, and
+  `meta.json`.
+- Local release gates passed before tagging:
+  - `npa package check --root . --json`
+  - `npa package build-certs --root . --check --json`
+  - `npa package verify-certs --root . --checker reference --json`
+  - `npa package check-hashes --root . --json`
+  - `npa package axiom-report --root . --check --json`
+  - `npa package index --root . --check --json`
+  - `npa package publish-plan --root . --check --json`
+- `generated/publish-plan.json` records package `npa-mathlib`, version
+  `0.1.0`, checksum-only signature policy, five local modules, five module
+  registry entries, five downstream import bundle modules, and two external
+  imports from `npa-std`.
+- `generated/axiom-report.json` records zero direct axioms, zero transitive
+  axioms, and zero policy violations.
+- Release notes list the five local modules, the `npa-std v0.1.0` dependency,
+  the release bundle SHA-256, and the reference-checker-only trust boundary.
+  They state that source, replay, theorem index, publish metadata, package
+  manifest, CI status, Git tags, and release pages are not proof evidence.
+- GitHub release workflow run
+  `https://github.com/finitefield-org/npa-mathlib/actions/runs/26822203340`
+  completed successfully for `Package artifact checks`,
+  `Reference checker source-free verification`, and
+  `Fast-kernel source-free verification`. CI status is recorded only as
+  operational evidence, not proof evidence.
+- `git diff --check` passed in the standalone repository before tagging.
 
 ## SRA-08 Run Downstream Source-Free Import Smoke
 
