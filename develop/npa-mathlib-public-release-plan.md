@@ -307,6 +307,9 @@ selected closure is limited to `npa-std v0.1.0`, the released
 intentionally excludes `Proofs.Ai.Algebra.AbstractGroupFirstIso` because that
 module exposes the provisional `FirstIsoRepMvp` public surface.
 
+Layer 3D-C is fixed as `npa-mathlib v0.1.9`, including regenerated package
+artifacts, a release bundle, and downstream source-free smoke evidence.
+
 Layer 4, analysis and functional analysis:
 
 - metric topology, normed spaces, derivatives, inverse/implicit function
@@ -410,6 +413,8 @@ Evidence fixed through 2026-06-03:
   Layer 3D-A group kernel/image modules.
 - `npa-mathlib v0.1.8` is published as a public GitHub Release with the
   Layer 3D-B kernel quotient foundation modules.
+- `npa-mathlib v0.1.9` is published as a public GitHub Release with the
+  Layer 3D-C first isomorphism-to-image modules.
 - The `v0.1.3` release bundle hash is
   `07e5cdf2ebb6e139fbe0473b6bc4372f830182a7c5bc39ed3dbf1a151f930602`.
 - The `v0.1.4` release bundle hash is
@@ -422,6 +427,8 @@ Evidence fixed through 2026-06-03:
   `a5647e21f091f71e4e390f88a7bfd2f5250fa9ba7742fc4fb77729ea9dc07444`.
 - The `v0.1.8` release bundle hash is
   `3d179c92c455628a9ffeb3b0cd607fcabc783cfe990a0e100f7b36fdf2696ed7`.
+- The `v0.1.9` release bundle hash is
+  `101d1dfc017c2ade6d0e37e0eeafa11245770b16594046a3e7a033e486b7f752`.
 - The release artifact bundle contains only the required package manifest,
   generated package artifacts, local `Mathlib.*` certificate artifacts, and
   vendored `npa-std` certificate artifacts.
@@ -466,9 +473,15 @@ Evidence fixed through 2026-06-03:
   imports only release-bundle certificate bytes for `Std.Logic.Eq`,
   `Mathlib.Logic.EqReasoning`, `Mathlib.Algebra.Group.Basic`, and
   `Mathlib.Algebra.Group.Kernel.Quotient.*`.
+- The `v0.1.9` downstream smoke materialized from the published release bundle
+  imports only release-bundle certificate bytes for `Std.Logic.Eq`,
+  `Mathlib.Logic.EqReasoning`, `Mathlib.Algebra.Group.Basic`,
+  `Mathlib.Algebra.Group.Image`,
+  `Mathlib.Algebra.Group.Kernel.Quotient.*`, and
+  `Mathlib.Algebra.Group.FirstIsomorphism.*`.
 - GitHub Actions status for `npa-mathlib v0.1.1`, `v0.1.2`, `v0.1.3`,
-  `v0.1.4`, `v0.1.5`, `v0.1.6`, and `v0.1.7` is intentionally not used as
-  release evidence in this pass.
+  `v0.1.4`, `v0.1.5`, `v0.1.6`, `v0.1.7`, `v0.1.8`, and `v0.1.9` is
+  intentionally not used as release evidence in this pass.
 - Negative checks rejected corrupted import package name, package version,
   export hash, certificate hash, and certificate artifact data before proof
   acceptance.
@@ -751,17 +764,14 @@ Concrete task sequence:
 
 ## Immediate Tasks
 
-1. Treat `npa-mathlib v0.1.8` as the current public theorem-library baseline
-   for Layer 3D-C first isomorphism materialization.
-2. Materialize the audited Layer 3D-C first isomorphism closure as
-   `npa-mathlib v0.1.9` with exactly
-   `Mathlib.Algebra.Group.FirstIsomorphism` and
-   `Mathlib.Algebra.Group.FirstIsomorphism.Image`.
+1. Treat `npa-mathlib v0.1.9` as the current public theorem-library baseline
+   for the next algebra closure audit.
+2. Audit the normal-subgroup quotient route before materializing second/third
+   isomorphism or correspondence theorem modules.
 3. Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic`; do not
    create a separate `Mathlib.Algebra.Group.Hom` module without a new audit.
-4. Keep the MVP first-isomorphism representative module, normal quotient,
-   second/third isomorphism, and correspondence routes in separate follow-on
-   audits.
+4. Keep the MVP first-isomorphism representative module, second/third
+   isomorphism, and correspondence routes in separate follow-on audits.
 5. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
 6. Keep CLR-08 high-trust release evidence separate from the reference-checker
