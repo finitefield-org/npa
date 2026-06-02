@@ -291,7 +291,7 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 
 ### PUB-07 Clean External Theorem Library CI Docs
 
-- Status: Pending
+- Status: Completed
 - Inputs:
   - `doc/external-theorem-library-ci.md`
 - Deliverables:
@@ -301,6 +301,16 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
   - The doc distinguishes reference-checker-only evidence from future
     high-trust evidence.
   - The doc does not make CI status proof evidence.
+- Evidence fixed on 2026-06-02:
+  - Rewrote `doc/external-theorem-library-ci.md` as an English package-author
+    CI guide.
+  - Documented pull request and release gate commands with explicit `--root .`.
+  - Separated base reference-checker-only evidence from optional high-trust
+    evidence requiring pinned checker binaries, runner policy, checker
+    registry, release policy, and release audit evidence.
+  - Documented that CI status, GitHub release pages, registry metadata, source
+    files, theorem indexes, publish plans, AI traces, and tactic traces are not
+    proof evidence.
 
 ### PUB-08 Clean External Checker README
 
