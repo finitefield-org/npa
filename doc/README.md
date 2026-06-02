@@ -15,7 +15,7 @@ verdicts, and deterministic proof artifact hashes.
 
 | Area | Audience | Language target | Status | Primary paths |
 | --- | --- | --- | --- | --- |
-| Public repository entry | Users, package authors, auditors | English | `README.md` cleaned in PUB-01; `LICENSE` and `CONTRIBUTING.md` pending PUB-02/PUB-03 | `README.md`, `LICENSE`, `CONTRIBUTING.md` |
+| Public repository entry | Users, package authors, auditors | English | `README.md` cleaned in PUB-01; `LICENSE` added in PUB-02; `CONTRIBUTING.md` pending PUB-03 | `README.md`, `LICENSE`, `CONTRIBUTING.md` |
 | Public docs router | Users, package authors, auditors | English | Active classification page | `doc/README.md` |
 | Toolchain reference | External theorem package maintainers | English | Current ref is `v0.1.1`; `v0.1.0` is historical | `doc/npa-toolchain-reference-v0.1.1.md`, `doc/npa-toolchain-reference-v0.1.0.md` |
 | External package CI | External theorem package maintainers | English | Pending public-doc cleanup in PUB-05/PUB-07 | `doc/external-theorem-library-ci.md`, `ci-templates/github-actions/README.md` |
@@ -30,7 +30,7 @@ These docs are intended to be safe entry points for public readers once the
 corresponding cleanup milestones are complete:
 
 - `README.md`: repository overview and quick start. Cleaned in PUB-01.
-- `LICENSE`: repository license. Creation target: PUB-02.
+- `LICENSE`: repository MIT license. Added in PUB-02.
 - `CONTRIBUTING.md`: contributor policy and local gates. Creation target:
   PUB-03.
 - `doc/README.md`: this documentation classification page.

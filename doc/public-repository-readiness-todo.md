@@ -155,12 +155,17 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 
 ### PUB-02 Add Root LICENSE
 
-- Status: Pending
+- Status: Completed
 - Deliverables:
   - `LICENSE` at repository root.
 - Acceptance criteria:
   - License matches workspace crate metadata, currently MIT.
   - Public GitHub page shows a recognized license.
+- Evidence fixed on 2026-06-02:
+  - Added root `LICENSE` with standard MIT License text.
+  - Confirmed workspace crate metadata remains `license = "MIT"`.
+  - Updated `doc/README.md` to mark the public repository entry license item
+    as added in PUB-02.
 
 ### PUB-03 Add Root CONTRIBUTING In English
 
