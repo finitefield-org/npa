@@ -1,6 +1,6 @@
 # Nano Proof Auditor (NPA)
 
-NPA is an experimental, certificate-first proof assistant and verification
+NPA is a certificate-first proof assistant and verification
 toolchain for dependent proofs.
 
 The project is designed around a small trusted base. Surface syntax,
