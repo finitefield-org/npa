@@ -31,9 +31,9 @@ Why this decision:
   Layer 2A vector release evidence, Layer 2B concrete geometry release
   evidence, Layer 3A abstract group foundation release evidence, Layer 3B
   subgroup release evidence, Layer 3C subgroup containment/order release
-  evidence, and Layer 3D-A kernel/image release evidence are now fixed. Larger
-  theorem layers, release signing, and high-trust evidence remain explicit
-  follow-up work.
+  evidence, Layer 3D-A kernel/image release evidence, and Layer 3D-B kernel
+  quotient release evidence are now fixed. Larger theorem layers, release
+  signing, and high-trust evidence remain explicit follow-up work.
 
 Why not create a registry server now:
 
@@ -96,11 +96,11 @@ from reference-checker-only results.
 | B1 | Package Manifest | pass | `crates/npa-package/src/manifest.rs`; `fixtures/npa-mathlib-seed/npa-package.toml`; `fixtures/npa-mathlib-seed-downstream/npa-package.toml`; package manifest negative fixtures under `crates/npa-package/tests/fixtures/package/invalid/` | `cargo run -q -p npa-cli -- package check --root fixtures/npa-mathlib-seed --json` passed; `cargo run -q -p npa-cli -- package check --root fixtures/npa-mathlib-seed-downstream --json` passed; `./scripts/check-fast.sh` passed manifest tests | Manifest imports are package/version/module/hash pinned; module-name-only external imports and forbidden registry lookup fields are rejected by tests. Manifest data is package metadata, not proof evidence. | None for CLR-10 evidence collection. | `develop/registry-readiness.md` | Supports readiness review without changing `npa.package.v0.1` semantics. |
 | B2 | Package CLI | pass | `crates/npa-cli/src/package*.rs`; `README.md`; seed generated artifacts | Seed commands passed: `check`, `build-certs --check`, `verify-certs --checker reference`, `check-hashes`, `axiom-report --check`, `index --check`, `publish-plan --check` | CLI orchestrates deterministic local package checks. It does not add kernel, checker, or certificate network input. | None for reference-checker-only seed evidence. | `develop/registry-readiness.md` | Package command surface is available for CLR-10 evidence collection. |
 | B3 | CI Contract | deferred | `ci-templates/github-actions/npa-package-pr.yml`; `ci-templates/github-actions/npa-package-release.yml`; `fixtures/npa-mathlib-seed/.github/workflows/npa-package-pr.yml`; `fixtures/npa-mathlib-seed/.github/workflows/npa-package-release.yml`; `docs/external-theorem-library-ci.md` | `python3 ci-templates/github-actions/validate-workflows.py` passed; seed package command sequence passed locally | Base PR/release templates are reference-checker-only and registry-free. Opt-in high-trust is separate and does not synthesize `verified_high_trust`. | No live standalone GitHub Actions run for a separate `npa-mathlib-seed` repository is recorded in this repo. | `fixtures/npa-mathlib-seed/DOGFOOD-AUDIT.md`; future standalone seed repo issue | Blocks claiming live external CI evidence; does not block collecting registry-readiness evidence from the checked-in fixture. |
-| B4 | External Package Import Resolution | pass | `fixtures/npa-mathlib-seed/generated/publish-plan.json`; `fixtures/npa-mathlib-seed-downstream/npa-package.toml`; `fixtures/npa-mathlib/generated/publish-plan.json`; `fixtures/npa-mathlib-downstream/npa-package.toml`; `fixtures/npa-mathlib-downstream/generated/package-lock.json`; public `npa-mathlib v0.1.0` through `v0.1.7` release-bundle downstream smoke evidence | Seed downstream `check`, `verify-certs --checker reference`, and `check-hashes` passed; public downstream `check`, `build-certs --check`, `verify-certs --checker reference`, and `check-hashes` passed for `v0.1.0` through `v0.1.7`; `cargo test -q -p npa-cli package_import_fixture` passed; `cargo test -q -p npa-package downstream_import_bundle` passed | Downstream import uses package, version, module, export hash, certificate hash, and certificate artifact hash. It does not use source files, theorem index contents, latest lookup, or registry network data. | None for the seed downstream fixture or public Layer 0 through Layer 3D-A downstream smoke. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md` | Supports Git-release-based registry seed consumption before any server exists and shows the same contract under public package name `npa-mathlib`. |
-| B5 | Source-Free Package Verification | pass | `fixtures/npa-mathlib-seed/generated/package-lock.json`; `fixtures/npa-mathlib/generated/package-lock.json`; seed, public, and downstream `.npcert` artifacts; public `npa-mathlib v0.1.0` through `v0.1.7` release bundles; `crates/npa-api/src/package_verifier.rs`; `crates/npa-package/src/lock.rs` | Seed reference verification passed for 7 modules; public `npa-mathlib v0.1.0` reference verification passed for 7 modules, `v0.1.1` for 10 modules, `v0.1.2` for 12 modules, `v0.1.3` for 14 modules, `v0.1.4` for 16 modules, `v0.1.5` for 17 modules, `v0.1.6` for 18 modules, and `v0.1.7` for 20 modules; public downstream reference verification passed for 2 modules in `v0.1.0`, 5 modules in `v0.1.1`, 7 modules in `v0.1.2`, 9 modules in `v0.1.3`, 4 modules in `v0.1.4`, 5 modules in `v0.1.5`, 6 modules in `v0.1.6`, and 6 modules in `v0.1.7`; `./scripts/check-fast.sh` passed package lock and verifier tests | Verification is certificate and import-artifact based in dependency order. Source, replay, meta, theorem index, AI traces, and registry metadata are not proof evidence. | None for reference checker evidence. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md` | Source-free reference verification is ready as the CLR-10 baseline and current public package baseline. |
-| B6 | Deterministic Public Artifacts | pass | `fixtures/npa-mathlib-seed/generated/package-lock.json`; `fixtures/npa-mathlib-seed/generated/axiom-report.json`; `fixtures/npa-mathlib-seed/generated/theorem-index.json`; `fixtures/npa-mathlib-seed/generated/publish-plan.json`; `fixtures/npa-mathlib/generated/package-lock.json`; `fixtures/npa-mathlib/generated/axiom-report.json`; `fixtures/npa-mathlib/generated/theorem-index.json`; `fixtures/npa-mathlib/generated/publish-plan.json`; standalone `npa-mathlib v0.1.0` through `v0.1.7` generated package artifacts | `check-hashes`, `axiom-report --check`, `index --check`, and `publish-plan --check` passed for the seed fixture, public `npa-mathlib` fixture, and standalone `npa-mathlib v0.1.0` through `v0.1.7` release states; `cargo test -q -p npa-package publish_plan` passed; `./scripts/check-fast.sh` passed | Generated artifacts are deterministic metadata. They do not become proof evidence and do not include mutable registry resolution as checker input. | Add explicit byte-identical rerun evidence if a final release audit requires it. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md` | Artifact freshness evidence is sufficient to continue Git-release-based public package preparation. |
+| B4 | External Package Import Resolution | pass | `fixtures/npa-mathlib-seed/generated/publish-plan.json`; `fixtures/npa-mathlib-seed-downstream/npa-package.toml`; `fixtures/npa-mathlib/generated/publish-plan.json`; `fixtures/npa-mathlib-downstream/npa-package.toml`; `fixtures/npa-mathlib-downstream/generated/package-lock.json`; public `npa-mathlib v0.1.0` through `v0.1.8` release-bundle downstream smoke evidence | Seed downstream `check`, `verify-certs --checker reference`, and `check-hashes` passed; public downstream `check`, `build-certs --check`, `verify-certs --checker reference`, and `check-hashes` passed for `v0.1.0` through `v0.1.8`; `cargo test -q -p npa-cli package_import_fixture` passed; `cargo test -q -p npa-package downstream_import_bundle` passed | Downstream import uses package, version, module, export hash, certificate hash, and certificate artifact hash. It does not use source files, theorem index contents, latest lookup, or registry network data. | None for the seed downstream fixture or public Layer 0 through Layer 3D-B downstream smoke. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md` | Supports Git-release-based registry seed consumption before any server exists and shows the same contract under public package name `npa-mathlib`. |
+| B5 | Source-Free Package Verification | pass | `fixtures/npa-mathlib-seed/generated/package-lock.json`; `fixtures/npa-mathlib/generated/package-lock.json`; seed, public, and downstream `.npcert` artifacts; public `npa-mathlib v0.1.0` through `v0.1.8` release bundles; `crates/npa-api/src/package_verifier.rs`; `crates/npa-package/src/lock.rs` | Seed reference verification passed for 7 modules; public `npa-mathlib v0.1.0` reference verification passed for 7 modules, `v0.1.1` for 10 modules, `v0.1.2` for 12 modules, `v0.1.3` for 14 modules, `v0.1.4` for 16 modules, `v0.1.5` for 17 modules, `v0.1.6` for 18 modules, `v0.1.7` for 20 modules, and `v0.1.8` for 24 modules; public downstream reference verification passed for 2 modules in `v0.1.0`, 5 modules in `v0.1.1`, 7 modules in `v0.1.2`, 9 modules in `v0.1.3`, 4 modules in `v0.1.4`, 5 modules in `v0.1.5`, 6 modules in `v0.1.6`, 6 modules in `v0.1.7`, and 8 modules in `v0.1.8`; `./scripts/check-fast.sh` passed package lock and verifier tests | Verification is certificate and import-artifact based in dependency order. Source, replay, meta, theorem index, AI traces, and registry metadata are not proof evidence. | None for reference checker evidence. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md` | Source-free reference verification is ready as the CLR-10 baseline and current public package baseline. |
+| B6 | Deterministic Public Artifacts | pass | `fixtures/npa-mathlib-seed/generated/package-lock.json`; `fixtures/npa-mathlib-seed/generated/axiom-report.json`; `fixtures/npa-mathlib-seed/generated/theorem-index.json`; `fixtures/npa-mathlib-seed/generated/publish-plan.json`; `fixtures/npa-mathlib/generated/package-lock.json`; `fixtures/npa-mathlib/generated/axiom-report.json`; `fixtures/npa-mathlib/generated/theorem-index.json`; `fixtures/npa-mathlib/generated/publish-plan.json`; standalone `npa-mathlib v0.1.0` through `v0.1.8` generated package artifacts | `check-hashes`, `axiom-report --check`, `index --check`, and `publish-plan --check` passed for the seed fixture, public `npa-mathlib` fixture, and standalone `npa-mathlib v0.1.0` through `v0.1.8` release states; `cargo test -q -p npa-package publish_plan` passed; `./scripts/check-fast.sh` passed | Generated artifacts are deterministic metadata. They do not become proof evidence and do not include mutable registry resolution as checker input. | Add explicit byte-identical rerun evidence if a final release audit requires it. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md` | Artifact freshness evidence is sufficient to continue Git-release-based public package preparation. |
 | B7 | Publish Metadata | pass | `fixtures/npa-mathlib-seed/generated/publish-plan.json`; `proofs/generated/publish-plan.json`; `crates/npa-package/src/publish_plan.rs`; `crates/npa-package/src/registry.rs` | Seed `publish-plan --check` passed; `proofs` `publish-plan --check` passed; `cargo test -q -p npa-package publish_plan` passed | `npa.registry.module.v0.1` theorem package metadata is separate from independent checker binary registry metadata such as `npa.independent-checker.checker_binary_registry.v1`. Publish metadata is discoverability/import helper data, not proof evidence. | None for checksum-only MVP metadata. Signing remains later release workflow work. | `develop/registry-readiness.md` | CLR-06 publish metadata can feed the registry-readiness decision. |
-| B8 | External Dogfood Repo | pass | `fixtures/npa-mathlib-seed/README.md`; `fixtures/npa-mathlib-seed/CONTRIBUTING.md`; `fixtures/npa-mathlib-seed/DOGFOOD-AUDIT.md`; `fixtures/npa-mathlib/README.md`; `fixtures/npa-mathlib-downstream/README.md`; seed and public generated artifacts; seed and public downstream fixtures; public `npa-std` and `npa-mathlib` release pages | Seed package commands passed locally; public `npa-mathlib` package commands passed locally; downstream fixtures passed; `npa-std v0.1.0` and `npa-mathlib v0.1.0` release workflows passed; `npa-mathlib v0.1.1` through `v0.1.7` release gates passed locally; published-release downstream smoke passed for `v0.1.0` through `v0.1.7`; `cargo test -q -p npa-cli package_import_fixture` passed | The seed and public releases are reference-checker-only. Registry seed entries are discoverability metadata and do not imply a live registry service, latest resolver, or trusted upload path. | Larger corpus import and CLR-08 high-trust evidence are deferred. Public Layer 3D-A kernel/image release evidence is fixed. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md`; standalone `npa-mathlib/docs/namespace-policy.md` | Supports using Git release artifacts as the public package baseline before any registry server exists. |
+| B8 | External Dogfood Repo | pass | `fixtures/npa-mathlib-seed/README.md`; `fixtures/npa-mathlib-seed/CONTRIBUTING.md`; `fixtures/npa-mathlib-seed/DOGFOOD-AUDIT.md`; `fixtures/npa-mathlib/README.md`; `fixtures/npa-mathlib-downstream/README.md`; seed and public generated artifacts; seed and public downstream fixtures; public `npa-std` and `npa-mathlib` release pages | Seed package commands passed locally; public `npa-mathlib` package commands passed locally; downstream fixtures passed; `npa-std v0.1.0` and `npa-mathlib v0.1.0` release workflows passed; `npa-mathlib v0.1.1` through `v0.1.8` release gates passed locally; published-release downstream smoke passed for `v0.1.0` through `v0.1.8`; `cargo test -q -p npa-cli package_import_fixture` passed | The seed and public releases are reference-checker-only. Registry seed entries are discoverability metadata and do not imply a live registry service, latest resolver, or trusted upload path. | Larger corpus import and CLR-08 high-trust evidence are deferred. Public Layer 3D-B kernel quotient release evidence is fixed. | `develop/registry-readiness.md`; `develop/npa-mathlib-public-release-plan.md`; standalone `npa-mathlib/docs/namespace-policy.md` | Supports using Git release artifacts as the public package baseline before any registry server exists. |
 
 ## Post-Activation Evidence
 
@@ -111,8 +111,9 @@ continuation, the `npa-mathlib v0.1.3` Layer 2B concrete geometry release
 continuation, the `npa-mathlib v0.1.4` Layer 3A abstract group foundation
 release continuation, the `npa-mathlib v0.1.5` Layer 3B subgroup and
 normal-subgroup foundation release continuation, the `npa-mathlib v0.1.6`
-Layer 3C subgroup containment/order release continuation, and the
-`npa-mathlib v0.1.7` Layer 3D-A kernel/image release continuation.
+Layer 3C subgroup containment/order release continuation, the
+`npa-mathlib v0.1.7` Layer 3D-A kernel/image release continuation, and the
+`npa-mathlib v0.1.8` Layer 3D-B kernel quotient release continuation.
 
 Repository and package split:
 
@@ -124,7 +125,7 @@ npa-std
   package npa-std 0.1.0
 
 npa-mathlib
-  package npa-mathlib 0.1.7
+  package npa-mathlib 0.1.8
 ```
 
 Exact refs:
@@ -159,6 +160,9 @@ Exact refs:
 - `finitefield-org/npa-mathlib` release tag `v0.1.7`
   - tag object: `3bb8ac860641d055fce59f3be3a3d9d089c9742f`
   - target commit: `3239a0a0d86e7599451dfb1ff72b485716fa6047`
+- `finitefield-org/npa-mathlib` release tag `v0.1.8`
+  - tag object: `25aa8ef4bf8a68b15807769b0a57a4cf0729ff3d`
+  - target commit: `dd5cec062b08023eacb3252864b64653b3199814`
 
 Release artifact paths:
 
@@ -216,9 +220,16 @@ Release artifact paths:
   `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.7/npa-mathlib-v0.1.7-release-artifacts.tar.gz`
 - `npa-mathlib v0.1.7` bundle SHA-256:
   `a5647e21f091f71e4e390f88a7bfd2f5250fa9ba7742fc4fb77729ea9dc07444`
+- `npa-mathlib v0.1.8` release:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.8`
+- `npa-mathlib-v0.1.8-release-artifacts.tar.gz`:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.8/npa-mathlib-v0.1.8-release-artifacts.tar.gz`
+- `npa-mathlib v0.1.8` bundle SHA-256:
+  `3d179c92c455628a9ffeb3b0cd607fcabc783cfe990a0e100f7b36fdf2696ed7`
 
 Command results fixed by SRA-04, SRA-07, SRA-08, and the `v0.1.2` /
-`v0.1.3` / `v0.1.4` / `v0.1.5` / `v0.1.6` / `v0.1.7` release evidence:
+`v0.1.3` / `v0.1.4` / `v0.1.5` / `v0.1.6` / `v0.1.7` / `v0.1.8`
+release evidence:
 
 - `npa-std` release workflow run
   `https://github.com/finitefield-org/npa-std/actions/runs/26806975884`
@@ -301,8 +312,19 @@ Command results fixed by SRA-04, SRA-07, SRA-08, and the `v0.1.2` /
   `Std.Logic.Eq`, `Mathlib.Logic.EqReasoning`,
   `Mathlib.Algebra.Group.Basic`, `Mathlib.Algebra.Group.Kernel`, and
   `Mathlib.Algebra.Group.Image`.
+- `npa-mathlib v0.1.8` release gates passed locally in the standalone
+  repository: `check`, `build-certs --check`,
+  `verify-certs --checker reference`, `check-hashes`,
+  `axiom-report --check`, `index --check`, and `publish-plan --check`.
+- `npa-mathlib v0.1.8` published-release downstream smoke passed `check`,
+  `build-certs --check`, `verify-certs --checker reference`, and
+  `check-hashes` after vendoring only release-bundle certificate bytes for
+  `Std.Logic.Eq`, `Mathlib.Logic.EqReasoning`,
+  `Mathlib.Algebra.Group.Basic`, and
+  `Mathlib.Algebra.Group.Kernel.Quotient.*`.
 - GitHub Actions status for `npa-mathlib v0.1.1`, `v0.1.2`, `v0.1.3`,
-  `v0.1.4`, `v0.1.5`, `v0.1.6`, and `v0.1.7` was intentionally ignored.
+  `v0.1.4`, `v0.1.5`, `v0.1.6`, `v0.1.7`, and `v0.1.8` was intentionally
+  ignored.
   This record uses local package gates and published release-bundle downstream
   smoke as operational evidence.
 - Published-release downstream smoke passed `check`, `build-certs --check`,
@@ -337,7 +359,7 @@ Remaining gaps:
   directly.
 - CLR-08 high-trust evidence: not provided; reference-checker-only releases
   must not be upgraded to `verified_high_trust`.
-- Broader theorem layers beyond the released Layer 3D-A kernel/image set
+- Broader theorem layers beyond the released Layer 3D-B kernel quotient set
   remain future `npa-mathlib` release work.
 
 ## Collected Command Evidence
@@ -591,6 +613,45 @@ The `v0.1.7` negative checks rejected a bad
 `Mathlib.Algebra.Group.Kernel` export hash, a bad
 `Mathlib.Algebra.Group.Image` certificate hash, corrupted certificate bytes,
 and bad package version before proof acceptance.
+
+The following additional commands were run from
+`/Users/kazuyoshitoshiya/ff/npa` for the `npa-mathlib v0.1.8` Layer 3D-B
+continuation and passed:
+
+```sh
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+```
+
+The published GitHub release asset digest for
+`npa-mathlib-v0.1.8-release-artifacts.tar.gz` matched the local bundle
+SHA-256:
+`3d179c92c455628a9ffeb3b0cd607fcabc783cfe990a0e100f7b36fdf2696ed7`.
+The downstream package vendored only certificate bytes from the release bundle
+for `Std.Logic.Eq`, `Mathlib.Logic.EqReasoning`,
+`Mathlib.Algebra.Group.Basic`,
+`Mathlib.Algebra.Group.Kernel.Quotient`,
+`Mathlib.Algebra.Group.Kernel.Quotient.Mul`,
+`Mathlib.Algebra.Group.Kernel.Quotient.Group`, and
+`Mathlib.Algebra.Group.Kernel.Quotient.Hom`, then passed `check`,
+`build-certs --check`, `verify-certs --checker reference`, and
+`check-hashes`.
+
+The `v0.1.8` negative checks rejected a bad
+`Mathlib.Algebra.Group.Kernel.Quotient` export hash, a bad
+`Mathlib.Algebra.Group.Kernel.Quotient.Hom` certificate hash, corrupted
+certificate bytes, and a stale package lock from bad package version before
+proof acceptance.
 
 ## Seed Publish Plan Facts
 
@@ -914,13 +975,55 @@ imported modules:
 - `Mathlib.Algebra.Group.Kernel`
 - `Mathlib.Algebra.Group.Image`
 
+## Public Layer 3D-B Release Facts
+
+The standalone `npa-mathlib v0.1.8` generated publish plan records:
+
+- schema: `npa.package.publish_plan.v0.1`
+- package: `npa-mathlib`
+- version: `0.1.8`
+- release artifact count: 28
+- module registry seed entry count: 22
+- downstream import bundle module count: 22
+- checker summary count: 48
+- signature policy: `checksum-only`
+- hash algorithm: `sha256`
+- signatures: empty
+- publish plan hash:
+  `sha256:93883dcf8b42e6013fb416f414a905f80a263bd17e8f50f5fc68017730a73058`
+
+The standalone `npa-mathlib v0.1.8` generated artifacts also record:
+
+- package lock entries: 24
+- theorem index entries: 238
+- theorem index checker summaries: 24
+- axiom report modules: 24
+- axiom report local modules: 22
+- axiom report external modules: 2
+- direct axiom count: 1
+- transitive axiom count: 9
+- policy violation count: 0
+- allowed axioms: `Eq.rec`
+
+The standalone `fixtures/downstream-smoke/generated/package-lock.json` records
+one local downstream module, `Downstream.GroupKernelQuotient`, and these
+external imported modules:
+
+- `Std.Logic.Eq`
+- `Mathlib.Logic.EqReasoning`
+- `Mathlib.Algebra.Group.Basic`
+- `Mathlib.Algebra.Group.Kernel.Quotient`
+- `Mathlib.Algebra.Group.Kernel.Quotient.Mul`
+- `Mathlib.Algebra.Group.Kernel.Quotient.Group`
+- `Mathlib.Algebra.Group.Kernel.Quotient.Hom`
+
 ## Follow-Up Candidates
 
-- Treat `npa-mathlib v0.1.7` as the current public theorem-library baseline
-  for Layer 3D-B kernel quotient materialization.
-- Materialize the audited Layer 3D-B kernel quotient closure as
-  `npa-mathlib v0.1.8` with exactly the four
-  `Mathlib.Algebra.Group.Kernel.Quotient*` modules.
+- Treat `npa-mathlib v0.1.8` as the current public theorem-library baseline
+  for the next Layer 3 algebra expansion.
+- Choose the next closure audit route: first isomorphism is now possible
+  because image and kernel quotient are public; normal quotient remains a
+  separate quotient route with its own namespace decision.
 - Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic`; do not
   create a separate `Mathlib.Algebra.Group.Hom` module without a new audit.
 - Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package

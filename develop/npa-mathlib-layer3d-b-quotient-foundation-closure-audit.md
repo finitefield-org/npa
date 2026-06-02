@@ -447,3 +447,81 @@ Use the next package/release version after `v0.1.7`; provisionally this is
     certificate bytes, and bad package version before proof acceptance.
 18. Create the `v0.1.8` release bundle only after generated artifacts,
     downstream evidence, and negative import hash checks are fixed.
+
+## Materialization Result
+
+Layer 3D-B was materialized in the standalone `npa-mathlib` repository as
+`npa-mathlib v0.1.8`.
+
+Release facts:
+
+- repository commit:
+  `dd5cec062b08023eacb3252864b64653b3199814`
+- tag object:
+  `25aa8ef4bf8a68b15807769b0a57a4cf0729ff3d`
+- release:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.8`
+- release artifact bundle:
+  `npa-mathlib-v0.1.8-release-artifacts.tar.gz`
+- bundle SHA-256:
+  `3d179c92c455628a9ffeb3b0cd607fcabc783cfe990a0e100f7b36fdf2696ed7`
+- release file-list count:
+  29
+- package-lock entries:
+  24
+- generated publish-plan artifact count:
+  28
+
+The public renamed module hashes are:
+
+| Public module | Source hash | Certificate file hash | Export hash | Axiom report hash | Certificate hash |
+| --- | --- | --- | --- | --- | --- |
+| `Mathlib.Algebra.Group.Kernel.Quotient` | `sha256:d2f77c8524c46be7531a84cfa888c18517f3c9b031859f604d56efeca13926c3` | `sha256:25802dfd49cadecb2e84d10c0eb6077dc14cd8220eda4b924db8d51dccbba560` | `sha256:456e96fbacbb84ec968918cae2b0914f9b851c96f3bdf1fda65be372c247ea48` | `sha256:30155dfd0399b8bb9222cee6aff0c26065a6766282a10f97ef2d27d45d89aa6a` | `sha256:de182e1a592999e7b630930514be307ac7e38c012a6214196397bd96def89ed9` |
+| `Mathlib.Algebra.Group.Kernel.Quotient.Mul` | `sha256:7e1390ce57d6eca8898e3230d8512a880333c9b25226762ef448c5c5baca6db6` | `sha256:f7c968a7e085262f3d27858308d5234956abc5ac1ad824a89ae1d323eaefa1c1` | `sha256:149df869acd227ea5d7476160595d2338e9c00b1fb2f72d5e4ee6fca5e663c55` | `sha256:5bd7339ac208646efb0ed11ff2499737a45b42195bb28180b5685aed4560bbe3` | `sha256:603136356e732b815a7040c25aa21a055ac9dfa448cfd1f2ae0f8675292d76d8` |
+| `Mathlib.Algebra.Group.Kernel.Quotient.Group` | `sha256:5e826492a530cfac9e2aac54e236f214af89a925e6bdd3c210c6fbfb92ea86dd` | `sha256:ef6acfa38ee4521a747ec9785d939c98cea0c64e26354f523eba4441a589742c` | `sha256:4e67aa4b715757c1e8d8b4cef1637464a43fe2a4348c909b893e4f4c1330fa69` | `sha256:35475c48af8ff4a446c4f9b72745aea69e6442d8ee83fe8587a0a88eeec2e307` | `sha256:28b4b550a12b0e1cb4ae1624c6cf7007c8262b52254729110cd26fadda72acac` |
+| `Mathlib.Algebra.Group.Kernel.Quotient.Hom` | `sha256:83535d4f2ef8ed1a9b97f6145b87923c449d502480695320f9046929dba51be2` | `sha256:cd20fd6f13cb1fbb6d5269bafea245cd6441ced5fc3b91c1a5bb5aa961fe9c06` | `sha256:2a0178a6cd6a9fff1e449bffb7a62e25d4e4a944ceb514083db0bcf5b0229700` | `sha256:b8556fe24d881da2124391b4b0d69d4d22f988483234a12d4f565c15909305e6` | `sha256:ed2a9ba856a0437961f5b62b26d755e26f5a526274d3b7f0cb2f6f5d960453f7` |
+
+The package gates passed from `/Users/kazuyoshitoshiya/ff/npa` against the
+standalone repository:
+
+```sh
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+```
+
+The source-free reference verifier reported package verification for 24
+modules. The downstream smoke fixture vendored only certificate bytes for
+`Std.Logic.Eq`, `Mathlib.Logic.EqReasoning`,
+`Mathlib.Algebra.Group.Basic`, and the four new
+`Mathlib.Algebra.Group.Kernel.Quotient.*` modules. It passed:
+
+```sh
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+```
+
+The downstream source-free reference verifier reported package verification
+for 8 modules.
+
+Negative checks rejected:
+
+- bad `Mathlib.Algebra.Group.Kernel.Quotient` export hash:
+  `export_hash_mismatch`
+- bad `Mathlib.Algebra.Group.Kernel.Quotient.Hom` certificate hash:
+  `certificate_hash_mismatch`
+- corrupted vendored Hom certificate bytes:
+  `certificate_decode_failed`
+- bad imported `npa-mathlib` package version:
+  `package_lock_stale`
+
+This completes the `v0.1.8` materialization decision. First isomorphism,
+normal quotient, second/third isomorphism, correspondence, ring isomorphism,
+CRT, geometry, and analysis routes remain outside this release and require
+separate closure audits.
