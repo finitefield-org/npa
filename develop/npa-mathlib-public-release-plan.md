@@ -63,7 +63,11 @@ The current seed uses `Proofs.Ai.*` because it was copied from the proof corpus.
 That namespace is acceptable for seed evidence but not ideal for a public
 theorem library.
 
-Recommended public namespace shape:
+The standalone `npa-mathlib` repository now carries the public namespace policy
+in `docs/namespace-policy.md`. That policy is the source of truth for public
+module naming after repository activation.
+
+Fixed Layer 0 public namespace shape:
 
 ```text
 Mathlib.Logic.Basic
@@ -71,9 +75,15 @@ Mathlib.Logic.Prop
 Mathlib.Logic.Eq
 Mathlib.Data.Nat.Basic
 Mathlib.Core.Reduction
+```
+
+Provisional examples for later layers must be checked against that policy before
+being published:
+
+```text
 Mathlib.Algebra.Ring
 Mathlib.Algebra.Square
-Mathlib.OrderedField
+Mathlib.Algebra.OrderedField
 Mathlib.Vector.Basic
 Mathlib.Geometry.Pythagorean
 ```
