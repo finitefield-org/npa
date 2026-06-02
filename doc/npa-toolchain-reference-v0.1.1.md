@@ -1,24 +1,21 @@
-# NPA Toolchain Reference v0.1.0
+# NPA Toolchain Reference v0.1.1
 
-This is the SRA-01 toolchain reference for external theorem package
-repositories.
-
-This ref is historical. SRA-02-compatible `npa-std` standalone activation
-should use `doc/npa-toolchain-reference-v0.1.1.md` and Git tag `v0.1.1`.
+This is the SRA-02-compatible toolchain reference for external theorem
+package repositories.
 
 ## Stable Ref
 
 Use the Git tag:
 
 ```text
-v0.1.0
+v0.1.1
 ```
 
 External theorem repositories should set exactly one pinned `npa` source. The
-historical SRA-01 setting was:
+recommended SRA-02-compatible setting is:
 
 ```text
-NPA_GIT_TAG = v0.1.0
+NPA_GIT_TAG = v0.1.1
 RUST_TOOLCHAIN_VERSION = 1.95.0
 ```
 
@@ -26,6 +23,17 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 40-hex commit SHA instead of a tag. `NPA_BINARY_PATH` remains supported for
 runner-local binary provisioning. `NPA_VERSION` is reserved for a later
 release-download mode and is rejected by the current setup script.
+
+## SRA-02 Compatibility
+
+This ref includes the `std-library-legacy-core-builder` producer profile used
+by the first `npa-std` package fixture. A checkout at this ref can rebuild and
+check the local `fixtures/npa-std` package fixture without registry or network
+package resolution.
+
+The previous `v0.1.0` ref remains the original SRA-01 toolchain reference, but
+it does not contain the SRA-02 `npa-std` fixture builder path and cannot pass
+`package build-certs --check` for `fixtures/npa-std`.
 
 ## Setup Contract
 
@@ -97,11 +105,17 @@ Untrusted helper data remains:
 
 ## Local Verification
 
-The SRA-01 local gate is:
+The SRA-02-compatible local gate is:
 
 ```sh
 cargo build -p npa-cli
-cargo run -p npa-cli -- package check --root fixtures/npa-mathlib --json
+cargo run -p npa-cli -- package check --root fixtures/npa-std --json
+cargo run -p npa-cli -- package build-certs --root fixtures/npa-std --check --json
+cargo run -p npa-cli -- package verify-certs --root fixtures/npa-std --checker reference --json
+cargo run -p npa-cli -- package check-hashes --root fixtures/npa-std --json
+cargo run -p npa-cli -- package axiom-report --root fixtures/npa-std --check --json
+cargo run -p npa-cli -- package index --root fixtures/npa-std --check --json
+cargo run -p npa-cli -- package publish-plan --root fixtures/npa-std --check --json
 python3 ci-templates/github-actions/validate-workflows.py
 cargo test -q -p npa-cli package_cli_args
 tmpdir="$(mktemp -d)"

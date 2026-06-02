@@ -235,7 +235,7 @@ data, and release audit evidence.
 ## Immediate Tasks
 
 1. Use the completed SRA-00 baseline as the local public Layer 0 checkpoint.
-2. Use the completed SRA-01 `npa` toolchain reference (`v0.1.0`) as the
+2. Use the SRA-02-compatible `npa` toolchain reference (`v0.1.1`) as the
    external repository CLI pin.
 3. Continue the standalone repository activation procedure in
    `doc/npa-standalone-repo-activation.md`, starting with SRA-02 `npa-std`

@@ -202,9 +202,9 @@ module, `Mathlib.Logic.Basic`, with the external certificate path
   CLR-10 needs evidence beyond the checked-in fixture and workflow validator.
 - Activate standalone repositories for `npa`, `npa-std`, and `npa-mathlib`
   according to `doc/npa-standalone-repo-activation.md`. The local public Layer
-  0 baseline is fixed by SRA-00 evidence, and the `npa` toolchain reference is
-  fixed by SRA-01 `v0.1.0` evidence. The next activation dependency is the
-  `npa-std` package fixture.
+  0 baseline is fixed by SRA-00 evidence, and the SRA-02-compatible `npa`
+  toolchain reference is fixed by `v0.1.1` evidence. The next activation
+  dependency is the standalone `npa-std` package repository image.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, and downstream import
   evidence.

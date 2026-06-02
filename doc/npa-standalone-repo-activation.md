@@ -161,9 +161,10 @@ GITHUB_PATH="$tmpdir/github-path" RUNNER_TEMP="$tmpdir" GITHUB_WORKSPACE="$PWD" 
 
 Evidence fixed on 2026-06-02:
 
-- Stable toolchain ref: Git tag `v0.1.0`.
+- Original stable toolchain ref: Git tag `v0.1.0`.
+- Current SRA-02-compatible toolchain ref: Git tag `v0.1.1`.
 - External repository defaults:
-  - `NPA_GIT_TAG = v0.1.0`
+  - `NPA_GIT_TAG = v0.1.1`
   - `RUST_TOOLCHAIN_VERSION = 1.95.0`
 - `ci-templates/github-actions/setup-pinned-npa.sh` supports exactly one of
   `NPA_BINARY_PATH`, `NPA_GIT_TAG`, or `NPA_GIT_COMMIT`; `NPA_VERSION` is
@@ -178,7 +179,9 @@ Evidence fixed on 2026-06-02:
   passed.
 - `python3 ci-templates/github-actions/validate-workflows.py` passed.
 - Binary-path setup smoke with `NPA_BINARY_PATH=target/debug/npa` passed and
-  printed `npa 0.1.0`.
+  printed `npa 0.1.1`.
+- `v0.1.1` includes the `std-library-legacy-core-builder` package build path
+  required by `fixtures/npa-std`.
 - `cargo test -q -p npa-cli package_cli_args` passed.
 - `./scripts/check-fast.sh` passed.
 - `git diff --check` passed.

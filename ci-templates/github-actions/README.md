@@ -86,11 +86,11 @@ test -x "$NPA_BINARY_PATH" || {
 set exactly one of `NPA_BINARY_PATH`, `NPA_GIT_TAG`, or `NPA_GIT_COMMIT`.
 
 `npa-package-release.yml` and `npa-package-high-trust.yml` use the same pinned
-source variables. For the first public toolchain ref, external repositories may
-set:
+source variables. For the current SRA-02-compatible toolchain ref, external
+repositories may set:
 
 ```text
-NPA_GIT_TAG = v0.1.0
+NPA_GIT_TAG = v0.1.1
 RUST_TOOLCHAIN_VERSION = 1.95.0
 ```
 
