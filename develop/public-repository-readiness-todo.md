@@ -165,7 +165,7 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 - Evidence fixed on 2026-06-02:
   - Added root `LICENSE` in PUB-02; later updated it to standard Apache
     License 2.0 text.
-  - Added root `NOTICE` with `Copyright 2026 Finite Field K.K.`.
+  - Added root `NOTICE` with `Copyright 2026 [Finite Field K.K.](https://finitefield.org/en/)`.
   - Confirmed workspace crate metadata is `license = "Apache-2.0"`.
   - Updated `docs/README.md` to mark the public repository entry license item
     as added in PUB-02.

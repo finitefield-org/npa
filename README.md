@@ -170,4 +170,4 @@ For contribution policy and the full local-gate checklist, see
 
 NPA is licensed under the [Apache License 2.0](LICENSE).
 
-Copyright 2026 Finite Field K.K. See [NOTICE](NOTICE).
+Copyright 2026 [Finite Field K.K.](https://finitefield.org/en/). See [NOTICE](NOTICE).
