@@ -295,3 +295,79 @@ Use the next package/release version after `v0.1.5`; provisionally this is
 12. Run package gates for `npa-mathlib` and the downstream smoke.
 13. Create the `v0.1.6` release bundle only after generated artifacts,
     downstream evidence, and negative import hash checks are fixed.
+
+## Materialization Result
+
+Layer 3C was materialized and published as `npa-mathlib v0.1.6`:
+
+- GitHub Release:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.6`
+- commit:
+  `7d2471d76263e966a61dbdc7c86199589cefa605`
+- tag object:
+  `3346dbd7dea47236d24280ece75e38322a442c23`
+- tag target:
+  `7d2471d76263e966a61dbdc7c86199589cefa605`
+- release bundle SHA-256:
+  `e16b09b55956ee8709b4cb639bf06ad2b3f60463a41f9170ed34cc8feb7d0bda`
+
+The published Layer 3C module was regenerated under the public `Mathlib.*`
+namespace with these hashes:
+
+| Public module | Source hash | Certificate file hash | Export hash | Axiom report hash | Certificate hash |
+| --- | --- | --- | --- | --- | --- |
+| `Mathlib.Algebra.Group.Subgroup.Order` | `sha256:1d351d2165afb4ef7b4dbc3dba8c2f3a2cb30d8d35f90e15ed0cce5c6a8fdebc` | `sha256:5da33730332206a1debca756d4ff04fbd8fa1b3ea84cb15d92676652f7eb7613` | `sha256:e437fa6d0d71c25cfd931ece5572e3f232a08d7c9c8ece7c3ebf1cd4cf0beee6` | `sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e` | `sha256:c501393a7f67b539b33378767cd9a3f89205a604c902036c001aa1d6f4dd84f5` |
+
+The regenerated package artifacts record:
+
+- package version: `0.1.6`
+- local modules: 16
+- external imports: 2
+- publish plan artifact count: 22
+- module registry seed entries: 16
+- downstream import bundle modules: 16
+- publish-plan checker summaries: 36
+- package lock entries: 18
+- theorem index entries: 218
+- theorem index checker summaries: 18
+- axiom report modules: 18
+- axiom report direct axioms: 1
+- axiom report transitive axioms: 3
+- axiom policy violations: 0
+- publish plan hash:
+  `sha256:4d41f14bf900a4339b8325bcee6165ced870eee7eefb4eaf438962b057815155`
+
+The new module adds no direct or transitive axioms. The package-level direct
+and transitive axiom counts remain due to carried-forward equality reasoning
+surface that is already allowed by `allowed_axioms = ["Eq.rec"]`.
+
+Downstream smoke was updated to theorem
+`Downstream.GroupSubgroupOrder::subgroup_le_refl_passthrough` and imports only
+release-bundle certificate bytes for:
+
+- `Std.Logic.Eq`
+- `Mathlib.Logic.EqReasoning`
+- `Mathlib.Algebra.Group.Basic`
+- `Mathlib.Algebra.Group.Subgroup`
+- `Mathlib.Algebra.Group.Subgroup.Order`
+
+The following package gates passed locally for the standalone repository:
+
+- `package check`
+- `package build-certs --check`
+- `package verify-certs --checker reference`
+- `package check-hashes`
+- `package axiom-report --check`
+- `package index --check`
+- `package publish-plan --check`
+
+The downstream smoke passed:
+
+- `package check`
+- `package build-certs --check`
+- `package verify-certs --checker reference`
+- `package check-hashes`
+
+Negative checks rejected a bad `Mathlib.Algebra.Group.Subgroup.Order` export
+hash, bad certificate hash, corrupted certificate bytes, and bad package
+version before proof acceptance.
