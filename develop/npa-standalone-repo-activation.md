@@ -67,9 +67,8 @@ SRA-09 Record post-activation evidence
 ```
 
 Do not start `npa-mathlib` standalone activation before `npa-std` has a
-published `v0.1.0` release artifact set. `npa-mathlib` currently vendors
-`npa-std` certificate bytes from this repository; public activation needs those
-bytes to come from the `npa-std` release bundle.
+published `v0.1.0` release artifact set. SRA-05 fixed `npa-mathlib` to the
+published `npa-std` release bundle certificate bytes.
 
 ## SRA-00 Freeze Local Baseline
 
@@ -448,7 +447,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-05 Re-Pin `npa-mathlib` Against The `npa-std` Release
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-04
 - Inputs:
   - `fixtures/npa-mathlib/`
@@ -476,6 +475,37 @@ cargo run -q -p npa-cli -- package verify-certs --root fixtures/npa-mathlib --ch
 cargo run -q -p npa-cli -- package check-hashes --root fixtures/npa-mathlib --json
 cargo run -q -p npa-cli -- package publish-plan --root fixtures/npa-mathlib --check --json
 ```
+
+Evidence fixed on 2026-06-02:
+
+- Copied `Std/Logic/Eq/certificate.npcert` and
+  `Std/Nat/Basic/certificate.npcert` from the downloaded
+  `npa-std-v0.1.0-release-artifacts.tar.gz` release bundle into
+  `fixtures/npa-mathlib/vendor/npa-std/`.
+- Release bundle URL:
+  `https://github.com/finitefield-org/npa-std/releases/download/v0.1.0/npa-std-v0.1.0-release-artifacts.tar.gz`.
+- Release bundle SHA-256:
+  `3ed967d1870f97f7042e87a75efebd3cf553e8c86d8959c720080115a78fe85c`.
+- Vendored certificate artifact SHA-256 values:
+  - `fixtures/npa-mathlib/vendor/npa-std/Std/Logic/Eq/certificate.npcert`:
+    `7aa25a1adf44de35cdaaa514484c1220fec0e543d3f65803805b5e6efc5b36a1`
+  - `fixtures/npa-mathlib/vendor/npa-std/Std/Nat/Basic/certificate.npcert`:
+    `d057dbc0e3c1e21649968eeaf882616602cfeb1f1cbb8393031c2010ea9596fb`
+- Manifest import pins were checked against the `npa-std` publish-plan
+  downstream import bundle for package, version, module, export hash,
+  certificate hash, certificate path, and certificate file hash.
+- `cargo run -q -p npa-cli -- package build-certs --root fixtures/npa-mathlib --json`
+  regenerated `generated/package-lock.json`; the regenerated artifact was
+  byte-identical to the checked-in file.
+- `cargo run -q -p npa-cli -- package axiom-report --root fixtures/npa-mathlib --json`,
+  `cargo run -q -p npa-cli -- package index --root fixtures/npa-mathlib --json`,
+  and `cargo run -q -p npa-cli -- package publish-plan --root fixtures/npa-mathlib --json`
+  regenerated deterministic package sidecars; no artifact hashes changed.
+- Downstream fixture updates were not required because the copied release
+  certificate bytes are byte-identical to the previous vendored bytes.
+- The verification commands listed above passed, including source-free
+  reference checker verification using only vendored `npa-std` certificate
+  artifacts.
 
 ## SRA-06 Activate `npa-mathlib` Standalone Repository
 
