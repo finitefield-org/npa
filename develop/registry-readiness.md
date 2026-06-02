@@ -376,10 +376,15 @@ external imported modules:
 
 ## Follow-Up Candidates
 
-- Start the next closed theorem expansion layer beyond `npa-mathlib v0.1.1` in
-  the standalone `npa-mathlib` repository, using `docs/namespace-policy.md` as
-  the namespace policy and `develop/npa-mathlib-public-release-plan.md` as the
-  layer plan.
+- Start Layer 2A closure audit in the standalone `npa-mathlib` repository:
+  `Mathlib.Vector.Basic` and `Mathlib.Vector.Dot`. Treat `npa-mathlib v0.1.1`
+  as the released algebra/order baseline and verify that the vector closure
+  does not require geometry, analysis, or abstract algebra modules.
+- Start Layer 2B geometry only after Layer 2A has regenerated package
+  artifacts, a release bundle, and downstream source-free smoke evidence.
+  Candidate modules are `Mathlib.Geometry.RightTriangle`,
+  `Mathlib.Geometry.Metric`, and optionally `Mathlib.Geometry.Pythagorean` if
+  the closure remains small.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, release-bundle evidence, and
   downstream import evidence.

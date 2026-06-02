@@ -168,10 +168,33 @@ The selected set is closed over new internal dependencies after namespace
 renaming. It introduces no new external package dependency beyond the existing
 hash-pinned `npa-std v0.1.0` imports already used by `npa-mathlib`.
 
-Layer 2, vector and geometry:
+Layer 2 is intentionally split into two smaller release candidates. Do not ship
+vector and geometry in one release unless both closures have already been
+audited separately.
 
-- vector basics and inner-product modules
-- right-triangle, metric, and Pythagorean modules
+Layer 2A, vector:
+
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Vector.Basic` | `Mathlib.Vector.Basic` | First vector API over the released Layer 1 algebra/order baseline. |
+| `Proofs.Ai.Vector.Dot` | `Mathlib.Vector.Dot` | Dot-product layer; expected to depend on `Mathlib.Vector.Basic` and the released Layer 1 algebra/order modules. |
+
+Layer 2A must be audited first. Its closure should be limited to
+`npa-std v0.1.0`, `npa-mathlib v0.1.1`, and the selected vector modules. If it
+requires geometry, analysis, or abstract algebra modules, stop and split again.
+
+Layer 2B, geometry:
+
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Geometry.RightTriangle` | `Mathlib.Geometry.RightTriangle` | First right-triangle facts; should consume the released Layer 2A vector artifacts source-free. |
+| `Proofs.Ai.Geometry.Metric` | `Mathlib.Geometry.Metric` | Metric facts over the vector/right-triangle closure. |
+| `Proofs.Ai.Geometry.Pythagorean` | `Mathlib.Geometry.Pythagorean` | Include only if its closure stays within the already released Layer 1/Layer 2A/Layer 2B inputs. |
+
+Layer 2B must not start until Layer 2A has package artifacts, a release bundle,
+and downstream source-free smoke evidence fixed. The geometry downstream smoke
+should vendor only release-bundle certificate bytes from `npa-std`,
+`npa-mathlib v0.1.1`, and the Layer 2A release.
 
 Layer 3, algebraic structures and isomorphism routes:
 
@@ -328,7 +351,10 @@ Concrete task sequence:
 
 1. Treat `npa-mathlib v0.1.1` as the current public theorem-library baseline
    for Layer 1 algebra/order imports.
-2. Keep CLR-08 high-trust release evidence separate from the reference-checker
+2. Start Layer 2A closure audit for `Mathlib.Vector.Basic` and
+   `Mathlib.Vector.Dot`; do not materialize Layer 2B geometry until Layer 2A is
+   released and downstream-smoked source-free.
+3. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
-3. Choose the next theorem expansion layer before changing package boundaries,
+4. Choose later theorem expansion layers before changing package boundaries,
    registry semantics, or import identity rules.
