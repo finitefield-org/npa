@@ -102,7 +102,8 @@ from reference-checker-only results.
 
 SRA-09 fixes the public Layer 0 activation state on 2026-06-02. The same
 evidence record now includes the `npa-mathlib v0.1.1` Layer 1 algebra/order
-release continuation.
+release continuation and the `npa-mathlib v0.1.2` Layer 2A vector release
+continuation.
 
 Repository and package split:
 
@@ -114,7 +115,7 @@ npa-std
   package npa-std 0.1.0
 
 npa-mathlib
-  package npa-mathlib 0.1.1
+  package npa-mathlib 0.1.2
 ```
 
 Exact refs:
@@ -131,6 +132,9 @@ Exact refs:
 - `finitefield-org/npa-mathlib` release tag `v0.1.1`
   - tag object: `04dba2cd9de58f2e02e990fa583939dbfa82e9ae`
   - target commit: `449855a37cbf1d3ebe777d5a6b044d47be324532`
+- `finitefield-org/npa-mathlib` release tag `v0.1.2`
+  - tag object: `d59032b305272d5fec557f3c07700720b2b51e27`
+  - target commit: `4c28e82d3dc2e0a8a25bb2e01bb433c7a10a28fe`
 
 Release artifact paths:
 
@@ -152,8 +156,15 @@ Release artifact paths:
   `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.1/npa-mathlib-v0.1.1-release-artifacts.tar.gz`
 - `npa-mathlib v0.1.1` bundle SHA-256:
   `ada3f288537dc777697c1083765790aa9dbd8782f43356c1f8572a1fa6ccbcb9`
+- `npa-mathlib v0.1.2` release:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.2`
+- `npa-mathlib-v0.1.2-release-artifacts.tar.gz`:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.2/npa-mathlib-v0.1.2-release-artifacts.tar.gz`
+- `npa-mathlib v0.1.2` bundle SHA-256:
+  `7b1d8fe69b0bca46e77149453e79ece8198473ce9e760d90e9f8e2c66b117d68`
 
-Command results fixed by SRA-04, SRA-07, and SRA-08:
+Command results fixed by SRA-04, SRA-07, SRA-08, and the `v0.1.2` release
+evidence:
 
 - `npa-std` release workflow run
   `https://github.com/finitefield-org/npa-std/actions/runs/26806975884`
@@ -177,7 +188,18 @@ Command results fixed by SRA-04, SRA-07, and SRA-08:
   `check-hashes` after vendoring only release-bundle certificate bytes for
   `Std.Logic.Eq`, `Mathlib.Algebra.Ring`, `Mathlib.Algebra.Square`, and
   `Mathlib.Algebra.OrderedField`.
-- GitHub Actions status for `npa-mathlib v0.1.1` was intentionally ignored.
+- `npa-mathlib v0.1.2` release gates passed locally in the standalone
+  repository: `check`, `build-certs --check`,
+  `verify-certs --checker reference`, `check-hashes`,
+  `axiom-report --check`, `index --check`, and `publish-plan --check`.
+- `npa-mathlib v0.1.2` published-release downstream smoke passed `check`,
+  `build-certs --check`, `verify-certs --checker reference`, and
+  `check-hashes` after vendoring only release-bundle certificate bytes for
+  `Std.Logic.Eq`, `Mathlib.Algebra.Ring`, `Mathlib.Algebra.Square`,
+  `Mathlib.Algebra.OrderedField`, `Mathlib.Vector.Basic`, and
+  `Mathlib.Vector.Dot`.
+- GitHub Actions status for `npa-mathlib v0.1.1` and `v0.1.2` was
+  intentionally ignored.
   This record uses local package gates and published release-bundle downstream
   smoke as operational evidence.
 - Published-release downstream smoke passed `check`, `build-certs --check`,
@@ -282,6 +304,34 @@ re-materialize the downstream smoke vendored dependency tree. The same
 downstream `check`, `build-certs --check`, `verify-certs --checker reference`,
 and `check-hashes` commands passed against the temporary downstream package.
 
+The following additional commands were run from
+`/Users/kazuyoshitoshiya/ff/npa-mathlib` for the `npa-mathlib v0.1.2`
+Layer 2A continuation and passed:
+
+```sh
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root . --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root . --check --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root . --checker reference --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root . --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package axiom-report --root . --check --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package index --root . --check --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package publish-plan --root . --check --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root fixtures/downstream-smoke --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
+git diff --check
+```
+
+The published `npa-mathlib v0.1.2` release bundle was downloaded, checked
+against its SHA sidecar value, extracted into a temporary directory, and
+source-free checked with `package check`, `verify-certs --checker reference`,
+`axiom-report --check`, `index --check`, and `publish-plan --check`. The root
+release bundle intentionally excludes source files, so `package check-hashes`
+is not the release-bundle gate. The temporary downstream package then vendored
+only certificate bytes from the downloaded release bundle and passed `check`,
+`build-certs --check`, `verify-certs --checker reference`, and `check-hashes`.
+
 ## Seed Publish Plan Facts
 
 `fixtures/npa-mathlib-seed/generated/publish-plan.json` currently records:
@@ -365,27 +415,60 @@ The standalone `npa-mathlib v0.1.1` generated artifacts also record:
 - transitive axiom count: 0
 - policy violation count: 0
 
-The standalone `fixtures/downstream-smoke/generated/package-lock.json` records
-one local downstream module, `Downstream.AlgebraOrderedField`, and these
-external imported modules:
+The standalone `v0.1.1` downstream smoke package lock recorded one local
+downstream module, `Downstream.AlgebraOrderedField`, and these external
+imported modules:
 
 - `Std.Logic.Eq`
 - `Mathlib.Algebra.Ring`
 - `Mathlib.Algebra.Square`
 - `Mathlib.Algebra.OrderedField`
 
+## Public Layer 2A Release Facts
+
+The standalone `npa-mathlib v0.1.2` generated publish plan records:
+
+- schema: `npa.package.publish_plan.v0.1`
+- package: `npa-mathlib`
+- version: `0.1.2`
+- release artifact count: 16
+- module registry seed entry count: 10
+- downstream import bundle module count: 10
+- signature policy: `checksum-only`
+- hash algorithm: `sha256`
+- signatures: empty
+
+The standalone `npa-mathlib v0.1.2` generated artifacts also record:
+
+- package lock entries: 12
+- theorem index entries: 123
+- theorem index checker summaries: 12
+- axiom report modules: 12
+- axiom report local modules: 10
+- axiom report external modules: 2
+- direct axiom count: 0
+- transitive axiom count: 0
+- policy violation count: 0
+
+The standalone `fixtures/downstream-smoke/generated/package-lock.json` records
+one local downstream module, `Downstream.VectorDot`, and these external
+imported modules:
+
+- `Std.Logic.Eq`
+- `Mathlib.Algebra.Ring`
+- `Mathlib.Algebra.Square`
+- `Mathlib.Algebra.OrderedField`
+- `Mathlib.Vector.Basic`
+- `Mathlib.Vector.Dot`
+
 ## Follow-Up Candidates
 
-- Materialize Layer 2A in the standalone `npa-mathlib` repository:
-  `Mathlib.Vector.Basic` and `Mathlib.Vector.Dot`. The closure audit is fixed
-  in `develop/npa-mathlib-layer2a-closure-audit.md` and shows that the vector
-  closure does not require geometry, analysis, abstract algebra, or abstract
-  vector modules.
-- Start Layer 2B geometry only after Layer 2A has regenerated package
-  artifacts, a release bundle, and downstream source-free smoke evidence.
-  Candidate modules are `Mathlib.Geometry.RightTriangle`,
-  `Mathlib.Geometry.Metric`, and optionally `Mathlib.Geometry.Pythagorean` if
-  the closure remains small.
+- Treat `npa-mathlib v0.1.2` as the current public theorem-library baseline
+  for Layer 2A vector imports.
+- Start Layer 2B geometry closure audit next. Candidate modules are
+  `Mathlib.Geometry.RightTriangle`, `Mathlib.Geometry.Metric`, and optionally
+  `Mathlib.Geometry.Pythagorean` if the closure remains small and consumes only
+  released `npa-std`, Layer 1, and Layer 2A certificate artifacts.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, release-bundle evidence, and
   downstream import evidence.

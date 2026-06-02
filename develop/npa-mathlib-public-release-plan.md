@@ -193,10 +193,10 @@ Layer 2B, geometry:
 | `Proofs.Ai.Geometry.Metric` | `Mathlib.Geometry.Metric` | Metric facts over the vector/right-triangle closure. |
 | `Proofs.Ai.Geometry.Pythagorean` | `Mathlib.Geometry.Pythagorean` | Include only if its closure stays within the already released Layer 1/Layer 2A/Layer 2B inputs. |
 
-Layer 2B must not start until Layer 2A has package artifacts, a release bundle,
-and downstream source-free smoke evidence fixed. The geometry downstream smoke
-should vendor only release-bundle certificate bytes from `npa-std`,
-`npa-mathlib v0.1.1`, and the Layer 2A release.
+Layer 2A is fixed as `npa-mathlib v0.1.2`, including package artifacts, a
+release bundle, and downstream source-free smoke evidence. The geometry
+downstream smoke should vendor only release-bundle certificate bytes from
+`npa-std`, `npa-mathlib v0.1.1`, and `npa-mathlib v0.1.2`.
 
 Layer 3, algebraic structures and isomorphism routes:
 
@@ -291,6 +291,8 @@ Evidence fixed on 2026-06-02:
 - `npa-mathlib v0.1.0` is published as a public GitHub Release.
 - `npa-mathlib v0.1.1` is published as a public GitHub Release with the
   Layer 1 algebra/order modules.
+- `npa-mathlib v0.1.2` is published as a public GitHub Release with the
+  Layer 2A vector modules.
 - The release artifact bundle contains only the required package manifest,
   generated package artifacts, local `Mathlib.*` certificate artifacts, and
   vendored `npa-std` certificate artifacts.
@@ -304,8 +306,13 @@ Evidence fixed on 2026-06-02:
   imports only release-bundle certificate bytes for `Std.Logic.Eq`,
   `Mathlib.Algebra.Ring`, `Mathlib.Algebra.Square`, and
   `Mathlib.Algebra.OrderedField`.
-- GitHub Actions status for `npa-mathlib v0.1.1` is intentionally not used as
-  release evidence in this pass.
+- The `v0.1.2` downstream smoke materialized from the published release bundle
+  imports only release-bundle certificate bytes for `Std.Logic.Eq`,
+  `Mathlib.Algebra.Ring`, `Mathlib.Algebra.Square`,
+  `Mathlib.Algebra.OrderedField`, `Mathlib.Vector.Basic`, and
+  `Mathlib.Vector.Dot`.
+- GitHub Actions status for `npa-mathlib v0.1.1` and `v0.1.2` is
+  intentionally not used as release evidence in this pass.
 - Negative checks rejected corrupted import package name, package version,
   export hash, certificate hash, and certificate artifact data before proof
   acceptance.
@@ -349,13 +356,45 @@ Concrete task sequence:
 8. Completed: published `npa-mathlib v0.1.1` after release bundle and
    downstream smoke evidence were fixed.
 
+## Layer 2A Expansion Tasks
+
+Status: Completed for the first Layer 2A vector release in
+`npa-mathlib v0.1.2`.
+
+Layer 2A selected module set:
+
+```text
+Mathlib.Vector.Basic
+Mathlib.Vector.Dot
+```
+
+Concrete task sequence:
+
+1. Completed: audited the selected vector closure in
+   `develop/npa-mathlib-layer2a-closure-audit.md`.
+2. Completed: mapped each source module to the `Mathlib.*` namespace according
+   to `npa-mathlib/docs/namespace-policy.md`.
+3. Completed: kept package name `npa-mathlib` and used the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Completed: added `Mathlib/Vector/Basic/` and `Mathlib/Vector/Dot/` in the
+   standalone `npa-mathlib` repository.
+5. Completed: regenerated certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+6. Completed: updated downstream source-free smoke to import the Layer 2A
+   certificate closure from release-bundle bytes.
+7. Completed: ran package gates for `npa-mathlib` and the downstream smoke.
+8. Completed: published `npa-mathlib v0.1.2` after release bundle and
+   downstream smoke evidence were fixed.
+
 ## Immediate Tasks
 
-1. Treat `npa-mathlib v0.1.1` as the current public theorem-library baseline
-   for Layer 1 algebra/order imports.
-2. Materialize Layer 2A `Mathlib.Vector.Basic` and `Mathlib.Vector.Dot` in the
-   standalone `npa-mathlib` repository; do not materialize Layer 2B geometry
-   until Layer 2A is released and downstream-smoked source-free.
+1. Treat `npa-mathlib v0.1.2` as the current public theorem-library baseline
+   for Layer 2A vector imports.
+2. Start the Layer 2B geometry closure audit. Candidate modules are
+   `Mathlib.Geometry.RightTriangle`, `Mathlib.Geometry.Metric`, and optionally
+   `Mathlib.Geometry.Pythagorean` if the closure remains small and consumes
+   only released `npa-std`, Layer 1, and Layer 2A certificate artifacts.
 3. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public package releases.
 4. Choose later theorem expansion layers before changing package boundaries,

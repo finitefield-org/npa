@@ -152,3 +152,32 @@ Run these steps in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
 
 Do not start Layer 2B geometry or CLR-08 high-trust evidence work as part of
 this Layer 2A materialization. Both remain separate release tracks.
+
+## Release Outcome
+
+Layer 2A was materialized and published as `npa-mathlib v0.1.2` on
+2026-06-02.
+
+Published release evidence:
+
+- release URL:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.2`
+- tag object: `d59032b305272d5fec557f3c07700720b2b51e27`
+- target commit: `4c28e82d3dc2e0a8a25bb2e01bb433c7a10a28fe`
+- release bundle:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.2/npa-mathlib-v0.1.2-release-artifacts.tar.gz`
+- release bundle SHA-256:
+  `7b1d8fe69b0bca46e77149453e79ece8198473ce9e760d90e9f8e2c66b117d68`
+
+The standalone package gates passed locally for `check`,
+`build-certs --check`, `verify-certs --checker reference`, `check-hashes`,
+`axiom-report --check`, `index --check`, and `publish-plan --check`.
+
+The published release bundle was then downloaded, checked against its SHA
+sidecar, and used as the only `npa-mathlib` certificate source for a downstream
+smoke fixture. The downstream smoke passed `check`, `build-certs --check`,
+`verify-certs --checker reference`, and `check-hashes`.
+
+GitHub Actions status is intentionally not used as release evidence for this
+release. The fixed evidence is the local package gate output, the published
+bundle checksum, and the published-release downstream smoke.
