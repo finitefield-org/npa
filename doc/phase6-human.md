@@ -133,8 +133,8 @@ release package や CI artifact として publish してよいですが、通常
 手書き・手動更新して commit しません。
 tests は temp package に `Std/Logic.npa` などの source skeleton を配置し、そこから raw `.npcert` と
 machine sidecar を再生成して検証します。
-MVP implementation では、この source skeleton が module membership / import intent を固定し、
-certificate 内容は deterministic Rust core-module builders から生成します。
+MVP implementation では、manifest が module membership / certificate path を固定し、source skeleton は
+import intent を固定します。certificate 内容は deterministic Rust core-module builders から生成します。
 完全な Human source proof scripts を標準ライブラリの正本にする作業は、将来の source elaboration 拡張です。
 stale artifact が working tree に残った場合は、source / implementation の変更ではなく build output として扱い、
 commit 前に削除または再生成元を確認します。
@@ -1732,7 +1732,7 @@ Phase 6 が完了したと言える条件はこれです。
 source package / certificate:
   builds_mvp_certificate_artifacts_from_source_package
   source_built_std_artifacts_feed_machine_release_sessions_retrieval_and_audit
-  MVP source skeleton fixes module membership/import intent; Rust builders generate certificate contents
+  manifest fixes module membership/certificate paths; source skeleton fixes import intent; Rust builders generate certificate contents
 
 release identity / generated artifact boundary:
   machine_release_identity_ignores_human_source_layout_and_debug_views

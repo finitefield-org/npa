@@ -737,7 +737,7 @@ MVP では次を入れません。
 Phase 6 Human が完了したと言える条件はこれです。
 
 ```text
-- Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic source package skeleton が存在し、module membership / import intent を固定する。
+- Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic source package skeleton が存在し、manifest が module membership / certificate path を固定し、source skeleton が import intent を固定する。
 - 4 release modules が kernel / verifier で検査済みの `.npcert` として生成される。
 - import entries が export_hash を持ち、高信頼モードで certificate_hash も照合される。
 - module の export_hash / certificate_hash / axiom_report_hash が生成される。
