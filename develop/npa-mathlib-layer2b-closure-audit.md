@@ -3,9 +3,9 @@
 Date: 2026-06-02
 
 This audit fixes the next `npa-mathlib` theorem layer after the public
-`v0.1.2` Layer 2A vector release. It is an input to materialization in the
-standalone `finitefield-org/npa-mathlib` repository; it does not publish new
-artifacts by itself.
+`v0.1.2` Layer 2A vector release. It served as the materialization input for
+the standalone `finitefield-org/npa-mathlib` repository; the release outcome is
+recorded below.
 
 ## Baseline
 
@@ -36,14 +36,15 @@ split, registry assumptions, axiom policy, or proof trust boundary.
 
 ## Selected Candidate Set
 
-The Layer 2B candidate set is closed and small enough to materialize next:
+The Layer 2B candidate set was closed and small enough for the `v0.1.3`
+materialization:
 
 | Corpus module | Public module | Public path | Declarations | Direct imports |
 | --- | --- | --- | --- | --- |
 | `Proofs.Ai.Geometry.RightTriangle` | `Mathlib.Geometry.RightTriangle` | `Mathlib/Geometry/RightTriangle/` | 2 definitions, 13 theorems | `Std.Logic.Eq`, `Proofs.Ai.Algebra.Ring`, `Proofs.Ai.Algebra.Square`, `Proofs.Ai.OrderedField`, `Proofs.Ai.Vector.Basic`, `Proofs.Ai.Vector.Dot` |
 | `Proofs.Ai.Geometry.Metric` | `Mathlib.Geometry.Metric` | `Mathlib/Geometry/Metric/` | 1 definition, 8 theorems | `Std.Logic.Eq`, `Proofs.Ai.Algebra.Ring`, `Proofs.Ai.Algebra.Square`, `Proofs.Ai.OrderedField`, `Proofs.Ai.Vector.Basic`, `Proofs.Ai.Vector.Dot`, `Proofs.Ai.Geometry.RightTriangle` |
 
-After public namespace materialization, the internal imports must become:
+After public namespace materialization, the internal imports became:
 
 ```text
 Mathlib.Geometry.RightTriangle
@@ -187,8 +188,8 @@ artifact and is not rebuilt as a local corpus module.
 
 ## Readiness Decision
 
-Layer 2B is ready for materialization in the standalone `npa-mathlib`
-repository with exactly these new public modules:
+Layer 2B materialization selected exactly these new public modules for the
+standalone `npa-mathlib` repository:
 
 ```text
 Mathlib.Geometry.RightTriangle
@@ -204,31 +205,78 @@ module names are proof-relevant. The public package must rename source imports
 to `Mathlib.*`, regenerate certificates, regenerate generated package
 artifacts, and update downstream smoke fixtures before release.
 
-Use the next package/release version after `v0.1.2`; provisionally this is
-`v0.1.3`.
+The materialized package/release version after `v0.1.2` is `v0.1.3`.
 
-## Next Materialization Steps
+## Completed Materialization Steps
 
-Run these steps in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
+These steps were completed in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
 
-1. Add `Mathlib/Geometry/RightTriangle/` and `Mathlib/Geometry/Metric/` from
-   the selected corpus sources.
-2. Rename module-local imports from `Proofs.Ai.*` to `Mathlib.*`.
-3. Keep the existing `npa-std v0.1.0` hash-pinned imports for `Std.Logic.Eq`
-   and `Std.Nat.Basic`.
-4. Keep the released Layer 0, Layer 1, and Layer 2A modules local in
+1. Completed: added `Mathlib/Geometry/RightTriangle/` and
+   `Mathlib/Geometry/Metric/` from the selected corpus sources.
+2. Completed: renamed module-local imports from `Proofs.Ai.*` to `Mathlib.*`.
+3. Completed: kept the existing `npa-std v0.1.0` hash-pinned imports for
+   `Std.Logic.Eq` and `Std.Nat.Basic`.
+4. Completed: kept the released Layer 0, Layer 1, and Layer 2A modules local in
    `npa-mathlib`.
-5. Add manifest entries for the two new modules and bump the package version
-   for the next release.
-6. Regenerate certificates and generated package artifacts:
+5. Completed: added manifest entries for the two new modules and bumped the
+   package version to `0.1.3`.
+6. Completed: regenerated certificates and generated package artifacts:
    `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
    `publish-plan.json`.
-7. Update the downstream smoke fixture so it imports at least
+7. Completed: updated the downstream smoke fixture so it imports
    `Mathlib.Geometry.Metric` through a package import bundle.
-8. Run package gates for `npa-mathlib` and downstream smoke.
-9. Publish the next release only after release bundle and downstream smoke
-   evidence are fixed.
+8. Completed: ran package gates for `npa-mathlib` and downstream smoke.
+9. Completed: published the release after release bundle and downstream smoke
+   evidence were fixed.
 
 Do not start the deferred abstract Pythagorean materialization or CLR-08
 high-trust evidence work as part of this Layer 2B materialization. Both remain
 separate release tracks.
+
+## Release Outcome
+
+Layer 2B was materialized and published as `npa-mathlib v0.1.3` on
+2026-06-02.
+
+Release refs:
+
+- release: `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.3`
+- tag object: `689748138908401e0b9f9a1b58cce907e945f18b`
+- target commit: `dd5283666592ac9a15def166d0f7f11b197449f8`
+- release bundle:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.3/npa-mathlib-v0.1.3-release-artifacts.tar.gz`
+- release bundle SHA-256:
+  `07e5cdf2ebb6e139fbe0473b6bc4372f830182a7c5bc39ed3dbf1a151f930602`
+
+Local release gates passed for the standalone repository:
+
+```sh
+npa package check --root . --json
+npa package build-certs --root . --check --json
+npa package verify-certs --root . --checker reference --json
+npa package check-hashes --root . --json
+npa package axiom-report --root . --check --json
+npa package index --root . --check --json
+npa package publish-plan --root . --check --json
+```
+
+Local downstream smoke gates passed:
+
+```sh
+npa package check --root fixtures/downstream-smoke --json
+npa package build-certs --root fixtures/downstream-smoke --check --json
+npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+npa package check-hashes --root fixtures/downstream-smoke --json
+```
+
+The published release bundle was downloaded, checked against its SHA sidecar,
+extracted, and source-free verified with `package check`,
+`verify-certs --checker reference`, `axiom-report --check`, `index --check`,
+and `publish-plan --check`. The root release bundle intentionally excludes
+source files, so `package check-hashes` is not the source-free bundle gate.
+
+A temporary downstream smoke then vendored only certificate bytes from the
+downloaded release bundle and passed `check`, `build-certs --check`,
+`verify-certs --checker reference`, and `check-hashes`.
+
+GitHub Actions status is intentionally not release evidence for `v0.1.3`.
