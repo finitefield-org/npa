@@ -343,10 +343,14 @@ Evidence fixed through 2026-06-03:
   Layer 2B concrete geometry modules.
 - `npa-mathlib v0.1.4` is published as a public GitHub Release with the
   Layer 3A abstract group foundation modules.
+- `npa-mathlib v0.1.5` is published as a public GitHub Release with the
+  Layer 3B subgroup and normal-subgroup foundation module.
 - The `v0.1.3` release bundle hash is
   `07e5cdf2ebb6e139fbe0473b6bc4372f830182a7c5bc39ed3dbf1a151f930602`.
 - The `v0.1.4` release bundle hash is
   `d216da5522a5d4cd5e37ae059387b93632a0d04aa6ea6f9b8e757c256789ee4c`.
+- The `v0.1.5` release bundle hash is
+  `7893ab55d0f56e19cd0337f461d772c141442a33c80bd1113248938a6f3b930d`.
 - The release artifact bundle contains only the required package manifest,
   generated package artifacts, local `Mathlib.*` certificate artifacts, and
   vendored `npa-std` certificate artifacts.
@@ -374,8 +378,13 @@ Evidence fixed through 2026-06-03:
 - The `v0.1.4` downstream smoke materialized from the published release bundle
   imports only release-bundle certificate bytes for `Std.Logic.Eq`,
   `Mathlib.Logic.EqReasoning`, and `Mathlib.Algebra.Group.Basic`.
-- GitHub Actions status for `npa-mathlib v0.1.1`, `v0.1.2`, `v0.1.3`, and
-  `v0.1.4` is intentionally not used as release evidence in this pass.
+- The `v0.1.5` downstream smoke materialized from the published release bundle
+  imports only release-bundle certificate bytes for `Std.Logic.Eq`,
+  `Mathlib.Logic.EqReasoning`, `Mathlib.Algebra.Group.Basic`, and
+  `Mathlib.Algebra.Group.Subgroup`.
+- GitHub Actions status for `npa-mathlib v0.1.1`, `v0.1.2`, `v0.1.3`,
+  `v0.1.4`, and `v0.1.5` is intentionally not used as release evidence in
+  this pass.
 - Negative checks rejected corrupted import package name, package version,
   export hash, certificate hash, and certificate artifact data before proof
   acceptance.
@@ -517,8 +526,8 @@ Concrete task sequence:
 
 ## Layer 3B Expansion Tasks
 
-Status: Audit fixed for the first Layer 3B subgroup release. Materialization
-is pending for `npa-mathlib v0.1.5`.
+Status: Completed for the first Layer 3B subgroup and normal-subgroup
+foundation release in `npa-mathlib v0.1.5`.
 
 Layer 3B selected module set:
 
@@ -530,30 +539,29 @@ Concrete task sequence:
 
 1. Completed: audited the selected subgroup and normal-subgroup closure in
    `develop/npa-mathlib-layer3b-closure-audit.md`.
-2. Pending: map the source module to the `Mathlib.*` namespace according to
+2. Completed: mapped the source module to the `Mathlib.*` namespace according to
    `npa-mathlib/docs/namespace-policy.md`.
-3. Pending: keep package name `npa-mathlib` and use the existing
+3. Completed: kept package name `npa-mathlib` and used the existing
    `npa-std v0.1.0` hash-pinned imports.
-4. Pending: add `Mathlib/Algebra/Group/Subgroup/` in the standalone
+4. Completed: added `Mathlib/Algebra/Group/Subgroup/` in the standalone
    `npa-mathlib` repository.
-5. Pending: keep `allow_custom_axioms = false` and
+5. Completed: kept `allow_custom_axioms = false` and
    `allowed_axioms = ["Eq.rec"]`.
-6. Pending: regenerate certificates and generated package artifacts:
+6. Completed: regenerated certificates and generated package artifacts:
    `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
    `publish-plan.json`.
-7. Pending: update downstream source-free smoke to import the Layer 3B
+7. Completed: updated downstream source-free smoke to import the Layer 3B
    certificate closure from release-bundle bytes.
-8. Pending: run package gates for `npa-mathlib` and the downstream smoke.
-9. Pending: publish `npa-mathlib v0.1.5` after release bundle and downstream
-   smoke evidence are fixed.
+8. Completed: ran package gates for `npa-mathlib` and the downstream smoke.
+9. Completed: published `npa-mathlib v0.1.5` after release bundle and
+   downstream smoke evidence were fixed.
 
 ## Immediate Tasks
 
-1. Treat `npa-mathlib v0.1.4` as the current public theorem-library baseline
-   for Layer 3A abstract group foundation imports.
-2. Materialize the audited Layer 3B subgroup closure as
-   `npa-mathlib v0.1.5` with exactly
-   `Mathlib.Algebra.Group.Subgroup`.
+1. Treat `npa-mathlib v0.1.5` as the current public theorem-library baseline
+   for Layer 3B subgroup and normal-subgroup imports.
+2. Select the next Layer 3C route before adding more
+   `Mathlib.Algebra.Group.*` modules.
 3. Keep subgroup order, kernel, image, quotient, normal quotient, isomorphism,
    and correspondence routes in separate follow-on audits.
 4. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
