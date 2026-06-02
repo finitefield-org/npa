@@ -10,6 +10,8 @@ pub enum CliAction {
     Run(CliCommand),
     /// Render deterministic help for the selected topic.
     Help(HelpTopic),
+    /// Print the `npa` CLI package version.
+    Version,
 }
 
 /// Parsed top-level command.
@@ -335,6 +337,7 @@ where
 
     match args[0].as_str() {
         "--help" | "-h" => Ok(CliAction::Help(HelpTopic::Root)),
+        "--version" | "-V" | "version" => Ok(CliAction::Version),
         "package" => parse_package_args(&args[1..]),
         command => Err(CliUsageError::new(UsageReason::UnknownCommand).with_command(command)),
     }
@@ -1135,7 +1138,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
 pub fn render_help(topic: HelpTopic) -> &'static str {
     match topic {
         HelpTopic::Root => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands"
+            "Usage: npa <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands\n  version    Print npa CLI version\n\nOptions:\n  --help\n  --version"
         }
         HelpTopic::Package => {
             "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"

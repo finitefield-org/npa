@@ -62,6 +62,12 @@ REQUIRED_COMMANDS_BY_WORKFLOW = {
     "npa-package-high-trust.yml": REQUIRED_HIGH_TRUST_COMMANDS,
 }
 
+REQUIRED_SETUP_COMMAND = "bash ci-templates/github-actions/setup-pinned-npa.sh"
+REQUIRED_HELPERS = (
+    "setup-pinned-npa.sh",
+    "summarize-npa-diagnostics.py",
+)
+
 BASE_WORKFLOWS = {
     "npa-package-pr.yml",
     "npa-package-release.yml",
@@ -77,10 +83,15 @@ def main(argv: list[str]) -> int:
     if not workflows:
         errors.append(f"{workflow_dir}: no workflow templates found")
 
+    for helper in REQUIRED_HELPERS:
+        if not (workflow_dir / helper).is_file():
+            errors.append(f"{workflow_dir / helper}: required helper is missing")
+
     errors.extend(validate_yaml_syntax(workflows))
     for workflow in workflows:
         text = workflow.read_text(encoding="utf-8")
         errors.extend(validate_flags(workflow, text, GLOBAL_FORBIDDEN_FLAGS))
+        errors.extend(validate_required_commands(workflow, text, (REQUIRED_SETUP_COMMAND,)))
         if workflow.name in BASE_WORKFLOWS:
             errors.extend(validate_flags(workflow, text, BASE_ONLY_FORBIDDEN_FLAGS))
 

@@ -25,36 +25,13 @@ jobs:
       - name: Checkout theorem package
         uses: actions/checkout@v4
 
-      - name: Locate pinned npa
+      - name: Locate or build pinned npa
         shell: bash
+        env:
+          RUST_TOOLCHAIN_VERSION: ${{ vars.RUST_TOOLCHAIN_VERSION }}
         run: |
           set -euo pipefail
-          source_count=0
-          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
-            if [ -n "$value" ]; then
-              source_count=$((source_count + 1))
-            fi
-          done
-          if [ "$source_count" -ne 1 ]; then
-            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
-            exit 2
-          fi
-          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
-            echo "This release template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
-            exit 2
-          fi
-          case "$NPA_BINARY_PATH" in
-            /*) npa_path="$NPA_BINARY_PATH" ;;
-            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
-          esac
-          if [ ! -x "$npa_path" ]; then
-            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
-            exit 2
-          fi
-          mkdir -p "$RUNNER_TEMP/npa-bin"
-          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
-          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
-          "$npa_path" --version
+          bash ci-templates/github-actions/setup-pinned-npa.sh
 
       - name: Package check
         shell: bash
@@ -154,36 +131,13 @@ jobs:
       - name: Checkout theorem package
         uses: actions/checkout@v4
 
-      - name: Locate pinned npa
+      - name: Locate or build pinned npa
         shell: bash
+        env:
+          RUST_TOOLCHAIN_VERSION: ${{ vars.RUST_TOOLCHAIN_VERSION }}
         run: |
           set -euo pipefail
-          source_count=0
-          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
-            if [ -n "$value" ]; then
-              source_count=$((source_count + 1))
-            fi
-          done
-          if [ "$source_count" -ne 1 ]; then
-            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
-            exit 2
-          fi
-          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
-            echo "This release template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
-            exit 2
-          fi
-          case "$NPA_BINARY_PATH" in
-            /*) npa_path="$NPA_BINARY_PATH" ;;
-            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
-          esac
-          if [ ! -x "$npa_path" ]; then
-            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
-            exit 2
-          fi
-          mkdir -p "$RUNNER_TEMP/npa-bin"
-          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
-          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
-          "$npa_path" --version
+          bash ci-templates/github-actions/setup-pinned-npa.sh
 
       - name: Source-free fast-kernel verification
         shell: bash
@@ -234,36 +188,13 @@ jobs:
       - name: Checkout theorem package
         uses: actions/checkout@v4
 
-      - name: Locate pinned npa
+      - name: Locate or build pinned npa
         shell: bash
+        env:
+          RUST_TOOLCHAIN_VERSION: ${{ vars.RUST_TOOLCHAIN_VERSION }}
         run: |
           set -euo pipefail
-          source_count=0
-          for value in "${NPA_BINARY_PATH:-}" "${NPA_VERSION:-}" "${NPA_GIT_TAG:-}" "${NPA_GIT_COMMIT:-}"; do
-            if [ -n "$value" ]; then
-              source_count=$((source_count + 1))
-            fi
-          done
-          if [ "$source_count" -ne 1 ]; then
-            echo "Set exactly one pinned npa source: NPA_BINARY_PATH, NPA_VERSION, NPA_GIT_TAG, or NPA_GIT_COMMIT." >&2
-            exit 2
-          fi
-          if [ -n "${NPA_VERSION:-}" ] || [ -n "${NPA_GIT_TAG:-}" ] || [ -n "${NPA_GIT_COMMIT:-}" ]; then
-            echo "This release template currently accepts NPA_BINARY_PATH; installer modes are added by later templates." >&2
-            exit 2
-          fi
-          case "$NPA_BINARY_PATH" in
-            /*) npa_path="$NPA_BINARY_PATH" ;;
-            *) npa_path="$GITHUB_WORKSPACE/$NPA_BINARY_PATH" ;;
-          esac
-          if [ ! -x "$npa_path" ]; then
-            echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
-            exit 2
-          fi
-          mkdir -p "$RUNNER_TEMP/npa-bin"
-          ln -sf "$npa_path" "$RUNNER_TEMP/npa-bin/npa"
-          echo "$RUNNER_TEMP/npa-bin" >> "$GITHUB_PATH"
-          "$npa_path" --version
+          bash ci-templates/github-actions/setup-pinned-npa.sh
 
       - name: Source-free reference checker verification
         shell: bash

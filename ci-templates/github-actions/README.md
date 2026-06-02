@@ -10,6 +10,7 @@ Template files:
 npa-package-pr.yml          available
 npa-package-release.yml     available
 npa-package-high-trust.yml  available
+setup-pinned-npa.sh         available
 summarize-npa-diagnostics.py available
 validate-workflows.py       available
 ```
@@ -31,13 +32,13 @@ scripts/phase9-regression.sh
 
 Those scripts are repository development gates, not external theorem library CI.
 CLR-09 should use `npa-package-pr.yml`, `npa-package-release.yml`,
-`summarize-npa-diagnostics.py`, and `validate-workflows.py` for the
-reference-checker-only seed release. Copy `npa-package-high-trust.yml` only
-after the seed repository also provides the pinned high-trust checker binary,
-runner policies, checker registry, and release audit evidence. If a seed
-repository installs workflow YAML under `.github/workflows/`, keep helper
-scripts at the path referenced by the templates or update the copied workflow
-paths in the same change.
+`setup-pinned-npa.sh`, `summarize-npa-diagnostics.py`, and
+`validate-workflows.py` for the reference-checker-only seed release. Copy
+`npa-package-high-trust.yml` only after the seed repository also provides the
+pinned high-trust checker binary, runner policies, checker registry, and
+release audit evidence. If a seed repository installs workflow YAML under
+`.github/workflows/`, keep helper scripts at the path referenced by the
+templates or update the copied workflow paths in the same change.
 
 ## Pinned Setup Inputs
 
@@ -48,12 +49,12 @@ Supported inputs:
 
 ```text
 NPA_BINARY_PATH
-  Path to an existing executable `npa` binary. This is the baseline setup mode
-  until concrete installer templates are added.
+  Path to an existing executable `npa` binary.
 
 NPA_VERSION
   Exact release version or release tag for a later release-download strategy.
-  `latest` is invalid.
+  `latest` is invalid. The current SRA-01 setup script rejects this mode until
+  release-download artifacts are added.
 
 NPA_GIT_TAG
   Exact immutable Git tag for building `npa-cli`.
@@ -81,16 +82,22 @@ test -x "$NPA_BINARY_PATH" || {
 ```
 
 `npa-package-pr.yml` reads `NPA_BINARY_PATH`, `NPA_VERSION`, `NPA_GIT_TAG`, and
-`NPA_GIT_COMMIT` from GitHub repository variables. For CLR-07-03 it accepts
-`NPA_BINARY_PATH` only and fails clearly if a later installer-mode variable is
-selected.
+`NPA_GIT_COMMIT` from GitHub repository variables. SRA-01 adds Git-ref setup:
+set exactly one of `NPA_BINARY_PATH`, `NPA_GIT_TAG`, or `NPA_GIT_COMMIT`.
 
-`npa-package-release.yml` uses the same pinned source variables. For CLR-07-04
-it also accepts `NPA_BINARY_PATH` only and fails clearly if a later
-installer-mode variable is selected.
+`npa-package-release.yml` and `npa-package-high-trust.yml` use the same pinned
+source variables. For the first public toolchain ref, external repositories may
+set:
 
-When Rust is used to build `npa-cli`, templates must use a checked-in
-`rust-toolchain.toml` or exact `RUST_TOOLCHAIN_VERSION`, then print:
+```text
+NPA_GIT_TAG = v0.1.0
+RUST_TOOLCHAIN_VERSION = 1.95.0
+```
+
+Alternatively, use `NPA_GIT_COMMIT` with a full lowercase 40-hex commit SHA.
+
+When Rust is used to build `npa-cli`, `setup-pinned-npa.sh` uses exact
+`RUST_TOOLCHAIN_VERSION`, defaulting to `1.95.0`, then prints:
 
 ```sh
 npa --version

@@ -129,7 +129,7 @@ Evidence fixed on 2026-06-02:
 
 ## SRA-01 Publish `npa` Toolchain Reference
 
-- Status: Pending
+- Status: Completed
 - Depends on: SRA-00
 - Inputs:
   - this repository
@@ -152,8 +152,36 @@ Evidence fixed on 2026-06-02:
 cargo build -p npa-cli
 cargo run -p npa-cli -- package check --root fixtures/npa-mathlib --json
 python3 ci-templates/github-actions/validate-workflows.py
+tmpdir="$(mktemp -d)"
+GITHUB_PATH="$tmpdir/github-path" RUNNER_TEMP="$tmpdir" GITHUB_WORKSPACE="$PWD" \
+  NPA_BINARY_PATH=target/debug/npa \
+  bash ci-templates/github-actions/setup-pinned-npa.sh
 ./scripts/check-fast.sh
 ```
+
+Evidence fixed on 2026-06-02:
+
+- Stable toolchain ref: Git tag `v0.1.0`.
+- External repository defaults:
+  - `NPA_GIT_TAG = v0.1.0`
+  - `RUST_TOOLCHAIN_VERSION = 1.95.0`
+- `ci-templates/github-actions/setup-pinned-npa.sh` supports exactly one of
+  `NPA_BINARY_PATH`, `NPA_GIT_TAG`, or `NPA_GIT_COMMIT`; `NPA_VERSION` is
+  reserved for release-download artifacts and is rejected by the current
+  helper.
+- Copyable PR, release, and opt-in high-trust templates call the same pinned
+  setup helper and remain no-registry/no-hidden-package-cache package gates.
+- `npa --version` and `npa version` print the deterministic CLI package
+  version for setup evidence.
+- `cargo build -p npa-cli` passed.
+- `cargo run -p npa-cli -- package check --root fixtures/npa-mathlib --json`
+  passed.
+- `python3 ci-templates/github-actions/validate-workflows.py` passed.
+- Binary-path setup smoke with `NPA_BINARY_PATH=target/debug/npa` passed and
+  printed `npa 0.1.0`.
+- `cargo test -q -p npa-cli package_cli_args` passed.
+- `./scripts/check-fast.sh` passed.
+- `git diff --check` passed.
 
 Recommended release note fields:
 

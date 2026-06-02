@@ -367,6 +367,28 @@ fn package_cli_args_parses_help_topics() {
 }
 
 #[test]
+fn package_cli_args_parses_version_topics() {
+    assert_eq!(parse(&["--version"]), CliAction::Version);
+    assert_eq!(parse(&["-V"]), CliAction::Version);
+    assert_eq!(parse(&["version"]), CliAction::Version);
+}
+
+#[test]
+fn package_cli_args_binary_reports_version() {
+    let output = Command::new(env!("CARGO_BIN_EXE_npa"))
+        .arg("--version")
+        .output()
+        .unwrap();
+
+    assert_eq!(output.status.code(), Some(0));
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!("npa {}\n", env!("CARGO_PKG_VERSION"))
+    );
+}
+
+#[test]
 fn package_cli_args_binary_reports_deterministic_usage_error() {
     let output = Command::new(env!("CARGO_BIN_EXE_npa"))
         .args(["package", "verify-certs", "--checker", "external"])

@@ -12,6 +12,10 @@ fn main() -> ExitCode {
             println!("{}", render_help(topic));
             ExitCode::SUCCESS
         }
+        Ok(CliAction::Version) => {
+            println!("npa {}", env!("CARGO_PKG_VERSION"));
+            ExitCode::SUCCESS
+        }
         Ok(CliAction::Run(command)) => {
             let json = match &command {
                 npa_cli::args::CliCommand::Package(command) => command.common_options().json,

@@ -235,10 +235,12 @@ data, and release audit evidence.
 ## Immediate Tasks
 
 1. Use the completed SRA-00 baseline as the local public Layer 0 checkpoint.
-2. Execute the standalone repository activation procedure in
-   `doc/npa-standalone-repo-activation.md`, starting with `npa-std` local
-   package fixture materialization.
-3. Add the next closed theorem layer to `fixtures/npa-mathlib/` only after the
+2. Use the completed SRA-01 `npa` toolchain reference (`v0.1.0`) as the
+   external repository CLI pin.
+3. Continue the standalone repository activation procedure in
+   `doc/npa-standalone-repo-activation.md`, starting with SRA-02 `npa-std`
+   local package fixture materialization.
+4. Add the next closed theorem layer to `fixtures/npa-mathlib/` only after the
    Layer 0 artifact hashes remain stable.
-4. Keep CLR-08 high-trust release evidence separate from the reference-checker
+5. Keep CLR-08 high-trust release evidence separate from the reference-checker
    public Layer 0 fixture.
