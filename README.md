@@ -138,6 +138,13 @@ Public package-author and toolchain references:
 Core design docs, release evidence, internal planning, and Japanese development
 notes are routed from the documentation index.
 
+The in-repo Phase 6 standard-library design documents the MVP release modules
+`Std.Logic`, `Std.Nat`, `Std.List`, and `Std.Algebra.Basic`. The current SRA-02
+external package fixture path is the split `npa-std` package.
+Phase 6 release/build artifact profiles include `std.nat.mvp`, `std.list.mvp`,
+and `std.all.mvp`; source layout fixtures remain authoring and debug context,
+not trusted proof evidence.
+
 ## Local Development Gates
 
 For ordinary development, start with the fast gate:
@@ -157,3 +164,9 @@ or release/high-trust evidence:
 
 For contribution policy and the full local-gate checklist, see
 [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+NPA is licensed under the [Apache License 2.0](LICENSE).
+
+Copyright 2026 Finite Field K.K. See [NOTICE](NOTICE).

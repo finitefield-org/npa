@@ -159,11 +159,13 @@ registry metadata, source scripts, or CI status part of proof acceptance.
 - Deliverables:
   - `LICENSE` at repository root.
 - Acceptance criteria:
-  - License matches workspace crate metadata, currently MIT.
+  - License matches workspace crate metadata, currently Apache-2.0.
   - Public GitHub page shows a recognized license.
 - Evidence fixed on 2026-06-02:
-  - Added root `LICENSE` with standard MIT License text.
-  - Confirmed workspace crate metadata remains `license = "MIT"`.
+  - Added root `LICENSE` in PUB-02; later updated it to standard Apache
+    License 2.0 text.
+  - Added root `NOTICE` with `Copyright 2026 Finite Field K.K.`.
+  - Confirmed workspace crate metadata is `license = "Apache-2.0"`.
   - Updated `doc/README.md` to mark the public repository entry license item
     as added in PUB-02.
 

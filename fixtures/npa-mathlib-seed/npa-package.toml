@@ -1,7 +1,7 @@
 schema = "npa.package.v0.1"
 package = "npa-mathlib-seed"
 version = "0.1.0"
-license = "MIT"
+license = "Apache-2.0"
 description = "Small external theorem-library seed package for CLR-09 dogfood."
 
 core_spec = "npa.core.v0.1"

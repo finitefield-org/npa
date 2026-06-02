@@ -33,7 +33,7 @@ corresponding cleanup milestones are complete:
   source, package verification quick start, and repository layout.
 - [Contributing](../CONTRIBUTING.md): contribution policy, local gates, corpus
   gate triggers, `unsafe` Rust policy, and working-tree etiquette.
-- [MIT License](../LICENSE): repository license.
+- [Apache License 2.0](../LICENSE): repository license.
 - [External Theorem Library CI](external-theorem-library-ci.md): package CI
   guide for external theorem libraries. Cleaned in PUB-07.
 - [GitHub Actions CI Templates](../ci-templates/github-actions/README.md):

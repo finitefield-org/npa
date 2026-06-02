@@ -577,7 +577,7 @@ mod tests {
                 allowed_axioms: vec![Name::from_dotted("Eq.rec")],
             },
             modules: vec![module],
-            license: Some("MIT".to_owned()),
+            license: Some("Apache-2.0".to_owned()),
             repository: Some("https://github.com/finitefield-org/npa".to_owned()),
             description: Some("proof corpus fixture".to_owned()),
             imports: Some(vec![import]),

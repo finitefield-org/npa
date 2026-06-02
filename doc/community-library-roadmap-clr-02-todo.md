@@ -84,7 +84,7 @@ The fixture uses the CLR-00 identity and profile strings:
 schema = "npa.package.v0.1"
 package = "npa-proof-corpus"
 version = "0.1.0"
-license = "MIT"
+license = "Apache-2.0"
 
 core_spec = "npa.core.v0.1"
 kernel_profile = "npa.kernel.v0.1"

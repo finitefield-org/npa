@@ -143,7 +143,7 @@ shape for every current `[[proof_modules]]` entry and adds hash-pinned top-level
 schema = "npa.package.v0.1"
 package = "npa-proof-corpus"
 version = "0.1.0"
-license = "MIT"
+license = "Apache-2.0"
 
 core_spec = "npa.core.v0.1"
 kernel_profile = "npa.kernel.v0.1"
@@ -371,7 +371,7 @@ Mapping from `proofs/manifest.toml` to `npa.package.v0.1`:
 | `schema` | `schema` | target | Change from `npa-ai-proof-corpus-v0.1` to `npa.package.v0.1`. |
 | missing | `package` | generated fixture default | Use `npa-proof-corpus` for the in-repo fixture until release metadata exists. |
 | missing | `version` | generated fixture default | Use `0.1.0` until release tagging is introduced. |
-| missing | `license` | generated fixture default | Use workspace license `MIT` for the in-repo fixture. |
+| missing | `license` | generated fixture default | Use workspace license `Apache-2.0` for the in-repo fixture. |
 | missing | `core_spec` | generated fixture default | Use `npa.core.v0.1`. |
 | missing | `kernel_profile` | generated fixture default | Use `npa.kernel.v0.1`. |
 | missing | `certificate_format` | generated fixture default | Use `npa.certificate.canonical.v0.1`. |

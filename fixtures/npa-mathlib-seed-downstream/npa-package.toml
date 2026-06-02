@@ -1,7 +1,7 @@
 schema = "npa.package.v0.1"
 package = "npa-mathlib-seed-downstream"
 version = "0.1.0"
-license = "MIT"
+license = "Apache-2.0"
 description = "Downstream import fixture for CLR-09 npa-mathlib-seed release artifacts."
 
 core_spec = "npa.core.v0.1"

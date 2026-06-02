@@ -262,7 +262,7 @@ certificate-first な信頼境界が曖昧になります。
 schema = "npa.package.v0.1"
 package = "npa-mathlib-seed"
 version = "0.1.0"
-license = "Apache-2.0 OR MIT"
+license = "Apache-2.0"
 
 core_spec = "npa.core.v0.1"
 kernel_profile = "npa.kernel.v0.1"
