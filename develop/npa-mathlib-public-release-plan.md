@@ -264,9 +264,26 @@ Layer 3C baseline, and the two new kernel/image modules. It does not add a
 separate `Mathlib.Algebra.Group.Hom` module because the required homomorphism
 surface is already public in `Mathlib.Algebra.Group.Basic`.
 
-Layer 3D-B and later algebraic routes should remain separate audits:
+Layer 3D-B, kernel quotient foundation:
 
-- `Proofs.Ai.Algebra.AbstractGroupQuotient`
+| Source corpus module | Public module | Notes |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractGroupQuotient` | `Mathlib.Algebra.Group.Kernel.Quotient` | Kernel relation setoid, kernel quotient carrier, quotient constructor, quotient-to-codomain map, and representative computation facts. |
+| `Proofs.Ai.Algebra.AbstractGroupQuotientMul` | `Mathlib.Algebra.Group.Kernel.Quotient.Mul` | Representative multiplication and compatibility with kernel relation equivalence. |
+| `Proofs.Ai.Algebra.AbstractGroupQuotientGroup` | `Mathlib.Algebra.Group.Kernel.Quotient.Group` | Quotient multiplication, identity, inverse, and group law facts. |
+| `Proofs.Ai.Algebra.AbstractGroupQuotientHom` | `Mathlib.Algebra.Group.Kernel.Quotient.Hom` | Multiplicativity of the canonical quotient-to-codomain map on arbitrary quotient elements. |
+
+Layer 3D-B kernel quotient closure audit is fixed in
+`develop/npa-mathlib-layer3d-b-quotient-foundation-closure-audit.md`. The
+selected closure is limited to `npa-std v0.1.0`, the released
+`npa-mathlib v0.1.7` baseline, and the four new kernel quotient modules. It
+uses `Mathlib.Algebra.Group.Kernel.Quotient*` rather than the broader
+`Mathlib.Algebra.Group.Quotient` namespace because the selected route is the
+kernel relation quotient for a homomorphism, not the later normal-subgroup
+quotient route.
+
+Layer 3D-C and later algebraic routes should remain separate audits:
+
 - `Proofs.Ai.Algebra.AbstractGroupNormalQuotient*`
 - `Proofs.Ai.Algebra.AbstractGroup*Iso*`
 - `Proofs.Ai.Algebra.AbstractGroupCorrespondence*`
@@ -664,16 +681,58 @@ Concrete task sequence:
 10. Completed: published `npa-mathlib v0.1.7` after release bundle, downstream
     smoke, and negative hash evidence are fixed.
 
+## Layer 3D-B Expansion Tasks
+
+Status: Audit fixed for the first Layer 3D-B kernel quotient foundation
+release. Materialization is pending for `npa-mathlib v0.1.8`.
+
+Layer 3D-B selected module set:
+
+```text
+Mathlib.Algebra.Group.Kernel.Quotient
+Mathlib.Algebra.Group.Kernel.Quotient.Mul
+Mathlib.Algebra.Group.Kernel.Quotient.Group
+Mathlib.Algebra.Group.Kernel.Quotient.Hom
+```
+
+Concrete task sequence:
+
+1. Completed: audited the selected kernel quotient foundation closure in
+   `develop/npa-mathlib-layer3d-b-quotient-foundation-closure-audit.md`.
+2. Pending: map source modules to the `Mathlib.*` namespace according to
+   `npa-mathlib/docs/namespace-policy.md`.
+3. Pending: keep package name `npa-mathlib` and use the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Pending: add `Mathlib/Algebra/Group/Kernel/Quotient/`,
+   `Mathlib/Algebra/Group/Kernel/Quotient/Mul/`,
+   `Mathlib/Algebra/Group/Kernel/Quotient/Group/`, and
+   `Mathlib/Algebra/Group/Kernel/Quotient/Hom/` in the standalone
+   `npa-mathlib` repository.
+5. Pending: do not create a broader `Mathlib.Algebra.Group.Quotient` module in
+   this release.
+6. Pending: keep `allow_custom_axioms = false` and
+   `allowed_axioms = ["Eq.rec"]`, while declaring `axioms = ["Eq.rec"]` for
+   the new modules.
+7. Pending: regenerate certificates and generated package artifacts:
+   `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
+   `publish-plan.json`.
+8. Pending: update downstream source-free smoke to import the Layer 3D-B
+   certificate closure from release-bundle bytes.
+9. Pending: run package gates for `npa-mathlib` and the downstream smoke.
+10. Pending: publish `npa-mathlib v0.1.8` after release bundle, downstream
+    smoke, and negative hash evidence are fixed.
+
 ## Immediate Tasks
 
 1. Treat `npa-mathlib v0.1.7` as the current public theorem-library baseline
-   for the next algebra release audit.
-2. Start a separate Layer 3D-B quotient foundation closure audit before adding
-   quotient modules to `npa-mathlib`.
+   for Layer 3D-B kernel quotient materialization.
+2. Materialize the audited Layer 3D-B kernel quotient closure as
+   `npa-mathlib v0.1.8` with exactly the four
+   `Mathlib.Algebra.Group.Kernel.Quotient*` modules.
 3. Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic`; do not
    create a separate `Mathlib.Algebra.Group.Hom` module without a new audit.
-4. Keep normal quotient, isomorphism, and correspondence routes in
-   separate follow-on audits.
+4. Keep first isomorphism, normal quotient, second/third isomorphism, and
+   correspondence routes in separate follow-on audits.
 5. Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
    closure has a separate audit and axiom-policy review.
 6. Keep CLR-08 high-trust release evidence separate from the reference-checker

@@ -917,16 +917,17 @@ imported modules:
 ## Follow-Up Candidates
 
 - Treat `npa-mathlib v0.1.7` as the current public theorem-library baseline
-  for the next algebra release audit.
-- Start a separate Layer 3D-B quotient foundation closure audit before adding
-  quotient modules to `npa-mathlib`.
+  for Layer 3D-B kernel quotient materialization.
+- Materialize the audited Layer 3D-B kernel quotient closure as
+  `npa-mathlib v0.1.8` with exactly the four
+  `Mathlib.Algebra.Group.Kernel.Quotient*` modules.
 - Keep the homomorphism surface in `Mathlib.Algebra.Group.Basic`; do not
   create a separate `Mathlib.Algebra.Group.Hom` module without a new audit.
 - Keep `Mathlib.Geometry.Pythagorean` deferred until its abstract/law-package
   closure has a separate audit and axiom-policy review.
-- Keep quotient, normal quotient, isomorphism, and correspondence routes in
-  separate closure audits before adding those modules to standalone
-  `npa-mathlib`.
+- Keep first isomorphism, normal quotient, second/third isomorphism, and
+  correspondence routes in separate closure audits before adding those modules
+  to standalone `npa-mathlib`.
 - Add larger theorem layers to `npa-mathlib` only after each layer has a closed
   dependency set, regenerated package artifacts, release-bundle evidence, and
   downstream import evidence.

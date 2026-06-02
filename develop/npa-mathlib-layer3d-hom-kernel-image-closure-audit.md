@@ -442,6 +442,6 @@ Negative checks rejected:
 - corrupted certificate bytes
 - bad package version
 
-The next theorem expansion should not extend `v0.1.7` in place. Start a new
-closure audit for the Layer 3D-B quotient foundation route before adding
-quotient, normal quotient, first isomorphism, or correspondence modules.
+The next theorem expansion should not extend `v0.1.7` in place. The follow-on
+Layer 3D-B kernel quotient foundation audit is recorded in
+`develop/npa-mathlib-layer3d-b-quotient-foundation-closure-audit.md`.
