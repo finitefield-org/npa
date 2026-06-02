@@ -717,6 +717,63 @@ Evidence fixed on 2026-06-02:
   operational evidence, not proof evidence.
 - `git diff --check` passed in the standalone repository before tagging.
 
+Layer 1 release evidence fixed on 2026-06-02:
+
+- Standalone repository:
+  `https://github.com/finitefield-org/npa-mathlib`.
+- Release commit:
+  `449855a37cbf1d3ebe777d5a6b044d47be324532`.
+- Git tag `v0.1.1` is an annotated tag:
+  - tag object `04dba2cd9de58f2e02e990fa583939dbfa82e9ae`
+  - target commit `449855a37cbf1d3ebe777d5a6b044d47be324532`
+- GitHub release:
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.1`.
+- Release artifact bundle:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.1/npa-mathlib-v0.1.1-release-artifacts.tar.gz`.
+- Bundle SHA-256:
+  `ada3f288537dc777697c1083765790aa9dbd8782f43356c1f8572a1fa6ccbcb9`.
+- SHA sidecar:
+  `https://github.com/finitefield-org/npa-mathlib/releases/download/v0.1.1/npa-mathlib-v0.1.1-release-artifacts.tar.gz.sha256`.
+- The release adds these public Layer 1 modules:
+  - `Mathlib.Algebra.Ring`
+  - `Mathlib.Algebra.Square`
+  - `Mathlib.Algebra.OrderedField`
+- Bundle contents are exactly the required proof-relevant release files:
+  - `npa-package.toml`
+  - `generated/package-lock.json`
+  - `generated/axiom-report.json`
+  - `generated/theorem-index.json`
+  - `generated/publish-plan.json`
+  - `Mathlib/Algebra/OrderedField/certificate.npcert`
+  - `Mathlib/Algebra/Ring/certificate.npcert`
+  - `Mathlib/Algebra/Square/certificate.npcert`
+  - `Mathlib/Core/Reduction/certificate.npcert`
+  - `Mathlib/Data/Nat/Basic/certificate.npcert`
+  - `Mathlib/Logic/Basic/certificate.npcert`
+  - `Mathlib/Logic/Eq/certificate.npcert`
+  - `Mathlib/Logic/Prop/certificate.npcert`
+  - `vendor/npa-std/Std/Logic/Eq/certificate.npcert`
+  - `vendor/npa-std/Std/Nat/Basic/certificate.npcert`
+- The bundle intentionally excludes `source.npa`, `replay.json`, and
+  `meta.json`.
+- Local release gates passed before tagging:
+  - `npa package check --root . --json`
+  - `npa package build-certs --root . --check --json`
+  - `npa package verify-certs --root . --checker reference --json`
+  - `npa package check-hashes --root . --json`
+  - `npa package axiom-report --root . --check --json`
+  - `npa package index --root . --check --json`
+  - `npa package publish-plan --root . --check --json`
+- `generated/publish-plan.json` records package `npa-mathlib`, version
+  `0.1.1`, checksum-only signature policy, eight local modules, eight module
+  registry entries, eight downstream import bundle modules, and two external
+  imports from `npa-std`.
+- `generated/axiom-report.json` records zero direct axioms, zero transitive
+  axioms, and zero policy violations.
+- GitHub Actions status was intentionally not used for this evidence pass;
+  release acceptance is recorded from local package gates and the published
+  release-bundle downstream smoke below.
+
 ## SRA-08 Run Downstream Source-Free Import Smoke
 
 - Status: Completed
@@ -800,6 +857,49 @@ Evidence fixed on 2026-06-02:
   - corrupted certificate file-hash pin in `generated/package-lock.json`:
     `package_lock_stale`
 
+Layer 1 downstream smoke evidence fixed on 2026-06-02:
+
+- Downloaded the published `v0.1.1` release assets from
+  `https://github.com/finitefield-org/npa-mathlib/releases/tag/v0.1.1`.
+- Verified the release bundle with the published SHA sidecar value:
+  `npa-mathlib-v0.1.1-release-artifacts.tar.gz: OK`.
+- Verified release bundle SHA-256:
+  `ada3f288537dc777697c1083765790aa9dbd8782f43356c1f8572a1fa6ccbcb9`.
+- Extracted release bundle contents were exactly:
+  - `npa-package.toml`
+  - `generated/package-lock.json`
+  - `generated/axiom-report.json`
+  - `generated/theorem-index.json`
+  - `generated/publish-plan.json`
+  - `Mathlib/Algebra/OrderedField/certificate.npcert`
+  - `Mathlib/Algebra/Ring/certificate.npcert`
+  - `Mathlib/Algebra/Square/certificate.npcert`
+  - `Mathlib/Core/Reduction/certificate.npcert`
+  - `Mathlib/Data/Nat/Basic/certificate.npcert`
+  - `Mathlib/Logic/Basic/certificate.npcert`
+  - `Mathlib/Logic/Eq/certificate.npcert`
+  - `Mathlib/Logic/Prop/certificate.npcert`
+  - `vendor/npa-std/Std/Logic/Eq/certificate.npcert`
+  - `vendor/npa-std/Std/Nat/Basic/certificate.npcert`
+- Materialized a temporary downstream package from the standalone
+  `fixtures/downstream-smoke/` and replaced its vendored dependency tree with
+  only release-bundle certificate bytes for:
+  - `Std.Logic.Eq`
+  - `Mathlib.Algebra.Ring`
+  - `Mathlib.Algebra.Square`
+  - `Mathlib.Algebra.OrderedField`
+- The temporary downstream package did not vendor `npa-mathlib` source,
+  replay, meta, theorem index, publish plan, registry state, or package source
+  tree.
+- Source-free downstream package gates passed:
+  - `npa package check --root <temporary-downstream> --json`
+  - `npa package build-certs --root <temporary-downstream> --check --json`
+  - `npa package verify-certs --root <temporary-downstream> --checker reference --json`
+  - `npa package check-hashes --root <temporary-downstream> --json`
+- `npa-checker-ref` verified the Layer 1 import closure from release-bundle
+  certificate bytes and verified
+  `Downstream.AlgebraOrderedField::ordered_field_le_refl_passthrough`.
+
 ## SRA-09 Record Post-Activation Evidence
 
 - Status: Completed
@@ -837,16 +937,21 @@ Evidence fixed on 2026-06-02:
   - `finitefield-org/npa` toolchain tag `v0.1.1`
   - `finitefield-org/npa-std` release tag `v0.1.0`
   - `finitefield-org/npa-mathlib` release tag `v0.1.0`
+  - `finitefield-org/npa-mathlib` release tag `v0.1.1`
 - Exact release artifact URLs and SHA-256 hashes are recorded for:
   - `npa-std-v0.1.0-release-artifacts.tar.gz`
   - `npa-mathlib-v0.1.0-release-artifacts.tar.gz`
+  - `npa-mathlib-v0.1.1-release-artifacts.tar.gz`
 - Command results are recorded for package release gates, downstream
-  source-free smoke, negative corrupted import checks, and
+  source-free smoke, v0.1.0 negative corrupted import checks, and
   `cargo test -q -p npa-cli package_import_fixture`.
+- GitHub Actions status for `npa-mathlib v0.1.1` was intentionally ignored;
+  this evidence pass relies on local package gates and published release-bundle
+  downstream smoke.
 - Remaining gaps are explicit: registry server, dependency solver, signing,
   binary cache, and CLR-08 high-trust evidence.
-- Layer 1 work can start in the standalone `npa-mathlib` repository without
-  revisiting repository split or package manifest semantics.
+- Layer 1 algebra/order work is released in the standalone `npa-mathlib`
+  repository without revisiting repository split or package manifest semantics.
 
 ## Release Artifact Rule
 

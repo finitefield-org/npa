@@ -145,8 +145,9 @@ Layer 0 fixture status:
 - The `v0.1.0` release bundle hash is
   `d89dd2cb08ae21c20b9ca889285d9fcb50b1c133d40556e0601588a44e9632d9`.
 
-Layer 1 can now start from the following provisional mapping candidates. Keep
-the final names aligned with the standalone `npa-mathlib` namespace policy:
+Layer 1 was completed in `npa-mathlib v0.1.1` using the following selected
+mapping. Keep later theorem layers aligned with the standalone `npa-mathlib`
+namespace policy:
 
 Layer 1, small algebra/order:
 
@@ -263,6 +264,8 @@ data, and release audit evidence.
 Evidence fixed on 2026-06-02:
 
 - `npa-mathlib v0.1.0` is published as a public GitHub Release.
+- `npa-mathlib v0.1.1` is published as a public GitHub Release with the
+  Layer 1 algebra/order modules.
 - The release artifact bundle contains only the required package manifest,
   generated package artifacts, local `Mathlib.*` certificate artifacts, and
   vendored `npa-std` certificate artifacts.
@@ -272,6 +275,12 @@ Evidence fixed on 2026-06-02:
 - A downstream source-free smoke materialized from the published release bundle
   passed `check`, `build-certs --check`, `verify-certs --checker reference`,
   and `check-hashes`.
+- The `v0.1.1` downstream smoke materialized from the published release bundle
+  imports only release-bundle certificate bytes for `Std.Logic.Eq`,
+  `Mathlib.Algebra.Ring`, `Mathlib.Algebra.Square`, and
+  `Mathlib.Algebra.OrderedField`.
+- GitHub Actions status for `npa-mathlib v0.1.1` is intentionally not used as
+  release evidence in this pass.
 - Negative checks rejected corrupted import package name, package version,
   export hash, certificate hash, and certificate artifact data before proof
   acceptance.
@@ -281,11 +290,14 @@ Evidence fixed on 2026-06-02:
 
 ## Layer 1 Expansion Tasks
 
+Status: Completed for the first Layer 1 algebra/order release in
+`npa-mathlib v0.1.1`.
+
 The repository split and package manifest semantics are fixed. Do not revisit
-them for Layer 1. Add the next theorem layer in the standalone
+them for later theorem layers. Add later theorem layers in the standalone
 `finitefield-org/npa-mathlib` repository.
 
-Layer 1 candidate module set:
+Layer 1 selected module set:
 
 ```text
 Mathlib.Algebra.Ring
@@ -295,27 +307,28 @@ Mathlib.Algebra.OrderedField
 
 Concrete task sequence:
 
-1. Select a closed Layer 1 source set from the current proof corpus algebra and
-   ordered-field candidates.
-2. Map each source module to the `Mathlib.*` namespace according to
-   `npa-mathlib/docs/namespace-policy.md`.
-3. Keep package name `npa-mathlib`; use the existing `npa-std v0.1.0`
-   hash-pinned imports unless the selected theorems require a reviewed
-   `npa-std` release update.
-4. Add the new module directories and manifest entries in the standalone
-   `npa-mathlib` repository.
-5. Regenerate certificates and generated package artifacts:
+1. Completed: selected a closed Layer 1 source set from the current proof
+   corpus algebra and ordered-field candidates.
+2. Completed: mapped each source module to the `Mathlib.*` namespace according
+   to `npa-mathlib/docs/namespace-policy.md`.
+3. Completed: kept package name `npa-mathlib` and used the existing
+   `npa-std v0.1.0` hash-pinned imports.
+4. Completed: added the new module directories and manifest entries in the
+   standalone `npa-mathlib` repository.
+5. Completed: regenerated certificates and generated package artifacts:
    `package-lock.json`, `axiom-report.json`, `theorem-index.json`, and
    `publish-plan.json`.
-6. Add or update a downstream source-free smoke that imports at least one new
-   Layer 1 certificate artifact from a release bundle.
-7. Run package gates for `npa-mathlib` and the downstream smoke.
-8. Publish the next `npa-mathlib` release only after the release bundle and
-   downstream smoke evidence are fixed.
+6. Completed: updated downstream source-free smoke to import the new Layer 1
+   certificate closure from release-bundle bytes.
+7. Completed: ran package gates for `npa-mathlib` and the downstream smoke.
+8. Completed: published `npa-mathlib v0.1.1` after release bundle and
+   downstream smoke evidence were fixed.
 
 ## Immediate Tasks
 
-1. Materialize the audited Layer 1 algebra/order set in the standalone
-   `npa-mathlib` repository.
+1. Treat `npa-mathlib v0.1.1` as the current public theorem-library baseline
+   for Layer 1 algebra/order imports.
 2. Keep CLR-08 high-trust release evidence separate from the reference-checker
-   public Layer 0 fixture.
+   public package releases.
+3. Choose the next theorem expansion layer before changing package boundaries,
+   registry semantics, or import identity rules.
