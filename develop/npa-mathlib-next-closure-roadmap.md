@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.18` vector-space foundation closure. It is a planning
+`v0.1.19` inner-product closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -14,13 +14,13 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through the vector-space
-foundation closure as package version `0.1.18`.
+The standalone `npa-mathlib` package has materialized through the
+inner-product closure as package version `0.1.19`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-vector-space-closure-audit.md
+develop/npa-mathlib-inner-product-closure-audit.md
 ```
 
 The currently public package includes:
@@ -59,6 +59,8 @@ Mathlib.Algebra.OrderedField.Basic
 Mathlib.Algebra.OrderedField.Square
 Mathlib.Algebra.OrderedField.ScalarIdentities
 Mathlib.LinearAlgebra.VectorSpace
+Mathlib.LinearAlgebra.InnerProduct
+Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.RightTriangle
 Mathlib.Geometry.Metric
 Mathlib.Vector.Basic
@@ -110,7 +112,14 @@ The `Vector Space Foundation Closure` item from this queue was completed as
 develop/npa-mathlib-vector-space-closure-audit.md
 ```
 
-The next open item is the inner product closure.
+The `Inner Product Closure` item from this queue was completed as
+`npa-mathlib v0.1.19`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-inner-product-closure-audit.md
+```
+
+The next open item is the geometry Pythagorean closure.
 
 ### Logic Iff Closure
 
@@ -311,6 +320,54 @@ Closure unit verdict:
   `polarization_scalar_rhs_from_ring_args` source-free from vendored
   certificates.
 
+### Inner Product Closure
+
+Status: completed in `npa-mathlib v0.1.19`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-inner-product-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Vector.AbstractInnerProduct
+Proofs.Ai.Vector.AbstractInnerProductDerive
+```
+
+Public modules:
+
+```text
+Mathlib.LinearAlgebra.InnerProduct
+Mathlib.LinearAlgebra.InnerProduct.Derived
+```
+
+Public surface audited:
+
+- `dot`, `normSq`, `distSq`, `PerpVec`, and `InnerProductLawArgs`.
+- Inner-product law projections including `parallelogram_law`,
+  `polarization_identity`, `cauchy_schwarz`, perpendicularity facts, and
+  norm-square facts.
+- Derived law-package theorem routes including
+  `parallelogram_law_from_inner_args`,
+  `polarization_identity_from_inner_args`,
+  `cauchy_schwarz_from_law_packages`, and norm-square derived bounds.
+
+Closure unit verdict:
+
+- The two corpus modules were kept in one release because
+  `AbstractInnerProductDerive` imports `AbstractInnerProduct`, and the pair
+  forms the coherent public inner-product closure over already released ring,
+  ordered algebra, scalar-identity, equality-reasoning, and vector-space
+  modules.
+- The abstract route is separate from the existing concrete
+  `Mathlib.Vector.Dot` module.
+- Downstream smoke consumes `parallelogram_law`,
+  `polarization_identity`, and `cauchy_schwarz_from_law_packages` source-free
+  from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -337,55 +394,14 @@ older queue are:
   derivative, fixed point, inverse function, and implicit function closures.
   The previous "analysis foundation" group was useful as a roadmap cluster but
   too large to be a default release closure.
-- The ring first-isomorphism, CRT, ordered algebra, square-normalization, and
-  vector-space foundation closures are complete. A separate public
+- The ring first-isomorphism, CRT, ordered algebra, square-normalization,
+  vector-space foundation, and inner-product closures are complete. A separate public
   ring-homomorphism namespace should wait for either a homomorphism-only corpus
   module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Inner Product Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-inner-product-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Vector.AbstractInnerProduct
-Proofs.Ai.Vector.AbstractInnerProductDerive
-```
-
-Candidate public modules:
-
-```text
-Mathlib.LinearAlgebra.InnerProduct
-Mathlib.LinearAlgebra.InnerProduct.Derived
-```
-
-Alternative public module prefix to evaluate:
-
-```text
-Mathlib.Vector.InnerProduct
-```
-
-Why this closure matters:
-
-- It adds inner-product identities, parallelogram law, polarization identity,
-  Cauchy-Schwarz, perpendicularity facts, and norm-square facts.
-- It is a prerequisite for the abstract geometry/Pythagorean route.
-
-Audit focus:
-
-- Confirm the prerequisite public imports from abstract ring, ordered algebra,
-  scalar derive, and vector-space foundation.
-- Add downstream smoke for `parallelogram_law`, `polarization_identity`, and
-  `cauchy_schwarz`.
-
-### 2. Geometry Pythagorean Closure
+### 1. Geometry Pythagorean Closure
 
 Recommended audit file:
 
@@ -450,7 +466,7 @@ Audit focus:
 - Add downstream smoke that consumes `pythagorean_distance_general` or the
   final `Pythagorean` theorem surface source-free.
 
-### 3. Analysis Metric Topology Closure
+### 2. Analysis Metric Topology Closure
 
 Recommended audit file:
 
@@ -484,7 +500,7 @@ Audit focus:
 - Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
   `local_unique_apply`.
 
-### 4. Analysis Normed Space Closure
+### 3. Analysis Normed Space Closure
 
 Recommended audit file:
 
@@ -515,7 +531,7 @@ Audit focus:
 - Add downstream smoke for `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args`.
 
-### 5. Analysis Linear Map Closure
+### 4. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -547,7 +563,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 6. Analysis Derivative Closure
+### 5. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -579,7 +595,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 7. Analysis Fixed Point Closure
+### 6. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -610,7 +626,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 8. Analysis Inverse Function Closure
+### 7. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -642,7 +658,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 9. Analysis Implicit Function Closure
+### 8. Analysis Implicit Function Closure
 
 Recommended audit file:
 
