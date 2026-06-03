@@ -48,13 +48,16 @@ cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
 cargo run -p npa-proof-corpus -- --changed-only
 ```
 
+For repeated local rechecks of the same certificate, optionally add
+`--verified-cache authoring` to `--module` or `--changed-only`.
+
 8. If verification fails, use the structured diagnostic to repair the smallest proof term/import change. Optionally emit a focused replay for the failing declaration:
 
 ```sh
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.X::theorem_name /tmp/replay.json
 ```
 
-9. Before finishing an authoring turn, run the local proof checks above and `./scripts/check-fast.sh` when appropriate. Do not run `./scripts/check-corpus.sh` as part of every proof attempt or repair loop.
+9. Before finishing an authoring turn, run the local proof checks above and `./scripts/check-fast.sh` when appropriate. For a coherent theorem batch, run `./scripts/check-corpus-authoring.sh`. Do not run `./scripts/check-corpus.sh` as part of every proof attempt or repair loop.
 
 ## Gate Policy
 
@@ -67,7 +70,20 @@ cargo run -p npa-proof-corpus -- --changed-only
 ./scripts/check-fast.sh
 ```
 
-`./scripts/check-corpus.sh` is intentionally expensive. Run it once at a batch boundary, before commit/push or release handoff, when proof-corpus infrastructure, certificate/package/checker compatibility, or kernel semantics changed, or when the user explicitly asks for the full corpus gate. If it is skipped, say so in the final response with the local checks that did run.
+Use `--verified-cache authoring` only for repeated local checks where a cached
+verdict can shorten authoring feedback. Cache hits are not proof evidence.
+
+Run `./scripts/check-corpus-authoring.sh` before finishing a theorem batch. It
+is the normal proof-corpus authoring completion gate and excludes package-wide
+CLI examples.
+
+`./scripts/check-corpus-package.sh` and `./scripts/check-corpus-full.sh` are
+intentionally expensive. Run them for proof-corpus infrastructure,
+certificate/package/checker compatibility, kernel semantics changes, push
+readiness, release handoff, or when the user explicitly asks for package/full
+corpus coverage. The legacy `./scripts/check-corpus.sh` name remains a full
+gate wrapper. If the package/full gate is skipped, say so in the final response
+with the local checks that did run.
 
 ## Guardrails
 

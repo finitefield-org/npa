@@ -169,6 +169,13 @@ release/high-trust evidence:
 The legacy `./scripts/check-corpus.sh` command remains valid and runs the full
 corpus gate.
 
+For proof-corpus theorem repair, use the targeted local loop first:
+`--build-module` or `--build-modules`, selected `--module`, and
+`--changed-only`. Finish a coherent theorem batch with
+`./scripts/check-corpus-authoring.sh`. Reserve `check-corpus-package.sh` and
+`check-corpus-full.sh` for package verifier changes, compatibility checks, push
+readiness, or release handoff.
+
 For contribution policy and the full local-gate checklist, see
 [CONTRIBUTING.md](CONTRIBUTING.md).
 

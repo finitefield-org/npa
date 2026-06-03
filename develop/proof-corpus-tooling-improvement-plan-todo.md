@@ -299,7 +299,7 @@ package artifact checks を改めて通す。
 
 ### PCT-08 End-To-End Measurement And Documentation Cleanup
 
-- Status: Pending
+- Status: Completed
 - Depends on: PCT-07
 - Inputs:
   - Baseline from PCT-00
@@ -328,6 +328,9 @@ package artifact checks を改めて通す。
   - `./scripts/check-corpus-package.sh`
 - Notes:
   - Full `./scripts/check-corpus.sh` or `./scripts/check-corpus-full.sh` should be run before final push if implementation touched proof corpus tooling or package verification.
+  - Completed in `develop/proof-corpus-tooling-pct-08-measurement.md`.
+  - This milestone changed documentation and repo-local skills only. It did not touch proof corpus tooling or package verification code, so the split authoring and package gates were run instead of the full compatibility wrapper.
+  - The measured local small-module authoring loop is about 394 times faster than the PCT-00 full corpus gate. The package gate remains the long boundary gate and is documented as a PR / push / release / compatibility check.
 
 ## Open Questions
 

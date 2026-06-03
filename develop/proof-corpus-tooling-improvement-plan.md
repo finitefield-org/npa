@@ -315,3 +315,16 @@ cache は効果が大きい一方で信頼境界の説明が難しいため、re
 
 目標は、theorem authoring の通常 loop を full corpus gate ではなく局所 build / verify の時間に
 近づけることです。
+
+PCT-08 の最終計測は `develop/proof-corpus-tooling-pct-08-measurement.md` に記録します。
+PCT-00 baseline の full corpus gate は 1059.81s でした。PCT-08 では clean small-module
+authoring loop、つまり `--build-module Proofs.Ai.Basic`、selected module source-free verification、
+`--changed-only` の合計が 2.69s でした。これは baseline full gate より約 394 倍短いです。
+
+`./scripts/check-corpus-authoring.sh` は 115.21s で通り、package-wide CLI examples を含まない
+theorem batch boundary 用 gate として使います。`./scripts/check-corpus-package.sh` は 1122.39s で通り、
+package verifier、package CLI examples、axiom-report、index、publish-plan の回帰を含むため、
+PR / push readiness / release handoff / compatibility changes の境界に寄せます。
+
+cache、promotion plan、promotion dry-run、theorem index、replay、metadata、CI status、timing log は
+すべて未信頼 sidecar です。これらは作業効率や audit の入力には使えますが、証明受理の根拠にはしません。

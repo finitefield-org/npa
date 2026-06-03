@@ -96,9 +96,49 @@ cargo run -q -p npa-proof-corpus -- --build-module Proofs.Ai.X
 Use the smallest module-specific checks that prove the selected corpus closure
 is valid.
 
+When a single corpus module maps cleanly to a public module, prefer the
+repo-local promotion plan command to seed the audit:
+
+```sh
+cargo run -q -p npa-proof-corpus -- \
+  --promote-plan Proofs.Ai.X \
+  --mathlib-root ../npa-mathlib \
+  --to-module Mathlib.X \
+  --out develop/npa-mathlib-x-closure-audit.md
+```
+
+The generated plan is an untrusted audit helper. It does not modify
+`npa-mathlib` and does not replace source-free verification or package gates.
+
 ## Materialize Workflow
 
 Materialize only after the audit has a clear selected set.
+
+Prefer the PCT-07 materialize command for the source, certificate, meta,
+replay, manifest, and namespace rewrite mechanics when the audit has resolved
+import mapping, axiom policy, and compatibility alias decisions:
+
+```sh
+cargo run -q -p npa-proof-corpus -- \
+  --promote-materialize develop/npa-mathlib-x-closure-audit.md \
+  --mathlib-root ../npa-mathlib \
+  --dry-run \
+  --compat-alias none
+
+cargo run -q -p npa-proof-corpus -- \
+  --promote-materialize develop/npa-mathlib-x-closure-audit.md \
+  --mathlib-root ../npa-mathlib \
+  --apply \
+  --compat-alias none
+```
+
+The command stages no git changes. Dry-run is for review only; apply writes the
+target package files and reports exact paths. It is still necessary to run the
+positive gates, downstream smoke gates, negative checks, and release artifact
+generation below.
+When apply mode covers one of the checklist items below, record the command
+output and continue with the remaining items; do not manually repeat a copy or
+rewrite step unless the command reports that the route needs manual handling.
 
 In `npa-mathlib`:
 
@@ -126,25 +166,26 @@ hashes. Never treat old corpus hashes as public hashes after module renaming.
 
 ## Positive Gates
 
-Run these gates in `npa-mathlib` after materialization:
+Run these gates from the `npa` repository against the sibling `npa-mathlib`
+checkout after materialization:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /path/to/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /path/to/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /path/to/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /path/to/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /path/to/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /path/to/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /path/to/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 Run downstream smoke gates:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /path/to/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /path/to/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /path/to/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /path/to/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 Run `git diff --check` in both repositories before finalization.
