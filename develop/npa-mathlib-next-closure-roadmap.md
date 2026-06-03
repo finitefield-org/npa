@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.23` analysis linear-map closure. It is a planning
+`v0.1.24` analysis derivative closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -15,12 +15,12 @@ untrusted sidecars.
 ## Current Baseline
 
 The standalone `npa-mathlib` package has materialized through the analysis
-linear-map closure as package version `0.1.23`.
+derivative closure as package version `0.1.24`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-analysis-linear-map-closure-audit.md
+develop/npa-mathlib-analysis-derivative-closure-audit.md
 ```
 
 The currently public package includes:
@@ -62,6 +62,7 @@ Mathlib.Algebra.OrderedField.ScalarIdentities
 Mathlib.LinearAlgebra.VectorSpace
 Mathlib.Analysis.NormedSpace.Basic
 Mathlib.Analysis.LinearMap
+Mathlib.Analysis.Calculus.Derivative
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.Affine
@@ -156,7 +157,14 @@ The `Analysis Linear Map Closure` item from this queue was completed as
 develop/npa-mathlib-analysis-linear-map-closure-audit.md
 ```
 
-The next open item is the analysis derivative closure.
+The `Analysis Derivative Closure` item from this queue was completed as
+`npa-mathlib v0.1.24`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-derivative-closure-audit.md
+```
+
+The next open item is the analysis fixed-point closure.
 
 ### Logic Iff Closure
 
@@ -591,6 +599,56 @@ Closure unit verdict:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args` source-free from vendored certificates.
 
+### Analysis Derivative Closure
+
+Status: completed in `npa-mathlib v0.1.24`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-derivative-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractDerivative
+```
+
+Public modules:
+
+```text
+Mathlib.Analysis.Calculus.Derivative
+```
+
+Public surface audited:
+
+- `FrechetRemainder`, `FrechetDerivativeAt`,
+  `FrechetDifferentiableAt`, `FrechetDifferentiableOn`, and
+  `DerivativeUniqueArgs`.
+- Constant, zero, pair, and partial-map APIs including `ConstMap`, `ZeroMap`,
+  `PairMap`, `PartialXMap`, `PartialYMap`, `PartialXDerivativeMap`, and
+  `PartialYDerivativeMap`.
+- Derivative rule argument packages including `DerivativeConstRuleArgs`,
+  `DerivativeIdRuleArgs`, `DerivativeFstRuleArgs`,
+  `DerivativeSndRuleArgs`, `DerivativePairRuleArgs`,
+  `DerivativeCompRuleArgs`, and `PartialDerivativeRuleArgs`.
+- Theorem surfaces including `frechet_derivative_at_intro`,
+  `derivative_comp_from_args`, `partial_x_derivative_from_args`, and
+  `partial_y_derivative_from_args`.
+
+Closure unit verdict:
+
+- The corpus module is a valid single-module derivative closure because it
+  imports only public `Std.Logic.Eq`, equality reasoning, metric topology,
+  vector-space, normed-space, and linear-map foundations.
+- The module belongs under `Mathlib.Analysis.Calculus.Derivative` because it
+  starts the calculus namespace used by later inverse-function and
+  implicit-function routes.
+- Downstream smoke consumes `frechet_derivative_at_intro`,
+  `derivative_comp_from_args`, and `partial_x_derivative_from_args`
+  source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -619,45 +677,14 @@ older queue are:
   too large to be a default release closure.
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
   vector-space foundation, inner-product, geometry Pythagorean, analysis
-  metric topology, analysis normed-space, and analysis linear-map closures are
-  complete. A separate public ring-homomorphism namespace should wait for either a
-  homomorphism-only corpus module or an audited alias layer.
+  metric topology, analysis normed-space, analysis linear-map, and analysis
+  derivative closures are complete. A separate public ring-homomorphism
+  namespace should wait for either a homomorphism-only corpus module or an
+  audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Derivative Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-derivative-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractDerivative
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Analysis.Calculus.Derivative
-```
-
-Why this closure matters:
-
-- It adds Frechet derivative, differentiability, uniqueness, product/pair, and
-  composition rule surfaces.
-
-Audit focus:
-
-- Confirm public imports from metric topology, vector-space, normed-space, and
-  linear-map closures.
-- Add downstream smoke for `frechet_derivative_at_intro`,
-  `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
-
-### 2. Analysis Fixed Point Closure
+### 1. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -688,7 +715,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 3. Analysis Inverse Function Closure
+### 2. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -720,7 +747,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 4. Analysis Implicit Function Closure
+### 3. Analysis Implicit Function Closure
 
 Recommended audit file:
 
