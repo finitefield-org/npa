@@ -4,8 +4,8 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.16` ring first-isomorphism and CRT closure. It is a planning document,
-not proof evidence.
+`v0.1.17` ordered algebra and square-normalization closure. It is a planning
+document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
 hashes, and source-free checker verdicts. Source files, replay files, meta
@@ -14,13 +14,13 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through the ring
-first-isomorphism and CRT closure as package version `0.1.16`.
+The standalone `npa-mathlib` package has materialized through the ordered
+algebra and square-normalization closure as package version `0.1.17`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-ring-isomorphism-crt-closure-audit.md
+develop/npa-mathlib-ordered-algebra-square-closure-audit.md
 ```
 
 The currently public package includes:
@@ -55,6 +55,9 @@ Mathlib.Algebra.Ring.Basic
 Mathlib.Algebra.Ring.FirstIsomorphism.Basic
 Mathlib.Algebra.Ring.FirstIsomorphism
 Mathlib.Algebra.Ring.ChineseRemainder
+Mathlib.Algebra.OrderedField.Basic
+Mathlib.Algebra.OrderedField.Square
+Mathlib.Algebra.OrderedField.ScalarIdentities
 Mathlib.Geometry.RightTriangle
 Mathlib.Geometry.Metric
 Mathlib.Vector.Basic
@@ -92,7 +95,14 @@ as `npa-mathlib v0.1.16`. Its audit is recorded in:
 develop/npa-mathlib-ring-isomorphism-crt-closure-audit.md
 ```
 
-The next open item is the ordered algebra and square normalization closure.
+The `Ordered Algebra And Square Normalization Closure` item from this queue was
+completed as `npa-mathlib v0.1.17`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-ordered-algebra-square-closure-audit.md
+```
+
+The next open item is the vector space foundation closure.
 
 ### Logic Iff Closure
 
@@ -244,6 +254,55 @@ Closure unit verdict:
 - Downstream smoke consumes both `ring_first_isomorphism_to_image` and
   `ring_chinese_remainder_theorem` source-free from vendored certificates.
 
+### Ordered Algebra And Square Normalization Closure
+
+Status: completed in `npa-mathlib v0.1.17`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-ordered-algebra-square-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Algebra.AbstractOrderedField
+Proofs.Ai.Algebra.AbstractSquareNormalize
+Proofs.Ai.Algebra.AbstractScalarDerive
+```
+
+Public modules:
+
+```text
+Mathlib.Algebra.OrderedField.Basic
+Mathlib.Algebra.OrderedField.Square
+Mathlib.Algebra.OrderedField.ScalarIdentities
+```
+
+Public surface audited:
+
+- `le`, `lt`, `sqrt`, `Nonneg`, `Positive`, and `OrderedFieldLawArgs`.
+- Ordered field facts including `sqrt_sq`,
+  `square_completion_bound_from_ordered_args`, and
+  `add_two_mul_le_sq_add_sqrt_from_ordered_args`.
+- Square-normalization facts including `sq_add_eq_add_sq_add_two_mul` and
+  `normalize_add_with_zero_cross_term`.
+- Scalar RHS identities including `law_of_cosines_scalar_rhs_from_ring_args`,
+  `parallelogram_scalar_rhs_from_ring_args`, and
+  `polarization_scalar_rhs_from_ring_args`.
+
+Closure unit verdict:
+
+- The three corpus modules were kept in one release because
+  `AbstractScalarDerive` imports `AbstractSquareNormalize`, and
+  `AbstractSquareNormalize` imports `AbstractOrderedField`.
+- The abstract route is separate from the existing concrete
+  `Mathlib.Algebra.OrderedField` and `Mathlib.Algebra.Square` modules.
+- Downstream smoke consumes `sqrt_sq`, `sq_add_eq_add_sq_add_two_mul`, and
+  `polarization_scalar_rhs_from_ring_args` source-free from vendored
+  certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -270,60 +329,13 @@ older queue are:
   derivative, fixed point, inverse function, and implicit function closures.
   The previous "analysis foundation" group was useful as a roadmap cluster but
   too large to be a default release closure.
-- The ring first-isomorphism and CRT closure is complete. A separate public
-  ring-homomorphism namespace should wait for either a homomorphism-only corpus
-  module or an audited alias layer.
+- The ring first-isomorphism, CRT, ordered algebra, and square-normalization
+  closures are complete. A separate public ring-homomorphism namespace should
+  wait for either a homomorphism-only corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Ordered Algebra And Square Normalization Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-ordered-algebra-square-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Algebra.AbstractOrderedField
-Proofs.Ai.Algebra.AbstractSquareNormalize
-Proofs.Ai.Algebra.AbstractScalarDerive
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Algebra.OrderedField.Basic
-Mathlib.Algebra.OrderedField.Square
-Mathlib.Algebra.OrderedField.ScalarIdentities
-```
-
-Why this closure matters:
-
-- It prepares the vector, inner-product, and geometry law-package routes.
-- It exposes reusable ordered-field square facts and scalar identities such as
-  square completion, law-of-cosines scalar RHS, and polarization scalar RHS.
-
-Closure unit verdict:
-
-- This is a coherent closure after abstract ring foundation: `AbstractOrderedField`
-  imports `AbstractRing`, `AbstractSquareNormalize` imports both, and
-  `AbstractScalarDerive` imports `AbstractSquareNormalize`.
-- The audit may split `AbstractScalarDerive` into a follow-up closure if the
-  ordered-field/square surface needs to stabilize first.
-
-Audit focus:
-
-- Decide how this abstract ordered-field surface relates to already released
-  `Mathlib.Algebra.OrderedField`.
-- Confirm whether the square-normalization API should live under ordered field
-  or under a separate algebra square namespace.
-- Add downstream smoke for `sqrt_sq`, `sq_add_eq_add_sq_add_two_mul`, and one
-  scalar derive theorem.
-
-### 2. Vector Space Foundation Closure
+### 1. Vector Space Foundation Closure
 
 Recommended audit file:
 
@@ -366,7 +378,7 @@ Audit focus:
 - Add downstream smoke for `VectorSpaceLawArgs`, `linear_comb2_ext`, and
   `linear_comb3_ext`.
 
-### 3. Inner Product Closure
+### 2. Inner Product Closure
 
 Recommended audit file:
 
@@ -407,7 +419,7 @@ Audit focus:
 - Add downstream smoke for `parallelogram_law`, `polarization_identity`, and
   `cauchy_schwarz`.
 
-### 4. Geometry Pythagorean Closure
+### 3. Geometry Pythagorean Closure
 
 Recommended audit file:
 
@@ -472,7 +484,7 @@ Audit focus:
 - Add downstream smoke that consumes `pythagorean_distance_general` or the
   final `Pythagorean` theorem surface source-free.
 
-### 5. Analysis Metric Topology Closure
+### 4. Analysis Metric Topology Closure
 
 Recommended audit file:
 
@@ -506,7 +518,7 @@ Audit focus:
 - Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
   `local_unique_apply`.
 
-### 6. Analysis Normed Space Closure
+### 5. Analysis Normed Space Closure
 
 Recommended audit file:
 
@@ -537,7 +549,7 @@ Audit focus:
 - Add downstream smoke for `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args`.
 
-### 7. Analysis Linear Map Closure
+### 6. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -569,7 +581,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 8. Analysis Derivative Closure
+### 7. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -601,7 +613,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 9. Analysis Fixed Point Closure
+### 8. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -632,7 +644,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 10. Analysis Inverse Function Closure
+### 9. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -664,7 +676,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 11. Analysis Implicit Function Closure
+### 10. Analysis Implicit Function Closure
 
 Recommended audit file:
 
