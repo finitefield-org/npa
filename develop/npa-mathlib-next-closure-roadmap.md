@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.21` analysis metric topology closure. It is a planning
+`v0.1.22` analysis normed-space closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -15,12 +15,12 @@ untrusted sidecars.
 ## Current Baseline
 
 The standalone `npa-mathlib` package has materialized through the analysis
-metric topology closure as package version `0.1.21`.
+normed-space closure as package version `0.1.22`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-analysis-metric-topology-closure-audit.md
+develop/npa-mathlib-analysis-normed-space-closure-audit.md
 ```
 
 The currently public package includes:
@@ -60,6 +60,7 @@ Mathlib.Algebra.OrderedField.Basic
 Mathlib.Algebra.OrderedField.Square
 Mathlib.Algebra.OrderedField.ScalarIdentities
 Mathlib.LinearAlgebra.VectorSpace
+Mathlib.Analysis.NormedSpace.Basic
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.Affine
@@ -140,7 +141,14 @@ The `Analysis Metric Topology Closure` item from this queue was completed as
 develop/npa-mathlib-analysis-metric-topology-closure-audit.md
 ```
 
-The next open item is the analysis normed space closure.
+The `Analysis Normed Space Closure` item from this queue was completed as
+`npa-mathlib v0.1.22`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-normed-space-closure-audit.md
+```
+
+The next open item is the analysis linear map closure.
 
 ### Logic Iff Closure
 
@@ -487,6 +495,50 @@ Closure unit verdict:
 - Downstream smoke consumes `metric_ball_mono`, `local_eq_trans`, and
   `local_unique_apply` source-free from vendored certificates.
 
+### Analysis Normed Space Closure
+
+Status: completed in `npa-mathlib v0.1.22`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-normed-space-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractNormedSpace
+```
+
+Public modules:
+
+```text
+Mathlib.Analysis.NormedSpace.Basic
+```
+
+Public surface audited:
+
+- `NormDist`, `NormedSpaceLawArgs`, product vector operations, `ProductNorm`,
+  `ProductDist`, and `ProductNormEstimateArgs`.
+- Norm facts including `norm_dist_def`, `norm_nonneg_from_args`,
+  `norm_zero_from_args`, `norm_triangle_from_args`,
+  `norm_dist_symm_from_args`, and `norm_dist_triangle_from_args`.
+- Product norm facts including `product_norm_pair_eq_from_pair_laws`,
+  `product_norm_fst_le_from_args`, `product_norm_snd_le_from_args`,
+  `product_norm_pair_le_add_from_args`, `product_norm_add_le_from_args`, and
+  `product_dist_pair_le_add_from_args`.
+
+Closure unit verdict:
+
+- The corpus module is a valid single-module normed-space closure because it
+  imports only public `Std.Logic.Eq`, equality reasoning, and vector-space
+  foundations.
+- The module belongs under `Mathlib.Analysis.NormedSpace.Basic` because it
+  provides norm/product-norm structure used by later analysis routes.
+- Downstream smoke consumes `norm_dist_triangle_from_args` and
+  `product_norm_pair_le_add_from_args` source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -514,45 +566,14 @@ older queue are:
   The previous "analysis foundation" group was useful as a roadmap cluster but
   too large to be a default release closure.
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
-  vector-space foundation, inner-product, geometry Pythagorean, and analysis
-  metric topology closures are complete. A separate public ring-homomorphism
-  namespace should wait for either a homomorphism-only corpus module or an
-  audited alias layer.
+  vector-space foundation, inner-product, geometry Pythagorean, analysis
+  metric topology, and analysis normed-space closures are complete. A separate
+  public ring-homomorphism namespace should wait for either a
+  homomorphism-only corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Normed Space Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-normed-space-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractNormedSpace
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Analysis.NormedSpace.Basic
-```
-
-Why this closure matters:
-
-- It adds norm and product norm law-package facts needed by linear maps,
-  derivative, fixed-point, and inverse-function routes.
-
-Audit focus:
-
-- Confirm that `Mathlib.LinearAlgebra.VectorSpace` is already public.
-- Add downstream smoke for `norm_dist_triangle_from_args` and
-  `product_norm_pair_le_add_from_args`.
-
-### 2. Analysis Linear Map Closure
+### 1. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -584,7 +605,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 3. Analysis Derivative Closure
+### 2. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -616,7 +637,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 4. Analysis Fixed Point Closure
+### 3. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -647,7 +668,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 5. Analysis Inverse Function Closure
+### 4. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -679,7 +700,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 6. Analysis Implicit Function Closure
+### 5. Analysis Implicit Function Closure
 
 Recommended audit file:
 
