@@ -438,6 +438,12 @@ require certificate_hash
 require imported certificate already checked by same checker
 ```
 
+この import identity は `develop/core-spec-v0.1.md` の SHA-256 collision threat model に従います。
+reference checker は import certificate を再検査し、実際に解決された public environment に対して
+downstream certificate を検査しますが、hash だけで byte-for-byte artifact identity を証明するわけではありません。
+`export_hash` / `certificate_hash` / package artifact hash による pinning は SHA-256 の
+collision resistance を暗号学的前提にします。
+
 ---
 
 ## 5.4 Declaration check

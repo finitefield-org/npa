@@ -656,6 +656,65 @@ index だけを hash すると、同じ module 内の transparent dependency 変
 `export_hash` に伝播しないためです。opaque theorem proof と opaque def body の
 non-axiom dependency は certificate hash 側にだけ含めます。
 
+### 9.7 SHA-256 collision threat model
+
+v0.1 の `export_hash`、`axiom_report_hash`、`certificate_hash`、package artifact hash は
+SHA-256 を使います。これらの hash は domain-separated canonical bytes から計算し、hash 入力の
+曖昧さ、encoding 差、表層構文差による取り違えを避けます。
+
+ただし、NPA は SHA-256 の衝突不可能性を数学的に証明しません。hash は compact identity /
+pinning mechanism であり、artifact identity と import pinning は SHA-256 の collision
+resistance を暗号学的前提にします。
+
+この前提の下での保証範囲は次です。
+
+```text
+guaranteed without trusting parser/elaborator/tactic/AI:
+  checker に実際に渡された canonical certificate bytes は decode される
+  declaration / export / axiom report / certificate hash は再計算される
+  declarations は kernel で型検査される
+  axiom report と axiom policy は certificate bytes と import environment から再検査される
+
+not guaranteed if SHA-256 collision is available to the adversary:
+  hash だけから、2つの異なる canonical payload が byte-for-byte 同一であること
+  package lock の file hash だけから、取得した artifact が期待 artifact と同一であること
+  import の export_hash だけから、期待した public environment と実際の public environment が同一であること
+  high-trust certificate_hash だけから、期待した certificate bytes と実際の certificate bytes が同一であること
+```
+
+したがって、SHA-256 衝突が存在する場合でも、checker が実際に受け取った certificate を
+型検査せずに theorem として受理することはありません。ill-typed な certificate は、同じ
+`certificate_hash` を持つ別 payload を作れたとしても、kernel type check で拒否されます。
+
+一方で、import / package の「期待した artifact との同一性」は hash pin に依存します。攻撃者が
+同じ `export_hash` を持つ異なる public environment、または同じ `certificate_hash` を持つ異なる
+certificate を作れるなら、hash だけを見た import resolution / package lock は両者を区別できません。
+その場合、downstream module は「実際に解決された import environment」に対して検査されますが、
+「利用者が意図した元 artifact」に対して検査されたとは言えません。
+
+通常モードと高信頼モードの違いは次です。
+
+```text
+normal mode:
+  import identity は module name + export_hash に依存する
+  export_hash collision は import public environment の取り違えになり得る
+
+high-trust mode:
+  module name + export_hash に加えて certificate_hash を要求する
+  import certificate が同じ checker で検査済みであることも要求する
+  ただし certificate_hash collision が可能なら、byte-for-byte identity までは保証しない
+```
+
+高信頼モードは「未検査 certificate を hash だけで信じる」設計ではありません。import も同じ checker
+で検査済みでなければなりません。しかし、検査済みであり同じ hash を持つ別 certificate を
+期待 certificate と区別する能力は、SHA-256 の collision resistance に依存します。
+
+collision-independent な artifact identity が必要な運用では、期待する canonical certificate bytes
+または canonical export block を入手して byte-for-byte 比較する、複数 hash / hash agility を
+policy として要求する、署名・transparency log・再現ビルド evidence と組み合わせる、などの
+追加措置を使います。これらは artifact provenance を強めるための運用・package policy であり、
+kernel が theorem を受理する根拠は引き続き canonical certificate の再検査です。
+
 ## 10. Kernel Checking Algorithm
 
 ### 10.1 Module Checking
