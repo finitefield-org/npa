@@ -3,8 +3,9 @@
 Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
-candidates for future public `npa-mathlib` materialization after Layer 3E
-Logic Iff. It is a planning document, not proof evidence.
+candidates for future public `npa-mathlib` materialization after the
+`v0.1.15` abstract ring foundation closure. It is a planning document, not
+proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
 hashes, and source-free checker verdicts. Source files, replay files, meta
@@ -13,13 +14,13 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through Layer 3E as
-package version `0.1.14`.
+The standalone `npa-mathlib` package has materialized through the abstract
+ring foundation closure as package version `0.1.15`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-layer3e-logic-iff-closure-audit.md
+develop/npa-mathlib-ring-basic-closure-audit.md
 ```
 
 The currently public package includes:
@@ -50,6 +51,7 @@ Mathlib.Algebra.Group.Subgroup
 Mathlib.Logic.Iff
 Mathlib.Logic.EqReasoning
 Mathlib.Algebra.Group.Basic
+Mathlib.Algebra.Ring.Basic
 Mathlib.Geometry.RightTriangle
 Mathlib.Geometry.Metric
 Mathlib.Vector.Basic
@@ -73,7 +75,14 @@ The `Logic Iff Closure` item from this queue was completed as
 develop/npa-mathlib-layer3e-logic-iff-closure-audit.md
 ```
 
-The next open item is the abstract ring foundation closure.
+The `Abstract Ring Foundation Closure` item from this queue was completed as
+`npa-mathlib v0.1.15`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-ring-basic-closure-audit.md
+```
+
+The next open item is the ring first isomorphism and CRT closure.
 
 ### Logic Iff Closure
 
@@ -136,6 +145,48 @@ Audit focus:
 - Add downstream smoke that consumes at least `iff_mp`, `or_elim`, and
   `false_elim` source-free.
 
+### Abstract Ring Foundation Closure
+
+Status: completed in `npa-mathlib v0.1.15`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-ring-basic-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Algebra.AbstractRing
+```
+
+Candidate public modules:
+
+```text
+Mathlib.Algebra.Ring.Basic
+```
+
+Public surface audited:
+
+- `RingLawArgs`
+- abstract `two`
+- abstract `sq`
+- additive group laws
+- multiplication laws
+- distributivity laws
+- subtraction and cancellation facts
+
+Closure unit verdict:
+
+- `Proofs.Ai.Algebra.AbstractRing` is an appropriate single-module foundation
+  closure because it imports only `Std.Logic.Eq`.
+- The public namespace decision is `Mathlib.Algebra.Ring.Basic`. The existing
+  concrete `Mathlib.Algebra.Ring` and `Mathlib.Algebra.Square` modules remain
+  separate despite module-scoped declaration-name overlaps.
+- Downstream smoke consumes `RingLawArgs`, `sub_add_cancel`, and
+  `ring_normalize_add_mul3` source-free from the public certificate.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -168,71 +219,7 @@ older queue are:
 
 ## Open Audit Queue
 
-### 1. Abstract Ring Foundation Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-ring-basic-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Algebra.AbstractRing
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Algebra.Ring.Basic
-```
-
-Alternative public module names to evaluate:
-
-```text
-Mathlib.Algebra.Ring.Abstract
-Mathlib.Algebra.Ring.Laws
-```
-
-Public surface to audit:
-
-- `RingLawArgs`
-- abstract `two`
-- abstract `sq`
-- additive group laws
-- multiplication laws
-- distributivity laws
-- subtraction and cancellation facts
-
-Why this should be next after Logic Iff:
-
-- It is the foundation for ring homomorphisms, ring first isomorphism, CRT,
-  UFD, Hilbert basis, Nullstellensatz, Krull, ordered algebra, vector spaces,
-  and geometry law-package routes.
-- It forces a namespace decision between the existing concrete
-  `Mathlib.Algebra.Ring` module and the proof-corpus abstract ring API.
-
-Audit focus:
-
-- Do not overload the existing `Mathlib.Algebra.Ring` module casually.
-- Decide whether the existing concrete ring module should remain as-is while
-  abstract law-package facts move under `Mathlib.Algebra.Ring.Basic`.
-- Verify that public source names do not collide with already released
-  `Mathlib.Algebra.Ring` declarations.
-- Also check overlapping names with `Mathlib.Algebra.Square`, especially
-  `two` and `sq`.
-- Add downstream smoke that consumes `RingLawArgs`, `sub_add_cancel`, and
-  `ring_normalize_add_mul3` source-free.
-
-Closure unit verdict:
-
-- `Proofs.Ai.Algebra.AbstractRing` is an appropriate single-module foundation
-  closure because it imports only `Std.Logic.Eq`.
-- Materialization may still fail until the audit resolves public declaration
-  collisions with the already released concrete ring/square modules.
-
-### 2. Ring First Isomorphism And CRT Closure
+### 1. Ring First Isomorphism And CRT Closure
 
 Recommended audit file:
 
@@ -294,7 +281,7 @@ Audit focus:
 - Add downstream smoke for both `ring_first_isomorphism_to_image` and
   `ring_chinese_remainder_theorem`.
 
-### 3. Ordered Algebra And Square Normalization Closure
+### 2. Ordered Algebra And Square Normalization Closure
 
 Recommended audit file:
 
@@ -341,7 +328,7 @@ Audit focus:
 - Add downstream smoke for `sqrt_sq`, `sq_add_eq_add_sq_add_two_mul`, and one
   scalar derive theorem.
 
-### 4. Vector Space Foundation Closure
+### 3. Vector Space Foundation Closure
 
 Recommended audit file:
 
@@ -384,7 +371,7 @@ Audit focus:
 - Add downstream smoke for `VectorSpaceLawArgs`, `linear_comb2_ext`, and
   `linear_comb3_ext`.
 
-### 5. Inner Product Closure
+### 4. Inner Product Closure
 
 Recommended audit file:
 
@@ -425,7 +412,7 @@ Audit focus:
 - Add downstream smoke for `parallelogram_law`, `polarization_identity`, and
   `cauchy_schwarz`.
 
-### 6. Geometry Pythagorean Closure
+### 5. Geometry Pythagorean Closure
 
 Recommended audit file:
 
@@ -490,7 +477,7 @@ Audit focus:
 - Add downstream smoke that consumes `pythagorean_distance_general` or the
   final `Pythagorean` theorem surface source-free.
 
-### 7. Analysis Metric Topology Closure
+### 6. Analysis Metric Topology Closure
 
 Recommended audit file:
 
@@ -524,7 +511,7 @@ Audit focus:
 - Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
   `local_unique_apply`.
 
-### 8. Analysis Normed Space Closure
+### 7. Analysis Normed Space Closure
 
 Recommended audit file:
 
@@ -555,7 +542,7 @@ Audit focus:
 - Add downstream smoke for `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args`.
 
-### 9. Analysis Linear Map Closure
+### 8. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -587,7 +574,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 10. Analysis Derivative Closure
+### 9. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -619,7 +606,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 11. Analysis Fixed Point Closure
+### 10. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -650,7 +637,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 12. Analysis Inverse Function Closure
+### 11. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -682,7 +669,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 13. Analysis Implicit Function Closure
+### 12. Analysis Implicit Function Closure
 
 Recommended audit file:
 
