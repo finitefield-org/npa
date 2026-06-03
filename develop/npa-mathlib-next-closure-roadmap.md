@@ -3,8 +3,8 @@
 Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
-candidates for future public `npa-mathlib` materialization after Layer 3D-G
-Correspondence. It is a planning document, not proof evidence.
+candidates for future public `npa-mathlib` materialization after Layer 3E
+Logic Iff. It is a planning document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
 hashes, and source-free checker verdicts. Source files, replay files, meta
@@ -13,18 +13,19 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through Layer 3D-G as
-package version `0.1.13`.
+The standalone `npa-mathlib` package has materialized through Layer 3E as
+package version `0.1.14`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-layer3d-g-correspondence-closure-audit.md
+develop/npa-mathlib-layer3e-logic-iff-closure-audit.md
 ```
 
-The currently public group-theory closure includes:
+The currently public closure includes:
 
 ```text
+Mathlib.Logic.Iff
 Mathlib.Algebra.Group.Basic
 Mathlib.Algebra.Group.Subgroup
 Mathlib.Algebra.Group.Subgroup.Order
@@ -52,7 +53,18 @@ Mathlib.Algebra.Group.Correspondence.Ordered
 
 ## Recommended Audit Queue
 
-### 1. Logic Iff Closure
+The `Logic Iff Closure` item from this queue was completed as
+`npa-mathlib v0.1.14`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-layer3e-logic-iff-closure-audit.md
+```
+
+The next open item is the abstract ring foundation closure.
+
+### Completed. Logic Iff Closure
+
+Status: completed in `npa-mathlib v0.1.14`.
 
 Recommended audit file:
 
