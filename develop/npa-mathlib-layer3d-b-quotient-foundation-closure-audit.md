@@ -481,17 +481,17 @@ The public renamed module hashes are:
 | `Mathlib.Algebra.Group.Kernel.Quotient.Group` | `sha256:5e826492a530cfac9e2aac54e236f214af89a925e6bdd3c210c6fbfb92ea86dd` | `sha256:ef6acfa38ee4521a747ec9785d939c98cea0c64e26354f523eba4441a589742c` | `sha256:4e67aa4b715757c1e8d8b4cef1637464a43fe2a4348c909b893e4f4c1330fa69` | `sha256:35475c48af8ff4a446c4f9b72745aea69e6442d8ee83fe8587a0a88eeec2e307` | `sha256:28b4b550a12b0e1cb4ae1624c6cf7007c8262b52254729110cd26fadda72acac` |
 | `Mathlib.Algebra.Group.Kernel.Quotient.Hom` | `sha256:83535d4f2ef8ed1a9b97f6145b87923c449d502480695320f9046929dba51be2` | `sha256:cd20fd6f13cb1fbb6d5269bafea245cd6441ced5fc3b91c1a5bb5aa961fe9c06` | `sha256:2a0178a6cd6a9fff1e449bffb7a62e25d4e4a944ceb514083db0bcf5b0229700` | `sha256:b8556fe24d881da2124391b4b0d69d4d22f988483234a12d4f565c15909305e6` | `sha256:ed2a9ba856a0437961f5b62b26d755e26f5a526274d3b7f0cb2f6f5d960453f7` |
 
-The package gates passed from `/Users/kazuyoshitoshiya/ff/npa` against the
+The package gates passed from `npa` against the
 standalone repository:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 The source-free reference verifier reported package verification for 24
@@ -501,10 +501,10 @@ modules. The downstream smoke fixture vendored only certificate bytes for
 `Mathlib.Algebra.Group.Kernel.Quotient.*` modules. It passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 The downstream source-free reference verifier reported package verification

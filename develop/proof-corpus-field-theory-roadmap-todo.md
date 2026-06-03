@@ -60,7 +60,7 @@ Proofs.Ai.Algebra.AbstractRingFirstIsoBase
   RingKerQuotAdd, RingKerQuotZero, RingKerQuotNeg, and RingKerQuotMulRep
 
 Proofs.Ai.Algebra.AbstractUfdPrimeFactorization
-  local Nonzero and IntegralDomainLawArgs already exist for UFD, but not as a reusable field layer
+  local UfdNonzero and IntegralDomainLawArgs already exist for UFD, but not as a reusable field layer
 
 Proofs.Ai.Algebra.AbstractOrderedField
   OrderedFieldLawArgs, le / lt / sqrt / Nonneg / Positive, square and sqrt order projections
@@ -74,7 +74,7 @@ proofs/npa-package.toml and proofs/manifest.toml
 
 Implication:
 
-- `AbstractField` should not reuse the UFD-local `Nonzero` by import at first. It should define the
+- `AbstractField` should not reuse the UFD-local `UfdNonzero` by import at first. It should define the
   field-level API deliberately, then later bridges can connect it to UFD / integral-domain APIs.
 - `AbstractOrderedField` should not be destructively rewritten in the first milestones. Add bridge
   theorems only after the standalone field layer is certificate-backed.
@@ -85,7 +85,7 @@ Implication:
 
 ### FT-00 Fix Field API Shape And Corpus Insertion Points
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `develop/proof-corpus-field-theory-roadmap.md`
@@ -100,7 +100,7 @@ Implication:
 - Tasks:
   - Confirm final theorem and definition names for `Nonzero`, `div`, and `FieldLawArgs`.
   - Decide whether `Nonzero` is introduced in `AbstractField` even though UFD has a local
-    `Nonzero` definition.
+    `UfdNonzero` definition.
   - Identify the exact generator insertion point and import order for the new algebra modules.
   - Record the planned module order in proof-corpus documentation before adding certificates.
 - Deliverables:
@@ -119,10 +119,13 @@ Implication:
 - Notes:
   - This milestone may be documentation-only if the implementation agent can infer the insertion
     point from nearby generated algebra modules.
+  - Completed before FT-02: `AbstractField` uses its own `Nonzero`, `div`, and `FieldLawArgs`,
+    imports only `Std.Logic.Eq` and `Proofs.Ai.Algebra.AbstractRing`, and is documented in
+    `proofs/README.md`.
 
 ### FT-01 Add `Proofs.Ai.Algebra.AbstractField` Foundation
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-00
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractRing`
@@ -164,10 +167,12 @@ Implication:
 - Notes:
   - Keep the module small. Do not import quotient, first-isomorphism, CRT, UFD, or ordered-field
     modules in this milestone.
+  - Completed before FT-02 with checked-in source, replay, meta, certificate, manifest, package,
+    package-lock, and AI theorem index artifacts for `Proofs.Ai.Algebra.AbstractField`.
 
 ### FT-02 Add Basic Field Calculation Lemmas
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-01
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -211,10 +216,13 @@ Implication:
   - If the split module is chosen, run `--build-module` and `--module` for
     `Proofs.Ai.Algebra.AbstractFieldBasic` and still run `--module Proofs.Ai.Algebra.AbstractField`
     to verify the foundation dependency.
+  - Completed in `Proofs.Ai.Algebra.AbstractField` by extending `FieldLawArgs` with the basic
+    calculation / cancellation / zero-product laws and projecting them as theorem targets.
+  - The split module was not needed; the foundation module remains source-free verifiable.
 
 ### FT-03 Add Field Homomorphism Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-02
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -251,10 +259,21 @@ Implication:
 - Notes:
   - This milestone prepares for field isomorphism and embedding APIs, but does not need to define
     those APIs yet.
+  - Completed in `Proofs.Ai.Algebra.AbstractFieldHom` with `FieldHomLawArgs`,
+    `field_hom_as_ring_hom`, `field_hom_inv_of_nonzero`, `field_hom_div`, and
+    `field_hom_preserves_nonzero`.
+  - `FieldHomLawArgs` stores a single `RingHomLawArgs` witness from
+    `AbstractRingFirstIsoBase`, so zero / one / addition / negation / multiplication preservation
+    laws are not duplicated in the field-hom package.
+  - The verified import closure includes the existing ring first-isomorphism base dependencies
+    needed by `RingHomLawArgs`; the new module itself adds no quotient or image construction
+    declarations.
+  - Inverse and division preservation projections require explicit source-side `Nonzero`
+    hypotheses.
 
 ### FT-04 Add Field To Integral Domain Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-02
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -291,10 +310,19 @@ Implication:
 - Notes:
   - If the existing UFD-local `IntegralDomainLawArgs` is too specialized, document the mismatch
     and introduce a narrow adapter instead of changing UFD theorem statements broadly.
+  - Completed in `Proofs.Ai.Algebra.AbstractFieldIntegralDomain` with
+    `field_no_zero_divisors`, `field_integral_domain_laws`, `field_nonzero_product_left`,
+    `field_nonzero_product_right`, and `field_mul_eq_zero_elim`.
+  - The bridge imports `AbstractField` and `AbstractUfdPrimeFactorization`; `AbstractField` does
+    not import the UFD layer.
+  - UFD's local nonzero predicate is named `UfdNonzero`, so the field `Nonzero` API and the
+    integral-domain bridge can be imported together without declaration-name collision.
+  - The module's axiom policy is the existing package-allowed `Eq.rec`, required only through
+    `EqReasoning` equality transport in the nonzero-product factor lemmas.
 
 ### FT-05 Add Field Ideal And Quotient Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-03, FT-04
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -330,10 +358,20 @@ Implication:
   - `rg -n "field_ideal_zero_or_top|quotient_by_maximal_ideal_is_field|MaximalIdeal" proofs tools`
 - Notes:
   - This milestone is the first one allowed to depend on heavier ring quotient and ideal modules.
+  - Completed in `Proofs.Ai.Algebra.AbstractFieldIdeal` with `FieldIdealZeroOrTop`,
+    `FieldSimpleRingEvidence`, `FieldIdealLawArgs`, `MaximalIdealQuotientFieldArgs`, and theorem
+    projections for the three target names.
+  - `quotient_by_maximal_ideal_is_field` is intentionally stated over explicit `MaximalIdeal`,
+    quotient ring laws, quotient hom, kernel exactness, and `RingFirstIso` evidence; no hidden
+    quotient or maximality axiom was added.
+  - `AbstractHilbertNullstellensatz` now uses the local name `HnsProperIdeal` so it can be imported
+    together with Krull's `ProperIdeal` without public-name conflicts.
+  - The module's axiom policy is the existing package-allowed `Eq.rec`, inherited through the
+    equality/quotient import route.
 
 ### FT-06 Add OrderedField Compatibility Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-02
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -365,7 +403,8 @@ Implication:
   - Certificate / export hash changes are localized and any affected downstream modules are
     rebuilt deliberately.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractOrderedField`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractOrderedField`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Geometry.Pythagorean`
@@ -376,10 +415,17 @@ Implication:
   - If the split module is chosen, substitute
     `Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge` for the first two verification commands and
     still run `--module Proofs.Ai.Algebra.AbstractOrderedField` to verify the existing base module.
+  - Completed as the split module `Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge` so existing
+    `OrderedFieldLawArgs` consumers keep their imports and theorem names unchanged.
+  - Added `OrderedFieldFieldBridgeArgs` as explicit bridge evidence containing `FieldLawArgs` and
+    the positive/nonzero, inverse-positive, division-positive, multiplication-positive, and
+    square-positive laws.
+  - The bridge introduces no axioms and does not force geometry, metric, or inner-product modules
+    to adopt `FieldLawArgs` in this milestone.
 
 ### FT-07 Final Corpus Gate And Documentation Pass
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-01, FT-02, FT-03, FT-04, FT-05, FT-06
 - Inputs:
   - all field-theory modules added by FT-01 through FT-06
@@ -399,7 +445,7 @@ Implication:
     agree.
   - Confirm the AI theorem index and package metadata include the new field modules in deterministic
     order.
-  - Decide whether a future `npa-mathlib` closure audit should materialize these modules publicly.
+  - Record that public `npa-mathlib` materialization is deferred to a separate closure audit.
 - Deliverables:
   - A reviewed field-theory corpus route with generated artifacts checked in.
   - Updated roadmap / README notes reflecting completed milestones.
@@ -407,7 +453,7 @@ Implication:
 - Acceptance criteria:
   - Full relevant corpus verification passes after all certificate-affecting changes.
   - Axiom report does not grow unexpectedly.
-  - The roadmap and todo document no longer describe completed work as future work.
+  - The roadmap and todo document no longer describe completed work as unimplemented work.
   - Any public `npa-mathlib` materialization is explicitly deferred to a separate closure audit.
 - Verification:
   - `./scripts/check-corpus.sh`
@@ -418,6 +464,14 @@ Implication:
 - Notes:
   - This is the only milestone that should normally run the full corpus gate for the field route.
     Earlier milestones should prefer `--build-module`, `--module`, and `--changed-only`.
+  - Completed as the final field-theory corpus pass after FT-01 through FT-06.
+  - `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/package-lock.json`, and
+    `proofs/generated/ai-theorem-index.json` include the new field modules in deterministic corpus
+    order: `AbstractField`, `AbstractFieldHom`, `AbstractFieldIntegralDomain`,
+    `AbstractFieldIdeal`, and `AbstractOrderedFieldFieldBridge`.
+  - Public `npa-mathlib` materialization is explicitly deferred to a separate closure audit. That
+    audit should re-check import closure size, axiom policy, statement stability, and compatibility
+    alias requirements before any promotion.
 
 ---
 

@@ -16,7 +16,7 @@ audit are untrusted sidecars.
 Current package state:
 
 - The abstract ring foundation has been materialized, committed, tagged, and
-  pushed in `/Users/kazuyoshitoshiya/ff/npa-mathlib` as
+  pushed in `../npa-mathlib` as
   `npa-mathlib v0.1.15`.
 - The `npa-mathlib` release commit is
   `44bc2d8490ae6d551145fbc67511859f72eb990e`.
@@ -245,7 +245,7 @@ built Proofs.Ai.Algebra.AbstractRing
 built Proofs.Ai.Algebra.AbstractRingFirstIsoBase
 built Proofs.Ai.Algebra.AbstractRingFirstIso
 built Proofs.Ai.Algebra.AbstractRingChineseRemainder
-wrote /Users/kazuyoshitoshiya/ff/npa/proofs/generated/ai-theorem-index.json
+wrote proofs/generated/ai-theorem-index.json
 built Proofs.Ai.Algebra.AbstractRingChineseRemainder (12 module(s) including import closure)
 ```
 
@@ -270,26 +270,26 @@ Planned downstream smoke theorem names:
 
 ## Positive Gates
 
-Run these gates in `/Users/kazuyoshitoshiya/ff/npa-mathlib` after
+Run these gates in `../npa-mathlib` after
 materialization:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 Run these downstream smoke gates:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 ## Negative Package-Copy Checks
@@ -332,17 +332,17 @@ Positive gates:
 
 | Gate | Status |
 | --- | --- |
-| `package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json` | passed |
-| `package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json` | passed, `modules=43` |
-| `package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json` | passed |
-| `package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json` | passed |
-| `package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json` | passed |
-| `package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json` | passed, `modules=14` |
-| `package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json` | passed |
+| `package check --root ../npa-mathlib --json` | passed |
+| `package build-certs --root ../npa-mathlib --check --json` | passed |
+| `package verify-certs --root ../npa-mathlib --checker reference --json` | passed, `modules=43` |
+| `package check-hashes --root ../npa-mathlib --json` | passed |
+| `package axiom-report --root ../npa-mathlib --check --json` | passed |
+| `package index --root ../npa-mathlib --check --json` | passed |
+| `package publish-plan --root ../npa-mathlib --check --json` | passed |
+| `package check --root ../npa-mathlib/fixtures/downstream-smoke --json` | passed |
+| `package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json` | passed |
+| `package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json` | passed, `modules=14` |
+| `package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json` | passed |
 
 Stale-name scan found only historical namespace-policy mapping entries for the
 materialized corpus names. No stale route-specific `Proofs.Ai.*`,
@@ -362,7 +362,7 @@ Release artifacts:
 
 | Artifact | Hash |
 | --- | --- |
-| `/Users/kazuyoshitoshiya/ff/npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.16-release-artifacts.tar.gz` | `sha256:a4e103d6b3dbce064946c601eae897783db065efd53c3fbd098fb54bd046681a` |
+| `../npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.16-release-artifacts.tar.gz` | `sha256:a4e103d6b3dbce064946c601eae897783db065efd53c3fbd098fb54bd046681a` |
 | `generated/publish-plan.json` file | `sha256:31bcacf7510fc623675f5a1629503bf32e78efb2b615f156e2d7744e7f5c026c` |
 | `generated/package-lock.json` file | `sha256:7eca758de81c54c725799fef96c832718116e8e7e3cfef0d6a4173e6e1f77b5d` |
 | `generated/axiom-report.json` file | `sha256:9d689e3589721a57a44828635f20eb5ee2bb4f51019ef72b902d21351f169638` |

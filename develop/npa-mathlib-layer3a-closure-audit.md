@@ -32,7 +32,7 @@ Current public package state:
   - `Mathlib.Data.Nat.Basic`
   - `Mathlib.Core.Reduction`
 - The standalone namespace policy is
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib/docs/namespace-policy.md`.
+  `../npa-mathlib/docs/namespace-policy.md`.
 
 Layer 3A must add only the abstract group foundation needed before subgroup,
 kernel, image, quotient, and isomorphism routes. It must not change the package
@@ -239,7 +239,7 @@ Use the next package/release version after `v0.1.3`; provisionally this is
 
 ## Materialization Steps
 
-These steps were completed in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
+These steps were completed in `../npa-mathlib`:
 
 1. Completed: added `Mathlib/Logic/EqReasoning/` and
    `Mathlib/Algebra/Group/Basic/` from the selected corpus sources.

@@ -146,13 +146,17 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_RING_MODULE,
     &ABSTRACT_FIELD_MODULE,
     &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
+    &ABSTRACT_FIELD_HOM_MODULE,
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
+    &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
     &ABSTRACT_KRULL_THEOREM_MODULE,
+    &ABSTRACT_FIELD_IDEAL_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
+    &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
     &ABSTRACT_SCALAR_DERIVE_MODULE,
     &ABSTRACT_VECTOR_SPACE_MODULE,
@@ -1257,6 +1261,30 @@ const ABSTRACT_RING_FIRST_ISO_BASE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_FIELD_HOM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldHom",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldHom/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldHom/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldHom/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldHom/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_HOM_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_HOM_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_RING_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRingFirstIso",
     source_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
@@ -1319,6 +1347,25 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldIntegralDomain",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_INTEGRAL_DOMAIN_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_INTEGRAL_DOMAIN_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
     source_path: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/source.npa",
@@ -1366,6 +1413,36 @@ const ABSTRACT_KRULL_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_IDEAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldIdeal",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_IDEAL_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_IDEAL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractOrderedField",
     source_path: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
@@ -1376,6 +1453,24 @@ const ABSTRACT_ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_ORDERED_FIELD_DEFINITIONS,
     theorems: ABSTRACT_ORDERED_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+    source_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_DEFINITIONS,
+    theorems: ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -1698,6 +1793,86 @@ macro_rules! abstract_field_abs {
     };
 }
 
+macro_rules! abstract_field_quotient_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort succ u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (Quot : Sort succ v), ",
+            "forall (zeroQ : Quot), ",
+            "forall (oneQ : Quot), ",
+            "forall (addQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (negQ : forall (a : Quot), Quot), ",
+            "forall (subQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (mulQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (invQ : forall (a : Quot), Quot), ",
+            "forall (quotient_map : forall (x : Scalar), Quot), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_quotient_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_hom_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (R : Sort u), ",
+            "forall (zeroR : R), ",
+            "forall (oneR : R), ",
+            "forall (addR : forall (a : R), forall (b : R), R), ",
+            "forall (negR : forall (a : R), R), ",
+            "forall (subR : forall (a : R), forall (b : R), R), ",
+            "forall (mulR : forall (a : R), forall (b : R), R), ",
+            "forall (invR : forall (a : R), R), ",
+            "forall (S : Sort v), ",
+            "forall (zeroS : S), ",
+            "forall (oneS : S), ",
+            "forall (addS : forall (a : S), forall (b : S), S), ",
+            "forall (negS : forall (a : S), S), ",
+            "forall (subS : forall (a : S), forall (b : S), S), ",
+            "forall (mulS : forall (a : S), forall (b : S), S), ",
+            "forall (invS : forall (a : S), S), ",
+            "forall (f : forall (a : R), S), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_hom_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => ",
+            $tail
+        )
+    };
+}
+
 macro_rules! abstract_ordered_field_params {
     ($tail:literal) => {
         concat!(
@@ -1726,6 +1901,40 @@ macro_rules! abstract_ordered_field_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ordered_field_field_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ordered_field_field_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => ",
             $tail
         )
     };
@@ -3234,10 +3443,11 @@ macro_rules! abstract_ordered_inner_product_abs {
     };
 }
 
-macro_rules! ring_args_elim {
-    ($target:literal, $($tail:tt)+) => {
+macro_rules! ring_args_elim_from {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
         concat!(
-            "ring_args ",
+            $args,
+            " ",
             $target,
             " ",
             "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
@@ -3271,6 +3481,12 @@ macro_rules! ring_args_elim {
     };
 }
 
+macro_rules! ring_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        ring_args_elim_from!("ring_args", $target, $($tail)+)
+    };
+}
+
 macro_rules! field_args_elim {
     ($target:literal, $($tail:tt)+) => {
         concat!(
@@ -3281,6 +3497,30 @@ macro_rules! field_args_elim {
             "fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => ",
             "fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => ",
             "fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => ",
+            "fun (inv_one_arg : @Eq.{u} Scalar (inv one) one) => ",
+            "fun (div_one_arg : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a) => ",
+            "fun (div_self_nonzero_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one) => ",
+            "fun (zero_div_arg : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero) => ",
+            "fun (mul_left_cancel_nonzero_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul a b) (mul a c)), @Eq.{u} Scalar b c) => ",
+            "fun (mul_right_cancel_nonzero_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul b a) (mul c a)), @Eq.{u} Scalar b c) => ",
+            "fun (nonzero_mul_closed_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (hb : @Nonzero.{u} Scalar zero b), @Nonzero.{u} Scalar zero (mul a b)) => ",
+            "fun (mul_eq_zero_cases_arg : forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! field_hom_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "field_hom_args (",
+            $target,
+            ") ",
+            "(fun (ring_hom_arg : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) => ",
+            "fun (hom_inv_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))) => ",
+            "fun (hom_div_arg : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) => ",
+            "fun (hom_preserves_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)) => ",
             $($tail)+,
             ")"
         )
@@ -3315,6 +3555,24 @@ macro_rules! ordered_args_elim {
             "fun (le_of_sq_le_sq_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b) => ",
             "fun (le_mul_sqrt_of_sq_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))) => ",
             "fun (add_two_mul_le_sq_add_sqrt_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! ordered_field_field_bridge_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "bridge_args (",
+            $target,
+            ") ",
+            "(fun (field_laws_arg : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (nonzero_of_positive_arg : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Nonzero.{u} Scalar zero a) => ",
+            "fun (inv_positive_arg : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Positive.{u} Scalar zero lt_rel (inv a)) => ",
+            "fun (div_positive_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)) => ",
+            "fun (mul_pos_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (mul a b)) => ",
+            "fun (sq_pos_of_nonzero_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)) => ",
             $($tail)+,
             ")"
         )
@@ -14570,7 +14828,15 @@ const ABSTRACT_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), ",
             "forall (zero_ne_one_law : @Nonzero.{u} Scalar zero one), ",
             "forall (inv_mul_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one), ",
-            "forall (mul_inv_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one), P), P"
+            "forall (mul_inv_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one), ",
+            "forall (inv_one_law : @Eq.{u} Scalar (inv one) one), ",
+            "forall (div_one_law : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a), ",
+            "forall (div_self_nonzero_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one), ",
+            "forall (zero_div_law : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero), ",
+            "forall (mul_left_cancel_nonzero_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul a b) (mul a c)), @Eq.{u} Scalar b c), ",
+            "forall (mul_right_cancel_nonzero_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul b a) (mul c a)), @Eq.{u} Scalar b c), ",
+            "forall (nonzero_mul_closed_law : forall (a : Scalar), forall (b : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (hb : @Nonzero.{u} Scalar zero b), @Nonzero.{u} Scalar zero (mul a b)), ",
+            "forall (mul_eq_zero_cases_law : forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P), P), P"
         )),
     },
 ];
@@ -14643,6 +14909,187 @@ const ABSTRACT_FIELD_THEOREMS: &[TheoremArtifact] = &[
             "fun Scalar => fun mul => fun inv => fun a => fun b => ",
             "@Eq.refl.{u} Scalar (mul a (inv b))"
         ),
+    },
+    TheoremArtifact {
+        name: "field_inv_one",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @Eq.{u} Scalar (inv one) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            field_args_elim!("@Eq.{u} Scalar (inv one) one", "inv_one_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "field_div_one",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a",
+                "div_one_arg a"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_div_self_nonzero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun ha => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one",
+                "div_self_nonzero_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_zero_div",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero",
+                "zero_div_arg a"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_left_cancel_nonzero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul a b) (mul a c)), @Eq.{u} Scalar b c"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun c => fun ha => fun h => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar b c",
+                "mul_left_cancel_nonzero_arg a b c ha h"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_right_cancel_nonzero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul b a) (mul c a)), @Eq.{u} Scalar b c"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun c => fun ha => fun h => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar b c",
+                "mul_right_cancel_nonzero_arg a b c ha h"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_nonzero_mul_closed",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (hb : @Nonzero.{u} Scalar zero b), @Nonzero.{u} Scalar zero (mul a b)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun ha => fun hb => ",
+            field_args_elim!(
+                "@Nonzero.{u} Scalar zero (mul a b)",
+                "nonzero_mul_closed_arg a b ha hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_eq_zero_cases",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hzero => fun P => fun left_case => fun right_case => ",
+            field_args_elim!(
+                "P",
+                "mul_eq_zero_cases_arg a b hzero P left_case right_case"
+            )
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_HOM_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "FieldHomLawArgs",
+    universe_params: &["u", "v"],
+    ty: abstract_field_hom_params!("Prop"),
+    value: abstract_field_hom_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        "forall (ring_hom_law : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f), ",
+        "forall (hom_inv_nonzero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))), ",
+        "forall (hom_div_law : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))), ",
+        "forall (hom_preserves_nonzero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)), P), P"
+    )),
+}];
+
+const ABSTRACT_FIELD_HOM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_hom_as_ring_hom",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => ",
+            field_hom_args_elim!(
+                "@RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f",
+                "ring_hom_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_inv_of_nonzero",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun ha => ",
+            field_hom_args_elim!(
+                "@Eq.{v} S (f (invR a)) (invS (f a))",
+                "hom_inv_nonzero_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_div",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun b => fun hb => ",
+            field_hom_args_elim!(
+                "@Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))",
+                "hom_div_arg a b hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_preserves_nonzero",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun ha => ",
+            field_hom_args_elim!(
+                "@Nonzero.{v} S zeroS (f a)",
+                "hom_preserves_nonzero_arg a ha"
+            )
+        )),
     },
 ];
 
@@ -14984,7 +15431,7 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS: &[DefinitionArtifact] = &[
         value: "",
     },
     DefinitionArtifact {
-        name: "Nonzero",
+        name: "UfdNonzero",
         universe_params: &[],
         ty: "",
         value: "",
@@ -15150,6 +15597,187 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_INTEGRAL_DOMAIN_DEFINITIONS: &[DefinitionArtifact] = &[];
+
+const ABSTRACT_FIELD_INTEGRAL_DOMAIN_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_no_zero_divisors",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), UfdOr (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hzero => ",
+            "@field_mul_eq_zero_cases.{u} Scalar zero one add neg sub mul inv field_args a b hzero ",
+            "(UfdOr (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero)) ",
+            "(fun (ha : @Eq.{u} Scalar a zero) => @ufd_or_inl (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero) ha) ",
+            "(fun (hb : @Eq.{u} Scalar b zero) => @ufd_or_inr (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero) hb)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_integral_domain_laws",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @IntegralDomainLawArgs.{u} Scalar zero one add neg sub mul"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            "@integral_domain_law_args_intro.{u} Scalar zero one add neg sub mul ",
+            "(@field_ring_laws.{u} Scalar zero one add neg sub mul inv field_args) ",
+            "(fun (hzeroone : @Eq.{u} Scalar zero one) => ((@field_zero_ne_one.{u} Scalar zero one add neg sub mul inv field_args) (@eq_symm.{u} Scalar zero one hzeroone)) UfdFalse) ",
+            "(@field_no_zero_divisors.{u} Scalar zero one add neg sub mul inv field_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_nonzero_product_left",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hprod : UfdNot (@Eq.{u} Scalar (mul a b) zero)), UfdNot (@Eq.{u} Scalar a zero)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hprod => fun (ha : @Eq.{u} Scalar a zero) => ",
+            field_args_elim!(
+                "UfdFalse",
+                ring_args_elim_from!(
+                    "ring_laws_arg",
+                    "UfdFalse",
+                    "hprod (@eq_trans.{u} Scalar (mul a b) (mul zero b) zero ",
+                    "(@eq_congr2.{u,u,u} Scalar Scalar Scalar mul a zero b b ha (@Eq.refl.{u} Scalar b)) ",
+                    "(zero_mul_arg b))"
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_nonzero_product_right",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hprod : UfdNot (@Eq.{u} Scalar (mul a b) zero)), UfdNot (@Eq.{u} Scalar b zero)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hprod => fun (hb : @Eq.{u} Scalar b zero) => ",
+            field_args_elim!(
+                "UfdFalse",
+                ring_args_elim_from!(
+                    "ring_laws_arg",
+                    "UfdFalse",
+                    "hprod (@eq_trans.{u} Scalar (mul a b) (mul a zero) zero ",
+                    "(@eq_congr2.{u,u,u} Scalar Scalar Scalar mul a a b zero (@Eq.refl.{u} Scalar a) hb) ",
+                    "(mul_zero_arg a))"
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_eq_zero_elim",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hzero => fun P => fun left_case => fun right_case => ",
+            "@field_mul_eq_zero_cases.{u} Scalar zero one add neg sub mul inv field_args a b hzero P left_case right_case"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_IDEAL_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldIdealZeroOrTop",
+        universe_params: &["u"],
+        ty: abstract_field_params!("forall (I : forall (x : Scalar), Prop), Prop"),
+        value: abstract_field_abs!(concat!(
+            "fun I => forall (P : Prop), ",
+            "forall (on_zero : forall (zero_case : forall (x : Scalar), forall (hI : I x), @Eq.{u} Scalar x zero), P), ",
+            "forall (on_top : forall (top_case : forall (x : Scalar), I x), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldSimpleRingEvidence",
+        universe_params: &["u"],
+        ty: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), Prop"
+        ),
+        value: abstract_field_abs!(concat!(
+            "fun field_args => forall (Q : Prop), forall (mk : ",
+            "forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), ",
+            "forall (ideal_zero_or_top : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I), ",
+            "forall (proper_ideal_zero : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), forall (proper : @ProperIdeal.{u} Scalar one I), forall (x : Scalar), forall (hI : I x), @Eq.{u} Scalar x zero), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldIdealLawArgs",
+        universe_params: &["u"],
+        ty: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), Prop"
+        ),
+        value: abstract_field_abs!(concat!(
+            "fun field_args => forall (Q : Prop), forall (mk : ",
+            "forall (ideal_zero_or_top_law : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I), ",
+            "forall (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MaximalIdealQuotientFieldArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{succ u} Scalar zero one add neg sub mul inv), Prop"
+        ),
+        value: abstract_field_quotient_abs!(concat!(
+            "fun field_args => forall (Q : Prop), forall (mk : ",
+            "forall (quotient_by_maximal_law : forall (M : forall (x : Scalar), Prop), ",
+            "forall (maximal : @MaximalIdeal.{succ u} Scalar zero one add neg mul M), ",
+            "forall (quotient_ring_laws : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), ",
+            "forall (quotient_map_hom : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), ",
+            "forall (kernel_exact : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M x), P), P), ",
+            "forall (first_iso_to_image : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws quotient_map_hom), ",
+            "@FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_IDEAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_ideal_zero_or_top",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (ideal_bridge : @FieldIdealLawArgs.{u} Scalar zero one add neg sub mul inv field_args), forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun ideal_bridge => fun I => fun ideal_laws => ",
+            "ideal_bridge (@FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I) ",
+            "(fun (ideal_zero_or_top_law : forall (J : forall (x : Scalar), Prop), forall (J_laws : @IdealLawArgs.{u} Scalar zero add neg mul J), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv J) => ",
+            "fun (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) => ideal_zero_or_top_law I ideal_laws)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_simple_ring_evidence",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (ideal_bridge : @FieldIdealLawArgs.{u} Scalar zero one add neg sub mul inv field_args), @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun ideal_bridge => ",
+            "ideal_bridge (@FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) ",
+            "(fun (ideal_zero_or_top_law : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I) => ",
+            "fun (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) => simple_ring_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "quotient_by_maximal_ideal_is_field",
+        universe_params: &["u", "v"],
+        statement: abstract_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{succ u} Scalar zero one add neg sub mul inv), forall (quotient_bridge : @MaximalIdealQuotientFieldArgs.{u,v} Scalar zero one add neg sub mul inv Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args), forall (M : forall (x : Scalar), Prop), forall (maximal : @MaximalIdeal.{succ u} Scalar zero one add neg mul M), forall (quotient_ring_laws : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M x), P), P), forall (first_iso_to_image : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws quotient_map_hom), @FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ"
+        ),
+        proof: abstract_field_quotient_abs!(concat!(
+            "fun field_args => fun quotient_bridge => fun M => fun maximal => fun quotient_ring_laws => fun quotient_map_hom => fun kernel_exact => fun first_iso_to_image => ",
+            "quotient_bridge (@FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) ",
+            "(fun (quotient_by_maximal_law : forall (M_arg : forall (x : Scalar), Prop), forall (maximal_arg : @MaximalIdeal.{succ u} Scalar zero one add neg mul M_arg), forall (quotient_ring_laws_arg : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom_arg : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact_arg : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M_arg x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M_arg x), P), P), forall (first_iso_to_image_arg : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws_arg quotient_map_hom_arg), @FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) => ",
+            "quotient_by_maximal_law M maximal quotient_ring_laws quotient_map_hom kernel_exact first_iso_to_image)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -15308,7 +15936,7 @@ const ABSTRACT_HILBERT_NULLSTELLENSATZ_DEFINITIONS: &[DefinitionArtifact] = &[
         value: "",
     },
     DefinitionArtifact {
-        name: "ProperIdeal",
+        name: "HnsProperIdeal",
         universe_params: &[],
         ty: "",
         value: "",
@@ -15917,6 +16545,110 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
             ordered_args_elim!(
                 "(le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b))))",
                 "add_two_mul_le_sq_add_sqrt_arg a b c n ha hb hn hc"
+            )
+        )),
+    },
+];
+
+const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "OrderedFieldFieldBridgeArgs",
+    universe_params: &["u"],
+    ty: abstract_ordered_field_field_params!(
+        "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), Prop"
+    ),
+    value: abstract_ordered_field_field_abs!(concat!(
+        "fun ordered_args => forall (P : Prop), forall (mk : ",
+        "forall (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+        "forall (nonzero_of_positive_law : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Nonzero.{u} Scalar zero a), ",
+        "forall (inv_positive_law : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Positive.{u} Scalar zero lt_rel (inv a)), ",
+        "forall (div_positive_law : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)), ",
+        "forall (mul_pos_law : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (mul a b)), ",
+        "forall (sq_pos_of_nonzero_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)), P), P"
+    )),
+}];
+
+const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ordered_field_field_laws",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), @FieldLawArgs.{u} Scalar zero one add neg sub mul inv"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => ",
+            ordered_field_field_bridge_args_elim!(
+                "@FieldLawArgs.{u} Scalar zero one add neg sub mul inv",
+                "field_laws_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_nonzero_of_positive",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Nonzero.{u} Scalar zero a"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun ha => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Nonzero.{u} Scalar zero a",
+                "nonzero_of_positive_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_inv_positive",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Positive.{u} Scalar zero lt_rel (inv a)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun ha => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (inv a)",
+                "inv_positive_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_div_positive",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun b => fun ha => fun hb => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)",
+                "div_positive_arg a b ha hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_mul_pos",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (mul a b)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun b => fun ha => fun hb => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (mul a b)",
+                "mul_pos_arg a b ha hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_sq_pos_of_nonzero",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun ha => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)",
+                "sq_pos_of_nonzero_arg a ha"
             )
         )),
     },
@@ -21246,7 +21978,7 @@ fn run_full() -> Result<(), String> {
     )?;
     let abstract_field_imports = vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
-    let _abstract_field = build_and_write_module(
+    let abstract_field = build_and_write_module(
         &proof_root,
         &ABSTRACT_FIELD_MODULE,
         &abstract_field_imports,
@@ -21277,6 +22009,36 @@ fn run_full() -> Result<(), String> {
         &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
         &abstract_ring_first_iso_base_imports,
         &abstract_ring_first_iso_base_source_interfaces,
+    )?;
+    let abstract_field_hom_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+    ];
+    let abstract_field_hom_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+    ];
+    let abstract_field_hom = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_HOM_MODULE,
+        &abstract_field_hom_imports,
+        &abstract_field_hom_source_interfaces,
     )?;
     let abstract_ring_first_iso_imports = vec![
         eq_import.clone(),
@@ -21352,6 +22114,26 @@ fn run_full() -> Result<(), String> {
         &abstract_ufd_prime_factorization_imports,
         &abstract_ufd_prime_factorization_source_interfaces,
     )?;
+    let abstract_field_integral_domain_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ufd_prime_factorization.verified_module.clone(),
+    ];
+    let abstract_field_integral_domain_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ufd_prime_factorization.source_interface.clone(),
+    ];
+    let abstract_field_integral_domain = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
+        &abstract_field_integral_domain_imports,
+        &abstract_field_integral_domain_source_interfaces,
+    )?;
     let abstract_hilbert_basis_theorem_imports =
         vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_hilbert_basis_theorem_source_interfaces = vec![
@@ -21396,6 +22178,48 @@ fn run_full() -> Result<(), String> {
         &abstract_krull_theorem_imports,
         &abstract_krull_theorem_source_interfaces,
     )?;
+    let abstract_field_ideal_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+    ];
+    let abstract_field_ideal_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+    ];
+    let abstract_field_ideal = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_IDEAL_MODULE,
+        &abstract_field_ideal_imports,
+        &abstract_field_ideal_source_interfaces,
+    )?;
     let abstract_ordered_field_imports =
         vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_ordered_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
@@ -21404,6 +22228,23 @@ fn run_full() -> Result<(), String> {
         &ABSTRACT_ORDERED_FIELD_MODULE,
         &abstract_ordered_field_imports,
         &abstract_ordered_field_source_interfaces,
+    )?;
+    let abstract_ordered_field_field_bridge_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+    ];
+    let abstract_ordered_field_field_bridge_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+    ];
+    let abstract_ordered_field_field_bridge = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
+        &abstract_ordered_field_field_bridge_imports,
+        &abstract_ordered_field_field_bridge_source_interfaces,
     )?;
     let abstract_square_normalize_imports = vec![
         eq_import.clone(),
@@ -21848,14 +22689,19 @@ fn run_full() -> Result<(), String> {
         abstract_group_correspondence_final,
         abstract_group_correspondence_order_final,
         abstract_ring,
+        abstract_field,
         abstract_ring_first_iso_base,
+        abstract_field_hom,
         abstract_ring_first_iso,
         abstract_ring_chinese_remainder,
         abstract_ufd_prime_factorization,
+        abstract_field_integral_domain,
         abstract_hilbert_basis_theorem,
         abstract_hilbert_nullstellensatz,
         abstract_krull_theorem,
+        abstract_field_ideal,
         abstract_ordered_field,
+        abstract_ordered_field_field_bridge,
         abstract_square_normalize,
         abstract_scalar_derive,
         abstract_vector_space,
@@ -24091,8 +24937,10 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
+        || module == ABSTRACT_FIELD_HOM_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
+        || module == ABSTRACT_FIELD_IDEAL_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -24426,6 +25274,10 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
+        || config.module == ABSTRACT_FIELD_HOM_MODULE.module
+        || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
+        || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
+        || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

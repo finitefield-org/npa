@@ -17,7 +17,7 @@ audit are untrusted sidecars.
 Current package state:
 
 - Layer 3D-G has been materialized, committed, tagged, and pushed in
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib` as `npa-mathlib v0.1.13`.
+  `../npa-mathlib` as `npa-mathlib v0.1.13`.
 - The `npa-mathlib` release commit is
   `b2ee22f9f526ae80fea7b8c9dea58888c3479ed5`.
 - The annotated `v0.1.13` tag object observed locally is
@@ -200,7 +200,7 @@ Observed result:
 
 ```text
 built Proofs.Ai.Logic.Iff
-wrote /Users/kazuyoshitoshiya/ff/npa/proofs/generated/ai-theorem-index.json
+wrote proofs/generated/ai-theorem-index.json
 built Proofs.Ai.Logic.Iff (1 module(s) including import closure)
 ```
 
@@ -231,26 +231,26 @@ Planned downstream smoke theorem names:
 
 ## Positive Gates
 
-Run these gates in `/Users/kazuyoshitoshiya/ff/npa-mathlib` after
+Run these gates in `../npa-mathlib` after
 materialization:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 Run these downstream smoke gates:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 ## Negative Package-Copy Checks
@@ -311,20 +311,20 @@ Generated artifact hashes:
 Release artifact:
 
 ```text
-/Users/kazuyoshitoshiya/ff/npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.14-release-artifacts.tar.gz
+../npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.14-release-artifacts.tar.gz
 sha256:eacfc65d24ee5b9b6c678c0ab9b134c64c11a357301fb18f1fe33f7fcf3a740e
 ```
 
 Positive gates passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 The source-free reference verifier reported:
@@ -336,10 +336,10 @@ mode=reference;verdict_source=npa-checker-ref;reference_checker_verdict=true;mod
 Downstream smoke gates passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 The downstream source-free reference verifier reported:

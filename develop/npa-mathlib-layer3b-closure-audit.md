@@ -35,7 +35,7 @@ Current public package state:
   - `Mathlib.Data.Nat.Basic`
   - `Mathlib.Core.Reduction`
 - The standalone namespace policy is
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib/docs/namespace-policy.md`.
+  `../npa-mathlib/docs/namespace-policy.md`.
 - The current public axiom policy keeps custom package-local axioms disabled
   and permits only the builtin equality eliminator surface:
 

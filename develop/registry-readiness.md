@@ -428,21 +428,21 @@ git diff --check
 ```
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa-mathlib` for the `npa-mathlib v0.1.1`
+`../npa-mathlib` for the `npa-mathlib v0.1.1`
 Layer 1 continuation and passed:
 
 ```sh
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root . --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package axiom-report --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package index --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package publish-plan --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root fixtures/downstream-smoke --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package check --root . --json
+../npa/target/debug/npa package build-certs --root . --check --json
+../npa/target/debug/npa package verify-certs --root . --checker reference --json
+../npa/target/debug/npa package check-hashes --root . --json
+../npa/target/debug/npa package axiom-report --root . --check --json
+../npa/target/debug/npa package index --root . --check --json
+../npa/target/debug/npa package publish-plan --root . --check --json
+../npa/target/debug/npa package check --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
+../npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+../npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
 git diff --check
 ```
 
@@ -453,21 +453,21 @@ downstream `check`, `build-certs --check`, `verify-certs --checker reference`,
 and `check-hashes` commands passed against the temporary downstream package.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa-mathlib` for the `npa-mathlib v0.1.2`
+`../npa-mathlib` for the `npa-mathlib v0.1.2`
 Layer 2A continuation and passed:
 
 ```sh
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root . --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package axiom-report --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package index --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package publish-plan --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root fixtures/downstream-smoke --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package check --root . --json
+../npa/target/debug/npa package build-certs --root . --check --json
+../npa/target/debug/npa package verify-certs --root . --checker reference --json
+../npa/target/debug/npa package check-hashes --root . --json
+../npa/target/debug/npa package axiom-report --root . --check --json
+../npa/target/debug/npa package index --root . --check --json
+../npa/target/debug/npa package publish-plan --root . --check --json
+../npa/target/debug/npa package check --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
+../npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+../npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
 git diff --check
 ```
 
@@ -481,21 +481,21 @@ only certificate bytes from the downloaded release bundle and passed `check`,
 `build-certs --check`, `verify-certs --checker reference`, and `check-hashes`.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa-mathlib` for the `npa-mathlib v0.1.3`
+`../npa-mathlib` for the `npa-mathlib v0.1.3`
 Layer 2B continuation and passed:
 
 ```sh
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root . --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package axiom-report --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package index --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package publish-plan --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root fixtures/downstream-smoke --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package check --root . --json
+../npa/target/debug/npa package build-certs --root . --check --json
+../npa/target/debug/npa package verify-certs --root . --checker reference --json
+../npa/target/debug/npa package check-hashes --root . --json
+../npa/target/debug/npa package axiom-report --root . --check --json
+../npa/target/debug/npa package index --root . --check --json
+../npa/target/debug/npa package publish-plan --root . --check --json
+../npa/target/debug/npa package check --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
+../npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+../npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
 git diff --check
 ```
 
@@ -510,21 +510,21 @@ passed `check`, `build-certs --check`, `verify-certs --checker reference`, and
 `check-hashes`.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa-mathlib` for the `npa-mathlib v0.1.4`
+`../npa-mathlib` for the `npa-mathlib v0.1.4`
 Layer 3A continuation and passed:
 
 ```sh
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root . --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root . --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package axiom-report --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package index --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package publish-plan --root . --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check --root fixtures/downstream-smoke --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
-/Users/kazuyoshitoshiya/ff/npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package check --root . --json
+../npa/target/debug/npa package build-certs --root . --check --json
+../npa/target/debug/npa package verify-certs --root . --checker reference --json
+../npa/target/debug/npa package check-hashes --root . --json
+../npa/target/debug/npa package axiom-report --root . --check --json
+../npa/target/debug/npa package index --root . --check --json
+../npa/target/debug/npa package publish-plan --root . --check --json
+../npa/target/debug/npa package check --root fixtures/downstream-smoke --json
+../npa/target/debug/npa package build-certs --root fixtures/downstream-smoke --check --json
+../npa/target/debug/npa package verify-certs --root fixtures/downstream-smoke --checker reference --json
+../npa/target/debug/npa package check-hashes --root fixtures/downstream-smoke --json
 git diff --check
 ```
 
@@ -538,22 +538,22 @@ for `Std.Logic.Eq`, `Mathlib.Logic.EqReasoning`, and
 `verify-certs --checker reference`, and `check-hashes`.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa` for the `npa-mathlib v0.1.5` Layer 3B
+`npa` for the `npa-mathlib v0.1.5` Layer 3B
 continuation and passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
+git -C ../npa-mathlib diff --check
 ```
 
 The published GitHub release asset digest for
@@ -571,22 +571,22 @@ The `v0.1.5` negative checks rejected a bad
 certificate bytes, and bad package version before proof acceptance.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa` for the `npa-mathlib v0.1.6` Layer 3C
+`npa` for the `npa-mathlib v0.1.6` Layer 3C
 continuation and passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
+git -C ../npa-mathlib diff --check
 ```
 
 The published GitHub release asset digest for
@@ -604,22 +604,22 @@ The `v0.1.6` negative checks rejected a bad
 corrupted certificate bytes, and bad package version before proof acceptance.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa` for the `npa-mathlib v0.1.7` Layer 3D-A
+`npa` for the `npa-mathlib v0.1.7` Layer 3D-A
 continuation and passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
+git -C ../npa-mathlib diff --check
 ```
 
 The published GitHub release asset digest for
@@ -638,22 +638,22 @@ The `v0.1.7` negative checks rejected a bad
 and bad package version before proof acceptance.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa` for the `npa-mathlib v0.1.8` Layer 3D-B
+`npa` for the `npa-mathlib v0.1.8` Layer 3D-B
 continuation and passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
+git -C ../npa-mathlib diff --check
 ```
 
 The published GitHub release asset digest for
@@ -677,22 +677,22 @@ certificate bytes, and a stale package lock from bad package version before
 proof acceptance.
 
 The following additional commands were run from
-`/Users/kazuyoshitoshiya/ff/npa` for the `npa-mathlib v0.1.9` Layer 3D-C
+`npa` for the `npa-mathlib v0.1.9` Layer 3D-C
 continuation and passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-git -C /Users/kazuyoshitoshiya/ff/npa-mathlib diff --check
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
+git -C ../npa-mathlib diff --check
 ```
 
 The published GitHub release asset digest for

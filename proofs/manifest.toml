@@ -732,14 +732,14 @@ meta = "Proofs/Ai/Algebra/AbstractField/meta.json"
 replay = "Proofs/Ai/Algebra/AbstractField/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
-source_sha256 = "sha256:8cc831151033766959c13dc06bd3004cd20ff8d66d91af3cd142241643cae529"
-certificate_file_sha256 = "sha256:cf429ca71a8bdab68a087fd26810f4ad02e4cf01ba31a50a62e56ca1f2396aeb"
-export_hash = "sha256:7db645527678623c9ea3792ec231452de6ee29ee0c231ac2f7f9c8b6c24a6203"
-axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
-certificate_hash = "sha256:861ae2f1adabcf7b5c351cf1bc220be5e610435f444d45b701566e9e64eff39f"
+source_sha256 = "sha256:570d26f6da6133797d99e88528c9d7dcb8f076199cde4f67970036bc566b3e9e"
+certificate_file_sha256 = "sha256:6a0ef30bfde4d9d94c6463a8e08c57f4be79bda6255dd08d46bd2f3622cdbf6b"
+export_hash = "sha256:fba4c80edb5d353d74425fb5d090cde7837f108a0ba60997bf63d0d77ff07284"
+axiom_report_hash = "sha256:6fb10daa6bb059bfea6535d1d96e9ae73c2da1aee15921bf824480bbeee32550"
+certificate_hash = "sha256:4bb6a8b4f1aa64dfbdf189c21738ea3fd12f17a9b77d335674c3354fc694a7d0"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"]
 definitions = ["FieldFalse", "FieldNot", "Nonzero", "div", "FieldLawArgs"]
-theorems = ["field_ring_laws", "field_zero_ne_one", "field_inv_mul_cancel", "field_mul_inv_cancel", "field_div_eq_mul_inv"]
+theorems = ["field_ring_laws", "field_zero_ne_one", "field_inv_mul_cancel", "field_mul_inv_cancel", "field_div_eq_mul_inv", "field_inv_one", "field_div_one", "field_div_self_nonzero", "field_zero_div", "field_mul_left_cancel_nonzero", "field_mul_right_cancel_nonzero", "field_nonzero_mul_closed", "field_mul_eq_zero_cases"]
 axioms = []
 
 [[proof_modules]]
@@ -759,6 +759,24 @@ imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractR
 definitions = ["RingHomLawArgs", "RingImagePred", "RingKerQuot", "RingKerQuotMk", "RingKerQuotToS", "RingKerQuotAdd", "RingKerQuotZero", "RingKerQuotNeg", "RingKerQuotMulRep"]
 theorems = ["ring_hom_zero", "ring_hom_one", "ring_hom_add", "ring_hom_neg", "ring_hom_mul", "ring_as_additive_group_laws", "ring_hom_as_additive_group_hom", "ring_ker_quot_mul_rep_compat", "ring_image_intro", "ring_image_zero", "ring_image_one", "ring_image_add_closed", "ring_image_neg_closed", "ring_image_mul_closed"]
 axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractFieldHom"
+source = "Proofs/Ai/Algebra/AbstractFieldHom/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFieldHom/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFieldHom/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFieldHom/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8dd8166d188b7e63159b25dd3c8ce1d5abbd2a62eff1b6764a3c8fa299cfb18b"
+certificate_file_sha256 = "sha256:40d27a67db6ec0b2d8d352a1215fc3f6b2727f2e6e750ae15a57972b870c31b2"
+export_hash = "sha256:866a0b077622289840ce57d1d04e921e3aea2bfafc4c318f1c0206398c9504c0"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:2b238fe831f116c7de850bf8e4abea685ef146073d7455767e387a4f761d3df1"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase"]
+definitions = ["FieldHomLawArgs"]
+theorems = ["field_hom_as_ring_hom", "field_hom_inv_of_nonzero", "field_hom_div", "field_hom_preserves_nonzero"]
+axioms = []
 
 [[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractRingFirstIso"
@@ -804,15 +822,33 @@ meta = "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/meta.json"
 replay = "Proofs/Ai/Algebra/AbstractUfdPrimeFactorization/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
-source_sha256 = "sha256:0ab6c9a20b0f0c35ddb1e1063cbb0e947ce961dc9970ce6ac20038d2bf8f28ba"
-certificate_file_sha256 = "sha256:c01d9439c371a19f4a4fbfac8092166e3930d2c932675393231f22e031f3b397"
-export_hash = "sha256:cbde43a66de66d7e6f91805ef38caa79ac5fad2112ce312767d2a23fb3af2650"
+source_sha256 = "sha256:b1ed38b5d2534f1ebe809c31efe1bdfb4abba0ff415681104c04b896f741bcce"
+certificate_file_sha256 = "sha256:bb96ea7f60456736ba6e1770f419216391d548df768bb2403b60e6d9c26391d6"
+export_hash = "sha256:599671702ec4e135bf1cf4520ccbe90188fc292820a2277f958799d87f73add3"
 axiom_report_hash = "sha256:9ce9f1ee79084f04cf740fea7eb29e010979a9a529978a7f8bc7f94fe1890d9a"
-certificate_hash = "sha256:bf2c7bc74baefc60c4367d73486c8f9e3960db060352f20938f389543d153e1d"
+certificate_hash = "sha256:1d624896a2f2cd3b8db01d7a03297f5c06383d3373f4cbb51568d4a9d4295be9"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"]
-definitions = ["UfdFalse", "UfdNot", "UfdOr", "Divides", "Unit", "Associate", "Nonzero", "Nonunit", "PrimeElement", "IrreducibleElement", "IntegralDomainLawArgs", "FactorizationPred", "PrimeFactorizationPred", "UniqueFactorizationDomainLawArgs", "UfdPrimeFactorizationTheorem"]
+definitions = ["UfdFalse", "UfdNot", "UfdOr", "Divides", "Unit", "Associate", "UfdNonzero", "Nonunit", "PrimeElement", "IrreducibleElement", "IntegralDomainLawArgs", "FactorizationPred", "PrimeFactorizationPred", "UniqueFactorizationDomainLawArgs", "UfdPrimeFactorizationTheorem"]
 theorems = ["ufd_or_inl", "ufd_or_inr", "divides_intro", "divides_elim", "unit_intro", "associate_intro", "integral_domain_law_args_intro", "factorization_pred_intro", "prime_factorization_pred_intro", "prime_factorization_to_factorization", "prime_factorization_all_prime", "ufd_domain_laws", "ufd_factorization_exists", "ufd_factorization_unique", "ufd_irreducible_factors_prime", "ufd_prime_factorization_exists", "ufd_prime_factorization_unique", "ufd_prime_factorization_theorem"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
+source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:904cacc06ff0cb5f293f590bb925949ce1a455d72d63a21570aa1f4e4c7bc9c9"
+certificate_file_sha256 = "sha256:f85c0d1275a43e0fbbad2a8f34a4e19ec0aa7e4fb641180017b73fe161db349d"
+export_hash = "sha256:aacad97a9d7d21f7c2249a366480b85c8be2a519d1495d50764caae2e58d6526"
+axiom_report_hash = "sha256:176cebfca05407324e6b04ffe0cb2ca0418f97bbd5ffae1191cd224272be909c"
+certificate_hash = "sha256:0cf122a8f4caaa416de58ba218b49636bdafbba40a41f996b5c5e3bfcb090429"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization"]
+definitions = []
+theorems = ["field_no_zero_divisors", "field_integral_domain_laws", "field_nonzero_product_left", "field_nonzero_product_right", "field_mul_eq_zero_elim"]
+axioms = ["Eq.rec"]
 
 [[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem"
@@ -840,13 +876,13 @@ meta = "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/meta.json"
 replay = "Proofs/Ai/Algebra/AbstractHilbertNullstellensatz/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
-source_sha256 = "sha256:351711dbb821c032bdba71d7d3dce1230053c593685fbe0a1d104cfe325303f7"
-certificate_file_sha256 = "sha256:231a401baaf2030856ecf4ec9f088ccc3c3f958bab4baf4808f6fe6fcad435c7"
-export_hash = "sha256:c62ec0d2d1692902bada1e53a5a5df7ded5f2f74583eb45028cd6fd6684f13e5"
+source_sha256 = "sha256:86523c9d4775ae16ee2deccb83b2ff5237e68bc2ca9d89d373ddf338bf406834"
+certificate_file_sha256 = "sha256:fdfa6e83be2763767290fdb7c1766a907ed7786ed44b6184654ddd0bf5d1a063"
+export_hash = "sha256:3993d4b67a0417074cb3448011522bf25b80584e920b3ecd096ef48f6dbf4836"
 axiom_report_hash = "sha256:7bdd9c5b57868c88a722f399dda7de65848234e965022107240b00060333d423"
-certificate_hash = "sha256:d39e640633f4f258cd2f9fd1c771e739b32ab80b04443d591935ab40eec6af99"
+certificate_hash = "sha256:dfce742536e451303737ea6af2e1defa909e0bac7a2418a20a67a24bd5a4b664"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem"]
-definitions = ["HnsFalse", "HnsNot", "IdealExtEq", "AlgebraicallyClosedFieldArgs", "ProperIdeal", "ZeroSet", "HasCommonZero", "VanishingIdeal", "RadicalMember", "PolynomialEvaluationLawArgs", "WeakNullstellensatz", "StrongNullstellensatz", "NullstellensatzConstructionArgs", "HilbertNullstellensatzTheorem"]
+definitions = ["HnsFalse", "HnsNot", "IdealExtEq", "AlgebraicallyClosedFieldArgs", "HnsProperIdeal", "ZeroSet", "HasCommonZero", "VanishingIdeal", "RadicalMember", "PolynomialEvaluationLawArgs", "WeakNullstellensatz", "StrongNullstellensatz", "NullstellensatzConstructionArgs", "HilbertNullstellensatzTheorem"]
 theorems = ["ideal_ext_eq_intro", "radical_member_intro", "polynomial_evaluation_law_args_intro", "polynomial_evaluation_field_laws", "polynomial_evaluation_noetherian", "nullstellensatz_construction_args_intro", "weak_nullstellensatz_from_construction", "strong_nullstellensatz_from_construction", "hilbert_nullstellensatz_theorem"]
 axioms = []
 
@@ -869,6 +905,24 @@ theorems = ["ideal_le_refl", "ideal_le_trans", "maximal_ideal_intro", "maximal_i
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractFieldIdeal"
+source = "Proofs/Ai/Algebra/AbstractFieldIdeal/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFieldIdeal/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFieldIdeal/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFieldIdeal/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:a07f602abf3931807824e3eee0124ace191eea78883e51c11da783717bb4d928"
+certificate_file_sha256 = "sha256:cfce6b1562ca40d8f3d25ac4d66dbae62476d2435bef2429d3d0c7644016338b"
+export_hash = "sha256:4660047aba1977b354394e27b69cfc3164ca6c7e7078457d091fdbe76bcb3232"
+axiom_report_hash = "sha256:2ee2d85444229be7c021456a50964e4d514b415b512b57ee6ff15c229acd5a70"
+certificate_hash = "sha256:5e98fe69ebd7f43cb5bf193285c075d1a764598fd451c5278977001951adfac4"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem"]
+definitions = ["FieldIdealZeroOrTop", "FieldSimpleRingEvidence", "FieldIdealLawArgs", "MaximalIdealQuotientFieldArgs"]
+theorems = ["field_ideal_zero_or_top", "field_simple_ring_evidence", "quotient_by_maximal_ideal_is_field"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractOrderedField"
 source = "Proofs/Ai/Algebra/AbstractOrderedField/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert"
@@ -884,6 +938,24 @@ certificate_hash = "sha256:52b1cacffa499c5efbcee1d7cd74226dc2f53ceb63d47b9897861
 imports = ["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"]
 definitions = ["le", "lt", "sqrt", "Nonneg", "Positive", "OrderedFieldLawArgs"]
 theorems = ["le_refl", "le_trans", "add_nonneg", "mul_nonneg", "square_nonneg", "sqrt_nonneg", "sqrt_square_of_nonneg", "sqrt_mul_self", "eq_of_square_eq_square_nonneg", "add_le_add", "mul_le_mul_nonneg", "zero_le_two", "le_antisymm", "lt_of_le_of_ne", "le_of_eq", "sqrt_sq", "sq_eq_zero_iff", "sum_nonneg_eq_zero", "square_completion_bound_from_ordered_args", "le_of_sq_le_sq_nonneg_from_ordered_args", "add_dist_nonneg_from_ordered_args", "sqrt_sum_square_bound_from_ordered_args", "le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args", "add_two_mul_le_sq_add_sqrt_from_ordered_args"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge"
+source = "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:72243ebdf7d538404a698933e038e163336f9d4f3e876acc0c451999c7b35356"
+certificate_file_sha256 = "sha256:b5929bfec689607687dce2de7efa311a3af45d9fbba33e3045845ec0e72e25f8"
+export_hash = "sha256:228c0fae7df966a5e96c7d1e6753063a5cb8801da218f6ab1bebfa550137c5d7"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:543bfbc91fd968253eec57742e43980803b28f341d9e6aacbf88e1b1ba055f25"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField"]
+definitions = ["OrderedFieldFieldBridgeArgs"]
+theorems = ["ordered_field_field_laws", "ordered_field_nonzero_of_positive", "ordered_field_inv_positive", "ordered_field_div_positive", "ordered_field_mul_pos", "ordered_field_sq_pos_of_nonzero"]
 axioms = []
 
 [[proof_modules]]

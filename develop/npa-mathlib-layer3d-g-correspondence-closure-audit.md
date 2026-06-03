@@ -13,7 +13,7 @@ out of this layer.
 Current package state:
 
 - Layer 3D-F has been materialized, committed, tagged, and pushed in
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib` as `npa-mathlib v0.1.12`.
+  `../npa-mathlib` as `npa-mathlib v0.1.12`.
 - The `npa-mathlib` release commit is
   `1474648969337fa077a9fe1cd2732f54232bb489`.
 - The annotated `v0.1.12` tag object observed from `origin` is
@@ -25,13 +25,13 @@ Current package state:
 - The current package check passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
 ```
 
 - The current source-free reference verifier passed with 34 modules:
 
 ```sh
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
 ```
 
 Layer 3D-G should materialize as `npa-mathlib v0.1.13`. It must not change
@@ -366,7 +366,7 @@ The future materialization step must:
 
 ## Materialization Result
 
-Layer 3D-G was materialized in `/Users/kazuyoshitoshiya/ff/npa-mathlib` as
+Layer 3D-G was materialized in `../npa-mathlib` as
 package version `0.1.13` with the four selected public modules. The package
 manifest, package lock, axiom report, theorem index, publish plan, namespace
 policy, README, and downstream smoke fixture were updated.
@@ -409,17 +409,17 @@ sha256:3dd2278931e045c1573ba8c7b3f06783a39fad65f741320a39bc592b7cb10e35
 Positive verification passed:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 Negative package-copy checks rejected the expected failure modes:

@@ -22,7 +22,7 @@ Current public package state:
   - `Mathlib.Data.Nat.Basic`
   - `Mathlib.Core.Reduction`
 - The standalone namespace policy is
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib/docs/namespace-policy.md`.
+  `../npa-mathlib/docs/namespace-policy.md`.
 
 Layer 1 must add modules without changing the package split, registry
 assumptions, or proof trust boundary.
@@ -107,7 +107,7 @@ Use the next package/release version after `v0.1.0`; provisionally this is
 
 ## Next Materialization Steps
 
-Run these steps in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
+Run these steps in `../npa-mathlib`:
 
 1. Add `Mathlib/Algebra/Ring/`, `Mathlib/Algebra/Square/`, and
    `Mathlib/Algebra/OrderedField/` from the selected corpus sources.

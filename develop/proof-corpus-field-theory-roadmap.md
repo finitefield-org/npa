@@ -66,13 +66,13 @@ Proofs.Ai.Algebra.AbstractOrderedField
 
 ### 3.1 AbstractField foundation
 
-最初に追加する候補 module:
+実装済み module:
 
 ```text
 Proofs.Ai.Algebra.AbstractField
 ```
 
-最小の public surface 候補:
+実装済み public surface:
 
 ```text
 Nonzero
@@ -93,9 +93,9 @@ field_div_eq_mul_inv
 
 ### 3.2 Basic field calculation lemmas
 
-次に、定理探索と rewrite に効く小さい補題を追加します。
+定理探索と rewrite に効く小さい補題を追加済みです。
 
-候補:
+実装済み theorem:
 
 ```text
 field_inv_one
@@ -116,15 +116,15 @@ field_mul_eq_zero_cases
 
 ### 3.3 Field homomorphism bridge
 
-既存の `RingHomLawArgs` と接続する module を追加します。
+既存の `RingHomLawArgs` と接続する module を追加済みです。
 
-候補 module:
+実装済み module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldHom
 ```
 
-候補 theorem:
+実装済み theorem:
 
 ```text
 FieldHomLawArgs
@@ -142,15 +142,15 @@ field_hom_preserves_nonzero
 
 ### 3.4 Field as integral domain
 
-体から整域性を取り出す層を追加します。
+体から整域性を取り出す層を追加済みです。
 
-候補 module:
+実装済み module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldIntegralDomain
 ```
 
-候補 theorem:
+実装済み theorem:
 
 ```text
 field_no_zero_divisors
@@ -169,13 +169,13 @@ field_mul_eq_zero_elim
 
 環論の商・イデアル定理と接続する上位層です。
 
-候補 module:
+実装済み module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldIdeal
 ```
 
-候補 theorem:
+実装済み theorem:
 
 ```text
 field_ideal_zero_or_top
@@ -191,9 +191,15 @@ quotient_by_maximal_ideal_is_field
 ## 4. OrderedField との接続
 
 `AbstractOrderedField` は現状、順序・平方根・平方の単調性を bundle として持っています。
-`AbstractField` 追加後は、互換性を保ちながら次の橋渡しを追加します。
+`AbstractField` 追加後の互換 bridge として、次の module を追加済みです。
 
-候補:
+実装済み module:
+
+```text
+Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge
+```
+
+実装済み theorem:
 
 ```text
 ordered_field_field_laws
@@ -204,25 +210,32 @@ ordered_field_mul_pos
 ordered_field_sq_pos_of_nonzero
 ```
 
-この段階では、既存の `OrderedFieldLawArgs` を直ちに削除または全面置換しません。
-まず `FieldLawArgs` と order/sqrt laws の間に projection theorem を追加し、
-依存 module の certificate / export hash への影響を局所化します。
+既存の `OrderedFieldLawArgs` は削除または全面置換していません。split bridge module で
+`FieldLawArgs` と order/sqrt laws の間に projection theorem を追加し、既存
+`AbstractOrderedField` consumer の certificate / export hash への影響を局所化しています。
 
 ## 5. 実装単位
 
-最初の実装単位は、次の順がよいです。
+実装単位は、次の順で完了しています。
 
 1. `Proofs.Ai.Algebra.AbstractField`
 2. `Proofs.Ai.Algebra.AbstractFieldHom`
 3. `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
 4. `Proofs.Ai.Algebra.AbstractFieldIdeal`
-5. `Proofs.Ai.Algebra.AbstractOrderedField` への bridge theorem 追加
+5. `Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
 
-各 module は小さく分け、import は必要最小限にします。
-特に最初の `AbstractField` は `AbstractRing` と `Std.Logic.Eq` だけから始め、
-群商・環商・CRT への依存は後続 bridge module に閉じ込めます。
+各 module は小さく分け、import は必要最小限にしています。
+最初の `AbstractField` は `AbstractRing` と `Std.Logic.Eq` だけから始め、
+群商・環商・CRT への依存は後続 bridge module に閉じ込めています。
 
-## 6. 検証
+## 6. npa-mathlib materialization policy
+
+この field-theory route は corpus 側の verified staging として完了しています。公開
+`npa-mathlib` への materialization はこの roadmap では実行せず、別の closure audit で
+import closure、axiom policy、statement stability、compatibility alias の要否を確認してから
+判断します。
+
+## 7. 検証
 
 proof corpus に体論 module を追加する作業では、full corpus gate を毎回走らせず、
 局所確認を優先します。

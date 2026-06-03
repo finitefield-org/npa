@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFieldHom",
+  "source": "Proofs/Ai/Algebra/AbstractFieldHom/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractFieldHom/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8dd8166d188b7e63159b25dd3c8ce1d5abbd2a62eff1b6764a3c8fa299cfb18b",
+  "certificate_file_sha256": "sha256:40d27a67db6ec0b2d8d352a1215fc3f6b2727f2e6e750ae15a57972b870c31b2",
+  "export_hash": "sha256:866a0b077622289840ce57d1d04e921e3aea2bfafc4c318f1c0206398c9504c0",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:2b238fe831f116c7de850bf8e4abea685ef146073d7455767e387a4f761d3df1",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FieldHomLawArgs", "kind": "def" },
+    { "name": "field_hom_as_ring_hom", "kind": "theorem" },
+    { "name": "field_hom_inv_of_nonzero", "kind": "theorem" },
+    { "name": "field_hom_div", "kind": "theorem" },
+    { "name": "field_hom_preserves_nonzero", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

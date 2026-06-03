@@ -13,7 +13,7 @@ measurement evidence only and is not proof evidence.
 
 - Date: 2026-06-03 / 2026-06-04 JST
 - Repository commit before this documentation change: `8ca8511`
-- Working directory: `/Users/kazuyoshitoshiya/ff/npa`
+- Working directory: `npa`
 - Machine: Apple M1 Max, 10 hardware threads, 64 GiB memory
 - OS: macOS 26.5 build 25F71, Darwin 25.5.0 arm64
 - Rust: `rustc 1.95.0 (59807616e 2026-04-14)`

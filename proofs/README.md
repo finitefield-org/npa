@@ -179,6 +179,10 @@ Current bundles:
 - `Proofs/Ai/Algebra/AbstractRingFirstIsoBase/`: ring homomorphism law package, additive-group
   bridge, image closure, and kernel quotient multiplication well-definedness for the ring first
   isomorphism route.
+- `Proofs/Ai/Algebra/AbstractFieldHom/`: field homomorphism law package wrapping the existing
+  `RingHomLawArgs` bridge and adding inverse, division, and nonzero-preservation projections.
+- `Proofs/Ai/Algebra/AbstractFieldIntegralDomain/`: bridge from field law packages to the
+  UFD-style `IntegralDomainLawArgs`, with no-zero-divisor and nonzero-product theorem targets.
 - `Proofs/Ai/Algebra/AbstractRingFirstIso/`: certificate-backed ring first isomorphism theorem
   bundle for the canonical map from the kernel quotient to the Church-encoded image, preserving
   zero, one, addition, and multiplication with injectivity and image-surjectivity.
@@ -197,8 +201,14 @@ Current bundles:
 - `Proofs/Ai/Algebra/AbstractKrullTheorem/`: certificate-backed Krull maximal ideal theorem
   package: every proper ideal is contained in a maximal ideal, with Zorn-style existence kept as
   explicit construction evidence outside the trusted core.
+- `Proofs/Ai/Algebra/AbstractFieldIdeal/`: field ideal and quotient bridge packaging
+  field-simple-ring evidence and the maximal-ideal quotient-is-field theorem over explicit
+  quotient, kernel, and first-isomorphism witnesses.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
   over explicit carrier, operation, relation, function, and law assumptions.
+- `Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/`: split compatibility bridge from
+  `OrderedFieldLawArgs` to `FieldLawArgs`, keeping positive/nonzero/inverse/division laws as
+  explicit evidence without changing existing ordered-field consumers.
 - `Proofs/Ai/Algebra/AbstractSquareNormalize/`: abstract square-normalization theorem targets over
   the P17/P18 scalar APIs and explicit law assumptions.
 - `Proofs/Ai/Algebra/AbstractScalarDerive/`: scalar rewrite derivations from `RingLawArgs` and
@@ -1004,11 +1014,16 @@ EqReasoning
   -> Vector.Basic -> Vector.Dot
   -> Geometry.RightTriangle -> Geometry.Metric
   -> Logic.Iff
-  -> Algebra.AbstractRing -> Algebra.AbstractUfdPrimeFactorization
+  -> Algebra.AbstractRing -> Algebra.AbstractField
+  -> Algebra.AbstractRingFirstIsoBase -> Algebra.AbstractFieldHom
+  -> Algebra.AbstractRingFirstIso -> Algebra.AbstractRingChineseRemainder
+  -> Algebra.AbstractUfdPrimeFactorization -> Algebra.AbstractFieldIntegralDomain
   -> Algebra.AbstractHilbertBasisTheorem
   -> Algebra.AbstractHilbertNullstellensatz
   -> Algebra.AbstractKrullTheorem
-  -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
+  -> Algebra.AbstractFieldIdeal
+  -> Algebra.AbstractOrderedField -> Algebra.AbstractOrderedFieldFieldBridge
+  -> Algebra.AbstractSquareNormalize
   -> Algebra.AbstractScalarDerive
   -> Vector.AbstractSpace -> Vector.AbstractInnerProduct -> Vector.AbstractInnerProductDerive
   -> LinearAlgebra.AbstractSpectralTheorem
@@ -1319,7 +1334,7 @@ Implemented definitions / API declarations:
 | `FieldFalse`, `FieldNot` | local Church-encoded falsehood and negation used only to keep `Nonzero` Prop-level |
 | `Nonzero` | reusable predicate `a != 0` over an explicit carrier and zero element |
 | `div` | derived operation `a / b := a * inv b`, not a core primitive or law-package field |
-| `FieldLawArgs` | Church-encoded field law package separating `RingLawArgs` from field-specific inverse and nonzero laws |
+| `FieldLawArgs` | Church-encoded field law package separating `RingLawArgs` from field-specific inverse, division, nonzero, cancellation, and zero-product laws |
 
 The foundation imports `AbstractRing` and reuses its `RingLawArgs` instead of restating ring laws.
 The division API is deliberately definitional: `field_div_eq_mul_inv` closes by reflexivity after
@@ -1335,6 +1350,56 @@ Theorem targets:
 | `field_inv_mul_cancel` | `a != 0 -> inv a * a = 1` from the field law package |
 | `field_mul_inv_cancel` | `a != 0 -> a * inv a = 1` from the field law package |
 | `field_div_eq_mul_inv` | certificate-backed definitional equality for derived division |
+| `field_inv_one` | projects `inv 1 = 1` |
+| `field_div_one` | projects `a / 1 = a` |
+| `field_div_self_nonzero` | projects `a != 0 -> a / a = 1` |
+| `field_zero_div` | projects `0 / a = 0` for the total derived division operation |
+| `field_mul_left_cancel_nonzero` | projects left multiplication cancellation with explicit nonzero evidence |
+| `field_mul_right_cancel_nonzero` | projects right multiplication cancellation with explicit nonzero evidence |
+| `field_nonzero_mul_closed` | projects nonzero closure under multiplication |
+| `field_mul_eq_zero_cases` | Church-encoded zero-product case split into `a = 0` or `b = 0` continuations |
+
+#### `Proofs.Ai.Algebra.AbstractFieldHom`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldHomLawArgs` | Church-encoded field-homomorphism law package containing one `RingHomLawArgs` witness plus inverse, division, and nonzero-preservation laws |
+
+`FieldHomLawArgs` deliberately reuses `RingHomLawArgs` from
+`Proofs.Ai.Algebra.AbstractRingFirstIsoBase` instead of duplicating the zero, one, addition,
+negation, and multiplication preservation laws. The module imports the existing ring hom bridge and
+therefore inherits that bridge's verified import closure, but it introduces no new quotient or image
+construction declarations.
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_hom_as_ring_hom` | projects the underlying `RingHomLawArgs` witness for downstream ring-first-isomorphism reuse |
+| `field_hom_inv_of_nonzero` | projects inverse preservation with explicit source-side `Nonzero` evidence |
+| `field_hom_div` | projects division preservation with explicit nonzero evidence for the denominator |
+| `field_hom_preserves_nonzero` | projects preservation of source-side `Nonzero` evidence across the homomorphism |
+
+#### `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
+
+This bridge imports `AbstractField` and the existing UFD-style integral-domain API. It does not
+make `AbstractField` depend on UFD, and it does not restate field inverse laws in downstream
+integral-domain modules.
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_no_zero_divisors` | packages `field_mul_eq_zero_cases` as a UFD-style disjunction `a = 0 or b = 0` |
+| `field_integral_domain_laws` | builds `IntegralDomainLawArgs` from `FieldLawArgs` for UFD-style downstream reuse |
+| `field_nonzero_product_left` | proves product nonzero implies the left factor is nonzero, using ring zero-multiplication laws |
+| `field_nonzero_product_right` | proves product nonzero implies the right factor is nonzero, using ring zero-multiplication laws |
+| `field_mul_eq_zero_elim` | exposes the field zero-product case split as a direct Prop-level eliminator |
+
+The module uses the repository-wide allowed `Eq.rec` equality-elimination interface through
+`EqReasoning` for equality transport in the nonzero-product lemmas.
 
 #### `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
 
@@ -1342,7 +1407,9 @@ Implemented definitions / API declarations:
 
 | Declaration | Purpose |
 | --- | --- |
+| `UfdFalse`, `UfdNot`, `UfdOr` | UFD-local Church-encoded falsehood, negation, and disjunction |
 | `Divides`, `Unit`, `Associate` | Church-encoded divisibility, unit, and associate evidence over explicit multiplication |
+| `UfdNonzero`, `Nonunit` | UFD-local element predicates, named separately from field `Nonzero` to keep imports composable |
 | `PrimeElement`, `IrreducibleElement` | local element predicates for prime and irreducible behavior |
 | `IntegralDomainLawArgs` | integral-domain package extending `RingLawArgs` with `0 != 1` and no zero divisors |
 | `FactorizationPred`, `PrimeFactorizationPred` | abstract factorization evidence for an element and its prime-factor refinement |
@@ -1380,6 +1447,7 @@ Implemented definitions / API declarations:
 | Declaration | Purpose |
 | --- | --- |
 | `AlgebraicallyClosedFieldArgs` | algebraically closed field law package over an explicit carrier and ring operations |
+| `HnsProperIdeal` | Nullstellensatz-local proper-ideal predicate, named separately from Krull's `ProperIdeal` to keep imports composable |
 | `ZeroSet`, `HasCommonZero` | common-zero predicate and existence package for an ideal of abstract polynomials |
 | `VanishingIdeal` | predicate of polynomials vanishing on every point of `V(I)` |
 | `RadicalMember` | abstract positive-power witness package for membership in `sqrt(I)` |
@@ -1410,6 +1478,36 @@ This module formalizes the common maximal ideal form of Krull's theorem: every p
 unital commutative ring is contained in a maximal ideal. Because the corpus has no set-theoretic
 chain/Zorn API yet, the Zorn argument is an explicit non-trusted construction package; the checked
 certificate verifies only the logical extraction from that construction to the public theorem.
+
+#### `Proofs.Ai.Algebra.AbstractFieldIdeal`
+
+This bridge connects the field law package to ideal and quotient-ring routes while keeping the
+non-computational construction evidence explicit. It imports the existing field, ring first
+isomorphism, Chinese remainder, Hilbert basis, Hilbert Nullstellensatz, and Krull packages, but it
+does not add chain/Zorn machinery, quotient syntax, or hidden global ideal axioms to the trusted
+core.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldIdealZeroOrTop` | Church-encoded field ideal dichotomy: an ideal is either zero or the whole field |
+| `FieldSimpleRingEvidence` | package combining ring laws, zero-or-top ideal laws, and proper-ideal-is-zero evidence |
+| `FieldIdealLawArgs` | bridge law package exposing the ideal dichotomy and simple-ring evidence for a field |
+| `MaximalIdealQuotientFieldArgs` | explicit quotient/maximal-ideal construction package returning field laws on the quotient |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_ideal_zero_or_top` | projects the explicit zero-or-top law for an arbitrary ideal with `IdealLawArgs` |
+| `field_simple_ring_evidence` | projects the simple-ring evidence package for downstream ideal arguments |
+| `quotient_by_maximal_ideal_is_field` | returns quotient `FieldLawArgs` from explicit `MaximalIdeal`, quotient ring laws, quotient hom, kernel exactness, and `RingFirstIso` evidence |
+
+The module's axiom policy is the existing package-allowed `Eq.rec`, inherited through the imported
+equality and quotient/isomorphism route. The theorem statement for
+`quotient_by_maximal_ideal_is_field` intentionally exposes all quotient and maximality witnesses so
+the Krull and Nullstellensatz trusted boundaries remain unchanged.
 
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
@@ -1472,6 +1570,39 @@ Theorem targets:
 | `sqrt_sum_square_bound_from_ordered_args` | `0 <= a -> 0 <= b -> 0 <= c -> sq a <= sq (b + c) -> a <= b + c` |
 | `le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args` | `0 <= a -> 0 <= b -> sq c <= a * b -> c <= sqrt a * sqrt b` |
 | `add_two_mul_le_sq_add_sqrt_from_ordered_args` | scalar ordered-field step for `a + 2 * c + b <= sq (sqrt a + sqrt b)` |
+
+#### `Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
+
+This split bridge imports `AbstractField` and `AbstractOrderedField` without modifying the existing
+`AbstractOrderedField` certificate. Downstream geometry, metric, and inner-product modules can keep
+using `OrderedFieldLawArgs`; field-specific consumers may opt into the bridge when they need
+`FieldLawArgs` or strict-positivity consequences.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `OrderedFieldFieldBridgeArgs` | explicit evidence package containing `FieldLawArgs` plus positive/nonzero, inverse, division, multiplication, and square-positivity laws |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `ordered_field_field_laws` | projects `FieldLawArgs` from the bridge package |
+| `ordered_field_nonzero_of_positive` | turns `0 < a` into field-level `Nonzero a` |
+| `ordered_field_inv_positive` | projects positivity of inverses |
+| `ordered_field_div_positive` | projects positivity of division from positive numerator and denominator |
+| `ordered_field_mul_pos` | projects strict positivity under multiplication |
+| `ordered_field_sq_pos_of_nonzero` | projects strict positivity of `sq a` from field-level nonzero evidence |
+
+The module introduces no axioms. Its construction evidence remains explicit, and existing
+`OrderedFieldLawArgs` theorem names stay in `AbstractOrderedField`.
+
+The field-theory route through `AbstractField`, `AbstractFieldHom`,
+`AbstractFieldIntegralDomain`, `AbstractFieldIdeal`, and `AbstractOrderedFieldFieldBridge` is
+complete as verified corpus staging. Public `npa-mathlib` materialization is deferred to a separate
+closure audit that checks import closure size, axiom policy, statement stability, and compatibility
+alias requirements.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

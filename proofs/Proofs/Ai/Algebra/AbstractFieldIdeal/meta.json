@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFieldIdeal",
+  "source": "Proofs/Ai/Algebra/AbstractFieldIdeal/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractFieldIdeal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a07f602abf3931807824e3eee0124ace191eea78883e51c11da783717bb4d928",
+  "certificate_file_sha256": "sha256:cfce6b1562ca40d8f3d25ac4d66dbae62476d2435bef2429d3d0c7644016338b",
+  "export_hash": "sha256:4660047aba1977b354394e27b69cfc3164ca6c7e7078457d091fdbe76bcb3232",
+  "axiom_report_hash": "sha256:2ee2d85444229be7c021456a50964e4d514b415b512b57ee6ff15c229acd5a70",
+  "certificate_hash": "sha256:5e98fe69ebd7f43cb5bf193285c075d1a764598fd451c5278977001951adfac4",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "FieldIdealZeroOrTop", "kind": "def" },
+    { "name": "FieldSimpleRingEvidence", "kind": "def" },
+    { "name": "FieldIdealLawArgs", "kind": "def" },
+    { "name": "MaximalIdealQuotientFieldArgs", "kind": "def" },
+    { "name": "field_ideal_zero_or_top", "kind": "theorem" },
+    { "name": "field_simple_ring_evidence", "kind": "theorem" },
+    { "name": "quotient_by_maximal_ideal_is_field", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

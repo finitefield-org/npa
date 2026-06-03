@@ -581,7 +581,7 @@ Evidence fixed on 2026-06-02:
   `https://github.com/finitefield-org/npa-mathlib`.
 - Repository visibility is `PUBLIC`; default branch is `main`.
 - Local activation root:
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib`.
+  `../npa-mathlib`.
 - Initial standalone commit:
   `987621ddb698c8d658a760bcc593f74cc66e6900`.
 - Package manifest declares package `npa-mathlib`, version `0.1.0`, and

@@ -18,7 +18,7 @@ audit are untrusted sidecars.
 Current package state:
 
 - Layer 3E has been materialized, committed, tagged, and pushed in
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib` as `npa-mathlib v0.1.14`.
+  `../npa-mathlib` as `npa-mathlib v0.1.14`.
 - The `npa-mathlib` release commit is
   `1a8dbdeb43da59d3b40f22b07d458b415e9783c0`.
 - The local ignored `v0.1.14` release-bundle tar hash is
@@ -229,7 +229,7 @@ Observed result:
 
 ```text
 built Proofs.Ai.Algebra.AbstractRing
-wrote /Users/kazuyoshitoshiya/ff/npa/proofs/generated/ai-theorem-index.json
+wrote proofs/generated/ai-theorem-index.json
 built Proofs.Ai.Algebra.AbstractRing (1 module(s) including import closure)
 ```
 
@@ -254,26 +254,26 @@ Planned downstream smoke theorem names:
 
 ## Positive Gates
 
-Run these gates in `/Users/kazuyoshitoshiya/ff/npa-mathlib` after
+Run these gates in `../npa-mathlib` after
 materialization:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 Run these downstream smoke gates:
 
 ```sh
-cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
-cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json
 ```
 
 ## Negative Package-Copy Checks
@@ -333,17 +333,17 @@ Positive gates passed:
 
 | Command | Status |
 | --- | --- |
-| `cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json` | passed |
-| `cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json` | passed, `package_verified`, `modules=40` |
-| `cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json` | passed |
-| `cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json` | passed |
-| `cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json` | passed |
-| `cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json` | passed |
-| `cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json` | passed, `package_verified`, `modules=3` |
-| `cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json` | passed |
+| `cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json` | passed |
+| `cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json` | passed |
+| `cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json` | passed, `package_verified`, `modules=40` |
+| `cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json` | passed |
+| `cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json` | passed |
+| `cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json` | passed |
+| `cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json` | passed |
+| `cargo run -q -p npa-cli -- package check --root ../npa-mathlib/fixtures/downstream-smoke --json` | passed |
+| `cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib/fixtures/downstream-smoke --check --json` | passed |
+| `cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib/fixtures/downstream-smoke --checker reference --json` | passed, `package_verified`, `modules=3` |
+| `cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib/fixtures/downstream-smoke --json` | passed |
 
 The package checker accepted the module-scoped declaration-name overlaps with
 `Mathlib.Algebra.Ring` and `Mathlib.Algebra.Square`. The downstream smoke
@@ -375,7 +375,7 @@ Local release artifact:
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `/Users/kazuyoshitoshiya/ff/npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.15-release-artifacts.tar.gz` | `sha256:027fa2b6571bda37e2f2702c7fccac046bf39693f80e222847d62b17252dbd82` |
+| `../npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.15-release-artifacts.tar.gz` | `sha256:027fa2b6571bda37e2f2702c7fccac046bf39693f80e222847d62b17252dbd82` |
 
 The release artifact includes `npa-package.toml`, public and vendored
 certificate bytes, `generated/package-lock.json`, `generated/axiom-report.json`,

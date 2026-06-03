@@ -29,7 +29,7 @@ Current public package state:
   - `Mathlib.Data.Nat.Basic`
   - `Mathlib.Core.Reduction`
 - The standalone namespace policy is
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib/docs/namespace-policy.md`.
+  `../npa-mathlib/docs/namespace-policy.md`.
 
 Layer 2B must add a small concrete geometry layer without changing the package
 split, registry assumptions, axiom policy, or proof trust boundary.
@@ -209,7 +209,7 @@ The materialized package/release version after `v0.1.2` is `v0.1.3`.
 
 ## Completed Materialization Steps
 
-These steps were completed in `/Users/kazuyoshitoshiya/ff/npa-mathlib`:
+These steps were completed in `../npa-mathlib`:
 
 1. Completed: added `Mathlib/Geometry/RightTriangle/` and
    `Mathlib/Geometry/Metric/` from the selected corpus sources.

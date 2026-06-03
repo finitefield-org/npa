@@ -12,7 +12,7 @@ isomorphism, CRT, geometry, and analysis routes out of this layer.
 Current intended package state:
 
 - Layer 3D-E has been materialized locally in the standalone repository
-  `/Users/kazuyoshitoshiya/ff/npa-mathlib` as `npa-mathlib v0.1.11`.
+  `../npa-mathlib` as `npa-mathlib v0.1.11`.
 - `v0.1.11` release publication, tag creation, and push are still pending.
   Layer 3D-F must not be published until the `v0.1.11` release-bundle evidence
   is reviewed and accepted.
@@ -234,7 +234,7 @@ Result:
 
 ```text
 built Proofs.Ai.Algebra.AbstractGroupThirdIso
-wrote /Users/kazuyoshitoshiya/ff/npa/proofs/generated/ai-theorem-index.json
+wrote proofs/generated/ai-theorem-index.json
 built Proofs.Ai.Algebra.AbstractGroupThirdIso (8 module(s) including import closure)
 ```
 
