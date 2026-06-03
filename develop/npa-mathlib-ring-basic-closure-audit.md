@@ -193,7 +193,7 @@ Corpus manifest hashes for `Proofs.Ai.Algebra.AbstractRing`:
 
 | Hash kind | Value |
 | --- | --- |
-| source hash | `sha256:37af595454630f02c434e510923320218158ab32d9d5da8fe84ecf576acc4a5c` |
+| source hash | `sha256:1a545c8cce7c0efe5f0c4754d63d5f846d055a329705397b3d5c95569c13dc71` |
 | certificate file hash | `sha256:e86d9cafaacdb1545c2d9131c332cfe9a185b609aa5d7aae20132a46cbfe9948` |
 | export hash | `sha256:d9ee6937c14ad1e94c85d5b4eb664022da239a794802a948601c207a0152f2ff` |
 | axiom report hash | `sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12` |
@@ -307,10 +307,11 @@ Public materialization hashes:
 | axiom report hash | `sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12` |
 | certificate hash | `sha256:9c1d44e6906a80b92a7439a2da9a80938940744d0802c544db51f5aa3aa4390f` |
 
-The public certificate file hash and certificate hash differ from the corpus
-hashes because the public module identity changed from
-`Proofs.Ai.Algebra.AbstractRing` to `Mathlib.Algebra.Ring.Basic`. The export
-and axiom-report hashes are unchanged.
+The public source sidecar is semantically identical to the corpus route but is
+stored without an extra trailing blank line. The public certificate file hash
+and certificate hash differ from the corpus hashes because the public module
+identity changed from `Proofs.Ai.Algebra.AbstractRing` to
+`Mathlib.Algebra.Ring.Basic`. The export and axiom-report hashes are unchanged.
 
 Downstream smoke module:
 
@@ -363,18 +364,18 @@ Generated sidecar hashes:
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `generated/publish-plan.json` | `sha256:361f46b2bf358be7a6e3be4853a2760a434c92c68420a4e38bdcad06e2e34ae1` |
-| internal publish plan hash | `sha256:8fbf5049b7db42cfa72efc8c2674234064d340790ed33b16714dcfb690f2608e` |
-| `generated/package-lock.json` | `sha256:e2666a9b3a986139d3034188a3b03ebad23a9ca40758188c00ed74ce1f9c6638` |
-| `generated/axiom-report.json` | `sha256:7e9f459783021fc174194ee0e2c1df60bf48c1110d2f6b1cd6523f4cc1b03c30` |
-| `generated/theorem-index.json` | `sha256:727d341d0a7965afc9447af795fca4bc9a6fd4879beb91e60e53bf5a38bb4386` |
+| `generated/publish-plan.json` | `sha256:7767e0cc45883c378a0809b2cbd5c29b023305684111396b2f1ba496dffd66d5` |
+| internal publish plan hash | `sha256:6626f3a256f56b6d732296691d07cf75dac92b2fbe5081f7b530e6ad7f782451` |
+| `generated/package-lock.json` | `sha256:75346f965c202c5a438b363314ccaafb444753667ccf645a1f822f3830eb98ba` |
+| `generated/axiom-report.json` | `sha256:15bb36c37433f739ff65b1a5e2289ad50148739c4e4297f982b8077d0375c0d8` |
+| `generated/theorem-index.json` | `sha256:f4d63a27a3eec9acc357f05abb87b9d9a86e527d262ec09d86d6cdd38486f449` |
 | `fixtures/downstream-smoke/generated/package-lock.json` | `sha256:dae8d51015728fc39f9100bd7b375ba4c23da4bca1c5211e4149cd21a0f68fa4` |
 
 Local release artifact:
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `/Users/kazuyoshitoshiya/ff/npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.15-release-artifacts.tar.gz` | `sha256:fdcf9b89569cde8348294df202ad22e7149a01fa40b8329d04e4a96427e12e13` |
+| `/Users/kazuyoshitoshiya/ff/npa-mathlib/target/release-artifacts/npa-mathlib-v0.1.15-release-artifacts.tar.gz` | `sha256:027fa2b6571bda37e2f2702c7fccac046bf39693f80e222847d62b17252dbd82` |
 
 The release artifact includes `npa-package.toml`, public and vendored
 certificate bytes, `generated/package-lock.json`, `generated/axiom-report.json`,
