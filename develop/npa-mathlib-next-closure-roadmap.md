@@ -1,10 +1,10 @@
 # npa-mathlib Next Closure Roadmap
 
-Date: 2026-06-03
+Date: 2026-06-04
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.26` analysis inverse-function closure. It is a planning
+`v0.1.27` analysis implicit-function closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -15,12 +15,12 @@ untrusted sidecars.
 ## Current Baseline
 
 The standalone `npa-mathlib` package has materialized through the analysis
-inverse-function closure as package version `0.1.26`.
+implicit-function closure as package version `0.1.27`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-analysis-inverse-function-closure-audit.md
+develop/npa-mathlib-analysis-implicit-function-closure-audit.md
 ```
 
 The currently public package includes:
@@ -65,6 +65,8 @@ Mathlib.Analysis.LinearMap
 Mathlib.Analysis.Calculus.Derivative
 Mathlib.Analysis.FixedPoint.Banach
 Mathlib.Analysis.Calculus.InverseFunction
+Mathlib.Analysis.Calculus.ImplicitFunction.Phi
+Mathlib.Analysis.Calculus.ImplicitFunction
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.Affine
@@ -180,7 +182,15 @@ The `Analysis Inverse Function Closure` item from this queue was completed as
 develop/npa-mathlib-analysis-inverse-function-closure-audit.md
 ```
 
-The next open item is the analysis implicit-function closure.
+The `Analysis Implicit Function Closure` item from this queue was completed as
+`npa-mathlib v0.1.27`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-implicit-function-closure-audit.md
+```
+
+No high-priority analysis closure remains open in the current proof-corpus
+route. Lower-priority seed closures remain below.
 
 ### Logic Iff Closure
 
@@ -750,6 +760,54 @@ Closure unit verdict:
   `quantitative_inverse_function_from_args` source-free from vendored
   certificates.
 
+### Analysis Implicit Function Closure
+
+Status: completed in `npa-mathlib v0.1.27`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-implicit-function-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractImplicitPhi
+Proofs.Ai.Analysis.AbstractImplicitFunction
+```
+
+Public modules:
+
+```text
+Mathlib.Analysis.Calculus.ImplicitFunction.Phi
+Mathlib.Analysis.Calculus.ImplicitFunction
+```
+
+Public surface audited:
+
+- `ImplicitPhiCoord`, `ImplicitPhi`, `ImplicitPhiDerivativeMap`,
+  `ImplicitPhiDerivativeArgs`, and `ImplicitPhiIsoArgs`.
+- `ImplicitTargetPoint`, `ImplicitFunction`, `ImplicitGraphPoint`,
+  `ImplicitPhiLocalInverseLaws`, `ImplicitFunctionExtractionArgs`,
+  `ImplicitFunctionDerivativeArgs`, `ImplicitFunctionTheoremEvidence`, and
+  `ImplicitFunctionDerivativeEvidence`.
+- Theorem surfaces including `implicit_phi_derivative_from_args`,
+  `implicit_function_theorem`, and `implicit_function_derivative_theorem`.
+
+Closure unit verdict:
+
+- The two corpus modules are a valid closure unit because the final
+  implicit-function module imports the Phi helper and both modules depend only
+  on already public vector-space, normed-space, linear-map, and derivative
+  foundations.
+- The public route uses `Mathlib.Analysis.Calculus.ImplicitFunction.Phi` for
+  the auxiliary Phi surface and `Mathlib.Analysis.Calculus.ImplicitFunction`
+  for the final theorem evidence surface.
+- Downstream smoke consumes `implicit_phi_derivative_from_args`,
+  `implicit_function_theorem`, and `implicit_function_derivative_theorem`
+  source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -779,47 +837,16 @@ older queue are:
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
   vector-space foundation, inner-product, geometry Pythagorean, analysis
   metric topology, analysis normed-space, analysis linear-map, analysis
-  derivative, analysis fixed-point, and analysis inverse-function closures are
-  complete. A separate public ring-homomorphism namespace should wait for
+  derivative, analysis fixed-point, analysis inverse-function, and analysis
+  implicit-function closures are complete. A separate public ring-homomorphism
+  namespace should wait for
   either a homomorphism-only corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Implicit Function Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-implicit-function-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractImplicitPhi
-Proofs.Ai.Analysis.AbstractImplicitFunction
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Analysis.Calculus.ImplicitFunction.Phi
-Mathlib.Analysis.Calculus.ImplicitFunction
-```
-
-Why this closure matters:
-
-- It adds the auxiliary implicit `Phi` map and the final implicit-function
-  theorem evidence surface after derivative and linear-map APIs are public.
-
-Audit focus:
-
-- Keep `ImplicitPhi` and `ImplicitFunction` in one closure because the final
-  module imports `AbstractImplicitPhi`.
-- Confirm public imports from vector-space, normed-space, linear-map, and
-  derivative closures.
-- Add downstream smoke for `implicit_phi_derivative_from_args`,
-  `implicit_function_theorem`, and `implicit_function_derivative_theorem`.
+No high-priority closure audit is currently queued. The remaining candidates
+below are lower-priority seed closures that need additional namespace and
+foundation review before materialization.
 
 ## Lower Priority Seed Closures
 
