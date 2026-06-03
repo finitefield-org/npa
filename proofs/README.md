@@ -173,6 +173,9 @@ Current bundles:
   containment, quotient round-trip, and subgroup-side saturation.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
+- `Proofs/Ai/Algebra/AbstractField/`: abstract field foundation over `AbstractRing`, adding
+  reusable nonzero, inverse-law, and derived-division theorem targets without making division a
+  core primitive.
 - `Proofs/Ai/Algebra/AbstractRingFirstIsoBase/`: ring homomorphism law package, additive-group
   bridge, image closure, and kernel quotient multiplication well-definedness for the ring first
   isomorphism route.
@@ -1286,8 +1289,9 @@ Implemented definitions / API declarations, not proof targets:
 
 The checked theorem targets take the corresponding law as an explicit argument and return it at the
 requested variables. This keeps the corpus certificate-first and avoids adding module-level
-unchecked ring axioms. `mul_left_cancel_nonzero` remains deferred until a nonzero predicate is
-introduced by a later ordered-field layer.
+unchecked ring axioms. Multiplicative nonzero cancellation remains outside `AbstractRing`; the
+field route introduces the reusable `Nonzero` API first, and later field-calculation modules derive
+the cancellation targets with explicit nonzero evidence.
 
 Theorem targets:
 
@@ -1305,6 +1309,32 @@ Theorem targets:
 | `sub_zero`, `zero_sub` | subtraction by zero and from zero |
 | `sub_add_cancel`, `add_sub_cancel` | basic subtraction/addition cancellation lemmas |
 | `sub_add_sub_cancel` | `(a - c) - (b - c) = a - b`, scalar analogue of vector displacement cancellation |
+
+#### `Proofs.Ai.Algebra.AbstractField`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldFalse`, `FieldNot` | local Church-encoded falsehood and negation used only to keep `Nonzero` Prop-level |
+| `Nonzero` | reusable predicate `a != 0` over an explicit carrier and zero element |
+| `div` | derived operation `a / b := a * inv b`, not a core primitive or law-package field |
+| `FieldLawArgs` | Church-encoded field law package separating `RingLawArgs` from field-specific inverse and nonzero laws |
+
+The foundation imports `AbstractRing` and reuses its `RingLawArgs` instead of restating ring laws.
+The division API is deliberately definitional: `field_div_eq_mul_inv` closes by reflexivity after
+unfolding `div`, so later modules can search for a theorem name without trusting a new primitive
+operation.
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_ring_laws` | projects `RingLawArgs` from `FieldLawArgs` for downstream abstract-ring theorem reuse |
+| `field_zero_ne_one` | projects `Nonzero one`, the field-level `0 != 1` witness |
+| `field_inv_mul_cancel` | `a != 0 -> inv a * a = 1` from the field law package |
+| `field_mul_inv_cancel` | `a != 0 -> a * inv a = 1` from the field law package |
+| `field_div_eq_mul_inv` | certificate-backed definitional equality for derived division |
 
 #### `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
 

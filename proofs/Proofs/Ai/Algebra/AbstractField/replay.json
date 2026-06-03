@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractField",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FieldFalse",
+      "source_kind": "explicit_def_value",
+      "term": "forall (P : Prop), P"
+    },
+    {
+      "declaration": "FieldNot",
+      "source_kind": "explicit_def_value",
+      "term": "fun P => forall (p : P), FieldFalse"
+    },
+    {
+      "declaration": "Nonzero",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun a => FieldNot (@Eq.{u} Scalar a zero)"
+    },
+    {
+      "declaration": "div",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun mul => fun inv => fun a => fun b => mul a (inv b)"
+    },
+    {
+      "declaration": "FieldLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => forall (P : Prop), forall (mk : forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (zero_ne_one_law : @Nonzero.{u} Scalar zero one), forall (inv_mul_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one), forall (mul_inv_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one), P), P"
+    },
+    {
+      "declaration": "field_ring_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => field_args (@RingLawArgs.{u} Scalar zero one add neg sub mul) (fun (ring_laws_arg : @RingLawArgs.{u} Scalar zero one add neg sub mul) => fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => ring_laws_arg)"
+    },
+    {
+      "declaration": "field_zero_ne_one",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => field_args (@Nonzero.{u} Scalar zero one) (fun (ring_laws_arg : @RingLawArgs.{u} Scalar zero one add neg sub mul) => fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => zero_ne_one_arg)"
+    },
+    {
+      "declaration": "field_inv_mul_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => fun a => fun ha => field_args (@Eq.{u} Scalar (mul (inv a) a) one) (fun (ring_laws_arg : @RingLawArgs.{u} Scalar zero one add neg sub mul) => fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => inv_mul_cancel_arg a ha)"
+    },
+    {
+      "declaration": "field_mul_inv_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => fun a => fun ha => field_args (@Eq.{u} Scalar (mul a (inv a)) one) (fun (ring_laws_arg : @RingLawArgs.{u} Scalar zero one add neg sub mul) => fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => mul_inv_cancel_arg a ha)"
+    },
+    {
+      "declaration": "field_div_eq_mul_inv",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun mul => fun inv => fun a => fun b => @Eq.refl.{u} Scalar (mul a (inv b))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractField/certificate.npcert"
+  }
+}

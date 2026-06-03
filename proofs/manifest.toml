@@ -725,6 +725,24 @@ theorems = ["sub_eq_add_neg", "add_assoc", "add_comm", "add_zero", "zero_add", "
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractField"
+source = "Proofs/Ai/Algebra/AbstractField/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractField/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractField/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractField/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8cc831151033766959c13dc06bd3004cd20ff8d66d91af3cd142241643cae529"
+certificate_file_sha256 = "sha256:cf429ca71a8bdab68a087fd26810f4ad02e4cf01ba31a50a62e56ca1f2396aeb"
+export_hash = "sha256:7db645527678623c9ea3792ec231452de6ee29ee0c231ac2f7f9c8b6c24a6203"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:861ae2f1adabcf7b5c351cf1bc220be5e610435f444d45b701566e9e64eff39f"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"]
+definitions = ["FieldFalse", "FieldNot", "Nonzero", "div", "FieldLawArgs"]
+theorems = ["field_ring_laws", "field_zero_ne_one", "field_inv_mul_cancel", "field_mul_inv_cancel", "field_div_eq_mul_inv"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractRingFirstIsoBase"
 source = "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/certificate.npcert"

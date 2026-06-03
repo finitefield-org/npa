@@ -138,6 +138,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE,
     &ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE,
     &ABSTRACT_RING_MODULE,
+    &ABSTRACT_FIELD_MODULE,
     &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
@@ -1046,6 +1047,19 @@ const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractField",
+    source_path: "Proofs/Ai/Algebra/AbstractField/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractField/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractField/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractField/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_RING_FIRST_ISO_BASE_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
     source_path: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/source.npa",
@@ -1473,6 +1487,37 @@ macro_rules! abstract_ring_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => ",
             $tail
         )
     };
@@ -3045,6 +3090,22 @@ macro_rules! ring_args_elim {
             "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
             "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
             "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! field_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "field_args (",
+            $target,
+            ") ",
+            "(fun (ring_laws_arg : @RingLawArgs.{u} Scalar zero one add neg sub mul) => ",
+            "fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => ",
+            "fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => ",
+            "fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => ",
             $($tail)+,
             ")"
         )
@@ -14289,6 +14350,127 @@ const ABSTRACT_RING_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldFalse",
+        universe_params: &[],
+        ty: "Prop",
+        value: "forall (P : Prop), P",
+    },
+    DefinitionArtifact {
+        name: "FieldNot",
+        universe_params: &[],
+        ty: "forall (P : Prop), Prop",
+        value: "fun P => forall (p : P), FieldFalse",
+    },
+    DefinitionArtifact {
+        name: "Nonzero",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (a : Scalar), ",
+            "Prop"
+        ),
+        value: "fun Scalar => fun zero => fun a => FieldNot (@Eq.{u} Scalar a zero)",
+    },
+    DefinitionArtifact {
+        name: "div",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "Scalar"
+        ),
+        value: "fun Scalar => fun mul => fun inv => fun a => fun b => mul a (inv b)",
+    },
+    DefinitionArtifact {
+        name: "FieldLawArgs",
+        universe_params: &["u"],
+        ty: abstract_field_params!("Prop"),
+        value: abstract_field_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), ",
+            "forall (zero_ne_one_law : @Nonzero.{u} Scalar zero one), ",
+            "forall (inv_mul_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one), ",
+            "forall (mul_inv_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_ring_laws",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @RingLawArgs.{u} Scalar zero one add neg sub mul"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            field_args_elim!(
+                "@RingLawArgs.{u} Scalar zero one add neg sub mul",
+                "ring_laws_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_zero_ne_one",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @Nonzero.{u} Scalar zero one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            field_args_elim!("@Nonzero.{u} Scalar zero one", "zero_ne_one_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "field_inv_mul_cancel",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun ha => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (mul (inv a) a) one",
+                "inv_mul_cancel_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_inv_cancel",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun ha => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (mul a (inv a)) one",
+                "mul_inv_cancel_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_div_eq_mul_inv",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "@Eq.{u} Scalar (@div.{u} Scalar mul inv a b) (mul a (inv b))"
+        ),
+        proof: concat!(
+            "fun Scalar => fun mul => fun inv => fun a => fun b => ",
+            "@Eq.refl.{u} Scalar (mul a (inv b))"
+        ),
+    },
+];
+
 const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "RingHomLawArgs",
@@ -20288,6 +20470,14 @@ fn run_full() -> Result<(), String> {
         &abstract_ring_imports,
         &abstract_ring_source_interfaces,
     )?;
+    let abstract_field_imports = vec![eq_import.clone(), abstract_ring.verified_module.clone()];
+    let abstract_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
+    let _abstract_field = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_MODULE,
+        &abstract_field_imports,
+        &abstract_field_source_interfaces,
+    )?;
     let abstract_ring_first_iso_base_imports = vec![
         eq_import.clone(),
         eq_reasoning.verified_module.clone(),
@@ -21433,7 +21623,11 @@ fn module_source(config: &ModuleArtifact) -> String {
 }
 
 fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
-    if config.module == ABSTRACT_ORDERED_FIELD_MODULE.module {
+    if config.module == ABSTRACT_FIELD_MODULE.module {
+        // Eq is verified as a transitive AbstractRing dependency; importing it directly here
+        // duplicates the kernel Eq declaration during certificate handoff.
+        &["Proofs.Ai.Algebra.AbstractRing"]
+    } else if config.module == ABSTRACT_ORDERED_FIELD_MODULE.module {
         // Eq is verified as a transitive AbstractRing dependency; importing it directly here
         // duplicates the kernel Eq declaration during certificate handoff.
         &["Proofs.Ai.Algebra.AbstractRing"]
