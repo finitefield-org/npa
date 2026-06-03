@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.19` inner-product closure. It is a planning
+`v0.1.20` geometry Pythagorean closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -14,13 +14,13 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through the
-inner-product closure as package version `0.1.19`.
+The standalone `npa-mathlib` package has materialized through the geometry
+Pythagorean closure as package version `0.1.20`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-inner-product-closure-audit.md
+develop/npa-mathlib-geometry-pythagorean-closure-audit.md
 ```
 
 The currently public package includes:
@@ -61,6 +61,12 @@ Mathlib.Algebra.OrderedField.ScalarIdentities
 Mathlib.LinearAlgebra.VectorSpace
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
+Mathlib.Geometry.Affine
+Mathlib.Geometry.Affine.Derived
+Mathlib.Geometry.RightTriangle.Abstract
+Mathlib.Geometry.RightTriangle.Derived
+Mathlib.Geometry.Metric.Abstract
+Mathlib.Geometry.Pythagorean
 Mathlib.Geometry.RightTriangle
 Mathlib.Geometry.Metric
 Mathlib.Vector.Basic
@@ -119,7 +125,14 @@ The `Inner Product Closure` item from this queue was completed as
 develop/npa-mathlib-inner-product-closure-audit.md
 ```
 
-The next open item is the geometry Pythagorean closure.
+The `Geometry Pythagorean Closure` item from this queue was completed as
+`npa-mathlib v0.1.20`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-geometry-pythagorean-closure-audit.md
+```
+
+The next open item is the analysis metric topology closure.
 
 ### Logic Iff Closure
 
@@ -368,6 +381,62 @@ Closure unit verdict:
   `polarization_identity`, and `cauchy_schwarz_from_law_packages` source-free
   from vendored certificates.
 
+### Geometry Pythagorean Closure
+
+Status: completed in `npa-mathlib v0.1.20`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-geometry-pythagorean-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Geometry.Affine
+Proofs.Ai.Geometry.AffineDerive
+Proofs.Ai.Geometry.AbstractRightTriangle
+Proofs.Ai.Geometry.AbstractRightTriangleDerive
+Proofs.Ai.Geometry.AbstractMetric
+Proofs.Ai.Geometry.Pythagorean
+```
+
+Public modules:
+
+```text
+Mathlib.Geometry.Affine
+Mathlib.Geometry.Affine.Derived
+Mathlib.Geometry.RightTriangle.Abstract
+Mathlib.Geometry.RightTriangle.Derived
+Mathlib.Geometry.Metric.Abstract
+Mathlib.Geometry.Pythagorean
+```
+
+Public surface audited:
+
+- Abstract affine point/displacement facts including `Point`, `disp`,
+  `distSqPoints`, `AffineLawArgs`, `dist_sq_symm`, and
+  `dist_sq_zero_iff_eq`.
+- Abstract right-triangle facts including `Perp`, `RightTriangle`,
+  `right_triangle_legs_perp`, `pythagorean_distance_sq_general`,
+  `law_of_cosines_general`, and `median_to_hypotenuse_general`.
+- Metric and Pythagorean theorem facts including `dist`,
+  `MetricSpaceLawArgs`, `pythagorean_distance_general`,
+  `pythagorean_theorem_dist_sq`, `pythagorean_converse_sq`, and
+  `pythagorean_theorem_api_alias`.
+
+Closure unit verdict:
+
+- The six corpus modules were kept in one release because
+  `Proofs.Ai.Geometry.Pythagorean` imports the other five geometry modules and
+  the final public value is the Pythagorean/law-of-cosines theorem surface.
+- The abstract route is separate from the existing concrete
+  `Mathlib.Geometry.RightTriangle` and `Mathlib.Geometry.Metric` modules.
+- Downstream smoke consumes `pythagorean_distance_general`,
+  `pythagorean_theorem_dist_sq`, and `pythagorean_theorem_api_alias`
+  source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -395,78 +464,13 @@ older queue are:
   The previous "analysis foundation" group was useful as a roadmap cluster but
   too large to be a default release closure.
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
-  vector-space foundation, and inner-product closures are complete. A separate public
-  ring-homomorphism namespace should wait for either a homomorphism-only corpus
-  module or an audited alias layer.
+  vector-space foundation, inner-product, and geometry Pythagorean closures are
+  complete. A separate public ring-homomorphism namespace should wait for
+  either a homomorphism-only corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Geometry Pythagorean Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-geometry-pythagorean-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Geometry.Affine
-Proofs.Ai.Geometry.AffineDerive
-Proofs.Ai.Geometry.AbstractRightTriangle
-Proofs.Ai.Geometry.AbstractRightTriangleDerive
-Proofs.Ai.Geometry.AbstractMetric
-Proofs.Ai.Geometry.Pythagorean
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Geometry.Affine
-Mathlib.Geometry.Affine.Derived
-Mathlib.Geometry.RightTriangle.Abstract
-Mathlib.Geometry.RightTriangle.Derived
-Mathlib.Geometry.Metric.Abstract
-Mathlib.Geometry.Pythagorean
-```
-
-Why this closure matters:
-
-- It upgrades the currently public concrete geometry layer into an abstract
-  law-package geometry route.
-- It should finally make `Mathlib.Geometry.Pythagorean` publishable without
-  hiding abstract algebra/vector dependencies.
-
-Closure unit verdict:
-
-- This is a valid final-theorem closure after inner product is public because
-  `Proofs.Ai.Geometry.Pythagorean` imports the other five geometry modules.
-- If the materialization diff is too large, the audit should split it into:
-
-```text
-Geometry Affine/RightTriangle Foundation:
-  Proofs.Ai.Geometry.Affine
-  Proofs.Ai.Geometry.AffineDerive
-  Proofs.Ai.Geometry.AbstractRightTriangle
-  Proofs.Ai.Geometry.AbstractRightTriangleDerive
-
-Geometry Metric/Pythagorean Final:
-  Proofs.Ai.Geometry.AbstractMetric
-  Proofs.Ai.Geometry.Pythagorean
-```
-
-Audit focus:
-
-- Do not materialize this before ordered algebra and inner-product routes are
-  public.
-- Decide whether existing `Mathlib.Geometry.RightTriangle` and
-  `Mathlib.Geometry.Metric` remain concrete modules while abstract routes get
-  `.Abstract` suffixes.
-- Add downstream smoke that consumes `pythagorean_distance_general` or the
-  final `Pythagorean` theorem surface source-free.
-
-### 2. Analysis Metric Topology Closure
+### 1. Analysis Metric Topology Closure
 
 Recommended audit file:
 
@@ -500,7 +504,7 @@ Audit focus:
 - Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
   `local_unique_apply`.
 
-### 3. Analysis Normed Space Closure
+### 2. Analysis Normed Space Closure
 
 Recommended audit file:
 
@@ -531,7 +535,7 @@ Audit focus:
 - Add downstream smoke for `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args`.
 
-### 4. Analysis Linear Map Closure
+### 3. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -563,7 +567,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 5. Analysis Derivative Closure
+### 4. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -595,7 +599,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 6. Analysis Fixed Point Closure
+### 5. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -626,7 +630,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 7. Analysis Inverse Function Closure
+### 6. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -658,7 +662,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 8. Analysis Implicit Function Closure
+### 7. Analysis Implicit Function Closure
 
 Recommended audit file:
 
