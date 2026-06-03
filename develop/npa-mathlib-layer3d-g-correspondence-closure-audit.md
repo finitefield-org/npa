@@ -200,9 +200,10 @@ release-bundle certificate bytes for the actual closure:
 - `Mathlib.Algebra.Group.Correspondence`
 - `Mathlib.Algebra.Group.Correspondence.Ordered`
 
-The downstream theorem should consume `correspondence_order_evidence`, not only
-`correspondence_theorem_evidence` or a helper lemma, so the smoke fixture proves
-the order-aware final evidence route is source-free importable.
+The downstream smoke fixture should consume both
+`correspondence_theorem_evidence` and `correspondence_order_evidence`, not only
+a helper lemma, so the smoke fixture proves the root correspondence route and
+the order-aware final evidence route are source-free importable.
 
 ## Deferred Candidates
 
@@ -356,8 +357,74 @@ The future materialization step must:
   plan, and release-bundle artifacts;
 - update namespace policy and README allowlists for the four new public
   modules;
-- update downstream smoke to consume `correspondence_order_evidence`;
+- update downstream smoke to consume `correspondence_theorem_evidence` and
+  `correspondence_order_evidence`;
 - run positive package gates, source-free reference verification, hash checks,
   axiom-report checks, index checks, and publish-plan checks; and
 - run negative package-copy checks for export hash mismatch, certificate hash
   mismatch, certificate decode failure, and stale package lock/version.
+
+## Materialization Result
+
+Layer 3D-G was materialized in `/Users/kazuyoshitoshiya/ff/npa-mathlib` as
+package version `0.1.13` with the four selected public modules. The package
+manifest, package lock, axiom report, theorem index, publish plan, namespace
+policy, README, and downstream smoke fixture were updated.
+
+The materialized public module hashes are:
+
+| Public module | Certificate file hash | Export hash | Axiom report hash | Certificate hash |
+| --- | --- | --- | --- | --- |
+| `Mathlib.Algebra.Group.Correspondence.Basic` | `sha256:dace40eccfee78cce71f880507e76ddb8a5a11d4872b070e7abbea999bb0544c` | `sha256:6a457720e4aef4102591fab03c2d50b9748b06bff9e7fe635dc8e30ae63b1c9a` | `sha256:a1c7dff2e43196d9ed0f707b49ddcb949d8c3f3c7b3a85369478372380820393` | `sha256:17d611fd3212bf953d900f1acbac0ae2403eecdd436e6116c6257238b43e1ec5` |
+| `Mathlib.Algebra.Group.Correspondence.Order` | `sha256:b24d4155ae756178e124c6d600821947a3f05a53b2e69106157ee35516f44bb1` | `sha256:343f663b129a1ecdfddc751614f5471b9256fb48567bd600e8ea7300b737fda8` | `sha256:930e872459fa0a237548e58d011ab133dca95a0d4dce5979f68cb3fe009ce914` | `sha256:aaeddce85ffe318f8ce637974e0011ad562148c5342fd28fee7140e80b19f20e` |
+| `Mathlib.Algebra.Group.Correspondence` | `sha256:0e4cd4a9b306a3faa97f56ba2cb034fedb0c12bd03151b78159122c0e887a2d2` | `sha256:53fd29e96f6e6f11234b9771a415d02b5958826424f22b99261710fe4d3051ea` | `sha256:f5d781dcd1af03f4c02e2c247ae1bcca0de8eb1b5bfae9b9b3803bc323f2b936` | `sha256:d670ec4a6223d1002a5ebad83f804b4835a67bda7f4f5055ea5cc99172a09776` |
+| `Mathlib.Algebra.Group.Correspondence.Ordered` | `sha256:e7095005a7709c8107ba2d3bf813392201597eea592aa0fa8da2a039a0c21af7` | `sha256:c265cf2dd797fee3682500227e12667debe58d472406723f89ceb8c47f01801b` | `sha256:48fad99b017e564eae3a94ad24d12f5a3572af147ee049749faf426445d75ddf` | `sha256:38cf43f485f7480e9674983644dd3d5572f64c911be1c569c116215dea9223ad` |
+
+The downstream smoke fixture now checks both public evidence routes:
+
+```text
+Downstream.GroupCorrespondence::correspondence_theorem_evidence_passthrough
+Downstream.GroupCorrespondence::correspondence_order_evidence_passthrough
+```
+
+The downstream local module hashes are:
+
+| Module | Source hash | Certificate file hash | Export hash | Axiom report hash | Certificate hash |
+| --- | --- | --- | --- | --- | --- |
+| `Downstream.GroupCorrespondence` | `sha256:06339f5e9149a25fa701b13a800f31957218c757fa3a38a7d568235097847923` | `sha256:3bce2b85ae2de5fcd64ec8c64cc6ab14ed8192bca6a81efaed86f7764598996c` | `sha256:915791bb3488a57fd02b2fa3e55ed83955930bfc1fbd0f57dc85406729c2e842` | `sha256:62a2039f05232dfc414b4bcafacadbe41a666c398485458f0767efc9f600242b` | `sha256:2fdfc7501868c7405bb6476dfe94ffad5ae57075d74249eb49fc7437ad120002` |
+
+The release artifact was generated locally:
+
+```text
+target/release-artifacts/npa-mathlib-v0.1.13-release-artifacts.tar.gz
+sha256:88d1ef15907dc65f19c175cb2eabd69168355c8f236218f0e6b498e11737e0b9
+```
+
+The generated publish-plan hash is:
+
+```text
+sha256:3dd2278931e045c1573ba8c7b3f06783a39fad65f741320a39bc592b7cb10e35
+```
+
+Positive verification passed:
+
+```sh
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --checker reference --json
+cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib/fixtures/downstream-smoke --json
+```
+
+Negative package-copy checks rejected the expected failure modes:
+
+- `export_hash_mismatch`
+- `certificate_hash_mismatch`
+- `certificate_decode_failed`
+- `package_lock_stale`

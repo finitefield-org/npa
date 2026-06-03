@@ -1,0 +1,4 @@
+interface:
+  display_name: "Closure Audit"
+  short_description: "Audit and materialize npa-mathlib closures"
+  default_prompt: "Use $closure-audit to audit a proof-corpus theorem closure and materialize it into npa-mathlib."

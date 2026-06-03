@@ -36,6 +36,7 @@ in [docs/](../docs/README.md).
 - [Standalone Repository Activation](npa-standalone-repo-activation.md)
 - [Registry Readiness](registry-readiness.md)
 - [NPA Mathlib Public Release Plan](npa-mathlib-public-release-plan.md)
+- [npa-mathlib Next Closure Roadmap](npa-mathlib-next-closure-roadmap.md)
 - [npa-mathlib Layer 1 Closure Audit](npa-mathlib-layer1-closure-audit.md)
 - [npa-mathlib Layer 2A Closure Audit](npa-mathlib-layer2a-closure-audit.md)
 - [npa-mathlib Layer 2B Closure Audit](npa-mathlib-layer2b-closure-audit.md)
