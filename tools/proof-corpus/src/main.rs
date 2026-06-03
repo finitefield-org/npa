@@ -17,10 +17,7 @@ const PROOF_CORPUS_LICENSE: &str = "Apache-2.0";
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
 const NPA_STD_PACKAGE: &str = "npa-std";
 const NPA_STD_VERSION: &str = "0.1.0";
-// PCT-05 defines this disk model before PCT-06 wires cache lookup into verification.
-#[allow(dead_code)]
 const VERIFIED_CACHE_SCHEMA: &str = "npa-proof-corpus.verified-cache.v0.1";
-#[allow(dead_code)]
 const VERIFIED_CACHE_LAYOUT_DIR: &str = "target/npa-proof-cache/verified-v0.1";
 const EXTERNAL_STD_IMPORT_PLANS: &[ExternalImportPlan] = &[
     ExternalImportPlan {
@@ -178,12 +175,13 @@ const MODULES: &[&ModuleArtifact] = &[
     &PYTHAGOREAN_MODULE,
 ];
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct VerifyOptions {
     modules: Vec<String>,
     changed_only: bool,
     shard: Option<Shard>,
     failures_out: Option<PathBuf>,
+    verified_cache: VerifiedCacheMode,
 }
 
 #[derive(Default)]
@@ -192,7 +190,7 @@ struct BuildOptions {
     failures_out: Option<PathBuf>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct Shard {
     index: usize,
     total: usize,
@@ -201,6 +199,14 @@ struct Shard {
 struct VerifyFailure {
     module: String,
     error: String,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum VerifiedCacheMode {
+    #[default]
+    Off,
+    Authoring,
+    ReadThrough,
 }
 
 #[derive(Clone, Debug)]
@@ -229,6 +235,13 @@ struct VerifiedCacheImportIdentity {
 }
 
 #[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct VerifiedCacheDependencyIdentity {
+    module: String,
+    certificate_file_hash: String,
+}
+
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct VerifiedCacheKeyInput {
     schema: String,
@@ -241,6 +254,7 @@ struct VerifiedCacheKeyInput {
     certificate_hash: String,
     certificate_file_hash: String,
     direct_imports: Vec<VerifiedCacheImportIdentity>,
+    import_closure_certificate_file_hashes: Vec<VerifiedCacheDependencyIdentity>,
     axiom_policy_fingerprint: String,
     enabled_core_features: Vec<String>,
 }
@@ -263,6 +277,21 @@ struct VerifiedCacheEntry {
 enum VerifiedCacheSchemaStatus {
     Current,
     Miss,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum VerifiedCacheLookupStatus {
+    Hit,
+    Miss,
+    SchemaMiss,
+    Stale,
+}
+
+#[derive(Clone, Debug)]
+struct VerifiedCacheLookup {
+    status: VerifiedCacheLookupStatus,
+    path: PathBuf,
+    source: Option<String>,
 }
 
 struct VerifiedCorpusCache<'a> {
@@ -19164,19 +19193,21 @@ usage:
   npa-proof-corpus --build-modules MODULE ... [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --build-modules-file PATH [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --promote-plan CORPUS_MODULE --mathlib-root PATH --to-module Mathlib.* --out PATH
-  npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH]
-  npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH]
-  npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH]
+  npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
+  npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
+  npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
   npa-proof-corpus --write-ai-index [PATH]
   npa-proof-corpus --write-replay MODULE::DECL PATH
 
 INDEX/TOTAL is zero-based, for example --shard 0/4.
+--verified-cache defaults to off. authoring and read-through are only for --module or --changed-only.
 "
     .to_owned()
 }
 
 fn parse_verify_options(args: &[String]) -> Result<VerifyOptions, String> {
     let mut options = VerifyOptions::default();
+    let mut verified_cache_seen = false;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -19202,10 +19233,39 @@ fn parse_verify_options(args: &[String]) -> Result<VerifyOptions, String> {
                 options.failures_out = Some(path);
                 index += 2;
             }
+            "--verified-cache" => {
+                if verified_cache_seen {
+                    return Err("duplicate --verified-cache option".to_owned());
+                }
+                let mode = args.get(index + 1).ok_or_else(usage)?;
+                options.verified_cache = parse_verified_cache_mode(mode)?;
+                verified_cache_seen = true;
+                index += 2;
+            }
             _ => return Err(usage()),
         }
     }
+    if options.verified_cache != VerifiedCacheMode::Off
+        && options.modules.is_empty()
+        && !options.changed_only
+    {
+        return Err(
+            "--verified-cache authoring/read-through is only supported with --module or --changed-only"
+                .to_owned(),
+        );
+    }
     Ok(options)
+}
+
+fn parse_verified_cache_mode(value: &str) -> Result<VerifiedCacheMode, String> {
+    match value {
+        "off" => Ok(VerifiedCacheMode::Off),
+        "authoring" => Ok(VerifiedCacheMode::Authoring),
+        "read-through" => Ok(VerifiedCacheMode::ReadThrough),
+        _ => Err(format!(
+            "invalid --verified-cache mode {value:?}; expected off, authoring, or read-through"
+        )),
+    }
 }
 
 fn parse_shard(value: &str) -> Result<Shard, String> {
@@ -19224,6 +19284,96 @@ fn parse_shard(value: &str) -> Result<Shard, String> {
         ));
     }
     Ok(Shard { index, total })
+}
+
+impl VerifiedCacheMode {
+    fn as_str(self) -> &'static str {
+        match self {
+            VerifiedCacheMode::Off => "off",
+            VerifiedCacheMode::Authoring => "authoring",
+            VerifiedCacheMode::ReadThrough => "read-through",
+        }
+    }
+}
+
+impl VerifiedCacheLookupStatus {
+    fn as_str(self) -> &'static str {
+        match self {
+            VerifiedCacheLookupStatus::Hit => "hit",
+            VerifiedCacheLookupStatus::Miss => "miss",
+            VerifiedCacheLookupStatus::SchemaMiss => "schema_miss",
+            VerifiedCacheLookupStatus::Stale => "stale",
+        }
+    }
+}
+
+fn print_verified_module_status(
+    module: &str,
+    mode: VerifiedCacheMode,
+    status: Option<VerifiedCacheLookupStatus>,
+) {
+    if mode == VerifiedCacheMode::Off {
+        println!("verified {module}");
+        return;
+    }
+    let status = status
+        .expect("verified cache status should be reported when verified cache mode is enabled");
+    println!(
+        "verified {module} cache_status = \"{}\" cache_mode = \"{}\"",
+        status.as_str(),
+        mode.as_str()
+    );
+}
+
+fn verify_selected_module_with_cache(
+    repo_root: &Path,
+    proof_root: &Path,
+    cache: &mut VerifiedCorpusCache<'_>,
+    module: &str,
+    mode: VerifiedCacheMode,
+) -> Result<Option<VerifiedCacheLookupStatus>, String> {
+    if mode == VerifiedCacheMode::Off {
+        cache.verify_module(module)?;
+        return Ok(None);
+    }
+
+    let key_input = verified_cache_key_input_from_certificate(proof_root, module)?;
+    let lookup = verified_cache_lookup(repo_root, &key_input)?;
+
+    match mode {
+        VerifiedCacheMode::Off => unreachable!(),
+        VerifiedCacheMode::Authoring if lookup.status == VerifiedCacheLookupStatus::Hit => {
+            Ok(Some(VerifiedCacheLookupStatus::Hit))
+        }
+        VerifiedCacheMode::Authoring => {
+            let verified = cache.verify_module(module)?;
+            write_verified_cache_entry(repo_root, key_input, &verified)?;
+            Ok(Some(lookup.status))
+        }
+        VerifiedCacheMode::ReadThrough => {
+            if matches!(
+                lookup.status,
+                VerifiedCacheLookupStatus::SchemaMiss | VerifiedCacheLookupStatus::Stale
+            ) {
+                discard_verified_cache_entry(&lookup.path)?;
+            }
+            let verified = cache.verify_module(module)?;
+            let entry = verified_cache_entry_from_verified_module(key_input, &verified);
+            let entry_json = verified_cache_entry_json(&entry);
+            let mut status = lookup.status;
+            if lookup.status == VerifiedCacheLookupStatus::Hit
+                && lookup.source.as_deref() != Some(entry_json.as_str())
+            {
+                discard_verified_cache_entry(&lookup.path)?;
+                status = VerifiedCacheLookupStatus::Stale;
+            }
+            write(
+                verified_cache_entry_path(repo_root, &entry.cache_key),
+                entry_json.as_bytes(),
+            )?;
+            Ok(Some(status))
+        }
+    }
 }
 
 fn run_verify(options: VerifyOptions) -> Result<(), String> {
@@ -19247,9 +19397,21 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
 
     let mut cache = VerifiedCorpusCache::new(&proof_root);
     let mut failures = Vec::new();
+    let mut verified_cache_hits = 0usize;
     for module in &targets {
-        match cache.verify_module(module) {
-            Ok(_) => println!("verified {module}"),
+        match verify_selected_module_with_cache(
+            &repo_root,
+            &proof_root,
+            &mut cache,
+            module,
+            options.verified_cache,
+        ) {
+            Ok(status) => {
+                if status == Some(VerifiedCacheLookupStatus::Hit) {
+                    verified_cache_hits += 1;
+                }
+                print_verified_module_status(module, options.verified_cache, status);
+            }
             Err(error) => {
                 eprintln!("failed {module}: {error}");
                 failures.push(VerifyFailure {
@@ -19270,11 +19432,20 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
     }
 
     if failures.is_empty() {
-        println!(
-            "verified {} selected module(s), {} module(s) including dependency cache",
-            targets.len(),
-            cache.verified.len()
-        );
+        if options.verified_cache == VerifiedCacheMode::Off {
+            println!(
+                "verified {} selected module(s), {} module(s) including dependency cache",
+                targets.len(),
+                cache.verified.len()
+            );
+        } else {
+            println!(
+                "verified {} selected module(s), {} module(s) including dependency cache, {} verified cache hit(s)",
+                targets.len(),
+                cache.verified.len(),
+                verified_cache_hits
+            );
+        }
         Ok(())
     } else {
         Err(format!(
@@ -22012,12 +22183,14 @@ fn verified_cache_key_input_from_verified_module(
     verified: &npa_cert::VerifiedModule,
     certificate_file_hash: String,
     direct_imports: Vec<VerifiedCacheImportIdentity>,
+    import_closure_certificate_file_hashes: Vec<VerifiedCacheDependencyIdentity>,
     policy: &npa_cert::AxiomPolicy,
 ) -> VerifiedCacheKeyInput {
     verified_cache_key_input_from_verified_module_with_profiles(
         verified,
         certificate_file_hash,
         direct_imports,
+        import_closure_certificate_file_hashes,
         policy,
         VERIFIED_CACHE_SCHEMA,
         npa_package::CHECKER_PROFILE_REFERENCE_V0_1,
@@ -22030,6 +22203,7 @@ fn verified_cache_key_input_from_verified_module_with_profiles(
     verified: &npa_cert::VerifiedModule,
     certificate_file_hash: String,
     mut direct_imports: Vec<VerifiedCacheImportIdentity>,
+    mut import_closure_certificate_file_hashes: Vec<VerifiedCacheDependencyIdentity>,
     policy: &npa_cert::AxiomPolicy,
     schema: &str,
     verifier_profile: &str,
@@ -22037,6 +22211,8 @@ fn verified_cache_key_input_from_verified_module_with_profiles(
 ) -> VerifiedCacheKeyInput {
     direct_imports.sort();
     direct_imports.dedup();
+    import_closure_certificate_file_hashes.sort();
+    import_closure_certificate_file_hashes.dedup();
     VerifiedCacheKeyInput {
         schema: schema.to_owned(),
         core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
@@ -22048,24 +22224,72 @@ fn verified_cache_key_input_from_verified_module_with_profiles(
         certificate_hash: tagged_hash(verified.certificate_hash()),
         certificate_file_hash,
         direct_imports,
+        import_closure_certificate_file_hashes,
         axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(policy),
         enabled_core_features: core_feature_names(&verified.axiom_report().core_features),
     }
 }
 
-#[allow(dead_code)]
+fn verified_cache_key_input_from_certificate(
+    proof_root: &Path,
+    module: &str,
+) -> Result<VerifiedCacheKeyInput, String> {
+    let certificate_bytes = read_certificate_bytes_for_module(proof_root, module)?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes).map_err(|err| {
+        format!("failed to decode certificate for verified cache {module}: {err:?}")
+    })?;
+    let actual = decoded.header.module.as_dotted();
+    if actual != module {
+        return Err(format!(
+            "certificate for verified cache target {module} has module {actual}"
+        ));
+    }
+
+    let policy = axiom_policy_for_module(module);
+    let mut direct_imports = Vec::with_capacity(decoded.imports.len());
+    for import in &decoded.imports {
+        let import_module = import.module.as_dotted();
+        let certificate_hash = match import.certificate_hash {
+            Some(hash) => tagged_hash(hash),
+            None => certificate_hash_for_module(proof_root, &import_module)?,
+        };
+        direct_imports.push(VerifiedCacheImportIdentity {
+            module: import_module,
+            export_hash: tagged_hash(import.export_hash),
+            certificate_hash,
+        });
+    }
+
+    let import_closure_certificate_file_hashes =
+        verified_cache_import_closure_file_hashes(proof_root, module, &decoded)?;
+
+    Ok(VerifiedCacheKeyInput {
+        schema: VERIFIED_CACHE_SCHEMA.to_owned(),
+        core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
+        certificate_format: npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1.to_owned(),
+        kernel_profile: npa_package::KERNEL_PROFILE_V0_1.to_owned(),
+        verifier_profile: npa_package::CHECKER_PROFILE_REFERENCE_V0_1.to_owned(),
+        binary_build_identity: default_binary_build_identity(),
+        module: module.to_owned(),
+        certificate_hash: tagged_hash(decoded.hashes.certificate_hash),
+        certificate_file_hash: tagged_sha256(&certificate_bytes),
+        direct_imports,
+        import_closure_certificate_file_hashes,
+        axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(&policy),
+        enabled_core_features: core_feature_names(&decoded.axiom_report.core_features),
+    })
+}
+
 fn verified_cache_key(input: &VerifiedCacheKeyInput) -> String {
     sha256_hex(verified_cache_key_material(input).as_bytes())
 }
 
-#[allow(dead_code)]
 fn verified_cache_entry_path(repo_root: &Path, cache_key: &str) -> PathBuf {
     repo_root
         .join(VERIFIED_CACHE_LAYOUT_DIR)
         .join(format!("{cache_key}.json"))
 }
 
-#[allow(dead_code)]
 fn verified_cache_key_material(input: &VerifiedCacheKeyInput) -> String {
     let imports = input
         .direct_imports
@@ -22080,8 +22304,20 @@ fn verified_cache_key_material(input: &VerifiedCacheKeyInput) -> String {
         })
         .collect::<Vec<_>>()
         .join(",");
+    let import_closure_certificate_file_hashes = input
+        .import_closure_certificate_file_hashes
+        .iter()
+        .map(|dependency| {
+            format!(
+                "{{\"module\":\"{}\",\"certificate_file_hash\":\"{}\"}}",
+                json_escape(&dependency.module),
+                json_escape(&dependency.certificate_file_hash)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
     format!(
-        "{{\"schema\":\"{}\",\"core_spec\":\"{}\",\"certificate_format\":\"{}\",\"kernel_profile\":\"{}\",\"verifier_profile\":\"{}\",\"binary_build_identity\":\"{}\",\"module\":\"{}\",\"certificate_hash\":\"{}\",\"certificate_file_hash\":\"{}\",\"direct_imports\":[{}],\"axiom_policy_fingerprint\":\"{}\",\"enabled_core_features\":{}}}",
+        "{{\"schema\":\"{}\",\"core_spec\":\"{}\",\"certificate_format\":\"{}\",\"kernel_profile\":\"{}\",\"verifier_profile\":\"{}\",\"binary_build_identity\":\"{}\",\"module\":\"{}\",\"certificate_hash\":\"{}\",\"certificate_file_hash\":\"{}\",\"direct_imports\":[{}],\"import_closure_certificate_file_hashes\":[{}],\"axiom_policy_fingerprint\":\"{}\",\"enabled_core_features\":{}}}",
         json_escape(&input.schema),
         json_escape(&input.core_spec),
         json_escape(&input.certificate_format),
@@ -22092,12 +22328,12 @@ fn verified_cache_key_material(input: &VerifiedCacheKeyInput) -> String {
         json_escape(&input.certificate_hash),
         json_escape(&input.certificate_file_hash),
         imports,
+        import_closure_certificate_file_hashes,
         json_escape(&input.axiom_policy_fingerprint),
         json_string_array(&input.enabled_core_features)
     )
 }
 
-#[allow(dead_code)]
 fn verified_cache_entry_from_verified_module(
     key_input: VerifiedCacheKeyInput,
     verified: &npa_cert::VerifiedModule,
@@ -22122,7 +22358,6 @@ fn verified_cache_entry_from_verified_module(
     }
 }
 
-#[allow(dead_code)]
 fn verified_cache_entry_json(entry: &VerifiedCacheEntry) -> String {
     format!(
         "{{\"schema\":\"{}\",\"cache_key\":\"{}\",\"trusted\":false,\"module\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"module_axioms\":{},\"core_features\":{},\"key_input\":{},\"trust_boundary\":\"cache entries are authoring-only acceleration metadata; canonical certificates and source-free verification remain authoritative\"}}\n",
@@ -22137,7 +22372,6 @@ fn verified_cache_entry_json(entry: &VerifiedCacheEntry) -> String {
     )
 }
 
-#[allow(dead_code)]
 fn verified_cache_entry_schema_status(source: &str) -> VerifiedCacheSchemaStatus {
     match leading_json_string_field(source, "schema").as_deref() {
         Some(VERIFIED_CACHE_SCHEMA) => VerifiedCacheSchemaStatus::Current,
@@ -22145,7 +22379,159 @@ fn verified_cache_entry_schema_status(source: &str) -> VerifiedCacheSchemaStatus
     }
 }
 
-#[allow(dead_code)]
+fn verified_cache_lookup(
+    repo_root: &Path,
+    key_input: &VerifiedCacheKeyInput,
+) -> Result<VerifiedCacheLookup, String> {
+    let cache_key = verified_cache_key(key_input);
+    let path = verified_cache_entry_path(repo_root, &cache_key);
+    let source = match fs::read_to_string(&path) {
+        Ok(source) => source,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(VerifiedCacheLookup {
+                status: VerifiedCacheLookupStatus::Miss,
+                path,
+                source: None,
+            });
+        }
+        Err(err) => {
+            return Err(format!(
+                "failed to read verified cache entry {}: {err}",
+                path.display()
+            ));
+        }
+    };
+
+    if verified_cache_entry_schema_status(&source) == VerifiedCacheSchemaStatus::Miss {
+        return Ok(VerifiedCacheLookup {
+            status: VerifiedCacheLookupStatus::SchemaMiss,
+            path,
+            source: Some(source),
+        });
+    }
+
+    let status = if top_level_json_string_field(&source, "cache_key").as_deref() == Some(&cache_key)
+        && top_level_json_string_field(&source, "module").as_deref() == Some(&key_input.module)
+        && top_level_json_string_field(&source, "certificate_hash").as_deref()
+            == Some(&key_input.certificate_hash)
+    {
+        VerifiedCacheLookupStatus::Hit
+    } else {
+        VerifiedCacheLookupStatus::Stale
+    };
+
+    Ok(VerifiedCacheLookup {
+        status,
+        path,
+        source: Some(source),
+    })
+}
+
+fn write_verified_cache_entry(
+    repo_root: &Path,
+    key_input: VerifiedCacheKeyInput,
+    verified: &npa_cert::VerifiedModule,
+) -> Result<(), String> {
+    let entry = verified_cache_entry_from_verified_module(key_input, verified);
+    let path = verified_cache_entry_path(repo_root, &entry.cache_key);
+    write(path, verified_cache_entry_json(&entry).as_bytes())
+}
+
+fn discard_verified_cache_entry(path: &Path) -> Result<(), String> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(format!(
+            "failed to discard inconsistent verified cache entry {}: {err}",
+            path.display()
+        )),
+    }
+}
+
+fn verified_cache_import_closure_file_hashes(
+    proof_root: &Path,
+    root_module: &str,
+    root_cert: &npa_cert::ModuleCert,
+) -> Result<Vec<VerifiedCacheDependencyIdentity>, String> {
+    let mut seen = BTreeSet::new();
+    let mut dependencies = Vec::new();
+    for import in &root_cert.imports {
+        collect_verified_cache_dependency_file_hash(
+            proof_root,
+            root_module,
+            &import.module.as_dotted(),
+            &mut seen,
+            &mut dependencies,
+        )?;
+    }
+    dependencies.sort();
+    dependencies.dedup();
+    Ok(dependencies)
+}
+
+fn collect_verified_cache_dependency_file_hash(
+    proof_root: &Path,
+    root_module: &str,
+    module: &str,
+    seen: &mut BTreeSet<String>,
+    dependencies: &mut Vec<VerifiedCacheDependencyIdentity>,
+) -> Result<(), String> {
+    if module == root_module || !seen.insert(module.to_owned()) {
+        return Ok(());
+    }
+    let certificate_bytes = read_certificate_bytes_for_module(proof_root, module)?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes).map_err(|err| {
+        format!("failed to decode import certificate for verified cache {module}: {err:?}")
+    })?;
+    let actual = decoded.header.module.as_dotted();
+    if actual != module {
+        return Err(format!(
+            "import certificate for verified cache dependency {module} has module {actual}"
+        ));
+    }
+    dependencies.push(VerifiedCacheDependencyIdentity {
+        module: module.to_owned(),
+        certificate_file_hash: tagged_sha256(&certificate_bytes),
+    });
+    for import in &decoded.imports {
+        collect_verified_cache_dependency_file_hash(
+            proof_root,
+            root_module,
+            &import.module.as_dotted(),
+            seen,
+            dependencies,
+        )?;
+    }
+    Ok(())
+}
+
+fn read_certificate_bytes_for_module(proof_root: &Path, module: &str) -> Result<Vec<u8>, String> {
+    let certificate_path = certificate_path_for_module(module)
+        .ok_or_else(|| format!("unknown proof corpus or external module {module}"))?;
+    fs::read(proof_root.join(certificate_path))
+        .map_err(|err| format!("failed to read {certificate_path}: {err}"))
+}
+
+fn certificate_hash_for_module(proof_root: &Path, module: &str) -> Result<String, String> {
+    let certificate_bytes = read_certificate_bytes_for_module(proof_root, module)?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes).map_err(|err| {
+        format!("failed to decode import certificate hash for verified cache {module}: {err:?}")
+    })?;
+    let actual = decoded.header.module.as_dotted();
+    if actual != module {
+        return Err(format!(
+            "import certificate for verified cache direct import {module} has module {actual}"
+        ));
+    }
+    Ok(tagged_hash(decoded.hashes.certificate_hash))
+}
+
+fn certificate_path_for_module(module: &str) -> Option<&'static str> {
+    external_import_plan(module)
+        .map(|plan| plan.certificate_path)
+        .or_else(|| module_config(module).map(|config| config.certificate_path))
+}
+
 fn verified_cache_axiom_policy_fingerprint(policy: &npa_cert::AxiomPolicy) -> String {
     let allowlisted_axioms = policy
         .allowlisted_axioms
@@ -22215,6 +22601,40 @@ fn leading_json_string_field(source: &str, field: &str) -> Option<String> {
     let needle = format!("\"{}\"", json_escape(field));
     let rest = source.strip_prefix(&needle)?;
     parse_json_string_after_colon(rest)
+}
+
+fn top_level_json_string_field(source: &str, field: &str) -> Option<String> {
+    let needle = format!("\"{}\"", json_escape(field));
+    let mut depth = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for (index, ch) in source.char_indices() {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' => {
+                if depth == 1 && source[index..].starts_with(&needle) {
+                    return parse_json_string_after_colon(&source[index + needle.len()..]);
+                }
+                in_string = true;
+            }
+            '{' | '[' => depth += 1,
+            '}' | ']' => {
+                depth = depth.checked_sub(1)?;
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 fn parse_json_string_after_colon(source: &str) -> Option<String> {
@@ -23294,6 +23714,51 @@ mod tests {
     }
 
     #[test]
+    fn verified_cache_parser_defaults_to_off() {
+        let parsed = parse_verify_options(&["--module".to_owned(), "Proofs.Ai.Basic".to_owned()])
+            .expect("verify args should parse");
+        assert_eq!(parsed.verified_cache, VerifiedCacheMode::Off);
+    }
+
+    #[test]
+    fn verified_cache_parser_accepts_authoring_and_read_through_for_local_targets() {
+        let parsed = parse_verify_options(&[
+            "--changed-only".to_owned(),
+            "--verified-cache".to_owned(),
+            "authoring".to_owned(),
+        ])
+        .expect("authoring cache should parse for changed-only");
+        assert_eq!(parsed.verified_cache, VerifiedCacheMode::Authoring);
+
+        let parsed = parse_verify_options(&[
+            "--module".to_owned(),
+            "Proofs.Ai.Basic".to_owned(),
+            "--verified-cache".to_owned(),
+            "read-through".to_owned(),
+        ])
+        .expect("read-through cache should parse for module");
+        assert_eq!(parsed.verified_cache, VerifiedCacheMode::ReadThrough);
+    }
+
+    #[test]
+    fn verified_cache_parser_rejects_authoring_for_full_verify() {
+        let err = parse_verify_options(&[
+            "--verify".to_owned(),
+            "--verified-cache".to_owned(),
+            "authoring".to_owned(),
+        ])
+        .expect_err("authoring cache should require a local target selector");
+        assert!(err.contains("only supported with --module or --changed-only"));
+    }
+
+    #[test]
+    fn usage_documents_verified_cache_modes() {
+        let usage = usage();
+        assert!(usage.contains("--verified-cache off|authoring|read-through"));
+        assert!(usage.contains("defaults to off"));
+    }
+
+    #[test]
     fn build_modules_args_parser_requires_modules() {
         let parsed =
             parse_build_modules_args(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Eq".to_owned()])
@@ -23514,6 +23979,7 @@ Proofs.Ai.Eq # inline comments are ignored
             "certificate_hash",
             "certificate_file_hash",
             "direct_imports",
+            "import_closure_certificate_file_hashes",
             "axiom_policy_fingerprint",
             "enabled_core_features",
         ] {
@@ -23547,6 +24013,10 @@ Proofs.Ai.Eq # inline comments are ignored
 
         let mut changed = input.clone();
         changed.direct_imports[0].certificate_hash = sample_hash('c');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.import_closure_certificate_file_hashes[0].certificate_file_hash = sample_hash('e');
         assert_ne!(key, verified_cache_key(&changed));
 
         let mut changed = input.clone();
@@ -23628,6 +24098,139 @@ Proofs.Ai.Eq # inline comments are ignored
         assert_eq!(
             entry.certificate_hash,
             tagged_hash(verified.certificate_hash())
+        );
+    }
+
+    #[test]
+    fn verified_cache_lookup_reports_hit_miss_and_stale() {
+        let temp = test_temp_dir("verified-cache-lookup");
+        let (entry, _verified) = basic_verified_cache_entry();
+        let key_input = entry.key_input.clone();
+
+        let miss = verified_cache_lookup(&temp, &key_input).expect("missing cache should be miss");
+        assert_eq!(miss.status, VerifiedCacheLookupStatus::Miss);
+
+        let path = verified_cache_entry_path(&temp, &entry.cache_key);
+        write(path.clone(), verified_cache_entry_json(&entry).as_bytes())
+            .expect("cache entry should write");
+        let hit = verified_cache_lookup(&temp, &key_input).expect("cache should hit");
+        assert_eq!(hit.status, VerifiedCacheLookupStatus::Hit);
+
+        let stale = verified_cache_entry_json(&entry).replacen(
+            &format!("\"module\":\"{}\"", entry.module),
+            "\"module\":\"Proofs.Ai.Other\"",
+            1,
+        );
+        write(path, stale.as_bytes()).expect("stale cache entry should write");
+        let stale = verified_cache_lookup(&temp, &key_input).expect("stale cache should load");
+        assert_eq!(stale.status, VerifiedCacheLookupStatus::Stale);
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_lookup_ignores_nested_identity_fields() {
+        let temp = test_temp_dir("verified-cache-nested-fields");
+        let (entry, _verified) = basic_verified_cache_entry();
+        let key_input = entry.key_input.clone();
+        let source = format!(
+            "{{\"schema\":\"{}\",\"cache_key\":\"{}\",\"trusted\":false,\"key_input\":{}}}\n",
+            VERIFIED_CACHE_SCHEMA,
+            entry.cache_key,
+            verified_cache_key_material(&key_input)
+        );
+        write(
+            verified_cache_entry_path(&temp, &entry.cache_key),
+            source.as_bytes(),
+        )
+        .expect("nested-only cache entry should write");
+
+        let lookup = verified_cache_lookup(&temp, &key_input).expect("lookup should load entry");
+        assert_eq!(lookup.status, VerifiedCacheLookupStatus::Stale);
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_lookup_treats_schema_mismatch_as_miss() {
+        let temp = test_temp_dir("verified-cache-schema-miss");
+        let (entry, _verified) = basic_verified_cache_entry();
+        let key_input = entry.key_input.clone();
+        let mismatched = verified_cache_entry_json(&entry).replacen(
+            VERIFIED_CACHE_SCHEMA,
+            "npa-proof-corpus.verified-cache.v9",
+            1,
+        );
+        write(
+            verified_cache_entry_path(&temp, &entry.cache_key),
+            mismatched.as_bytes(),
+        )
+        .expect("mismatched cache entry should write");
+
+        let lookup = verified_cache_lookup(&temp, &key_input).expect("lookup should not fail");
+        assert_eq!(lookup.status, VerifiedCacheLookupStatus::SchemaMiss);
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_read_through_discards_inconsistent_hit() {
+        let temp = test_temp_dir("verified-cache-read-through-stale");
+        let repo = repo_root().expect("repo root should resolve");
+        let proof_root = repo.join("proofs");
+
+        let mut cache = VerifiedCorpusCache::new(&proof_root);
+        let status = verify_selected_module_with_cache(
+            &temp,
+            &proof_root,
+            &mut cache,
+            "Proofs.Ai.Basic",
+            VerifiedCacheMode::Authoring,
+        )
+        .expect("authoring cache miss should verify and write");
+        assert_eq!(status, Some(VerifiedCacheLookupStatus::Miss));
+
+        let key_input = verified_cache_key_input_from_certificate(&proof_root, "Proofs.Ai.Basic")
+            .expect("basic key input should build");
+        let path = verified_cache_entry_path(&temp, &verified_cache_key(&key_input));
+        let source = fs::read_to_string(&path).expect("cache entry should exist");
+        let tampered = source.replacen("\"export_hash\":\"", "\"export_hash\":\"tampered-", 1);
+        fs::write(&path, tampered).expect("tampered cache entry should write");
+
+        let mut cache = VerifiedCorpusCache::new(&proof_root);
+        let status = verify_selected_module_with_cache(
+            &temp,
+            &proof_root,
+            &mut cache,
+            "Proofs.Ai.Basic",
+            VerifiedCacheMode::ReadThrough,
+        )
+        .expect("read-through should repair stale cache hit");
+        assert_eq!(status, Some(VerifiedCacheLookupStatus::Stale));
+
+        let repaired = fs::read_to_string(&path).expect("cache entry should be repaired");
+        assert!(!repaired.contains("tampered-"));
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_key_input_from_certificate_tracks_import_closure_files() {
+        let repo = repo_root().expect("repo root should resolve");
+        let proof_root = repo.join("proofs");
+        let input =
+            verified_cache_key_input_from_certificate(&proof_root, "Proofs.Ai.Algebra.Square")
+                .expect("square cache key input should build");
+        assert!(
+            input
+                .import_closure_certificate_file_hashes
+                .iter()
+                .any(|dependency| dependency.module == "Proofs.Ai.Algebra.Ring"),
+            "import closure should include direct corpus dependency"
+        );
+        assert!(
+            input
+                .import_closure_certificate_file_hashes
+                .iter()
+                .any(|dependency| dependency.module == "Std.Logic.Eq"),
+            "import closure should include transitive external dependency"
         );
     }
 
@@ -23791,6 +24394,10 @@ Proofs.Ai.Eq # inline comments are ignored
                 export_hash: sample_hash('3'),
                 certificate_hash: sample_hash('4'),
             }],
+            import_closure_certificate_file_hashes: vec![VerifiedCacheDependencyIdentity {
+                module: "Proofs.Ai.Import".to_owned(),
+                certificate_file_hash: sample_hash('5'),
+            }],
             axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(&policy),
             enabled_core_features: vec!["quotient_v1".to_owned()],
         }
@@ -23807,6 +24414,7 @@ Proofs.Ai.Eq # inline comments are ignored
         let key_input = verified_cache_key_input_from_verified_module(
             &verified,
             tagged_sha256(&certificate_bytes),
+            Vec::new(),
             Vec::new(),
             &policy,
         );

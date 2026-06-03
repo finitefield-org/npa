@@ -126,6 +126,7 @@ certificate_file_hash
 direct import module names
 direct import export hashes
 direct import certificate hashes
+import closure certificate file hashes
 axiom policy fingerprint
 enabled core features
 ```
@@ -139,8 +140,10 @@ target/npa-proof-cache/verified-v0.1/<cache-key>.json
 PCT-05 では、authoring cache の data model として
 `npa-proof-corpus.verified-cache.v0.1` schema、content-addressed key material、
 entry JSON、schema version mismatch を miss として扱う判定を実装済みです。
-この段階では `--module` / `--changed-only` / gate scripts は cache entry を読みません。
-実際の cache lookup / hit reporting / read-through 比較は PCT-06 で実装します。
+PCT-06 では `--module` / `--changed-only` に対して lookup / write / hit reporting を実装済みです。
+cache key には direct import identity に加えて import closure の certificate file hash も入れるため、
+依存 certificate file が変わった場合は authoring hit にならず live verifier に戻ります。
+gate scripts は `--verified-cache authoring` を渡さないため、release-like path の既定は cache off です。
 
 ### 4.4 CLI 仕様
 
@@ -161,6 +164,14 @@ authoring
 
 read-through
   cache lookup はするが、最終的に verifier を再実行して cache と比較する。debug 用。
+  cache entry が live verifier の結果と一致しない場合は stale として破棄し、live result を再書き込みする。
+```
+
+cache mode が有効な場合、deterministic text output に次の形で status を出します。
+
+```text
+verified Proofs.Ai.X cache_status = "hit" cache_mode = "authoring"
+verified Proofs.Ai.X cache_status = "stale" cache_mode = "read-through"
 ```
 
 ### 4.5 完了条件

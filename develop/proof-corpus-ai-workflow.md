@@ -43,7 +43,9 @@ Machine Surface、tactic candidate、source-free certificate verification を優
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Basic
 cargo run -p npa-proof-corpus -- --write-ai-index
 cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic --verified-cache authoring
 cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 cargo run -p npa-proof-corpus -- --changed-only --failures-out proofs/generated/failed-corpus-replay.json
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Basic::id proofs/generated/replay-basic-id.json
 ```
@@ -56,6 +58,13 @@ Human Surface source から compile し、`source.npa`、`certificate.npcert`、
 
 `--module` と `--changed-only` は checked-in certificate を source-free に検査します。依存 module は
 再帰的に読み込まれ、同一プロセス内で verified module / decoded certificate が cache されます。
+
+同じ certificate を繰り返し確認する authoring 中だけ、`--verified-cache authoring` を付けると
+process 間で versioned verified cache を再利用できます。cache mode を有効にした場合、出力には
+`cache_status = "hit"` / `"miss"` / `"stale"` と `cache_mode = "authoring"` が出ます。
+既定は `off` であり、`./scripts/check-corpus.sh`、full gate、release / high-trust 相当の確認では
+authoring cache を使いません。cache の挙動を調べる場合は `--verified-cache read-through` を使い、
+live verifier result と cache entry の比較を行います。
 
 ## Shard
 
