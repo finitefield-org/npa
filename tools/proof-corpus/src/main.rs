@@ -19026,7 +19026,17 @@ fn run() -> Result<(), String> {
         }
         "--build-module" if args.len() == 2 => {
             let repo_root = repo_root()?;
-            run_build_module(&repo_root, &args[1])
+            run_build_modules(&repo_root, &[args[1].clone()])
+        }
+        "--build-modules" => {
+            let repo_root = repo_root()?;
+            let modules = parse_build_modules_args(&args[1..])?;
+            run_build_modules(&repo_root, &modules)
+        }
+        "--build-modules-file" if args.len() == 2 => {
+            let repo_root = repo_root()?;
+            let modules = parse_build_modules_file(&output_path(&repo_root, &args[1]))?;
+            run_build_modules(&repo_root, &modules)
         }
         "--write-ai-index" => {
             let repo_root = repo_root()?;
@@ -19068,6 +19078,8 @@ usage:
   npa-proof-corpus
   npa-proof-corpus --package-lock-only
   npa-proof-corpus --build-module MODULE
+  npa-proof-corpus --build-modules MODULE ...
+  npa-proof-corpus --build-modules-file PATH
   npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH]
   npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH]
   npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH]
@@ -19188,9 +19200,51 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
     }
 }
 
-fn run_build_module(repo_root: &Path, module: &str) -> Result<(), String> {
-    let config =
-        module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+fn parse_build_modules_args(args: &[String]) -> Result<Vec<String>, String> {
+    if args.is_empty() {
+        return Err(usage());
+    }
+    Ok(args.to_vec())
+}
+
+fn parse_build_modules_file(path: &Path) -> Result<Vec<String>, String> {
+    let source = fs::read_to_string(path).map_err(|err| {
+        format!(
+            "failed to read build modules file {}: {err}",
+            path.display()
+        )
+    })?;
+    parse_build_modules_file_contents(&source)
+        .map_err(|err| format!("invalid build modules file {}: {err}", path.display()))
+}
+
+fn parse_build_modules_file_contents(source: &str) -> Result<Vec<String>, String> {
+    let mut modules = Vec::new();
+    for (index, line) in source.lines().enumerate() {
+        let module = line
+            .split_once('#')
+            .map(|(module, _)| module)
+            .unwrap_or(line)
+            .trim();
+        if module.is_empty() {
+            continue;
+        }
+        if module.split_whitespace().count() != 1 {
+            return Err(format!(
+                "line {} must contain exactly one module name",
+                index + 1
+            ));
+        }
+        modules.push(module.to_owned());
+    }
+    if modules.is_empty() {
+        return Err("no proof corpus modules requested".to_owned());
+    }
+    Ok(modules)
+}
+
+fn run_build_modules(repo_root: &Path, requested_modules: &[String]) -> Result<(), String> {
+    let selected_modules = build_batch_selection(requested_modules)?;
     let proof_root = repo_root.join("proofs");
     fs::create_dir_all(&proof_root)
         .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
@@ -19200,7 +19254,9 @@ fn run_build_module(repo_root: &Path, module: &str) -> Result<(), String> {
     write_external_import_artifacts(&proof_root, &external_imports)?;
 
     let mut cache = BuiltCorpusCache::new(&proof_root, external_imports);
-    cache.build_module(config.module)?;
+    for config in &selected_modules {
+        cache.build_module(config.module)?;
+    }
 
     let mut module_metas = Vec::with_capacity(MODULES.len());
     for module_config in MODULES {
@@ -19224,11 +19280,60 @@ fn run_build_module(repo_root: &Path, module: &str) -> Result<(), String> {
     write_package_lock_fixture(&proof_root)?;
     write_ai_theorem_index(&proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
 
-    println!(
-        "built {} ({} module(s) including import closure)",
-        config.module,
-        cache.built.len()
-    );
+    if requested_modules.len() == 1 {
+        println!(
+            "built {} ({} module(s) including import closure)",
+            requested_modules[0],
+            cache.built.len()
+        );
+    } else {
+        println!(
+            "built {} requested module(s), {} module(s) including import closure",
+            requested_modules.len(),
+            cache.built.len()
+        );
+    }
+    Ok(())
+}
+
+fn build_batch_selection(
+    requested_modules: &[String],
+) -> Result<Vec<&'static ModuleArtifact>, String> {
+    if requested_modules.is_empty() {
+        return Err("no proof corpus modules requested".to_owned());
+    }
+    let mut selected = BTreeSet::new();
+    for module in requested_modules {
+        let config =
+            module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+        collect_build_closure(config.module, &mut selected)?;
+    }
+    let mut selected = selected
+        .into_iter()
+        .map(|module| module_config(module).expect("selected module must exist"))
+        .collect::<Vec<_>>();
+    selected.sort_by_key(|config| module_order(config.module).unwrap_or(usize::MAX));
+    Ok(selected)
+}
+
+fn collect_build_closure(
+    module: &str,
+    selected: &mut BTreeSet<&'static str>,
+) -> Result<(), String> {
+    if external_import_plan(module).is_some() {
+        return Ok(());
+    }
+    if selected.contains(module) {
+        return Ok(());
+    }
+    let config =
+        module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+    for import in config.imports.iter().chain(source_imports(config)) {
+        if external_import_plan(import).is_none() {
+            collect_build_closure(import, selected)?;
+        }
+    }
+    selected.insert(config.module);
     Ok(())
 }
 
@@ -22167,6 +22272,78 @@ mod tests {
         assert_eq!(shard.total, 4);
         assert!(parse_shard("4/4").is_err());
         assert!(parse_shard("0/0").is_err());
+    }
+
+    #[test]
+    fn build_modules_args_parser_requires_modules() {
+        let parsed =
+            parse_build_modules_args(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Eq".to_owned()])
+                .expect("modules should parse");
+        assert_eq!(parsed, vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]);
+        assert!(parse_build_modules_args(&[]).is_err());
+    }
+
+    #[test]
+    fn build_modules_file_parser_skips_blank_lines_and_comments() {
+        let parsed = parse_build_modules_file_contents(
+            "\
+# one module per line
+Proofs.Ai.Basic
+
+Proofs.Ai.Eq # inline comments are ignored
+",
+        )
+        .expect("module file should parse");
+        assert_eq!(parsed, vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]);
+    }
+
+    #[test]
+    fn build_modules_file_parser_rejects_multi_token_lines() {
+        let err = parse_build_modules_file_contents("Proofs.Ai.Basic Proofs.Ai.Eq")
+            .expect_err("multi-token lines should fail");
+        assert!(err.contains("line 1"));
+    }
+
+    #[test]
+    fn build_batch_selection_deduplicates_requested_modules() {
+        let selected =
+            build_batch_selection(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Basic".to_owned()])
+                .expect("duplicate request should select once");
+        let selected = selected
+            .into_iter()
+            .map(|config| config.module)
+            .collect::<Vec<_>>();
+        assert_eq!(selected, vec!["Proofs.Ai.Basic"]);
+    }
+
+    #[test]
+    fn build_batch_selection_rejects_unknown_modules() {
+        let err = match build_batch_selection(&["Proofs.Ai.DoesNotExist".to_owned()]) {
+            Ok(_) => panic!("unknown modules should fail"),
+            Err(err) => err,
+        };
+        assert!(err.contains("unknown proof corpus module Proofs.Ai.DoesNotExist"));
+    }
+
+    #[test]
+    fn build_batch_selection_returns_import_closure_in_topological_order() {
+        let selected = build_batch_selection(&[
+            "Proofs.Ai.Algebra.Square".to_owned(),
+            "Proofs.Ai.OrderedField".to_owned(),
+        ])
+        .expect("selection should include shared closure");
+        let selected = selected
+            .into_iter()
+            .map(|config| config.module)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            selected,
+            vec![
+                "Proofs.Ai.Algebra.Ring",
+                "Proofs.Ai.Algebra.Square",
+                "Proofs.Ai.OrderedField"
+            ]
+        );
     }
 
     #[test]
