@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.22` analysis normed-space closure. It is a planning
+`v0.1.23` analysis linear-map closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -15,12 +15,12 @@ untrusted sidecars.
 ## Current Baseline
 
 The standalone `npa-mathlib` package has materialized through the analysis
-normed-space closure as package version `0.1.22`.
+linear-map closure as package version `0.1.23`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-analysis-normed-space-closure-audit.md
+develop/npa-mathlib-analysis-linear-map-closure-audit.md
 ```
 
 The currently public package includes:
@@ -61,6 +61,7 @@ Mathlib.Algebra.OrderedField.Square
 Mathlib.Algebra.OrderedField.ScalarIdentities
 Mathlib.LinearAlgebra.VectorSpace
 Mathlib.Analysis.NormedSpace.Basic
+Mathlib.Analysis.LinearMap
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.Affine
@@ -148,7 +149,14 @@ The `Analysis Normed Space Closure` item from this queue was completed as
 develop/npa-mathlib-analysis-normed-space-closure-audit.md
 ```
 
-The next open item is the analysis linear map closure.
+The `Analysis Linear Map Closure` item from this queue was completed as
+`npa-mathlib v0.1.23`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-linear-map-closure-audit.md
+```
+
+The next open item is the analysis derivative closure.
 
 ### Logic Iff Closure
 
@@ -539,6 +547,50 @@ Closure unit verdict:
 - Downstream smoke consumes `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args` source-free from vendored certificates.
 
+### Analysis Linear Map Closure
+
+Status: completed in `npa-mathlib v0.1.23`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-linear-map-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractLinearMap
+```
+
+Public modules:
+
+```text
+Mathlib.Analysis.LinearMap
+```
+
+Public surface audited:
+
+- `OperatorNormBound`, `LinearMapLawArgs`, `BoundedLinearMapArgs`, and
+  `LinearIsoArgs`.
+- Identity, composition, and inverse map APIs including `LinearId`,
+  `LinearComp`, `LinearInv`, `linear_comp_law_args`, and
+  `linear_inv_left_inverse_from_iso`.
+- Block-triangular map APIs including `BlockTriangularMap`,
+  `BlockTriangularInverse`, `BlockTriangularIsoArgs`, and
+  `block_triangular_b_iso_from_args`.
+
+Closure unit verdict:
+
+- The corpus module is a valid single-module linear-map closure because it
+  imports only public `Std.Logic.Eq`, equality reasoning, vector-space, and
+  normed-space foundations.
+- The module belongs under `Mathlib.Analysis.LinearMap` because the checked
+  surface is bounded and normed rather than purely algebraic linear algebra.
+- Downstream smoke consumes `linear_comp_law_args`,
+  `linear_inv_left_inverse_from_iso`, and
+  `block_triangular_b_iso_from_args` source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -567,45 +619,13 @@ older queue are:
   too large to be a default release closure.
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
   vector-space foundation, inner-product, geometry Pythagorean, analysis
-  metric topology, and analysis normed-space closures are complete. A separate
-  public ring-homomorphism namespace should wait for either a
+  metric topology, analysis normed-space, and analysis linear-map closures are
+  complete. A separate public ring-homomorphism namespace should wait for either a
   homomorphism-only corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Linear Map Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-linear-map-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractLinearMap
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Analysis.LinearMap
-```
-
-Why this closure matters:
-
-- It adds bounded-linear-map, linear-isomorphism, composition, inverse, and
-  block-triangular map facts used by derivative and implicit-function routes.
-
-Audit focus:
-
-- Confirm public imports from vector-space and normed-space closures.
-- Add downstream smoke for `linear_comp_law_args`,
-  `linear_inv_left_inverse_from_iso`, and
-  `block_triangular_b_iso_from_args`.
-
-### 2. Analysis Derivative Closure
+### 1. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -637,7 +657,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 3. Analysis Fixed Point Closure
+### 2. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -668,7 +688,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 4. Analysis Inverse Function Closure
+### 3. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -700,7 +720,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 5. Analysis Implicit Function Closure
+### 4. Analysis Implicit Function Closure
 
 Recommended audit file:
 
