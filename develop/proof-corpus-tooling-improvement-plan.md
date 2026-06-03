@@ -249,13 +249,21 @@ cargo run -p npa-proof-corpus -- \
 `--promote-plan` は `--mathlib-root` 配下を読み取り専用の evidence source として扱います。
 `--out` が `--mathlib-root` 配下を指す場合は、plan 生成前に deterministic diagnostic で失敗します。
 
-将来の materialize command:
+PCT-07 で実装済みの materialize command:
 
 ```sh
 cargo run -p npa-proof-corpus -- \
   --promote-materialize develop/npa-mathlib-field-closure-audit.md \
-  --mathlib-root ../npa-mathlib
+  --mathlib-root ../npa-mathlib \
+  --dry-run \
+  --compat-alias none
 ```
+
+既定は dry-run です。`--apply` を指定した場合だけ target package の source、
+certificate、meta、replay、`npa-package.toml` を書きます。git staging は行わず、
+書いた path を deterministic text output に列挙します。PCT-04 plan 内で import mapping、
+axiom policy、compatibility alias decision が未解決のままなら拒否します。ただし
+`--compat-alias none` は operator が「互換 alias なし」と明示判断するための option です。
 
 ### 6.3 Promotion plan 内容
 
@@ -274,6 +282,9 @@ promotion plan は次を含みます。
 
 - plan 生成だけなら `npa-mathlib` repo を変更しない。
 - materialize は dry-run / apply を分ける。
+- dry-run は intended file / manifest / package metadata / namespace change を表示し、
+  `npa-mathlib` repo を変更しない。
+- apply は target package artifacts と manifest だけを書き、git stage は行わない。
 - materialize 後に package check、build-certs --check、verify-certs --checker reference、
   check-hashes、axiom-report --check、index --check が案内される。
 - source-free downstream smoke が promotion checklist に含まれる。

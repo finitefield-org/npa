@@ -219,11 +219,80 @@ struct PromotePlanOptions {
     out: PathBuf,
 }
 
+#[derive(Clone, Debug)]
+struct PromoteMaterializeOptions {
+    plan_arg: PathBuf,
+    plan: PathBuf,
+    mathlib_root_arg: PathBuf,
+    mathlib_root: PathBuf,
+    mode: PromoteMaterializeMode,
+    compat_alias: Option<CompatibilityAliasDecision>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PromoteMaterializeMode {
+    DryRun,
+    Apply,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CompatibilityAliasDecision {
+    None,
+}
+
 struct PromotionEvidence {
     label: String,
     path: String,
     status: &'static str,
     detail: String,
+}
+
+#[derive(Clone, Debug)]
+struct PromotionPlanMapping {
+    corpus_module: String,
+    target_module: String,
+    import_mapping: BTreeMap<String, String>,
+    alias_resolved_in_plan: bool,
+}
+
+struct MaterializedPromotion {
+    corpus_module: String,
+    target_module: String,
+    changes: Vec<MaterializeChange>,
+    gate_commands: Vec<String>,
+}
+
+struct MaterializedModuleArtifact {
+    module: String,
+    source_path: String,
+    certificate_path: String,
+    meta_path: String,
+    replay_path: String,
+    source: String,
+    certificate_bytes: Vec<u8>,
+    meta: String,
+    replay: String,
+    source_sha256: String,
+    certificate_file_sha256: String,
+    export_hash: String,
+    axiom_report_hash: String,
+    certificate_hash: String,
+    imports: Vec<String>,
+    axioms: Vec<String>,
+}
+
+struct MaterializeChange {
+    kind: &'static str,
+    path: PathBuf,
+    action: MaterializeAction,
+    bytes: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MaterializeAction {
+    Create,
+    Update,
+    Unchanged,
 }
 
 #[allow(dead_code)]
@@ -19150,6 +19219,11 @@ fn run() -> Result<(), String> {
             let options = parse_promote_plan_args(&repo_root, &args[1..])?;
             run_promote_plan(&repo_root, &options)
         }
+        "--promote-materialize" => {
+            let repo_root = repo_root()?;
+            let options = parse_promote_materialize_args(&repo_root, &args[1..])?;
+            run_promote_materialize(&repo_root, &options)
+        }
         "--write-ai-index" => {
             let repo_root = repo_root()?;
             let proof_root = repo_root.join("proofs");
@@ -19193,6 +19267,7 @@ usage:
   npa-proof-corpus --build-modules MODULE ... [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --build-modules-file PATH [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --promote-plan CORPUS_MODULE --mathlib-root PATH --to-module Mathlib.* --out PATH
+  npa-proof-corpus --promote-materialize PLAN --mathlib-root PATH [--dry-run|--apply] [--compat-alias none]
   npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
   npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
   npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
@@ -19635,31 +19710,128 @@ fn parse_promote_plan_args(
 }
 
 fn validate_mathlib_module(module: &str) -> Result<(), String> {
+    validate_mathlib_module_for("promote-plan", module)
+}
+
+fn validate_mathlib_module_for(command: &str, module: &str) -> Result<(), String> {
     if !module.starts_with("Mathlib.") || module == "Mathlib." {
         return Err(format!(
-            "promote-plan error: invalid_target_module {module}; expected Mathlib.*"
+            "{command} error: invalid_target_module {module}; expected Mathlib.*"
         ));
     }
     for component in module.split('.') {
         if component.is_empty() {
             return Err(format!(
-                "promote-plan error: invalid_target_module {module}; empty component"
+                "{command} error: invalid_target_module {module}; empty component"
             ));
         }
         let mut chars = component.chars();
         let first = chars.next().unwrap_or_default();
         if !(first.is_ascii_alphabetic() || first == '_') {
             return Err(format!(
-                "promote-plan error: invalid_target_module {module}; bad component {component}"
+                "{command} error: invalid_target_module {module}; bad component {component}"
             ));
         }
         if chars.any(|ch| !(ch.is_ascii_alphanumeric() || ch == '_')) {
             return Err(format!(
-                "promote-plan error: invalid_target_module {module}; bad component {component}"
+                "{command} error: invalid_target_module {module}; bad component {component}"
             ));
         }
     }
     Ok(())
+}
+
+fn parse_promote_materialize_args(
+    repo_root: &Path,
+    args: &[String],
+) -> Result<PromoteMaterializeOptions, String> {
+    let plan_arg = args
+        .first()
+        .ok_or_else(|| "promote-materialize error: missing_plan".to_owned())?;
+    if plan_arg.starts_with("--") {
+        return Err("promote-materialize error: missing_plan".to_owned());
+    }
+
+    let mut mathlib_root_arg = None;
+    let mut mode = PromoteMaterializeMode::DryRun;
+    let mut mode_seen = false;
+    let mut compat_alias = None;
+    let mut index = 1usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--mathlib-root" => {
+                if mathlib_root_arg.is_some() {
+                    return Err(
+                        "promote-materialize error: duplicate_option --mathlib-root".to_owned()
+                    );
+                }
+                let path = args.get(index + 1).ok_or_else(|| {
+                    "promote-materialize error: missing_value --mathlib-root".to_owned()
+                })?;
+                mathlib_root_arg = Some(PathBuf::from(path));
+                index += 2;
+            }
+            "--dry-run" => {
+                if mode_seen {
+                    return Err("promote-materialize error: duplicate_mode".to_owned());
+                }
+                mode = PromoteMaterializeMode::DryRun;
+                mode_seen = true;
+                index += 1;
+            }
+            "--apply" => {
+                if mode_seen {
+                    return Err("promote-materialize error: duplicate_mode".to_owned());
+                }
+                mode = PromoteMaterializeMode::Apply;
+                mode_seen = true;
+                index += 1;
+            }
+            "--compat-alias" => {
+                if compat_alias.is_some() {
+                    return Err(
+                        "promote-materialize error: duplicate_option --compat-alias".to_owned()
+                    );
+                }
+                let value = args.get(index + 1).ok_or_else(|| {
+                    "promote-materialize error: missing_value --compat-alias".to_owned()
+                })?;
+                compat_alias = Some(parse_compat_alias_decision(value)?);
+                index += 2;
+            }
+            option if option.starts_with("--") => {
+                return Err(format!(
+                    "promote-materialize error: unknown_option {option}"
+                ));
+            }
+            value => {
+                return Err(format!(
+                    "promote-materialize error: unexpected_argument {value}"
+                ));
+            }
+        }
+    }
+
+    let mathlib_root_arg = mathlib_root_arg
+        .ok_or_else(|| "promote-materialize error: missing_option --mathlib-root".to_owned())?;
+
+    Ok(PromoteMaterializeOptions {
+        plan_arg: PathBuf::from(plan_arg.as_str()),
+        plan: output_path(repo_root, plan_arg.as_str()),
+        mathlib_root: output_path(repo_root, &mathlib_root_arg),
+        mathlib_root_arg,
+        mode,
+        compat_alias,
+    })
+}
+
+fn parse_compat_alias_decision(value: &str) -> Result<CompatibilityAliasDecision, String> {
+    match value {
+        "none" => Ok(CompatibilityAliasDecision::None),
+        other => Err(format!(
+            "promote-materialize error: invalid_compat_alias {other}; expected none"
+        )),
+    }
 }
 
 fn run_build_modules(repo_root: &Path, options: &BuildOptions) -> Result<(), String> {
@@ -21747,6 +21919,1103 @@ fn run_promote_plan(repo_root: &Path, options: &PromotePlanOptions) -> Result<()
     Ok(())
 }
 
+fn run_promote_materialize(
+    repo_root: &Path,
+    options: &PromoteMaterializeOptions,
+) -> Result<(), String> {
+    let plan_source = fs::read_to_string(&options.plan).map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_read_plan {}: {err}",
+            options.plan_arg.display()
+        )
+    })?;
+    let mapping = parse_promotion_plan_markdown(&plan_source)?;
+    let materialized = materialize_promotion(repo_root, options, &mapping, &plan_source)?;
+
+    if options.mode == PromoteMaterializeMode::Apply {
+        for change in &materialized.changes {
+            if change.action != MaterializeAction::Unchanged {
+                write(change.path.clone(), &change.bytes)?;
+            }
+        }
+    }
+
+    print_materialized_promotion(options, &materialized);
+    Ok(())
+}
+
+fn parse_promotion_plan_markdown(source: &str) -> Result<PromotionPlanMapping, String> {
+    let mut corpus_module = None;
+    let mut target_module = None;
+    let mut import_mapping = BTreeMap::new();
+
+    for line in source.lines() {
+        if let Some(rest) = line.strip_prefix("# Promotion Plan: ") {
+            if let Some((corpus, target)) = rest.split_once(" -> ") {
+                corpus_module = Some(corpus.trim().to_owned());
+                target_module = Some(target.trim().to_owned());
+            }
+        } else if let Some(value) = markdown_bullet_code_value(line, "Corpus module") {
+            corpus_module = Some(value);
+        } else if let Some(value) = markdown_bullet_code_value(line, "Target module") {
+            target_module = Some(value);
+        }
+    }
+
+    let corpus_module = corpus_module
+        .ok_or_else(|| "promote-materialize error: plan_missing_corpus_module".to_owned())?;
+    let target_module = target_module
+        .ok_or_else(|| "promote-materialize error: plan_missing_target_module".to_owned())?;
+    validate_mathlib_module_for("promote-materialize", &target_module)?;
+
+    if let Some(section) = markdown_section(source, "## Direct Import Mapping") {
+        for line in section.lines() {
+            let Some(cells) = markdown_table_row(line) else {
+                continue;
+            };
+            if cells.len() < 3 || markdown_table_separator(&cells) || cells[0] == "Corpus import" {
+                continue;
+            }
+            let import = markdown_code_cell(&cells[0]);
+            if import.is_empty() {
+                continue;
+            }
+            if external_import_plan(&import).is_some() {
+                import_mapping.insert(import.clone(), import);
+                continue;
+            }
+            let target = markdown_code_cell(&cells[1]);
+            let status = &cells[2];
+            if target.starts_with("TBD")
+                || status.contains("Missing evidence")
+                || !target.starts_with("Mathlib.")
+            {
+                return Err(format!(
+                    "promote-materialize error: unresolved_import_mapping {import}"
+                ));
+            }
+            validate_mathlib_module_for("promote-materialize", &target)?;
+            import_mapping.insert(import, target);
+        }
+    }
+
+    let closure = markdown_section(source, "## Import Closure")
+        .ok_or_else(|| "promote-materialize error: plan_missing_import_closure".to_owned())?;
+    for line in closure.lines() {
+        let Some(cells) = markdown_table_row(line) else {
+            continue;
+        };
+        if cells.len() < 2 || markdown_table_separator(&cells) || cells[0] == "Corpus module" {
+            continue;
+        }
+        let corpus = markdown_code_cell(&cells[0]);
+        let target = markdown_code_cell(&cells[1]);
+        if corpus.is_empty() {
+            continue;
+        }
+        if target.starts_with("TBD")
+            || target.contains("Missing evidence")
+            || !target.starts_with("Mathlib.")
+        {
+            return Err(format!(
+                "promote-materialize error: unresolved_import_mapping {corpus}"
+            ));
+        }
+        validate_mathlib_module_for("promote-materialize", &target)?;
+        import_mapping.entry(corpus).or_insert(target);
+    }
+
+    let alias_rows = source
+        .lines()
+        .filter(|line| line.contains("Compatibility alias"))
+        .collect::<Vec<_>>();
+    let alias_resolved_in_plan = !alias_rows.is_empty()
+        && !alias_rows
+            .iter()
+            .any(|line| line.contains("Missing evidence"));
+
+    Ok(PromotionPlanMapping {
+        corpus_module,
+        target_module,
+        import_mapping,
+        alias_resolved_in_plan,
+    })
+}
+
+fn materialize_promotion(
+    repo_root: &Path,
+    options: &PromoteMaterializeOptions,
+    mapping: &PromotionPlanMapping,
+    plan_source: &str,
+) -> Result<MaterializedPromotion, String> {
+    let config = module_config(&mapping.corpus_module).ok_or_else(|| {
+        format!(
+            "promote-materialize error: unknown_corpus_module {}",
+            mapping.corpus_module
+        )
+    })?;
+    match mapping.import_mapping.get(config.module) {
+        Some(target) if target == &mapping.target_module => {}
+        Some(_) => {
+            return Err(format!(
+                "promote-materialize error: target_module_mismatch {}",
+                mapping.target_module
+            ));
+        }
+        None => {
+            return Err(format!(
+                "promote-materialize error: unresolved_import_mapping {}",
+                config.module
+            ));
+        }
+    }
+    validate_promote_materialize_plan(options, mapping, config, plan_source)?;
+
+    let manifest_path = options.mathlib_root.join(PACKAGE_MANIFEST_PATH);
+    let manifest_source = fs::read_to_string(&manifest_path).map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_read_mathlib_manifest {}: {err}",
+            manifest_path.display()
+        )
+    })?;
+    let manifest = npa_package::parse_manifest_str(&manifest_source)
+        .map_err(|err| format!("promote-materialize error: invalid_mathlib_manifest {err:?}"))?;
+    validate_materialize_package_policy(&manifest)?;
+
+    let artifact = materialized_module_artifact(repo_root, options, mapping, config, &manifest)?;
+    let module_table = materialized_module_manifest_table(config, &artifact);
+    let updated_manifest =
+        upsert_package_module_table(&manifest_source, &mapping.target_module, &module_table)?;
+    npa_package::parse_and_validate_manifest_str(&updated_manifest).map_err(|err| {
+        format!("promote-materialize error: updated_mathlib_manifest_invalid {err:?}")
+    })?;
+
+    let changes = vec![
+        materialize_change(
+            "source",
+            options.mathlib_root.join(&artifact.source_path),
+            artifact.source.as_bytes().to_vec(),
+        )?,
+        materialize_change(
+            "certificate",
+            options.mathlib_root.join(&artifact.certificate_path),
+            artifact.certificate_bytes.clone(),
+        )?,
+        materialize_change(
+            "meta",
+            options.mathlib_root.join(&artifact.meta_path),
+            artifact.meta.as_bytes().to_vec(),
+        )?,
+        materialize_change(
+            "replay",
+            options.mathlib_root.join(&artifact.replay_path),
+            artifact.replay.as_bytes().to_vec(),
+        )?,
+        materialize_change(
+            "manifest",
+            manifest_path,
+            updated_manifest.as_bytes().to_vec(),
+        )?,
+    ];
+
+    Ok(MaterializedPromotion {
+        corpus_module: mapping.corpus_module.clone(),
+        target_module: mapping.target_module.clone(),
+        changes,
+        gate_commands: materialize_gate_commands(&options.mathlib_root_arg),
+    })
+}
+
+fn validate_promote_materialize_plan(
+    options: &PromoteMaterializeOptions,
+    mapping: &PromotionPlanMapping,
+    config: &ModuleArtifact,
+    plan_source: &str,
+) -> Result<(), String> {
+    if !mapping.alias_resolved_in_plan && options.compat_alias.is_none() {
+        return Err(
+            "promote-materialize error: unresolved_compatibility_alias_decision".to_owned(),
+        );
+    }
+    if plan_source.contains("| `allow_custom_axioms` | `true`")
+        || plan_source.contains("allow_custom_axioms = true")
+    {
+        return Err(
+            "promote-materialize error: axiom_policy_widening allow_custom_axioms".to_owned(),
+        );
+    }
+
+    for axiom in config.expected_axioms {
+        if !PACKAGE_POLICY_ALLOWED_AXIOMS.contains(axiom) {
+            return Err(format!(
+                "promote-materialize error: axiom_policy_widening {axiom}"
+            ));
+        }
+    }
+
+    for import in source_imports(config) {
+        if external_import_plan(import).is_some() {
+            continue;
+        }
+        let Some(target) = mapping.import_mapping.get(*import) else {
+            return Err(format!(
+                "promote-materialize error: unresolved_import_mapping {import}"
+            ));
+        };
+        validate_mathlib_module_for("promote-materialize", target)?;
+    }
+
+    Ok(())
+}
+
+fn validate_materialize_package_policy(
+    manifest: &npa_package::PackageManifest,
+) -> Result<(), String> {
+    if manifest.policy.allow_custom_axioms {
+        return Err(
+            "promote-materialize error: axiom_policy_widening allow_custom_axioms".to_owned(),
+        );
+    }
+    let allowed_axioms = manifest
+        .policy
+        .allowed_axioms
+        .iter()
+        .map(|axiom| axiom.as_dotted())
+        .collect::<Vec<_>>();
+    let expected = PACKAGE_POLICY_ALLOWED_AXIOMS
+        .iter()
+        .map(|axiom| (*axiom).to_owned())
+        .collect::<Vec<_>>();
+    if allowed_axioms != expected {
+        return Err(format!(
+            "promote-materialize error: axiom_policy_widening allowed_axioms expected {:?} actual {:?}",
+            expected, allowed_axioms
+        ));
+    }
+    Ok(())
+}
+
+fn materialized_module_artifact(
+    repo_root: &Path,
+    options: &PromoteMaterializeOptions,
+    mapping: &PromotionPlanMapping,
+    config: &ModuleArtifact,
+    manifest: &npa_package::PackageManifest,
+) -> Result<MaterializedModuleArtifact, String> {
+    let proof_root = repo_root.join("proofs");
+    let corpus_source = if uses_checked_in_source(config.module) {
+        fs::read_to_string(proof_root.join(config.source_path))
+            .map_err(|err| format!("failed to read {}: {err}", config.source_path))?
+    } else {
+        module_source(config)
+    };
+    let source = rewrite_promotion_source_imports(&corpus_source, mapping)?;
+    let imports = target_direct_imports(config, mapping)?;
+    let policy = materialize_axiom_policy_for_package(manifest);
+    let (verified_imports, source_interfaces) =
+        materialize_direct_import_context(&options.mathlib_root, manifest, &imports, &policy)?;
+    let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
+        npa_frontend::FileId(0),
+        npa_cert::Name::from_dotted(&mapping.target_module),
+        &source,
+        &verified_imports,
+        &source_interfaces,
+        &npa_frontend::HumanCompileOptions::default(),
+        &policy,
+    )
+    .map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_compile_target {}: {err:?}",
+            mapping.target_module
+        )
+    })?;
+    let certificate_bytes = npa_cert::encode_module_cert(&output.certificate).map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_encode_target {}: {err:?}",
+            mapping.target_module
+        )
+    })?;
+    let verified = output.verified_module;
+    if verified.module().as_dotted() != mapping.target_module {
+        return Err(format!(
+            "promote-materialize error: certificate_module_mismatch expected {} actual {}",
+            mapping.target_module,
+            verified.module().as_dotted()
+        ));
+    }
+    let axioms = verified
+        .axiom_report()
+        .module_axioms
+        .iter()
+        .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    let expected_axioms = config
+        .expected_axioms
+        .iter()
+        .map(|axiom| (*axiom).to_owned())
+        .collect::<Vec<_>>();
+    if axioms != expected_axioms {
+        return Err(format!(
+            "promote-materialize error: target_axioms_mismatch expected {:?} actual {:?}",
+            expected_axioms, axioms
+        ));
+    }
+    let expected_features = expected_core_features_for_module(config.module);
+    if verified.axiom_report().core_features != expected_features {
+        return Err(format!(
+            "promote-materialize error: target_core_features_mismatch expected {:?} actual {:?}",
+            expected_features,
+            verified.axiom_report().core_features
+        ));
+    }
+
+    let base = mathlib_module_path(&mapping.target_module);
+    let mut artifact = MaterializedModuleArtifact {
+        module: mapping.target_module.clone(),
+        source_path: format!("{base}/source.npa"),
+        certificate_path: format!("{base}/certificate.npcert"),
+        meta_path: format!("{base}/meta.json"),
+        replay_path: format!("{base}/replay.json"),
+        source,
+        certificate_bytes,
+        meta: String::new(),
+        replay: String::new(),
+        source_sha256: String::new(),
+        certificate_file_sha256: String::new(),
+        export_hash: tagged_hash(output.certificate.hashes.export_hash),
+        axiom_report_hash: tagged_hash(output.certificate.hashes.axiom_report_hash),
+        certificate_hash: tagged_hash(output.certificate.hashes.certificate_hash),
+        imports,
+        axioms,
+    };
+    artifact.source_sha256 = tagged_sha256(artifact.source.as_bytes());
+    artifact.certificate_file_sha256 = tagged_sha256(&artifact.certificate_bytes);
+    artifact.meta = materialized_meta_json(config, &artifact);
+    artifact.replay = materialized_replay_json(config, &artifact);
+    Ok(artifact)
+}
+
+fn rewrite_promotion_source_imports(
+    source: &str,
+    mapping: &PromotionPlanMapping,
+) -> Result<String, String> {
+    let mut out = String::new();
+    let trailing_newline = source.ends_with('\n');
+    for line in source.lines() {
+        if let Some(import) = line.strip_prefix("import ") {
+            let import = import.trim();
+            let target = if external_import_plan(import).is_some() {
+                import.to_owned()
+            } else {
+                mapping.import_mapping.get(import).cloned().ok_or_else(|| {
+                    format!("promote-materialize error: unresolved_import_mapping {import}")
+                })?
+            };
+            out.push_str("import ");
+            out.push_str(&target);
+        } else {
+            out.push_str(line);
+        }
+        out.push('\n');
+    }
+    if !trailing_newline {
+        out.pop();
+    }
+    Ok(out)
+}
+
+fn target_direct_imports(
+    config: &ModuleArtifact,
+    mapping: &PromotionPlanMapping,
+) -> Result<Vec<String>, String> {
+    source_imports(config)
+        .iter()
+        .map(|import| {
+            if external_import_plan(import).is_some() {
+                Ok((*import).to_owned())
+            } else {
+                mapping.import_mapping.get(*import).cloned().ok_or_else(|| {
+                    format!("promote-materialize error: unresolved_import_mapping {import}")
+                })
+            }
+        })
+        .collect()
+}
+
+fn materialize_axiom_policy_for_package(
+    manifest: &npa_package::PackageManifest,
+) -> npa_cert::AxiomPolicy {
+    let mut policy = npa_cert::AxiomPolicy::normal()
+        .with_core_feature(npa_cert::CoreFeature::QuotientV1)
+        .with_core_feature(npa_cert::CoreFeature::QuotientV2)
+        .with_core_feature(npa_cert::CoreFeature::QuotientV3);
+    if !manifest.policy.allow_custom_axioms {
+        policy.allowlisted_axioms = manifest.policy.allowed_axioms.iter().cloned().collect();
+    }
+    policy
+}
+
+fn materialize_direct_import_context(
+    mathlib_root: &Path,
+    manifest: &npa_package::PackageManifest,
+    direct_imports: &[String],
+    policy: &npa_cert::AxiomPolicy,
+) -> Result<
+    (
+        Vec<npa_cert::VerifiedModule>,
+        Vec<npa_frontend::HumanImportedSourceInterface>,
+    ),
+    String,
+> {
+    let mut session = npa_cert::VerifierSession::new();
+    let mut verified = BTreeMap::new();
+    let mut source_interfaces = BTreeMap::new();
+    let mut visiting = BTreeSet::new();
+    for import in direct_imports {
+        verify_materialize_package_import(
+            mathlib_root,
+            manifest,
+            import,
+            policy,
+            &mut session,
+            &mut verified,
+            &mut source_interfaces,
+            &mut visiting,
+        )?;
+    }
+
+    let mut direct_verified = Vec::new();
+    let mut direct_source_interfaces = Vec::new();
+    for import in direct_imports {
+        direct_verified.push(verified.get(import).cloned().ok_or_else(|| {
+            format!("promote-materialize error: verified_import_missing {import}")
+        })?);
+        direct_source_interfaces.push(source_interfaces.get(import).cloned().ok_or_else(|| {
+            format!("promote-materialize error: source_interface_missing {import}")
+        })?);
+    }
+    Ok((direct_verified, direct_source_interfaces))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn verify_materialize_package_import(
+    mathlib_root: &Path,
+    manifest: &npa_package::PackageManifest,
+    module: &str,
+    policy: &npa_cert::AxiomPolicy,
+    session: &mut npa_cert::VerifierSession,
+    verified: &mut BTreeMap<String, npa_cert::VerifiedModule>,
+    source_interfaces: &mut BTreeMap<String, npa_frontend::HumanImportedSourceInterface>,
+    visiting: &mut BTreeSet<String>,
+) -> Result<(), String> {
+    if verified.contains_key(module) {
+        return Ok(());
+    }
+    if !visiting.insert(module.to_owned()) {
+        return Err(format!(
+            "promote-materialize error: import_cycle_while_materializing {module}"
+        ));
+    }
+
+    if let Some(import) = manifest
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .find(|import| import.module.as_dotted() == module)
+    {
+        let bytes = fs::read(mathlib_root.join(import.certificate.as_str())).map_err(|err| {
+            format!(
+                "promote-materialize error: failed_to_read_import_certificate {}: {err}",
+                import.certificate.as_str()
+            )
+        })?;
+        let module_name = import.module.as_dotted();
+        let verified_module =
+            npa_cert::verify_module_cert(&bytes, session, policy).map_err(|err| {
+                format!(
+                    "promote-materialize error: import_certificate_rejected {module_name}: {err:?}"
+                )
+            })?;
+        validate_verified_import_hashes(
+            &module_name,
+            &bytes,
+            &verified_module,
+            None,
+            Some(import),
+        )?;
+        source_interfaces.insert(
+            module_name.clone(),
+            fallback_source_interface_from_verified(&verified_module),
+        );
+        verified.insert(module_name, verified_module);
+        visiting.remove(module);
+        return Ok(());
+    }
+
+    let package_module = manifest
+        .modules
+        .iter()
+        .find(|candidate| candidate.module.as_dotted() == module)
+        .ok_or_else(|| format!("promote-materialize error: unresolved_import_mapping {module}"))?;
+    for import in &package_module.imports {
+        verify_materialize_package_import(
+            mathlib_root,
+            manifest,
+            &import.as_dotted(),
+            policy,
+            session,
+            verified,
+            source_interfaces,
+            visiting,
+        )?;
+    }
+    let bytes =
+        fs::read(mathlib_root.join(package_module.certificate.as_str())).map_err(|err| {
+            format!(
+                "promote-materialize error: failed_to_read_import_certificate {}: {err}",
+                package_module.certificate.as_str()
+            )
+        })?;
+    let module_name = package_module.module.as_dotted();
+    let verified_module = npa_cert::verify_module_cert(&bytes, session, policy).map_err(|err| {
+        format!("promote-materialize error: import_certificate_rejected {module_name}: {err:?}")
+    })?;
+    validate_verified_import_hashes(
+        &module_name,
+        &bytes,
+        &verified_module,
+        Some(package_module),
+        None,
+    )?;
+    source_interfaces.insert(
+        module_name.clone(),
+        fallback_source_interface_from_verified(&verified_module),
+    );
+    verified.insert(module_name, verified_module);
+    visiting.remove(module);
+    Ok(())
+}
+
+fn validate_verified_import_hashes(
+    module: &str,
+    bytes: &[u8],
+    verified: &npa_cert::VerifiedModule,
+    package_module: Option<&npa_package::PackageModule>,
+    external_import: Option<&npa_package::PackageExternalImport>,
+) -> Result<(), String> {
+    if verified.module().as_dotted() != module {
+        return Err(format!(
+            "promote-materialize error: import_certificate_module_mismatch expected {module} actual {}",
+            verified.module().as_dotted()
+        ));
+    }
+    if let Some(module_entry) = package_module {
+        compare_package_hash(
+            module,
+            "expected_certificate_file_hash",
+            npa_package::format_package_hash(&npa_package::package_file_hash(bytes)),
+            npa_package::format_package_hash(&module_entry.expected_certificate_file_hash),
+        )?;
+        compare_package_hash(
+            module,
+            "expected_export_hash",
+            tagged_hash(verified.export_hash()),
+            npa_package::format_package_hash(&module_entry.expected_export_hash),
+        )?;
+        compare_package_hash(
+            module,
+            "expected_certificate_hash",
+            tagged_hash(verified.certificate_hash()),
+            npa_package::format_package_hash(&module_entry.expected_certificate_hash),
+        )?;
+    }
+    if let Some(import_entry) = external_import {
+        compare_package_hash(
+            module,
+            "export_hash",
+            tagged_hash(verified.export_hash()),
+            npa_package::format_package_hash(&import_entry.export_hash),
+        )?;
+        compare_package_hash(
+            module,
+            "certificate_hash",
+            tagged_hash(verified.certificate_hash()),
+            npa_package::format_package_hash(&import_entry.certificate_hash),
+        )?;
+    }
+    Ok(())
+}
+
+fn compare_package_hash(
+    module: &str,
+    field: &str,
+    actual: String,
+    expected: String,
+) -> Result<(), String> {
+    if actual != expected {
+        return Err(format!(
+            "promote-materialize error: import_hash_mismatch {module} {field} expected {expected} actual {actual}"
+        ));
+    }
+    Ok(())
+}
+
+fn fallback_source_interface_from_verified(
+    verified: &npa_cert::VerifiedModule,
+) -> npa_frontend::HumanImportedSourceInterface {
+    let import = npa_frontend::VerifiedImport::from(verified);
+    let empty_span = npa_frontend::Span::empty(npa_frontend::FileId(0));
+    let mut source_interface = npa_frontend::HumanSourceInterface::new(import.module.clone());
+    source_interface.declarations = import
+        .exports
+        .iter()
+        .map(|export| npa_frontend::HumanSourceDeclarationMetadata {
+            kind: npa_frontend::HumanSourceDeclarationKind::Imported,
+            name: npa_frontend::HumanName::new(export.name.0.clone(), empty_span),
+            universe_params: export
+                .universe_params
+                .iter()
+                .cloned()
+                .map(|name| npa_frontend::HumanUniverseParam {
+                    name,
+                    span: empty_span,
+                })
+                .collect(),
+            binders: Vec::new(),
+            decl_interface_hash: Some(export.decl_interface_hash),
+            span: empty_span,
+        })
+        .collect();
+
+    npa_frontend::HumanImportedSourceInterface {
+        module: import.module,
+        export_hash: import.export_hash,
+        certificate_hash: import.certificate_hash,
+        source_interface,
+    }
+}
+
+fn materialized_module_manifest_table(
+    config: &ModuleArtifact,
+    artifact: &MaterializedModuleArtifact,
+) -> String {
+    let mut table = String::new();
+    table.push_str("[[modules]]\n");
+    table.push_str(&format!("module = \"{}\"\n", artifact.module));
+    table.push_str(&format!("source = \"{}\"\n", artifact.source_path));
+    table.push_str(&format!(
+        "certificate = \"{}\"\n",
+        artifact.certificate_path
+    ));
+    table.push_str(&format!("meta = \"{}\"\n", artifact.meta_path));
+    table.push_str(&format!("replay = \"{}\"\n", artifact.replay_path));
+    table.push_str("producer_profile = \"human-surface-explicit-term\"\n");
+    table.push_str(&format!(
+        "expected_source_hash = \"{}\"\n",
+        artifact.source_sha256
+    ));
+    table.push_str(&format!(
+        "expected_certificate_file_hash = \"{}\"\n",
+        artifact.certificate_file_sha256
+    ));
+    table.push_str(&format!(
+        "expected_export_hash = \"{}\"\n",
+        artifact.export_hash
+    ));
+    table.push_str(&format!(
+        "expected_axiom_report_hash = \"{}\"\n",
+        artifact.axiom_report_hash
+    ));
+    table.push_str(&format!(
+        "expected_certificate_hash = \"{}\"\n",
+        artifact.certificate_hash
+    ));
+    table.push_str(&format!(
+        "imports = [{}]\n",
+        quoted_owned_items(&artifact.imports)
+    ));
+    if !config.inductives.is_empty() {
+        table.push_str(&format!(
+            "inductives = [{}]\n",
+            quoted_items(
+                &config
+                    .inductives
+                    .iter()
+                    .map(|inductive| inductive.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+    }
+    table.push_str(&format!(
+        "definitions = [{}]\n",
+        quoted_items(
+            &config
+                .definitions
+                .iter()
+                .map(|definition| definition.name)
+                .collect::<Vec<_>>()
+        )
+    ));
+    table.push_str(&format!(
+        "theorems = [{}]\n",
+        quoted_items(
+            &config
+                .theorems
+                .iter()
+                .map(|theorem| theorem.name)
+                .collect::<Vec<_>>()
+        )
+    ));
+    table.push_str(&format!(
+        "axioms = [{}]\n",
+        quoted_owned_items(&artifact.axioms)
+    ));
+    table
+}
+
+fn materialized_meta_json(
+    config: &ModuleArtifact,
+    artifact: &MaterializedModuleArtifact,
+) -> String {
+    let inductives = config.inductives.iter().map(|inductive| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"inductive\" }}",
+            inductive.name
+        )
+    });
+    let definitions = config.definitions.iter().map(|definition| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"def\" }}",
+            definition.name
+        )
+    });
+    let theorems = config.theorems.iter().map(|theorem| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"theorem\" }}",
+            theorem.name
+        )
+    });
+    let declarations = inductives
+        .chain(definitions)
+        .chain(theorems)
+        .collect::<Vec<_>>()
+        .join(",\n");
+    format!(
+        "\
+{{
+  \"schema\": \"npa-ai-proof-meta-v0.1\",
+  \"module\": \"{}\",
+  \"source\": \"{}\",
+  \"certificate\": \"{}\",
+  \"producer_profile\": \"human-surface-explicit-term\",
+  \"trusted_status\": \"verified_by_certificate\",
+  \"source_sha256\": \"{}\",
+  \"certificate_file_sha256\": \"{}\",
+  \"export_hash\": \"{}\",
+  \"axiom_report_hash\": \"{}\",
+  \"certificate_hash\": \"{}\",
+  \"imports\": [{}],
+  \"axioms\": [{}],
+  \"declarations\": [
+{}
+  ],
+  \"trust_boundary\": \"source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted\"
+}}
+",
+        artifact.module,
+        artifact.source_path,
+        artifact.certificate_path,
+        artifact.source_sha256,
+        artifact.certificate_file_sha256,
+        artifact.export_hash,
+        artifact.axiom_report_hash,
+        artifact.certificate_hash,
+        quoted_owned_items(&artifact.imports),
+        quoted_owned_items(&artifact.axioms),
+        declarations
+    )
+}
+
+fn materialized_replay_json(
+    config: &ModuleArtifact,
+    artifact: &MaterializedModuleArtifact,
+) -> String {
+    let steps = if uses_checked_in_source(config.module) {
+        source_replay_steps(&artifact.source)
+            .into_iter()
+            .map(|(name, kind, term)| replay_step_json(&name, kind, &term))
+            .collect::<Vec<_>>()
+            .join(",\n")
+    } else {
+        let inductive_steps = config.inductives.iter().map(|inductive| {
+            let term = inductive_replay_term(inductive);
+            replay_step_json(inductive.name, "inductive_decl", &term)
+        });
+        let definition_steps = config.definitions.iter().map(|definition| {
+            replay_step_json(definition.name, "explicit_def_value", definition.value)
+        });
+        let theorem_steps = config
+            .theorems
+            .iter()
+            .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
+        inductive_steps
+            .chain(definition_steps)
+            .chain(theorem_steps)
+            .collect::<Vec<_>>()
+            .join(",\n")
+    };
+    format!(
+        "\
+{{
+  \"schema\": \"npa-ai-proof-replay-v0.1\",
+  \"module\": \"{}\",
+  \"trusted\": false,
+  \"profile\": \"explicit_term_source_certificate_handoff\",
+  \"steps\": [
+{}
+  ],
+  \"acceptance\": {{
+    \"required\": [\"decode_module_cert\", \"verify_module_cert\"],
+    \"accepted_artifact\": \"{}\"
+  }}
+}}
+",
+        artifact.module, steps, artifact.certificate_path
+    )
+}
+
+fn upsert_package_module_table(
+    source: &str,
+    target_module: &str,
+    module_table: &str,
+) -> Result<String, String> {
+    if let Some((start, end)) = find_package_module_block(source, target_module) {
+        let mut out = String::new();
+        out.push_str(&source[..start]);
+        out.push_str(module_table);
+        if !module_table.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push_str(&source[end..]);
+        Ok(out)
+    } else {
+        let mut out = source.trim_end_matches('\n').to_owned();
+        out.push_str("\n\n");
+        out.push_str(module_table);
+        if !out.ends_with('\n') {
+            out.push('\n');
+        }
+        Ok(out)
+    }
+}
+
+fn find_package_module_block(source: &str, target_module: &str) -> Option<(usize, usize)> {
+    let lines = source
+        .split_inclusive('\n')
+        .scan(0usize, |offset, line| {
+            let start = *offset;
+            *offset += line.len();
+            Some((start, line))
+        })
+        .collect::<Vec<_>>();
+    for (index, (start, line)) in lines.iter().enumerate() {
+        if line.trim() != "[[modules]]" {
+            continue;
+        }
+        let end = lines[index + 1..]
+            .iter()
+            .find(|(_, next)| {
+                let trimmed = next.trim();
+                trimmed.starts_with('[') && trimmed.ends_with(']')
+            })
+            .map(|(offset, _)| *offset)
+            .unwrap_or(source.len());
+        let block = &source[*start..end];
+        if package_module_name_from_block(block).as_deref() == Some(target_module) {
+            return Some((*start, end));
+        }
+    }
+    None
+}
+
+fn package_module_name_from_block(block: &str) -> Option<String> {
+    for line in block.lines() {
+        let line = line.trim();
+        let Some(rest) = line.strip_prefix("module") else {
+            continue;
+        };
+        let rest = rest.trim_start();
+        let Some(rest) = rest.strip_prefix('=') else {
+            continue;
+        };
+        return quoted_toml_string(rest.trim_start()).map(ToOwned::to_owned);
+    }
+    None
+}
+
+fn quoted_toml_string(value: &str) -> Option<&str> {
+    let value = value.strip_prefix('"')?;
+    let end = value.find('"')?;
+    Some(&value[..end])
+}
+
+fn materialize_change(
+    kind: &'static str,
+    path: PathBuf,
+    bytes: Vec<u8>,
+) -> Result<MaterializeChange, String> {
+    let action = match fs::read(&path) {
+        Ok(existing) if existing == bytes => MaterializeAction::Unchanged,
+        Ok(_) => MaterializeAction::Update,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => MaterializeAction::Create,
+        Err(err) => {
+            return Err(format!(
+                "promote-materialize error: failed_to_read_target {}: {err}",
+                path.display()
+            ));
+        }
+    };
+    Ok(MaterializeChange {
+        kind,
+        path,
+        action,
+        bytes,
+    })
+}
+
+fn materialize_gate_commands(mathlib_root_arg: &Path) -> Vec<String> {
+    let root = mathlib_root_arg.display();
+    let downstream_root = downstream_smoke_root(mathlib_root_arg);
+    vec![
+        format!("cargo run -q -p npa-cli -- package check --root {root} --json"),
+        format!("cargo run -q -p npa-cli -- package build-certs --root {root} --check --json"),
+        format!(
+            "cargo run -q -p npa-cli -- package verify-certs --root {root} --checker reference --json"
+        ),
+        format!("cargo run -q -p npa-cli -- package check-hashes --root {root} --json"),
+        format!("cargo run -q -p npa-cli -- package axiom-report --root {root} --check --json"),
+        format!("cargo run -q -p npa-cli -- package index --root {root} --check --json"),
+        format!("cargo run -q -p npa-cli -- package publish-plan --root {root} --check --json"),
+        format!("cargo run -q -p npa-cli -- package check --root {downstream_root} --json"),
+        format!(
+            "cargo run -q -p npa-cli -- package build-certs --root {downstream_root} --check --json"
+        ),
+        format!(
+            "cargo run -q -p npa-cli -- package verify-certs --root {downstream_root} --checker reference --json"
+        ),
+        format!(
+            "cargo run -q -p npa-cli -- package check-hashes --root {downstream_root} --json"
+        ),
+    ]
+}
+
+fn print_materialized_promotion(
+    options: &PromoteMaterializeOptions,
+    materialized: &MaterializedPromotion,
+) {
+    println!(
+        "promotion materialize mode = \"{}\"",
+        promote_materialize_mode_name(options.mode)
+    );
+    println!("plan = \"{}\"", options.plan_arg.display());
+    println!("mathlib_root = \"{}\"", options.mathlib_root_arg.display());
+    println!("corpus_module = \"{}\"", materialized.corpus_module);
+    println!("target_module = \"{}\"", materialized.target_module);
+    println!(
+        "namespace_change = \"{} -> {}\"",
+        materialized.corpus_module, materialized.target_module
+    );
+    for change in &materialized.changes {
+        println!(
+            "change kind = \"{}\" action = \"{}\" path = \"{}\"",
+            change.kind,
+            materialize_action_name(change.action),
+            materialize_display_path(&options.mathlib_root, &change.path)
+        );
+    }
+    if options.mode == PromoteMaterializeMode::Apply {
+        for change in &materialized.changes {
+            if change.action != MaterializeAction::Unchanged {
+                println!(
+                    "changed_path = \"{}\"",
+                    materialize_display_path(&options.mathlib_root, &change.path)
+                );
+            }
+        }
+    }
+    println!("post_materialize_checklist:");
+    for command in &materialized.gate_commands {
+        println!("  {command}");
+    }
+}
+
+fn promote_materialize_mode_name(mode: PromoteMaterializeMode) -> &'static str {
+    match mode {
+        PromoteMaterializeMode::DryRun => "dry-run",
+        PromoteMaterializeMode::Apply => "apply",
+    }
+}
+
+fn materialize_action_name(action: MaterializeAction) -> &'static str {
+    match action {
+        MaterializeAction::Create => "create",
+        MaterializeAction::Update => "update",
+        MaterializeAction::Unchanged => "unchanged",
+    }
+}
+
+fn materialize_display_path(root: &Path, path: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .display()
+        .to_string()
+}
+
+fn markdown_bullet_code_value(line: &str, label: &str) -> Option<String> {
+    let rest = line.trim().strip_prefix("- ")?;
+    let rest = rest.strip_prefix(label)?;
+    let rest = rest.strip_prefix(':')?.trim();
+    Some(markdown_code_cell(rest))
+}
+
+fn markdown_section<'a>(source: &'a str, header: &str) -> Option<&'a str> {
+    let start = source.find(header)?;
+    let body_start = source[start + header.len()..].find('\n')? + start + header.len() + 1;
+    let body = &source[body_start..];
+    let end = body.find("\n## ").unwrap_or(body.len());
+    Some(&body[..end])
+}
+
+fn markdown_table_row(line: &str) -> Option<Vec<String>> {
+    let trimmed = line.trim();
+    if !trimmed.starts_with('|') || !trimmed.ends_with('|') {
+        return None;
+    }
+    Some(
+        trimmed
+            .trim_matches('|')
+            .split('|')
+            .map(|cell| cell.trim().to_owned())
+            .collect(),
+    )
+}
+
+fn markdown_table_separator(cells: &[String]) -> bool {
+    cells
+        .iter()
+        .all(|cell| cell.chars().all(|ch| matches!(ch, '-' | ':' | ' ')))
+}
+
+fn markdown_code_cell(cell: &str) -> String {
+    let trimmed = cell.trim();
+    trimmed
+        .strip_prefix('`')
+        .and_then(|value| value.strip_suffix('`'))
+        .unwrap_or(trimmed)
+        .replace("\\|", "|")
+}
+
 fn promotion_plan_markdown(
     repo_root: &Path,
     options: &PromotePlanOptions,
@@ -21880,9 +23149,9 @@ fn promotion_plan_markdown(
     out.push_str("## Axiom Policy Diff\n\n");
     out.push_str("| Item | Corpus value | Target action |\n");
     out.push_str("| --- | --- | --- |\n");
-    out.push_str(&format!(
-        "| `allow_custom_axioms` | `false` | Keep `false` in npa-mathlib unless a separate policy review approves a change. |\n"
-    ));
+    out.push_str(
+        "| `allow_custom_axioms` | `false` | Keep `false` in npa-mathlib unless a separate policy review approves a change. |\n",
+    );
     out.push_str(&format!(
         "| `allowed_axioms` | `{}` | Target package allow-list must cover exactly the required axioms without accidental widening. |\n",
         PACKAGE_POLICY_ALLOWED_AXIOMS.join(", ")
@@ -22199,6 +23468,7 @@ fn verified_cache_key_input_from_verified_module(
 }
 
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 fn verified_cache_key_input_from_verified_module_with_profiles(
     verified: &npa_cert::VerifiedModule,
     certificate_file_hash: String,
@@ -23163,11 +24433,9 @@ fn module_source(config: &ModuleArtifact) -> String {
 }
 
 fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
-    if config.module == ABSTRACT_FIELD_MODULE.module {
-        // Eq is verified as a transitive AbstractRing dependency; importing it directly here
-        // duplicates the kernel Eq declaration during certificate handoff.
-        &["Proofs.Ai.Algebra.AbstractRing"]
-    } else if config.module == ABSTRACT_ORDERED_FIELD_MODULE.module {
+    if config.module == ABSTRACT_FIELD_MODULE.module
+        || config.module == ABSTRACT_ORDERED_FIELD_MODULE.module
+    {
         // Eq is verified as a transitive AbstractRing dependency; importing it directly here
         // duplicates the kernel Eq declaration during certificate handoff.
         &["Proofs.Ai.Algebra.AbstractRing"]
@@ -23961,6 +25229,220 @@ Proofs.Ai.Eq # inline comments are ignored
     }
 
     #[test]
+    fn promote_materialize_args_parser_defaults_to_dry_run() {
+        let repo = repo_root().expect("repo root should resolve");
+        let parsed = parse_promote_materialize_args(
+            &repo,
+            &[
+                "develop/basic-promotion.md".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+            ],
+        )
+        .expect("promote-materialize args should parse");
+        assert_eq!(parsed.plan_arg, PathBuf::from("develop/basic-promotion.md"));
+        assert_eq!(parsed.mathlib_root_arg, PathBuf::from("../npa-mathlib"));
+        assert_eq!(parsed.mode, PromoteMaterializeMode::DryRun);
+        assert!(parsed.compat_alias.is_none());
+
+        let parsed = parse_promote_materialize_args(
+            &repo,
+            &[
+                "develop/basic-promotion.md".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--apply".to_owned(),
+                "--compat-alias".to_owned(),
+                "none".to_owned(),
+            ],
+        )
+        .expect("apply args should parse");
+        assert_eq!(parsed.mode, PromoteMaterializeMode::Apply);
+        assert_eq!(parsed.compat_alias, Some(CompatibilityAliasDecision::None));
+
+        let err = parse_promote_materialize_args(
+            &repo,
+            &[
+                "develop/basic-promotion.md".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--dry-run".to_owned(),
+                "--apply".to_owned(),
+            ],
+        )
+        .expect_err("duplicate modes should fail");
+        assert_eq!(err, "promote-materialize error: duplicate_mode");
+    }
+
+    #[test]
+    fn usage_documents_promote_materialize() {
+        let usage = usage();
+        assert!(usage.contains(
+            "--promote-materialize PLAN --mathlib-root PATH [--dry-run|--apply] [--compat-alias none]"
+        ));
+    }
+
+    #[test]
+    fn promote_materialize_rejects_unresolved_import_mapping() {
+        let plan = "\
+# Promotion Plan: Proofs.Ai.Algebra.AbstractField -> Mathlib.Algebra.Field.Basic
+
+## Direct Import Mapping
+
+| Corpus import | Proposed target import | Status |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractRing` | `TBD (Mathlib.Algebra.AbstractRing)` | Missing evidence |
+
+## Import Closure
+
+| Corpus module | Proposed target module | Certificate | Source imports | Package imports | Axioms |
+| --- | --- | --- | --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractRing` | `TBD (Mathlib.Algebra.AbstractRing)` | `Proofs/Ai/Algebra/AbstractRing/certificate.npcert` | `none` | `none` | `none` |
+";
+        let err =
+            parse_promotion_plan_markdown(plan).expect_err("unresolved import mapping should fail");
+        assert_eq!(
+            err,
+            "promote-materialize error: unresolved_import_mapping Proofs.Ai.Algebra.AbstractRing"
+        );
+    }
+
+    #[test]
+    fn promote_materialize_rejects_unresolved_alias_decision() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-unresolved-alias");
+        let plan_path = temp.join("plan.md");
+        fs::write(
+            &plan_path,
+            test_basic_promotion_plan("Mathlib.Test.Basic", true),
+        )
+        .expect("plan write");
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: temp.join("mathlib"),
+            mode: PromoteMaterializeMode::DryRun,
+            compat_alias: None,
+        };
+
+        let err = run_promote_materialize(&repo, &options)
+            .expect_err("alias decision should be required");
+        assert_eq!(
+            err,
+            "promote-materialize error: unresolved_compatibility_alias_decision"
+        );
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_rejects_missing_alias_decision() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-missing-alias");
+        let plan_path = temp.join("plan.md");
+        let plan = test_basic_promotion_plan("Mathlib.Test.Basic", false)
+            .lines()
+            .filter(|line| !line.contains("Compatibility alias review"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        fs::write(&plan_path, format!("{plan}\n")).expect("plan write");
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: temp.join("mathlib"),
+            mode: PromoteMaterializeMode::DryRun,
+            compat_alias: None,
+        };
+
+        let err = run_promote_materialize(&repo, &options)
+            .expect_err("missing alias decision should be required");
+        assert_eq!(
+            err,
+            "promote-materialize error: unresolved_compatibility_alias_decision"
+        );
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_dry_run_does_not_modify_mathlib_root() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-dry-run");
+        let mathlib_root = temp.join("mathlib");
+        write_minimal_mathlib_manifest(&mathlib_root);
+        let plan_path = temp.join("plan.md");
+        fs::write(
+            &plan_path,
+            test_basic_promotion_plan("Mathlib.Test.Basic", true),
+        )
+        .expect("plan write");
+        let before = test_tree_hashes(&mathlib_root);
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: mathlib_root.clone(),
+            mode: PromoteMaterializeMode::DryRun,
+            compat_alias: Some(CompatibilityAliasDecision::None),
+        };
+
+        run_promote_materialize(&repo, &options).expect("dry-run should succeed");
+        let after = test_tree_hashes(&mathlib_root);
+        assert_eq!(before, after);
+        assert!(!mathlib_root.join("Mathlib/Test/Basic/source.npa").exists());
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_apply_writes_target_package_artifacts() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-apply");
+        let mathlib_root = temp.join("mathlib");
+        write_minimal_mathlib_manifest(&mathlib_root);
+        let plan_path = temp.join("plan.md");
+        fs::write(
+            &plan_path,
+            test_basic_promotion_plan("Mathlib.Test.Basic", true),
+        )
+        .expect("plan write");
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: mathlib_root.clone(),
+            mode: PromoteMaterializeMode::Apply,
+            compat_alias: Some(CompatibilityAliasDecision::None),
+        };
+
+        run_promote_materialize(&repo, &options).expect("apply should write artifacts");
+
+        let source_path = mathlib_root.join("Mathlib/Test/Basic/source.npa");
+        let certificate_path = mathlib_root.join("Mathlib/Test/Basic/certificate.npcert");
+        let meta_path = mathlib_root.join("Mathlib/Test/Basic/meta.json");
+        let replay_path = mathlib_root.join("Mathlib/Test/Basic/replay.json");
+        assert!(source_path.exists());
+        assert!(certificate_path.exists());
+        assert!(meta_path.exists());
+        assert!(replay_path.exists());
+
+        let source = fs::read_to_string(source_path).expect("source should be readable");
+        assert!(source.contains("theorem id"));
+        let certificate = fs::read(certificate_path).expect("certificate should be readable");
+        let decoded =
+            npa_cert::decode_module_cert(&certificate).expect("certificate should decode");
+        assert_eq!(decoded.header.module.as_dotted(), "Mathlib.Test.Basic");
+
+        let manifest = fs::read_to_string(mathlib_root.join(PACKAGE_MANIFEST_PATH))
+            .expect("manifest should be readable");
+        npa_package::parse_and_validate_manifest_str(&manifest)
+            .expect("updated manifest should validate");
+        assert!(manifest.contains("module = \"Mathlib.Test.Basic\""));
+        assert!(manifest.contains("source = \"Mathlib/Test/Basic/source.npa\""));
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
     fn verified_cache_key_material_includes_required_fields() {
         let input = sample_verified_cache_key_input();
         let key = verified_cache_key(&input);
@@ -24374,6 +25856,100 @@ Proofs.Ai.Eq # inline comments are ignored
                 hashes.insert(relative, tagged_sha256(&bytes));
             }
         }
+    }
+
+    fn test_basic_promotion_plan(target_module: &str, alias_missing: bool) -> String {
+        let alias_status = if alias_missing {
+            "Missing evidence"
+        } else {
+            "Verified evidence"
+        };
+        format!(
+            "\
+# Promotion Plan: Proofs.Ai.Basic -> {target_module}
+
+## Module Mapping
+
+- Corpus module: `Proofs.Ai.Basic`
+- Target module: `{target_module}`
+
+## Direct Import Mapping
+
+- No direct imports.
+
+## Import Closure
+
+| Corpus module | Proposed target module | Certificate | Source imports | Package imports | Axioms |
+| --- | --- | --- | --- | --- | --- |
+| `Proofs.Ai.Basic` | `{target_module}` | `Proofs/Ai/Basic/certificate.npcert` | `none` | `none` | `none` |
+
+## Axiom Policy Diff
+
+| Item | Corpus value | Target action |
+| --- | --- | --- |
+| `allow_custom_axioms` | `false` | Keep `false`. |
+| `allowed_axioms` | `Eq.rec` | Keep current package policy. |
+
+## Evidence
+
+| Evidence | Path | Status | Detail |
+| --- | --- | --- | --- |
+| Compatibility alias review | `manual` | {alias_status} | Decide whether aliases are needed. |
+"
+        )
+    }
+
+    fn write_minimal_mathlib_manifest(root: &Path) {
+        fs::create_dir_all(root).expect("mathlib root");
+        fs::write(root.join(PACKAGE_MANIFEST_PATH), minimal_mathlib_manifest())
+            .expect("mathlib manifest");
+    }
+
+    fn minimal_mathlib_manifest() -> String {
+        format!(
+            "\
+schema = \"{}\"
+package = \"npa-mathlib-test\"
+version = \"0.1.0\"
+license = \"Apache-2.0\"
+
+core_spec = \"{}\"
+kernel_profile = \"{}\"
+certificate_format = \"{}\"
+checker_profile = \"{}\"
+
+[policy]
+allow_custom_axioms = false
+allowed_axioms = [\"Eq.rec\"]
+
+[[modules]]
+module = \"Mathlib.Placeholder\"
+source = \"Mathlib/Placeholder/source.npa\"
+certificate = \"Mathlib/Placeholder/certificate.npcert\"
+meta = \"Mathlib/Placeholder/meta.json\"
+replay = \"Mathlib/Placeholder/replay.json\"
+producer_profile = \"human-surface-explicit-term\"
+expected_source_hash = \"{}\"
+expected_certificate_file_hash = \"{}\"
+expected_export_hash = \"{}\"
+expected_axiom_report_hash = \"{}\"
+expected_certificate_hash = \"{}\"
+imports = []
+definitions = []
+theorems = []
+axioms = []
+",
+            npa_package::PACKAGE_MANIFEST_SCHEMA,
+            npa_package::CORE_SPEC_V0_1,
+            npa_package::KERNEL_PROFILE_V0_1,
+            npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1,
+            npa_package::CHECKER_PROFILE_REFERENCE_V0_1,
+            sample_hash('0'),
+            sample_hash('0'),
+            sample_hash('0'),
+            sample_hash('0'),
+            sample_hash('0')
+        )
     }
 
     fn sample_verified_cache_key_input() -> VerifiedCacheKeyInput {

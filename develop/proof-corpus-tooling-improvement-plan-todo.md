@@ -28,8 +28,8 @@ certificate-first な信頼境界を維持するための実装順を固定し�
 
 - `npa-proof-corpus` は `--build-module`、`--build-modules`、`--build-modules-file`、
   `--module`、`--changed-only`、`--write-ai-index`、`--write-replay`、`--shard`、
-  `--failures-out`、`--verified-cache`、`--promote-plan` を持つ。
-- `--promote-materialize` は未実装。
+  `--failures-out`、`--verified-cache`、`--promote-plan`、`--promote-materialize` を持つ。
+- `--promote-materialize` は既定 dry-run で、`--apply` 指定時だけ target package files を書く。
 - `./scripts/check-corpus.sh` は互換 wrapper として full corpus gate を実行し、split gate scripts
   は authoring / package / full の用途別に実装済み。
 - 現リポジトリ自身には active `.github/workflows` はなく、`ci-templates/github-actions/**` は
@@ -260,11 +260,11 @@ package artifact checks を改めて通す。
 
 ### PCT-07 Promotion Materialize Command
 
-- Status: Pending
+- Status: Completed
 - Depends on: PCT-04, PCT-06
 - Inputs:
   - Promotion plan output from PCT-04
-  - local `/Users/kazuyoshitoshiya/ff/npa-mathlib` checkout
+  - local `../npa-mathlib` checkout
   - `npa-mathlib` package gate commands
   - downstream smoke fixture conventions
 - Deliverables:
@@ -283,15 +283,19 @@ package artifact checks を改めて通す。
   - `cargo test -p npa-proof-corpus`
   - Dry-run against a known small corpus module.
   - Package gates in `npa-mathlib` after apply:
-    - `cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json`
-    - `cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json`
-    - `cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json`
-    - `cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json`
-    - `cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json`
-    - `cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json`
-    - `cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json`
+    - `cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json`
+    - `cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json`
+    - `cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json`
+    - `cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json`
+    - `cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json`
+    - `cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json`
+    - `cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json`
 - Notes:
   - This command helps move stable artifacts; it must not decide that proof evidence is valid without source-free verification.
+  - Completed in `tools/proof-corpus/src/main.rs` with `--promote-materialize PLAN --mathlib-root PATH [--dry-run|--apply] [--compat-alias none]`.
+  - Dry-run reports source / certificate / meta / replay / manifest actions and namespace change without modifying `npa-mathlib`.
+  - Apply writes files only; it does not stage git changes.
+  - Materialization rejects unresolved import mapping, package policy widening, and unresolved compatibility alias decisions unless the operator explicitly passes `--compat-alias none`.
 
 ### PCT-08 End-To-End Measurement And Documentation Cleanup
 
@@ -329,7 +333,7 @@ package artifact checks を改めて通す。
 
 - Should split corpus gates become active workflows in this repository later, or remain local scripts plus external package CI templates?
 - Should the verified certificate cache support only proof corpus verification first, or also package verifier authoring paths in the same milestone?
-- Should promotion materialization be implemented in `npa-proof-corpus`, `npa-cli`, or a separate helper once package authoring stabilizes?
+- Should promotion materialization later grow richer alias-file generation, or should aliases remain a manual package authoring step?
 
 ## Review Notes
 
