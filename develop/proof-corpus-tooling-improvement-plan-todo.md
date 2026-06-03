@@ -55,7 +55,7 @@ package artifact checks を改めて通す。
 
 ### PCT-00 Baseline Metrics And Current Command Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `develop/proof-corpus-tooling-improvement-plan.md`
@@ -78,6 +78,7 @@ package artifact checks を改めて通す。
   - Targeted review of the baseline note against `tools/proof-corpus/src/main.rs`
 - Notes:
   - Do not run the full corpus gate repeatedly while measuring. One full-gate timing is enough for the baseline.
+  - Completed in `develop/proof-corpus-tooling-baseline-pct-00.md`.
 
 ### PCT-01 Batch Build CLI And Dependency Selection
 
