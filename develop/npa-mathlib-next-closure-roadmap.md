@@ -4,8 +4,8 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.15` abstract ring foundation closure. It is a planning document, not
-proof evidence.
+`v0.1.16` ring first-isomorphism and CRT closure. It is a planning document,
+not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
 hashes, and source-free checker verdicts. Source files, replay files, meta
@@ -14,13 +14,13 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through the abstract
-ring foundation closure as package version `0.1.15`.
+The standalone `npa-mathlib` package has materialized through the ring
+first-isomorphism and CRT closure as package version `0.1.16`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-ring-basic-closure-audit.md
+develop/npa-mathlib-ring-isomorphism-crt-closure-audit.md
 ```
 
 The currently public package includes:
@@ -52,6 +52,9 @@ Mathlib.Logic.Iff
 Mathlib.Logic.EqReasoning
 Mathlib.Algebra.Group.Basic
 Mathlib.Algebra.Ring.Basic
+Mathlib.Algebra.Ring.FirstIsomorphism.Basic
+Mathlib.Algebra.Ring.FirstIsomorphism
+Mathlib.Algebra.Ring.ChineseRemainder
 Mathlib.Geometry.RightTriangle
 Mathlib.Geometry.Metric
 Mathlib.Vector.Basic
@@ -82,7 +85,14 @@ The `Abstract Ring Foundation Closure` item from this queue was completed as
 develop/npa-mathlib-ring-basic-closure-audit.md
 ```
 
-The next open item is the ring first isomorphism and CRT closure.
+The `Ring First Isomorphism And CRT Closure` item from this queue was completed
+as `npa-mathlib v0.1.16`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-ring-isomorphism-crt-closure-audit.md
+```
+
+The next open item is the ordered algebra and square normalization closure.
 
 ### Logic Iff Closure
 
@@ -187,6 +197,53 @@ Closure unit verdict:
 - Downstream smoke consumes `RingLawArgs`, `sub_add_cancel`, and
   `ring_normalize_add_mul3` source-free from the public certificate.
 
+### Ring First Isomorphism And CRT Closure
+
+Status: completed in `npa-mathlib v0.1.16`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-ring-isomorphism-crt-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Algebra.AbstractRingFirstIsoBase
+Proofs.Ai.Algebra.AbstractRingFirstIso
+Proofs.Ai.Algebra.AbstractRingChineseRemainder
+```
+
+Public modules:
+
+```text
+Mathlib.Algebra.Ring.FirstIsomorphism.Basic
+Mathlib.Algebra.Ring.FirstIsomorphism
+Mathlib.Algebra.Ring.ChineseRemainder
+```
+
+Public surface audited:
+
+- `RingHomLawArgs`, `RingImagePred`, and `RingKerQuot*` scaffolding.
+- `RingFirstIso` and `ring_first_isomorphism_to_image`.
+- `RingCrtPairMap`, `RingCrtCombine`, `RingCrtIntersectionPred`, and
+  `RingChineseRemainder`.
+- `ring_chinese_remainder_theorem`.
+
+Closure unit verdict:
+
+- Ring first-isomorphism and CRT were kept in one release because the CRT route
+  imports the first-isomorphism modules and depends on
+  `ring_first_isomorphism_to_image`.
+- No separate `Mathlib.Algebra.Ring.Hom` module was introduced. The checked
+  corpus base module bundles homomorphism laws, image predicates, and
+  kernel-quotient construction.
+- The `RingKerQuot*` names remain public in
+  `Mathlib.Algebra.Ring.FirstIsomorphism.Basic` for this release.
+- Downstream smoke consumes both `ring_first_isomorphism_to_image` and
+  `ring_chinese_remainder_theorem` source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -213,75 +270,13 @@ older queue are:
   derivative, fixed point, inverse function, and implicit function closures.
   The previous "analysis foundation" group was useful as a roadmap cluster but
   too large to be a default release closure.
-- Ring first isomorphism and CRT remain adjacent, but the audit should be ready
-  to split CRT into its own release if the first-isomorphism surface is already
-  large enough.
+- The ring first-isomorphism and CRT closure is complete. A separate public
+  ring-homomorphism namespace should wait for either a homomorphism-only corpus
+  module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Ring First Isomorphism And CRT Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-ring-isomorphism-crt-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Algebra.AbstractRingFirstIsoBase
-Proofs.Ai.Algebra.AbstractRingFirstIso
-Proofs.Ai.Algebra.AbstractRingChineseRemainder
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Algebra.Ring.Hom
-Mathlib.Algebra.Ring.FirstIsomorphism.Basic
-Mathlib.Algebra.Ring.FirstIsomorphism
-Mathlib.Algebra.Ring.ChineseRemainder
-```
-
-Why this closure matters:
-
-- It is the natural ring analogue of the already public group first
-  isomorphism route.
-- It adds public ring homomorphism laws, image predicates, kernel quotient
-  construction, and a CRT theorem evidence surface.
-
-Closure unit verdict:
-
-- `Proofs.Ai.Algebra.AbstractRingFirstIsoBase` and
-  `Proofs.Ai.Algebra.AbstractRingFirstIso` should stay in one closure when
-  the goal is the ring first-isomorphism theorem because the final module
-  imports the base module.
-- `Proofs.Ai.Algebra.AbstractRingChineseRemainder` may be kept in the same
-  release only if the audit wants a single ring-isomorphism theorem release.
-  A smaller valid split is:
-
-```text
-Ring First Isomorphism Closure:
-  Proofs.Ai.Algebra.AbstractRingFirstIsoBase
-  Proofs.Ai.Algebra.AbstractRingFirstIso
-
-Ring CRT Closure:
-  Proofs.Ai.Algebra.AbstractRingChineseRemainder
-```
-
-Audit focus:
-
-- Determine how much of the additive-group quotient import closure should be
-  exposed as a public ring quotient API.
-- Decide whether `RingKerQuot*` names are acceptable public identifiers or
-  should move under a clearer ring quotient namespace.
-- Confirm that the closure imports public group quotient / image /
-  first-isomorphism modules rather than corpus names.
-- Add downstream smoke for both `ring_first_isomorphism_to_image` and
-  `ring_chinese_remainder_theorem`.
-
-### 2. Ordered Algebra And Square Normalization Closure
+### 1. Ordered Algebra And Square Normalization Closure
 
 Recommended audit file:
 
@@ -328,7 +323,7 @@ Audit focus:
 - Add downstream smoke for `sqrt_sq`, `sq_add_eq_add_sq_add_two_mul`, and one
   scalar derive theorem.
 
-### 3. Vector Space Foundation Closure
+### 2. Vector Space Foundation Closure
 
 Recommended audit file:
 
@@ -371,7 +366,7 @@ Audit focus:
 - Add downstream smoke for `VectorSpaceLawArgs`, `linear_comb2_ext`, and
   `linear_comb3_ext`.
 
-### 4. Inner Product Closure
+### 3. Inner Product Closure
 
 Recommended audit file:
 
@@ -412,7 +407,7 @@ Audit focus:
 - Add downstream smoke for `parallelogram_law`, `polarization_identity`, and
   `cauchy_schwarz`.
 
-### 5. Geometry Pythagorean Closure
+### 4. Geometry Pythagorean Closure
 
 Recommended audit file:
 
@@ -477,7 +472,7 @@ Audit focus:
 - Add downstream smoke that consumes `pythagorean_distance_general` or the
   final `Pythagorean` theorem surface source-free.
 
-### 6. Analysis Metric Topology Closure
+### 5. Analysis Metric Topology Closure
 
 Recommended audit file:
 
@@ -511,7 +506,7 @@ Audit focus:
 - Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
   `local_unique_apply`.
 
-### 7. Analysis Normed Space Closure
+### 6. Analysis Normed Space Closure
 
 Recommended audit file:
 
@@ -542,7 +537,7 @@ Audit focus:
 - Add downstream smoke for `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args`.
 
-### 8. Analysis Linear Map Closure
+### 7. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -574,7 +569,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 9. Analysis Derivative Closure
+### 8. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -606,7 +601,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 10. Analysis Fixed Point Closure
+### 9. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -637,7 +632,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 11. Analysis Inverse Function Closure
+### 10. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -669,7 +664,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 12. Analysis Implicit Function Closure
+### 11. Analysis Implicit Function Closure
 
 Recommended audit file:
 
