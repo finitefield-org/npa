@@ -108,7 +108,7 @@ package artifact checks を改めて通す。
 
 ### PCT-02 Batch Metadata Transaction And Failure Semantics
 
-- Status: Pending
+- Status: Completed
 - Depends on: PCT-01
 - Inputs:
   - `tools/proof-corpus/src/main.rs`
@@ -134,6 +134,7 @@ package artifact checks を改めて通す。
   - `git diff --check`
 - Notes:
   - Do not introduce exact-count audit assertions that fail only because a module was added.
+  - Completed in `tools/proof-corpus/src/main.rs`.
 
 ### PCT-03 Split Corpus Gates
 

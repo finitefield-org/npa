@@ -80,6 +80,7 @@ struct GeneratedModule {
     source_interface: npa_frontend::HumanImportedSourceInterface,
 }
 
+#[derive(Clone)]
 struct ModuleMeta {
     config: &'static ModuleArtifact,
     source_sha256: String,
@@ -174,6 +175,12 @@ struct VerifyOptions {
     modules: Vec<String>,
     changed_only: bool,
     shard: Option<Shard>,
+    failures_out: Option<PathBuf>,
+}
+
+#[derive(Default)]
+struct BuildOptions {
+    requested_modules: Vec<String>,
     failures_out: Option<PathBuf>,
 }
 
@@ -19024,19 +19031,20 @@ fn run() -> Result<(), String> {
             let proof_root = repo_root.join("proofs");
             write_package_lock_fixture(&proof_root)
         }
-        "--build-module" if args.len() == 2 => {
+        "--build-module" => {
             let repo_root = repo_root()?;
-            run_build_modules(&repo_root, &[args[1].clone()])
+            let options = parse_build_module_args(&args[1..])?;
+            run_build_modules(&repo_root, &options)
         }
         "--build-modules" => {
             let repo_root = repo_root()?;
-            let modules = parse_build_modules_args(&args[1..])?;
-            run_build_modules(&repo_root, &modules)
+            let options = parse_build_modules_args(&args[1..])?;
+            run_build_modules(&repo_root, &options)
         }
-        "--build-modules-file" if args.len() == 2 => {
+        "--build-modules-file" => {
             let repo_root = repo_root()?;
-            let modules = parse_build_modules_file(&output_path(&repo_root, &args[1]))?;
-            run_build_modules(&repo_root, &modules)
+            let options = parse_build_modules_file_args(&repo_root, &args[1..])?;
+            run_build_modules(&repo_root, &options)
         }
         "--write-ai-index" => {
             let repo_root = repo_root()?;
@@ -19063,10 +19071,10 @@ fn run() -> Result<(), String> {
     }
 }
 
-fn output_path(repo_root: &Path, path: &str) -> PathBuf {
-    let path = PathBuf::from(path);
+fn output_path<P: AsRef<Path>>(repo_root: &Path, path: P) -> PathBuf {
+    let path = path.as_ref();
     if path.is_absolute() {
-        path
+        path.to_path_buf()
     } else {
         repo_root.join(path)
     }
@@ -19077,9 +19085,9 @@ fn usage() -> String {
 usage:
   npa-proof-corpus
   npa-proof-corpus --package-lock-only
-  npa-proof-corpus --build-module MODULE
-  npa-proof-corpus --build-modules MODULE ...
-  npa-proof-corpus --build-modules-file PATH
+  npa-proof-corpus --build-module MODULE [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-modules MODULE ... [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-modules-file PATH [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH]
   npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH]
   npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH]
@@ -19200,11 +19208,73 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
     }
 }
 
-fn parse_build_modules_args(args: &[String]) -> Result<Vec<String>, String> {
-    if args.is_empty() {
+fn parse_build_module_args(args: &[String]) -> Result<BuildOptions, String> {
+    let options = parse_build_modules_args(args)?;
+    if options.requested_modules.len() != 1 {
         return Err(usage());
     }
-    Ok(args.to_vec())
+    Ok(options)
+}
+
+fn parse_build_modules_args(args: &[String]) -> Result<BuildOptions, String> {
+    let mut options = BuildOptions::default();
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--metadata-once" => {
+                index += 1;
+            }
+            "--failures-out" => {
+                if options.failures_out.is_some() {
+                    return Err("duplicate --failures-out option".to_owned());
+                }
+                let path = args.get(index + 1).ok_or_else(usage)?;
+                options.failures_out = Some(PathBuf::from(path));
+                index += 2;
+            }
+            module if module.starts_with("--") => return Err(usage()),
+            module => {
+                options.requested_modules.push(module.to_owned());
+                index += 1;
+            }
+        }
+    }
+    if options.requested_modules.is_empty() {
+        return Err(usage());
+    }
+    Ok(options)
+}
+
+fn parse_build_modules_file_args(
+    repo_root: &Path,
+    args: &[String],
+) -> Result<BuildOptions, String> {
+    let file = args.first().ok_or_else(usage)?;
+    let mut options = parse_build_metadata_options(&args[1..])?;
+    options.requested_modules = parse_build_modules_file(&output_path(repo_root, file))?;
+    Ok(options)
+}
+
+fn parse_build_metadata_options(args: &[String]) -> Result<BuildOptions, String> {
+    let mut options = BuildOptions::default();
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--metadata-once" => {
+                index += 1;
+            }
+            "--failures-out" => {
+                if options.failures_out.is_some() {
+                    return Err("duplicate --failures-out option".to_owned());
+                }
+                let path = args.get(index + 1).ok_or_else(usage)?;
+                options.failures_out = Some(PathBuf::from(path));
+                index += 2;
+            }
+            _ => return Err(usage()),
+        }
+    }
+    Ok(options)
 }
 
 fn parse_build_modules_file(path: &Path) -> Result<Vec<String>, String> {
@@ -19243,33 +19313,107 @@ fn parse_build_modules_file_contents(source: &str) -> Result<Vec<String>, String
     Ok(modules)
 }
 
-fn run_build_modules(repo_root: &Path, requested_modules: &[String]) -> Result<(), String> {
-    let selected_modules = build_batch_selection(requested_modules)?;
+fn run_build_modules(repo_root: &Path, options: &BuildOptions) -> Result<(), String> {
     let proof_root = repo_root.join("proofs");
-    fs::create_dir_all(&proof_root)
-        .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
+    let mut failures = Vec::new();
+    let result = run_build_modules_inner(&proof_root, options, &mut failures);
+    if let Some(path) = &options.failures_out {
+        write_failure_replay(&proof_root, &output_path(repo_root, path), &failures)?;
+    }
+    result
+}
 
-    let mut existing_metas = package_manifest_module_metas(&proof_root)?;
-    let external_imports = generated_external_std_imports()?;
-    write_external_import_artifacts(&proof_root, &external_imports)?;
+fn run_build_modules_inner(
+    proof_root: &Path,
+    options: &BuildOptions,
+    failures: &mut Vec<VerifyFailure>,
+) -> Result<(), String> {
+    let selected_modules = match build_batch_selection(&options.requested_modules) {
+        Ok(selected) => selected,
+        Err(error) => {
+            failures.push(VerifyFailure {
+                module: first_unknown_requested_module(&options.requested_modules)
+                    .unwrap_or_default(),
+                error: error.clone(),
+            });
+            return Err(error);
+        }
+    };
+    fs::create_dir_all(proof_root).map_err(|err| {
+        record_build_failure(
+            failures,
+            "",
+            format!("failed to create {}: {err}", proof_root.display()),
+        )
+    })?;
 
-    let mut cache = BuiltCorpusCache::new(&proof_root, external_imports);
+    let existing_metas = package_manifest_module_metas(proof_root)
+        .map_err(|error| record_build_failure(failures, "", error))?;
+    let external_imports = generated_external_std_imports()
+        .map_err(|error| record_build_failure(failures, "", error))?;
+    write_external_import_artifacts(proof_root, &external_imports)
+        .map_err(|error| record_build_failure(failures, "", error))?;
+
+    let mut cache = BuiltCorpusCache::new(proof_root, external_imports);
     for config in &selected_modules {
-        cache.build_module(config.module)?;
+        if let Err(error) = cache.build_module(config.module) {
+            failures.push(VerifyFailure {
+                module: config.module.to_owned(),
+                error: error.clone(),
+            });
+            return Err(error);
+        }
     }
 
-    let mut module_metas = Vec::with_capacity(MODULES.len());
-    for module_config in MODULES {
-        let meta = if let Some(generated) = cache.built.get(module_config.module) {
-            ModuleMeta::from(generated)
-        } else {
-            existing_metas
-                .remove(module_config.module)
-                .ok_or_else(|| format!("missing existing metadata for {}", module_config.module))?
-        };
-        module_metas.push(meta);
-    }
+    write_batch_metadata_once(proof_root, existing_metas, &cache)
+        .map_err(|error| record_build_failure(failures, "", error))?;
 
+    if options.requested_modules.len() == 1 {
+        println!(
+            "built {} ({} module(s) including import closure)",
+            options.requested_modules[0],
+            cache.built.len()
+        );
+    } else {
+        println!(
+            "built {} requested module(s), {} module(s) including import closure",
+            options.requested_modules.len(),
+            cache.built.len()
+        );
+    }
+    Ok(())
+}
+
+fn record_build_failure(
+    failures: &mut Vec<VerifyFailure>,
+    module: impl Into<String>,
+    error: String,
+) -> String {
+    failures.push(VerifyFailure {
+        module: module.into(),
+        error: error.clone(),
+    });
+    error
+}
+
+fn first_unknown_requested_module(requested_modules: &[String]) -> Option<String> {
+    requested_modules
+        .iter()
+        .find(|module| module_config(module).is_none())
+        .cloned()
+}
+
+fn write_batch_metadata_once(
+    proof_root: &Path,
+    existing_metas: BTreeMap<String, ModuleMeta>,
+    cache: &BuiltCorpusCache<'_>,
+) -> Result<(), String> {
+    let built_metas = cache
+        .built
+        .iter()
+        .map(|(module, generated)| (module.clone(), ModuleMeta::from(generated)))
+        .collect::<BTreeMap<_, _>>();
+    let module_metas = batch_module_metas(existing_metas, built_metas)?;
     let manifest = manifest_toml(&module_metas);
     let package_manifest = package_manifest_toml(&module_metas, &cache.external_imports)?;
     write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
@@ -19277,23 +19421,27 @@ fn run_build_modules(repo_root: &Path, requested_modules: &[String]) -> Result<(
         proof_root.join(PACKAGE_MANIFEST_PATH),
         package_manifest.as_bytes(),
     )?;
-    write_package_lock_fixture(&proof_root)?;
-    write_ai_theorem_index(&proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
-
-    if requested_modules.len() == 1 {
-        println!(
-            "built {} ({} module(s) including import closure)",
-            requested_modules[0],
-            cache.built.len()
-        );
-    } else {
-        println!(
-            "built {} requested module(s), {} module(s) including import closure",
-            requested_modules.len(),
-            cache.built.len()
-        );
-    }
+    write_package_lock_fixture(proof_root)?;
+    write_ai_theorem_index(proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
     Ok(())
+}
+
+fn batch_module_metas(
+    mut existing_metas: BTreeMap<String, ModuleMeta>,
+    mut built_metas: BTreeMap<String, ModuleMeta>,
+) -> Result<Vec<ModuleMeta>, String> {
+    let mut module_metas = Vec::with_capacity(MODULES.len());
+    for module_config in MODULES {
+        let meta = if let Some(generated) = built_metas.remove(module_config.module) {
+            generated
+        } else {
+            existing_metas
+                .remove(module_config.module)
+                .ok_or_else(|| format!("missing existing metadata for {}", module_config.module))?
+        };
+        module_metas.push(meta);
+    }
+    Ok(module_metas)
 }
 
 fn build_batch_selection(
@@ -22279,8 +22427,28 @@ mod tests {
         let parsed =
             parse_build_modules_args(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Eq".to_owned()])
                 .expect("modules should parse");
-        assert_eq!(parsed, vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]);
+        assert_eq!(
+            parsed.requested_modules,
+            vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]
+        );
+        assert!(parsed.failures_out.is_none());
         assert!(parse_build_modules_args(&[]).is_err());
+    }
+
+    #[test]
+    fn build_modules_args_parser_accepts_failures_out_and_metadata_once() {
+        let parsed = parse_build_modules_args(&[
+            "Proofs.Ai.Basic".to_owned(),
+            "--metadata-once".to_owned(),
+            "--failures-out".to_owned(),
+            "proofs/generated/build-failures.json".to_owned(),
+        ])
+        .expect("build options should parse");
+        assert_eq!(parsed.requested_modules, vec!["Proofs.Ai.Basic"]);
+        assert_eq!(
+            parsed.failures_out,
+            Some(PathBuf::from("proofs/generated/build-failures.json"))
+        );
     }
 
     #[test]
@@ -22343,6 +22511,40 @@ Proofs.Ai.Eq # inline comments are ignored
                 "Proofs.Ai.Algebra.Square",
                 "Proofs.Ai.OrderedField"
             ]
+        );
+    }
+
+    #[test]
+    fn batch_module_metas_are_deterministic_for_single_module_compatibility() {
+        let repo = repo_root().expect("repo root should resolve");
+        let existing =
+            package_manifest_module_metas(&repo.join("proofs")).expect("manifest should parse");
+        let basic_meta = existing
+            .get(BASIC_MODULE.module)
+            .expect("basic metadata should exist")
+            .clone();
+
+        let mut build_module_metas = BTreeMap::new();
+        build_module_metas.insert(BASIC_MODULE.module.to_owned(), basic_meta.clone());
+        let mut build_modules_metas = BTreeMap::new();
+        build_modules_metas.insert(BASIC_MODULE.module.to_owned(), basic_meta);
+
+        let from_build_module = batch_module_metas(existing.clone(), build_module_metas)
+            .expect("single-module metadata merge should work");
+        let from_build_modules = batch_module_metas(existing, build_modules_metas)
+            .expect("batch metadata merge should work");
+
+        assert_eq!(
+            manifest_toml(&from_build_module),
+            manifest_toml(&from_build_modules)
+        );
+        let external_imports =
+            generated_external_std_imports().expect("external imports should generate");
+        assert_eq!(
+            package_manifest_toml(&from_build_module, &external_imports)
+                .expect("single-module package manifest should render"),
+            package_manifest_toml(&from_build_modules, &external_imports)
+                .expect("batch package manifest should render")
         );
     }
 
