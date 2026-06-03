@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.24` analysis derivative closure. It is a planning
+`v0.1.25` analysis fixed-point closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -15,12 +15,12 @@ untrusted sidecars.
 ## Current Baseline
 
 The standalone `npa-mathlib` package has materialized through the analysis
-derivative closure as package version `0.1.24`.
+fixed-point closure as package version `0.1.25`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-analysis-derivative-closure-audit.md
+develop/npa-mathlib-analysis-fixed-point-closure-audit.md
 ```
 
 The currently public package includes:
@@ -63,6 +63,7 @@ Mathlib.LinearAlgebra.VectorSpace
 Mathlib.Analysis.NormedSpace.Basic
 Mathlib.Analysis.LinearMap
 Mathlib.Analysis.Calculus.Derivative
+Mathlib.Analysis.FixedPoint.Banach
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.Affine
@@ -164,7 +165,14 @@ The `Analysis Derivative Closure` item from this queue was completed as
 develop/npa-mathlib-analysis-derivative-closure-audit.md
 ```
 
-The next open item is the analysis fixed-point closure.
+The `Analysis Fixed Point Closure` item from this queue was completed as
+`npa-mathlib v0.1.25`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-fixed-point-closure-audit.md
+```
+
+The next open item is the analysis inverse-function closure.
 
 ### Logic Iff Closure
 
@@ -649,6 +657,48 @@ Closure unit verdict:
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`
   source-free from vendored certificates.
 
+### Analysis Fixed Point Closure
+
+Status: completed in `npa-mathlib v0.1.25`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-fixed-point-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractFixedPoint
+```
+
+Public modules:
+
+```text
+Mathlib.Analysis.FixedPoint.Banach
+```
+
+Public surface audited:
+
+- `CauchySeq`, `ConvergesTo`, and `CompleteMetricArgs`.
+- `SelfMapOn`, `ContractiveOn`, `FixedPoint`, `FixedPointStability`,
+  `FixedPointEvidence`, `FixedPointResult`, and `BanachFixedPointArgs`.
+- Theorem surfaces including `fixed_point_unique_from_evidence`,
+  `fixed_point_result_intro`, `fixed_point_result_elim`, and
+  `banach_fixed_point_from_args`.
+
+Closure unit verdict:
+
+- The corpus module is a valid single-module fixed-point closure because it
+  imports only public `Std.Logic.Eq`, metric topology, vector-space, and
+  normed-space foundations.
+- The module belongs under `Mathlib.Analysis.FixedPoint.Banach` because the
+  checked surface is a Banach fixed-point theorem route rather than a calculus
+  derivative API.
+- Downstream smoke consumes `fixed_point_unique_from_evidence` and
+  `banach_fixed_point_from_args` source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -677,45 +727,14 @@ older queue are:
   too large to be a default release closure.
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
   vector-space foundation, inner-product, geometry Pythagorean, analysis
-  metric topology, analysis normed-space, analysis linear-map, and analysis
-  derivative closures are complete. A separate public ring-homomorphism
-  namespace should wait for either a homomorphism-only corpus module or an
-  audited alias layer.
+  metric topology, analysis normed-space, analysis linear-map, analysis
+  derivative, and analysis fixed-point closures are complete. A separate
+  public ring-homomorphism namespace should wait for either a homomorphism-only
+  corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Fixed Point Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-fixed-point-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractFixedPoint
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Analysis.FixedPoint.Banach
-```
-
-Why this closure matters:
-
-- It adds completeness, contractive map, fixed-point evidence, and Banach
-  fixed-point theorem surfaces used by the inverse-function route.
-
-Audit focus:
-
-- Confirm public imports from metric topology, vector-space, and normed-space.
-- Add downstream smoke for `fixed_point_unique_from_evidence` and
-  `banach_fixed_point_from_args`.
-
-### 2. Analysis Inverse Function Closure
+### 1. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -747,7 +766,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 3. Analysis Implicit Function Closure
+### 2. Analysis Implicit Function Closure
 
 Recommended audit file:
 
