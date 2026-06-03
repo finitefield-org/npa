@@ -138,7 +138,7 @@ package artifact checks を改めて通す。
 
 ### PCT-03 Split Corpus Gates
 
-- Status: Pending
+- Status: Completed
 - Depends on: PCT-02
 - Inputs:
   - `scripts/check-corpus.sh`
@@ -168,6 +168,7 @@ package artifact checks を改めて通す。
   - `rg -n "check-corpus-authoring|check-corpus-package|check-corpus-full|check-corpus.sh" AGENTS.md CONTRIBUTING.md README.md develop/proof-corpus-ai-workflow.md`
 - Notes:
   - The in-repo `ci-templates` are package-repository templates, not active workflows for this repository. Do not imply that this repo has active `.github/workflows` unless they are actually added.
+  - Completed with split gate scripts and repo-local docs.
 
 ### PCT-04 Promotion Plan Command
 

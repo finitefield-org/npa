@@ -155,14 +155,19 @@ For ordinary development, start with the fast gate:
 ./scripts/check-fast.sh
 ```
 
-Run the corpus gate only for changes that affect proof corpus files, proof
-corpus tooling, canonical certificate compatibility, kernel semantics,
-independent checkers, package verification, package locks, artifact validation,
-or release/high-trust evidence:
+Run a corpus gate only for changes that affect proof corpus files, proof corpus
+tooling, canonical certificate compatibility, kernel semantics, independent
+checkers, package verification, package locks, artifact validation, or
+release/high-trust evidence:
 
 ```sh
-./scripts/check-corpus.sh
+./scripts/check-corpus-authoring.sh  # theorem authoring completion
+./scripts/check-corpus-package.sh    # package verifier and package CLI checks
+./scripts/check-corpus-full.sh       # authoring + package
 ```
+
+The legacy `./scripts/check-corpus.sh` command remains valid and runs the full
+corpus gate.
 
 For contribution policy and the full local-gate checklist, see
 [CONTRIBUTING.md](CONTRIBUTING.md).

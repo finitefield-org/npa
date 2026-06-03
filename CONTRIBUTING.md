@@ -46,11 +46,22 @@ Run the corpus gate only when a change affects one of these areas:
 - `.npcert` generation or verification compatibility
 - release or high-trust evidence
 
-For those changes, run:
+For those changes, choose the split corpus gate that matches the change:
 
 ```sh
-./scripts/check-corpus.sh
+./scripts/check-corpus-authoring.sh
+./scripts/check-corpus-package.sh
+./scripts/check-corpus-full.sh
 ```
+
+Use `check-corpus-authoring.sh` for normal proof-corpus theorem authoring
+completion. It excludes package-wide CLI examples. Use
+`check-corpus-package.sh` for package verifier coverage, package CLI examples,
+axiom-report, index, and publish-plan regression. Use
+`check-corpus-full.sh` for push readiness, release handoff, high-trust-adjacent
+changes, or broad certificate/package/checker compatibility changes. The
+legacy `./scripts/check-corpus.sh` name remains valid as a compatibility
+wrapper around `check-corpus-full.sh`.
 
 When adding or editing proof corpus theorems, use the targeted authoring
 commands from `develop/proof-corpus-ai-workflow.md` for the normal repair loop.

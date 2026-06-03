@@ -24,6 +24,10 @@ they use into the same paths referenced by the templates. Do not copy local
 `npa` repository development gates such as:
 
 ```sh
+scripts/check-fast.sh
+scripts/check-corpus-authoring.sh
+scripts/check-corpus-package.sh
+scripts/check-corpus-full.sh
 scripts/phase8-release-audit.sh
 scripts/phase9-regression.sh
 ```

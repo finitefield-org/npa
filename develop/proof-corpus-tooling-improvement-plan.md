@@ -174,8 +174,7 @@ read-through
 
 ### 5.2 Gate 分類
 
-追加する gate。以下は将来の script 名であり、実装されるまでは既存の
-`./scripts/check-corpus.sh` が full corpus gate です。
+PCT-03 で追加された gate:
 
 ```sh
 ./scripts/check-corpus-authoring.sh
@@ -198,9 +197,9 @@ check-corpus-full.sh
   authoring + package をまとめた high-trust 手前の full gate。
 ```
 
-既存の `./scripts/check-corpus.sh` は互換性のため残し、移行期間は `check-corpus-full.sh` を呼ぶ alias とします。
-script 分割が完了するまでは、AGENTS.md / CONTRIBUTING.md / README.md の通常案内は
-既存の `./scripts/check-corpus.sh` を指したままにします。
+既存の `./scripts/check-corpus.sh` は互換性のため残し、`check-corpus-full.sh` を呼ぶ alias とします。
+script 分割前の古い案内では `./scripts/check-corpus.sh` が full corpus gate でしたが、
+PCT-03 以降の AGENTS.md / CONTRIBUTING.md / README.md は split gate 名を案内します。
 
 ### 5.3 完了条件
 

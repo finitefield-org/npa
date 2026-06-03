@@ -118,6 +118,14 @@ certificate、deterministic hash、source-free checker / verifier verdict です
 
 通常開発では `./scripts/check-fast.sh` を使います。
 
-proof corpus を変更した場合、または certificate / kernel / checker / package verification の互換性に
-関わる変更では `./scripts/check-corpus.sh` を実行します。作業中に毎回 full corpus gate を回すのではなく、
-`--module`、`--changed-only`、`--shard` で局所確認してから最後に gate を通します。
+proof corpus theorem authoring の通常完了確認では、作業中に毎回 full corpus gate を
+回さず、`--module`、`--changed-only`、`--shard` で局所確認してから
+`./scripts/check-corpus-authoring.sh` を通します。この gate は package-wide CLI examples を
+含めません。
+
+certificate / kernel / checker / package verification の互換性に関わる変更、または
+package metadata / package CLI examples / axiom-report / index / publish-plan の回帰確認では、
+`./scripts/check-corpus-package.sh` を実行します。push 前、release / high-trust 手前、
+または authoring と package の両方をまとめて確認する場合は
+`./scripts/check-corpus-full.sh` を実行します。既存の `./scripts/check-corpus.sh` は
+互換 wrapper として full gate を実行します。
