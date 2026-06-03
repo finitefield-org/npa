@@ -22,36 +22,49 @@ The latest completed closure audit is:
 develop/npa-mathlib-layer3e-logic-iff-closure-audit.md
 ```
 
-The currently public closure includes:
+The currently public package includes:
 
 ```text
-Mathlib.Logic.Iff
-Mathlib.Algebra.Group.Basic
-Mathlib.Algebra.Group.Subgroup
-Mathlib.Algebra.Group.Subgroup.Order
-Mathlib.Algebra.Group.Kernel
-Mathlib.Algebra.Group.Image
-Mathlib.Algebra.Group.Kernel.Quotient
-Mathlib.Algebra.Group.Kernel.Quotient.Mul
-Mathlib.Algebra.Group.Kernel.Quotient.Group
-Mathlib.Algebra.Group.Kernel.Quotient.Hom
-Mathlib.Algebra.Group.FirstIsomorphism
-Mathlib.Algebra.Group.FirstIsomorphism.Image
-Mathlib.Algebra.Group.Quotient
-Mathlib.Algebra.Group.Quotient.Mul
-Mathlib.Algebra.Group.Quotient.Group
-Mathlib.Algebra.Group.SecondIsomorphism.Map
-Mathlib.Algebra.Group.SecondIsomorphism.Kernel
-Mathlib.Algebra.Group.SecondIsomorphism.Image
-Mathlib.Algebra.Group.SecondIsomorphism
-Mathlib.Algebra.Group.ThirdIsomorphism
 Mathlib.Algebra.Group.Correspondence.Basic
 Mathlib.Algebra.Group.Correspondence.Order
 Mathlib.Algebra.Group.Correspondence
 Mathlib.Algebra.Group.Correspondence.Ordered
+Mathlib.Algebra.Group.ThirdIsomorphism
+Mathlib.Algebra.Group.SecondIsomorphism
+Mathlib.Algebra.Group.SecondIsomorphism.Image
+Mathlib.Algebra.Group.SecondIsomorphism.Kernel
+Mathlib.Algebra.Group.SecondIsomorphism.Map
+Mathlib.Algebra.Group.Quotient.Group
+Mathlib.Algebra.Group.Quotient.Mul
+Mathlib.Algebra.Group.Quotient
+Mathlib.Algebra.Group.FirstIsomorphism.Image
+Mathlib.Algebra.Group.FirstIsomorphism
+Mathlib.Algebra.Group.Kernel.Quotient.Hom
+Mathlib.Algebra.Group.Kernel.Quotient.Group
+Mathlib.Algebra.Group.Kernel.Quotient.Mul
+Mathlib.Algebra.Group.Kernel.Quotient
+Mathlib.Algebra.Group.Image
+Mathlib.Algebra.Group.Kernel
+Mathlib.Algebra.Group.Subgroup.Order
+Mathlib.Algebra.Group.Subgroup
+Mathlib.Logic.Iff
+Mathlib.Logic.EqReasoning
+Mathlib.Algebra.Group.Basic
+Mathlib.Geometry.RightTriangle
+Mathlib.Geometry.Metric
+Mathlib.Vector.Basic
+Mathlib.Vector.Dot
+Mathlib.Algebra.Ring
+Mathlib.Algebra.Square
+Mathlib.Algebra.OrderedField
+Mathlib.Logic.Basic
+Mathlib.Logic.Prop
+Mathlib.Logic.Eq
+Mathlib.Data.Nat.Basic
+Mathlib.Core.Reduction
 ```
 
-## Recommended Audit Queue
+## Completed Queue Items
 
 The `Logic Iff Closure` item from this queue was completed as
 `npa-mathlib v0.1.14`. Its audit is recorded in:
@@ -62,7 +75,7 @@ develop/npa-mathlib-layer3e-logic-iff-closure-audit.md
 
 The next open item is the abstract ring foundation closure.
 
-### Completed. Logic Iff Closure
+### Logic Iff Closure
 
 Status: completed in `npa-mathlib v0.1.14`.
 
@@ -123,7 +136,39 @@ Audit focus:
 - Add downstream smoke that consumes at least `iff_mp`, `or_elim`, and
   `false_elim` source-free.
 
-### 2. Abstract Ring Foundation Closure
+## Closure Unit Rules
+
+This review treats a future closure unit as appropriate only when it satisfies
+all of the following conditions:
+
+- The selected corpus modules form a closed import slice over already public
+  `Mathlib.*` / `Std.*` modules plus modules selected in the same audit.
+- The slice has one coherent public purpose and at least one downstream smoke
+  theorem that exercises the final surface, not only helper definitions.
+- The slice does not bundle an avoidably independent prerequisite chain with a
+  later theorem family.
+- The audit explicitly checks declaration-name collisions against already
+  released modules before materialization.
+- If a large route can be validly shipped either as one final-theorem closure
+  or as smaller foundation closures, the audit records the chosen unit and the
+  reason.
+
+The current open queue below reflects these rules. The main changes from the
+older queue are:
+
+- `VectorSpace` is split from `InnerProduct` because analysis normed-space
+  modules depend only on `Proofs.Ai.Vector.AbstractSpace`.
+- The analysis chain is split into metric topology, normed space, linear map,
+  derivative, fixed point, inverse function, and implicit function closures.
+  The previous "analysis foundation" group was useful as a roadmap cluster but
+  too large to be a default release closure.
+- Ring first isomorphism and CRT remain adjacent, but the audit should be ready
+  to split CRT into its own release if the first-isomorphism surface is already
+  large enough.
+
+## Open Audit Queue
+
+### 1. Abstract Ring Foundation Closure
 
 Recommended audit file:
 
@@ -175,10 +220,19 @@ Audit focus:
   abstract law-package facts move under `Mathlib.Algebra.Ring.Basic`.
 - Verify that public source names do not collide with already released
   `Mathlib.Algebra.Ring` declarations.
+- Also check overlapping names with `Mathlib.Algebra.Square`, especially
+  `two` and `sq`.
 - Add downstream smoke that consumes `RingLawArgs`, `sub_add_cancel`, and
   `ring_normalize_add_mul3` source-free.
 
-### 3. Ring First Isomorphism And CRT Closure
+Closure unit verdict:
+
+- `Proofs.Ai.Algebra.AbstractRing` is an appropriate single-module foundation
+  closure because it imports only `Std.Logic.Eq`.
+- Materialization may still fail until the audit resolves public declaration
+  collisions with the already released concrete ring/square modules.
+
+### 2. Ring First Isomorphism And CRT Closure
 
 Recommended audit file:
 
@@ -210,6 +264,25 @@ Why this closure matters:
 - It adds public ring homomorphism laws, image predicates, kernel quotient
   construction, and a CRT theorem evidence surface.
 
+Closure unit verdict:
+
+- `Proofs.Ai.Algebra.AbstractRingFirstIsoBase` and
+  `Proofs.Ai.Algebra.AbstractRingFirstIso` should stay in one closure when
+  the goal is the ring first-isomorphism theorem because the final module
+  imports the base module.
+- `Proofs.Ai.Algebra.AbstractRingChineseRemainder` may be kept in the same
+  release only if the audit wants a single ring-isomorphism theorem release.
+  A smaller valid split is:
+
+```text
+Ring First Isomorphism Closure:
+  Proofs.Ai.Algebra.AbstractRingFirstIsoBase
+  Proofs.Ai.Algebra.AbstractRingFirstIso
+
+Ring CRT Closure:
+  Proofs.Ai.Algebra.AbstractRingChineseRemainder
+```
+
 Audit focus:
 
 - Determine how much of the additive-group quotient import closure should be
@@ -221,7 +294,7 @@ Audit focus:
 - Add downstream smoke for both `ring_first_isomorphism_to_image` and
   `ring_chinese_remainder_theorem`.
 
-### 4. Ordered Algebra And Square Normalization Closure
+### 3. Ordered Algebra And Square Normalization Closure
 
 Recommended audit file:
 
@@ -251,6 +324,14 @@ Why this closure matters:
 - It exposes reusable ordered-field square facts and scalar identities such as
   square completion, law-of-cosines scalar RHS, and polarization scalar RHS.
 
+Closure unit verdict:
+
+- This is a coherent closure after abstract ring foundation: `AbstractOrderedField`
+  imports `AbstractRing`, `AbstractSquareNormalize` imports both, and
+  `AbstractScalarDerive` imports `AbstractSquareNormalize`.
+- The audit may split `AbstractScalarDerive` into a follow-up closure if the
+  ordered-field/square surface needs to stabilize first.
+
 Audit focus:
 
 - Decide how this abstract ordered-field surface relates to already released
@@ -260,42 +341,39 @@ Audit focus:
 - Add downstream smoke for `sqrt_sq`, `sq_add_eq_add_sq_add_two_mul`, and one
   scalar derive theorem.
 
-### 5. Vector Space And Inner Product Closure
+### 4. Vector Space Foundation Closure
 
 Recommended audit file:
 
 ```text
-develop/npa-mathlib-vector-inner-product-closure-audit.md
+develop/npa-mathlib-vector-space-closure-audit.md
 ```
 
 Candidate corpus modules:
 
 ```text
 Proofs.Ai.Vector.AbstractSpace
-Proofs.Ai.Vector.AbstractInnerProduct
-Proofs.Ai.Vector.AbstractInnerProductDerive
 ```
 
 Candidate public modules:
 
 ```text
 Mathlib.LinearAlgebra.VectorSpace
-Mathlib.LinearAlgebra.InnerProduct
-Mathlib.LinearAlgebra.InnerProduct.Derived
 ```
 
 Alternative public module prefix to evaluate:
 
 ```text
 Mathlib.Vector.AbstractSpace
-Mathlib.Vector.InnerProduct
 ```
 
 Why this closure matters:
 
-- It adds high-value reusable mathematics: vector-space laws, inner-product
-  identities, parallelogram law, polarization identity, and Cauchy-Schwarz.
-- It is a prerequisite for the abstract geometry and normed-space routes.
+- It adds the abstract vector-space law package needed by both analysis and
+  inner-product geometry.
+- It should not wait for inner-product materialization because
+  `Proofs.Ai.Analysis.AbstractNormedSpace` depends only on
+  `Proofs.Ai.Vector.AbstractSpace`.
 
 Audit focus:
 
@@ -303,6 +381,47 @@ Audit focus:
   to `Mathlib.LinearAlgebra.*` for abstract vector spaces.
 - Confirm the dependency path through abstract ordered field and square
   normalization.
+- Add downstream smoke for `VectorSpaceLawArgs`, `linear_comb2_ext`, and
+  `linear_comb3_ext`.
+
+### 5. Inner Product Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-inner-product-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Vector.AbstractInnerProduct
+Proofs.Ai.Vector.AbstractInnerProductDerive
+```
+
+Candidate public modules:
+
+```text
+Mathlib.LinearAlgebra.InnerProduct
+Mathlib.LinearAlgebra.InnerProduct.Derived
+```
+
+Alternative public module prefix to evaluate:
+
+```text
+Mathlib.Vector.InnerProduct
+```
+
+Why this closure matters:
+
+- It adds inner-product identities, parallelogram law, polarization identity,
+  Cauchy-Schwarz, perpendicularity facts, and norm-square facts.
+- It is a prerequisite for the abstract geometry/Pythagorean route.
+
+Audit focus:
+
+- Confirm the prerequisite public imports from abstract ring, ordered algebra,
+  scalar derive, and vector-space foundation.
 - Add downstream smoke for `parallelogram_law`, `polarization_identity`, and
   `cauchy_schwarz`.
 
@@ -343,6 +462,24 @@ Why this closure matters:
 - It should finally make `Mathlib.Geometry.Pythagorean` publishable without
   hiding abstract algebra/vector dependencies.
 
+Closure unit verdict:
+
+- This is a valid final-theorem closure after inner product is public because
+  `Proofs.Ai.Geometry.Pythagorean` imports the other five geometry modules.
+- If the materialization diff is too large, the audit should split it into:
+
+```text
+Geometry Affine/RightTriangle Foundation:
+  Proofs.Ai.Geometry.Affine
+  Proofs.Ai.Geometry.AffineDerive
+  Proofs.Ai.Geometry.AbstractRightTriangle
+  Proofs.Ai.Geometry.AbstractRightTriangleDerive
+
+Geometry Metric/Pythagorean Final:
+  Proofs.Ai.Geometry.AbstractMetric
+  Proofs.Ai.Geometry.Pythagorean
+```
+
 Audit focus:
 
 - Do not materialize this before ordered algebra and inner-product routes are
@@ -353,67 +490,233 @@ Audit focus:
 - Add downstream smoke that consumes `pythagorean_distance_general` or the
   final `Pythagorean` theorem surface source-free.
 
-### 7. Analysis Foundation Closure
+### 7. Analysis Metric Topology Closure
 
 Recommended audit file:
 
 ```text
-develop/npa-mathlib-analysis-foundation-closure-audit.md
+develop/npa-mathlib-analysis-metric-topology-closure-audit.md
 ```
 
 Candidate corpus modules:
 
 ```text
 Proofs.Ai.Analysis.AbstractMetricTopology
-Proofs.Ai.Analysis.AbstractNormedSpace
-Proofs.Ai.Analysis.AbstractLinearMap
-Proofs.Ai.Analysis.AbstractDerivative
-Proofs.Ai.Analysis.AbstractFixedPoint
-Proofs.Ai.Analysis.AbstractInverseFunction
-Proofs.Ai.Analysis.AbstractImplicitPhi
-Proofs.Ai.Analysis.AbstractImplicitFunction
-```
-
-Recommended split:
-
-```text
-MetricTopology
-NormedSpace
-LinearMap
-Derivative
-FixedPoint
-InverseFunction
-ImplicitPhi
-ImplicitFunction
 ```
 
 Candidate public modules:
 
 ```text
 Mathlib.Topology.Metric.Basic
+```
+
+Why this closure matters:
+
+- It is a small standalone analysis foundation route; it imports only
+  `Std.Logic.Eq` and equality reasoning.
+- It should be materialized before derivative, fixed-point, and inverse
+  function closures.
+
+Audit focus:
+
+- Decide whether the module belongs under `Mathlib.Topology.Metric.Basic` or
+  a more analysis-oriented namespace.
+- Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
+  `local_unique_apply`.
+
+### 8. Analysis Normed Space Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-normed-space-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractNormedSpace
+```
+
+Candidate public modules:
+
+```text
 Mathlib.Analysis.NormedSpace.Basic
+```
+
+Why this closure matters:
+
+- It adds norm and product norm law-package facts needed by linear maps,
+  derivative, fixed-point, and inverse-function routes.
+
+Audit focus:
+
+- Confirm that `Mathlib.LinearAlgebra.VectorSpace` is already public.
+- Add downstream smoke for `norm_dist_triangle_from_args` and
+  `product_norm_pair_le_add_from_args`.
+
+### 9. Analysis Linear Map Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-linear-map-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractLinearMap
+```
+
+Candidate public modules:
+
+```text
 Mathlib.Analysis.LinearMap
+```
+
+Why this closure matters:
+
+- It adds bounded-linear-map, linear-isomorphism, composition, inverse, and
+  block-triangular map facts used by derivative and implicit-function routes.
+
+Audit focus:
+
+- Confirm public imports from vector-space and normed-space closures.
+- Add downstream smoke for `linear_comp_law_args`,
+  `linear_inv_left_inverse_from_iso`, and
+  `block_triangular_b_iso_from_args`.
+
+### 10. Analysis Derivative Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-derivative-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractDerivative
+```
+
+Candidate public modules:
+
+```text
 Mathlib.Analysis.Calculus.Derivative
+```
+
+Why this closure matters:
+
+- It adds Frechet derivative, differentiability, uniqueness, product/pair, and
+  composition rule surfaces.
+
+Audit focus:
+
+- Confirm public imports from metric topology, vector-space, normed-space, and
+  linear-map closures.
+- Add downstream smoke for `frechet_derivative_at_intro`,
+  `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
+
+### 11. Analysis Fixed Point Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-fixed-point-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractFixedPoint
+```
+
+Candidate public modules:
+
+```text
 Mathlib.Analysis.FixedPoint.Banach
+```
+
+Why this closure matters:
+
+- It adds completeness, contractive map, fixed-point evidence, and Banach
+  fixed-point theorem surfaces used by the inverse-function route.
+
+Audit focus:
+
+- Confirm public imports from metric topology, vector-space, and normed-space.
+- Add downstream smoke for `fixed_point_unique_from_evidence` and
+  `banach_fixed_point_from_args`.
+
+### 12. Analysis Inverse Function Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-inverse-function-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractInverseFunction
+```
+
+Candidate public modules:
+
+```text
 Mathlib.Analysis.Calculus.InverseFunction
+```
+
+Why this closure matters:
+
+- It adds local inverse evidence and the quantitative inverse function theorem
+  route after derivative and fixed point are public.
+
+Audit focus:
+
+- Confirm public imports from metric topology, vector-space, normed-space,
+  linear-map, derivative, and fixed-point closures.
+- Add downstream smoke for `local_inverse_result_intro` and
+  `quantitative_inverse_function_from_args`.
+
+### 13. Analysis Implicit Function Closure
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-implicit-function-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractImplicitPhi
+Proofs.Ai.Analysis.AbstractImplicitFunction
+```
+
+Candidate public modules:
+
+```text
 Mathlib.Analysis.Calculus.ImplicitFunction.Phi
 Mathlib.Analysis.Calculus.ImplicitFunction
 ```
 
 Why this closure matters:
 
-- It opens the path to calculus theorem evidence and fixed-point based
-  inverse/implicit function routes.
+- It adds the auxiliary implicit `Phi` map and the final implicit-function
+  theorem evidence surface after derivative and linear-map APIs are public.
 
 Audit focus:
 
-- Do not ship the entire analysis chain in one release.
-- First audit `AbstractMetricTopology` separately if a small safe release is
-  desired.
-- Keep topology, normed-space, linear-map, derivative, fixed-point, inverse,
-  and implicit-function namespaces separate.
-- Add downstream smoke for the final theorem of each split, not just helper
-  definitions.
+- Keep `ImplicitPhi` and `ImplicitFunction` in one closure because the final
+  module imports `AbstractImplicitPhi`.
+- Confirm public imports from vector-space, normed-space, linear-map, and
+  derivative closures.
+- Add downstream smoke for `implicit_phi_derivative_from_args`,
+  `implicit_function_theorem`, and `implicit_function_derivative_theorem`.
 
 ## Lower Priority Seed Closures
 
@@ -434,6 +737,8 @@ closures:
 Each new closure audit should include:
 
 - selected corpus modules;
+- closure-unit rationale, including why the selected modules should ship
+  together and which nearby modules are intentionally split out;
 - explicitly deferred nearby modules;
 - public module names and filesystem paths;
 - import rewrite table from `Proofs.Ai.*` to `Mathlib.*` / `Std.*`;
