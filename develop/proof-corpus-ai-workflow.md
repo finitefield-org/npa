@@ -4,6 +4,8 @@
 運用方針です。NPA の信頼境界は変えません。AI、replay、metadata、theorem index はすべて
 未信頼 sidecar であり、受理根拠は canonical certificate と checker / kernel の検査結果だけです。
 
+tooling 改善の計画と仕様は `develop/proof-corpus-tooling-improvement-plan.md` に記録します。
+
 ## 基本方針
 
 AI は証明を「信用される成果物」として出すのではなく、安い候補を大量に出します。
@@ -87,6 +89,30 @@ cargo run -p npa-proof-corpus -- \
 ```
 
 focused replay は未信頼 sidecar です。再投入された候補は、通った場合だけ certificate handoff に進めます。
+
+## npa-mathlib への promotion 基準
+
+proof corpus は staging / 探索場、`npa-mathlib` は stable theorem package として扱います。
+corpus で追加した定理や module は、次の条件を満たすものから `npa-mathlib` へ取り入れます。
+取り入れ後の新規 downstream corpus module は、同じ内容を再証明せず、可能な限り
+`npa-mathlib` 側の package import を使います。既存 corpus の置き換えは一括ではなく、
+触るタイミングや依存整理のタイミングで段階的に進めます。
+
+promotion の判断基準:
+
+- 名前と statement が当面変わらない。
+- 2 つ以上の downstream module から使われそう、または予定された層の明確な foundation である。
+- import closure が小さく、未成熟な staging module を public package に引き込まない。
+- axiom policy が明確で、public `npa-mathlib` policy を意図せず広げない。
+- source-free verifier、package hash check、theorem index check、axiom report check が通る。
+- compatibility alias を残す必要があるか判断済みである。
+
+promotion は証明受理の根拠を変えません。`source.npa`、`replay.json`、`meta.json`、
+AI theorem index は引き続き未信頼 sidecar であり、公開 package の信頼根拠は canonical
+certificate、deterministic hash、source-free checker / verifier verdict です。
+
+判定に迷う場合は、`judge-promote-to-mathlib` skill で evidence を列挙し、`Promote`、
+`Defer`、`Reject for now` のいずれかを明示します。
 
 ## Gate
 

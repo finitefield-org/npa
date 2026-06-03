@@ -54,7 +54,20 @@ cargo run -p npa-proof-corpus -- --changed-only
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.X::theorem_name /tmp/replay.json
 ```
 
-9. Before finishing, run `./scripts/check-fast.sh`. Run `./scripts/check-corpus.sh` only when the corpus gate conditions in `AGENTS.md` apply or the user asks for the full gate.
+9. Before finishing an authoring turn, run the local proof checks above and `./scripts/check-fast.sh` when appropriate. Do not run `./scripts/check-corpus.sh` as part of every proof attempt or repair loop.
+
+## Gate Policy
+
+During theorem authoring, the default verification loop is local:
+
+```sh
+cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --changed-only
+./scripts/check-fast.sh
+```
+
+`./scripts/check-corpus.sh` is intentionally expensive. Run it once at a batch boundary, before commit/push or release handoff, when proof-corpus infrastructure, certificate/package/checker compatibility, or kernel semantics changed, or when the user explicitly asks for the full corpus gate. If it is skipped, say so in the final response with the local checks that did run.
 
 ## Guardrails
 

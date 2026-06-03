@@ -52,9 +52,11 @@ For those changes, run:
 ./scripts/check-corpus.sh
 ```
 
-When adding or editing proof corpus theorems, prefer the targeted authoring
-commands from `develop/proof-corpus-ai-workflow.md` before running the full corpus
-gate.
+When adding or editing proof corpus theorems, use the targeted authoring
+commands from `develop/proof-corpus-ai-workflow.md` for the normal repair loop.
+Do not run the full corpus gate after every proof attempt; reserve it for batch
+boundaries, commit/push readiness, release handoff, or certificate/package/checker
+compatibility changes.
 
 ## Certificate Compatibility
 
