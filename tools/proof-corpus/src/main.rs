@@ -7,6 +7,9 @@ use std::process::Command;
 const MANIFEST_PATH: &str = "manifest.toml";
 const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
 const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
+const PACKAGE_AXIOM_REPORT_PATH: &str = "generated/axiom-report.json";
+const PACKAGE_THEOREM_INDEX_PATH: &str = "generated/theorem-index.json";
+const PACKAGE_PUBLISH_PLAN_PATH: &str = "generated/publish-plan.json";
 const AI_THEOREM_INDEX_PATH: &str = "generated/ai-theorem-index.json";
 const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
 const PROOF_CORPUS_VERSION: &str = "0.1.0";
@@ -193,6 +196,23 @@ struct Shard {
 struct VerifyFailure {
     module: String,
     error: String,
+}
+
+#[derive(Clone, Debug)]
+struct PromotePlanOptions {
+    corpus_module: String,
+    mathlib_root_arg: PathBuf,
+    mathlib_root: PathBuf,
+    target_module: String,
+    out_arg: PathBuf,
+    out: PathBuf,
+}
+
+struct PromotionEvidence {
+    label: String,
+    path: String,
+    status: &'static str,
+    detail: String,
 }
 
 struct VerifiedCorpusCache<'a> {
@@ -19046,6 +19066,11 @@ fn run() -> Result<(), String> {
             let options = parse_build_modules_file_args(&repo_root, &args[1..])?;
             run_build_modules(&repo_root, &options)
         }
+        "--promote-plan" => {
+            let repo_root = repo_root()?;
+            let options = parse_promote_plan_args(&repo_root, &args[1..])?;
+            run_promote_plan(&repo_root, &options)
+        }
         "--write-ai-index" => {
             let repo_root = repo_root()?;
             let proof_root = repo_root.join("proofs");
@@ -19088,6 +19113,7 @@ usage:
   npa-proof-corpus --build-module MODULE [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --build-modules MODULE ... [--metadata-once] [--failures-out PATH]
   npa-proof-corpus --build-modules-file PATH [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --promote-plan CORPUS_MODULE --mathlib-root PATH --to-module Mathlib.* --out PATH
   npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH]
   npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH]
   npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH]
@@ -19311,6 +19337,108 @@ fn parse_build_modules_file_contents(source: &str) -> Result<Vec<String>, String
         return Err("no proof corpus modules requested".to_owned());
     }
     Ok(modules)
+}
+
+fn parse_promote_plan_args(
+    repo_root: &Path,
+    args: &[String],
+) -> Result<PromotePlanOptions, String> {
+    let corpus_module = args
+        .first()
+        .ok_or_else(|| "promote-plan error: missing_corpus_module".to_owned())?
+        .to_owned();
+    if corpus_module.starts_with("--") {
+        return Err("promote-plan error: missing_corpus_module".to_owned());
+    }
+
+    let mut mathlib_root_arg = None;
+    let mut target_module = None;
+    let mut out_arg = None;
+    let mut index = 1usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--mathlib-root" => {
+                if mathlib_root_arg.is_some() {
+                    return Err("promote-plan error: duplicate_option --mathlib-root".to_owned());
+                }
+                let path = args
+                    .get(index + 1)
+                    .ok_or_else(|| "promote-plan error: missing_value --mathlib-root".to_owned())?;
+                mathlib_root_arg = Some(PathBuf::from(path));
+                index += 2;
+            }
+            "--to-module" => {
+                if target_module.is_some() {
+                    return Err("promote-plan error: duplicate_option --to-module".to_owned());
+                }
+                let module = args
+                    .get(index + 1)
+                    .ok_or_else(|| "promote-plan error: missing_value --to-module".to_owned())?;
+                validate_mathlib_module(module)?;
+                target_module = Some(module.to_owned());
+                index += 2;
+            }
+            "--out" => {
+                if out_arg.is_some() {
+                    return Err("promote-plan error: duplicate_option --out".to_owned());
+                }
+                let path = args
+                    .get(index + 1)
+                    .ok_or_else(|| "promote-plan error: missing_value --out".to_owned())?;
+                out_arg = Some(PathBuf::from(path));
+                index += 2;
+            }
+            option if option.starts_with("--") => {
+                return Err(format!("promote-plan error: unknown_option {option}"));
+            }
+            value => {
+                return Err(format!("promote-plan error: unexpected_argument {value}"));
+            }
+        }
+    }
+
+    let mathlib_root_arg = mathlib_root_arg
+        .ok_or_else(|| "promote-plan error: missing_option --mathlib-root".to_owned())?;
+    let target_module =
+        target_module.ok_or_else(|| "promote-plan error: missing_option --to-module".to_owned())?;
+    let out_arg = out_arg.ok_or_else(|| "promote-plan error: missing_option --out".to_owned())?;
+
+    Ok(PromotePlanOptions {
+        corpus_module,
+        mathlib_root: output_path(repo_root, &mathlib_root_arg),
+        mathlib_root_arg,
+        target_module,
+        out: output_path(repo_root, &out_arg),
+        out_arg,
+    })
+}
+
+fn validate_mathlib_module(module: &str) -> Result<(), String> {
+    if !module.starts_with("Mathlib.") || module == "Mathlib." {
+        return Err(format!(
+            "promote-plan error: invalid_target_module {module}; expected Mathlib.*"
+        ));
+    }
+    for component in module.split('.') {
+        if component.is_empty() {
+            return Err(format!(
+                "promote-plan error: invalid_target_module {module}; empty component"
+            ));
+        }
+        let mut chars = component.chars();
+        let first = chars.next().unwrap_or_default();
+        if !(first.is_ascii_alphabetic() || first == '_') {
+            return Err(format!(
+                "promote-plan error: invalid_target_module {module}; bad component {component}"
+            ));
+        }
+        if chars.any(|ch| !(ch.is_ascii_alphanumeric() || ch == '_')) {
+            return Err(format!(
+                "promote-plan error: invalid_target_module {module}; bad component {component}"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn run_build_modules(repo_root: &Path, options: &BuildOptions) -> Result<(), String> {
@@ -21374,6 +21502,461 @@ fn run_full() -> Result<(), String> {
     Ok(())
 }
 
+fn run_promote_plan(repo_root: &Path, options: &PromotePlanOptions) -> Result<(), String> {
+    let config = module_config(&options.corpus_module).ok_or_else(|| {
+        format!(
+            "promote-plan error: unknown_corpus_module {}",
+            options.corpus_module
+        )
+    })?;
+    validate_mathlib_module(&options.target_module)?;
+    if path_inside_or_equal(&options.out, &options.mathlib_root) {
+        return Err(format!(
+            "promote-plan error: output_path_inside_mathlib_root {}",
+            options.out_arg.display()
+        ));
+    }
+
+    let proof_root = repo_root.join("proofs");
+    let closure = build_batch_selection(std::slice::from_ref(&options.corpus_module))?;
+    let module_metas = package_manifest_module_metas(&proof_root)?;
+    let body = promotion_plan_markdown(repo_root, options, config, &closure, &module_metas)?;
+    write(options.out.clone(), body.as_bytes())?;
+    println!("wrote {}", options.out.display());
+    Ok(())
+}
+
+fn promotion_plan_markdown(
+    repo_root: &Path,
+    options: &PromotePlanOptions,
+    config: &ModuleArtifact,
+    closure: &[&ModuleArtifact],
+    module_metas: &BTreeMap<String, ModuleMeta>,
+) -> Result<String, String> {
+    let requested_meta = module_metas.get(config.module).ok_or_else(|| {
+        format!(
+            "promote-plan error: missing_corpus_metadata {}",
+            config.module
+        )
+    })?;
+    let evidence = promotion_evidence(repo_root, &options.mathlib_root);
+    let direct_imports = source_imports(config);
+    let expected_features = expected_core_features_for_module(config.module);
+    let supported_features = supported_core_features_for_module(config.module);
+    let target_path = mathlib_module_path(&options.target_module);
+    let mathlib_root = options.mathlib_root_arg.display();
+    let downstream_root = downstream_smoke_root(&options.mathlib_root_arg);
+
+    let mut out = String::new();
+    out.push_str(&format!(
+        "# Promotion Plan: {} -> {}\n\n",
+        config.module, options.target_module
+    ));
+    out.push_str("This plan is untrusted planning metadata. Proof acceptance still comes from canonical certificates, deterministic hashes, and source-free verification.\n\n");
+
+    out.push_str("## Module Mapping\n\n");
+    out.push_str(&format!("- Corpus module: `{}`\n", config.module));
+    out.push_str(&format!("- Target module: `{}`\n", options.target_module));
+    out.push_str(&format!("- Target source: `{target_path}/source.npa`\n"));
+    out.push_str(&format!(
+        "- Target certificate: `{target_path}/certificate.npcert`\n"
+    ));
+    out.push_str(&format!("- Corpus source: `{}`\n", config.source_path));
+    out.push_str(&format!(
+        "- Corpus certificate: `{}`\n",
+        config.certificate_path
+    ));
+    out.push_str(&format!("- Corpus meta: `{}`\n", config.meta_path));
+    out.push_str(&format!("- Corpus replay: `{}`\n\n", config.replay_path));
+
+    out.push_str("## Readiness Checklist\n\n");
+    out.push_str("| Criterion | Status | Detail |\n");
+    out.push_str("| --- | --- | --- |\n");
+    out.push_str("| Name and statement stable | Missing evidence | Reviewer must confirm that the public name and statement will not churn before materialization. |\n");
+    out.push_str("| Likely downstream reuse | Missing evidence | Reviewer must identify at least two likely downstream modules or record why promotion still pays off. |\n");
+    out.push_str(&format!(
+        "| Import closure small | Verified evidence | Corpus closure has {} internal module(s). |\n",
+        closure.len()
+    ));
+    out.push_str(&format!(
+        "| Axiom policy explicit | Verified evidence | Corpus module axioms: `{}`; package allow-list: `{}`. |\n",
+        format_string_list(&requested_meta.axioms),
+        PACKAGE_POLICY_ALLOWED_AXIOMS.join(", ")
+    ));
+    out.push_str("| Source-free package evidence | Verified evidence | Corpus package artifact files and hashes are listed below; rerun gates before promotion. |\n");
+    out.push_str("| Compatibility alias decision | Missing evidence | Decide whether a corpus compatibility alias is needed after the target module lands. |\n\n");
+
+    out.push_str("## Direct Import Mapping\n\n");
+    if direct_imports.is_empty() {
+        out.push_str("- No direct imports.\n\n");
+    } else {
+        out.push_str("| Corpus import | Proposed target import | Status |\n");
+        out.push_str("| --- | --- | --- |\n");
+        for import in direct_imports {
+            let (target, status) = promotion_import_target(import, options);
+            out.push_str(&format!(
+                "| `{}` | `{}` | {} |\n",
+                markdown_escape(import),
+                markdown_escape(&target),
+                status
+            ));
+        }
+        out.push('\n');
+    }
+
+    out.push_str("## Import Closure\n\n");
+    out.push_str("| Corpus module | Proposed target module | Certificate | Source imports | Package imports | Axioms |\n");
+    out.push_str("| --- | --- | --- | --- | --- | --- |\n");
+    for module in closure {
+        let meta = module_metas.get(module.module).ok_or_else(|| {
+            format!(
+                "promote-plan error: missing_corpus_metadata {}",
+                module.module
+            )
+        })?;
+        out.push_str(&format!(
+            "| `{}` | `{}` | `{}` | `{}` | `{}` | `{}` |\n",
+            markdown_escape(module.module),
+            markdown_escape(&promotion_target_module(module.module, options)),
+            markdown_escape(module.certificate_path),
+            markdown_escape(&format_str_list(source_imports(module))),
+            markdown_escape(&format_str_list(module.imports)),
+            markdown_escape(&format_string_list(&meta.axioms))
+        ));
+    }
+    out.push('\n');
+
+    out.push_str("## Public Exports\n\n");
+    push_export_list(
+        &mut out,
+        "Inductives",
+        &config
+            .inductives
+            .iter()
+            .map(|item| item.name)
+            .collect::<Vec<_>>(),
+    );
+    push_export_list(
+        &mut out,
+        "Definitions",
+        &config
+            .definitions
+            .iter()
+            .map(|item| item.name)
+            .collect::<Vec<_>>(),
+    );
+    push_export_list(
+        &mut out,
+        "Theorems",
+        &config
+            .theorems
+            .iter()
+            .map(|item| item.name)
+            .collect::<Vec<_>>(),
+    );
+    out.push('\n');
+
+    out.push_str("## Axiom Policy Diff\n\n");
+    out.push_str("| Item | Corpus value | Target action |\n");
+    out.push_str("| --- | --- | --- |\n");
+    out.push_str(&format!(
+        "| `allow_custom_axioms` | `false` | Keep `false` in npa-mathlib unless a separate policy review approves a change. |\n"
+    ));
+    out.push_str(&format!(
+        "| `allowed_axioms` | `{}` | Target package allow-list must cover exactly the required axioms without accidental widening. |\n",
+        PACKAGE_POLICY_ALLOWED_AXIOMS.join(", ")
+    ));
+    out.push_str(&format!(
+        "| Module axioms | `{}` | Verify the target module axiom report remains within package policy. |\n",
+        format_string_list(&requested_meta.axioms)
+    ));
+    out.push_str(&format!(
+        "| Expected core features | `{}` | Source-free verifier must report the same required features. |\n",
+        format_core_features(&expected_features)
+    ));
+    out.push_str(&format!(
+        "| Supported authoring features | `{}` | Do not treat authoring support as release evidence. |\n\n",
+        format_core_features(&supported_features)
+    ));
+
+    out.push_str("## Evidence\n\n");
+    out.push_str("| Evidence | Path | Status | Detail |\n");
+    out.push_str("| --- | --- | --- | --- |\n");
+    out.push_str(&format!(
+        "| Corpus module metadata | `{}` | Verified evidence | source `{}`, certificate file `{}`, export `{}`, axiom report `{}`, certificate `{}` |\n",
+        markdown_escape(config.meta_path),
+        markdown_escape(&requested_meta.source_sha256),
+        markdown_escape(&requested_meta.certificate_file_sha256),
+        markdown_escape(&requested_meta.export_hash),
+        markdown_escape(&requested_meta.axiom_report_hash),
+        markdown_escape(&requested_meta.certificate_hash)
+    ));
+    for item in &evidence {
+        out.push_str(&format!(
+            "| {} | `{}` | {} | {} |\n",
+            markdown_escape(&item.label),
+            markdown_escape(&item.path),
+            item.status,
+            markdown_escape(&item.detail)
+        ));
+    }
+    out.push_str("| Stable statement review | `manual` | Missing evidence | Compare corpus statement against intended public Mathlib statement. |\n");
+    out.push_str("| Compatibility alias review | `manual` | Missing evidence | Decide whether old corpus-facing names need aliases after promotion. |\n\n");
+
+    out.push_str("## Gate Commands\n\n");
+    out.push_str("Run these from the NPA repository after materialization or before accepting promotion evidence.\n\n");
+    out.push_str("```sh\n");
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check --root {mathlib_root} --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package build-certs --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package verify-certs --root {mathlib_root} --checker reference --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check-hashes --root {mathlib_root} --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package axiom-report --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package index --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package publish-plan --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check --root {downstream_root} --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package build-certs --root {downstream_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package verify-certs --root {downstream_root} --checker reference --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check-hashes --root {downstream_root} --json\n"
+    ));
+    out.push_str("```\n\n");
+
+    out.push_str("## Materialization Notes\n\n");
+    out.push_str("- This command did not write to `--mathlib-root`.\n");
+    out.push_str("- Copying source, certificate, meta, replay, package manifest, package lock, axiom report, theorem index, and publish plan is a later materialization step.\n");
+    out.push_str("- Evidence placeholders above must be resolved before using the plan as a promotion checklist.\n");
+    out.push_str(&format!(
+        "- Requested output path: `{}`.\n",
+        options.out_arg.display()
+    ));
+
+    Ok(out)
+}
+
+fn promotion_evidence(repo_root: &Path, mathlib_root: &Path) -> Vec<PromotionEvidence> {
+    let proof_root = repo_root.join("proofs");
+    let corpus_paths = [
+        (
+            "Corpus manifest",
+            MANIFEST_PATH,
+            proof_root.join(MANIFEST_PATH),
+        ),
+        (
+            "Corpus package manifest",
+            PACKAGE_MANIFEST_PATH,
+            proof_root.join(PACKAGE_MANIFEST_PATH),
+        ),
+        (
+            "Corpus package lock",
+            PACKAGE_LOCK_PATH,
+            proof_root.join(PACKAGE_LOCK_PATH),
+        ),
+        (
+            "Corpus axiom report",
+            PACKAGE_AXIOM_REPORT_PATH,
+            proof_root.join(PACKAGE_AXIOM_REPORT_PATH),
+        ),
+        (
+            "Corpus theorem index",
+            PACKAGE_THEOREM_INDEX_PATH,
+            proof_root.join(PACKAGE_THEOREM_INDEX_PATH),
+        ),
+    ];
+    let mathlib_paths = [
+        (
+            "npa-mathlib package manifest",
+            PACKAGE_MANIFEST_PATH,
+            mathlib_root.join(PACKAGE_MANIFEST_PATH),
+        ),
+        (
+            "npa-mathlib package lock",
+            PACKAGE_LOCK_PATH,
+            mathlib_root.join(PACKAGE_LOCK_PATH),
+        ),
+        (
+            "npa-mathlib axiom report",
+            PACKAGE_AXIOM_REPORT_PATH,
+            mathlib_root.join(PACKAGE_AXIOM_REPORT_PATH),
+        ),
+        (
+            "npa-mathlib theorem index",
+            PACKAGE_THEOREM_INDEX_PATH,
+            mathlib_root.join(PACKAGE_THEOREM_INDEX_PATH),
+        ),
+        (
+            "npa-mathlib publish plan",
+            PACKAGE_PUBLISH_PLAN_PATH,
+            mathlib_root.join(PACKAGE_PUBLISH_PLAN_PATH),
+        ),
+        (
+            "Downstream smoke manifest",
+            "fixtures/downstream-smoke/npa-package.toml",
+            mathlib_root.join("fixtures/downstream-smoke/npa-package.toml"),
+        ),
+    ];
+
+    corpus_paths
+        .into_iter()
+        .chain(mathlib_paths)
+        .map(|(label, display_path, path)| promotion_file_evidence(label, display_path, &path))
+        .collect()
+}
+
+fn promotion_file_evidence(label: &str, display_path: &str, path: &Path) -> PromotionEvidence {
+    match fs::read(path) {
+        Ok(bytes) => PromotionEvidence {
+            label: label.to_owned(),
+            path: display_path.to_owned(),
+            status: "Verified evidence",
+            detail: format!("file present; {}", tagged_sha256(&bytes)),
+        },
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => PromotionEvidence {
+            label: label.to_owned(),
+            path: display_path.to_owned(),
+            status: "Missing evidence",
+            detail: "file not found".to_owned(),
+        },
+        Err(err) => PromotionEvidence {
+            label: label.to_owned(),
+            path: display_path.to_owned(),
+            status: "Missing evidence",
+            detail: format!("could not read file: {err}"),
+        },
+    }
+}
+
+fn promotion_import_target(import: &str, options: &PromotePlanOptions) -> (String, &'static str) {
+    if let Some(plan) = external_import_plan(import) {
+        (
+            format!("{} {} ({})", plan.package, plan.version, plan.module),
+            "Verified evidence",
+        )
+    } else if import == options.corpus_module {
+        (options.target_module.clone(), "Verified evidence")
+    } else if module_config(import).is_some() {
+        (
+            format!("TBD ({})", default_mathlib_module_guess(import)),
+            "Missing evidence",
+        )
+    } else {
+        ("TBD".to_owned(), "Missing evidence")
+    }
+}
+
+fn promotion_target_module(module: &str, options: &PromotePlanOptions) -> String {
+    if module == options.corpus_module {
+        options.target_module.clone()
+    } else {
+        format!("TBD ({})", default_mathlib_module_guess(module))
+    }
+}
+
+fn default_mathlib_module_guess(module: &str) -> String {
+    module
+        .strip_prefix("Proofs.Ai.")
+        .map(|suffix| format!("Mathlib.{suffix}"))
+        .unwrap_or_else(|| format!("Mathlib.TBD.{module}"))
+}
+
+fn mathlib_module_path(module: &str) -> String {
+    module.replace('.', "/")
+}
+
+fn downstream_smoke_root(mathlib_root_arg: &Path) -> String {
+    mathlib_root_arg
+        .join("fixtures/downstream-smoke")
+        .display()
+        .to_string()
+}
+
+fn push_export_list(out: &mut String, title: &str, items: &[&str]) {
+    out.push_str(&format!("### {title}\n\n"));
+    if items.is_empty() {
+        out.push_str("- None.\n\n");
+    } else {
+        for item in items {
+            out.push_str(&format!("- `{}`\n", markdown_escape(item)));
+        }
+        out.push('\n');
+    }
+}
+
+fn format_str_list(items: &[&str]) -> String {
+    if items.is_empty() {
+        "none".to_owned()
+    } else {
+        items.join(", ")
+    }
+}
+
+fn format_string_list(items: &[String]) -> String {
+    if items.is_empty() {
+        "none".to_owned()
+    } else {
+        items.join(", ")
+    }
+}
+
+fn format_core_features(items: &[npa_cert::CoreFeature]) -> String {
+    if items.is_empty() {
+        "none".to_owned()
+    } else {
+        items
+            .iter()
+            .map(|item| format!("{item:?}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+fn markdown_escape(input: &str) -> String {
+    input.replace('|', "\\|")
+}
+
+fn path_inside_or_equal(child: &Path, parent: &Path) -> bool {
+    let child = normalize_path_lexical(child);
+    let parent = normalize_path_lexical(parent);
+    child == parent || child.starts_with(parent)
+}
+
+fn normalize_path_lexical(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Prefix(prefix) => normalized.push(prefix.as_os_str()),
+            std::path::Component::RootDir => normalized.push(component.as_os_str()),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if !normalized.pop() {
+                    normalized.push(component.as_os_str());
+                }
+            }
+            std::path::Component::Normal(part) => normalized.push(part),
+        }
+    }
+    normalized
+}
+
 fn write_package_lock_fixture(proof_root: &Path) -> Result<(), String> {
     let package_manifest = fs::read_to_string(proof_root.join(PACKAGE_MANIFEST_PATH))
         .map_err(|err| format!("failed to read {PACKAGE_MANIFEST_PATH}: {err}"))?;
@@ -22473,6 +23056,158 @@ Proofs.Ai.Eq # inline comments are ignored
     }
 
     #[test]
+    fn promote_plan_args_parser_requires_valid_target() {
+        let repo = repo_root().expect("repo root should resolve");
+        let parsed = parse_promote_plan_args(
+            &repo,
+            &[
+                "Proofs.Ai.Algebra.AbstractField".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--to-module".to_owned(),
+                "Mathlib.Algebra.Field.Basic".to_owned(),
+                "--out".to_owned(),
+                "/tmp/npa-promote-plan.md".to_owned(),
+            ],
+        )
+        .expect("valid promote-plan args should parse");
+        assert_eq!(parsed.corpus_module, "Proofs.Ai.Algebra.AbstractField");
+        assert_eq!(parsed.target_module, "Mathlib.Algebra.Field.Basic");
+        assert_eq!(parsed.mathlib_root_arg, PathBuf::from("../npa-mathlib"));
+
+        let err = parse_promote_plan_args(
+            &repo,
+            &[
+                "Proofs.Ai.Algebra.AbstractField".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--to-module".to_owned(),
+                "Algebra.Field.Basic".to_owned(),
+                "--out".to_owned(),
+                "/tmp/npa-promote-plan.md".to_owned(),
+            ],
+        )
+        .expect_err("non-Mathlib target should fail");
+        assert_eq!(
+            err,
+            "promote-plan error: invalid_target_module Algebra.Field.Basic; expected Mathlib.*"
+        );
+    }
+
+    #[test]
+    fn promote_plan_rejects_unknown_module_before_write() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("unknown-promote-module");
+        let out = temp.join("plan.md");
+        let options = PromotePlanOptions {
+            corpus_module: "Proofs.Ai.DoesNotExist".to_owned(),
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: temp.join("mathlib"),
+            target_module: "Mathlib.Algebra.Field.Basic".to_owned(),
+            out_arg: out.clone(),
+            out: out.clone(),
+        };
+
+        let err = run_promote_plan(&repo, &options).expect_err("unknown module should fail");
+        assert_eq!(
+            err,
+            "promote-plan error: unknown_corpus_module Proofs.Ai.DoesNotExist"
+        );
+        assert!(!out.exists());
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_plan_rejects_output_inside_mathlib_root() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("promote-output-inside-mathlib");
+        let mathlib_root = temp.join("mathlib");
+        let out = mathlib_root.join("promotion-plan.md");
+        let options = PromotePlanOptions {
+            corpus_module: "Proofs.Ai.Algebra.AbstractField".to_owned(),
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root,
+            target_module: "Mathlib.Algebra.Field.Basic".to_owned(),
+            out_arg: PathBuf::from("../npa-mathlib-test/promotion-plan.md"),
+            out: out.clone(),
+        };
+
+        let err = run_promote_plan(&repo, &options).expect_err("inside output should fail");
+        assert_eq!(
+            err,
+            "promote-plan error: output_path_inside_mathlib_root ../npa-mathlib-test/promotion-plan.md"
+        );
+        assert!(!out.exists());
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_plan_generation_is_read_only_for_mathlib_root() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("read-only-promote-plan");
+        let mathlib_root = temp.join("mathlib");
+        fs::create_dir_all(mathlib_root.join("generated")).expect("generated dir");
+        fs::create_dir_all(mathlib_root.join("fixtures/downstream-smoke"))
+            .expect("downstream smoke dir");
+        fs::write(
+            mathlib_root.join(PACKAGE_MANIFEST_PATH),
+            "schema = \"npa.package.v0.1\"\npackage = \"npa-mathlib\"\n",
+        )
+        .expect("mathlib manifest");
+        fs::write(
+            mathlib_root.join(PACKAGE_LOCK_PATH),
+            "{\"schema\":\"package-lock-test\"}\n",
+        )
+        .expect("mathlib package lock");
+        fs::write(
+            mathlib_root.join(PACKAGE_AXIOM_REPORT_PATH),
+            "{\"schema\":\"axiom-report-test\"}\n",
+        )
+        .expect("mathlib axiom report");
+        fs::write(
+            mathlib_root.join(PACKAGE_THEOREM_INDEX_PATH),
+            "{\"schema\":\"theorem-index-test\"}\n",
+        )
+        .expect("mathlib theorem index");
+        fs::write(
+            mathlib_root.join("fixtures/downstream-smoke/npa-package.toml"),
+            "schema = \"npa.package.v0.1\"\npackage = \"smoke\"\n",
+        )
+        .expect("downstream smoke manifest");
+
+        let before = test_tree_hashes(&mathlib_root);
+        let out = temp.join("plan.md");
+        let options = PromotePlanOptions {
+            corpus_module: "Proofs.Ai.Algebra.AbstractField".to_owned(),
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: mathlib_root.clone(),
+            target_module: "Mathlib.Algebra.Field.Basic".to_owned(),
+            out_arg: out.clone(),
+            out: out.clone(),
+        };
+        run_promote_plan(&repo, &options).expect("plan should generate");
+        let after = test_tree_hashes(&mathlib_root);
+
+        assert_eq!(before, after);
+        let plan = fs::read_to_string(out).expect("plan should be written outside mathlib root");
+        assert!(plan.contains(
+            "# Promotion Plan: Proofs.Ai.Algebra.AbstractField -> Mathlib.Algebra.Field.Basic"
+        ));
+        assert!(plan.contains("| npa-mathlib package manifest | `npa-package.toml` | Verified evidence | file present; sha256"));
+        assert!(plan.contains(
+            "| npa-mathlib publish plan | `generated/publish-plan.json` | Missing evidence | file not found |"
+        ));
+        assert!(plan.contains(
+            "cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib-test --checker reference --json"
+        ));
+        assert!(plan.contains(
+            "cargo run -q -p npa-cli -- package check --root ../npa-mathlib-test/fixtures/downstream-smoke --json"
+        ));
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
     fn build_batch_selection_deduplicates_requested_modules() {
         let selected =
             build_batch_selection(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Basic".to_owned()])
@@ -22577,5 +23312,40 @@ Proofs.Ai.Eq # inline comments are ignored
         assert!(replay.contains("\"declaration\": \"id\""));
         assert!(replay.contains("\"source_kind\": \"explicit_term\""));
         assert!(!replay.contains("const_left"));
+    }
+
+    fn test_temp_dir(name: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("npa-proof-corpus-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("test temp dir");
+        dir
+    }
+
+    fn test_tree_hashes(root: &Path) -> BTreeMap<String, String> {
+        let mut hashes = BTreeMap::new();
+        collect_test_tree_hashes(root, root, &mut hashes);
+        hashes
+    }
+
+    fn collect_test_tree_hashes(root: &Path, path: &Path, hashes: &mut BTreeMap<String, String>) {
+        let mut entries = fs::read_dir(path)
+            .expect("test tree should be readable")
+            .map(|entry| entry.expect("test tree entry").path())
+            .collect::<Vec<_>>();
+        entries.sort();
+        for entry in entries {
+            if entry.is_dir() {
+                collect_test_tree_hashes(root, &entry, hashes);
+            } else {
+                let relative = entry
+                    .strip_prefix(root)
+                    .expect("test path should be under root")
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                let bytes = fs::read(&entry).expect("test file should be readable");
+                hashes.insert(relative, tagged_sha256(&bytes));
+            }
+        }
     }
 }

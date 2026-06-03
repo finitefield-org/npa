@@ -172,7 +172,7 @@ package artifact checks を改めて通す。
 
 ### PCT-04 Promotion Plan Command
 
-- Status: Pending
+- Status: Completed
 - Depends on: PCT-03
 - Inputs:
   - `tools/proof-corpus/src/main.rs`
@@ -194,10 +194,11 @@ package artifact checks を改めて通す。
   - The plan includes source-free package gate and downstream smoke commands.
 - Verification:
   - `cargo test -p npa-proof-corpus`
-  - `cargo run -p npa-proof-corpus -- --promote-plan Proofs.Ai.Algebra.AbstractField --mathlib-root /Users/kazuyoshitoshiya/ff/npa-mathlib --to-module Mathlib.Algebra.Field.Basic --out /tmp/npa-promote-plan.md`
+  - `cargo run -p npa-proof-corpus -- --promote-plan Proofs.Ai.Algebra.AbstractField --mathlib-root ../npa-mathlib --to-module Mathlib.Algebra.Field.Basic --out /tmp/npa-promote-plan.md`
   - `git diff --check`
 - Notes:
   - This milestone decides and records promotion readiness. It does not materialize files into `npa-mathlib`.
+  - Completed with read-only `--promote-plan` generation, deterministic diagnostics, and source-free gate commands.
 
 ### PCT-05 Verified Certificate Cache Data Model
 

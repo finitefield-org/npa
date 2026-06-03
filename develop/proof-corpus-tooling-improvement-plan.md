@@ -219,22 +219,25 @@ materialization を command 化します。
 
 ### 6.2 CLI 仕様
 
-追加候補:
+PCT-04 で実装済み:
 
 ```sh
 cargo run -p npa-proof-corpus -- \
   --promote-plan Proofs.Ai.Algebra.AbstractField \
-  --mathlib-root /Users/kazuyoshitoshiya/ff/npa-mathlib \
+  --mathlib-root ../npa-mathlib \
   --to-module Mathlib.Algebra.Field.Basic \
   --out develop/npa-mathlib-field-closure-audit.md
 ```
+
+`--promote-plan` は `--mathlib-root` 配下を読み取り専用の evidence source として扱います。
+`--out` が `--mathlib-root` 配下を指す場合は、plan 生成前に deterministic diagnostic で失敗します。
 
 将来の materialize command:
 
 ```sh
 cargo run -p npa-proof-corpus -- \
   --promote-materialize develop/npa-mathlib-field-closure-audit.md \
-  --mathlib-root /Users/kazuyoshitoshiya/ff/npa-mathlib
+  --mathlib-root ../npa-mathlib
 ```
 
 ### 6.3 Promotion plan 内容
