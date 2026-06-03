@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.25` analysis fixed-point closure. It is a planning
+`v0.1.26` analysis inverse-function closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -15,12 +15,12 @@ untrusted sidecars.
 ## Current Baseline
 
 The standalone `npa-mathlib` package has materialized through the analysis
-fixed-point closure as package version `0.1.25`.
+inverse-function closure as package version `0.1.26`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-analysis-fixed-point-closure-audit.md
+develop/npa-mathlib-analysis-inverse-function-closure-audit.md
 ```
 
 The currently public package includes:
@@ -64,6 +64,7 @@ Mathlib.Analysis.NormedSpace.Basic
 Mathlib.Analysis.LinearMap
 Mathlib.Analysis.Calculus.Derivative
 Mathlib.Analysis.FixedPoint.Banach
+Mathlib.Analysis.Calculus.InverseFunction
 Mathlib.LinearAlgebra.InnerProduct
 Mathlib.LinearAlgebra.InnerProduct.Derived
 Mathlib.Geometry.Affine
@@ -172,7 +173,14 @@ The `Analysis Fixed Point Closure` item from this queue was completed as
 develop/npa-mathlib-analysis-fixed-point-closure-audit.md
 ```
 
-The next open item is the analysis inverse-function closure.
+The `Analysis Inverse Function Closure` item from this queue was completed as
+`npa-mathlib v0.1.26`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-inverse-function-closure-audit.md
+```
+
+The next open item is the analysis implicit-function closure.
 
 ### Logic Iff Closure
 
@@ -699,6 +707,49 @@ Closure unit verdict:
 - Downstream smoke consumes `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args` source-free from vendored certificates.
 
+### Analysis Inverse Function Closure
+
+Status: completed in `npa-mathlib v0.1.26`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-inverse-function-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractInverseFunction
+```
+
+Public modules:
+
+```text
+Mathlib.Analysis.Calculus.InverseFunction
+```
+
+Public surface audited:
+
+- `InverseResidual`, `InverseNewtonMap`, `LocalInverseEvidence`,
+  `LocalInverseResult`, and `QuantitativeInverseFunctionArgs`.
+- Theorem surfaces including `local_inverse_result_intro`,
+  `local_inverse_result_elim`, `local_inverse_derivative_from_evidence`,
+  `local_inverse_linear_iso_from_evidence`, and
+  `quantitative_inverse_function_from_args`.
+
+Closure unit verdict:
+
+- The corpus module is a valid single-module inverse-function closure because
+  it imports only public `Std.Logic.Eq`, metric topology, vector-space,
+  normed-space, linear-map, derivative, and fixed-point foundations.
+- The module belongs under `Mathlib.Analysis.Calculus.InverseFunction` because
+  the checked surface extends calculus with local inverse evidence and the
+  quantitative inverse-function theorem route.
+- Downstream smoke consumes `local_inverse_result_intro` and
+  `quantitative_inverse_function_from_args` source-free from vendored
+  certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -728,45 +779,13 @@ older queue are:
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
   vector-space foundation, inner-product, geometry Pythagorean, analysis
   metric topology, analysis normed-space, analysis linear-map, analysis
-  derivative, and analysis fixed-point closures are complete. A separate
-  public ring-homomorphism namespace should wait for either a homomorphism-only
-  corpus module or an audited alias layer.
+  derivative, analysis fixed-point, and analysis inverse-function closures are
+  complete. A separate public ring-homomorphism namespace should wait for
+  either a homomorphism-only corpus module or an audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Inverse Function Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-inverse-function-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractInverseFunction
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Analysis.Calculus.InverseFunction
-```
-
-Why this closure matters:
-
-- It adds local inverse evidence and the quantitative inverse function theorem
-  route after derivative and fixed point are public.
-
-Audit focus:
-
-- Confirm public imports from metric topology, vector-space, normed-space,
-  linear-map, derivative, and fixed-point closures.
-- Add downstream smoke for `local_inverse_result_intro` and
-  `quantitative_inverse_function_from_args`.
-
-### 2. Analysis Implicit Function Closure
+### 1. Analysis Implicit Function Closure
 
 Recommended audit file:
 
