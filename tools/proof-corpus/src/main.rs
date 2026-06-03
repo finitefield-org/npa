@@ -17,6 +17,11 @@ const PROOF_CORPUS_LICENSE: &str = "Apache-2.0";
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
 const NPA_STD_PACKAGE: &str = "npa-std";
 const NPA_STD_VERSION: &str = "0.1.0";
+// PCT-05 defines this disk model before PCT-06 wires cache lookup into verification.
+#[allow(dead_code)]
+const VERIFIED_CACHE_SCHEMA: &str = "npa-proof-corpus.verified-cache.v0.1";
+#[allow(dead_code)]
+const VERIFIED_CACHE_LAYOUT_DIR: &str = "target/npa-proof-cache/verified-v0.1";
 const EXTERNAL_STD_IMPORT_PLANS: &[ExternalImportPlan] = &[
     ExternalImportPlan {
         module: "Std.Logic.Eq",
@@ -213,6 +218,51 @@ struct PromotionEvidence {
     path: String,
     status: &'static str,
     detail: String,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct VerifiedCacheImportIdentity {
+    module: String,
+    export_hash: String,
+    certificate_hash: String,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct VerifiedCacheKeyInput {
+    schema: String,
+    core_spec: String,
+    certificate_format: String,
+    kernel_profile: String,
+    verifier_profile: String,
+    binary_build_identity: String,
+    module: String,
+    certificate_hash: String,
+    certificate_file_hash: String,
+    direct_imports: Vec<VerifiedCacheImportIdentity>,
+    axiom_policy_fingerprint: String,
+    enabled_core_features: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct VerifiedCacheEntry {
+    schema: String,
+    cache_key: String,
+    key_input: VerifiedCacheKeyInput,
+    module: String,
+    export_hash: String,
+    certificate_hash: String,
+    module_axioms: Vec<String>,
+    core_features: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum VerifiedCacheSchemaStatus {
+    Current,
+    Miss,
 }
 
 struct VerifiedCorpusCache<'a> {
@@ -21957,6 +22007,240 @@ fn normalize_path_lexical(path: &Path) -> PathBuf {
     normalized
 }
 
+#[allow(dead_code)]
+fn verified_cache_key_input_from_verified_module(
+    verified: &npa_cert::VerifiedModule,
+    certificate_file_hash: String,
+    direct_imports: Vec<VerifiedCacheImportIdentity>,
+    policy: &npa_cert::AxiomPolicy,
+) -> VerifiedCacheKeyInput {
+    verified_cache_key_input_from_verified_module_with_profiles(
+        verified,
+        certificate_file_hash,
+        direct_imports,
+        policy,
+        VERIFIED_CACHE_SCHEMA,
+        npa_package::CHECKER_PROFILE_REFERENCE_V0_1,
+        &default_binary_build_identity(),
+    )
+}
+
+#[allow(dead_code)]
+fn verified_cache_key_input_from_verified_module_with_profiles(
+    verified: &npa_cert::VerifiedModule,
+    certificate_file_hash: String,
+    mut direct_imports: Vec<VerifiedCacheImportIdentity>,
+    policy: &npa_cert::AxiomPolicy,
+    schema: &str,
+    verifier_profile: &str,
+    binary_build_identity: &str,
+) -> VerifiedCacheKeyInput {
+    direct_imports.sort();
+    direct_imports.dedup();
+    VerifiedCacheKeyInput {
+        schema: schema.to_owned(),
+        core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
+        certificate_format: npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1.to_owned(),
+        kernel_profile: npa_package::KERNEL_PROFILE_V0_1.to_owned(),
+        verifier_profile: verifier_profile.to_owned(),
+        binary_build_identity: binary_build_identity.to_owned(),
+        module: verified.module().as_dotted(),
+        certificate_hash: tagged_hash(verified.certificate_hash()),
+        certificate_file_hash,
+        direct_imports,
+        axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(policy),
+        enabled_core_features: core_feature_names(&verified.axiom_report().core_features),
+    }
+}
+
+#[allow(dead_code)]
+fn verified_cache_key(input: &VerifiedCacheKeyInput) -> String {
+    sha256_hex(verified_cache_key_material(input).as_bytes())
+}
+
+#[allow(dead_code)]
+fn verified_cache_entry_path(repo_root: &Path, cache_key: &str) -> PathBuf {
+    repo_root
+        .join(VERIFIED_CACHE_LAYOUT_DIR)
+        .join(format!("{cache_key}.json"))
+}
+
+#[allow(dead_code)]
+fn verified_cache_key_material(input: &VerifiedCacheKeyInput) -> String {
+    let imports = input
+        .direct_imports
+        .iter()
+        .map(|import| {
+            format!(
+                "{{\"module\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\"}}",
+                json_escape(&import.module),
+                json_escape(&import.export_hash),
+                json_escape(&import.certificate_hash)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "{{\"schema\":\"{}\",\"core_spec\":\"{}\",\"certificate_format\":\"{}\",\"kernel_profile\":\"{}\",\"verifier_profile\":\"{}\",\"binary_build_identity\":\"{}\",\"module\":\"{}\",\"certificate_hash\":\"{}\",\"certificate_file_hash\":\"{}\",\"direct_imports\":[{}],\"axiom_policy_fingerprint\":\"{}\",\"enabled_core_features\":{}}}",
+        json_escape(&input.schema),
+        json_escape(&input.core_spec),
+        json_escape(&input.certificate_format),
+        json_escape(&input.kernel_profile),
+        json_escape(&input.verifier_profile),
+        json_escape(&input.binary_build_identity),
+        json_escape(&input.module),
+        json_escape(&input.certificate_hash),
+        json_escape(&input.certificate_file_hash),
+        imports,
+        json_escape(&input.axiom_policy_fingerprint),
+        json_string_array(&input.enabled_core_features)
+    )
+}
+
+#[allow(dead_code)]
+fn verified_cache_entry_from_verified_module(
+    key_input: VerifiedCacheKeyInput,
+    verified: &npa_cert::VerifiedModule,
+) -> VerifiedCacheEntry {
+    let mut module_axioms = verified
+        .axiom_report()
+        .module_axioms
+        .iter()
+        .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    module_axioms.sort();
+    module_axioms.dedup();
+    VerifiedCacheEntry {
+        schema: VERIFIED_CACHE_SCHEMA.to_owned(),
+        cache_key: verified_cache_key(&key_input),
+        key_input,
+        module: verified.module().as_dotted(),
+        export_hash: tagged_hash(verified.export_hash()),
+        certificate_hash: tagged_hash(verified.certificate_hash()),
+        module_axioms,
+        core_features: core_feature_names(&verified.axiom_report().core_features),
+    }
+}
+
+#[allow(dead_code)]
+fn verified_cache_entry_json(entry: &VerifiedCacheEntry) -> String {
+    format!(
+        "{{\"schema\":\"{}\",\"cache_key\":\"{}\",\"trusted\":false,\"module\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"module_axioms\":{},\"core_features\":{},\"key_input\":{},\"trust_boundary\":\"cache entries are authoring-only acceleration metadata; canonical certificates and source-free verification remain authoritative\"}}\n",
+        json_escape(&entry.schema),
+        json_escape(&entry.cache_key),
+        json_escape(&entry.module),
+        json_escape(&entry.export_hash),
+        json_escape(&entry.certificate_hash),
+        json_string_array(&entry.module_axioms),
+        json_string_array(&entry.core_features),
+        verified_cache_key_material(&entry.key_input)
+    )
+}
+
+#[allow(dead_code)]
+fn verified_cache_entry_schema_status(source: &str) -> VerifiedCacheSchemaStatus {
+    match leading_json_string_field(source, "schema").as_deref() {
+        Some(VERIFIED_CACHE_SCHEMA) => VerifiedCacheSchemaStatus::Current,
+        _ => VerifiedCacheSchemaStatus::Miss,
+    }
+}
+
+#[allow(dead_code)]
+fn verified_cache_axiom_policy_fingerprint(policy: &npa_cert::AxiomPolicy) -> String {
+    let allowlisted_axioms = policy
+        .allowlisted_axioms
+        .iter()
+        .map(|axiom| axiom.as_dotted())
+        .collect::<Vec<_>>();
+    let supported_core_features = policy
+        .supported_core_features
+        .iter()
+        .copied()
+        .map(|feature| feature.as_str().to_owned())
+        .collect::<Vec<_>>();
+    let material = format!(
+        "{{\"mode\":\"{}\",\"deny_sorry\":{},\"allowlisted_axioms\":{},\"supported_core_features\":{}}}",
+        trust_mode_name(policy.mode),
+        policy.deny_sorry,
+        json_string_array(&allowlisted_axioms),
+        json_string_array(&supported_core_features)
+    );
+    tagged_sha256(material.as_bytes())
+}
+
+#[allow(dead_code)]
+fn default_binary_build_identity() -> String {
+    option_env!("NPA_BINARY_BUILD_IDENTITY")
+        .unwrap_or(concat!(
+            env!("CARGO_PKG_NAME"),
+            "@",
+            env!("CARGO_PKG_VERSION")
+        ))
+        .to_owned()
+}
+
+#[allow(dead_code)]
+fn core_feature_names(features: &[npa_cert::CoreFeature]) -> Vec<String> {
+    let mut names = features
+        .iter()
+        .copied()
+        .map(|feature| feature.as_str().to_owned())
+        .collect::<Vec<_>>();
+    names.sort();
+    names.dedup();
+    names
+}
+
+#[allow(dead_code)]
+fn trust_mode_name(mode: npa_cert::TrustMode) -> &'static str {
+    match mode {
+        npa_cert::TrustMode::Normal => "normal",
+        npa_cert::TrustMode::HighTrust => "high_trust",
+    }
+}
+
+#[allow(dead_code)]
+fn json_string_array(items: &[String]) -> String {
+    let body = items
+        .iter()
+        .map(|item| format!("\"{}\"", json_escape(item)))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("[{body}]")
+}
+
+#[allow(dead_code)]
+fn leading_json_string_field(source: &str, field: &str) -> Option<String> {
+    let source = source.trim_start().strip_prefix('{')?.trim_start();
+    let needle = format!("\"{}\"", json_escape(field));
+    let rest = source.strip_prefix(&needle)?;
+    parse_json_string_after_colon(rest)
+}
+
+fn parse_json_string_after_colon(source: &str) -> Option<String> {
+    let rest = source.trim_start();
+    let rest = rest.strip_prefix(':')?.trim_start();
+    let rest = rest.strip_prefix('"')?;
+    let mut value = String::new();
+    let mut chars = rest.chars();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '"' => return Some(value),
+            '\\' => match chars.next()? {
+                '"' => value.push('"'),
+                '\\' => value.push('\\'),
+                '/' => value.push('/'),
+                'n' => value.push('\n'),
+                'r' => value.push('\r'),
+                't' => value.push('\t'),
+                _ => return None,
+            },
+            ch => value.push(ch),
+        }
+    }
+    None
+}
+
 fn write_package_lock_fixture(proof_root: &Path) -> Result<(), String> {
     let package_manifest = fs::read_to_string(proof_root.join(PACKAGE_MANIFEST_PATH))
         .map_err(|err| format!("failed to read {PACKAGE_MANIFEST_PATH}: {err}"))?;
@@ -22555,8 +22839,12 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
 }
 
 fn tagged_sha256(bytes: &[u8]) -> String {
+    format!("sha256:{}", sha256_hex(bytes))
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
     let digest = Sha256::digest(bytes);
-    format!("sha256:{}", hex_bytes(&digest))
+    hex_bytes(&digest)
 }
 
 fn tagged_hash(hash: npa_cert::Hash) -> String {
@@ -23208,6 +23496,142 @@ Proofs.Ai.Eq # inline comments are ignored
     }
 
     #[test]
+    fn verified_cache_key_material_includes_required_fields() {
+        let input = sample_verified_cache_key_input();
+        let key = verified_cache_key(&input);
+        assert_eq!(key, verified_cache_key(&input.clone()));
+        assert_eq!(key.len(), 64);
+        assert!(key.bytes().all(|byte| byte.is_ascii_hexdigit()));
+
+        let material = verified_cache_key_material(&input);
+        for field in [
+            "schema",
+            "core_spec",
+            "certificate_format",
+            "kernel_profile",
+            "verifier_profile",
+            "binary_build_identity",
+            "certificate_hash",
+            "certificate_file_hash",
+            "direct_imports",
+            "axiom_policy_fingerprint",
+            "enabled_core_features",
+        ] {
+            assert!(
+                material.contains(&format!("\"{field}\"")),
+                "cache key material should contain {field}: {material}"
+            );
+        }
+    }
+
+    #[test]
+    fn verified_cache_key_changes_for_required_identity_inputs() {
+        let input = sample_verified_cache_key_input();
+        let key = verified_cache_key(&input);
+
+        let mut changed = input.clone();
+        changed.certificate_hash = sample_hash('a');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.certificate_file_hash = sample_hash('b');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].module = "Proofs.Ai.OtherImport".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].export_hash = sample_hash('d');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].certificate_hash = sample_hash('c');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.axiom_policy_fingerprint =
+            verified_cache_axiom_policy_fingerprint(&npa_cert::AxiomPolicy::high_trust());
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.enabled_core_features.push("quotient_v2".to_owned());
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.verifier_profile = "npa.checker.reference.v0.2".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.schema = "npa-proof-corpus.verified-cache.vNEXT".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input;
+        changed.binary_build_identity = "npa-proof-corpus@test-build".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+    }
+
+    #[test]
+    fn verified_cache_entry_path_uses_versioned_layout() {
+        let repo = repo_root().expect("repo root should resolve");
+        let key = verified_cache_key(&sample_verified_cache_key_input());
+        let path = verified_cache_entry_path(&repo, &key);
+        assert_eq!(
+            path.strip_prefix(&repo)
+                .expect("cache path should be repo local"),
+            Path::new(VERIFIED_CACHE_LAYOUT_DIR).join(format!("{key}.json"))
+        );
+    }
+
+    #[test]
+    fn verified_cache_schema_mismatch_is_miss() {
+        let (entry, _verified) = basic_verified_cache_entry();
+        let json = verified_cache_entry_json(&entry);
+        assert_eq!(
+            verified_cache_entry_schema_status(&json),
+            VerifiedCacheSchemaStatus::Current
+        );
+
+        let mismatched = json.replacen(
+            VERIFIED_CACHE_SCHEMA,
+            "npa-proof-corpus.verified-cache.v9",
+            1,
+        );
+        assert_eq!(
+            verified_cache_entry_schema_status(&mismatched),
+            VerifiedCacheSchemaStatus::Miss
+        );
+        assert_eq!(
+            verified_cache_entry_schema_status("{\"schema\":"),
+            VerifiedCacheSchemaStatus::Miss
+        );
+        assert_eq!(
+            verified_cache_entry_schema_status(
+                "{\"key_input\":{\"schema\":\"npa-proof-corpus.verified-cache.v0.1\"}}"
+            ),
+            VerifiedCacheSchemaStatus::Miss
+        );
+    }
+
+    #[test]
+    fn verified_cache_entry_serialization_is_deterministic_and_untrusted() {
+        let (entry, verified) = basic_verified_cache_entry();
+        let json = verified_cache_entry_json(&entry);
+        assert_eq!(json, verified_cache_entry_json(&entry));
+        assert!(json.contains("\"trusted\":false"));
+        assert!(json.contains("\"key_input\":{"));
+        assert!(json.contains(
+            "cache entries are authoring-only acceleration metadata; canonical certificates and source-free verification remain authoritative"
+        ));
+        assert_eq!(entry.module, "Proofs.Ai.Basic");
+        assert_eq!(entry.export_hash, tagged_hash(verified.export_hash()));
+        assert_eq!(
+            entry.certificate_hash,
+            tagged_hash(verified.certificate_hash())
+        );
+    }
+
+    #[test]
     fn build_batch_selection_deduplicates_requested_modules() {
         let selected =
             build_batch_selection(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Basic".to_owned()])
@@ -23347,5 +23771,50 @@ Proofs.Ai.Eq # inline comments are ignored
                 hashes.insert(relative, tagged_sha256(&bytes));
             }
         }
+    }
+
+    fn sample_verified_cache_key_input() -> VerifiedCacheKeyInput {
+        let policy =
+            npa_cert::AxiomPolicy::normal().with_core_feature(npa_cert::CoreFeature::QuotientV1);
+        VerifiedCacheKeyInput {
+            schema: VERIFIED_CACHE_SCHEMA.to_owned(),
+            core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
+            certificate_format: npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1.to_owned(),
+            kernel_profile: npa_package::KERNEL_PROFILE_V0_1.to_owned(),
+            verifier_profile: npa_package::CHECKER_PROFILE_REFERENCE_V0_1.to_owned(),
+            binary_build_identity: default_binary_build_identity(),
+            module: "Proofs.Ai.Sample".to_owned(),
+            certificate_hash: sample_hash('1'),
+            certificate_file_hash: sample_hash('2'),
+            direct_imports: vec![VerifiedCacheImportIdentity {
+                module: "Proofs.Ai.Import".to_owned(),
+                export_hash: sample_hash('3'),
+                certificate_hash: sample_hash('4'),
+            }],
+            axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(&policy),
+            enabled_core_features: vec!["quotient_v1".to_owned()],
+        }
+    }
+
+    fn basic_verified_cache_entry() -> (VerifiedCacheEntry, npa_cert::VerifiedModule) {
+        let repo = repo_root().expect("repo root should resolve");
+        let certificate_bytes = fs::read(repo.join("proofs").join(BASIC_MODULE.certificate_path))
+            .expect("basic certificate should be readable");
+        let mut session = npa_cert::VerifierSession::new();
+        let policy = npa_cert::AxiomPolicy::normal();
+        let verified = npa_cert::verify_module_cert(&certificate_bytes, &mut session, &policy)
+            .expect("basic certificate should verify");
+        let key_input = verified_cache_key_input_from_verified_module(
+            &verified,
+            tagged_sha256(&certificate_bytes),
+            Vec::new(),
+            &policy,
+        );
+        let entry = verified_cache_entry_from_verified_module(key_input, &verified);
+        (entry, verified)
+    }
+
+    fn sample_hash(ch: char) -> String {
+        format!("sha256:{}", ch.to_string().repeat(64))
     }
 }

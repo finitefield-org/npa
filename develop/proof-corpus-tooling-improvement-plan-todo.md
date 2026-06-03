@@ -202,7 +202,7 @@ package artifact checks を改めて通す。
 
 ### PCT-05 Verified Certificate Cache Data Model
 
-- Status: Pending
+- Status: Completed
 - Depends on: PCT-04
 - Inputs:
   - `tools/proof-corpus/src/main.rs`
@@ -225,6 +225,7 @@ package artifact checks を改めて通す。
   - `rg -n "npa-proof-cache|verified-cache|cache_status" tools/proof-corpus/src/main.rs develop`
 - Notes:
   - Keep cache serialization deterministic, but do not treat cache bytes as trusted proof evidence.
+  - Completed with versioned key/entry schema, path layout helpers, and schema-mismatch-as-miss tests.
 
 ### PCT-06 Verified Cache CLI Integration
 

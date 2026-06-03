@@ -136,6 +136,12 @@ cache entry は content-addressed path に置きます。
 target/npa-proof-cache/verified-v0.1/<cache-key>.json
 ```
 
+PCT-05 では、authoring cache の data model として
+`npa-proof-corpus.verified-cache.v0.1` schema、content-addressed key material、
+entry JSON、schema version mismatch を miss として扱う判定を実装済みです。
+この段階では `--module` / `--changed-only` / gate scripts は cache entry を読みません。
+実際の cache lookup / hit reporting / read-through 比較は PCT-06 で実装します。
+
 ### 4.4 CLI 仕様
 
 ```sh
