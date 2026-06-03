@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 This roadmap records the remaining proof-corpus routes that are good
 candidates for future public `npa-mathlib` materialization after the
-`v0.1.20` geometry Pythagorean closure. It is a planning
+`v0.1.21` analysis metric topology closure. It is a planning
 document, not proof evidence.
 
 Proof acceptance remains based only on canonical `.npcert` bytes, deterministic
@@ -14,13 +14,13 @@ untrusted sidecars.
 
 ## Current Baseline
 
-The standalone `npa-mathlib` package has materialized through the geometry
-Pythagorean closure as package version `0.1.20`.
+The standalone `npa-mathlib` package has materialized through the analysis
+metric topology closure as package version `0.1.21`.
 
 The latest completed closure audit is:
 
 ```text
-develop/npa-mathlib-geometry-pythagorean-closure-audit.md
+develop/npa-mathlib-analysis-metric-topology-closure-audit.md
 ```
 
 The currently public package includes:
@@ -50,6 +50,7 @@ Mathlib.Algebra.Group.Subgroup.Order
 Mathlib.Algebra.Group.Subgroup
 Mathlib.Logic.Iff
 Mathlib.Logic.EqReasoning
+Mathlib.Topology.Metric.Basic
 Mathlib.Algebra.Group.Basic
 Mathlib.Algebra.Ring.Basic
 Mathlib.Algebra.Ring.FirstIsomorphism.Basic
@@ -132,7 +133,14 @@ The `Geometry Pythagorean Closure` item from this queue was completed as
 develop/npa-mathlib-geometry-pythagorean-closure-audit.md
 ```
 
-The next open item is the analysis metric topology closure.
+The `Analysis Metric Topology Closure` item from this queue was completed as
+`npa-mathlib v0.1.21`. Its audit is recorded in:
+
+```text
+develop/npa-mathlib-analysis-metric-topology-closure-audit.md
+```
+
+The next open item is the analysis normed space closure.
 
 ### Logic Iff Closure
 
@@ -437,6 +445,48 @@ Closure unit verdict:
   `pythagorean_theorem_dist_sq`, and `pythagorean_theorem_api_alias`
   source-free from vendored certificates.
 
+### Analysis Metric Topology Closure
+
+Status: completed in `npa-mathlib v0.1.21`.
+
+Recommended audit file:
+
+```text
+develop/npa-mathlib-analysis-metric-topology-closure-audit.md
+```
+
+Candidate corpus modules:
+
+```text
+Proofs.Ai.Analysis.AbstractMetricTopology
+```
+
+Public modules:
+
+```text
+Mathlib.Topology.Metric.Basic
+```
+
+Public surface audited:
+
+- `MetricBall`, `Neighborhood`, `LocalMem`, `LocalPred`, `LocalEq`, and
+  `LocalUnique`.
+- Introduction/elimination and shrink/monotonicity facts including
+  `metric_ball_intro`, `metric_ball_elim`, `neighborhood_shrink`,
+  `local_pred_shrink`, and `metric_ball_mono`.
+- Local equality and uniqueness facts including `local_eq_refl`,
+  `local_eq_symm`, `local_eq_trans`, and `local_unique_apply`.
+
+Closure unit verdict:
+
+- The corpus module is a valid single-module topology closure because it
+  imports only `Std.Logic.Eq` and equality reasoning.
+- The module belongs under `Mathlib.Topology.Metric.Basic` because it provides
+  local metric-topology vocabulary rather than a final analysis theorem
+  surface.
+- Downstream smoke consumes `metric_ball_mono`, `local_eq_trans`, and
+  `local_unique_apply` source-free from vendored certificates.
+
 ## Closure Unit Rules
 
 This review treats a future closure unit as appropriate only when it satisfies
@@ -464,47 +514,14 @@ older queue are:
   The previous "analysis foundation" group was useful as a roadmap cluster but
   too large to be a default release closure.
 - The ring first-isomorphism, CRT, ordered algebra, square-normalization,
-  vector-space foundation, inner-product, and geometry Pythagorean closures are
-  complete. A separate public ring-homomorphism namespace should wait for
-  either a homomorphism-only corpus module or an audited alias layer.
+  vector-space foundation, inner-product, geometry Pythagorean, and analysis
+  metric topology closures are complete. A separate public ring-homomorphism
+  namespace should wait for either a homomorphism-only corpus module or an
+  audited alias layer.
 
 ## Open Audit Queue
 
-### 1. Analysis Metric Topology Closure
-
-Recommended audit file:
-
-```text
-develop/npa-mathlib-analysis-metric-topology-closure-audit.md
-```
-
-Candidate corpus modules:
-
-```text
-Proofs.Ai.Analysis.AbstractMetricTopology
-```
-
-Candidate public modules:
-
-```text
-Mathlib.Topology.Metric.Basic
-```
-
-Why this closure matters:
-
-- It is a small standalone analysis foundation route; it imports only
-  `Std.Logic.Eq` and equality reasoning.
-- It should be materialized before derivative, fixed-point, and inverse
-  function closures.
-
-Audit focus:
-
-- Decide whether the module belongs under `Mathlib.Topology.Metric.Basic` or
-  a more analysis-oriented namespace.
-- Add downstream smoke for `metric_ball_mono`, `local_eq_trans`, and
-  `local_unique_apply`.
-
-### 2. Analysis Normed Space Closure
+### 1. Analysis Normed Space Closure
 
 Recommended audit file:
 
@@ -535,7 +552,7 @@ Audit focus:
 - Add downstream smoke for `norm_dist_triangle_from_args` and
   `product_norm_pair_le_add_from_args`.
 
-### 3. Analysis Linear Map Closure
+### 2. Analysis Linear Map Closure
 
 Recommended audit file:
 
@@ -567,7 +584,7 @@ Audit focus:
   `linear_inv_left_inverse_from_iso`, and
   `block_triangular_b_iso_from_args`.
 
-### 4. Analysis Derivative Closure
+### 3. Analysis Derivative Closure
 
 Recommended audit file:
 
@@ -599,7 +616,7 @@ Audit focus:
 - Add downstream smoke for `frechet_derivative_at_intro`,
   `derivative_comp_from_args`, and `partial_x_derivative_from_args`.
 
-### 5. Analysis Fixed Point Closure
+### 4. Analysis Fixed Point Closure
 
 Recommended audit file:
 
@@ -630,7 +647,7 @@ Audit focus:
 - Add downstream smoke for `fixed_point_unique_from_evidence` and
   `banach_fixed_point_from_args`.
 
-### 6. Analysis Inverse Function Closure
+### 5. Analysis Inverse Function Closure
 
 Recommended audit file:
 
@@ -662,7 +679,7 @@ Audit focus:
 - Add downstream smoke for `local_inverse_result_intro` and
   `quantitative_inverse_function_from_args`.
 
-### 7. Analysis Implicit Function Closure
+### 6. Analysis Implicit Function Closure
 
 Recommended audit file:
 
@@ -752,5 +769,16 @@ Minimum negative checks:
 - bad public certificate hash is rejected as `certificate_hash_mismatch`;
 - corrupted certificate bytes are rejected by source-free reference
   verification;
-- stale downstream lock or package-version pin is rejected as
-  `package_lock_stale`.
+- stale downstream import identity, at minimum the imported `export_hash` or
+  `certificate_hash`, is rejected by the downstream build or lock gate.
+
+## Package Tooling Follow-up Audits
+
+The analysis metric topology closure found one non-blocking package tooling
+gap: changing only a downstream external import version string from `0.1.21`
+to `0.1.20` did not fail `package check` or `package check-hashes`.
+
+This is not a certificate soundness failure because downstream imports are
+bound by `export_hash` and `certificate_hash`, and those identity mismatches
+are rejected. A future package tooling audit should decide whether generated
+locks and artifact checks must also reject version-only drift explicitly.
