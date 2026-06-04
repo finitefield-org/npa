@@ -72,13 +72,9 @@ compatibility, release work, or promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- The proof corpus has a concrete `Proofs.Ai.NumberTheory.Flt.Statement`
-  module, but no general checked `Proofs.Ai.NumberTheory.*` foundation for
-  divisibility, gcd, congruences, arithmetic functions, local fields, or
-  analytic number theory.
-- The proof corpus also has `Proofs.Ai.NumberTheory.Flt.Bridge` artifacts.
-  Those are FLT bridge-policy assets, not a reusable general number-theory
-  foundation.
+- The proof corpus has no general checked `Proofs.Ai.NumberTheory.*`
+  foundation for divisibility, gcd, congruences, arithmetic functions, local
+  fields, or analytic number theory.
 - Existing reusable algebra foundations include `Proofs.Ai.Algebra.AbstractRing`,
   `Proofs.Ai.Algebra.AbstractField`,
   `Proofs.Ai.Algebra.AbstractOrderedField`,
@@ -88,11 +84,6 @@ compatibility, release work, or promotion into a high-trust closure.
   `develop/proof-corpus-field-theory-roadmap.md`,
   `develop/proof-corpus-field-theory-roadmap-todo.md`, and
   `Proofs.Ai.Algebra.AbstractFiniteField`.
-- The FLT task breakdown already reserves reusable modules such as
-  `Proofs.Ai.EllipticCurve.Semistable`,
-  `Proofs.Ai.ModularForms.ModularCurve`,
-  `Proofs.Ai.GaloisRepresentation.LocalCondition`, and
-  `Proofs.Ai.Modularity.Semistable`.
 - Existing reusable analysis, measure, topology, and linear-algebra prerequisite
   documents are inputs for analytic number theory, p-adic analysis, geometry
   of numbers, and modular forms.
@@ -193,7 +184,7 @@ later in the file.
 - Areas: `proofs/README.md`, theorem-card documentation, AI theorem index sidecars
 - Tasks:
   - Create theorem cards for `NT-00` through `NT-24`.
-  - Record duplicate-home decisions for FLT, finite fields, Chebotarev,
+  - Record duplicate-home decisions for finite fields, Chebotarev,
     modularity, Langlands, elliptic curves, algebraic geometry, cryptography,
     and analytic number theory.
   - Label conjectures, conditional theorem forms, bridge interfaces, and
@@ -275,8 +266,7 @@ later in the file.
   - Descent/minimization statement interface.
 - Acceptance criteria:
   - Quotient-remainder uniqueness does not assume gcd or prime factorization.
-  - Descent interfaces are general enough for FLT exponent-four and
-    Diophantine milestones.
+  - Descent interfaces are general enough for Diophantine milestones.
   - Algorithm extraction is separated from mathematical existence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanDivision`
@@ -293,7 +283,7 @@ later in the file.
     normalized sign convention.
   - Add lcm existence, uniqueness, multiple characterization, and gcd-lcm
     product formula under explicit hypotheses.
-  - Export the normal forms used by congruence and FLT reduction.
+  - Export the normal forms used by congruence and Diophantine reduction.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.Gcd`.
   - `Proofs.Ai.NumberTheory.Lcm`.
@@ -341,7 +331,7 @@ later in the file.
 - Acceptance criteria:
   - The theorem depends on gcd/Bezout, not on a hidden Diophantine solver.
   - All zero and sign edge cases are stated or intentionally split.
-  - The module is reusable outside FLT.
+  - The module is reusable outside this linear Diophantine milestone.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.LinearDiophantine`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.LinearDiophantine`
@@ -387,7 +377,8 @@ later in the file.
   - The bridge imports the abstract UFD package without making UFD depend on
     number theory.
   - Euclid's lemma is derived from Bezout/UFD evidence, not assumed.
-  - Factor extraction can be consumed by FLT and arithmetic functions.
+  - Factor extraction can be consumed by Diophantine equations and arithmetic
+    functions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.UfdBridge`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.UfdBridge`
@@ -838,7 +829,7 @@ later in the file.
   - `Proofs.Ai.NumberTheory.Waring` statement interface.
 - Acceptance criteria:
   - Each theorem states positivity and representability hypotheses explicitly.
-  - Theorems are not imported into FLT as hidden assumptions.
+  - Theorems are not imported into downstream routes as hidden assumptions.
   - Coin problem theorem states gcd and nonnegative-combination assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.SumsOfSquares`
@@ -1183,14 +1174,14 @@ later in the file.
 - Tasks:
   - Add Weierstrass model and nonsingularity interfaces.
   - Add elliptic-curve point group law theorem surface.
-  - Keep general elliptic-curve APIs independent of FLT Frey modules.
+  - Keep general elliptic-curve APIs independent of specialized Frey modules.
 - Deliverables:
   - `Proofs.Ai.EllipticCurve.Basic`.
   - `Proofs.Ai.EllipticCurve.GroupLaw`.
 - Acceptance criteria:
-  - Group law does not depend on modularity, Ribet, or FLT bridge axioms.
+  - Group law does not depend on modularity, Ribet, or bridge axioms.
   - Field and polynomial assumptions are explicit.
-  - The API is usable outside FLT.
+  - The API is usable outside specialized final-theorem routes.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic`
@@ -1204,7 +1195,7 @@ later in the file.
 - Tasks:
   - Add conductor, reduction type, minimal model, and semistability interfaces.
   - Add height and Neron-Tate height theorem surfaces.
-  - Align module names with the FLT todo document.
+  - Keep module names general enough for arithmetic-geometry reuse.
 - Deliverables:
   - `Proofs.Ai.EllipticCurve.Reduction`.
   - `Proofs.Ai.EllipticCurve.Semistable`.
@@ -1270,12 +1261,12 @@ later in the file.
 - Tasks:
   - Add modular forms, cusp forms, weights, levels, and q-expansion interfaces.
   - Add Eisenstein series and q-expansion principle statement surfaces.
-  - Keep modular forms independent of FLT final glue.
+  - Keep modular forms independent of final-theorem glue.
 - Deliverables:
   - `Proofs.Ai.ModularForms.Basic`.
   - `Proofs.Ai.ModularForms.QExpansion`.
 - Acceptance criteria:
-  - The module is reusable outside FLT.
+  - The module is reusable outside modularity-lifting wrappers.
   - Complex-analytic domain assumptions are explicit.
   - No Ribet or Wiles theorem is introduced here.
 - Verification:
@@ -1322,7 +1313,7 @@ later in the file.
   - The module cannot be confused with a completed Ribet proof while
     bridge-backed.
   - General level-lowering terminology is reusable for non-Frey representations.
-  - Final FLT cannot import bridge-backed variants in high-trust mode.
+  - High-trust downstream routes cannot import bridge-backed variants.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Modularity.Ribet`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Modularity.Ribet`
@@ -1337,13 +1328,13 @@ later in the file.
   - Add deformation functor, deformation ring, Hecke/deformation comparison,
     and `R = T` theorem surfaces.
   - Add minimal and non-minimal modularity lifting interfaces.
-  - Add semistable modularity theorem route aligned with the FLT todo.
+  - Add semistable modularity theorem route with reusable assumptions.
 - Deliverables:
   - `Proofs.Ai.Modularity.Lifting`.
   - `Proofs.Ai.Modularity.Semistable`.
 - Acceptance criteria:
   - Remaining deep assumptions are named and machine-visible.
-  - The final semistable modularity version has no `Flt.BridgeAxiom.*`
+  - The final semistable modularity version has no unapproved bridge axiom
     dependency.
   - Lifting wrappers are useful outside the Frey curve case.
 - Verification:
@@ -1593,8 +1584,8 @@ later in the file.
 - Tasks:
   - Add Galois representation, l-adic representation, cyclotomic character,
     and Tate module representation interfaces.
-  - Add ramification and local-condition theorem surfaces aligned with the FLT
-    todo.
+  - Add ramification and local-condition theorem surfaces aligned with
+    modularity and arithmetic-geometry prerequisites.
   - Add Hodge-Tate, de Rham, crystalline, semistable, Fontaine-Laffaille, and
     comparison theorem surfaces.
 - Deliverables:
@@ -1602,7 +1593,7 @@ later in the file.
   - `Proofs.Ai.GaloisRepresentation.Ramification`.
   - `Proofs.Ai.GaloisRepresentation.LocalCondition`.
 - Acceptance criteria:
-  - Local conditions are reusable outside FLT.
+  - Local conditions are reusable outside specialized final-theorem routes.
   - Elliptic-curve and modular-form representation interfaces can share this
     API.
   - Taylor-Wiles and potential modularity statements remain interfaces until
@@ -1783,14 +1774,12 @@ later in the file.
 This task document was reviewed against:
 
 - `proofs/number-theory-theorem-proof-roadmap.md`
-- `proofs/fermats-last-theorem-proof-phases-todo.md`
 - `develop/proof-corpus-field-theory-roadmap-todo.md`
 - `AGENTS.md`
 
 | Finding | Status | Resolution |
 | --- | --- | --- |
 | The finite-field core could be duplicated under number theory even though field theory owns `Proofs.Ai.Algebra.AbstractFiniteField`. | Fixed | `NT-T67` imports or aliases the field-theory finite-field core, and `NT-T68`/`NT-T69` only add applications. |
-| FLT-related module names could drift from the existing FLT todo. | Fixed | `NT-T46`, `NT-T50`, `NT-T52`, and `NT-T63` use the existing `EllipticCurve.Semistable`, `ModularForms.ModularCurve`, `Modularity.Semistable`, and `GaloisRepresentation.LocalCondition` names. |
 | The initial recommended queue placed finite-field elliptic curves before finite-field ownership and Ribet/modularity before Galois local conditions. | Fixed | Queue groups now place `NT-T67` before `NT-T48`, and `NT-T61` through `NT-T63` before `NT-T51` and `NT-T52`. |
 | Analytic and conjectural theorem families could be mistaken for derived certificate targets. | Fixed | Target-level defaults and milestone acceptance criteria keep conjectures at `L0` or conditional `L1` until dependencies are certified. |
 

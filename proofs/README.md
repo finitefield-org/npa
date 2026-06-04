@@ -368,9 +368,6 @@ Planning documents:
   theorem route.
 - `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
   implicit-function theorem route.
-- `fermats-last-theorem-proof-phases.md`: FLT0-FLT8 plan for a certificate-first Fermat's Last
-  Theorem project, including bridge-axiom policy, elementary reduction, Frey/Ribet/modularity
-  layers, and final high-trust audit criteria.
 
 ## Completed Inner-Product To Metric Route
 
