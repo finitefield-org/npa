@@ -76,6 +76,9 @@ compatibility, release work, or promotion into a high-trust closure.
   module, but no general checked `Proofs.Ai.NumberTheory.*` foundation for
   divisibility, gcd, congruences, arithmetic functions, local fields, or
   analytic number theory.
+- The proof corpus also has `Proofs.Ai.NumberTheory.Flt.Bridge` artifacts.
+  Those are FLT bridge-policy assets, not a reusable general number-theory
+  foundation.
 - Existing reusable algebra foundations include `Proofs.Ai.Algebra.AbstractRing`,
   `Proofs.Ai.Algebra.AbstractField`,
   `Proofs.Ai.Algebra.AbstractOrderedField`,
@@ -93,8 +96,8 @@ compatibility, release work, or promotion into a high-trust closure.
 - Existing reusable analysis, measure, topology, and linear-algebra prerequisite
   documents are inputs for analytic number theory, p-adic analysis, geometry
   of numbers, and modular forms.
-- There are unrelated uncommitted implementation changes in the current
-  worktree; this task document must be staged and committed independently.
+- If later authors run this task breakdown in a dirty worktree, they must stage
+  only the number-theory task's files and leave unrelated changes alone.
 
 ## Roadmap Coverage Map
 
@@ -143,7 +146,10 @@ compatibility, release work, or promotion into a high-trust closure.
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
 reasonably build, source-free verify, and review the whole milestone without
-guessing. The split must preserve the dependency order in this document.
+guessing. The split must preserve the execution dependency order in the
+`Recommended Queue Coverage` table below. The detailed milestone section keeps
+roadmap/topic order, so a task card can name dependencies whose details appear
+later in the file.
 
 ## Recommended Queue Coverage
 
