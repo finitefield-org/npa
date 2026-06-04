@@ -23,6 +23,7 @@ struct ExpectedModule {
 struct VerifiedCorpusImports<'a> {
     eq: &'a VerifiedModule,
     eq_reasoning: &'a VerifiedModule,
+    classical_category: &'a VerifiedModule,
     nat: &'a VerifiedModule,
     ring: &'a VerifiedModule,
     square: &'a VerifiedModule,
@@ -53,6 +54,8 @@ struct VerifiedCorpusImports<'a> {
     abstract_ring_first_iso_base: &'a VerifiedModule,
     abstract_ring_first_iso: &'a VerifiedModule,
     abstract_hilbert_basis_theorem: &'a VerifiedModule,
+    derived_affine_schemes: &'a VerifiedModule,
+    derived_category: &'a VerifiedModule,
     abstract_ordered_field: &'a VerifiedModule,
     abstract_square_normalize: &'a VerifiedModule,
     abstract_scalar_derive: &'a VerifiedModule,
@@ -504,6 +507,288 @@ const IFF_THEOREMS: &[&str] = &[
     "or_inr",
     "or_elim",
     "iff_congr_arg",
+];
+
+const CLASSICAL_CATEGORY_DEFINITIONS: &[&str] = &[
+    "CategoryLawArgs",
+    "FunctorLawArgs",
+    "NaturalTransformationLawArgs",
+    "AdjunctionHomNaturalIsoLawArgs",
+    "AdjunctionUnitCounitTriangleLawArgs",
+    "LeftAdjointExistsArgs",
+    "FreydUniversalArrowLawArgs",
+    "HomFunctorLawArgs",
+    "PresheafLawArgs",
+    "SieveLawArgs",
+    "GrothendieckTopologyLawArgs",
+    "MatchingFamilyLawArgs",
+    "SheafConditionLawArgs",
+    "SheafificationLawArgs",
+    "FiniteLimitLawArgs",
+    "CartesianClosedLawArgs",
+    "SubobjectClassifierLawArgs",
+    "ElementaryToposLawArgs",
+    "KripkeJoyalSemanticsLawArgs",
+    "GiraudAxiomsLawArgs",
+    "GrothendieckToposRepresentationLawArgs",
+    "GiraudRepresentationConstructionArgs",
+    "YonedaNaturalFamilyLawArgs",
+    "YonedaEmbeddingLawArgs",
+    "LimitLawArgs",
+    "LimitExistsArgs",
+    "ColimitLawArgs",
+    "ColimitExistsArgs",
+    "CompleteCategoryLawArgs",
+    "CocompleteCategoryLawArgs",
+    "CompleteCocompleteCategoryLawArgs",
+    "PresheafCategoryLawArgs",
+    "PresheafPointwiseLimitConstructionArgs",
+    "PresheafPointwiseColimitConstructionArgs",
+];
+
+const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
+    "category_definition_intro",
+    "functor_definition_intro",
+    "functor_preserves_id",
+    "functor_preserves_comp",
+    "natural_transformation_definition_intro",
+    "natural_transformation_naturality",
+    "adjunction_hom_natural_iso_definition_intro",
+    "adjunction_hom_left_inverse",
+    "adjunction_hom_right_inverse",
+    "adjunction_hom_naturality_source",
+    "adjunction_hom_naturality_target",
+    "category_comp_assoc_law",
+    "left_adjoint_exists_intro",
+    "freyd_universal_arrow_definition_intro",
+    "freyd_universal_arrow_factor",
+    "freyd_universal_arrow_unique",
+    "freyd_universal_arrow_map_factor",
+    "freyd_universal_arrow_hom_left_inverse",
+    "freyd_universal_arrow_hom_right_inverse",
+    "freyd_universal_arrow_hom_naturality_source_functorial",
+    "freyd_universal_arrow_hom_naturality_source_assoc_left",
+    "freyd_universal_arrow_hom_naturality_source_map_factor",
+    "freyd_universal_arrow_hom_naturality_source_assoc_right",
+    "freyd_universal_arrow_hom_naturality_source_assoc_chain",
+    "freyd_universal_arrow_hom_naturality_source",
+    "freyd_universal_arrow_hom_naturality_target",
+    "freyd_universal_arrow_induces_hom_adjunction",
+    "freyd_adjoint_functor_theorem",
+    "adjunction_unit_counit_triangle_definition_intro",
+    "adjunction_unit_naturality",
+    "adjunction_counit_naturality",
+    "adjunction_triangle_identity_left",
+    "adjunction_triangle_identity_right",
+    "category_comp_id",
+    "category_id_comp",
+    "category_comp_assoc",
+    "hom_functor_theorem",
+    "presheaf_definition_intro",
+    "sieve_definition_intro",
+    "sieve_precomp_closed",
+    "grothendieck_topology_definition_intro",
+    "grothendieck_topology_maximal",
+    "grothendieck_topology_pullback_membership",
+    "grothendieck_topology_pullback_reflects_membership",
+    "grothendieck_topology_pullback_stable",
+    "grothendieck_topology_transitive",
+    "matching_family_definition_intro",
+    "matching_family_compatible",
+    "sheaf_condition_definition_intro",
+    "sheaf_condition_amalgamation_exists",
+    "sheaf_condition_amalgamation_unique",
+    "sheafification_definition_intro",
+    "sheafification_is_sheaf",
+    "sheafification_universal_exists",
+    "sheafification_universal_unique",
+    "sheafification_theorem",
+    "sheafification_is_left_adjoint",
+    "subobject_classifier_definition_intro",
+    "subobject_classifier_terminal_unique",
+    "subobject_classifier_truth_mono",
+    "subobject_classifier_pullback_square",
+    "subobject_classifier_pullback_universal",
+    "subobject_classifier_characteristic_exists",
+    "subobject_classifier_characteristic_unique",
+    "subobject_classifier",
+    "elementary_topos_definition_intro",
+    "elementary_topos_finite_limits",
+    "elementary_topos_cartesian_closed",
+    "elementary_topos_subobject_classifier",
+    "elementary_topos_definition",
+    "kripke_joyal_semantics_definition_intro",
+    "kripke_joyal_stability",
+    "kripke_joyal_locality",
+    "kripke_joyal_truth",
+    "kripke_joyal_false_elim",
+    "kripke_joyal_conjunction_intro",
+    "kripke_joyal_conjunction_left",
+    "kripke_joyal_conjunction_right",
+    "kripke_joyal_implication_intro",
+    "kripke_joyal_implication_elim",
+    "kripke_joyal_disjunction_local_intro",
+    "kripke_joyal_disjunction_cover",
+    "kripke_joyal_semantics",
+    "giraud_axioms_definition_intro",
+    "grothendieck_topos_representation_definition_intro",
+    "giraud_representation_construction_intro",
+    "giraud_theorem",
+    "yoneda_natural_family_intro",
+    "yoneda_natural_family_naturality",
+    "yoneda_lemma",
+    "yoneda_embedding",
+    "yoneda_embedding_naturality",
+    "yoneda_embedding_recover",
+    "limit_definition_intro",
+    "limit_cone_naturality",
+    "limit_universal_property",
+    "limit_exists_intro",
+    "colimit_definition_intro",
+    "colimit_cocone_naturality",
+    "colimit_universal_property",
+    "colimit_exists_intro",
+    "complete_category_definition_intro",
+    "complete_category_limit_exists",
+    "cocomplete_category_definition_intro",
+    "cocomplete_category_colimit_exists",
+    "complete_cocomplete_category_definition_intro",
+    "complete_cocomplete_category_complete",
+    "complete_cocomplete_category_cocomplete",
+    "presheaf_category_laws_intro",
+    "presheaf_pointwise_limit_construction_intro",
+    "presheaf_pointwise_limit_exists",
+    "presheaf_pointwise_colimit_construction_intro",
+    "presheaf_pointwise_colimit_exists",
+    "presheaf_category_complete_from_pointwise_limits",
+    "presheaf_category_cocomplete_from_pointwise_colimits",
+    "presheaf_category_complete_and_cocomplete",
+    "adjunction_right_adjoint_transposes_cones",
+    "adjunction_right_adjoint_transposes_limit_factor",
+    "adjunction_right_adjoint_preserved_limit_cone_law",
+    "right_adjoint_preserves_limits",
+    "adjunction_left_adjoint_transposes_cocones",
+    "adjunction_left_adjoint_transposes_colimit_factor",
+    "adjunction_left_adjoint_untransposes_colimit_factor",
+    "adjunction_left_adjoint_preserved_colimit_cocone_law",
+    "left_adjoint_preserves_colimits",
+    "opposite_category_laws",
+];
+
+const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[&str] = &[
+    "SimplexCategoryLawArgs",
+    "SimplicialSetLawArgs",
+    "KanComplexLawArgs",
+    "QuasicategoryLawArgs",
+    "HomotopyCategoryLawArgs",
+    "InfinityYonedaLawArgs",
+    "InfinityKanExtensionLawArgs",
+    "PresentableInfinityCategoryLawArgs",
+    "InfinityAdjointFunctorTheoremLawArgs",
+    "PresheafInfinityCategoryLawArgs",
+    "AccessibleLocalizationLawArgs",
+    "LeftExactLocalizationLawArgs",
+    "SheavesOfSpacesLawArgs",
+    "HypercoverDescentLawArgs",
+    "InfinityToposLawArgs",
+    "TruncationConnectivityLawArgs",
+    "PostnikovTowerLawArgs",
+    "CohomologyInInfinityTopoiLawArgs",
+    "MappingSpaceLawArgs",
+    "JoyalModelStructureLawArgs",
+    "CartesianFibrationLawArgs",
+    "CoCartesianFibrationLawArgs",
+    "StraighteningUnstraighteningLawArgs",
+    "NerveConstructionLawArgs",
+];
+
+const INFINITY_SIMPLICIAL_SET_THEOREMS: &[&str] = &[
+    "simplex_category_definition_intro",
+    "simplex_category_has_category_laws",
+    "simplicial_set_definition_intro",
+    "simplicial_set_is_presheaf_on_simplex_category",
+    "simplicial_set_restrict_identity",
+    "simplicial_set_restrict_composition",
+    "kan_complex_definition_intro",
+    "kan_complex_is_simplicial_set",
+    "kan_complex_horn_filler",
+    "kan_complex",
+    "quasicategory_definition_intro",
+    "quasicategory_is_simplicial_set",
+    "quasicategory_inner_horn_filler",
+    "quasicategory",
+    "homotopy_category_definition_intro",
+    "homotopy_category_has_category_laws",
+    "homotopy_category",
+    "infinity_yoneda_definition_intro",
+    "infinity_yoneda_lemma",
+    "infinity_kan_extension_definition_intro",
+    "infinity_left_kan_extension",
+    "infinity_right_kan_extension",
+    "infinity_kan_extension",
+    "presentable_infinity_category_definition_intro",
+    "presentable_infinity_category_accessible",
+    "presentable_infinity_category_cocomplete",
+    "presentable_infinity_category",
+    "infinity_adjoint_functor_theorem_definition_intro",
+    "infinity_adjoint_functor_theorem",
+    "presheaf_infinity_category_definition_intro",
+    "presheaf_infinity_category",
+    "accessible_localization_definition_intro",
+    "accessible_localization",
+    "left_exact_localization_definition_intro",
+    "left_exact_localization",
+    "sheaves_of_spaces_definition_intro",
+    "sheaves_of_spaces",
+    "hypercover_descent_definition_intro",
+    "hypercover_descent",
+    "infinity_topos_definition_intro",
+    "infinity_topos_definition",
+    "infinity_giraud_theorem",
+    "truncation_connectivity_definition_intro",
+    "truncation_and_connectivity",
+    "postnikov_tower_definition_intro",
+    "postnikov_tower",
+    "cohomology_in_infinity_topoi_definition_intro",
+    "cohomology_in_infinity_topoi",
+    "mapping_space_definition_intro",
+    "mapping_space_is_simplicial_set",
+    "mapping_space_is_kan_complex",
+    "mapping_space",
+    "joyal_model_structure_definition_intro",
+    "joyal_model_structure_has_model_category_laws",
+    "joyal_model_structure_cofibrations_are_monomorphisms",
+    "joyal_model_structure_monomorphisms_are_cofibrations",
+    "joyal_model_structure_fibrant_objects_are_quasicategories",
+    "joyal_model_structure_quasicategories_are_fibrant",
+    "joyal_model_structure_weak_equivalences_are_categorical",
+    "joyal_model_structure_categorical_equivalences_are_weak",
+    "joyal_model_structure",
+    "cartesian_fibration_definition_intro",
+    "cartesian_fibration_is_simplicial_map",
+    "cartesian_fibration_is_inner_fibration",
+    "cartesian_fibration_lift_exists",
+    "cartesian_fibration_lift_stable",
+    "cartesian_fibration",
+    "cocartesian_fibration_definition_intro",
+    "cocartesian_fibration_is_simplicial_map",
+    "cocartesian_fibration_is_inner_fibration",
+    "cocartesian_fibration_lift_exists",
+    "cocartesian_fibration_lift_stable",
+    "cocartesian_fibration",
+    "straightening_unstraightening_definition_intro",
+    "straightening_maps_cartesian_fibrations_to_functors",
+    "unstraightening_maps_functors_to_cartesian_fibrations",
+    "straightening_unstraightening_cartesian_unit",
+    "straightening_unstraightening_cartesian_counit",
+    "straightening_maps_cocartesian_fibrations_to_functors",
+    "unstraightening_maps_functors_to_cocartesian_fibrations",
+    "straightening_unstraightening_cocartesian_unit",
+    "straightening_unstraightening_cocartesian_counit",
+    "straightening_unstraightening",
+    "nerve_construction_definition_intro",
+    "nerve_construction_is_simplicial_set",
+    "nerve_construction",
 ];
 
 const ABSTRACT_GROUP_DEFINITIONS: &[&str] =
@@ -1053,6 +1338,62 @@ const ABSTRACT_KRULL_THEOREM_THEOREMS: &[&str] = &[
     "krull_maximal_ideal_contains",
     "krull_maximal_ideal_is_maximal",
     "krull_theorem",
+];
+
+const DERIVED_AFFINE_SCHEMES_DEFINITIONS: &[&str] = &["DerivedAffineSchemeLawArgs"];
+
+const DERIVED_AFFINE_SCHEMES_THEOREMS: &[&str] =
+    &["affine_schemes_definition_intro", "affine_schemes"];
+
+const QUASI_COHERENT_SHEAVES_DEFINITIONS: &[&str] = &["QuasiCoherentSheafLawArgs"];
+
+const QUASI_COHERENT_SHEAVES_THEOREMS: &[&str] = &[
+    "quasi_coherent_sheaves_definition_intro",
+    "quasi_coherent_sheaves",
+];
+
+const ETALE_SMOOTH_FLAT_TOPOLOGY_DEFINITIONS: &[&str] = &["EtaleSmoothFlatTopologyLawArgs"];
+
+const ETALE_SMOOTH_FLAT_TOPOLOGY_THEOREMS: &[&str] = &[
+    "etale_smooth_flat_topology_definition_intro",
+    "etale_topology",
+    "smooth_topology",
+    "flat_topology",
+    "etale_smooth_flat_topology",
+];
+
+const DERIVED_CATEGORY_DEFINITIONS: &[&str] = &["DerivedCategoryLawArgs"];
+
+const DERIVED_CATEGORY_THEOREMS: &[&str] = &[
+    "derived_category_definition_intro",
+    "derived_category_has_category_laws",
+    "derived_category_localization_functor",
+    "derived_category_inverts_quasi_isomorphisms",
+    "derived_category_universal_property",
+    "derived_category",
+];
+
+const TOR_EXT_DEFINITIONS: &[&str] = &["TorExtLawArgs"];
+
+const TOR_EXT_THEOREMS: &[&str] = &[
+    "tor_ext_definition_intro",
+    "tor_ext_derived_category",
+    "tor_is_left_derived_tensor",
+    "ext_is_right_derived_hom",
+    "tor_ext_long_exact_sequence",
+    "tor_ext",
+];
+
+const COTANGENT_COMPLEX_DEFINITIONS: &[&str] = &["CotangentComplexLawArgs"];
+
+const COTANGENT_COMPLEX_THEOREMS: &[&str] = &[
+    "cotangent_complex_definition_intro",
+    "cotangent_complex_derived_category",
+    "cotangent_complex_represents_derivations",
+    "cotangent_complex_transitivity_triangle",
+    "cotangent_complex_base_change",
+    "cotangent_complex_smooth_etale_vanishing",
+    "cotangent_complex",
 ];
 
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[&str] = &[
@@ -1873,6 +2214,30 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Category.Classical",
+        source: "Proofs/Ai/Category/Classical/source.npa",
+        certificate: "Proofs/Ai/Category/Classical/certificate.npcert",
+        meta: "Proofs/Ai/Category/Classical/meta.json",
+        replay: "Proofs/Ai/Category/Classical/replay.json",
+        imports: &["Proofs.Ai.EqReasoning", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: CLASSICAL_CATEGORY_DEFINITIONS,
+        theorems: CLASSICAL_CATEGORY_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Infinity.SimplicialSet",
+        source: "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa",
+        certificate: "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert",
+        meta: "Proofs/Ai/Category/Infinity/SimplicialSet/meta.json",
+        replay: "Proofs/Ai/Category/Infinity/SimplicialSet/replay.json",
+        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: INFINITY_SIMPLICIAL_SET_DEFINITIONS,
+        theorems: INFINITY_SIMPLICIAL_SET_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractGroup",
         source: "Proofs/Ai/Algebra/AbstractGroup/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert",
@@ -2452,6 +2817,86 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+        source: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/replay.json",
+        imports: &[],
+        inductives: &[],
+        definitions: DERIVED_AFFINE_SCHEMES_DEFINITIONS,
+        theorems: DERIVED_AFFINE_SCHEMES_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.QuasiCoherentSheaves",
+        source: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/replay.json",
+        imports: &["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+        inductives: &[],
+        definitions: QUASI_COHERENT_SHEAVES_DEFINITIONS,
+        theorems: QUASI_COHERENT_SHEAVES_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+        source: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/replay.json",
+        imports: &["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+        inductives: &[],
+        definitions: ETALE_SMOOTH_FLAT_TOPOLOGY_DEFINITIONS,
+        theorems: ETALE_SMOOTH_FLAT_TOPOLOGY_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+        source: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/replay.json",
+        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: DERIVED_CATEGORY_DEFINITIONS,
+        theorems: DERIVED_CATEGORY_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.TorExt",
+        source: "Proofs/Ai/AlgebraicGeometry/TorExt/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/TorExt/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/TorExt/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/TorExt/replay.json",
+        imports: &[
+            "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+            "Proofs.Ai.Category.Classical",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: TOR_EXT_DEFINITIONS,
+        theorems: TOR_EXT_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.CotangentComplex",
+        source: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/replay.json",
+        imports: &[
+            "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+            "Proofs.Ai.Category.Classical",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: COTANGENT_COMPLEX_DEFINITIONS,
+        theorems: COTANGENT_COMPLEX_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractOrderedField",
         source: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert",
@@ -2861,6 +3306,8 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let eq_import = verified_eq_import_module();
     let nat_import = verified_nat_import_module();
     let eq_reasoning_import = verified_eq_reasoning_import_module(&root, &eq_import);
+    let classical_category_import =
+        verified_classical_category_import_module(&root, &eq_import, &eq_reasoning_import);
     let ring_import = verified_ring_import_module(&root, &eq_import);
     let square_import = verified_square_import_module(&root, &eq_import, &ring_import);
     let ordered_field_import =
@@ -3096,6 +3543,9 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
             abstract_ring_first_iso_base: &abstract_ring_first_iso_base_import,
         },
     );
+    let derived_affine_schemes_import = verified_derived_affine_schemes_import_module(&root);
+    let derived_category_import =
+        verified_derived_category_import_module(&root, &eq_import, &classical_category_import);
     let abstract_ordered_field_import =
         verified_abstract_ordered_field_import_module(&root, &eq_import, &abstract_ring_import);
     let abstract_square_normalize_import = verified_abstract_square_normalize_import_module(
@@ -3246,6 +3696,7 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
         eq_reasoning: &eq_reasoning_import,
+        classical_category: &classical_category_import,
         nat: &nat_import,
         ring: &ring_import,
         square: &square_import,
@@ -3276,6 +3727,8 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         abstract_ring_first_iso_base: &abstract_ring_first_iso_base_import,
         abstract_ring_first_iso: &abstract_ring_first_iso_import,
         abstract_hilbert_basis_theorem: &abstract_hilbert_basis_theorem_import,
+        derived_affine_schemes: &derived_affine_schemes_import,
+        derived_category: &derived_category_import,
         abstract_ordered_field: &abstract_ordered_field_import,
         abstract_square_normalize: &abstract_square_normalize_import,
         abstract_scalar_derive: &abstract_scalar_derive_import,
@@ -3423,6 +3876,9 @@ fn register_expected_imports(
             "Proofs.Ai.EqReasoning" => {
                 session.register_verified_module(verified_imports.eq_reasoning.clone())
             }
+            "Proofs.Ai.Category.Classical" => {
+                session.register_verified_module(verified_imports.classical_category.clone())
+            }
             "Std.Nat.Basic" => session.register_verified_module(verified_imports.nat.clone()),
             "Proofs.Ai.Algebra.Ring" => {
                 session.register_verified_module(verified_imports.ring.clone())
@@ -3504,6 +3960,12 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem" => session
                 .register_verified_module(verified_imports.abstract_hilbert_basis_theorem.clone()),
+            "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes" => {
+                session.register_verified_module(verified_imports.derived_affine_schemes.clone())
+            }
+            "Proofs.Ai.AlgebraicGeometry.DerivedCategory" => {
+                session.register_verified_module(verified_imports.derived_category.clone())
+            }
             "Proofs.Ai.Algebra.AbstractOrderedField" => {
                 session.register_verified_module(verified_imports.abstract_ordered_field.clone())
             }
@@ -3593,6 +4055,19 @@ fn verified_eq_reasoning_import_module(root: &Path, eq_import: &VerifiedModule) 
     session.register_verified_module(eq_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("EqReasoning corpus certificate should verify for downstream imports")
+}
+
+fn verified_classical_category_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Category/Classical/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(eq_reasoning_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("Classical category corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_group_import_module(
@@ -4186,6 +4661,27 @@ fn verified_abstract_hilbert_basis_theorem_import_module(
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
         "AbstractHilbertBasisTheorem corpus certificate should verify for downstream imports",
     )
+}
+
+fn verified_derived_affine_schemes_import_module(root: &Path) -> VerifiedModule {
+    let bytes =
+        read(root.join("Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("DerivedAffineSchemes corpus certificate should verify for downstream imports")
+}
+
+fn verified_derived_category_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    classical_category_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(classical_category_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("DerivedCategory corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_ordered_field_import_module(

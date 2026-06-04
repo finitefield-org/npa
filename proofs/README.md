@@ -101,6 +101,36 @@ Current bundles:
   and vector dot layers.
 - `Proofs/Ai/Logic/Iff/`: first-class logical equivalence, conjunction, disjunction, falsehood, and
   negation theorem targets importing `Std.Logic.Eq`.
+- `Proofs/Ai/Category/Classical/`: first-stage classical category-theory law package,
+  category-definition introduction, functor-definition introduction, natural-transformation
+  definition introduction, adjunction Hom natural-isomorphism law package, unit/counit
+  triangle-identity law package, law projections, pointwise Hom functor theorem,
+  a pointwise Yoneda lemma, pointwise Yoneda embedding laws,
+  sieve, Grothendieck-topology, matching-family, sheaf-condition, and sheafification
+  law packages with checked axiom projections, universal-property witnesses, and a
+  left-adjoint witness, subobject-classifier law package and classifier witnesses,
+  elementary-topos law package with finite-limit, cartesian-closed, and classifier
+  projections, Kripke-Joyal forcing semantics over sites with stability, locality,
+  propositional connective, and local-disjunction clauses, Giraud axiom and
+  Grothendieck-topos representation packages with a checked Giraud theorem witness,
+  limit and colimit existence/universal-property packages, adjoint preservation of
+  limits and colimits, Freyd-style universal-arrow construction of a left adjoint,
+  checked presheaf-category completeness and cocompleteness from pointwise
+  construction certificates, and the checked opposite-category law construction.
+- `Proofs/Ai/Category/Infinity/SimplicialSet/`: third-stage infinity-category
+  entry point for simplicial sets, with the simplex-category law package,
+  simplicial-set restriction laws, and a checked presheaf-on-the-simplex-category
+  witness, plus a Kan-complex horn-filler law package and checked Kan-complex
+  filler projection, a quasicategory inner-horn-filler law package and checked
+  quasicategory projection, a homotopy-category law package projecting the
+  category laws associated to a quasicategory, a mapping-space law package
+  projecting Kan-complex mapping spaces, a Joyal-model-structure law package
+  projecting model-structure, cofibration, fibrant-object, and weak-equivalence
+  characterization laws, Cartesian and coCartesian fibration law packages with
+  simplicial-map, inner-fibration, lift-existence, and lift-stability projections,
+  a straightening-unstraightening law package with Cartesian/coCartesian
+  functoriality and unit/counit projections, and a nerve-construction law package
+  projecting the nerve of a category as a simplicial set.
 - `Proofs/Ai/Algebra/AbstractGroup/`: abstract group and homomorphism law packages, group-law
   projections, cancellation, double-inverse, product-reassociation, and reverse-inverse lemmas,
   normal-relation reassociation lemmas, kernel predicate, kernel relation, and checked

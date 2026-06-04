@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "EtaleSmoothFlatTopologyLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => fun Cover => fun IsEtaleCover => fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => forall (P : Prop), forall (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P), P"
+    },
+    {
+      "declaration": "etale_smooth_flat_topology_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => fun Cover => fun IsEtaleCover => fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => fun etale_topology_law => fun smooth_topology_law => fun flat_topology_law => fun (P : Prop) => fun (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P) => mk etale_topology_law smooth_topology_law flat_topology_law"
+    },
+    {
+      "declaration": "etale_topology",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => fun Cover => fun IsEtaleCover => fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => fun topology_args => topology_args (IsGrothendieckTopology IsEtaleCover) (fun (etale_topology_law : IsGrothendieckTopology IsEtaleCover) => fun (smooth_topology_law : IsGrothendieckTopology IsSmoothCover) => fun (flat_topology_law : IsGrothendieckTopology IsFlatCover) => etale_topology_law)"
+    },
+    {
+      "declaration": "smooth_topology",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => fun Cover => fun IsEtaleCover => fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => fun topology_args => topology_args (IsGrothendieckTopology IsSmoothCover) (fun (etale_topology_law : IsGrothendieckTopology IsEtaleCover) => fun (smooth_topology_law : IsGrothendieckTopology IsSmoothCover) => fun (flat_topology_law : IsGrothendieckTopology IsFlatCover) => smooth_topology_law)"
+    },
+    {
+      "declaration": "flat_topology",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => fun Cover => fun IsEtaleCover => fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => fun topology_args => topology_args (IsGrothendieckTopology IsFlatCover) (fun (etale_topology_law : IsGrothendieckTopology IsEtaleCover) => fun (smooth_topology_law : IsGrothendieckTopology IsSmoothCover) => fun (flat_topology_law : IsGrothendieckTopology IsFlatCover) => flat_topology_law)"
+    },
+    {
+      "declaration": "etale_smooth_flat_topology",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => fun Cover => fun IsEtaleCover => fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => fun topology_args => fun (P : Prop) => fun (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P) => topology_args P mk"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/certificate.npcert"
+  }
+}

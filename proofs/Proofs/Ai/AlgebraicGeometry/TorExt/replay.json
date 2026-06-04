@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.TorExt",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "TorExtLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => forall (P : Prop), forall (mk : forall (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal), forall (tor_left_derived_tensor_law : TorIsLeftDerivedTensor), forall (ext_right_derived_hom_law : ExtIsRightDerivedHom), forall (tor_ext_long_exact_sequence_law : TorExtLongExactSequence), P), P"
+    },
+    {
+      "declaration": "tor_ext_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => fun derived_category_law => fun tor_left_derived_tensor_law => fun ext_right_derived_hom_law => fun tor_ext_long_exact_sequence_law => fun (P : Prop) => fun (mk : forall (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal), forall (tor_left_derived_tensor_law : TorIsLeftDerivedTensor), forall (ext_right_derived_hom_law : ExtIsRightDerivedHom), forall (tor_ext_long_exact_sequence_law : TorExtLongExactSequence), P) => mk derived_category_law tor_left_derived_tensor_law ext_right_derived_hom_law tor_ext_long_exact_sequence_law"
+    },
+    {
+      "declaration": "tor_ext_derived_category",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => fun tor_ext_args => tor_ext_args (@DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal) (fun (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal) => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => derived_category_law)"
+    },
+    {
+      "declaration": "tor_is_left_derived_tensor",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => fun tor_ext_args => tor_ext_args TorIsLeftDerivedTensor (fun (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal) => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => tor_left_derived_tensor_law)"
+    },
+    {
+      "declaration": "ext_is_right_derived_hom",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => fun tor_ext_args => tor_ext_args ExtIsRightDerivedHom (fun (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal) => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => ext_right_derived_hom_law)"
+    },
+    {
+      "declaration": "tor_ext_long_exact_sequence",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => fun tor_ext_args => tor_ext_args TorExtLongExactSequence (fun (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal) => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => tor_ext_long_exact_sequence_law)"
+    },
+    {
+      "declaration": "tor_ext",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun TensorProduct => fun InternalHom => fun Tor => fun Ext => fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => fun TorExtLongExactSequence => fun tor_ext_args => fun (P : Prop) => fun (mk : forall (derived_category_law : @DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id complex_comp complex_category_args QuasiIso DerivedObj DerivedHom derived_id derived_comp localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw LocalizationUniversal), forall (tor_left_derived_tensor_law : TorIsLeftDerivedTensor), forall (ext_right_derived_hom_law : ExtIsRightDerivedHom), forall (tor_ext_long_exact_sequence_law : TorExtLongExactSequence), P) => tor_ext_args P mk"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/AlgebraicGeometry/TorExt/certificate.npcert"
+  }
+}

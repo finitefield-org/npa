@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+  "source": "Proofs/Ai/AlgebraicGeometry/DerivedCategory/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0dae5ae49d521ae3a26130615065d423b7eaf10d17df80fe67a36275ae45791e",
+  "certificate_file_sha256": "sha256:7ab86df66387e5b181bd893f4e5caf4d4db12e511bca1dcac10fc4cf411638cc",
+  "export_hash": "sha256:ca9e55e0eddcb7a94ba3ddbb87d0033ffd1b7d905e5917901cc52eda12a995ef",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:8e5638693eb4cfd44c28697d43918ced31ab6742f431b3b385bf184fe4792a3d",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"],
+  "axioms": [],
+  "declarations": [
+    { "name": "DerivedCategoryLawArgs", "kind": "def" },
+    { "name": "derived_category_definition_intro", "kind": "theorem" },
+    { "name": "derived_category_has_category_laws", "kind": "theorem" },
+    { "name": "derived_category_localization_functor", "kind": "theorem" },
+    { "name": "derived_category_inverts_quasi_isomorphisms", "kind": "theorem" },
+    { "name": "derived_category_universal_property", "kind": "theorem" },
+    { "name": "derived_category", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

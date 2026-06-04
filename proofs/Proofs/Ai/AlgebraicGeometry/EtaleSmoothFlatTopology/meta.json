@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+  "source": "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6e82bf7b52763d796389e47cd1cc4df64af8fa407a740341a3728c9a48ef1e5f",
+  "certificate_file_sha256": "sha256:13c3e35e5f7560556f2cd4fa40b99861695b9201e74b4d0f77d0faa3f3386a15",
+  "export_hash": "sha256:d703624de3ede7adf563775b6e2400c2172b690eb53560ccc4ad6df02afa6057",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:4968dc2adf8849376b456aab63770efc503078bb3f2fe534180e350f1dea34a4",
+  "imports": ["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+  "axioms": [],
+  "declarations": [
+    { "name": "EtaleSmoothFlatTopologyLawArgs", "kind": "def" },
+    { "name": "etale_smooth_flat_topology_definition_intro", "kind": "theorem" },
+    { "name": "etale_topology", "kind": "theorem" },
+    { "name": "smooth_topology", "kind": "theorem" },
+    { "name": "flat_topology", "kind": "theorem" },
+    { "name": "etale_smooth_flat_topology", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

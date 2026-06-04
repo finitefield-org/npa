@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "DerivedCategoryLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => forall (P : Prop), forall (mk : forall (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp), forall (localization_functor_law : LocalizationFunctorLaw), forall (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)), forall (localization_universal_law : LocalizationUniversal), P), P"
+    },
+    {
+      "declaration": "derived_category_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun derived_category_law => fun localization_functor_law => fun quasi_isomorphism_inverted_law => fun localization_universal_law => fun (P : Prop) => fun (mk : forall (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp), forall (localization_functor_law : LocalizationFunctorLaw), forall (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)), forall (localization_universal_law : LocalizationUniversal), P) => mk derived_category_law localization_functor_law quasi_isomorphism_inverted_law localization_universal_law"
+    },
+    {
+      "declaration": "derived_category_has_category_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun derived_category_args => derived_category_args (@CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp) (fun (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp) => fun (localization_functor_law : LocalizationFunctorLaw) => fun (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)) => fun (localization_universal_law : LocalizationUniversal) => derived_category_law)"
+    },
+    {
+      "declaration": "derived_category_localization_functor",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun derived_category_args => derived_category_args LocalizationFunctorLaw (fun (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp) => fun (localization_functor_law : LocalizationFunctorLaw) => fun (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)) => fun (localization_universal_law : LocalizationUniversal) => localization_functor_law)"
+    },
+    {
+      "declaration": "derived_category_inverts_quasi_isomorphisms",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun derived_category_args => derived_category_args (forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)) (fun (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp) => fun (localization_functor_law : LocalizationFunctorLaw) => fun (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)) => fun (localization_universal_law : LocalizationUniversal) => quasi_isomorphism_inverted_law)"
+    },
+    {
+      "declaration": "derived_category_universal_property",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun derived_category_args => derived_category_args LocalizationUniversal (fun (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp) => fun (localization_functor_law : LocalizationFunctorLaw) => fun (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)) => fun (localization_universal_law : LocalizationUniversal) => localization_universal_law)"
+    },
+    {
+      "declaration": "derived_category",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => fun complex_category_args => fun QuasiIso => fun DerivedObj => fun DerivedHom => fun derived_id => fun derived_comp => fun localize_obj => fun localize_map => fun IsIsoInDerived => fun LocalizationFunctorLaw => fun LocalizationUniversal => fun derived_category_args => fun (P : Prop) => fun (mk : forall (derived_category_law : @CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp), forall (localization_functor_law : LocalizationFunctorLaw), forall (quasi_isomorphism_inverted_law : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), forall (qis : QuasiIso A B f), IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)), forall (localization_universal_law : LocalizationUniversal), P) => derived_category_args P mk"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert"
+  }
+}
