@@ -107,7 +107,6 @@ const MODULES: &[&ModuleArtifact] = &[
     &BASIC_MODULE,
     &EQ_MODULE,
     &NAT_MODULE,
-    &FLT_STATEMENT_MODULE,
     &PROP_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
@@ -445,19 +444,6 @@ const NAT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NAT_THEOREMS,
-    expected_axioms: &[],
-};
-
-const FLT_STATEMENT_MODULE: ModuleArtifact = ModuleArtifact {
-    module: "Proofs.Ai.NumberTheory.Flt.Statement",
-    source_path: "Proofs/Ai/NumberTheory/Flt/Statement/source.npa",
-    certificate_path: "Proofs/Ai/NumberTheory/Flt/Statement/certificate.npcert",
-    meta_path: "Proofs/Ai/NumberTheory/Flt/Statement/meta.json",
-    replay_path: "Proofs/Ai/NumberTheory/Flt/Statement/replay.json",
-    imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
-    inductives: &[],
-    definitions: FLT_STATEMENT_DEFINITIONS,
-    theorems: FLT_STATEMENT_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9266,192 +9252,6 @@ const NAT_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &[],
         statement: "forall (n : Nat), @Eq.{1} Nat (Nat.succ n) (Nat.succ n)",
         proof: "fun n => @Eq.refl.{1} Nat (Nat.succ n)",
-    },
-];
-
-const FLT_STATEMENT_DEFINITIONS: &[DefinitionArtifact] = &[
-    DefinitionArtifact {
-        name: "FltFalse",
-        universe_params: &[],
-        ty: "Prop",
-        value: "forall (P : Prop), P",
-    },
-    DefinitionArtifact {
-        name: "FltNot",
-        universe_params: &[],
-        ty: "forall (P : Prop), Prop",
-        value: "fun P => forall (p : P), FltFalse",
-    },
-    DefinitionArtifact {
-        name: "FltNatTwo",
-        universe_params: &[],
-        ty: "Nat",
-        value: "Nat.succ (Nat.succ Nat.zero)",
-    },
-    DefinitionArtifact {
-        name: "FltNatNe",
-        universe_params: &[],
-        ty: "forall (a : Nat), forall (b : Nat), Prop",
-        value: "fun a => fun b => FltNot (@Eq.{1} Nat a b)",
-    },
-    DefinitionArtifact {
-        name: "FltNatEquation",
-        universe_params: &[],
-        ty: concat!(
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (n : Nat), forall (a : Nat), forall (b : Nat), forall (c : Nat), Prop"
-        ),
-        value: concat!(
-            "fun add => fun pow => fun n => fun a => fun b => fun c => ",
-            "@Eq.{1} Nat (add (pow a n) (pow b n)) (pow c n)"
-        ),
-    },
-    DefinitionArtifact {
-        name: "fermat_last_theorem",
-        universe_params: &[],
-        ty: concat!(
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop"
-        ),
-        value: concat!(
-            "fun add => fun pow => fun lt => ",
-            "forall (n : Nat), forall (a : Nat), forall (b : Nat), forall (c : Nat), ",
-            "forall (hn : lt FltNatTwo n), ",
-            "forall (ha : FltNatNe a Nat.zero), ",
-            "forall (hb : FltNatNe b Nat.zero), ",
-            "forall (hc : FltNatNe c Nat.zero), ",
-            "forall (heq : FltNatEquation add pow n a b c), FltFalse"
-        ),
-    },
-    DefinitionArtifact {
-        name: "fermat_last_theorem_nat",
-        universe_params: &[],
-        ty: concat!(
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop"
-        ),
-        value: "fermat_last_theorem",
-    },
-    DefinitionArtifact {
-        name: "fermat_last_theorem_positive_nat",
-        universe_params: &["u"],
-        ty: concat!(
-            "forall (PositiveNat : Sort u), ",
-            "forall (toNat : forall (x : PositiveNat), Nat), ",
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop"
-        ),
-        value: concat!(
-            "fun PositiveNat => fun toNat => fun add => fun pow => fun lt => ",
-            "forall (n : Nat), ",
-            "forall (a : PositiveNat), forall (b : PositiveNat), forall (c : PositiveNat), ",
-            "forall (hn : lt FltNatTwo n), ",
-            "forall (heq : FltNatEquation add pow n (toNat a) (toNat b) (toNat c)), FltFalse"
-        ),
-    },
-    DefinitionArtifact {
-        name: "fermat_last_theorem_int",
-        universe_params: &["u"],
-        ty: concat!(
-            "forall (Int : Sort u), ",
-            "forall (zero : Int), ",
-            "forall (add : forall (x : Int), forall (y : Int), Int), ",
-            "forall (pow : forall (base : Int), forall (exp : Nat), Int), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop"
-        ),
-        value: concat!(
-            "fun Int => fun zero => fun add => fun pow => fun lt => ",
-            "forall (n : Nat), forall (a : Int), forall (b : Int), forall (c : Int), ",
-            "forall (hn : lt FltNatTwo n), ",
-            "forall (ha : FltNot (@Eq.{u} Int a zero)), ",
-            "forall (hb : FltNot (@Eq.{u} Int b zero)), ",
-            "forall (hc : FltNot (@Eq.{u} Int c zero)), ",
-            "forall (heq : @Eq.{u} Int (add (pow a n) (pow b n)) (pow c n)), FltFalse"
-        ),
-    },
-];
-
-const FLT_STATEMENT_THEOREMS: &[TheoremArtifact] = &[
-    TheoremArtifact {
-        name: "fermat_last_theorem_shape",
-        universe_params: &[],
-        statement: concat!(
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), ",
-            "@Eq.{1} Prop (fermat_last_theorem add pow lt) ",
-            "(forall (n : Nat), forall (a : Nat), forall (b : Nat), forall (c : Nat), ",
-            "forall (hn : lt FltNatTwo n), ",
-            "forall (ha : FltNatNe a Nat.zero), ",
-            "forall (hb : FltNatNe b Nat.zero), ",
-            "forall (hc : FltNatNe c Nat.zero), ",
-            "forall (heq : FltNatEquation add pow n a b c), FltFalse)"
-        ),
-        proof: concat!(
-            "fun add => fun pow => fun lt => ",
-            "@Eq.refl.{1} Prop (fermat_last_theorem add pow lt)"
-        ),
-    },
-    TheoremArtifact {
-        name: "fermat_last_theorem_nat_alias",
-        universe_params: &[],
-        statement: concat!(
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), ",
-            "@Eq.{1} Prop (fermat_last_theorem_nat add pow lt) ",
-            "(fermat_last_theorem add pow lt)"
-        ),
-        proof: concat!(
-            "fun add => fun pow => fun lt => ",
-            "@Eq.refl.{1} Prop (fermat_last_theorem add pow lt)"
-        ),
-    },
-    TheoremArtifact {
-        name: "fermat_last_theorem_positive_nat_shape",
-        universe_params: &["u"],
-        statement: concat!(
-            "forall (PositiveNat : Sort u), ",
-            "forall (toNat : forall (x : PositiveNat), Nat), ",
-            "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
-            "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), ",
-            "@Eq.{1} Prop (@fermat_last_theorem_positive_nat.{u} PositiveNat toNat add pow lt) ",
-            "(forall (n : Nat), ",
-            "forall (a : PositiveNat), forall (b : PositiveNat), forall (c : PositiveNat), ",
-            "forall (hn : lt FltNatTwo n), ",
-            "forall (heq : FltNatEquation add pow n (toNat a) (toNat b) (toNat c)), FltFalse)"
-        ),
-        proof: concat!(
-            "fun PositiveNat => fun toNat => fun add => fun pow => fun lt => ",
-            "@Eq.refl.{1} Prop (@fermat_last_theorem_positive_nat.{u} PositiveNat toNat add pow lt)"
-        ),
-    },
-    TheoremArtifact {
-        name: "fermat_last_theorem_int_shape",
-        universe_params: &["u"],
-        statement: concat!(
-            "forall (Int : Sort u), ",
-            "forall (zero : Int), ",
-            "forall (add : forall (x : Int), forall (y : Int), Int), ",
-            "forall (pow : forall (base : Int), forall (exp : Nat), Int), ",
-            "forall (lt : forall (x : Nat), forall (y : Nat), Prop), ",
-            "@Eq.{1} Prop (@fermat_last_theorem_int.{u} Int zero add pow lt) ",
-            "(forall (n : Nat), forall (a : Int), forall (b : Int), forall (c : Int), ",
-            "forall (hn : lt FltNatTwo n), ",
-            "forall (ha : FltNot (@Eq.{u} Int a zero)), ",
-            "forall (hb : FltNot (@Eq.{u} Int b zero)), ",
-            "forall (hc : FltNot (@Eq.{u} Int c zero)), ",
-            "forall (heq : @Eq.{u} Int (add (pow a n) (pow b n)) (pow c n)), FltFalse)"
-        ),
-        proof: concat!(
-            "fun Int => fun zero => fun add => fun pow => fun lt => ",
-            "@Eq.refl.{1} Prop (@fermat_last_theorem_int.{u} Int zero add pow lt)"
-        ),
     },
 ];
 
@@ -33242,12 +33042,6 @@ fn run_full() -> Result<(), String> {
         &nat_imports,
         &nat_source_interfaces,
     )?;
-    let flt_statement = build_and_write_module(
-        &proof_root,
-        &FLT_STATEMENT_MODULE,
-        &nat_imports,
-        &nat_source_interfaces,
-    )?;
     let prop = build_and_write_module(&proof_root, &PROP_MODULE, &[], &[])?;
     let reduction = build_and_write_module(
         &proof_root,
@@ -35096,7 +34890,6 @@ fn run_full() -> Result<(), String> {
         basic,
         eq,
         nat,
-        flt_statement,
         prop,
         reduction,
         eq_reasoning,
@@ -37757,7 +37550,6 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
         || config.module == ABSTRACT_GALOIS_STARTER_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
-        || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

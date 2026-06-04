@@ -31,8 +31,8 @@ The theorem inventory covers these areas:
   arithmetic progressions;
 - algebraic number theory, number fields, rings of integers, Dedekind domains,
   ideals, class groups, local fields, class field theory, and p-adic analysis;
-- elliptic curves, modular forms, Galois representations, modularity, Fermat's
-  Last Theorem, arithmetic geometry, Iwasawa theory, and Langlands interfaces;
+- elliptic curves, modular forms, Galois representations, modularity,
+  arithmetic geometry, Iwasawa theory, and Langlands interfaces;
 - finite fields, computational number theory, cryptographic correctness
   theorems, and algorithmic theorem surfaces.
 
@@ -46,11 +46,9 @@ on them.
 
 The current proof corpus has reusable algebra, group, ring, field, ordered
 field, UFD-style prime factorization, metric-analysis, linear-algebra, and
-algebraic-geometry interfaces. It has a concrete
-`Proofs.Ai.NumberTheory.Flt.Statement` module and separate FLT planning
-documents, but it does not yet expose a general `Proofs.Ai.NumberTheory.*`
-foundation for divisibility, congruences, arithmetic functions, local fields,
-or analytic number theory.
+algebraic-geometry interfaces. It does not yet expose a general
+`Proofs.Ai.NumberTheory.*` foundation for divisibility, congruences,
+arithmetic functions, local fields, or analytic number theory.
 
 Relevant existing anchors:
 
@@ -65,12 +63,10 @@ Relevant existing anchors:
 | finite-dimensional linear algebra | `proofs/linear-algebra-theorem-proof-roadmap.md` |
 | metric and analytic prerequisites | `proofs/analysis-theorem-proof-roadmap.md` and `proofs/measure-theory-theorem-proof-roadmap.md` |
 | topology and compactness prerequisites | `proofs/topology-theorem-proof-roadmap.md` |
-| FLT statement and Wiles route | `proofs/fermats-last-theorem-proof-phases.md` and `proofs/fermats-last-theorem-proof-phases-todo.md` |
 
 Number-theory work should start with explicit law packages and statement-level
 interfaces, then gradually replace them with derived certificate-backed
-modules. The FLT project should import the reusable number-theory route instead
-of privately defining divisibility, gcd, prime exponent, or coprimality facts.
+modules.
 
 ## Proof Levels
 
@@ -189,14 +185,14 @@ semantics.
   1. classify each theorem from the inventory into exactly one primary
      milestone;
   2. mark duplicates shared with algebra, analysis, topology, measure theory,
-     algebraic geometry, cryptography, and the FLT project;
+     algebraic geometry, cryptography, and arithmetic geometry projects;
   3. assign each theorem a stable English identifier, theorem level, target
      module, dependencies, and acceptance gate;
   4. mark conjectural statements and conditional theorem forms explicitly.
 - Deliverables:
   - Number-theory theorem cards.
-  - Duplicate-home map for FLT, modularity, Chebotarev, class field theory,
-    finite fields, additive combinatorics, and analytic number theory.
+  - Duplicate-home map for modularity, Chebotarev, class field theory, finite
+    fields, additive combinatorics, and analytic number theory.
 - Acceptance criteria:
   - Every theorem family has one primary home.
   - Cross-roadmap aliases point to the primary theorem instead of duplicating
@@ -226,7 +222,7 @@ semantics.
 - Acceptance criteria:
   - Divisibility facts do not depend on prime factorization.
   - Quotient-remainder uniqueness states its exact sign and bound hypotheses.
-  - Later gcd and FLT modules can import these facts without importing
+  - Later gcd and Diophantine modules can import these facts without importing
     elliptic-curve or modularity modules.
 
 ## NT-02 Gcd, Lcm, Euclid Algorithm, And Bezout
@@ -254,7 +250,8 @@ semantics.
 - Acceptance criteria:
   - Euclid's lemma and Gauss's lemma are not assumed before Bezout or prime
     divisibility facts are available.
-  - Gcd normal form is stable enough for congruence, CRT, and FLT reduction.
+  - Gcd normal form is stable enough for congruence, CRT, and Diophantine
+    reduction.
 
 ## NT-03 Primes And Unique Factorization
 
@@ -277,8 +274,8 @@ semantics.
 - Proof strategy:
   - Bridge natural-number factorization to the existing abstract UFD theorem
     only through explicit ordered and positivity assumptions.
-  - Export general prime-factor projections for FLT, finite fields, and
-    arithmetic functions.
+  - Export general prime-factor projections for finite fields, Diophantine
+    equations, and arithmetic functions.
 - Acceptance criteria:
   - Fundamental theorem of arithmetic is a derived theorem, not an input axiom.
   - Prime-factorization uniqueness exposes units and sign normalization.
@@ -475,8 +472,8 @@ semantics.
   - Reuse geometry and algebraic identities rather than adding Diophantine
     solver primitives.
 - Acceptance criteria:
-  - FLT-related statements point to the dedicated FLT roadmap for Wiles,
-    Ribet, Frey, and final theorem work.
+  - Wiles, Ribet, Frey, and final-theorem-specific work is outside this
+    reusable additive-number-theory roadmap.
   - Advanced additive theorems expose finite-set, density, and ambient-group
     assumptions.
 
@@ -634,7 +631,7 @@ semantics.
 
 - Status: planned.
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
-  finite fields, and existing FLT roadmap interfaces.
+  and finite fields.
 - Target modules:
   - `Proofs.Ai.EllipticCurve.Basic`
   - `Proofs.Ai.EllipticCurve.GroupLaw`
@@ -656,8 +653,9 @@ semantics.
   9. modularity, Gross-Zagier, Kolyvagin, Sato-Tate, and BSD statement or
      conditional theorem surfaces.
 - Proof strategy:
-  - Keep general elliptic-curve APIs independent of FLT-specific Frey curves.
-  - Import FLT Frey-curve modules only for the specialized FLT route.
+  - Keep general elliptic-curve APIs independent of specialized Frey-curve
+    routes.
+  - Keep final-theorem-specific glue out of the reusable elliptic-curve APIs.
 - Acceptance criteria:
   - Group law theorem does not rely on modularity or arithmetic geometry
     bridge axioms.
@@ -685,14 +683,14 @@ semantics.
   6. Petersson inner product and trace formula interfaces;
   7. modular curves and Eichler-Shimura interface;
   8. modularity lifting theorem surfaces;
-  9. Ribet level lowering and semistable modularity route for FLT.
+  9. Ribet level lowering and semistable modularity interfaces.
 - Proof strategy:
-  - Share modules with the existing FLT roadmap.
-  - Keep modularity-lifting bridge assumptions named and rejected by final FLT
-    release policy.
+  - Keep modularity-lifting APIs reusable and separate from any final-theorem
+    route.
+  - Do not hide modularity-lifting assumptions in reusable modules.
 - Acceptance criteria:
-  - Modular forms modules are usable outside FLT.
-  - Ribet and Wiles/Taylor-Wiles surfaces are not hidden in final theorem
+  - Modular forms modules are usable outside modularity-lifting wrappers.
+  - Ribet and Wiles/Taylor-Wiles surfaces are not hidden in downstream theorem
     imports.
 
 ## NT-18 L-functions And Langlands Interfaces
@@ -819,7 +817,8 @@ semantics.
   - Share representation APIs with elliptic-curve and modular-form modules.
 - Acceptance criteria:
   - Chebotarev is not used to prove elementary prime infinitude or FTA.
-  - Representation-theoretic local conditions are reusable outside FLT.
+  - Representation-theoretic local conditions are reusable outside any
+    specialized final-theorem route.
 
 ## NT-22 Computational Number Theory And Cryptography
 
@@ -954,7 +953,6 @@ arithmetic, quotient, finite-group, and algebraic foundations are reusable.
 | finite-field core laws, Frobenius, and root characterization | `Proofs.Ai.Algebra.AbstractFiniteField` through `develop/proof-corpus-field-theory-roadmap.md` | import or alias; add number-theoretic applications |
 | real, complex, series, integration, Tauberian theorems | analysis and measure roadmaps | import for analytic number theory |
 | topological compactness and local compactness | topology roadmap | import for local fields and harmonic analysis |
-| Fermat's Last Theorem final route | FLT phase documents | reuse elementary number theory; own Frey/Ribet/Wiles glue |
 | scheme and derived algebraic geometry foundations | algebraic-geometry modules and future roadmap | import for arithmetic geometry |
 | cryptographic security assumptions | future cryptography roadmap or theorem cards | state assumptions; prove algebraic correctness only |
 
@@ -967,7 +965,7 @@ arithmetic, quotient, finite-group, and algebraic foundations are reusable.
 | hiding quotient assumptions inside residue rings or class groups | checker-policy surprises | expose quotient core features and package axiom reports |
 | using analytic number theory to justify elementary prime facts | circular dependency graph | keep elementary primes and FTA before zeta, `L`-functions, and Chebotarev |
 | large theorem interfaces becoming permanent bridge axioms | untrusted final theorem claims | use namespaced bridge assumptions and reject them in promotion gates |
-| duplicate theorem ownership across FLT, elliptic curves, modularity, and Langlands | inconsistent APIs and import cycles | keep general APIs outside FLT, and make FLT import specialized routes |
+| duplicate theorem ownership across elliptic curves, modularity, and Langlands | inconsistent APIs and import cycles | keep general APIs outside specialized final-theorem routes |
 
 ## Acceptance Gates
 
