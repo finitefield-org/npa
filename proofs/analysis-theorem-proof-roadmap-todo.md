@@ -445,7 +445,7 @@ guessing. The split must preserve the dependency order in this document.
 - Depends on: ANA-T08
 - Inputs:
   - `Proofs.Ai.Analysis.Series.Criteria`
-  - `Proofs.Ai.Analysis.Series.Power`
+  - sequence and real foundations from ANA-T01 through ANA-T08
 - Code or documentation areas:
   - `Proofs/Ai/Analysis/Series/Criteria/`
   - `Proofs/Ai/Analysis/Series/Power/`
@@ -622,8 +622,9 @@ guessing. The split must preserve the dependency order in this document.
 - Depends on: ANA-T14
 - Inputs:
   - `Proofs.Ai.Analysis.Calculus.OneVariable`
-  - `Proofs.Ai.Analysis.Series.Power`
   - `Proofs.Ai.Analysis.Convex.Basic`
+  - optional `Proofs.Ai.Analysis.Series.Power` support only if this milestone
+    explicitly chooses a power-series proof route
 - Code or documentation areas:
   - `Proofs/Ai/Analysis/Calculus/OneVariable/`
   - `Proofs/Ai/Analysis/Calculus/Taylor/`
@@ -642,6 +643,8 @@ guessing. The split must preserve the dependency order in this document.
   - l'Hopital uses Cauchy MVT and explicit nonzero hypotheses.
   - Taylor theorem does not depend on power-series convergence unless the
     statement explicitly chooses a power-series route.
+  - Any power-series-dependent Taylor or Maclaurin variant is split into a
+    follow-up that depends on ANA-T09.
   - Convex tangent inequality is reusable by optimization milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Taylor`
@@ -823,7 +826,7 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T22 Add Metric And Topological Compactness Route
 
 - Status: Pending
-- Depends on: ANA-T05, ANA-T10
+- Depends on: ANA-T05, ANA-T10, ANA-T19
 - Inputs:
   - `Proofs.Ai.Analysis.AbstractMetricTopology`
   - `Proofs.Ai.Analysis.Sequence.Compactness`
@@ -881,10 +884,12 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T24 Add Measure And Lebesgue Construction Foundation
 
 - Status: Pending
-- Depends on: ANA-T22
+- Depends on: ANA-T17, ANA-T22
 - Inputs:
   - topology foundation from ANA-T22
   - real and sequence foundations from ANA-T01 through ANA-T05
+  - Riemann integration foundation from ANA-T16 through ANA-T17 for the
+    roadmap's ANA-05 dependency and Riemann/Lebesgue disambiguation checks
 - Code or documentation areas:
   - `Proofs/Ai/Measure/Basic/`
   - `Proofs/Ai/Measure/Construction/`
@@ -912,8 +917,9 @@ guessing. The split must preserve the dependency order in this document.
 - Status: Pending
 - Depends on: ANA-T24
 - Inputs:
-  - `Proofs.Ai.Measure.Integral`
   - `Proofs.Ai.Measure.Basic`
+  - `Proofs.Ai.Measure.Construction`
+  - initial Lebesgue integral construction interface from ANA-T24
 - Code or documentation areas:
   - `Proofs/Ai/Measure/Integral/`
 - Tasks:
@@ -940,8 +946,8 @@ guessing. The split must preserve the dependency order in this document.
 - Status: Pending
 - Depends on: ANA-T25
 - Inputs:
-  - `Proofs.Ai.Measure.Product`
-  - `Proofs.Ai.Measure.Decomposition`
+  - `Proofs.Ai.Measure.Integral`
+  - measure foundation modules from ANA-T24
   - topology and compactness modules
 - Code or documentation areas:
   - `Proofs/Ai/Measure/Product/`
@@ -1003,7 +1009,8 @@ guessing. The split must preserve the dependency order in this document.
 - Inputs:
   - inner-product modules
   - existing spectral theorem modules
-  - measure and weak topology foundations
+  - measure foundations from ANA-T26
+  - topology and compactness foundations from ANA-T22 and ANA-T23
 - Code or documentation areas:
   - `Proofs/Ai/FunctionalAnalysis/Hilbert/`
   - `Proofs/Ai/FunctionalAnalysis/WeakTopology/`
@@ -1035,10 +1042,12 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T29 Add Complex Numbers, Holomorphic Functions, And Cauchy Theorem Family
 
 - Status: Pending
-- Depends on: ANA-T18
+- Depends on: ANA-T18, ANA-T22
 - Inputs:
   - real and Riemann integration foundations
-  - series foundations for local power-series work
+  - topology foundations from ANA-T22
+  - series foundations are deferred to ANA-T30 unless this milestone
+    explicitly splits off local power-series statements
 - Code or documentation areas:
   - `Proofs/Ai/Complex/Basic/`
   - `Proofs/Ai/Complex/Holomorphic/`
@@ -1065,7 +1074,7 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T30 Add Meromorphic, Residue, And Advanced Complex Analysis Route
 
 - Status: Pending
-- Depends on: ANA-T29
+- Depends on: ANA-T09, ANA-T22, ANA-T29
 - Inputs:
   - `Proofs.Ai.Complex.Cauchy`
   - series and topology foundations
@@ -1096,7 +1105,7 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T31 Add Fourier Series And Transform Foundations
 
 - Status: Pending
-- Depends on: ANA-T26, ANA-T29
+- Depends on: ANA-T09, ANA-T26, ANA-T28, ANA-T29
 - Inputs:
   - measure integration
   - complex exponentials
@@ -1159,7 +1168,7 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T33 Add ODE Foundations, Gronwall, And Picard-Lindelof
 
 - Status: Pending
-- Depends on: ANA-T18, ANA-T23
+- Depends on: ANA-T14, ANA-T18, ANA-T23
 - Inputs:
   - existing fixed-point and derivative modules
   - Riemann integration and continuity foundations
@@ -1216,7 +1225,7 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T35 Add Sobolev And Weak PDE Foundations
 
 - Status: Pending
-- Depends on: ANA-T26, ANA-T28
+- Depends on: ANA-T26, ANA-T28, ANA-T31, ANA-T33
 - Inputs:
   - measure foundations
   - Hilbert functional analysis
@@ -1379,7 +1388,9 @@ After `ANQ-020`, pick one route based on project priority:
 
 - continue to `ANA-T18` for the fundamental theorem of calculus;
 - continue to `ANA-T19` for Euclidean inverse/implicit specializations;
-- continue to `ANA-T24` if measure theory is the next strategic foundation.
+- prepare the measure-theory route by completing the ANA-T22 topology
+  prerequisite, then continue to `ANA-T24` if measure theory is the next
+  strategic foundation.
 
 ---
 

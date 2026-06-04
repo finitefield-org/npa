@@ -490,7 +490,7 @@ Implication:
 
 ### FT-08 Add Field Hom Kernel / Image / Embedding Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-03
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -528,6 +528,11 @@ Implication:
 - Notes:
   - This is the preferred next implementation milestone because it is small and creates immediate
     downstream evidence for the existing field hom layer.
+  - Completed with `Proofs.Ai.Algebra.AbstractFieldHomKernelImage`, which adds
+    `FieldHomKernelImageArgs`, `FieldHomImageFieldArgs`, `FieldEmbeddingLawArgs`,
+    `FieldIsoLawArgs`, and the seven planned theorem targets. Construction-heavy kernel, image,
+    embedding composition, and isomorphism transitivity facts remain explicit evidence rather than
+    trusted infrastructure.
 
 ### FT-09 Add Polynomial Quotient Over Field Bridge
 

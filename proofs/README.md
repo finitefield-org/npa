@@ -54,6 +54,12 @@ Current bundles:
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
   `Std.Logic.Eq` and `Proofs.Ai.Algebra.Ring`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
+- `Proofs/Ai/NumberTheory/Flt/Statement/`: FLT statement-freeze module importing
+  `Std.Logic.Eq` and `Std.Nat.Basic`. It exports Prop-valued statement constants for
+  `fermat_last_theorem`, natural-number, positive-natural, and integer variants. Current
+  `Std.Nat.Basic` provides certified `Nat.zero` and `Nat.succ`; addition, exponentiation, and
+  order are explicit statement parameters until the reusable number-theory library materializes
+  them. This module has no `Flt.BridgeAxiom.*` dependency.
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
@@ -1320,6 +1326,49 @@ Theorem targets:
 | `or_inl`, `or_inr`, `or_elim` | disjunction introduction and elimination helpers |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
+#### `Proofs.Ai.NumberTheory.Flt.Statement`
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FltFalse` | FLT-local Church-encoded falsehood used to spell the contradiction target explicitly |
+| `FltNot` | negation abbreviation `P -> FltFalse`, used for nonzero hypotheses |
+| `FltNatTwo` | certified Nat numeral `2`, defined as `Nat.succ (Nat.succ Nat.zero)` |
+| `FltNatNe` | explicit natural-number inequality predicate, defined as negated `Eq` |
+| `FltNatEquation` | explicit equation shape `a^n + b^n = c^n` over parameterized `add` and `pow` |
+| `fermat_last_theorem` | public final natural-number statement constant parameterized by `add`, `pow`, and `lt` |
+| `fermat_last_theorem_nat` | compatibility alias for the public natural-number statement |
+| `fermat_last_theorem_positive_nat` | positive-natural statement alias through an explicit `toNat` embedding |
+| `fermat_last_theorem_int` | integer statement alias over an explicit integer carrier, zero, addition, and power operation |
+
+The statement module is the FLT-00 contract layer. It freezes names and surface shape only; it does
+not prove Fermat's Last Theorem and it does not introduce bridge axioms. The current `Std.Nat.Basic`
+fixture supplies the certified Nat carrier plus `Nat.zero` and `Nat.succ`. Because reusable
+addition, exponentiation, and order APIs are scheduled for later number-theory milestones, the
+statement constants take `add`, `pow`, and `lt` as explicit arguments rather than using notation,
+typeclass search, or hidden source sugar.
+
+Bridge policy and library growth policy are deliberately separated:
+
+- `Flt.BridgeAxiom.*` declarations are development-only interfaces for later smoke milestones and
+  must not be imported by this statement module.
+- Domain milestones that follow FLT-00 are incomplete if they only add hidden FLT glue; they must
+  contribute reusable number theory, algebra, elliptic-curve, modular-forms, Galois-representation,
+  or modularity theorem surfaces that can be used independently of the final FLT proof route.
+- Metadata files such as `manifest.toml`, `npa-package.toml`, generated theorem indexes, and axiom
+  reports make the surface discoverable, but proof acceptance remains canonical `.npcert` bytes
+  plus checker verdicts.
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `fermat_last_theorem_shape` | reflexive check that the public statement expands to the frozen Nat form |
+| `fermat_last_theorem_nat_alias` | reflexive check that the Nat alias is the public statement |
+| `fermat_last_theorem_positive_nat_shape` | reflexive check of the positive-natural compatibility shape |
+| `fermat_last_theorem_int_shape` | reflexive check of the integer compatibility shape |
+
 #### `Proofs.Ai.Algebra.AbstractRing`
 
 Implemented definitions / API declarations, not proof targets:
@@ -1411,6 +1460,33 @@ Theorem targets:
 | `field_hom_inv_of_nonzero` | projects inverse preservation with explicit source-side `Nonzero` evidence |
 | `field_hom_div` | projects division preservation with explicit nonzero evidence for the denominator |
 | `field_hom_preserves_nonzero` | projects preservation of source-side `Nonzero` evidence across the homomorphism |
+
+#### `Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
+
+This module is the first direct downstream consumer of `AbstractFieldHom`. It keeps kernel, image,
+embedding, and isomorphism construction data explicit instead of introducing concrete quotient or
+subtype machinery into the trusted surface.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldHomKernelImageArgs` | packages nonzero image preservation and injectivity evidence for a field hom |
+| `FieldHomImageFieldArgs` | packages explicit image-carrier field laws plus the image embedding field hom |
+| `FieldEmbeddingLawArgs` | packages a field hom together with injectivity evidence |
+| `FieldIsoLawArgs` | packages forward/backward field embeddings and inverse laws |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_hom_kernel_zero_of_nonzero` | reuses `field_hom_preserves_nonzero` as the kernel-zero exclusion projection |
+| `field_hom_injective_of_nonzero` | projects explicit injectivity evidence from `FieldHomKernelImageArgs` |
+| `field_hom_image_field_laws` | projects field laws for an explicitly supplied image carrier |
+| `field_embedding_as_field_hom` | projects the underlying `FieldHomLawArgs` from an embedding package |
+| `field_embedding_comp` | records composition as explicit `FieldEmbeddingLawArgs` evidence |
+| `field_iso_symm` | swaps forward and backward embedding evidence for a field isomorphism |
+| `field_iso_trans` | records transitivity as explicit composite isomorphism evidence |
 
 #### `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
 

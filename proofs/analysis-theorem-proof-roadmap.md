@@ -695,8 +695,9 @@ After `ANQ-020`, choose between:
 - continuing the calculus route through the fundamental theorem of calculus;
 - specializing the already available inverse and implicit function theorem
   routes to Euclidean statements;
-- starting measure theory if Fourier, PDE, and functional-analysis goals are
-  more important than elementary calculus coverage.
+- preparing the measure-theory route, including any missing topology
+  prerequisites, if Fourier, PDE, and functional-analysis goals are more
+  important than elementary calculus coverage.
 
 ## Risk Register
 
