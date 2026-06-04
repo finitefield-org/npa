@@ -469,9 +469,13 @@ secondary area must import, specialize, or expose a compatibility alias.
   `Proofs.Ai.LinearAlgebra.Systems.Basic`: homogeneous solutions are exposed
   as the kernel solution set with explicit kernel/subspace evidence, and
   nonhomogeneous solution sets are represented by a certified particular
-  solution plus homogeneous offsets. Row-operation preservation, elimination
-  traces, echelon/RREF, pivot/free-variable, Rouche-Capelli, and fundamental
-  solution-system results remain planned.
+  solution plus homogeneous offsets. `LAQ-009` complete for
+  `Proofs.Ai.LinearAlgebra.Matrix.Elimination`: matrix system solution
+  predicates, row-operation solution-set preservation, explicit row-reduction
+  trace evidence, Gaussian-elimination correctness projections, and a separate
+  RREF uniqueness route are now available. Gauss-Jordan correctness,
+  pivot/free-variable, Rouche-Capelli, and fundamental solution-system results
+  remain planned.
 - Depends on: `LIN-03` and `LIN-04`.
 - Target modules:
   - `Proofs.Ai.LinearAlgebra.Systems.Basic`
@@ -498,6 +502,7 @@ secondary area must import, specialize, or expose a compatibility alias.
   - Cramer and determinant criteria remain aliases to `LIN-06`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Systems.Basic`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Elimination`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ## LIN-06 Determinants, Adjugates, And Cramer Formulas

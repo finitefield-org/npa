@@ -1342,6 +1342,23 @@ theorems = ["homogeneous_solution_intro", "homogeneous_solution_eq_zero", "homog
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Elimination"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:6b506dc6a186df75c197996f756aa00511fe9168bf5653e162a8b0cadb27a4f7"
+expected_certificate_file_hash = "sha256:73f808829ea67a6193c552e45c6eda01510c9b0e0bf762d4644b6696a8c8fa19"
+expected_export_hash = "sha256:9f66571fd23a314422142928b23bcf4fab948669397d2cb4667ccfc69cfb188b"
+expected_axiom_report_hash = "sha256:6d14a3d02748965eba554beb8d48d3bfcbd201a68c65df3c0fd2edf58cc167fc"
+expected_certificate_hash = "sha256:46ec0b86e655b8d5d37652c253647488493de44cdc40d6522c9af1f5c0517bdc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Systems.Basic"]
+definitions = ["MatrixSystemSolutionSet", "EchelonForm", "ReducedRowEchelonForm", "RowOperationPreservesSolutions", "RowReductionTraceEvidence", "GaussianEliminationCorrectnessEvidence", "RrefUniquenessEvidence"]
+theorems = ["matrix_system_solution_intro", "matrix_system_solution_eq_rhs", "echelon_form_intro", "reduced_row_echelon_form_intro", "row_operation_preserves_solutions_intro", "row_operation_preserves_solutions_forward", "row_operation_preserves_solutions_backward", "row_reduction_trace_evidence_intro", "row_reduction_trace_preserves_solution_set", "gaussian_elimination_correctness_evidence_intro", "gaussian_elimination_trace_evidence", "gaussian_elimination_echelon_form", "gaussian_elimination_preserves_solution_set", "gaussian_elimination_correctness", "rref_uniqueness_evidence_intro", "rref_unique_matrix", "rref_unique_rhs", "rref_uniqueness_route"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"

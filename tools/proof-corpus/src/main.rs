@@ -181,6 +181,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &LINEAR_ALGEBRA_MATRIX_BASIC_MODULE,
     &LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE,
     &LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE,
+    &LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1881,6 +1882,28 @@ const LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Matrix.Elimination",
+    source_path: "Proofs/Ai/LinearAlgebra/Matrix/Elimination/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Matrix/Elimination/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Matrix/Elimination/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Matrix/Elimination/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+        "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+        "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+        "Proofs.Ai.LinearAlgebra.LinearMap.Basic",
+        "Proofs.Ai.LinearAlgebra.Matrix.Basic",
+        "Proofs.Ai.LinearAlgebra.Systems.Basic",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_MATRIX_ELIMINATION_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_MATRIX_ELIMINATION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -2727,6 +2750,260 @@ macro_rules! linear_algebra_matrix_abs {
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => ",
             $tail
         )
+    };
+}
+
+macro_rules! linear_algebra_matrix_form_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (form_law : Prop), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (form_law : Prop), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_form_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun form_law => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun form_law => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_system_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            "forall (matrix_eval : forall (entries : forall (i : Row), forall (j : Col), Scalar), forall (solution : forall (j : Col), Scalar), forall (i : Row), Scalar), ",
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (rhs : forall (i : Row), Scalar), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            "forall (matrix_eval : forall (entries : forall (i : Row), forall (j : Col), Scalar), forall (solution : forall (j : Col), Scalar), forall (i : Row), Scalar), ",
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (rhs : forall (i : Row), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_system_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun entries => fun rhs => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun entries => fun rhs => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_row_operation_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            "forall (matrix_eval : forall (entries : forall (i : Row), forall (j : Col), Scalar), forall (solution : forall (j : Col), Scalar), forall (i : Row), Scalar), ",
+            "forall (source_entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (source_rhs : forall (i : Row), Scalar), ",
+            "forall (target_entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (target_rhs : forall (i : Row), Scalar), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            "forall (matrix_eval : forall (entries : forall (i : Row), forall (j : Col), Scalar), forall (solution : forall (j : Col), Scalar), forall (i : Row), Scalar), ",
+            "forall (source_entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (source_rhs : forall (i : Row), Scalar), ",
+            "forall (target_entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (target_rhs : forall (i : Row), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_row_operation_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_row_reduction_trace_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_row_operation_params!(concat!(
+            "forall (Trace : Sort x), ",
+            "forall (trace : Trace), ",
+            "forall (trace_valid : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_row_operation_params!(concat!(
+            "forall (Trace : Sort x), ",
+            "forall (trace : Trace), ",
+            "forall (trace_valid : Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_row_reduction_trace_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_row_operation_abs!(concat!(
+            "fun Trace => fun trace => fun trace_valid => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_row_operation_abs!(concat!(
+            "fun Trace => fun trace => fun trace_valid => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_gaussian_elimination_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_row_reduction_trace_params!(concat!(
+            "forall (echelon_law : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_row_reduction_trace_params!(concat!(
+            "forall (echelon_law : Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_gaussian_elimination_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_row_reduction_trace_abs!(concat!(
+            "fun echelon_law => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_row_reduction_trace_abs!(concat!(
+            "fun echelon_law => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_rref_uniqueness_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_row_operation_params!(concat!(
+            "forall (left_rref_law : Prop), ",
+            "forall (right_rref_law : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_row_operation_params!(concat!(
+            "forall (left_rref_law : Prop), ",
+            "forall (right_rref_law : Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_rref_uniqueness_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_row_operation_abs!(concat!(
+            "fun left_rref_law => fun right_rref_law => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_row_operation_abs!(concat!(
+            "fun left_rref_law => fun right_rref_law => ",
+            $tail
+        ))
     };
 }
 
@@ -31809,6 +32086,249 @@ const LINEAR_ALGEBRA_SYSTEMS_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_MATRIX_ELIMINATION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "MatrixSystemSolutionSet",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_system_params!(
+            "forall (solution : forall (j : Col), Scalar), Prop"
+        ),
+        value: linear_algebra_matrix_system_abs!(
+            "fun solution => forall (i : Row), @Eq.{u} Scalar (matrix_eval entries solution i) (rhs i)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "EchelonForm",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_form_params!("Prop"),
+        value: linear_algebra_matrix_form_abs!("form_law"),
+    },
+    DefinitionArtifact {
+        name: "ReducedRowEchelonForm",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_form_params!("Prop"),
+        value: linear_algebra_matrix_form_abs!("form_law"),
+    },
+    DefinitionArtifact {
+        name: "RowOperationPreservesSolutions",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_row_operation_params!("Prop"),
+        value: linear_algebra_row_operation_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), ",
+            "forall (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "RowReductionTraceEvidence",
+        universe_params: &["u", "v", "w", "x"],
+        ty: linear_algebra_row_reduction_trace_params!("Prop"),
+        value: linear_algebra_row_reduction_trace_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (trace_valid_evidence : trace_valid), ",
+            "forall (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GaussianEliminationCorrectnessEvidence",
+        universe_params: &["u", "v", "w", "x"],
+        ty: linear_algebra_gaussian_elimination_params!("Prop"),
+        value: linear_algebra_gaussian_elimination_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid), ",
+            "forall (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "RrefUniquenessEvidence",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_rref_uniqueness_params!("Prop"),
+        value: linear_algebra_rref_uniqueness_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law), ",
+            "forall (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law), ",
+            "forall (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), ",
+            "forall (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries), ",
+            "forall (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_MATRIX_ELIMINATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "matrix_system_solution_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_system_params!(
+            "forall (solution : forall (j : Col), Scalar), forall (h : forall (i : Row), @Eq.{u} Scalar (matrix_eval entries solution i) (rhs i)), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval entries rhs solution"
+        ),
+        proof: linear_algebra_matrix_system_abs!("fun solution => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "matrix_system_solution_eq_rhs",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_system_params!(
+            "forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval entries rhs solution), forall (i : Row), @Eq.{u} Scalar (matrix_eval entries solution i) (rhs i)"
+        ),
+        proof: linear_algebra_matrix_system_abs!("fun solution => fun h => fun i => h i"),
+    },
+    TheoremArtifact {
+        name: "echelon_form_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_form_params!(
+            "forall (h : form_law), @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col entries form_law"
+        ),
+        proof: linear_algebra_matrix_form_abs!("fun h => h"),
+    },
+    TheoremArtifact {
+        name: "reduced_row_echelon_form_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_form_params!(
+            "forall (h : form_law), @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col entries form_law"
+        ),
+        proof: linear_algebra_matrix_form_abs!("fun h => h"),
+    },
+    TheoremArtifact {
+        name: "row_operation_preserves_solutions_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_row_operation_params!(
+            "forall (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), forall (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs"
+        ),
+        proof: linear_algebra_row_operation_abs!(
+            "fun forward => fun backward => fun (P : Prop) => fun (mk : forall (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), forall (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), P) => mk forward backward"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_operation_preserves_solutions_forward",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_row_operation_params!(
+            "forall (preserves : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution"
+        ),
+        proof: linear_algebra_row_operation_abs!(
+            "fun preserves => fun solution => fun h => preserves (@MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution) (fun (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution) => fun (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution) => forward solution h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_operation_preserves_solutions_backward",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_row_operation_params!(
+            "forall (preserves : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution"
+        ),
+        proof: linear_algebra_row_operation_abs!(
+            "fun preserves => fun solution => fun h => preserves (@MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution) (fun (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution) => fun (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution) => backward solution h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_reduction_trace_evidence_intro",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_row_reduction_trace_params!(
+            "forall (trace_valid_evidence : trace_valid), forall (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid"
+        ),
+        proof: linear_algebra_row_reduction_trace_abs!(
+            "fun trace_valid_evidence => fun preserves_solution_set => fun (P : Prop) => fun (mk : forall (trace_valid_evidence : trace_valid), forall (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), P) => mk trace_valid_evidence preserves_solution_set"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_reduction_trace_preserves_solution_set",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_row_reduction_trace_params!(
+            "forall (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid), @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs"
+        ),
+        proof: linear_algebra_row_reduction_trace_abs!(
+            "fun trace_evidence => trace_evidence (@RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) (fun (trace_valid_evidence : trace_valid) => fun (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) => preserves_solution_set)"
+        ),
+    },
+    TheoremArtifact {
+        name: "gaussian_elimination_correctness_evidence_intro",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_gaussian_elimination_params!(
+            "forall (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid), forall (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law), @GaussianEliminationCorrectnessEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law"
+        ),
+        proof: linear_algebra_gaussian_elimination_abs!(
+            "fun trace_evidence => fun echelon_form => fun (P : Prop) => fun (mk : forall (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid), forall (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law), P) => mk trace_evidence echelon_form"
+        ),
+    },
+    TheoremArtifact {
+        name: "gaussian_elimination_trace_evidence",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_gaussian_elimination_params!(
+            "forall (evidence : @GaussianEliminationCorrectnessEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law), @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid"
+        ),
+        proof: linear_algebra_gaussian_elimination_abs!(
+            "fun evidence => evidence (@RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid) (fun (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid) => fun (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law) => trace_evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "gaussian_elimination_echelon_form",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_gaussian_elimination_params!(
+            "forall (evidence : @GaussianEliminationCorrectnessEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law), @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law"
+        ),
+        proof: linear_algebra_gaussian_elimination_abs!(
+            "fun evidence => evidence (@EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law) (fun (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid) => fun (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law) => echelon_form)"
+        ),
+    },
+    TheoremArtifact {
+        name: "gaussian_elimination_preserves_solution_set",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_gaussian_elimination_params!(
+            "forall (evidence : @GaussianEliminationCorrectnessEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law), @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs"
+        ),
+        proof: linear_algebra_gaussian_elimination_abs!(
+            "fun evidence => @row_reduction_trace_preserves_solution_set.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid (@gaussian_elimination_trace_evidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "gaussian_elimination_correctness",
+        universe_params: &["u", "v", "w", "x"],
+        statement: linear_algebra_gaussian_elimination_params!(
+            "forall (evidence : @GaussianEliminationCorrectnessEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law), @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs"
+        ),
+        proof: linear_algebra_gaussian_elimination_abs!(
+            "fun evidence => @gaussian_elimination_preserves_solution_set.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "rref_uniqueness_evidence_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_rref_uniqueness_params!(
+            "forall (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law), forall (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law), forall (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), forall (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries), forall (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)), @RrefUniquenessEvidence.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs left_rref_law right_rref_law"
+        ),
+        proof: linear_algebra_rref_uniqueness_abs!(
+            "fun left_rref => fun right_rref => fun same_solution_sets => fun unique_matrix => fun unique_rhs => fun (P : Prop) => fun (mk : forall (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law), forall (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law), forall (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), forall (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries), forall (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)), P) => mk left_rref right_rref same_solution_sets unique_matrix unique_rhs"
+        ),
+    },
+    TheoremArtifact {
+        name: "rref_unique_matrix",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_rref_uniqueness_params!(
+            "forall (evidence : @RrefUniquenessEvidence.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs left_rref_law right_rref_law), @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries"
+        ),
+        proof: linear_algebra_rref_uniqueness_abs!(
+            "fun evidence => evidence (@MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries) (fun (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law) => fun (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law) => fun (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) => fun (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries) => fun (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)) => unique_matrix)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rref_unique_rhs",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_rref_uniqueness_params!(
+            "forall (evidence : @RrefUniquenessEvidence.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs left_rref_law right_rref_law), forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)"
+        ),
+        proof: linear_algebra_rref_uniqueness_abs!(
+            "fun evidence => fun i => evidence (@Eq.{u} Scalar (source_rhs i) (target_rhs i)) (fun (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law) => fun (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law) => fun (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) => fun (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries) => fun (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)) => unique_rhs i)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rref_uniqueness_route",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_rref_uniqueness_params!(
+            "forall (evidence : @RrefUniquenessEvidence.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs left_rref_law right_rref_law), @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries"
+        ),
+        proof: linear_algebra_rref_uniqueness_abs!(
+            "fun evidence => @rref_unique_matrix.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs left_rref_law right_rref_law evidence"
+        ),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -39713,6 +40233,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LINEAR_ALGEBRA_MATRIX_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE.module
         || config.module == LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE.module
+        || config.module == LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
