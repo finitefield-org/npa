@@ -1,96 +1,122 @@
-# GitHub Actions Template Location
+# GitHub Actions Templates
 
-This directory is reserved for copyable external theorem library CI templates.
-It is intentionally outside `.github/workflows` so these files are not active
-local workflows for the `npa` repository.
+This directory contains copyable GitHub Actions templates for external NPA
+theorem package repositories. It is intentionally outside `.github/workflows`
+so the files are not active workflows for the `npa` repository itself.
 
-Template files:
+The templates help package authors run deterministic package checks with a
+pinned `npa` toolchain. They do not make CI status, GitHub release pages,
+package registry metadata, or uploaded artifacts part of proof acceptance.
 
-```text
-npa-package-pr.yml          available
-npa-package-release.yml     available
-npa-package-high-trust.yml  available
-summarize-npa-diagnostics.py available
-validate-workflows.py       available
-```
-
-CLR-07-03 adds the PR template. CLR-07-04 adds the base release template.
-CLR-08-06 adds the opt-in high-trust release template. The contract source is:
+## Files
 
 ```text
-doc/external-theorem-library-ci.md
+npa-package-pr.yml             pull request package checks
+npa-package-release.yml        release package checks
+npa-package-high-trust.yml     optional high-trust release extension
+setup-pinned-npa.sh            pinned npa setup helper
+summarize-npa-diagnostics.py   deterministic diagnostic summary helper
+validate-workflows.py          local workflow drift validator
 ```
 
-External theorem libraries should copy or reference templates from this
-directory. They should not copy local `npa` repository gates such as:
+External theorem libraries should copy the workflow files and helper scripts
+they use into the same paths referenced by the templates. Do not copy local
+`npa` repository development gates such as:
 
 ```sh
+scripts/check-fast.sh
+scripts/check-corpus-authoring.sh
+scripts/check-corpus-package.sh
+scripts/check-corpus-full.sh
 scripts/phase8-release-audit.sh
 scripts/phase9-regression.sh
 ```
 
-Those scripts are repository development gates, not external theorem library CI.
-CLR-09 should use `npa-package-pr.yml`, `npa-package-release.yml`,
-`summarize-npa-diagnostics.py`, and `validate-workflows.py` for the
-reference-checker-only seed release. Copy `npa-package-high-trust.yml` only
-after the seed repository also provides the pinned high-trust checker binary,
-runner policies, checker registry, and release audit evidence. If a seed
-repository installs workflow YAML under `.github/workflows/`, keep helper
-scripts at the path referenced by the templates or update the copied workflow
-paths in the same change.
+Those scripts test this repository's checker and regression fixtures. External
+theorem libraries should run package commands against their own package root.
+
+## Quick Start
+
+For the current package-author path, set these repository variables:
+
+```text
+NPA_GIT_TAG = v0.1.1
+RUST_TOOLCHAIN_VERSION = 1.95.0
+```
+
+Then copy:
+
+```text
+ci-templates/github-actions/npa-package-pr.yml
+ci-templates/github-actions/npa-package-release.yml
+ci-templates/github-actions/setup-pinned-npa.sh
+ci-templates/github-actions/summarize-npa-diagnostics.py
+ci-templates/github-actions/validate-workflows.py
+```
+
+Install the copied `npa-package-*.yml` files under `.github/workflows/` in the
+theorem package repository. Keep helper scripts under
+`ci-templates/github-actions/`, or update the helper script paths in the
+workflow YAML in the same change.
+
+The high-trust workflow is optional. Copy
+`npa-package-high-trust.yml` only after the package repository also provides
+the documented checker binary, runner policy, checker registry, and release
+audit evidence.
+
+## Trust Boundary
+
+CI is untrusted orchestration metadata. A passing workflow is useful review
+evidence, but proof acceptance remains:
+
+```text
+canonical .npcert bytes
+source-free reference checker or kernel verifier verdicts
+deterministic certificate, import, export, axiom-report, and index hashes
+```
+
+Fetching the pinned `npa` implementation or the pinned Rust toolchain is tool
+setup. Package workflows must not use registry lookup, latest-version
+resolution, hidden package caches, package dependency solvers, or network
+package fetching as proof acceptance input.
+
+Source-free verification may read package metadata, package locks, canonical
+certificate files, import certificates, and axiom policy. It must not trust
+`.npa` source files, replay files, tactic traces, AI traces, prompt metadata,
+theorem search indexes, registry network data, hidden caches, or plugins as
+proof evidence.
 
 ## Pinned Setup Inputs
 
-The base templates must fail unless the `npa` CLI source is explicit and
-pinned. They must not infer a floating `latest` version.
-
-Supported inputs:
+The setup helper requires exactly one pinned `npa` source:
 
 ```text
 NPA_BINARY_PATH
-  Path to an existing executable `npa` binary. This is the baseline setup mode
-  until concrete installer templates are added.
+  Path to an existing executable npa binary.
 
 NPA_VERSION
   Exact release version or release tag for a later release-download strategy.
-  `latest` is invalid.
+  This mode is currently rejected until release-download artifacts are added.
+  The value latest is invalid.
 
 NPA_GIT_TAG
-  Exact immutable Git tag for building `npa-cli`.
+  Exact immutable Git tag for building npa-cli.
 
 NPA_GIT_COMMIT
-  Full Git commit SHA for building `npa-cli`.
+  Full lowercase 40-hex Git commit SHA for building npa-cli.
 ```
 
-Exactly one of `NPA_BINARY_PATH`, `NPA_VERSION`, `NPA_GIT_TAG`, or
-`NPA_GIT_COMMIT` must be set. If none or multiple are set, setup fails before
-running package commands.
+If none or multiple are set, setup fails before running package commands.
 
-Baseline binary-path setup:
+When the helper builds `npa-cli` from `NPA_GIT_TAG` or `NPA_GIT_COMMIT`, it
+uses the exact `RUST_TOOLCHAIN_VERSION`. If the variable is unset, the helper
+defaults to:
 
-```sh
-test -n "${NPA_BINARY_PATH:-}" || {
-  echo "NPA_BINARY_PATH must point to a pinned npa binary" >&2
-  exit 2
-}
-test -x "$NPA_BINARY_PATH" || {
-  echo "NPA_BINARY_PATH is not executable: $NPA_BINARY_PATH" >&2
-  exit 2
-}
-"$NPA_BINARY_PATH" --version
+```text
+RUST_TOOLCHAIN_VERSION = 1.95.0
 ```
 
-`npa-package-pr.yml` reads `NPA_BINARY_PATH`, `NPA_VERSION`, `NPA_GIT_TAG`, and
-`NPA_GIT_COMMIT` from GitHub repository variables. For CLR-07-03 it accepts
-`NPA_BINARY_PATH` only and fails clearly if a later installer-mode variable is
-selected.
-
-`npa-package-release.yml` uses the same pinned source variables. For CLR-07-04
-it also accepts `NPA_BINARY_PATH` only and fails clearly if a later
-installer-mode variable is selected.
-
-When Rust is used to build `npa-cli`, templates must use a checked-in
-`rust-toolchain.toml` or exact `RUST_TOOLCHAIN_VERSION`, then print:
+The setup helper prints:
 
 ```sh
 npa --version
@@ -98,12 +124,13 @@ cargo --version
 rustc --version
 ```
 
-Fetching the pinned `npa` implementation or pinned Rust toolchain is tool
-setup. It is separate from theorem package dependency resolution and must not
-fetch theorem packages, package imports, registry metadata, or hidden package
-cache entries.
+`cargo --version` and `rustc --version` are printed only when Rust is used to
+build `npa-cli`.
 
-The base contract uses full-package package commands:
+## Package Commands
+
+All template package commands use explicit `--root .` so the package root is
+the checked-out theorem package repository. The base package command set is:
 
 ```sh
 npa package check --root . --json
@@ -114,115 +141,59 @@ npa package axiom-report --root . --check --json
 npa package index --root . --check --json
 ```
 
-`npa-package-pr.yml` is the PR-mode template. It runs the full package as the
-conservative changed-module fallback and saves command JSON to:
-
-```text
-ci-output/package-check.json
-ci-output/build-certs.json
-ci-output/check-hashes.json
-ci-output/verify-certs-reference.json
-ci-output/axiom-report.json
-ci-output/index.json
-```
-
-Validate workflow syntax with `actionlint` when it is installed:
-
-```sh
-actionlint ci-templates/github-actions/*.yml
-```
-
-If `actionlint` is unavailable, use a local YAML parser as a cheap syntax
-fallback. The validator uses PyYAML when available and Ruby's bundled YAML
-parser otherwise:
-
-```sh
-for workflow in ci-templates/github-actions/*.yml; do
-  ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0))' "$workflow"
-done
-```
-
-Run the local no-network validator to combine YAML parsing with package-command
-drift checks:
-
-```sh
-python3 ci-templates/github-actions/validate-workflows.py
-```
-
-The validator checks that PR and release workflows still contain the required
-full-package package commands, and that the opt-in high-trust workflow keeps
-the external checker, release audit validation, and `verified_high_trust`
-commands wired to explicit policy and checker-registry inputs. It also fails if
-any workflow adds unsupported changed/all selectors, registry or network
-package resolution, or implicit latest package resolution. External checker
-mode remains forbidden in the PR and base release workflows.
-Reference / external checker benchmark collection is likewise not a PR hot
-path requirement. The opt-in high-trust path may attach an external checker
-benchmark summary to the release audit bundle and fail release/high-trust
-policy from that regression evidence, but the benchmark summary does not change
-proof validity or any checker verdict.
-
-Release templates may add the fast verifier as a labeled non-reference gate:
+The release workflow also runs the fast verifier as a labeled non-reference
+gate:
 
 ```sh
 npa package verify-certs --root . --checker fast --json
 ```
 
-`npa-package-release.yml` runs package artifact checks, a fast-kernel
-source-free verification job, and a reference checker source-free verification
-job. Fast-kernel output is labeled fast-kernel and is not reported as reference
-checker success. The template uploads checked package artifacts, certificate
-artifacts, and JSON diagnostics; it does not upload AI traces, prompt metadata,
-host-specific caches, or environment dumps.
+Fast verifier output is labeled fast-kernel and must not be reported as
+reference checker success.
 
-Failure summaries use package command JSON diagnostics when
-`ci-templates/github-actions/summarize-npa-diagnostics.py` is copied with the
-workflow. The summary table is deterministic and intentionally limited to:
-
-```text
-file | command | status | exit_code | kind | reason_code | module | path | expected_hash | actual_hash
-```
-
-The table uses package-relative paths and omits raw runner stderr, absolute host
-paths, environment variables, and caches.
-
-Contributor failure mapping:
-
-| Diagnostic | Action |
-| --- | --- |
-| `source_hash_mismatch` | Review the source change, then update package metadata through the normal package update flow. Do not edit expected hashes blindly. |
-| `certificate_hash_mismatch` or `certificate_file_hash_mismatch` | Rebuild/check certificates explicitly, review the certificate and package-lock diffs, then rerun hash and verifier checks. |
-| `reference_checker_rejected` | Treat the `.npcert` as rejected proof evidence; fix the theorem or certificate generation path and rerun reference verification. |
-| `axiom_policy_rejected` or `axiom_report_policy_violation` | Remove the unapproved axiom dependency or update package axiom policy through review. |
-| `axiom_report_stale` or `axiom_report_hash_mismatch` | Regenerate `generated/axiom-report.json`, review the diff, then rerun `npa package axiom-report --root . --check --json`. |
-| `theorem_index_stale` or `theorem_index_hash_mismatch` | Regenerate `generated/theorem-index.json`, review the diff, then rerun `npa package index --root . --check --json`. |
-
-Theorem index and axiom report metadata are not proof evidence; they are derived
-review/search artifacts.
-
-The CLR-06 publish-plan check is optional. Set `NPA_ENABLE_PUBLISH_PLAN` to
-`true` and check in `generated/publish-plan.json` to run:
+Publish-plan checking is optional. Set `NPA_ENABLE_PUBLISH_PLAN` to `true` and
+check in `generated/publish-plan.json` to run:
 
 ```sh
 npa package publish-plan --root . --check --json
 ```
 
-Base CLR-07 templates must not add unsupported changed/all selectors, external
-checker mode, registry or network package resolution, or implicit latest
-package resolution. They must not contact an NPA package registry, use hidden
-package caches, or resolve imports by implicit latest version.
+Publish metadata is release review metadata, not proof evidence, and it does
+not imply a package registry server exists.
 
-CI output is not proof evidence. The proof boundary remains canonical
-certificate artifacts plus source-free checker or kernel verifier verdicts.
-Base CLR-07 templates remain reference-checker-only for PR acceptance and do
-not use registry access, a package solver, a binary cache, or implicit latest
-package resolution. Release base mode adds only the labeled fast-kernel gate.
+## Pull Request Workflow
 
-`npa-package-high-trust.yml` is the implemented opt-in high-trust extension,
-not a base-template requirement. It adds separate jobs for external checker
-source-free verification, high-trust-reference release audit validation, and
-`verified_high_trust` generation/check. It requires all of these inputs to be
-present before it runs verifier commands:
+`npa-package-pr.yml` is the pull request template. It:
+
+- checks out the theorem package repository;
+- locates or builds `npa` from exactly one pinned source;
+- runs the full package command set with explicit `--root .`;
+- saves deterministic JSON diagnostics under `ci-output/`;
+- fails on package validation, deterministic certificate build, hash,
+  source-free reference checker, axiom policy, or theorem index failures.
+
+The pull request workflow is the contributor hot path. It intentionally does
+not use changed-module selectors, external checker mode, registry lookup,
+network package resolution, hidden caches, or implicit latest package
+resolution.
+
+## Release Workflow
+
+`npa-package-release.yml` runs from a clean checkout at the release ref. It:
+
+- runs package artifact checks;
+- runs fast-kernel source-free verification;
+- runs reference checker source-free verification;
+- uploads checked package metadata, certificate artifacts, and JSON
+  diagnostics.
+
+The base release workflow does not require the external checker and does not
+emit high-trust release evidence.
+
+## High-Trust Extension
+
+`npa-package-high-trust.yml` is an optional release extension. It requires all
+of these inputs before verifier commands run:
 
 ```text
 NPA_CHECKER_EXT_BINARY_PATH
@@ -246,7 +217,7 @@ npa package verify-certs --root . --checker external \
   --json
 ```
 
-The template also runs:
+The high-trust workflow also runs:
 
 ```sh
 npa package high-trust --root . \
@@ -262,28 +233,79 @@ npa package high-trust --root . \
   --json
 ```
 
-That extension requires a pinned built `npa-checker-ext` executable in the fresh
-checkout, plus runner-owned policy and checker registry entries that validate
-binary identity and hash. The source-free boundary stays the same: the checker
-path reads package metadata, package lock, canonical certificates, import
-certificates, runner policy, checker registry, checker executable bytes, and
-axiom policy, not `.npa` source, replay/meta files, theorem index, AI traces,
-registry network data, hidden caches, or plugins.
+`verified_high_trust` is generated only after external checker and
+high-trust-reference release audit evidence exists. It must not be emitted from
+reference-checker-only release evidence.
 
-`verified_high_trust` is generated by `npa package high-trust` only after
-external and high-trust-reference release audit evidence exists. It must not be
-emitted from reference-checker-only release evidence.
-External checker benchmark rows are release audit metadata: they record checker
-identity, certificate hash, module, timing, timeout/memory limits, result hash,
-and run artifact hash so release audit can link the benchmark to the saved
-checker result.
+## Diagnostics
 
-High-trust failure mapping:
+Failure summaries use package command JSON diagnostics when
+`summarize-npa-diagnostics.py` is copied with the workflows. The summary table
+is deterministic and intentionally limited to:
+
+```text
+file | command | status | exit_code | kind | reason_code | module | path | expected_hash | actual_hash
+```
+
+The table uses package-relative paths and omits raw runner stderr, absolute
+host paths, environment variables, and caches.
+
+Common diagnostic actions:
 
 | Diagnostic | Action |
 | --- | --- |
-| missing `NPA_CHECKER_EXT_BINARY_PATH`, missing `ci/checker-binaries.json`, or `checker_binary_file_unreadable` | Pin a built `npa-checker-ext` executable in the fresh checkout and add the matching checker registry entry. Do not fall back to a runner cache. |
-| `checker_binary_hash_mismatch`, `checker_identity_mismatch`, or `checker_build_hash_mismatch` | Treat the checker binary as changed release evidence. Review the binary build provenance, then update runner policy and checker identity metadata in the same review. |
-| `not_verified`, `checker_disagreement`, `status_disagreement`, or normalized comparison failure | Inspect the saved external and release audit JSON. Fix the certificate/checker disagreement; do not relabel fast-kernel or reference output as external success. |
-| failed external checker benchmark policy | Treat it as release/high-trust regression evidence. Review thresholds and machine provenance, then update policy or evidence without changing the saved checker verdicts. |
-| failed `import_certificate_hash` auxiliary result | Regenerate the high-trust import certificate hash auxiliary evidence from the intended import lock and rerun `npa package high-trust --check`. |
+| `source_hash_mismatch` | Review the source change, then update package metadata through the normal package update flow. Do not edit expected hashes blindly. |
+| `certificate_hash_mismatch` or `certificate_file_hash_mismatch` | Rebuild/check certificates explicitly, review the certificate and package-lock diffs, then rerun hash and verifier checks. |
+| `reference_checker_rejected` | Treat the `.npcert` as rejected proof evidence; fix the theorem or certificate generation path and rerun reference verification. |
+| `axiom_policy_rejected` or `axiom_report_policy_violation` | Remove the unapproved axiom dependency or update package axiom policy through review. |
+| `axiom_report_stale` or `axiom_report_hash_mismatch` | Regenerate `generated/axiom-report.json`, review the diff, then rerun `npa package axiom-report --root . --check --json`. |
+| `theorem_index_stale` or `theorem_index_hash_mismatch` | Regenerate `generated/theorem-index.json`, review the diff, then rerun `npa package index --root . --check --json`. |
+
+Theorem index and axiom report metadata are derived review/search artifacts.
+They are not proof evidence.
+
+## Local Validation
+
+Validate workflow syntax with `actionlint` when it is installed:
+
+```sh
+actionlint ci-templates/github-actions/*.yml
+```
+
+If `actionlint` is unavailable, use Ruby's bundled YAML parser as a cheap
+syntax fallback:
+
+```sh
+for workflow in ci-templates/github-actions/*.yml; do
+  ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0))' "$workflow"
+done
+```
+
+Run the local no-network validator to combine YAML parsing with package-command
+drift checks:
+
+```sh
+python3 ci-templates/github-actions/validate-workflows.py
+```
+
+The validator checks that workflows still contain the required package
+commands. It also fails if a workflow adds unsupported changed/all selectors,
+registry lookup, network package resolution, implicit latest package
+resolution, or unsupported external checker mode in the base workflows.
+
+## Explicit Exclusions
+
+Base package workflows must not:
+
+- use `--changed`;
+- use `--all`;
+- use `--registry`;
+- use `--network`;
+- use `--latest`;
+- require external checker mode;
+- contact an NPA package registry;
+- use hidden package caches;
+- use a package dependency solver;
+- resolve imports by implicit latest version;
+- treat CI output, release pages, registry metadata, source files, replay
+  files, theorem indexes, or AI traces as proof evidence.

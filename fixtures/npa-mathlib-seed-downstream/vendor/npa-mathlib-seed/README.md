@@ -1,5 +1,10 @@
 # Vendored seed artifact
 
+Visibility: internal vendored-artifact fixture note.
+
+This directory is part of the local `npa-mathlib-seed-downstream` regression
+fixture. It is not public package-author guidance.
+
 This directory contains only certificate artifacts copied from the
 `npa-mathlib-seed` release artifact set.
 

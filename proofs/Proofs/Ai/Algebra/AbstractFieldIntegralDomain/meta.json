@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFieldIntegralDomain",
+  "source": "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:904cacc06ff0cb5f293f590bb925949ce1a455d72d63a21570aa1f4e4c7bc9c9",
+  "certificate_file_sha256": "sha256:f85c0d1275a43e0fbbad2a8f34a4e19ec0aa7e4fb641180017b73fe161db349d",
+  "export_hash": "sha256:aacad97a9d7d21f7c2249a366480b85c8be2a519d1495d50764caae2e58d6526",
+  "axiom_report_hash": "sha256:176cebfca05407324e6b04ffe0cb2ca0418f97bbd5ffae1191cd224272be909c",
+  "certificate_hash": "sha256:0cf122a8f4caaa416de58ba218b49636bdafbba40a41f996b5c5e3bfcb090429",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "field_no_zero_divisors", "kind": "theorem" },
+    { "name": "field_integral_domain_laws", "kind": "theorem" },
+    { "name": "field_nonzero_product_left", "kind": "theorem" },
+    { "name": "field_nonzero_product_right", "kind": "theorem" },
+    { "name": "field_mul_eq_zero_elim", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

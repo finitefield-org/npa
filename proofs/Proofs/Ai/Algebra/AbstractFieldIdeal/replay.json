@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFieldIdeal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FieldIdealZeroOrTop",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun I => forall (P : Prop), forall (on_zero : forall (zero_case : forall (x : Scalar), forall (hI : I x), @Eq.{u} Scalar x zero), P), forall (on_top : forall (top_case : forall (x : Scalar), I x), P), P"
+    },
+    {
+      "declaration": "FieldSimpleRingEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => forall (Q : Prop), forall (mk : forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (ideal_zero_or_top : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I), forall (proper_ideal_zero : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), forall (proper : @ProperIdeal.{u} Scalar one I), forall (x : Scalar), forall (hI : I x), @Eq.{u} Scalar x zero), Q), Q"
+    },
+    {
+      "declaration": "FieldIdealLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => forall (Q : Prop), forall (mk : forall (ideal_zero_or_top_law : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I), forall (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args), Q), Q"
+    },
+    {
+      "declaration": "MaximalIdealQuotientFieldArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => fun field_args => forall (Q : Prop), forall (mk : forall (quotient_by_maximal_law : forall (M : forall (x : Scalar), Prop), forall (maximal : @MaximalIdeal.{succ u} Scalar zero one add neg mul M), forall (quotient_ring_laws : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M x), P), P), forall (first_iso_to_image : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws quotient_map_hom), @FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), Q), Q"
+    },
+    {
+      "declaration": "field_ideal_zero_or_top",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => fun ideal_bridge => fun I => fun ideal_laws => ideal_bridge (@FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I) (fun (ideal_zero_or_top_law : forall (J : forall (x : Scalar), Prop), forall (J_laws : @IdealLawArgs.{u} Scalar zero add neg mul J), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv J) => fun (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) => ideal_zero_or_top_law I ideal_laws)"
+    },
+    {
+      "declaration": "field_simple_ring_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun field_args => fun ideal_bridge => ideal_bridge (@FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) (fun (ideal_zero_or_top_law : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I) => fun (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) => simple_ring_law)"
+    },
+    {
+      "declaration": "quotient_by_maximal_ideal_is_field",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => fun field_args => fun quotient_bridge => fun M => fun maximal => fun quotient_ring_laws => fun quotient_map_hom => fun kernel_exact => fun first_iso_to_image => quotient_bridge (@FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) (fun (quotient_by_maximal_law : forall (M_arg : forall (x : Scalar), Prop), forall (maximal_arg : @MaximalIdeal.{succ u} Scalar zero one add neg mul M_arg), forall (quotient_ring_laws_arg : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom_arg : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact_arg : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M_arg x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M_arg x), P), P), forall (first_iso_to_image_arg : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws_arg quotient_map_hom_arg), @FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) => quotient_by_maximal_law M maximal quotient_ring_laws quotient_map_hom kernel_exact first_iso_to_image)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractFieldIdeal/certificate.npcert"
+  }
+}

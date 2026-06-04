@@ -7,13 +7,18 @@ use std::process::Command;
 const MANIFEST_PATH: &str = "manifest.toml";
 const PACKAGE_MANIFEST_PATH: &str = "npa-package.toml";
 const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
+const PACKAGE_AXIOM_REPORT_PATH: &str = "generated/axiom-report.json";
+const PACKAGE_THEOREM_INDEX_PATH: &str = "generated/theorem-index.json";
+const PACKAGE_PUBLISH_PLAN_PATH: &str = "generated/publish-plan.json";
 const AI_THEOREM_INDEX_PATH: &str = "generated/ai-theorem-index.json";
 const PROOF_CORPUS_PACKAGE: &str = "npa-proof-corpus";
 const PROOF_CORPUS_VERSION: &str = "0.1.0";
-const PROOF_CORPUS_LICENSE: &str = "MIT";
+const PROOF_CORPUS_LICENSE: &str = "Apache-2.0";
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
 const NPA_STD_PACKAGE: &str = "npa-std";
 const NPA_STD_VERSION: &str = "0.1.0";
+const VERIFIED_CACHE_SCHEMA: &str = "npa-proof-corpus.verified-cache.v0.1";
+const VERIFIED_CACHE_LAYOUT_DIR: &str = "target/npa-proof-cache/verified-v0.1";
 const EXTERNAL_STD_IMPORT_PLANS: &[ExternalImportPlan] = &[
     ExternalImportPlan {
         module: "Std.Logic.Eq",
@@ -80,6 +85,7 @@ struct GeneratedModule {
     source_interface: npa_frontend::HumanImportedSourceInterface,
 }
 
+#[derive(Clone)]
 struct ModuleMeta {
     config: &'static ModuleArtifact,
     source_sha256: String,
@@ -140,13 +146,17 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE,
     &ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE,
     &ABSTRACT_RING_MODULE,
+    &ABSTRACT_FIELD_MODULE,
     &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
+    &ABSTRACT_FIELD_HOM_MODULE,
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
+    &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
     &ABSTRACT_KRULL_THEOREM_MODULE,
+    &ABSTRACT_FIELD_IDEAL_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -154,6 +164,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &TOR_EXT_MODULE,
     &COTANGENT_COMPLEX_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
+    &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
     &ABSTRACT_SCALAR_DERIVE_MODULE,
     &ABSTRACT_VECTOR_SPACE_MODULE,
@@ -176,15 +187,22 @@ const MODULES: &[&ModuleArtifact] = &[
     &PYTHAGOREAN_MODULE,
 ];
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct VerifyOptions {
     modules: Vec<String>,
     changed_only: bool,
     shard: Option<Shard>,
     failures_out: Option<PathBuf>,
+    verified_cache: VerifiedCacheMode,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Default)]
+struct BuildOptions {
+    requested_modules: Vec<String>,
+    failures_out: Option<PathBuf>,
+}
+
+#[derive(Clone, Copy, Debug)]
 struct Shard {
     index: usize,
     total: usize,
@@ -193,6 +211,168 @@ struct Shard {
 struct VerifyFailure {
     module: String,
     error: String,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum VerifiedCacheMode {
+    #[default]
+    Off,
+    Authoring,
+    ReadThrough,
+}
+
+#[derive(Clone, Debug)]
+struct PromotePlanOptions {
+    corpus_module: String,
+    mathlib_root_arg: PathBuf,
+    mathlib_root: PathBuf,
+    target_module: String,
+    out_arg: PathBuf,
+    out: PathBuf,
+}
+
+#[derive(Clone, Debug)]
+struct PromoteMaterializeOptions {
+    plan_arg: PathBuf,
+    plan: PathBuf,
+    mathlib_root_arg: PathBuf,
+    mathlib_root: PathBuf,
+    mode: PromoteMaterializeMode,
+    compat_alias: Option<CompatibilityAliasDecision>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PromoteMaterializeMode {
+    DryRun,
+    Apply,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CompatibilityAliasDecision {
+    None,
+}
+
+struct PromotionEvidence {
+    label: String,
+    path: String,
+    status: &'static str,
+    detail: String,
+}
+
+#[derive(Clone, Debug)]
+struct PromotionPlanMapping {
+    corpus_module: String,
+    target_module: String,
+    import_mapping: BTreeMap<String, String>,
+    alias_resolved_in_plan: bool,
+}
+
+struct MaterializedPromotion {
+    corpus_module: String,
+    target_module: String,
+    changes: Vec<MaterializeChange>,
+    gate_commands: Vec<String>,
+}
+
+struct MaterializedModuleArtifact {
+    module: String,
+    source_path: String,
+    certificate_path: String,
+    meta_path: String,
+    replay_path: String,
+    source: String,
+    certificate_bytes: Vec<u8>,
+    meta: String,
+    replay: String,
+    source_sha256: String,
+    certificate_file_sha256: String,
+    export_hash: String,
+    axiom_report_hash: String,
+    certificate_hash: String,
+    imports: Vec<String>,
+    axioms: Vec<String>,
+}
+
+struct MaterializeChange {
+    kind: &'static str,
+    path: PathBuf,
+    action: MaterializeAction,
+    bytes: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MaterializeAction {
+    Create,
+    Update,
+    Unchanged,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct VerifiedCacheImportIdentity {
+    module: String,
+    export_hash: String,
+    certificate_hash: String,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct VerifiedCacheDependencyIdentity {
+    module: String,
+    certificate_file_hash: String,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct VerifiedCacheKeyInput {
+    schema: String,
+    core_spec: String,
+    certificate_format: String,
+    kernel_profile: String,
+    verifier_profile: String,
+    binary_build_identity: String,
+    module: String,
+    certificate_hash: String,
+    certificate_file_hash: String,
+    direct_imports: Vec<VerifiedCacheImportIdentity>,
+    import_closure_certificate_file_hashes: Vec<VerifiedCacheDependencyIdentity>,
+    axiom_policy_fingerprint: String,
+    enabled_core_features: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct VerifiedCacheEntry {
+    schema: String,
+    cache_key: String,
+    key_input: VerifiedCacheKeyInput,
+    module: String,
+    export_hash: String,
+    certificate_hash: String,
+    module_axioms: Vec<String>,
+    core_features: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum VerifiedCacheSchemaStatus {
+    Current,
+    Miss,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum VerifiedCacheLookupStatus {
+    Hit,
+    Miss,
+    SchemaMiss,
+    Stale,
+}
+
+#[derive(Clone, Debug)]
+struct VerifiedCacheLookup {
+    status: VerifiedCacheLookupStatus,
+    path: PathBuf,
+    source: Option<String>,
 }
 
 struct VerifiedCorpusCache<'a> {
@@ -1080,6 +1260,19 @@ const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractField",
+    source_path: "Proofs/Ai/Algebra/AbstractField/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractField/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractField/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractField/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_RING_FIRST_ISO_BASE_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
     source_path: "Proofs/Ai/Algebra/AbstractRingFirstIsoBase/source.npa",
@@ -1100,6 +1293,30 @@ const ABSTRACT_RING_FIRST_ISO_BASE_MODULE: ModuleArtifact = ModuleArtifact {
     definitions: ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS,
     theorems: ABSTRACT_RING_FIRST_ISO_BASE_THEOREMS,
     expected_axioms: &["Eq.rec"],
+};
+
+const ABSTRACT_FIELD_HOM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldHom",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldHom/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldHom/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldHom/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldHom/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_HOM_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_HOM_THEOREMS,
+    expected_axioms: &[],
 };
 
 const ABSTRACT_RING_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
@@ -1164,6 +1381,25 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldIntegralDomain",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_INTEGRAL_DOMAIN_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_INTEGRAL_DOMAIN_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
     source_path: "Proofs/Ai/Algebra/AbstractHilbertBasisTheorem/source.npa",
@@ -1209,6 +1445,36 @@ const ABSTRACT_KRULL_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
     definitions: ABSTRACT_KRULL_THEOREM_DEFINITIONS,
     theorems: ABSTRACT_KRULL_THEOREM_THEOREMS,
     expected_axioms: &[],
+};
+
+const ABSTRACT_FIELD_IDEAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldIdeal",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldIdeal/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_IDEAL_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_IDEAL_THEOREMS,
+    expected_axioms: &["Eq.rec"],
 };
 
 const DERIVED_AFFINE_SCHEMES_MODULE: ModuleArtifact = ModuleArtifact {
@@ -1307,6 +1573,24 @@ const ABSTRACT_ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_ORDERED_FIELD_DEFINITIONS,
     theorems: ABSTRACT_ORDERED_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+    source_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractOrderedFieldFieldBridge/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_DEFINITIONS,
+    theorems: ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -1598,6 +1882,117 @@ macro_rules! abstract_ring_abs {
     };
 }
 
+macro_rules! abstract_field_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_quotient_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort succ u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (Quot : Sort succ v), ",
+            "forall (zeroQ : Quot), ",
+            "forall (oneQ : Quot), ",
+            "forall (addQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (negQ : forall (a : Quot), Quot), ",
+            "forall (subQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (mulQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (invQ : forall (a : Quot), Quot), ",
+            "forall (quotient_map : forall (x : Scalar), Quot), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_quotient_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_hom_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (R : Sort u), ",
+            "forall (zeroR : R), ",
+            "forall (oneR : R), ",
+            "forall (addR : forall (a : R), forall (b : R), R), ",
+            "forall (negR : forall (a : R), R), ",
+            "forall (subR : forall (a : R), forall (b : R), R), ",
+            "forall (mulR : forall (a : R), forall (b : R), R), ",
+            "forall (invR : forall (a : R), R), ",
+            "forall (S : Sort v), ",
+            "forall (zeroS : S), ",
+            "forall (oneS : S), ",
+            "forall (addS : forall (a : S), forall (b : S), S), ",
+            "forall (negS : forall (a : S), S), ",
+            "forall (subS : forall (a : S), forall (b : S), S), ",
+            "forall (mulS : forall (a : S), forall (b : S), S), ",
+            "forall (invS : forall (a : S), S), ",
+            "forall (f : forall (a : R), S), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_field_hom_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => ",
+            $tail
+        )
+    };
+}
+
 macro_rules! abstract_ordered_field_params {
     ($tail:literal) => {
         concat!(
@@ -1626,6 +2021,40 @@ macro_rules! abstract_ordered_field_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ordered_field_field_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ordered_field_field_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => ",
             $tail
         )
     };
@@ -7259,10 +7688,11 @@ macro_rules! abstract_ordered_inner_product_abs {
     };
 }
 
-macro_rules! ring_args_elim {
-    ($target:literal, $($tail:tt)+) => {
+macro_rules! ring_args_elim_from {
+    ($args:literal, $target:literal, $($tail:tt)+) => {
         concat!(
-            "ring_args ",
+            $args,
+            " ",
             $target,
             " ",
             "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
@@ -7290,6 +7720,52 @@ macro_rules! ring_args_elim {
             "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
             "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
             "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! ring_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        ring_args_elim_from!("ring_args", $target, $($tail)+)
+    };
+}
+
+macro_rules! field_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "field_args (",
+            $target,
+            ") ",
+            "(fun (ring_laws_arg : @RingLawArgs.{u} Scalar zero one add neg sub mul) => ",
+            "fun (zero_ne_one_arg : @Nonzero.{u} Scalar zero one) => ",
+            "fun (inv_mul_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one) => ",
+            "fun (mul_inv_cancel_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one) => ",
+            "fun (inv_one_arg : @Eq.{u} Scalar (inv one) one) => ",
+            "fun (div_one_arg : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a) => ",
+            "fun (div_self_nonzero_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one) => ",
+            "fun (zero_div_arg : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero) => ",
+            "fun (mul_left_cancel_nonzero_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul a b) (mul a c)), @Eq.{u} Scalar b c) => ",
+            "fun (mul_right_cancel_nonzero_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul b a) (mul c a)), @Eq.{u} Scalar b c) => ",
+            "fun (nonzero_mul_closed_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (hb : @Nonzero.{u} Scalar zero b), @Nonzero.{u} Scalar zero (mul a b)) => ",
+            "fun (mul_eq_zero_cases_arg : forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! field_hom_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "field_hom_args (",
+            $target,
+            ") ",
+            "(fun (ring_hom_arg : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) => ",
+            "fun (hom_inv_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))) => ",
+            "fun (hom_div_arg : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) => ",
+            "fun (hom_preserves_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)) => ",
             $($tail)+,
             ")"
         )
@@ -7324,6 +7800,24 @@ macro_rules! ordered_args_elim {
             "fun (le_of_sq_le_sq_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b) => ",
             "fun (le_mul_sqrt_of_sq_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))) => ",
             "fun (add_two_mul_le_sq_add_sqrt_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))) => ",
+            $($tail)+,
+            ")"
+        )
+    };
+}
+
+macro_rules! ordered_field_field_bridge_args_elim {
+    ($target:literal, $($tail:tt)+) => {
+        concat!(
+            "bridge_args (",
+            $target,
+            ") ",
+            "(fun (field_laws_arg : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (nonzero_of_positive_arg : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Nonzero.{u} Scalar zero a) => ",
+            "fun (inv_positive_arg : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Positive.{u} Scalar zero lt_rel (inv a)) => ",
+            "fun (div_positive_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)) => ",
+            "fun (mul_pos_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (mul a b)) => ",
+            "fun (sq_pos_of_nonzero_arg : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)) => ",
             $($tail)+,
             ")"
         )
@@ -22980,6 +23474,316 @@ const ABSTRACT_RING_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldFalse",
+        universe_params: &[],
+        ty: "Prop",
+        value: "forall (P : Prop), P",
+    },
+    DefinitionArtifact {
+        name: "FieldNot",
+        universe_params: &[],
+        ty: "forall (P : Prop), Prop",
+        value: "fun P => forall (p : P), FieldFalse",
+    },
+    DefinitionArtifact {
+        name: "Nonzero",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (a : Scalar), ",
+            "Prop"
+        ),
+        value: "fun Scalar => fun zero => fun a => FieldNot (@Eq.{u} Scalar a zero)",
+    },
+    DefinitionArtifact {
+        name: "div",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "Scalar"
+        ),
+        value: "fun Scalar => fun mul => fun inv => fun a => fun b => mul a (inv b)",
+    },
+    DefinitionArtifact {
+        name: "FieldLawArgs",
+        universe_params: &["u"],
+        ty: abstract_field_params!("Prop"),
+        value: abstract_field_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), ",
+            "forall (zero_ne_one_law : @Nonzero.{u} Scalar zero one), ",
+            "forall (inv_mul_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one), ",
+            "forall (mul_inv_cancel_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one), ",
+            "forall (inv_one_law : @Eq.{u} Scalar (inv one) one), ",
+            "forall (div_one_law : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a), ",
+            "forall (div_self_nonzero_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one), ",
+            "forall (zero_div_law : forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero), ",
+            "forall (mul_left_cancel_nonzero_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul a b) (mul a c)), @Eq.{u} Scalar b c), ",
+            "forall (mul_right_cancel_nonzero_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul b a) (mul c a)), @Eq.{u} Scalar b c), ",
+            "forall (nonzero_mul_closed_law : forall (a : Scalar), forall (b : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (hb : @Nonzero.{u} Scalar zero b), @Nonzero.{u} Scalar zero (mul a b)), ",
+            "forall (mul_eq_zero_cases_law : forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_ring_laws",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @RingLawArgs.{u} Scalar zero one add neg sub mul"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            field_args_elim!(
+                "@RingLawArgs.{u} Scalar zero one add neg sub mul",
+                "ring_laws_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_zero_ne_one",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @Nonzero.{u} Scalar zero one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            field_args_elim!("@Nonzero.{u} Scalar zero one", "zero_ne_one_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "field_inv_mul_cancel",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul (inv a) a) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun ha => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (mul (inv a) a) one",
+                "inv_mul_cancel_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_inv_cancel",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (mul a (inv a)) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun ha => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (mul a (inv a)) one",
+                "mul_inv_cancel_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_div_eq_mul_inv",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "@Eq.{u} Scalar (@div.{u} Scalar mul inv a b) (mul a (inv b))"
+        ),
+        proof: concat!(
+            "fun Scalar => fun mul => fun inv => fun a => fun b => ",
+            "@Eq.refl.{u} Scalar (mul a (inv b))"
+        ),
+    },
+    TheoremArtifact {
+        name: "field_inv_one",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @Eq.{u} Scalar (inv one) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            field_args_elim!("@Eq.{u} Scalar (inv one) one", "inv_one_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "field_div_one",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (@div.{u} Scalar mul inv a one) a",
+                "div_one_arg a"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_div_self_nonzero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun ha => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (@div.{u} Scalar mul inv a a) one",
+                "div_self_nonzero_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_zero_div",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), @Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar (@div.{u} Scalar mul inv zero a) zero",
+                "zero_div_arg a"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_left_cancel_nonzero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul a b) (mul a c)), @Eq.{u} Scalar b c"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun c => fun ha => fun h => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar b c",
+                "mul_left_cancel_nonzero_arg a b c ha h"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_right_cancel_nonzero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (h : @Eq.{u} Scalar (mul b a) (mul c a)), @Eq.{u} Scalar b c"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun c => fun ha => fun h => ",
+            field_args_elim!(
+                "@Eq.{u} Scalar b c",
+                "mul_right_cancel_nonzero_arg a b c ha h"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_nonzero_mul_closed",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), forall (hb : @Nonzero.{u} Scalar zero b), @Nonzero.{u} Scalar zero (mul a b)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun ha => fun hb => ",
+            field_args_elim!(
+                "@Nonzero.{u} Scalar zero (mul a b)",
+                "nonzero_mul_closed_arg a b ha hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_eq_zero_cases",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hzero => fun P => fun left_case => fun right_case => ",
+            field_args_elim!(
+                "P",
+                "mul_eq_zero_cases_arg a b hzero P left_case right_case"
+            )
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_HOM_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "FieldHomLawArgs",
+    universe_params: &["u", "v"],
+    ty: abstract_field_hom_params!("Prop"),
+    value: abstract_field_hom_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        "forall (ring_hom_law : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f), ",
+        "forall (hom_inv_nonzero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))), ",
+        "forall (hom_div_law : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))), ",
+        "forall (hom_preserves_nonzero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)), P), P"
+    )),
+}];
+
+const ABSTRACT_FIELD_HOM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_hom_as_ring_hom",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => ",
+            field_hom_args_elim!(
+                "@RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f",
+                "ring_hom_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_inv_of_nonzero",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun ha => ",
+            field_hom_args_elim!(
+                "@Eq.{v} S (f (invR a)) (invS (f a))",
+                "hom_inv_nonzero_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_div",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun b => fun hb => ",
+            field_hom_args_elim!(
+                "@Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))",
+                "hom_div_arg a b hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_preserves_nonzero",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun ha => ",
+            field_hom_args_elim!(
+                "@Nonzero.{v} S zeroS (f a)",
+                "hom_preserves_nonzero_arg a ha"
+            )
+        )),
+    },
+];
+
 const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "RingHomLawArgs",
@@ -23318,7 +24122,7 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS: &[DefinitionArtifact] = &[
         value: "",
     },
     DefinitionArtifact {
-        name: "Nonzero",
+        name: "UfdNonzero",
         universe_params: &[],
         ty: "",
         value: "",
@@ -23484,6 +24288,187 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_INTEGRAL_DOMAIN_DEFINITIONS: &[DefinitionArtifact] = &[];
+
+const ABSTRACT_FIELD_INTEGRAL_DOMAIN_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_no_zero_divisors",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), UfdOr (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hzero => ",
+            "@field_mul_eq_zero_cases.{u} Scalar zero one add neg sub mul inv field_args a b hzero ",
+            "(UfdOr (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero)) ",
+            "(fun (ha : @Eq.{u} Scalar a zero) => @ufd_or_inl (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero) ha) ",
+            "(fun (hb : @Eq.{u} Scalar b zero) => @ufd_or_inr (@Eq.{u} Scalar a zero) (@Eq.{u} Scalar b zero) hb)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_integral_domain_laws",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), @IntegralDomainLawArgs.{u} Scalar zero one add neg sub mul"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => ",
+            "@integral_domain_law_args_intro.{u} Scalar zero one add neg sub mul ",
+            "(@field_ring_laws.{u} Scalar zero one add neg sub mul inv field_args) ",
+            "(fun (hzeroone : @Eq.{u} Scalar zero one) => ((@field_zero_ne_one.{u} Scalar zero one add neg sub mul inv field_args) (@eq_symm.{u} Scalar zero one hzeroone)) UfdFalse) ",
+            "(@field_no_zero_divisors.{u} Scalar zero one add neg sub mul inv field_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_nonzero_product_left",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hprod : UfdNot (@Eq.{u} Scalar (mul a b) zero)), UfdNot (@Eq.{u} Scalar a zero)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hprod => fun (ha : @Eq.{u} Scalar a zero) => ",
+            field_args_elim!(
+                "UfdFalse",
+                ring_args_elim_from!(
+                    "ring_laws_arg",
+                    "UfdFalse",
+                    "hprod (@eq_trans.{u} Scalar (mul a b) (mul zero b) zero ",
+                    "(@eq_congr2.{u,u,u} Scalar Scalar Scalar mul a zero b b ha (@Eq.refl.{u} Scalar b)) ",
+                    "(zero_mul_arg b))"
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_nonzero_product_right",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hprod : UfdNot (@Eq.{u} Scalar (mul a b) zero)), UfdNot (@Eq.{u} Scalar b zero)"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hprod => fun (hb : @Eq.{u} Scalar b zero) => ",
+            field_args_elim!(
+                "UfdFalse",
+                ring_args_elim_from!(
+                    "ring_laws_arg",
+                    "UfdFalse",
+                    "hprod (@eq_trans.{u} Scalar (mul a b) (mul a zero) zero ",
+                    "(@eq_congr2.{u,u,u} Scalar Scalar Scalar mul a a b zero (@Eq.refl.{u} Scalar a) hb) ",
+                    "(mul_zero_arg a))"
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "field_mul_eq_zero_elim",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (a : Scalar), forall (b : Scalar), forall (hzero : @Eq.{u} Scalar (mul a b) zero), forall (P : Prop), forall (left_case : forall (ha : @Eq.{u} Scalar a zero), P), forall (right_case : forall (hb : @Eq.{u} Scalar b zero), P), P"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun a => fun b => fun hzero => fun P => fun left_case => fun right_case => ",
+            "@field_mul_eq_zero_cases.{u} Scalar zero one add neg sub mul inv field_args a b hzero P left_case right_case"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_IDEAL_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldIdealZeroOrTop",
+        universe_params: &["u"],
+        ty: abstract_field_params!("forall (I : forall (x : Scalar), Prop), Prop"),
+        value: abstract_field_abs!(concat!(
+            "fun I => forall (P : Prop), ",
+            "forall (on_zero : forall (zero_case : forall (x : Scalar), forall (hI : I x), @Eq.{u} Scalar x zero), P), ",
+            "forall (on_top : forall (top_case : forall (x : Scalar), I x), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldSimpleRingEvidence",
+        universe_params: &["u"],
+        ty: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), Prop"
+        ),
+        value: abstract_field_abs!(concat!(
+            "fun field_args => forall (Q : Prop), forall (mk : ",
+            "forall (ring_laws : @RingLawArgs.{u} Scalar zero one add neg sub mul), ",
+            "forall (ideal_zero_or_top : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I), ",
+            "forall (proper_ideal_zero : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), forall (proper : @ProperIdeal.{u} Scalar one I), forall (x : Scalar), forall (hI : I x), @Eq.{u} Scalar x zero), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldIdealLawArgs",
+        universe_params: &["u"],
+        ty: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), Prop"
+        ),
+        value: abstract_field_abs!(concat!(
+            "fun field_args => forall (Q : Prop), forall (mk : ",
+            "forall (ideal_zero_or_top_law : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I), ",
+            "forall (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MaximalIdealQuotientFieldArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{succ u} Scalar zero one add neg sub mul inv), Prop"
+        ),
+        value: abstract_field_quotient_abs!(concat!(
+            "fun field_args => forall (Q : Prop), forall (mk : ",
+            "forall (quotient_by_maximal_law : forall (M : forall (x : Scalar), Prop), ",
+            "forall (maximal : @MaximalIdeal.{succ u} Scalar zero one add neg mul M), ",
+            "forall (quotient_ring_laws : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), ",
+            "forall (quotient_map_hom : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), ",
+            "forall (kernel_exact : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M x), P), P), ",
+            "forall (first_iso_to_image : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws quotient_map_hom), ",
+            "@FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_IDEAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_ideal_zero_or_top",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (ideal_bridge : @FieldIdealLawArgs.{u} Scalar zero one add neg sub mul inv field_args), forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun ideal_bridge => fun I => fun ideal_laws => ",
+            "ideal_bridge (@FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I) ",
+            "(fun (ideal_zero_or_top_law : forall (J : forall (x : Scalar), Prop), forall (J_laws : @IdealLawArgs.{u} Scalar zero add neg mul J), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv J) => ",
+            "fun (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) => ideal_zero_or_top_law I ideal_laws)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_simple_ring_evidence",
+        universe_params: &["u"],
+        statement: abstract_field_params!(
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (ideal_bridge : @FieldIdealLawArgs.{u} Scalar zero one add neg sub mul inv field_args), @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args"
+        ),
+        proof: abstract_field_abs!(concat!(
+            "fun field_args => fun ideal_bridge => ",
+            "ideal_bridge (@FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) ",
+            "(fun (ideal_zero_or_top_law : forall (I : forall (x : Scalar), Prop), forall (ideal_laws : @IdealLawArgs.{u} Scalar zero add neg mul I), @FieldIdealZeroOrTop.{u} Scalar zero one add neg sub mul inv I) => ",
+            "fun (simple_ring_law : @FieldSimpleRingEvidence.{u} Scalar zero one add neg sub mul inv field_args) => simple_ring_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "quotient_by_maximal_ideal_is_field",
+        universe_params: &["u", "v"],
+        statement: abstract_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{succ u} Scalar zero one add neg sub mul inv), forall (quotient_bridge : @MaximalIdealQuotientFieldArgs.{u,v} Scalar zero one add neg sub mul inv Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args), forall (M : forall (x : Scalar), Prop), forall (maximal : @MaximalIdeal.{succ u} Scalar zero one add neg mul M), forall (quotient_ring_laws : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M x), P), P), forall (first_iso_to_image : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws quotient_map_hom), @FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ"
+        ),
+        proof: abstract_field_quotient_abs!(concat!(
+            "fun field_args => fun quotient_bridge => fun M => fun maximal => fun quotient_ring_laws => fun quotient_map_hom => fun kernel_exact => fun first_iso_to_image => ",
+            "quotient_bridge (@FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) ",
+            "(fun (quotient_by_maximal_law : forall (M_arg : forall (x : Scalar), Prop), forall (maximal_arg : @MaximalIdeal.{succ u} Scalar zero one add neg mul M_arg), forall (quotient_ring_laws_arg : @RingLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom_arg : @RingHomLawArgs.{succ u,succ v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact_arg : forall (x : Scalar), forall (P : Prop), forall (mk_kernel : forall (to_kernel : forall (hM : M_arg x), @Eq.{succ v} Quot (quotient_map x) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ v} Quot (quotient_map x) zeroQ), M_arg x), P), P), forall (first_iso_to_image_arg : @RingFirstIso.{u,v} Scalar zero one add neg sub mul Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map (@field_ring_laws.{succ u} Scalar zero one add neg sub mul inv field_args) quotient_ring_laws_arg quotient_map_hom_arg), @FieldLawArgs.{succ v} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) => ",
+            "quotient_by_maximal_law M maximal quotient_ring_laws quotient_map_hom kernel_exact first_iso_to_image)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -23642,7 +24627,7 @@ const ABSTRACT_HILBERT_NULLSTELLENSATZ_DEFINITIONS: &[DefinitionArtifact] = &[
         value: "",
     },
     DefinitionArtifact {
-        name: "ProperIdeal",
+        name: "HnsProperIdeal",
         universe_params: &[],
         ty: "",
         value: "",
@@ -24995,6 +25980,110 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
             ordered_args_elim!(
                 "(le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b))))",
                 "add_two_mul_le_sq_add_sqrt_arg a b c n ha hb hn hc"
+            )
+        )),
+    },
+];
+
+const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "OrderedFieldFieldBridgeArgs",
+    universe_params: &["u"],
+    ty: abstract_ordered_field_field_params!(
+        "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), Prop"
+    ),
+    value: abstract_ordered_field_field_abs!(concat!(
+        "fun ordered_args => forall (P : Prop), forall (mk : ",
+        "forall (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+        "forall (nonzero_of_positive_law : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Nonzero.{u} Scalar zero a), ",
+        "forall (inv_positive_law : forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Positive.{u} Scalar zero lt_rel (inv a)), ",
+        "forall (div_positive_law : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)), ",
+        "forall (mul_pos_law : forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (mul a b)), ",
+        "forall (sq_pos_of_nonzero_law : forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)), P), P"
+    )),
+}];
+
+const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ordered_field_field_laws",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), @FieldLawArgs.{u} Scalar zero one add neg sub mul inv"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => ",
+            ordered_field_field_bridge_args_elim!(
+                "@FieldLawArgs.{u} Scalar zero one add neg sub mul inv",
+                "field_laws_arg"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_nonzero_of_positive",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Nonzero.{u} Scalar zero a"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun ha => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Nonzero.{u} Scalar zero a",
+                "nonzero_of_positive_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_inv_positive",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), @Positive.{u} Scalar zero lt_rel (inv a)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun ha => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (inv a)",
+                "inv_positive_arg a ha"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_div_positive",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun b => fun ha => fun hb => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (@div.{u} Scalar mul inv a b)",
+                "div_positive_arg a b ha hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_mul_pos",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (b : Scalar), forall (ha : @Positive.{u} Scalar zero lt_rel a), forall (hb : @Positive.{u} Scalar zero lt_rel b), @Positive.{u} Scalar zero lt_rel (mul a b)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun b => fun ha => fun hb => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (mul a b)",
+                "mul_pos_arg a b ha hb"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "ordered_field_sq_pos_of_nonzero",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (a : Scalar), forall (ha : @Nonzero.{u} Scalar zero a), @Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)"
+        ),
+        proof: abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => fun a => fun ha => ",
+            ordered_field_field_bridge_args_elim!(
+                "@Positive.{u} Scalar zero lt_rel (@sq.{u} Scalar mul a)",
+                "sq_pos_of_nonzero_arg a ha"
             )
         )),
     },
@@ -28277,9 +29366,30 @@ fn run() -> Result<(), String> {
             let proof_root = repo_root.join("proofs");
             write_package_lock_fixture(&proof_root)
         }
-        "--build-module" if args.len() == 2 => {
+        "--build-module" => {
             let repo_root = repo_root()?;
-            run_build_module(&repo_root, &args[1])
+            let options = parse_build_module_args(&args[1..])?;
+            run_build_modules(&repo_root, &options)
+        }
+        "--build-modules" => {
+            let repo_root = repo_root()?;
+            let options = parse_build_modules_args(&args[1..])?;
+            run_build_modules(&repo_root, &options)
+        }
+        "--build-modules-file" => {
+            let repo_root = repo_root()?;
+            let options = parse_build_modules_file_args(&repo_root, &args[1..])?;
+            run_build_modules(&repo_root, &options)
+        }
+        "--promote-plan" => {
+            let repo_root = repo_root()?;
+            let options = parse_promote_plan_args(&repo_root, &args[1..])?;
+            run_promote_plan(&repo_root, &options)
+        }
+        "--promote-materialize" => {
+            let repo_root = repo_root()?;
+            let options = parse_promote_materialize_args(&repo_root, &args[1..])?;
+            run_promote_materialize(&repo_root, &options)
         }
         "--write-ai-index" => {
             let repo_root = repo_root()?;
@@ -28306,10 +29416,10 @@ fn run() -> Result<(), String> {
     }
 }
 
-fn output_path(repo_root: &Path, path: &str) -> PathBuf {
-    let path = PathBuf::from(path);
+fn output_path<P: AsRef<Path>>(repo_root: &Path, path: P) -> PathBuf {
+    let path = path.as_ref();
     if path.is_absolute() {
-        path
+        path.to_path_buf()
     } else {
         repo_root.join(path)
     }
@@ -28320,20 +29430,26 @@ fn usage() -> String {
 usage:
   npa-proof-corpus
   npa-proof-corpus --package-lock-only
-  npa-proof-corpus --build-module MODULE
-  npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH]
-  npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH]
-  npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH]
+  npa-proof-corpus --build-module MODULE [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-modules MODULE ... [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-modules-file PATH [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --promote-plan CORPUS_MODULE --mathlib-root PATH --to-module Mathlib.* --out PATH
+  npa-proof-corpus --promote-materialize PLAN --mathlib-root PATH [--dry-run|--apply] [--compat-alias none]
+  npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
+  npa-proof-corpus --module MODULE [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
+  npa-proof-corpus --changed-only [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
   npa-proof-corpus --write-ai-index [PATH]
   npa-proof-corpus --write-replay MODULE::DECL PATH
 
 INDEX/TOTAL is zero-based, for example --shard 0/4.
+--verified-cache defaults to off. authoring and read-through are only for --module or --changed-only.
 "
     .to_owned()
 }
 
 fn parse_verify_options(args: &[String]) -> Result<VerifyOptions, String> {
     let mut options = VerifyOptions::default();
+    let mut verified_cache_seen = false;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -28359,10 +29475,39 @@ fn parse_verify_options(args: &[String]) -> Result<VerifyOptions, String> {
                 options.failures_out = Some(path);
                 index += 2;
             }
+            "--verified-cache" => {
+                if verified_cache_seen {
+                    return Err("duplicate --verified-cache option".to_owned());
+                }
+                let mode = args.get(index + 1).ok_or_else(usage)?;
+                options.verified_cache = parse_verified_cache_mode(mode)?;
+                verified_cache_seen = true;
+                index += 2;
+            }
             _ => return Err(usage()),
         }
     }
+    if options.verified_cache != VerifiedCacheMode::Off
+        && options.modules.is_empty()
+        && !options.changed_only
+    {
+        return Err(
+            "--verified-cache authoring/read-through is only supported with --module or --changed-only"
+                .to_owned(),
+        );
+    }
     Ok(options)
+}
+
+fn parse_verified_cache_mode(value: &str) -> Result<VerifiedCacheMode, String> {
+    match value {
+        "off" => Ok(VerifiedCacheMode::Off),
+        "authoring" => Ok(VerifiedCacheMode::Authoring),
+        "read-through" => Ok(VerifiedCacheMode::ReadThrough),
+        _ => Err(format!(
+            "invalid --verified-cache mode {value:?}; expected off, authoring, or read-through"
+        )),
+    }
 }
 
 fn parse_shard(value: &str) -> Result<Shard, String> {
@@ -28381,6 +29526,96 @@ fn parse_shard(value: &str) -> Result<Shard, String> {
         ));
     }
     Ok(Shard { index, total })
+}
+
+impl VerifiedCacheMode {
+    fn as_str(self) -> &'static str {
+        match self {
+            VerifiedCacheMode::Off => "off",
+            VerifiedCacheMode::Authoring => "authoring",
+            VerifiedCacheMode::ReadThrough => "read-through",
+        }
+    }
+}
+
+impl VerifiedCacheLookupStatus {
+    fn as_str(self) -> &'static str {
+        match self {
+            VerifiedCacheLookupStatus::Hit => "hit",
+            VerifiedCacheLookupStatus::Miss => "miss",
+            VerifiedCacheLookupStatus::SchemaMiss => "schema_miss",
+            VerifiedCacheLookupStatus::Stale => "stale",
+        }
+    }
+}
+
+fn print_verified_module_status(
+    module: &str,
+    mode: VerifiedCacheMode,
+    status: Option<VerifiedCacheLookupStatus>,
+) {
+    if mode == VerifiedCacheMode::Off {
+        println!("verified {module}");
+        return;
+    }
+    let status = status
+        .expect("verified cache status should be reported when verified cache mode is enabled");
+    println!(
+        "verified {module} cache_status = \"{}\" cache_mode = \"{}\"",
+        status.as_str(),
+        mode.as_str()
+    );
+}
+
+fn verify_selected_module_with_cache(
+    repo_root: &Path,
+    proof_root: &Path,
+    cache: &mut VerifiedCorpusCache<'_>,
+    module: &str,
+    mode: VerifiedCacheMode,
+) -> Result<Option<VerifiedCacheLookupStatus>, String> {
+    if mode == VerifiedCacheMode::Off {
+        cache.verify_module(module)?;
+        return Ok(None);
+    }
+
+    let key_input = verified_cache_key_input_from_certificate(proof_root, module)?;
+    let lookup = verified_cache_lookup(repo_root, &key_input)?;
+
+    match mode {
+        VerifiedCacheMode::Off => unreachable!(),
+        VerifiedCacheMode::Authoring if lookup.status == VerifiedCacheLookupStatus::Hit => {
+            Ok(Some(VerifiedCacheLookupStatus::Hit))
+        }
+        VerifiedCacheMode::Authoring => {
+            let verified = cache.verify_module(module)?;
+            write_verified_cache_entry(repo_root, key_input, &verified)?;
+            Ok(Some(lookup.status))
+        }
+        VerifiedCacheMode::ReadThrough => {
+            if matches!(
+                lookup.status,
+                VerifiedCacheLookupStatus::SchemaMiss | VerifiedCacheLookupStatus::Stale
+            ) {
+                discard_verified_cache_entry(&lookup.path)?;
+            }
+            let verified = cache.verify_module(module)?;
+            let entry = verified_cache_entry_from_verified_module(key_input, &verified);
+            let entry_json = verified_cache_entry_json(&entry);
+            let mut status = lookup.status;
+            if lookup.status == VerifiedCacheLookupStatus::Hit
+                && lookup.source.as_deref() != Some(entry_json.as_str())
+            {
+                discard_verified_cache_entry(&lookup.path)?;
+                status = VerifiedCacheLookupStatus::Stale;
+            }
+            write(
+                verified_cache_entry_path(repo_root, &entry.cache_key),
+                entry_json.as_bytes(),
+            )?;
+            Ok(Some(status))
+        }
+    }
 }
 
 fn run_verify(options: VerifyOptions) -> Result<(), String> {
@@ -28404,9 +29639,21 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
 
     let mut cache = VerifiedCorpusCache::new(&proof_root);
     let mut failures = Vec::new();
+    let mut verified_cache_hits = 0usize;
     for module in &targets {
-        match cache.verify_module(module) {
-            Ok(_) => println!("verified {module}"),
+        match verify_selected_module_with_cache(
+            &repo_root,
+            &proof_root,
+            &mut cache,
+            module,
+            options.verified_cache,
+        ) {
+            Ok(status) => {
+                if status == Some(VerifiedCacheLookupStatus::Hit) {
+                    verified_cache_hits += 1;
+                }
+                print_verified_module_status(module, options.verified_cache, status);
+            }
             Err(error) => {
                 eprintln!("failed {module}: {error}");
                 failures.push(VerifyFailure {
@@ -28427,11 +29674,20 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
     }
 
     if failures.is_empty() {
-        println!(
-            "verified {} selected module(s), {} module(s) including dependency cache",
-            targets.len(),
-            cache.verified.len()
-        );
+        if options.verified_cache == VerifiedCacheMode::Off {
+            println!(
+                "verified {} selected module(s), {} module(s) including dependency cache",
+                targets.len(),
+                cache.verified.len()
+            );
+        } else {
+            println!(
+                "verified {} selected module(s), {} module(s) including dependency cache, {} verified cache hit(s)",
+                targets.len(),
+                cache.verified.len(),
+                verified_cache_hits
+            );
+        }
         Ok(())
     } else {
         Err(format!(
@@ -28441,32 +29697,411 @@ fn run_verify(options: VerifyOptions) -> Result<(), String> {
     }
 }
 
-fn run_build_module(repo_root: &Path, module: &str) -> Result<(), String> {
-    let config =
-        module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
-    let proof_root = repo_root.join("proofs");
-    fs::create_dir_all(&proof_root)
-        .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
+fn parse_build_module_args(args: &[String]) -> Result<BuildOptions, String> {
+    let options = parse_build_modules_args(args)?;
+    if options.requested_modules.len() != 1 {
+        return Err(usage());
+    }
+    Ok(options)
+}
 
-    let mut existing_metas = package_manifest_module_metas(&proof_root)?;
-    let external_imports = generated_external_std_imports()?;
-    write_external_import_artifacts(&proof_root, &external_imports)?;
+fn parse_build_modules_args(args: &[String]) -> Result<BuildOptions, String> {
+    let mut options = BuildOptions::default();
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--metadata-once" => {
+                index += 1;
+            }
+            "--failures-out" => {
+                if options.failures_out.is_some() {
+                    return Err("duplicate --failures-out option".to_owned());
+                }
+                let path = args.get(index + 1).ok_or_else(usage)?;
+                options.failures_out = Some(PathBuf::from(path));
+                index += 2;
+            }
+            module if module.starts_with("--") => return Err(usage()),
+            module => {
+                options.requested_modules.push(module.to_owned());
+                index += 1;
+            }
+        }
+    }
+    if options.requested_modules.is_empty() {
+        return Err(usage());
+    }
+    Ok(options)
+}
 
-    let mut cache = BuiltCorpusCache::new(&proof_root, external_imports);
-    cache.build_module(config.module)?;
+fn parse_build_modules_file_args(
+    repo_root: &Path,
+    args: &[String],
+) -> Result<BuildOptions, String> {
+    let file = args.first().ok_or_else(usage)?;
+    let mut options = parse_build_metadata_options(&args[1..])?;
+    options.requested_modules = parse_build_modules_file(&output_path(repo_root, file))?;
+    Ok(options)
+}
 
-    let mut module_metas = Vec::with_capacity(MODULES.len());
-    for module_config in MODULES {
-        let meta = if let Some(generated) = cache.built.get(module_config.module) {
-            ModuleMeta::from(generated)
-        } else {
-            existing_metas
-                .remove(module_config.module)
-                .ok_or_else(|| format!("missing existing metadata for {}", module_config.module))?
-        };
-        module_metas.push(meta);
+fn parse_build_metadata_options(args: &[String]) -> Result<BuildOptions, String> {
+    let mut options = BuildOptions::default();
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--metadata-once" => {
+                index += 1;
+            }
+            "--failures-out" => {
+                if options.failures_out.is_some() {
+                    return Err("duplicate --failures-out option".to_owned());
+                }
+                let path = args.get(index + 1).ok_or_else(usage)?;
+                options.failures_out = Some(PathBuf::from(path));
+                index += 2;
+            }
+            _ => return Err(usage()),
+        }
+    }
+    Ok(options)
+}
+
+fn parse_build_modules_file(path: &Path) -> Result<Vec<String>, String> {
+    let source = fs::read_to_string(path).map_err(|err| {
+        format!(
+            "failed to read build modules file {}: {err}",
+            path.display()
+        )
+    })?;
+    parse_build_modules_file_contents(&source)
+        .map_err(|err| format!("invalid build modules file {}: {err}", path.display()))
+}
+
+fn parse_build_modules_file_contents(source: &str) -> Result<Vec<String>, String> {
+    let mut modules = Vec::new();
+    for (index, line) in source.lines().enumerate() {
+        let module = line
+            .split_once('#')
+            .map(|(module, _)| module)
+            .unwrap_or(line)
+            .trim();
+        if module.is_empty() {
+            continue;
+        }
+        if module.split_whitespace().count() != 1 {
+            return Err(format!(
+                "line {} must contain exactly one module name",
+                index + 1
+            ));
+        }
+        modules.push(module.to_owned());
+    }
+    if modules.is_empty() {
+        return Err("no proof corpus modules requested".to_owned());
+    }
+    Ok(modules)
+}
+
+fn parse_promote_plan_args(
+    repo_root: &Path,
+    args: &[String],
+) -> Result<PromotePlanOptions, String> {
+    let corpus_module = args
+        .first()
+        .ok_or_else(|| "promote-plan error: missing_corpus_module".to_owned())?
+        .to_owned();
+    if corpus_module.starts_with("--") {
+        return Err("promote-plan error: missing_corpus_module".to_owned());
     }
 
+    let mut mathlib_root_arg = None;
+    let mut target_module = None;
+    let mut out_arg = None;
+    let mut index = 1usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--mathlib-root" => {
+                if mathlib_root_arg.is_some() {
+                    return Err("promote-plan error: duplicate_option --mathlib-root".to_owned());
+                }
+                let path = args
+                    .get(index + 1)
+                    .ok_or_else(|| "promote-plan error: missing_value --mathlib-root".to_owned())?;
+                mathlib_root_arg = Some(PathBuf::from(path));
+                index += 2;
+            }
+            "--to-module" => {
+                if target_module.is_some() {
+                    return Err("promote-plan error: duplicate_option --to-module".to_owned());
+                }
+                let module = args
+                    .get(index + 1)
+                    .ok_or_else(|| "promote-plan error: missing_value --to-module".to_owned())?;
+                validate_mathlib_module(module)?;
+                target_module = Some(module.to_owned());
+                index += 2;
+            }
+            "--out" => {
+                if out_arg.is_some() {
+                    return Err("promote-plan error: duplicate_option --out".to_owned());
+                }
+                let path = args
+                    .get(index + 1)
+                    .ok_or_else(|| "promote-plan error: missing_value --out".to_owned())?;
+                out_arg = Some(PathBuf::from(path));
+                index += 2;
+            }
+            option if option.starts_with("--") => {
+                return Err(format!("promote-plan error: unknown_option {option}"));
+            }
+            value => {
+                return Err(format!("promote-plan error: unexpected_argument {value}"));
+            }
+        }
+    }
+
+    let mathlib_root_arg = mathlib_root_arg
+        .ok_or_else(|| "promote-plan error: missing_option --mathlib-root".to_owned())?;
+    let target_module =
+        target_module.ok_or_else(|| "promote-plan error: missing_option --to-module".to_owned())?;
+    let out_arg = out_arg.ok_or_else(|| "promote-plan error: missing_option --out".to_owned())?;
+
+    Ok(PromotePlanOptions {
+        corpus_module,
+        mathlib_root: output_path(repo_root, &mathlib_root_arg),
+        mathlib_root_arg,
+        target_module,
+        out: output_path(repo_root, &out_arg),
+        out_arg,
+    })
+}
+
+fn validate_mathlib_module(module: &str) -> Result<(), String> {
+    validate_mathlib_module_for("promote-plan", module)
+}
+
+fn validate_mathlib_module_for(command: &str, module: &str) -> Result<(), String> {
+    if !module.starts_with("Mathlib.") || module == "Mathlib." {
+        return Err(format!(
+            "{command} error: invalid_target_module {module}; expected Mathlib.*"
+        ));
+    }
+    for component in module.split('.') {
+        if component.is_empty() {
+            return Err(format!(
+                "{command} error: invalid_target_module {module}; empty component"
+            ));
+        }
+        let mut chars = component.chars();
+        let first = chars.next().unwrap_or_default();
+        if !(first.is_ascii_alphabetic() || first == '_') {
+            return Err(format!(
+                "{command} error: invalid_target_module {module}; bad component {component}"
+            ));
+        }
+        if chars.any(|ch| !(ch.is_ascii_alphanumeric() || ch == '_')) {
+            return Err(format!(
+                "{command} error: invalid_target_module {module}; bad component {component}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn parse_promote_materialize_args(
+    repo_root: &Path,
+    args: &[String],
+) -> Result<PromoteMaterializeOptions, String> {
+    let plan_arg = args
+        .first()
+        .ok_or_else(|| "promote-materialize error: missing_plan".to_owned())?;
+    if plan_arg.starts_with("--") {
+        return Err("promote-materialize error: missing_plan".to_owned());
+    }
+
+    let mut mathlib_root_arg = None;
+    let mut mode = PromoteMaterializeMode::DryRun;
+    let mut mode_seen = false;
+    let mut compat_alias = None;
+    let mut index = 1usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--mathlib-root" => {
+                if mathlib_root_arg.is_some() {
+                    return Err(
+                        "promote-materialize error: duplicate_option --mathlib-root".to_owned()
+                    );
+                }
+                let path = args.get(index + 1).ok_or_else(|| {
+                    "promote-materialize error: missing_value --mathlib-root".to_owned()
+                })?;
+                mathlib_root_arg = Some(PathBuf::from(path));
+                index += 2;
+            }
+            "--dry-run" => {
+                if mode_seen {
+                    return Err("promote-materialize error: duplicate_mode".to_owned());
+                }
+                mode = PromoteMaterializeMode::DryRun;
+                mode_seen = true;
+                index += 1;
+            }
+            "--apply" => {
+                if mode_seen {
+                    return Err("promote-materialize error: duplicate_mode".to_owned());
+                }
+                mode = PromoteMaterializeMode::Apply;
+                mode_seen = true;
+                index += 1;
+            }
+            "--compat-alias" => {
+                if compat_alias.is_some() {
+                    return Err(
+                        "promote-materialize error: duplicate_option --compat-alias".to_owned()
+                    );
+                }
+                let value = args.get(index + 1).ok_or_else(|| {
+                    "promote-materialize error: missing_value --compat-alias".to_owned()
+                })?;
+                compat_alias = Some(parse_compat_alias_decision(value)?);
+                index += 2;
+            }
+            option if option.starts_with("--") => {
+                return Err(format!(
+                    "promote-materialize error: unknown_option {option}"
+                ));
+            }
+            value => {
+                return Err(format!(
+                    "promote-materialize error: unexpected_argument {value}"
+                ));
+            }
+        }
+    }
+
+    let mathlib_root_arg = mathlib_root_arg
+        .ok_or_else(|| "promote-materialize error: missing_option --mathlib-root".to_owned())?;
+
+    Ok(PromoteMaterializeOptions {
+        plan_arg: PathBuf::from(plan_arg.as_str()),
+        plan: output_path(repo_root, plan_arg.as_str()),
+        mathlib_root: output_path(repo_root, &mathlib_root_arg),
+        mathlib_root_arg,
+        mode,
+        compat_alias,
+    })
+}
+
+fn parse_compat_alias_decision(value: &str) -> Result<CompatibilityAliasDecision, String> {
+    match value {
+        "none" => Ok(CompatibilityAliasDecision::None),
+        other => Err(format!(
+            "promote-materialize error: invalid_compat_alias {other}; expected none"
+        )),
+    }
+}
+
+fn run_build_modules(repo_root: &Path, options: &BuildOptions) -> Result<(), String> {
+    let proof_root = repo_root.join("proofs");
+    let mut failures = Vec::new();
+    let result = run_build_modules_inner(&proof_root, options, &mut failures);
+    if let Some(path) = &options.failures_out {
+        write_failure_replay(&proof_root, &output_path(repo_root, path), &failures)?;
+    }
+    result
+}
+
+fn run_build_modules_inner(
+    proof_root: &Path,
+    options: &BuildOptions,
+    failures: &mut Vec<VerifyFailure>,
+) -> Result<(), String> {
+    let selected_modules = match build_batch_selection(&options.requested_modules) {
+        Ok(selected) => selected,
+        Err(error) => {
+            failures.push(VerifyFailure {
+                module: first_unknown_requested_module(&options.requested_modules)
+                    .unwrap_or_default(),
+                error: error.clone(),
+            });
+            return Err(error);
+        }
+    };
+    fs::create_dir_all(proof_root).map_err(|err| {
+        record_build_failure(
+            failures,
+            "",
+            format!("failed to create {}: {err}", proof_root.display()),
+        )
+    })?;
+
+    let existing_metas = package_manifest_module_metas(proof_root)
+        .map_err(|error| record_build_failure(failures, "", error))?;
+    let external_imports = generated_external_std_imports()
+        .map_err(|error| record_build_failure(failures, "", error))?;
+    write_external_import_artifacts(proof_root, &external_imports)
+        .map_err(|error| record_build_failure(failures, "", error))?;
+
+    let mut cache = BuiltCorpusCache::new(proof_root, external_imports);
+    for config in &selected_modules {
+        if let Err(error) = cache.build_module(config.module) {
+            failures.push(VerifyFailure {
+                module: config.module.to_owned(),
+                error: error.clone(),
+            });
+            return Err(error);
+        }
+    }
+
+    write_batch_metadata_once(proof_root, existing_metas, &cache)
+        .map_err(|error| record_build_failure(failures, "", error))?;
+
+    if options.requested_modules.len() == 1 {
+        println!(
+            "built {} ({} module(s) including import closure)",
+            options.requested_modules[0],
+            cache.built.len()
+        );
+    } else {
+        println!(
+            "built {} requested module(s), {} module(s) including import closure",
+            options.requested_modules.len(),
+            cache.built.len()
+        );
+    }
+    Ok(())
+}
+
+fn record_build_failure(
+    failures: &mut Vec<VerifyFailure>,
+    module: impl Into<String>,
+    error: String,
+) -> String {
+    failures.push(VerifyFailure {
+        module: module.into(),
+        error: error.clone(),
+    });
+    error
+}
+
+fn first_unknown_requested_module(requested_modules: &[String]) -> Option<String> {
+    requested_modules
+        .iter()
+        .find(|module| module_config(module).is_none())
+        .cloned()
+}
+
+fn write_batch_metadata_once(
+    proof_root: &Path,
+    existing_metas: BTreeMap<String, ModuleMeta>,
+    cache: &BuiltCorpusCache<'_>,
+) -> Result<(), String> {
+    let built_metas = cache
+        .built
+        .iter()
+        .map(|(module, generated)| (module.clone(), ModuleMeta::from(generated)))
+        .collect::<BTreeMap<_, _>>();
+    let module_metas = batch_module_metas(existing_metas, built_metas)?;
     let manifest = manifest_toml(&module_metas);
     let package_manifest = package_manifest_toml(&module_metas, &cache.external_imports)?;
     write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
@@ -28474,14 +30109,67 @@ fn run_build_module(repo_root: &Path, module: &str) -> Result<(), String> {
         proof_root.join(PACKAGE_MANIFEST_PATH),
         package_manifest.as_bytes(),
     )?;
-    write_package_lock_fixture(&proof_root)?;
-    write_ai_theorem_index(&proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
+    write_package_lock_fixture(proof_root)?;
+    write_ai_theorem_index(proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
+    Ok(())
+}
 
-    println!(
-        "built {} ({} module(s) including import closure)",
-        config.module,
-        cache.built.len()
-    );
+fn batch_module_metas(
+    mut existing_metas: BTreeMap<String, ModuleMeta>,
+    mut built_metas: BTreeMap<String, ModuleMeta>,
+) -> Result<Vec<ModuleMeta>, String> {
+    let mut module_metas = Vec::with_capacity(MODULES.len());
+    for module_config in MODULES {
+        let meta = if let Some(generated) = built_metas.remove(module_config.module) {
+            generated
+        } else {
+            existing_metas
+                .remove(module_config.module)
+                .ok_or_else(|| format!("missing existing metadata for {}", module_config.module))?
+        };
+        module_metas.push(meta);
+    }
+    Ok(module_metas)
+}
+
+fn build_batch_selection(
+    requested_modules: &[String],
+) -> Result<Vec<&'static ModuleArtifact>, String> {
+    if requested_modules.is_empty() {
+        return Err("no proof corpus modules requested".to_owned());
+    }
+    let mut selected = BTreeSet::new();
+    for module in requested_modules {
+        let config =
+            module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+        collect_build_closure(config.module, &mut selected)?;
+    }
+    let mut selected = selected
+        .into_iter()
+        .map(|module| module_config(module).expect("selected module must exist"))
+        .collect::<Vec<_>>();
+    selected.sort_by_key(|config| module_order(config.module).unwrap_or(usize::MAX));
+    Ok(selected)
+}
+
+fn collect_build_closure(
+    module: &str,
+    selected: &mut BTreeSet<&'static str>,
+) -> Result<(), String> {
+    if external_import_plan(module).is_some() {
+        return Ok(());
+    }
+    if selected.contains(module) {
+        return Ok(());
+    }
+    let config =
+        module_config(module).ok_or_else(|| format!("unknown proof corpus module {module}"))?;
+    for import in config.imports.iter().chain(source_imports(config)) {
+        if external_import_plan(import).is_none() {
+            collect_build_closure(import, selected)?;
+        }
+    }
+    selected.insert(config.module);
     Ok(())
 }
 
@@ -29734,6 +31422,14 @@ fn run_full() -> Result<(), String> {
         &abstract_ring_imports,
         &abstract_ring_source_interfaces,
     )?;
+    let abstract_field_imports = vec![eq_import.clone(), abstract_ring.verified_module.clone()];
+    let abstract_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
+    let abstract_field = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_MODULE,
+        &abstract_field_imports,
+        &abstract_field_source_interfaces,
+    )?;
     let abstract_ring_first_iso_base_imports = vec![
         eq_import.clone(),
         eq_reasoning.verified_module.clone(),
@@ -29759,6 +31455,36 @@ fn run_full() -> Result<(), String> {
         &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
         &abstract_ring_first_iso_base_imports,
         &abstract_ring_first_iso_base_source_interfaces,
+    )?;
+    let abstract_field_hom_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+    ];
+    let abstract_field_hom_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+    ];
+    let abstract_field_hom = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_HOM_MODULE,
+        &abstract_field_hom_imports,
+        &abstract_field_hom_source_interfaces,
     )?;
     let abstract_ring_first_iso_imports = vec![
         eq_import.clone(),
@@ -29834,6 +31560,26 @@ fn run_full() -> Result<(), String> {
         &abstract_ufd_prime_factorization_imports,
         &abstract_ufd_prime_factorization_source_interfaces,
     )?;
+    let abstract_field_integral_domain_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ufd_prime_factorization.verified_module.clone(),
+    ];
+    let abstract_field_integral_domain_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ufd_prime_factorization.source_interface.clone(),
+    ];
+    let abstract_field_integral_domain = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
+        &abstract_field_integral_domain_imports,
+        &abstract_field_integral_domain_source_interfaces,
+    )?;
     let abstract_hilbert_basis_theorem_imports =
         vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_hilbert_basis_theorem_source_interfaces = vec![
@@ -29877,6 +31623,48 @@ fn run_full() -> Result<(), String> {
         &ABSTRACT_KRULL_THEOREM_MODULE,
         &abstract_krull_theorem_imports,
         &abstract_krull_theorem_source_interfaces,
+    )?;
+    let abstract_field_ideal_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+    ];
+    let abstract_field_ideal_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+    ];
+    let abstract_field_ideal = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_IDEAL_MODULE,
+        &abstract_field_ideal_imports,
+        &abstract_field_ideal_source_interfaces,
     )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
@@ -29952,6 +31740,23 @@ fn run_full() -> Result<(), String> {
         &ABSTRACT_ORDERED_FIELD_MODULE,
         &abstract_ordered_field_imports,
         &abstract_ordered_field_source_interfaces,
+    )?;
+    let abstract_ordered_field_field_bridge_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+    ];
+    let abstract_ordered_field_field_bridge_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+    ];
+    let abstract_ordered_field_field_bridge = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
+        &abstract_ordered_field_field_bridge_imports,
+        &abstract_ordered_field_field_bridge_source_interfaces,
     )?;
     let abstract_square_normalize_imports = vec![
         eq_import.clone(),
@@ -30397,13 +32202,17 @@ fn run_full() -> Result<(), String> {
         abstract_group_correspondence_final,
         abstract_group_correspondence_order_final,
         abstract_ring,
+        abstract_field,
         abstract_ring_first_iso_base,
+        abstract_field_hom,
         abstract_ring_first_iso,
         abstract_ring_chinese_remainder,
         abstract_ufd_prime_factorization,
+        abstract_field_integral_domain,
         abstract_hilbert_basis_theorem,
         abstract_hilbert_nullstellensatz,
         abstract_krull_theorem,
+        abstract_field_ideal,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -30411,6 +32220,7 @@ fn run_full() -> Result<(), String> {
         tor_ext,
         cotangent_complex,
         abstract_ordered_field,
+        abstract_ordered_field_field_bridge,
         abstract_square_normalize,
         abstract_scalar_derive,
         abstract_vector_space,
@@ -30448,6 +32258,2042 @@ fn run_full() -> Result<(), String> {
     write_ai_theorem_index(&proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
 
     Ok(())
+}
+
+fn run_promote_plan(repo_root: &Path, options: &PromotePlanOptions) -> Result<(), String> {
+    let config = module_config(&options.corpus_module).ok_or_else(|| {
+        format!(
+            "promote-plan error: unknown_corpus_module {}",
+            options.corpus_module
+        )
+    })?;
+    validate_mathlib_module(&options.target_module)?;
+    if path_inside_or_equal(&options.out, &options.mathlib_root) {
+        return Err(format!(
+            "promote-plan error: output_path_inside_mathlib_root {}",
+            options.out_arg.display()
+        ));
+    }
+
+    let proof_root = repo_root.join("proofs");
+    let closure = build_batch_selection(std::slice::from_ref(&options.corpus_module))?;
+    let module_metas = package_manifest_module_metas(&proof_root)?;
+    let body = promotion_plan_markdown(repo_root, options, config, &closure, &module_metas)?;
+    write(options.out.clone(), body.as_bytes())?;
+    println!("wrote {}", options.out.display());
+    Ok(())
+}
+
+fn run_promote_materialize(
+    repo_root: &Path,
+    options: &PromoteMaterializeOptions,
+) -> Result<(), String> {
+    let plan_source = fs::read_to_string(&options.plan).map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_read_plan {}: {err}",
+            options.plan_arg.display()
+        )
+    })?;
+    let mapping = parse_promotion_plan_markdown(&plan_source)?;
+    let materialized = materialize_promotion(repo_root, options, &mapping, &plan_source)?;
+
+    if options.mode == PromoteMaterializeMode::Apply {
+        for change in &materialized.changes {
+            if change.action != MaterializeAction::Unchanged {
+                write(change.path.clone(), &change.bytes)?;
+            }
+        }
+    }
+
+    print_materialized_promotion(options, &materialized);
+    Ok(())
+}
+
+fn parse_promotion_plan_markdown(source: &str) -> Result<PromotionPlanMapping, String> {
+    let mut corpus_module = None;
+    let mut target_module = None;
+    let mut import_mapping = BTreeMap::new();
+
+    for line in source.lines() {
+        if let Some(rest) = line.strip_prefix("# Promotion Plan: ") {
+            if let Some((corpus, target)) = rest.split_once(" -> ") {
+                corpus_module = Some(corpus.trim().to_owned());
+                target_module = Some(target.trim().to_owned());
+            }
+        } else if let Some(value) = markdown_bullet_code_value(line, "Corpus module") {
+            corpus_module = Some(value);
+        } else if let Some(value) = markdown_bullet_code_value(line, "Target module") {
+            target_module = Some(value);
+        }
+    }
+
+    let corpus_module = corpus_module
+        .ok_or_else(|| "promote-materialize error: plan_missing_corpus_module".to_owned())?;
+    let target_module = target_module
+        .ok_or_else(|| "promote-materialize error: plan_missing_target_module".to_owned())?;
+    validate_mathlib_module_for("promote-materialize", &target_module)?;
+
+    if let Some(section) = markdown_section(source, "## Direct Import Mapping") {
+        for line in section.lines() {
+            let Some(cells) = markdown_table_row(line) else {
+                continue;
+            };
+            if cells.len() < 3 || markdown_table_separator(&cells) || cells[0] == "Corpus import" {
+                continue;
+            }
+            let import = markdown_code_cell(&cells[0]);
+            if import.is_empty() {
+                continue;
+            }
+            if external_import_plan(&import).is_some() {
+                import_mapping.insert(import.clone(), import);
+                continue;
+            }
+            let target = markdown_code_cell(&cells[1]);
+            let status = &cells[2];
+            if target.starts_with("TBD")
+                || status.contains("Missing evidence")
+                || !target.starts_with("Mathlib.")
+            {
+                return Err(format!(
+                    "promote-materialize error: unresolved_import_mapping {import}"
+                ));
+            }
+            validate_mathlib_module_for("promote-materialize", &target)?;
+            import_mapping.insert(import, target);
+        }
+    }
+
+    let closure = markdown_section(source, "## Import Closure")
+        .ok_or_else(|| "promote-materialize error: plan_missing_import_closure".to_owned())?;
+    for line in closure.lines() {
+        let Some(cells) = markdown_table_row(line) else {
+            continue;
+        };
+        if cells.len() < 2 || markdown_table_separator(&cells) || cells[0] == "Corpus module" {
+            continue;
+        }
+        let corpus = markdown_code_cell(&cells[0]);
+        let target = markdown_code_cell(&cells[1]);
+        if corpus.is_empty() {
+            continue;
+        }
+        if target.starts_with("TBD")
+            || target.contains("Missing evidence")
+            || !target.starts_with("Mathlib.")
+        {
+            return Err(format!(
+                "promote-materialize error: unresolved_import_mapping {corpus}"
+            ));
+        }
+        validate_mathlib_module_for("promote-materialize", &target)?;
+        import_mapping.entry(corpus).or_insert(target);
+    }
+
+    let alias_rows = source
+        .lines()
+        .filter(|line| line.contains("Compatibility alias"))
+        .collect::<Vec<_>>();
+    let alias_resolved_in_plan = !alias_rows.is_empty()
+        && !alias_rows
+            .iter()
+            .any(|line| line.contains("Missing evidence"));
+
+    Ok(PromotionPlanMapping {
+        corpus_module,
+        target_module,
+        import_mapping,
+        alias_resolved_in_plan,
+    })
+}
+
+fn materialize_promotion(
+    repo_root: &Path,
+    options: &PromoteMaterializeOptions,
+    mapping: &PromotionPlanMapping,
+    plan_source: &str,
+) -> Result<MaterializedPromotion, String> {
+    let config = module_config(&mapping.corpus_module).ok_or_else(|| {
+        format!(
+            "promote-materialize error: unknown_corpus_module {}",
+            mapping.corpus_module
+        )
+    })?;
+    match mapping.import_mapping.get(config.module) {
+        Some(target) if target == &mapping.target_module => {}
+        Some(_) => {
+            return Err(format!(
+                "promote-materialize error: target_module_mismatch {}",
+                mapping.target_module
+            ));
+        }
+        None => {
+            return Err(format!(
+                "promote-materialize error: unresolved_import_mapping {}",
+                config.module
+            ));
+        }
+    }
+    validate_promote_materialize_plan(options, mapping, config, plan_source)?;
+
+    let manifest_path = options.mathlib_root.join(PACKAGE_MANIFEST_PATH);
+    let manifest_source = fs::read_to_string(&manifest_path).map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_read_mathlib_manifest {}: {err}",
+            manifest_path.display()
+        )
+    })?;
+    let manifest = npa_package::parse_manifest_str(&manifest_source)
+        .map_err(|err| format!("promote-materialize error: invalid_mathlib_manifest {err:?}"))?;
+    validate_materialize_package_policy(&manifest)?;
+
+    let artifact = materialized_module_artifact(repo_root, options, mapping, config, &manifest)?;
+    let module_table = materialized_module_manifest_table(config, &artifact);
+    let updated_manifest =
+        upsert_package_module_table(&manifest_source, &mapping.target_module, &module_table)?;
+    npa_package::parse_and_validate_manifest_str(&updated_manifest).map_err(|err| {
+        format!("promote-materialize error: updated_mathlib_manifest_invalid {err:?}")
+    })?;
+
+    let changes = vec![
+        materialize_change(
+            "source",
+            options.mathlib_root.join(&artifact.source_path),
+            artifact.source.as_bytes().to_vec(),
+        )?,
+        materialize_change(
+            "certificate",
+            options.mathlib_root.join(&artifact.certificate_path),
+            artifact.certificate_bytes.clone(),
+        )?,
+        materialize_change(
+            "meta",
+            options.mathlib_root.join(&artifact.meta_path),
+            artifact.meta.as_bytes().to_vec(),
+        )?,
+        materialize_change(
+            "replay",
+            options.mathlib_root.join(&artifact.replay_path),
+            artifact.replay.as_bytes().to_vec(),
+        )?,
+        materialize_change(
+            "manifest",
+            manifest_path,
+            updated_manifest.as_bytes().to_vec(),
+        )?,
+    ];
+
+    Ok(MaterializedPromotion {
+        corpus_module: mapping.corpus_module.clone(),
+        target_module: mapping.target_module.clone(),
+        changes,
+        gate_commands: materialize_gate_commands(&options.mathlib_root_arg),
+    })
+}
+
+fn validate_promote_materialize_plan(
+    options: &PromoteMaterializeOptions,
+    mapping: &PromotionPlanMapping,
+    config: &ModuleArtifact,
+    plan_source: &str,
+) -> Result<(), String> {
+    if !mapping.alias_resolved_in_plan && options.compat_alias.is_none() {
+        return Err(
+            "promote-materialize error: unresolved_compatibility_alias_decision".to_owned(),
+        );
+    }
+    if plan_source.contains("| `allow_custom_axioms` | `true`")
+        || plan_source.contains("allow_custom_axioms = true")
+    {
+        return Err(
+            "promote-materialize error: axiom_policy_widening allow_custom_axioms".to_owned(),
+        );
+    }
+
+    for axiom in config.expected_axioms {
+        if !PACKAGE_POLICY_ALLOWED_AXIOMS.contains(axiom) {
+            return Err(format!(
+                "promote-materialize error: axiom_policy_widening {axiom}"
+            ));
+        }
+    }
+
+    for import in source_imports(config) {
+        if external_import_plan(import).is_some() {
+            continue;
+        }
+        let Some(target) = mapping.import_mapping.get(*import) else {
+            return Err(format!(
+                "promote-materialize error: unresolved_import_mapping {import}"
+            ));
+        };
+        validate_mathlib_module_for("promote-materialize", target)?;
+    }
+
+    Ok(())
+}
+
+fn validate_materialize_package_policy(
+    manifest: &npa_package::PackageManifest,
+) -> Result<(), String> {
+    if manifest.policy.allow_custom_axioms {
+        return Err(
+            "promote-materialize error: axiom_policy_widening allow_custom_axioms".to_owned(),
+        );
+    }
+    let allowed_axioms = manifest
+        .policy
+        .allowed_axioms
+        .iter()
+        .map(|axiom| axiom.as_dotted())
+        .collect::<Vec<_>>();
+    let expected = PACKAGE_POLICY_ALLOWED_AXIOMS
+        .iter()
+        .map(|axiom| (*axiom).to_owned())
+        .collect::<Vec<_>>();
+    if allowed_axioms != expected {
+        return Err(format!(
+            "promote-materialize error: axiom_policy_widening allowed_axioms expected {:?} actual {:?}",
+            expected, allowed_axioms
+        ));
+    }
+    Ok(())
+}
+
+fn materialized_module_artifact(
+    repo_root: &Path,
+    options: &PromoteMaterializeOptions,
+    mapping: &PromotionPlanMapping,
+    config: &ModuleArtifact,
+    manifest: &npa_package::PackageManifest,
+) -> Result<MaterializedModuleArtifact, String> {
+    let proof_root = repo_root.join("proofs");
+    let corpus_source = if uses_checked_in_source(config.module) {
+        fs::read_to_string(proof_root.join(config.source_path))
+            .map_err(|err| format!("failed to read {}: {err}", config.source_path))?
+    } else {
+        module_source(config)
+    };
+    let source = rewrite_promotion_source_imports(&corpus_source, mapping)?;
+    let imports = target_direct_imports(config, mapping)?;
+    let policy = materialize_axiom_policy_for_package(manifest);
+    let (verified_imports, source_interfaces) =
+        materialize_direct_import_context(&options.mathlib_root, manifest, &imports, &policy)?;
+    let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy(
+        npa_frontend::FileId(0),
+        npa_cert::Name::from_dotted(&mapping.target_module),
+        &source,
+        &verified_imports,
+        &source_interfaces,
+        &npa_frontend::HumanCompileOptions::default(),
+        &policy,
+    )
+    .map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_compile_target {}: {err:?}",
+            mapping.target_module
+        )
+    })?;
+    let certificate_bytes = npa_cert::encode_module_cert(&output.certificate).map_err(|err| {
+        format!(
+            "promote-materialize error: failed_to_encode_target {}: {err:?}",
+            mapping.target_module
+        )
+    })?;
+    let verified = output.verified_module;
+    if verified.module().as_dotted() != mapping.target_module {
+        return Err(format!(
+            "promote-materialize error: certificate_module_mismatch expected {} actual {}",
+            mapping.target_module,
+            verified.module().as_dotted()
+        ));
+    }
+    let axioms = verified
+        .axiom_report()
+        .module_axioms
+        .iter()
+        .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    let expected_axioms = config
+        .expected_axioms
+        .iter()
+        .map(|axiom| (*axiom).to_owned())
+        .collect::<Vec<_>>();
+    if axioms != expected_axioms {
+        return Err(format!(
+            "promote-materialize error: target_axioms_mismatch expected {:?} actual {:?}",
+            expected_axioms, axioms
+        ));
+    }
+    let expected_features = expected_core_features_for_module(config.module);
+    if verified.axiom_report().core_features != expected_features {
+        return Err(format!(
+            "promote-materialize error: target_core_features_mismatch expected {:?} actual {:?}",
+            expected_features,
+            verified.axiom_report().core_features
+        ));
+    }
+
+    let base = mathlib_module_path(&mapping.target_module);
+    let mut artifact = MaterializedModuleArtifact {
+        module: mapping.target_module.clone(),
+        source_path: format!("{base}/source.npa"),
+        certificate_path: format!("{base}/certificate.npcert"),
+        meta_path: format!("{base}/meta.json"),
+        replay_path: format!("{base}/replay.json"),
+        source,
+        certificate_bytes,
+        meta: String::new(),
+        replay: String::new(),
+        source_sha256: String::new(),
+        certificate_file_sha256: String::new(),
+        export_hash: tagged_hash(output.certificate.hashes.export_hash),
+        axiom_report_hash: tagged_hash(output.certificate.hashes.axiom_report_hash),
+        certificate_hash: tagged_hash(output.certificate.hashes.certificate_hash),
+        imports,
+        axioms,
+    };
+    artifact.source_sha256 = tagged_sha256(artifact.source.as_bytes());
+    artifact.certificate_file_sha256 = tagged_sha256(&artifact.certificate_bytes);
+    artifact.meta = materialized_meta_json(config, &artifact);
+    artifact.replay = materialized_replay_json(config, &artifact);
+    Ok(artifact)
+}
+
+fn rewrite_promotion_source_imports(
+    source: &str,
+    mapping: &PromotionPlanMapping,
+) -> Result<String, String> {
+    let mut out = String::new();
+    let trailing_newline = source.ends_with('\n');
+    for line in source.lines() {
+        if let Some(import) = line.strip_prefix("import ") {
+            let import = import.trim();
+            let target = if external_import_plan(import).is_some() {
+                import.to_owned()
+            } else {
+                mapping.import_mapping.get(import).cloned().ok_or_else(|| {
+                    format!("promote-materialize error: unresolved_import_mapping {import}")
+                })?
+            };
+            out.push_str("import ");
+            out.push_str(&target);
+        } else {
+            out.push_str(line);
+        }
+        out.push('\n');
+    }
+    if !trailing_newline {
+        out.pop();
+    }
+    Ok(out)
+}
+
+fn target_direct_imports(
+    config: &ModuleArtifact,
+    mapping: &PromotionPlanMapping,
+) -> Result<Vec<String>, String> {
+    source_imports(config)
+        .iter()
+        .map(|import| {
+            if external_import_plan(import).is_some() {
+                Ok((*import).to_owned())
+            } else {
+                mapping.import_mapping.get(*import).cloned().ok_or_else(|| {
+                    format!("promote-materialize error: unresolved_import_mapping {import}")
+                })
+            }
+        })
+        .collect()
+}
+
+fn materialize_axiom_policy_for_package(
+    manifest: &npa_package::PackageManifest,
+) -> npa_cert::AxiomPolicy {
+    let mut policy = npa_cert::AxiomPolicy::normal()
+        .with_core_feature(npa_cert::CoreFeature::QuotientV1)
+        .with_core_feature(npa_cert::CoreFeature::QuotientV2)
+        .with_core_feature(npa_cert::CoreFeature::QuotientV3);
+    if !manifest.policy.allow_custom_axioms {
+        policy.allowlisted_axioms = manifest.policy.allowed_axioms.iter().cloned().collect();
+    }
+    policy
+}
+
+fn materialize_direct_import_context(
+    mathlib_root: &Path,
+    manifest: &npa_package::PackageManifest,
+    direct_imports: &[String],
+    policy: &npa_cert::AxiomPolicy,
+) -> Result<
+    (
+        Vec<npa_cert::VerifiedModule>,
+        Vec<npa_frontend::HumanImportedSourceInterface>,
+    ),
+    String,
+> {
+    let mut session = npa_cert::VerifierSession::new();
+    let mut verified = BTreeMap::new();
+    let mut source_interfaces = BTreeMap::new();
+    let mut visiting = BTreeSet::new();
+    for import in direct_imports {
+        verify_materialize_package_import(
+            mathlib_root,
+            manifest,
+            import,
+            policy,
+            &mut session,
+            &mut verified,
+            &mut source_interfaces,
+            &mut visiting,
+        )?;
+    }
+
+    let mut direct_verified = Vec::new();
+    let mut direct_source_interfaces = Vec::new();
+    for import in direct_imports {
+        direct_verified.push(verified.get(import).cloned().ok_or_else(|| {
+            format!("promote-materialize error: verified_import_missing {import}")
+        })?);
+        direct_source_interfaces.push(source_interfaces.get(import).cloned().ok_or_else(|| {
+            format!("promote-materialize error: source_interface_missing {import}")
+        })?);
+    }
+    Ok((direct_verified, direct_source_interfaces))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn verify_materialize_package_import(
+    mathlib_root: &Path,
+    manifest: &npa_package::PackageManifest,
+    module: &str,
+    policy: &npa_cert::AxiomPolicy,
+    session: &mut npa_cert::VerifierSession,
+    verified: &mut BTreeMap<String, npa_cert::VerifiedModule>,
+    source_interfaces: &mut BTreeMap<String, npa_frontend::HumanImportedSourceInterface>,
+    visiting: &mut BTreeSet<String>,
+) -> Result<(), String> {
+    if verified.contains_key(module) {
+        return Ok(());
+    }
+    if !visiting.insert(module.to_owned()) {
+        return Err(format!(
+            "promote-materialize error: import_cycle_while_materializing {module}"
+        ));
+    }
+
+    if let Some(import) = manifest
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .find(|import| import.module.as_dotted() == module)
+    {
+        let bytes = fs::read(mathlib_root.join(import.certificate.as_str())).map_err(|err| {
+            format!(
+                "promote-materialize error: failed_to_read_import_certificate {}: {err}",
+                import.certificate.as_str()
+            )
+        })?;
+        let module_name = import.module.as_dotted();
+        let verified_module =
+            npa_cert::verify_module_cert(&bytes, session, policy).map_err(|err| {
+                format!(
+                    "promote-materialize error: import_certificate_rejected {module_name}: {err:?}"
+                )
+            })?;
+        validate_verified_import_hashes(
+            &module_name,
+            &bytes,
+            &verified_module,
+            None,
+            Some(import),
+        )?;
+        source_interfaces.insert(
+            module_name.clone(),
+            fallback_source_interface_from_verified(&verified_module),
+        );
+        verified.insert(module_name, verified_module);
+        visiting.remove(module);
+        return Ok(());
+    }
+
+    let package_module = manifest
+        .modules
+        .iter()
+        .find(|candidate| candidate.module.as_dotted() == module)
+        .ok_or_else(|| format!("promote-materialize error: unresolved_import_mapping {module}"))?;
+    for import in &package_module.imports {
+        verify_materialize_package_import(
+            mathlib_root,
+            manifest,
+            &import.as_dotted(),
+            policy,
+            session,
+            verified,
+            source_interfaces,
+            visiting,
+        )?;
+    }
+    let bytes =
+        fs::read(mathlib_root.join(package_module.certificate.as_str())).map_err(|err| {
+            format!(
+                "promote-materialize error: failed_to_read_import_certificate {}: {err}",
+                package_module.certificate.as_str()
+            )
+        })?;
+    let module_name = package_module.module.as_dotted();
+    let verified_module = npa_cert::verify_module_cert(&bytes, session, policy).map_err(|err| {
+        format!("promote-materialize error: import_certificate_rejected {module_name}: {err:?}")
+    })?;
+    validate_verified_import_hashes(
+        &module_name,
+        &bytes,
+        &verified_module,
+        Some(package_module),
+        None,
+    )?;
+    source_interfaces.insert(
+        module_name.clone(),
+        fallback_source_interface_from_verified(&verified_module),
+    );
+    verified.insert(module_name, verified_module);
+    visiting.remove(module);
+    Ok(())
+}
+
+fn validate_verified_import_hashes(
+    module: &str,
+    bytes: &[u8],
+    verified: &npa_cert::VerifiedModule,
+    package_module: Option<&npa_package::PackageModule>,
+    external_import: Option<&npa_package::PackageExternalImport>,
+) -> Result<(), String> {
+    if verified.module().as_dotted() != module {
+        return Err(format!(
+            "promote-materialize error: import_certificate_module_mismatch expected {module} actual {}",
+            verified.module().as_dotted()
+        ));
+    }
+    if let Some(module_entry) = package_module {
+        compare_package_hash(
+            module,
+            "expected_certificate_file_hash",
+            npa_package::format_package_hash(&npa_package::package_file_hash(bytes)),
+            npa_package::format_package_hash(&module_entry.expected_certificate_file_hash),
+        )?;
+        compare_package_hash(
+            module,
+            "expected_export_hash",
+            tagged_hash(verified.export_hash()),
+            npa_package::format_package_hash(&module_entry.expected_export_hash),
+        )?;
+        compare_package_hash(
+            module,
+            "expected_certificate_hash",
+            tagged_hash(verified.certificate_hash()),
+            npa_package::format_package_hash(&module_entry.expected_certificate_hash),
+        )?;
+    }
+    if let Some(import_entry) = external_import {
+        compare_package_hash(
+            module,
+            "export_hash",
+            tagged_hash(verified.export_hash()),
+            npa_package::format_package_hash(&import_entry.export_hash),
+        )?;
+        compare_package_hash(
+            module,
+            "certificate_hash",
+            tagged_hash(verified.certificate_hash()),
+            npa_package::format_package_hash(&import_entry.certificate_hash),
+        )?;
+    }
+    Ok(())
+}
+
+fn compare_package_hash(
+    module: &str,
+    field: &str,
+    actual: String,
+    expected: String,
+) -> Result<(), String> {
+    if actual != expected {
+        return Err(format!(
+            "promote-materialize error: import_hash_mismatch {module} {field} expected {expected} actual {actual}"
+        ));
+    }
+    Ok(())
+}
+
+fn fallback_source_interface_from_verified(
+    verified: &npa_cert::VerifiedModule,
+) -> npa_frontend::HumanImportedSourceInterface {
+    let import = npa_frontend::VerifiedImport::from(verified);
+    let empty_span = npa_frontend::Span::empty(npa_frontend::FileId(0));
+    let mut source_interface = npa_frontend::HumanSourceInterface::new(import.module.clone());
+    source_interface.declarations = import
+        .exports
+        .iter()
+        .map(|export| npa_frontend::HumanSourceDeclarationMetadata {
+            kind: npa_frontend::HumanSourceDeclarationKind::Imported,
+            name: npa_frontend::HumanName::new(export.name.0.clone(), empty_span),
+            universe_params: export
+                .universe_params
+                .iter()
+                .cloned()
+                .map(|name| npa_frontend::HumanUniverseParam {
+                    name,
+                    span: empty_span,
+                })
+                .collect(),
+            binders: Vec::new(),
+            decl_interface_hash: Some(export.decl_interface_hash),
+            span: empty_span,
+        })
+        .collect();
+
+    npa_frontend::HumanImportedSourceInterface {
+        module: import.module,
+        export_hash: import.export_hash,
+        certificate_hash: import.certificate_hash,
+        source_interface,
+    }
+}
+
+fn materialized_module_manifest_table(
+    config: &ModuleArtifact,
+    artifact: &MaterializedModuleArtifact,
+) -> String {
+    let mut table = String::new();
+    table.push_str("[[modules]]\n");
+    table.push_str(&format!("module = \"{}\"\n", artifact.module));
+    table.push_str(&format!("source = \"{}\"\n", artifact.source_path));
+    table.push_str(&format!(
+        "certificate = \"{}\"\n",
+        artifact.certificate_path
+    ));
+    table.push_str(&format!("meta = \"{}\"\n", artifact.meta_path));
+    table.push_str(&format!("replay = \"{}\"\n", artifact.replay_path));
+    table.push_str("producer_profile = \"human-surface-explicit-term\"\n");
+    table.push_str(&format!(
+        "expected_source_hash = \"{}\"\n",
+        artifact.source_sha256
+    ));
+    table.push_str(&format!(
+        "expected_certificate_file_hash = \"{}\"\n",
+        artifact.certificate_file_sha256
+    ));
+    table.push_str(&format!(
+        "expected_export_hash = \"{}\"\n",
+        artifact.export_hash
+    ));
+    table.push_str(&format!(
+        "expected_axiom_report_hash = \"{}\"\n",
+        artifact.axiom_report_hash
+    ));
+    table.push_str(&format!(
+        "expected_certificate_hash = \"{}\"\n",
+        artifact.certificate_hash
+    ));
+    table.push_str(&format!(
+        "imports = [{}]\n",
+        quoted_owned_items(&artifact.imports)
+    ));
+    if !config.inductives.is_empty() {
+        table.push_str(&format!(
+            "inductives = [{}]\n",
+            quoted_items(
+                &config
+                    .inductives
+                    .iter()
+                    .map(|inductive| inductive.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+    }
+    table.push_str(&format!(
+        "definitions = [{}]\n",
+        quoted_items(
+            &config
+                .definitions
+                .iter()
+                .map(|definition| definition.name)
+                .collect::<Vec<_>>()
+        )
+    ));
+    table.push_str(&format!(
+        "theorems = [{}]\n",
+        quoted_items(
+            &config
+                .theorems
+                .iter()
+                .map(|theorem| theorem.name)
+                .collect::<Vec<_>>()
+        )
+    ));
+    table.push_str(&format!(
+        "axioms = [{}]\n",
+        quoted_owned_items(&artifact.axioms)
+    ));
+    table
+}
+
+fn materialized_meta_json(
+    config: &ModuleArtifact,
+    artifact: &MaterializedModuleArtifact,
+) -> String {
+    let inductives = config.inductives.iter().map(|inductive| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"inductive\" }}",
+            inductive.name
+        )
+    });
+    let definitions = config.definitions.iter().map(|definition| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"def\" }}",
+            definition.name
+        )
+    });
+    let theorems = config.theorems.iter().map(|theorem| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"theorem\" }}",
+            theorem.name
+        )
+    });
+    let declarations = inductives
+        .chain(definitions)
+        .chain(theorems)
+        .collect::<Vec<_>>()
+        .join(",\n");
+    format!(
+        "\
+{{
+  \"schema\": \"npa-ai-proof-meta-v0.1\",
+  \"module\": \"{}\",
+  \"source\": \"{}\",
+  \"certificate\": \"{}\",
+  \"producer_profile\": \"human-surface-explicit-term\",
+  \"trusted_status\": \"verified_by_certificate\",
+  \"source_sha256\": \"{}\",
+  \"certificate_file_sha256\": \"{}\",
+  \"export_hash\": \"{}\",
+  \"axiom_report_hash\": \"{}\",
+  \"certificate_hash\": \"{}\",
+  \"imports\": [{}],
+  \"axioms\": [{}],
+  \"declarations\": [
+{}
+  ],
+  \"trust_boundary\": \"source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted\"
+}}
+",
+        artifact.module,
+        artifact.source_path,
+        artifact.certificate_path,
+        artifact.source_sha256,
+        artifact.certificate_file_sha256,
+        artifact.export_hash,
+        artifact.axiom_report_hash,
+        artifact.certificate_hash,
+        quoted_owned_items(&artifact.imports),
+        quoted_owned_items(&artifact.axioms),
+        declarations
+    )
+}
+
+fn materialized_replay_json(
+    config: &ModuleArtifact,
+    artifact: &MaterializedModuleArtifact,
+) -> String {
+    let steps = if uses_checked_in_source(config.module) {
+        source_replay_steps(&artifact.source)
+            .into_iter()
+            .map(|(name, kind, term)| replay_step_json(&name, kind, &term))
+            .collect::<Vec<_>>()
+            .join(",\n")
+    } else {
+        let inductive_steps = config.inductives.iter().map(|inductive| {
+            let term = inductive_replay_term(inductive);
+            replay_step_json(inductive.name, "inductive_decl", &term)
+        });
+        let definition_steps = config.definitions.iter().map(|definition| {
+            replay_step_json(definition.name, "explicit_def_value", definition.value)
+        });
+        let theorem_steps = config
+            .theorems
+            .iter()
+            .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
+        inductive_steps
+            .chain(definition_steps)
+            .chain(theorem_steps)
+            .collect::<Vec<_>>()
+            .join(",\n")
+    };
+    format!(
+        "\
+{{
+  \"schema\": \"npa-ai-proof-replay-v0.1\",
+  \"module\": \"{}\",
+  \"trusted\": false,
+  \"profile\": \"explicit_term_source_certificate_handoff\",
+  \"steps\": [
+{}
+  ],
+  \"acceptance\": {{
+    \"required\": [\"decode_module_cert\", \"verify_module_cert\"],
+    \"accepted_artifact\": \"{}\"
+  }}
+}}
+",
+        artifact.module, steps, artifact.certificate_path
+    )
+}
+
+fn upsert_package_module_table(
+    source: &str,
+    target_module: &str,
+    module_table: &str,
+) -> Result<String, String> {
+    if let Some((start, end)) = find_package_module_block(source, target_module) {
+        let mut out = String::new();
+        out.push_str(&source[..start]);
+        out.push_str(module_table);
+        if !module_table.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push_str(&source[end..]);
+        Ok(out)
+    } else {
+        let mut out = source.trim_end_matches('\n').to_owned();
+        out.push_str("\n\n");
+        out.push_str(module_table);
+        if !out.ends_with('\n') {
+            out.push('\n');
+        }
+        Ok(out)
+    }
+}
+
+fn find_package_module_block(source: &str, target_module: &str) -> Option<(usize, usize)> {
+    let lines = source
+        .split_inclusive('\n')
+        .scan(0usize, |offset, line| {
+            let start = *offset;
+            *offset += line.len();
+            Some((start, line))
+        })
+        .collect::<Vec<_>>();
+    for (index, (start, line)) in lines.iter().enumerate() {
+        if line.trim() != "[[modules]]" {
+            continue;
+        }
+        let end = lines[index + 1..]
+            .iter()
+            .find(|(_, next)| {
+                let trimmed = next.trim();
+                trimmed.starts_with('[') && trimmed.ends_with(']')
+            })
+            .map(|(offset, _)| *offset)
+            .unwrap_or(source.len());
+        let block = &source[*start..end];
+        if package_module_name_from_block(block).as_deref() == Some(target_module) {
+            return Some((*start, end));
+        }
+    }
+    None
+}
+
+fn package_module_name_from_block(block: &str) -> Option<String> {
+    for line in block.lines() {
+        let line = line.trim();
+        let Some(rest) = line.strip_prefix("module") else {
+            continue;
+        };
+        let rest = rest.trim_start();
+        let Some(rest) = rest.strip_prefix('=') else {
+            continue;
+        };
+        return quoted_toml_string(rest.trim_start()).map(ToOwned::to_owned);
+    }
+    None
+}
+
+fn quoted_toml_string(value: &str) -> Option<&str> {
+    let value = value.strip_prefix('"')?;
+    let end = value.find('"')?;
+    Some(&value[..end])
+}
+
+fn materialize_change(
+    kind: &'static str,
+    path: PathBuf,
+    bytes: Vec<u8>,
+) -> Result<MaterializeChange, String> {
+    let action = match fs::read(&path) {
+        Ok(existing) if existing == bytes => MaterializeAction::Unchanged,
+        Ok(_) => MaterializeAction::Update,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => MaterializeAction::Create,
+        Err(err) => {
+            return Err(format!(
+                "promote-materialize error: failed_to_read_target {}: {err}",
+                path.display()
+            ));
+        }
+    };
+    Ok(MaterializeChange {
+        kind,
+        path,
+        action,
+        bytes,
+    })
+}
+
+fn materialize_gate_commands(mathlib_root_arg: &Path) -> Vec<String> {
+    let root = mathlib_root_arg.display();
+    let downstream_root = downstream_smoke_root(mathlib_root_arg);
+    vec![
+        format!("cargo run -q -p npa-cli -- package check --root {root} --json"),
+        format!("cargo run -q -p npa-cli -- package build-certs --root {root} --check --json"),
+        format!(
+            "cargo run -q -p npa-cli -- package verify-certs --root {root} --checker reference --json"
+        ),
+        format!("cargo run -q -p npa-cli -- package check-hashes --root {root} --json"),
+        format!("cargo run -q -p npa-cli -- package axiom-report --root {root} --check --json"),
+        format!("cargo run -q -p npa-cli -- package index --root {root} --check --json"),
+        format!("cargo run -q -p npa-cli -- package publish-plan --root {root} --check --json"),
+        format!("cargo run -q -p npa-cli -- package check --root {downstream_root} --json"),
+        format!(
+            "cargo run -q -p npa-cli -- package build-certs --root {downstream_root} --check --json"
+        ),
+        format!(
+            "cargo run -q -p npa-cli -- package verify-certs --root {downstream_root} --checker reference --json"
+        ),
+        format!(
+            "cargo run -q -p npa-cli -- package check-hashes --root {downstream_root} --json"
+        ),
+    ]
+}
+
+fn print_materialized_promotion(
+    options: &PromoteMaterializeOptions,
+    materialized: &MaterializedPromotion,
+) {
+    println!(
+        "promotion materialize mode = \"{}\"",
+        promote_materialize_mode_name(options.mode)
+    );
+    println!("plan = \"{}\"", options.plan_arg.display());
+    println!("mathlib_root = \"{}\"", options.mathlib_root_arg.display());
+    println!("corpus_module = \"{}\"", materialized.corpus_module);
+    println!("target_module = \"{}\"", materialized.target_module);
+    println!(
+        "namespace_change = \"{} -> {}\"",
+        materialized.corpus_module, materialized.target_module
+    );
+    for change in &materialized.changes {
+        println!(
+            "change kind = \"{}\" action = \"{}\" path = \"{}\"",
+            change.kind,
+            materialize_action_name(change.action),
+            materialize_display_path(&options.mathlib_root, &change.path)
+        );
+    }
+    if options.mode == PromoteMaterializeMode::Apply {
+        for change in &materialized.changes {
+            if change.action != MaterializeAction::Unchanged {
+                println!(
+                    "changed_path = \"{}\"",
+                    materialize_display_path(&options.mathlib_root, &change.path)
+                );
+            }
+        }
+    }
+    println!("post_materialize_checklist:");
+    for command in &materialized.gate_commands {
+        println!("  {command}");
+    }
+}
+
+fn promote_materialize_mode_name(mode: PromoteMaterializeMode) -> &'static str {
+    match mode {
+        PromoteMaterializeMode::DryRun => "dry-run",
+        PromoteMaterializeMode::Apply => "apply",
+    }
+}
+
+fn materialize_action_name(action: MaterializeAction) -> &'static str {
+    match action {
+        MaterializeAction::Create => "create",
+        MaterializeAction::Update => "update",
+        MaterializeAction::Unchanged => "unchanged",
+    }
+}
+
+fn materialize_display_path(root: &Path, path: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .display()
+        .to_string()
+}
+
+fn markdown_bullet_code_value(line: &str, label: &str) -> Option<String> {
+    let rest = line.trim().strip_prefix("- ")?;
+    let rest = rest.strip_prefix(label)?;
+    let rest = rest.strip_prefix(':')?.trim();
+    Some(markdown_code_cell(rest))
+}
+
+fn markdown_section<'a>(source: &'a str, header: &str) -> Option<&'a str> {
+    let start = source.find(header)?;
+    let body_start = source[start + header.len()..].find('\n')? + start + header.len() + 1;
+    let body = &source[body_start..];
+    let end = body.find("\n## ").unwrap_or(body.len());
+    Some(&body[..end])
+}
+
+fn markdown_table_row(line: &str) -> Option<Vec<String>> {
+    let trimmed = line.trim();
+    if !trimmed.starts_with('|') || !trimmed.ends_with('|') {
+        return None;
+    }
+    Some(
+        trimmed
+            .trim_matches('|')
+            .split('|')
+            .map(|cell| cell.trim().to_owned())
+            .collect(),
+    )
+}
+
+fn markdown_table_separator(cells: &[String]) -> bool {
+    cells
+        .iter()
+        .all(|cell| cell.chars().all(|ch| matches!(ch, '-' | ':' | ' ')))
+}
+
+fn markdown_code_cell(cell: &str) -> String {
+    let trimmed = cell.trim();
+    trimmed
+        .strip_prefix('`')
+        .and_then(|value| value.strip_suffix('`'))
+        .unwrap_or(trimmed)
+        .replace("\\|", "|")
+}
+
+fn promotion_plan_markdown(
+    repo_root: &Path,
+    options: &PromotePlanOptions,
+    config: &ModuleArtifact,
+    closure: &[&ModuleArtifact],
+    module_metas: &BTreeMap<String, ModuleMeta>,
+) -> Result<String, String> {
+    let requested_meta = module_metas.get(config.module).ok_or_else(|| {
+        format!(
+            "promote-plan error: missing_corpus_metadata {}",
+            config.module
+        )
+    })?;
+    let evidence = promotion_evidence(repo_root, &options.mathlib_root);
+    let direct_imports = source_imports(config);
+    let expected_features = expected_core_features_for_module(config.module);
+    let supported_features = supported_core_features_for_module(config.module);
+    let target_path = mathlib_module_path(&options.target_module);
+    let mathlib_root = options.mathlib_root_arg.display();
+    let downstream_root = downstream_smoke_root(&options.mathlib_root_arg);
+
+    let mut out = String::new();
+    out.push_str(&format!(
+        "# Promotion Plan: {} -> {}\n\n",
+        config.module, options.target_module
+    ));
+    out.push_str("This plan is untrusted planning metadata. Proof acceptance still comes from canonical certificates, deterministic hashes, and source-free verification.\n\n");
+
+    out.push_str("## Module Mapping\n\n");
+    out.push_str(&format!("- Corpus module: `{}`\n", config.module));
+    out.push_str(&format!("- Target module: `{}`\n", options.target_module));
+    out.push_str(&format!("- Target source: `{target_path}/source.npa`\n"));
+    out.push_str(&format!(
+        "- Target certificate: `{target_path}/certificate.npcert`\n"
+    ));
+    out.push_str(&format!("- Corpus source: `{}`\n", config.source_path));
+    out.push_str(&format!(
+        "- Corpus certificate: `{}`\n",
+        config.certificate_path
+    ));
+    out.push_str(&format!("- Corpus meta: `{}`\n", config.meta_path));
+    out.push_str(&format!("- Corpus replay: `{}`\n\n", config.replay_path));
+
+    out.push_str("## Readiness Checklist\n\n");
+    out.push_str("| Criterion | Status | Detail |\n");
+    out.push_str("| --- | --- | --- |\n");
+    out.push_str("| Name and statement stable | Missing evidence | Reviewer must confirm that the public name and statement will not churn before materialization. |\n");
+    out.push_str("| Likely downstream reuse | Missing evidence | Reviewer must identify at least two likely downstream modules or record why promotion still pays off. |\n");
+    out.push_str(&format!(
+        "| Import closure small | Verified evidence | Corpus closure has {} internal module(s). |\n",
+        closure.len()
+    ));
+    out.push_str(&format!(
+        "| Axiom policy explicit | Verified evidence | Corpus module axioms: `{}`; package allow-list: `{}`. |\n",
+        format_string_list(&requested_meta.axioms),
+        PACKAGE_POLICY_ALLOWED_AXIOMS.join(", ")
+    ));
+    out.push_str("| Source-free package evidence | Verified evidence | Corpus package artifact files and hashes are listed below; rerun gates before promotion. |\n");
+    out.push_str("| Compatibility alias decision | Missing evidence | Decide whether a corpus compatibility alias is needed after the target module lands. |\n\n");
+
+    out.push_str("## Direct Import Mapping\n\n");
+    if direct_imports.is_empty() {
+        out.push_str("- No direct imports.\n\n");
+    } else {
+        out.push_str("| Corpus import | Proposed target import | Status |\n");
+        out.push_str("| --- | --- | --- |\n");
+        for import in direct_imports {
+            let (target, status) = promotion_import_target(import, options);
+            out.push_str(&format!(
+                "| `{}` | `{}` | {} |\n",
+                markdown_escape(import),
+                markdown_escape(&target),
+                status
+            ));
+        }
+        out.push('\n');
+    }
+
+    out.push_str("## Import Closure\n\n");
+    out.push_str("| Corpus module | Proposed target module | Certificate | Source imports | Package imports | Axioms |\n");
+    out.push_str("| --- | --- | --- | --- | --- | --- |\n");
+    for module in closure {
+        let meta = module_metas.get(module.module).ok_or_else(|| {
+            format!(
+                "promote-plan error: missing_corpus_metadata {}",
+                module.module
+            )
+        })?;
+        out.push_str(&format!(
+            "| `{}` | `{}` | `{}` | `{}` | `{}` | `{}` |\n",
+            markdown_escape(module.module),
+            markdown_escape(&promotion_target_module(module.module, options)),
+            markdown_escape(module.certificate_path),
+            markdown_escape(&format_str_list(source_imports(module))),
+            markdown_escape(&format_str_list(module.imports)),
+            markdown_escape(&format_string_list(&meta.axioms))
+        ));
+    }
+    out.push('\n');
+
+    out.push_str("## Public Exports\n\n");
+    push_export_list(
+        &mut out,
+        "Inductives",
+        &config
+            .inductives
+            .iter()
+            .map(|item| item.name)
+            .collect::<Vec<_>>(),
+    );
+    push_export_list(
+        &mut out,
+        "Definitions",
+        &config
+            .definitions
+            .iter()
+            .map(|item| item.name)
+            .collect::<Vec<_>>(),
+    );
+    push_export_list(
+        &mut out,
+        "Theorems",
+        &config
+            .theorems
+            .iter()
+            .map(|item| item.name)
+            .collect::<Vec<_>>(),
+    );
+    out.push('\n');
+
+    out.push_str("## Axiom Policy Diff\n\n");
+    out.push_str("| Item | Corpus value | Target action |\n");
+    out.push_str("| --- | --- | --- |\n");
+    out.push_str(
+        "| `allow_custom_axioms` | `false` | Keep `false` in npa-mathlib unless a separate policy review approves a change. |\n",
+    );
+    out.push_str(&format!(
+        "| `allowed_axioms` | `{}` | Target package allow-list must cover exactly the required axioms without accidental widening. |\n",
+        PACKAGE_POLICY_ALLOWED_AXIOMS.join(", ")
+    ));
+    out.push_str(&format!(
+        "| Module axioms | `{}` | Verify the target module axiom report remains within package policy. |\n",
+        format_string_list(&requested_meta.axioms)
+    ));
+    out.push_str(&format!(
+        "| Expected core features | `{}` | Source-free verifier must report the same required features. |\n",
+        format_core_features(&expected_features)
+    ));
+    out.push_str(&format!(
+        "| Supported authoring features | `{}` | Do not treat authoring support as release evidence. |\n\n",
+        format_core_features(&supported_features)
+    ));
+
+    out.push_str("## Evidence\n\n");
+    out.push_str("| Evidence | Path | Status | Detail |\n");
+    out.push_str("| --- | --- | --- | --- |\n");
+    out.push_str(&format!(
+        "| Corpus module metadata | `{}` | Verified evidence | source `{}`, certificate file `{}`, export `{}`, axiom report `{}`, certificate `{}` |\n",
+        markdown_escape(config.meta_path),
+        markdown_escape(&requested_meta.source_sha256),
+        markdown_escape(&requested_meta.certificate_file_sha256),
+        markdown_escape(&requested_meta.export_hash),
+        markdown_escape(&requested_meta.axiom_report_hash),
+        markdown_escape(&requested_meta.certificate_hash)
+    ));
+    for item in &evidence {
+        out.push_str(&format!(
+            "| {} | `{}` | {} | {} |\n",
+            markdown_escape(&item.label),
+            markdown_escape(&item.path),
+            item.status,
+            markdown_escape(&item.detail)
+        ));
+    }
+    out.push_str("| Stable statement review | `manual` | Missing evidence | Compare corpus statement against intended public Mathlib statement. |\n");
+    out.push_str("| Compatibility alias review | `manual` | Missing evidence | Decide whether old corpus-facing names need aliases after promotion. |\n\n");
+
+    out.push_str("## Gate Commands\n\n");
+    out.push_str("Run these from the NPA repository after materialization or before accepting promotion evidence.\n\n");
+    out.push_str("```sh\n");
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check --root {mathlib_root} --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package build-certs --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package verify-certs --root {mathlib_root} --checker reference --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check-hashes --root {mathlib_root} --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package axiom-report --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package index --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package publish-plan --root {mathlib_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check --root {downstream_root} --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package build-certs --root {downstream_root} --check --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package verify-certs --root {downstream_root} --checker reference --json\n"
+    ));
+    out.push_str(&format!(
+        "cargo run -q -p npa-cli -- package check-hashes --root {downstream_root} --json\n"
+    ));
+    out.push_str("```\n\n");
+
+    out.push_str("## Materialization Notes\n\n");
+    out.push_str("- This command did not write to `--mathlib-root`.\n");
+    out.push_str("- Copying source, certificate, meta, replay, package manifest, package lock, axiom report, theorem index, and publish plan is a later materialization step.\n");
+    out.push_str("- Evidence placeholders above must be resolved before using the plan as a promotion checklist.\n");
+    out.push_str(&format!(
+        "- Requested output path: `{}`.\n",
+        options.out_arg.display()
+    ));
+
+    Ok(out)
+}
+
+fn promotion_evidence(repo_root: &Path, mathlib_root: &Path) -> Vec<PromotionEvidence> {
+    let proof_root = repo_root.join("proofs");
+    let corpus_paths = [
+        (
+            "Corpus manifest",
+            MANIFEST_PATH,
+            proof_root.join(MANIFEST_PATH),
+        ),
+        (
+            "Corpus package manifest",
+            PACKAGE_MANIFEST_PATH,
+            proof_root.join(PACKAGE_MANIFEST_PATH),
+        ),
+        (
+            "Corpus package lock",
+            PACKAGE_LOCK_PATH,
+            proof_root.join(PACKAGE_LOCK_PATH),
+        ),
+        (
+            "Corpus axiom report",
+            PACKAGE_AXIOM_REPORT_PATH,
+            proof_root.join(PACKAGE_AXIOM_REPORT_PATH),
+        ),
+        (
+            "Corpus theorem index",
+            PACKAGE_THEOREM_INDEX_PATH,
+            proof_root.join(PACKAGE_THEOREM_INDEX_PATH),
+        ),
+    ];
+    let mathlib_paths = [
+        (
+            "npa-mathlib package manifest",
+            PACKAGE_MANIFEST_PATH,
+            mathlib_root.join(PACKAGE_MANIFEST_PATH),
+        ),
+        (
+            "npa-mathlib package lock",
+            PACKAGE_LOCK_PATH,
+            mathlib_root.join(PACKAGE_LOCK_PATH),
+        ),
+        (
+            "npa-mathlib axiom report",
+            PACKAGE_AXIOM_REPORT_PATH,
+            mathlib_root.join(PACKAGE_AXIOM_REPORT_PATH),
+        ),
+        (
+            "npa-mathlib theorem index",
+            PACKAGE_THEOREM_INDEX_PATH,
+            mathlib_root.join(PACKAGE_THEOREM_INDEX_PATH),
+        ),
+        (
+            "npa-mathlib publish plan",
+            PACKAGE_PUBLISH_PLAN_PATH,
+            mathlib_root.join(PACKAGE_PUBLISH_PLAN_PATH),
+        ),
+        (
+            "Downstream smoke manifest",
+            "fixtures/downstream-smoke/npa-package.toml",
+            mathlib_root.join("fixtures/downstream-smoke/npa-package.toml"),
+        ),
+    ];
+
+    corpus_paths
+        .into_iter()
+        .chain(mathlib_paths)
+        .map(|(label, display_path, path)| promotion_file_evidence(label, display_path, &path))
+        .collect()
+}
+
+fn promotion_file_evidence(label: &str, display_path: &str, path: &Path) -> PromotionEvidence {
+    match fs::read(path) {
+        Ok(bytes) => PromotionEvidence {
+            label: label.to_owned(),
+            path: display_path.to_owned(),
+            status: "Verified evidence",
+            detail: format!("file present; {}", tagged_sha256(&bytes)),
+        },
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => PromotionEvidence {
+            label: label.to_owned(),
+            path: display_path.to_owned(),
+            status: "Missing evidence",
+            detail: "file not found".to_owned(),
+        },
+        Err(err) => PromotionEvidence {
+            label: label.to_owned(),
+            path: display_path.to_owned(),
+            status: "Missing evidence",
+            detail: format!("could not read file: {err}"),
+        },
+    }
+}
+
+fn promotion_import_target(import: &str, options: &PromotePlanOptions) -> (String, &'static str) {
+    if let Some(plan) = external_import_plan(import) {
+        (
+            format!("{} {} ({})", plan.package, plan.version, plan.module),
+            "Verified evidence",
+        )
+    } else if import == options.corpus_module {
+        (options.target_module.clone(), "Verified evidence")
+    } else if module_config(import).is_some() {
+        (
+            format!("TBD ({})", default_mathlib_module_guess(import)),
+            "Missing evidence",
+        )
+    } else {
+        ("TBD".to_owned(), "Missing evidence")
+    }
+}
+
+fn promotion_target_module(module: &str, options: &PromotePlanOptions) -> String {
+    if module == options.corpus_module {
+        options.target_module.clone()
+    } else {
+        format!("TBD ({})", default_mathlib_module_guess(module))
+    }
+}
+
+fn default_mathlib_module_guess(module: &str) -> String {
+    module
+        .strip_prefix("Proofs.Ai.")
+        .map(|suffix| format!("Mathlib.{suffix}"))
+        .unwrap_or_else(|| format!("Mathlib.TBD.{module}"))
+}
+
+fn mathlib_module_path(module: &str) -> String {
+    module.replace('.', "/")
+}
+
+fn downstream_smoke_root(mathlib_root_arg: &Path) -> String {
+    mathlib_root_arg
+        .join("fixtures/downstream-smoke")
+        .display()
+        .to_string()
+}
+
+fn push_export_list(out: &mut String, title: &str, items: &[&str]) {
+    out.push_str(&format!("### {title}\n\n"));
+    if items.is_empty() {
+        out.push_str("- None.\n\n");
+    } else {
+        for item in items {
+            out.push_str(&format!("- `{}`\n", markdown_escape(item)));
+        }
+        out.push('\n');
+    }
+}
+
+fn format_str_list(items: &[&str]) -> String {
+    if items.is_empty() {
+        "none".to_owned()
+    } else {
+        items.join(", ")
+    }
+}
+
+fn format_string_list(items: &[String]) -> String {
+    if items.is_empty() {
+        "none".to_owned()
+    } else {
+        items.join(", ")
+    }
+}
+
+fn format_core_features(items: &[npa_cert::CoreFeature]) -> String {
+    if items.is_empty() {
+        "none".to_owned()
+    } else {
+        items
+            .iter()
+            .map(|item| format!("{item:?}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
+fn markdown_escape(input: &str) -> String {
+    input.replace('|', "\\|")
+}
+
+fn path_inside_or_equal(child: &Path, parent: &Path) -> bool {
+    let child = normalize_path_lexical(child);
+    let parent = normalize_path_lexical(parent);
+    child == parent || child.starts_with(parent)
+}
+
+fn normalize_path_lexical(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Prefix(prefix) => normalized.push(prefix.as_os_str()),
+            std::path::Component::RootDir => normalized.push(component.as_os_str()),
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                if !normalized.pop() {
+                    normalized.push(component.as_os_str());
+                }
+            }
+            std::path::Component::Normal(part) => normalized.push(part),
+        }
+    }
+    normalized
+}
+
+#[allow(dead_code)]
+fn verified_cache_key_input_from_verified_module(
+    verified: &npa_cert::VerifiedModule,
+    certificate_file_hash: String,
+    direct_imports: Vec<VerifiedCacheImportIdentity>,
+    import_closure_certificate_file_hashes: Vec<VerifiedCacheDependencyIdentity>,
+    policy: &npa_cert::AxiomPolicy,
+) -> VerifiedCacheKeyInput {
+    verified_cache_key_input_from_verified_module_with_profiles(
+        verified,
+        certificate_file_hash,
+        direct_imports,
+        import_closure_certificate_file_hashes,
+        policy,
+        VERIFIED_CACHE_SCHEMA,
+        npa_package::CHECKER_PROFILE_REFERENCE_V0_1,
+        &default_binary_build_identity(),
+    )
+}
+
+#[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
+fn verified_cache_key_input_from_verified_module_with_profiles(
+    verified: &npa_cert::VerifiedModule,
+    certificate_file_hash: String,
+    mut direct_imports: Vec<VerifiedCacheImportIdentity>,
+    mut import_closure_certificate_file_hashes: Vec<VerifiedCacheDependencyIdentity>,
+    policy: &npa_cert::AxiomPolicy,
+    schema: &str,
+    verifier_profile: &str,
+    binary_build_identity: &str,
+) -> VerifiedCacheKeyInput {
+    direct_imports.sort();
+    direct_imports.dedup();
+    import_closure_certificate_file_hashes.sort();
+    import_closure_certificate_file_hashes.dedup();
+    VerifiedCacheKeyInput {
+        schema: schema.to_owned(),
+        core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
+        certificate_format: npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1.to_owned(),
+        kernel_profile: npa_package::KERNEL_PROFILE_V0_1.to_owned(),
+        verifier_profile: verifier_profile.to_owned(),
+        binary_build_identity: binary_build_identity.to_owned(),
+        module: verified.module().as_dotted(),
+        certificate_hash: tagged_hash(verified.certificate_hash()),
+        certificate_file_hash,
+        direct_imports,
+        import_closure_certificate_file_hashes,
+        axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(policy),
+        enabled_core_features: core_feature_names(&verified.axiom_report().core_features),
+    }
+}
+
+fn verified_cache_key_input_from_certificate(
+    proof_root: &Path,
+    module: &str,
+) -> Result<VerifiedCacheKeyInput, String> {
+    let certificate_bytes = read_certificate_bytes_for_module(proof_root, module)?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes).map_err(|err| {
+        format!("failed to decode certificate for verified cache {module}: {err:?}")
+    })?;
+    let actual = decoded.header.module.as_dotted();
+    if actual != module {
+        return Err(format!(
+            "certificate for verified cache target {module} has module {actual}"
+        ));
+    }
+
+    let policy = axiom_policy_for_module(module);
+    let mut direct_imports = Vec::with_capacity(decoded.imports.len());
+    for import in &decoded.imports {
+        let import_module = import.module.as_dotted();
+        let certificate_hash = match import.certificate_hash {
+            Some(hash) => tagged_hash(hash),
+            None => certificate_hash_for_module(proof_root, &import_module)?,
+        };
+        direct_imports.push(VerifiedCacheImportIdentity {
+            module: import_module,
+            export_hash: tagged_hash(import.export_hash),
+            certificate_hash,
+        });
+    }
+
+    let import_closure_certificate_file_hashes =
+        verified_cache_import_closure_file_hashes(proof_root, module, &decoded)?;
+
+    Ok(VerifiedCacheKeyInput {
+        schema: VERIFIED_CACHE_SCHEMA.to_owned(),
+        core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
+        certificate_format: npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1.to_owned(),
+        kernel_profile: npa_package::KERNEL_PROFILE_V0_1.to_owned(),
+        verifier_profile: npa_package::CHECKER_PROFILE_REFERENCE_V0_1.to_owned(),
+        binary_build_identity: default_binary_build_identity(),
+        module: module.to_owned(),
+        certificate_hash: tagged_hash(decoded.hashes.certificate_hash),
+        certificate_file_hash: tagged_sha256(&certificate_bytes),
+        direct_imports,
+        import_closure_certificate_file_hashes,
+        axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(&policy),
+        enabled_core_features: core_feature_names(&decoded.axiom_report.core_features),
+    })
+}
+
+fn verified_cache_key(input: &VerifiedCacheKeyInput) -> String {
+    sha256_hex(verified_cache_key_material(input).as_bytes())
+}
+
+fn verified_cache_entry_path(repo_root: &Path, cache_key: &str) -> PathBuf {
+    repo_root
+        .join(VERIFIED_CACHE_LAYOUT_DIR)
+        .join(format!("{cache_key}.json"))
+}
+
+fn verified_cache_key_material(input: &VerifiedCacheKeyInput) -> String {
+    let imports = input
+        .direct_imports
+        .iter()
+        .map(|import| {
+            format!(
+                "{{\"module\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\"}}",
+                json_escape(&import.module),
+                json_escape(&import.export_hash),
+                json_escape(&import.certificate_hash)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let import_closure_certificate_file_hashes = input
+        .import_closure_certificate_file_hashes
+        .iter()
+        .map(|dependency| {
+            format!(
+                "{{\"module\":\"{}\",\"certificate_file_hash\":\"{}\"}}",
+                json_escape(&dependency.module),
+                json_escape(&dependency.certificate_file_hash)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "{{\"schema\":\"{}\",\"core_spec\":\"{}\",\"certificate_format\":\"{}\",\"kernel_profile\":\"{}\",\"verifier_profile\":\"{}\",\"binary_build_identity\":\"{}\",\"module\":\"{}\",\"certificate_hash\":\"{}\",\"certificate_file_hash\":\"{}\",\"direct_imports\":[{}],\"import_closure_certificate_file_hashes\":[{}],\"axiom_policy_fingerprint\":\"{}\",\"enabled_core_features\":{}}}",
+        json_escape(&input.schema),
+        json_escape(&input.core_spec),
+        json_escape(&input.certificate_format),
+        json_escape(&input.kernel_profile),
+        json_escape(&input.verifier_profile),
+        json_escape(&input.binary_build_identity),
+        json_escape(&input.module),
+        json_escape(&input.certificate_hash),
+        json_escape(&input.certificate_file_hash),
+        imports,
+        import_closure_certificate_file_hashes,
+        json_escape(&input.axiom_policy_fingerprint),
+        json_string_array(&input.enabled_core_features)
+    )
+}
+
+fn verified_cache_entry_from_verified_module(
+    key_input: VerifiedCacheKeyInput,
+    verified: &npa_cert::VerifiedModule,
+) -> VerifiedCacheEntry {
+    let mut module_axioms = verified
+        .axiom_report()
+        .module_axioms
+        .iter()
+        .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    module_axioms.sort();
+    module_axioms.dedup();
+    VerifiedCacheEntry {
+        schema: VERIFIED_CACHE_SCHEMA.to_owned(),
+        cache_key: verified_cache_key(&key_input),
+        key_input,
+        module: verified.module().as_dotted(),
+        export_hash: tagged_hash(verified.export_hash()),
+        certificate_hash: tagged_hash(verified.certificate_hash()),
+        module_axioms,
+        core_features: core_feature_names(&verified.axiom_report().core_features),
+    }
+}
+
+fn verified_cache_entry_json(entry: &VerifiedCacheEntry) -> String {
+    format!(
+        "{{\"schema\":\"{}\",\"cache_key\":\"{}\",\"trusted\":false,\"module\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"module_axioms\":{},\"core_features\":{},\"key_input\":{},\"trust_boundary\":\"cache entries are authoring-only acceleration metadata; canonical certificates and source-free verification remain authoritative\"}}\n",
+        json_escape(&entry.schema),
+        json_escape(&entry.cache_key),
+        json_escape(&entry.module),
+        json_escape(&entry.export_hash),
+        json_escape(&entry.certificate_hash),
+        json_string_array(&entry.module_axioms),
+        json_string_array(&entry.core_features),
+        verified_cache_key_material(&entry.key_input)
+    )
+}
+
+fn verified_cache_entry_schema_status(source: &str) -> VerifiedCacheSchemaStatus {
+    match leading_json_string_field(source, "schema").as_deref() {
+        Some(VERIFIED_CACHE_SCHEMA) => VerifiedCacheSchemaStatus::Current,
+        _ => VerifiedCacheSchemaStatus::Miss,
+    }
+}
+
+fn verified_cache_lookup(
+    repo_root: &Path,
+    key_input: &VerifiedCacheKeyInput,
+) -> Result<VerifiedCacheLookup, String> {
+    let cache_key = verified_cache_key(key_input);
+    let path = verified_cache_entry_path(repo_root, &cache_key);
+    let source = match fs::read_to_string(&path) {
+        Ok(source) => source,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(VerifiedCacheLookup {
+                status: VerifiedCacheLookupStatus::Miss,
+                path,
+                source: None,
+            });
+        }
+        Err(err) => {
+            return Err(format!(
+                "failed to read verified cache entry {}: {err}",
+                path.display()
+            ));
+        }
+    };
+
+    if verified_cache_entry_schema_status(&source) == VerifiedCacheSchemaStatus::Miss {
+        return Ok(VerifiedCacheLookup {
+            status: VerifiedCacheLookupStatus::SchemaMiss,
+            path,
+            source: Some(source),
+        });
+    }
+
+    let status = if top_level_json_string_field(&source, "cache_key").as_deref() == Some(&cache_key)
+        && top_level_json_string_field(&source, "module").as_deref() == Some(&key_input.module)
+        && top_level_json_string_field(&source, "certificate_hash").as_deref()
+            == Some(&key_input.certificate_hash)
+    {
+        VerifiedCacheLookupStatus::Hit
+    } else {
+        VerifiedCacheLookupStatus::Stale
+    };
+
+    Ok(VerifiedCacheLookup {
+        status,
+        path,
+        source: Some(source),
+    })
+}
+
+fn write_verified_cache_entry(
+    repo_root: &Path,
+    key_input: VerifiedCacheKeyInput,
+    verified: &npa_cert::VerifiedModule,
+) -> Result<(), String> {
+    let entry = verified_cache_entry_from_verified_module(key_input, verified);
+    let path = verified_cache_entry_path(repo_root, &entry.cache_key);
+    write(path, verified_cache_entry_json(&entry).as_bytes())
+}
+
+fn discard_verified_cache_entry(path: &Path) -> Result<(), String> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(format!(
+            "failed to discard inconsistent verified cache entry {}: {err}",
+            path.display()
+        )),
+    }
+}
+
+fn verified_cache_import_closure_file_hashes(
+    proof_root: &Path,
+    root_module: &str,
+    root_cert: &npa_cert::ModuleCert,
+) -> Result<Vec<VerifiedCacheDependencyIdentity>, String> {
+    let mut seen = BTreeSet::new();
+    let mut dependencies = Vec::new();
+    for import in &root_cert.imports {
+        collect_verified_cache_dependency_file_hash(
+            proof_root,
+            root_module,
+            &import.module.as_dotted(),
+            &mut seen,
+            &mut dependencies,
+        )?;
+    }
+    dependencies.sort();
+    dependencies.dedup();
+    Ok(dependencies)
+}
+
+fn collect_verified_cache_dependency_file_hash(
+    proof_root: &Path,
+    root_module: &str,
+    module: &str,
+    seen: &mut BTreeSet<String>,
+    dependencies: &mut Vec<VerifiedCacheDependencyIdentity>,
+) -> Result<(), String> {
+    if module == root_module || !seen.insert(module.to_owned()) {
+        return Ok(());
+    }
+    let certificate_bytes = read_certificate_bytes_for_module(proof_root, module)?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes).map_err(|err| {
+        format!("failed to decode import certificate for verified cache {module}: {err:?}")
+    })?;
+    let actual = decoded.header.module.as_dotted();
+    if actual != module {
+        return Err(format!(
+            "import certificate for verified cache dependency {module} has module {actual}"
+        ));
+    }
+    dependencies.push(VerifiedCacheDependencyIdentity {
+        module: module.to_owned(),
+        certificate_file_hash: tagged_sha256(&certificate_bytes),
+    });
+    for import in &decoded.imports {
+        collect_verified_cache_dependency_file_hash(
+            proof_root,
+            root_module,
+            &import.module.as_dotted(),
+            seen,
+            dependencies,
+        )?;
+    }
+    Ok(())
+}
+
+fn read_certificate_bytes_for_module(proof_root: &Path, module: &str) -> Result<Vec<u8>, String> {
+    let certificate_path = certificate_path_for_module(module)
+        .ok_or_else(|| format!("unknown proof corpus or external module {module}"))?;
+    fs::read(proof_root.join(certificate_path))
+        .map_err(|err| format!("failed to read {certificate_path}: {err}"))
+}
+
+fn certificate_hash_for_module(proof_root: &Path, module: &str) -> Result<String, String> {
+    let certificate_bytes = read_certificate_bytes_for_module(proof_root, module)?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes).map_err(|err| {
+        format!("failed to decode import certificate hash for verified cache {module}: {err:?}")
+    })?;
+    let actual = decoded.header.module.as_dotted();
+    if actual != module {
+        return Err(format!(
+            "import certificate for verified cache direct import {module} has module {actual}"
+        ));
+    }
+    Ok(tagged_hash(decoded.hashes.certificate_hash))
+}
+
+fn certificate_path_for_module(module: &str) -> Option<&'static str> {
+    external_import_plan(module)
+        .map(|plan| plan.certificate_path)
+        .or_else(|| module_config(module).map(|config| config.certificate_path))
+}
+
+fn verified_cache_axiom_policy_fingerprint(policy: &npa_cert::AxiomPolicy) -> String {
+    let allowlisted_axioms = policy
+        .allowlisted_axioms
+        .iter()
+        .map(|axiom| axiom.as_dotted())
+        .collect::<Vec<_>>();
+    let supported_core_features = policy
+        .supported_core_features
+        .iter()
+        .copied()
+        .map(|feature| feature.as_str().to_owned())
+        .collect::<Vec<_>>();
+    let material = format!(
+        "{{\"mode\":\"{}\",\"deny_sorry\":{},\"allowlisted_axioms\":{},\"supported_core_features\":{}}}",
+        trust_mode_name(policy.mode),
+        policy.deny_sorry,
+        json_string_array(&allowlisted_axioms),
+        json_string_array(&supported_core_features)
+    );
+    tagged_sha256(material.as_bytes())
+}
+
+#[allow(dead_code)]
+fn default_binary_build_identity() -> String {
+    option_env!("NPA_BINARY_BUILD_IDENTITY")
+        .unwrap_or(concat!(
+            env!("CARGO_PKG_NAME"),
+            "@",
+            env!("CARGO_PKG_VERSION")
+        ))
+        .to_owned()
+}
+
+#[allow(dead_code)]
+fn core_feature_names(features: &[npa_cert::CoreFeature]) -> Vec<String> {
+    let mut names = features
+        .iter()
+        .copied()
+        .map(|feature| feature.as_str().to_owned())
+        .collect::<Vec<_>>();
+    names.sort();
+    names.dedup();
+    names
+}
+
+#[allow(dead_code)]
+fn trust_mode_name(mode: npa_cert::TrustMode) -> &'static str {
+    match mode {
+        npa_cert::TrustMode::Normal => "normal",
+        npa_cert::TrustMode::HighTrust => "high_trust",
+    }
+}
+
+#[allow(dead_code)]
+fn json_string_array(items: &[String]) -> String {
+    let body = items
+        .iter()
+        .map(|item| format!("\"{}\"", json_escape(item)))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("[{body}]")
+}
+
+#[allow(dead_code)]
+fn leading_json_string_field(source: &str, field: &str) -> Option<String> {
+    let source = source.trim_start().strip_prefix('{')?.trim_start();
+    let needle = format!("\"{}\"", json_escape(field));
+    let rest = source.strip_prefix(&needle)?;
+    parse_json_string_after_colon(rest)
+}
+
+fn top_level_json_string_field(source: &str, field: &str) -> Option<String> {
+    let needle = format!("\"{}\"", json_escape(field));
+    let mut depth = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for (index, ch) in source.char_indices() {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' => {
+                if depth == 1 && source[index..].starts_with(&needle) {
+                    return parse_json_string_after_colon(&source[index + needle.len()..]);
+                }
+                in_string = true;
+            }
+            '{' | '[' => depth += 1,
+            '}' | ']' => {
+                depth = depth.checked_sub(1)?;
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn parse_json_string_after_colon(source: &str) -> Option<String> {
+    let rest = source.trim_start();
+    let rest = rest.strip_prefix(':')?.trim_start();
+    let rest = rest.strip_prefix('"')?;
+    let mut value = String::new();
+    let mut chars = rest.chars();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '"' => return Some(value),
+            '\\' => match chars.next()? {
+                '"' => value.push('"'),
+                '\\' => value.push('\\'),
+                '/' => value.push('/'),
+                'n' => value.push('\n'),
+                'r' => value.push('\r'),
+                't' => value.push('\t'),
+                _ => return None,
+            },
+            ch => value.push(ch),
+        }
+    }
+    None
 }
 
 fn write_package_lock_fixture(proof_root: &Path) -> Result<(), String> {
@@ -30610,8 +34456,10 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
         || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
+        || module == ABSTRACT_FIELD_HOM_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
+        || module == ABSTRACT_FIELD_IDEAL_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -30945,6 +34793,10 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
+        || config.module == ABSTRACT_FIELD_HOM_MODULE.module
+        || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
+        || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
+        || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
@@ -30952,7 +34804,9 @@ fn module_source(config: &ModuleArtifact) -> String {
 }
 
 fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
-    if config.module == ABSTRACT_ORDERED_FIELD_MODULE.module {
+    if config.module == ABSTRACT_FIELD_MODULE.module
+        || config.module == ABSTRACT_ORDERED_FIELD_MODULE.module
+    {
         // Eq is verified as a transitive AbstractRing dependency; importing it directly here
         // duplicates the kernel Eq declaration during certificate handoff.
         &["Proofs.Ai.Algebra.AbstractRing"]
@@ -31044,8 +34898,12 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
 }
 
 fn tagged_sha256(bytes: &[u8]) -> String {
+    format!("sha256:{}", sha256_hex(bytes))
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
     let digest = Sha256::digest(bytes);
-    format!("sha256:{}", hex_bytes(&digest))
+    hex_bytes(&digest)
 }
 
 fn tagged_hash(hash: npa_cert::Hash) -> String {
@@ -31495,6 +35353,817 @@ mod tests {
     }
 
     #[test]
+    fn verified_cache_parser_defaults_to_off() {
+        let parsed = parse_verify_options(&["--module".to_owned(), "Proofs.Ai.Basic".to_owned()])
+            .expect("verify args should parse");
+        assert_eq!(parsed.verified_cache, VerifiedCacheMode::Off);
+    }
+
+    #[test]
+    fn verified_cache_parser_accepts_authoring_and_read_through_for_local_targets() {
+        let parsed = parse_verify_options(&[
+            "--changed-only".to_owned(),
+            "--verified-cache".to_owned(),
+            "authoring".to_owned(),
+        ])
+        .expect("authoring cache should parse for changed-only");
+        assert_eq!(parsed.verified_cache, VerifiedCacheMode::Authoring);
+
+        let parsed = parse_verify_options(&[
+            "--module".to_owned(),
+            "Proofs.Ai.Basic".to_owned(),
+            "--verified-cache".to_owned(),
+            "read-through".to_owned(),
+        ])
+        .expect("read-through cache should parse for module");
+        assert_eq!(parsed.verified_cache, VerifiedCacheMode::ReadThrough);
+    }
+
+    #[test]
+    fn verified_cache_parser_rejects_authoring_for_full_verify() {
+        let err = parse_verify_options(&[
+            "--verify".to_owned(),
+            "--verified-cache".to_owned(),
+            "authoring".to_owned(),
+        ])
+        .expect_err("authoring cache should require a local target selector");
+        assert!(err.contains("only supported with --module or --changed-only"));
+    }
+
+    #[test]
+    fn usage_documents_verified_cache_modes() {
+        let usage = usage();
+        assert!(usage.contains("--verified-cache off|authoring|read-through"));
+        assert!(usage.contains("defaults to off"));
+    }
+
+    #[test]
+    fn build_modules_args_parser_requires_modules() {
+        let parsed =
+            parse_build_modules_args(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Eq".to_owned()])
+                .expect("modules should parse");
+        assert_eq!(
+            parsed.requested_modules,
+            vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]
+        );
+        assert!(parsed.failures_out.is_none());
+        assert!(parse_build_modules_args(&[]).is_err());
+    }
+
+    #[test]
+    fn build_modules_args_parser_accepts_failures_out_and_metadata_once() {
+        let parsed = parse_build_modules_args(&[
+            "Proofs.Ai.Basic".to_owned(),
+            "--metadata-once".to_owned(),
+            "--failures-out".to_owned(),
+            "proofs/generated/build-failures.json".to_owned(),
+        ])
+        .expect("build options should parse");
+        assert_eq!(parsed.requested_modules, vec!["Proofs.Ai.Basic"]);
+        assert_eq!(
+            parsed.failures_out,
+            Some(PathBuf::from("proofs/generated/build-failures.json"))
+        );
+    }
+
+    #[test]
+    fn build_modules_file_parser_skips_blank_lines_and_comments() {
+        let parsed = parse_build_modules_file_contents(
+            "\
+# one module per line
+Proofs.Ai.Basic
+
+Proofs.Ai.Eq # inline comments are ignored
+",
+        )
+        .expect("module file should parse");
+        assert_eq!(parsed, vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]);
+    }
+
+    #[test]
+    fn build_modules_file_parser_rejects_multi_token_lines() {
+        let err = parse_build_modules_file_contents("Proofs.Ai.Basic Proofs.Ai.Eq")
+            .expect_err("multi-token lines should fail");
+        assert!(err.contains("line 1"));
+    }
+
+    #[test]
+    fn promote_plan_args_parser_requires_valid_target() {
+        let repo = repo_root().expect("repo root should resolve");
+        let parsed = parse_promote_plan_args(
+            &repo,
+            &[
+                "Proofs.Ai.Algebra.AbstractField".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--to-module".to_owned(),
+                "Mathlib.Algebra.Field.Basic".to_owned(),
+                "--out".to_owned(),
+                "/tmp/npa-promote-plan.md".to_owned(),
+            ],
+        )
+        .expect("valid promote-plan args should parse");
+        assert_eq!(parsed.corpus_module, "Proofs.Ai.Algebra.AbstractField");
+        assert_eq!(parsed.target_module, "Mathlib.Algebra.Field.Basic");
+        assert_eq!(parsed.mathlib_root_arg, PathBuf::from("../npa-mathlib"));
+
+        let err = parse_promote_plan_args(
+            &repo,
+            &[
+                "Proofs.Ai.Algebra.AbstractField".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--to-module".to_owned(),
+                "Algebra.Field.Basic".to_owned(),
+                "--out".to_owned(),
+                "/tmp/npa-promote-plan.md".to_owned(),
+            ],
+        )
+        .expect_err("non-Mathlib target should fail");
+        assert_eq!(
+            err,
+            "promote-plan error: invalid_target_module Algebra.Field.Basic; expected Mathlib.*"
+        );
+    }
+
+    #[test]
+    fn promote_plan_rejects_unknown_module_before_write() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("unknown-promote-module");
+        let out = temp.join("plan.md");
+        let options = PromotePlanOptions {
+            corpus_module: "Proofs.Ai.DoesNotExist".to_owned(),
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: temp.join("mathlib"),
+            target_module: "Mathlib.Algebra.Field.Basic".to_owned(),
+            out_arg: out.clone(),
+            out: out.clone(),
+        };
+
+        let err = run_promote_plan(&repo, &options).expect_err("unknown module should fail");
+        assert_eq!(
+            err,
+            "promote-plan error: unknown_corpus_module Proofs.Ai.DoesNotExist"
+        );
+        assert!(!out.exists());
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_plan_rejects_output_inside_mathlib_root() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("promote-output-inside-mathlib");
+        let mathlib_root = temp.join("mathlib");
+        let out = mathlib_root.join("promotion-plan.md");
+        let options = PromotePlanOptions {
+            corpus_module: "Proofs.Ai.Algebra.AbstractField".to_owned(),
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root,
+            target_module: "Mathlib.Algebra.Field.Basic".to_owned(),
+            out_arg: PathBuf::from("../npa-mathlib-test/promotion-plan.md"),
+            out: out.clone(),
+        };
+
+        let err = run_promote_plan(&repo, &options).expect_err("inside output should fail");
+        assert_eq!(
+            err,
+            "promote-plan error: output_path_inside_mathlib_root ../npa-mathlib-test/promotion-plan.md"
+        );
+        assert!(!out.exists());
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_plan_generation_is_read_only_for_mathlib_root() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("read-only-promote-plan");
+        let mathlib_root = temp.join("mathlib");
+        fs::create_dir_all(mathlib_root.join("generated")).expect("generated dir");
+        fs::create_dir_all(mathlib_root.join("fixtures/downstream-smoke"))
+            .expect("downstream smoke dir");
+        fs::write(
+            mathlib_root.join(PACKAGE_MANIFEST_PATH),
+            "schema = \"npa.package.v0.1\"\npackage = \"npa-mathlib\"\n",
+        )
+        .expect("mathlib manifest");
+        fs::write(
+            mathlib_root.join(PACKAGE_LOCK_PATH),
+            "{\"schema\":\"package-lock-test\"}\n",
+        )
+        .expect("mathlib package lock");
+        fs::write(
+            mathlib_root.join(PACKAGE_AXIOM_REPORT_PATH),
+            "{\"schema\":\"axiom-report-test\"}\n",
+        )
+        .expect("mathlib axiom report");
+        fs::write(
+            mathlib_root.join(PACKAGE_THEOREM_INDEX_PATH),
+            "{\"schema\":\"theorem-index-test\"}\n",
+        )
+        .expect("mathlib theorem index");
+        fs::write(
+            mathlib_root.join("fixtures/downstream-smoke/npa-package.toml"),
+            "schema = \"npa.package.v0.1\"\npackage = \"smoke\"\n",
+        )
+        .expect("downstream smoke manifest");
+
+        let before = test_tree_hashes(&mathlib_root);
+        let out = temp.join("plan.md");
+        let options = PromotePlanOptions {
+            corpus_module: "Proofs.Ai.Algebra.AbstractField".to_owned(),
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: mathlib_root.clone(),
+            target_module: "Mathlib.Algebra.Field.Basic".to_owned(),
+            out_arg: out.clone(),
+            out: out.clone(),
+        };
+        run_promote_plan(&repo, &options).expect("plan should generate");
+        let after = test_tree_hashes(&mathlib_root);
+
+        assert_eq!(before, after);
+        let plan = fs::read_to_string(out).expect("plan should be written outside mathlib root");
+        assert!(plan.contains(
+            "# Promotion Plan: Proofs.Ai.Algebra.AbstractField -> Mathlib.Algebra.Field.Basic"
+        ));
+        assert!(plan.contains("| npa-mathlib package manifest | `npa-package.toml` | Verified evidence | file present; sha256"));
+        assert!(plan.contains(
+            "| npa-mathlib publish plan | `generated/publish-plan.json` | Missing evidence | file not found |"
+        ));
+        assert!(plan.contains(
+            "cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib-test --checker reference --json"
+        ));
+        assert!(plan.contains(
+            "cargo run -q -p npa-cli -- package check --root ../npa-mathlib-test/fixtures/downstream-smoke --json"
+        ));
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_args_parser_defaults_to_dry_run() {
+        let repo = repo_root().expect("repo root should resolve");
+        let parsed = parse_promote_materialize_args(
+            &repo,
+            &[
+                "develop/basic-promotion.md".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+            ],
+        )
+        .expect("promote-materialize args should parse");
+        assert_eq!(parsed.plan_arg, PathBuf::from("develop/basic-promotion.md"));
+        assert_eq!(parsed.mathlib_root_arg, PathBuf::from("../npa-mathlib"));
+        assert_eq!(parsed.mode, PromoteMaterializeMode::DryRun);
+        assert!(parsed.compat_alias.is_none());
+
+        let parsed = parse_promote_materialize_args(
+            &repo,
+            &[
+                "develop/basic-promotion.md".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--apply".to_owned(),
+                "--compat-alias".to_owned(),
+                "none".to_owned(),
+            ],
+        )
+        .expect("apply args should parse");
+        assert_eq!(parsed.mode, PromoteMaterializeMode::Apply);
+        assert_eq!(parsed.compat_alias, Some(CompatibilityAliasDecision::None));
+
+        let err = parse_promote_materialize_args(
+            &repo,
+            &[
+                "develop/basic-promotion.md".to_owned(),
+                "--mathlib-root".to_owned(),
+                "../npa-mathlib".to_owned(),
+                "--dry-run".to_owned(),
+                "--apply".to_owned(),
+            ],
+        )
+        .expect_err("duplicate modes should fail");
+        assert_eq!(err, "promote-materialize error: duplicate_mode");
+    }
+
+    #[test]
+    fn usage_documents_promote_materialize() {
+        let usage = usage();
+        assert!(usage.contains(
+            "--promote-materialize PLAN --mathlib-root PATH [--dry-run|--apply] [--compat-alias none]"
+        ));
+    }
+
+    #[test]
+    fn promote_materialize_rejects_unresolved_import_mapping() {
+        let plan = "\
+# Promotion Plan: Proofs.Ai.Algebra.AbstractField -> Mathlib.Algebra.Field.Basic
+
+## Direct Import Mapping
+
+| Corpus import | Proposed target import | Status |
+| --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractRing` | `TBD (Mathlib.Algebra.AbstractRing)` | Missing evidence |
+
+## Import Closure
+
+| Corpus module | Proposed target module | Certificate | Source imports | Package imports | Axioms |
+| --- | --- | --- | --- | --- | --- |
+| `Proofs.Ai.Algebra.AbstractRing` | `TBD (Mathlib.Algebra.AbstractRing)` | `Proofs/Ai/Algebra/AbstractRing/certificate.npcert` | `none` | `none` | `none` |
+";
+        let err =
+            parse_promotion_plan_markdown(plan).expect_err("unresolved import mapping should fail");
+        assert_eq!(
+            err,
+            "promote-materialize error: unresolved_import_mapping Proofs.Ai.Algebra.AbstractRing"
+        );
+    }
+
+    #[test]
+    fn promote_materialize_rejects_unresolved_alias_decision() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-unresolved-alias");
+        let plan_path = temp.join("plan.md");
+        fs::write(
+            &plan_path,
+            test_basic_promotion_plan("Mathlib.Test.Basic", true),
+        )
+        .expect("plan write");
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: temp.join("mathlib"),
+            mode: PromoteMaterializeMode::DryRun,
+            compat_alias: None,
+        };
+
+        let err = run_promote_materialize(&repo, &options)
+            .expect_err("alias decision should be required");
+        assert_eq!(
+            err,
+            "promote-materialize error: unresolved_compatibility_alias_decision"
+        );
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_rejects_missing_alias_decision() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-missing-alias");
+        let plan_path = temp.join("plan.md");
+        let plan = test_basic_promotion_plan("Mathlib.Test.Basic", false)
+            .lines()
+            .filter(|line| !line.contains("Compatibility alias review"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        fs::write(&plan_path, format!("{plan}\n")).expect("plan write");
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: temp.join("mathlib"),
+            mode: PromoteMaterializeMode::DryRun,
+            compat_alias: None,
+        };
+
+        let err = run_promote_materialize(&repo, &options)
+            .expect_err("missing alias decision should be required");
+        assert_eq!(
+            err,
+            "promote-materialize error: unresolved_compatibility_alias_decision"
+        );
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_dry_run_does_not_modify_mathlib_root() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-dry-run");
+        let mathlib_root = temp.join("mathlib");
+        write_minimal_mathlib_manifest(&mathlib_root);
+        let plan_path = temp.join("plan.md");
+        fs::write(
+            &plan_path,
+            test_basic_promotion_plan("Mathlib.Test.Basic", true),
+        )
+        .expect("plan write");
+        let before = test_tree_hashes(&mathlib_root);
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: mathlib_root.clone(),
+            mode: PromoteMaterializeMode::DryRun,
+            compat_alias: Some(CompatibilityAliasDecision::None),
+        };
+
+        run_promote_materialize(&repo, &options).expect("dry-run should succeed");
+        let after = test_tree_hashes(&mathlib_root);
+        assert_eq!(before, after);
+        assert!(!mathlib_root.join("Mathlib/Test/Basic/source.npa").exists());
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn promote_materialize_apply_writes_target_package_artifacts() {
+        let repo = repo_root().expect("repo root should resolve");
+        let temp = test_temp_dir("materialize-apply");
+        let mathlib_root = temp.join("mathlib");
+        write_minimal_mathlib_manifest(&mathlib_root);
+        let plan_path = temp.join("plan.md");
+        fs::write(
+            &plan_path,
+            test_basic_promotion_plan("Mathlib.Test.Basic", true),
+        )
+        .expect("plan write");
+        let options = PromoteMaterializeOptions {
+            plan_arg: plan_path.clone(),
+            plan: plan_path,
+            mathlib_root_arg: PathBuf::from("../npa-mathlib-test"),
+            mathlib_root: mathlib_root.clone(),
+            mode: PromoteMaterializeMode::Apply,
+            compat_alias: Some(CompatibilityAliasDecision::None),
+        };
+
+        run_promote_materialize(&repo, &options).expect("apply should write artifacts");
+
+        let source_path = mathlib_root.join("Mathlib/Test/Basic/source.npa");
+        let certificate_path = mathlib_root.join("Mathlib/Test/Basic/certificate.npcert");
+        let meta_path = mathlib_root.join("Mathlib/Test/Basic/meta.json");
+        let replay_path = mathlib_root.join("Mathlib/Test/Basic/replay.json");
+        assert!(source_path.exists());
+        assert!(certificate_path.exists());
+        assert!(meta_path.exists());
+        assert!(replay_path.exists());
+
+        let source = fs::read_to_string(source_path).expect("source should be readable");
+        assert!(source.contains("theorem id"));
+        let certificate = fs::read(certificate_path).expect("certificate should be readable");
+        let decoded =
+            npa_cert::decode_module_cert(&certificate).expect("certificate should decode");
+        assert_eq!(decoded.header.module.as_dotted(), "Mathlib.Test.Basic");
+
+        let manifest = fs::read_to_string(mathlib_root.join(PACKAGE_MANIFEST_PATH))
+            .expect("manifest should be readable");
+        npa_package::parse_and_validate_manifest_str(&manifest)
+            .expect("updated manifest should validate");
+        assert!(manifest.contains("module = \"Mathlib.Test.Basic\""));
+        assert!(manifest.contains("source = \"Mathlib/Test/Basic/source.npa\""));
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_key_material_includes_required_fields() {
+        let input = sample_verified_cache_key_input();
+        let key = verified_cache_key(&input);
+        assert_eq!(key, verified_cache_key(&input.clone()));
+        assert_eq!(key.len(), 64);
+        assert!(key.bytes().all(|byte| byte.is_ascii_hexdigit()));
+
+        let material = verified_cache_key_material(&input);
+        for field in [
+            "schema",
+            "core_spec",
+            "certificate_format",
+            "kernel_profile",
+            "verifier_profile",
+            "binary_build_identity",
+            "certificate_hash",
+            "certificate_file_hash",
+            "direct_imports",
+            "import_closure_certificate_file_hashes",
+            "axiom_policy_fingerprint",
+            "enabled_core_features",
+        ] {
+            assert!(
+                material.contains(&format!("\"{field}\"")),
+                "cache key material should contain {field}: {material}"
+            );
+        }
+    }
+
+    #[test]
+    fn verified_cache_key_changes_for_required_identity_inputs() {
+        let input = sample_verified_cache_key_input();
+        let key = verified_cache_key(&input);
+
+        let mut changed = input.clone();
+        changed.certificate_hash = sample_hash('a');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.certificate_file_hash = sample_hash('b');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].module = "Proofs.Ai.OtherImport".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].export_hash = sample_hash('d');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].certificate_hash = sample_hash('c');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.import_closure_certificate_file_hashes[0].certificate_file_hash = sample_hash('e');
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.axiom_policy_fingerprint =
+            verified_cache_axiom_policy_fingerprint(&npa_cert::AxiomPolicy::high_trust());
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.enabled_core_features.push("quotient_v2".to_owned());
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.verifier_profile = "npa.checker.reference.v0.2".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.schema = "npa-proof-corpus.verified-cache.vNEXT".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+
+        let mut changed = input;
+        changed.binary_build_identity = "npa-proof-corpus@test-build".to_owned();
+        assert_ne!(key, verified_cache_key(&changed));
+    }
+
+    #[test]
+    fn verified_cache_entry_path_uses_versioned_layout() {
+        let repo = repo_root().expect("repo root should resolve");
+        let key = verified_cache_key(&sample_verified_cache_key_input());
+        let path = verified_cache_entry_path(&repo, &key);
+        assert_eq!(
+            path.strip_prefix(&repo)
+                .expect("cache path should be repo local"),
+            Path::new(VERIFIED_CACHE_LAYOUT_DIR).join(format!("{key}.json"))
+        );
+    }
+
+    #[test]
+    fn verified_cache_schema_mismatch_is_miss() {
+        let (entry, _verified) = basic_verified_cache_entry();
+        let json = verified_cache_entry_json(&entry);
+        assert_eq!(
+            verified_cache_entry_schema_status(&json),
+            VerifiedCacheSchemaStatus::Current
+        );
+
+        let mismatched = json.replacen(
+            VERIFIED_CACHE_SCHEMA,
+            "npa-proof-corpus.verified-cache.v9",
+            1,
+        );
+        assert_eq!(
+            verified_cache_entry_schema_status(&mismatched),
+            VerifiedCacheSchemaStatus::Miss
+        );
+        assert_eq!(
+            verified_cache_entry_schema_status("{\"schema\":"),
+            VerifiedCacheSchemaStatus::Miss
+        );
+        assert_eq!(
+            verified_cache_entry_schema_status(
+                "{\"key_input\":{\"schema\":\"npa-proof-corpus.verified-cache.v0.1\"}}"
+            ),
+            VerifiedCacheSchemaStatus::Miss
+        );
+    }
+
+    #[test]
+    fn verified_cache_entry_serialization_is_deterministic_and_untrusted() {
+        let (entry, verified) = basic_verified_cache_entry();
+        let json = verified_cache_entry_json(&entry);
+        assert_eq!(json, verified_cache_entry_json(&entry));
+        assert!(json.contains("\"trusted\":false"));
+        assert!(json.contains("\"key_input\":{"));
+        assert!(json.contains(
+            "cache entries are authoring-only acceleration metadata; canonical certificates and source-free verification remain authoritative"
+        ));
+        assert_eq!(entry.module, "Proofs.Ai.Basic");
+        assert_eq!(entry.export_hash, tagged_hash(verified.export_hash()));
+        assert_eq!(
+            entry.certificate_hash,
+            tagged_hash(verified.certificate_hash())
+        );
+    }
+
+    #[test]
+    fn verified_cache_lookup_reports_hit_miss_and_stale() {
+        let temp = test_temp_dir("verified-cache-lookup");
+        let (entry, _verified) = basic_verified_cache_entry();
+        let key_input = entry.key_input.clone();
+
+        let miss = verified_cache_lookup(&temp, &key_input).expect("missing cache should be miss");
+        assert_eq!(miss.status, VerifiedCacheLookupStatus::Miss);
+
+        let path = verified_cache_entry_path(&temp, &entry.cache_key);
+        write(path.clone(), verified_cache_entry_json(&entry).as_bytes())
+            .expect("cache entry should write");
+        let hit = verified_cache_lookup(&temp, &key_input).expect("cache should hit");
+        assert_eq!(hit.status, VerifiedCacheLookupStatus::Hit);
+
+        let stale = verified_cache_entry_json(&entry).replacen(
+            &format!("\"module\":\"{}\"", entry.module),
+            "\"module\":\"Proofs.Ai.Other\"",
+            1,
+        );
+        write(path, stale.as_bytes()).expect("stale cache entry should write");
+        let stale = verified_cache_lookup(&temp, &key_input).expect("stale cache should load");
+        assert_eq!(stale.status, VerifiedCacheLookupStatus::Stale);
+
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_lookup_ignores_nested_identity_fields() {
+        let temp = test_temp_dir("verified-cache-nested-fields");
+        let (entry, _verified) = basic_verified_cache_entry();
+        let key_input = entry.key_input.clone();
+        let source = format!(
+            "{{\"schema\":\"{}\",\"cache_key\":\"{}\",\"trusted\":false,\"key_input\":{}}}\n",
+            VERIFIED_CACHE_SCHEMA,
+            entry.cache_key,
+            verified_cache_key_material(&key_input)
+        );
+        write(
+            verified_cache_entry_path(&temp, &entry.cache_key),
+            source.as_bytes(),
+        )
+        .expect("nested-only cache entry should write");
+
+        let lookup = verified_cache_lookup(&temp, &key_input).expect("lookup should load entry");
+        assert_eq!(lookup.status, VerifiedCacheLookupStatus::Stale);
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_lookup_treats_schema_mismatch_as_miss() {
+        let temp = test_temp_dir("verified-cache-schema-miss");
+        let (entry, _verified) = basic_verified_cache_entry();
+        let key_input = entry.key_input.clone();
+        let mismatched = verified_cache_entry_json(&entry).replacen(
+            VERIFIED_CACHE_SCHEMA,
+            "npa-proof-corpus.verified-cache.v9",
+            1,
+        );
+        write(
+            verified_cache_entry_path(&temp, &entry.cache_key),
+            mismatched.as_bytes(),
+        )
+        .expect("mismatched cache entry should write");
+
+        let lookup = verified_cache_lookup(&temp, &key_input).expect("lookup should not fail");
+        assert_eq!(lookup.status, VerifiedCacheLookupStatus::SchemaMiss);
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_read_through_discards_inconsistent_hit() {
+        let temp = test_temp_dir("verified-cache-read-through-stale");
+        let repo = repo_root().expect("repo root should resolve");
+        let proof_root = repo.join("proofs");
+
+        let mut cache = VerifiedCorpusCache::new(&proof_root);
+        let status = verify_selected_module_with_cache(
+            &temp,
+            &proof_root,
+            &mut cache,
+            "Proofs.Ai.Basic",
+            VerifiedCacheMode::Authoring,
+        )
+        .expect("authoring cache miss should verify and write");
+        assert_eq!(status, Some(VerifiedCacheLookupStatus::Miss));
+
+        let key_input = verified_cache_key_input_from_certificate(&proof_root, "Proofs.Ai.Basic")
+            .expect("basic key input should build");
+        let path = verified_cache_entry_path(&temp, &verified_cache_key(&key_input));
+        let source = fs::read_to_string(&path).expect("cache entry should exist");
+        let tampered = source.replacen("\"export_hash\":\"", "\"export_hash\":\"tampered-", 1);
+        fs::write(&path, tampered).expect("tampered cache entry should write");
+
+        let mut cache = VerifiedCorpusCache::new(&proof_root);
+        let status = verify_selected_module_with_cache(
+            &temp,
+            &proof_root,
+            &mut cache,
+            "Proofs.Ai.Basic",
+            VerifiedCacheMode::ReadThrough,
+        )
+        .expect("read-through should repair stale cache hit");
+        assert_eq!(status, Some(VerifiedCacheLookupStatus::Stale));
+
+        let repaired = fs::read_to_string(&path).expect("cache entry should be repaired");
+        assert!(!repaired.contains("tampered-"));
+        let _ = fs::remove_dir_all(temp);
+    }
+
+    #[test]
+    fn verified_cache_key_input_from_certificate_tracks_import_closure_files() {
+        let repo = repo_root().expect("repo root should resolve");
+        let proof_root = repo.join("proofs");
+        let input =
+            verified_cache_key_input_from_certificate(&proof_root, "Proofs.Ai.Algebra.Square")
+                .expect("square cache key input should build");
+        assert!(
+            input
+                .import_closure_certificate_file_hashes
+                .iter()
+                .any(|dependency| dependency.module == "Proofs.Ai.Algebra.Ring"),
+            "import closure should include direct corpus dependency"
+        );
+        assert!(
+            input
+                .import_closure_certificate_file_hashes
+                .iter()
+                .any(|dependency| dependency.module == "Std.Logic.Eq"),
+            "import closure should include transitive external dependency"
+        );
+    }
+
+    #[test]
+    fn build_batch_selection_deduplicates_requested_modules() {
+        let selected =
+            build_batch_selection(&["Proofs.Ai.Basic".to_owned(), "Proofs.Ai.Basic".to_owned()])
+                .expect("duplicate request should select once");
+        let selected = selected
+            .into_iter()
+            .map(|config| config.module)
+            .collect::<Vec<_>>();
+        assert_eq!(selected, vec!["Proofs.Ai.Basic"]);
+    }
+
+    #[test]
+    fn build_batch_selection_rejects_unknown_modules() {
+        let err = match build_batch_selection(&["Proofs.Ai.DoesNotExist".to_owned()]) {
+            Ok(_) => panic!("unknown modules should fail"),
+            Err(err) => err,
+        };
+        assert!(err.contains("unknown proof corpus module Proofs.Ai.DoesNotExist"));
+    }
+
+    #[test]
+    fn build_batch_selection_returns_import_closure_in_topological_order() {
+        let selected = build_batch_selection(&[
+            "Proofs.Ai.Algebra.Square".to_owned(),
+            "Proofs.Ai.OrderedField".to_owned(),
+        ])
+        .expect("selection should include shared closure");
+        let selected = selected
+            .into_iter()
+            .map(|config| config.module)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            selected,
+            vec![
+                "Proofs.Ai.Algebra.Ring",
+                "Proofs.Ai.Algebra.Square",
+                "Proofs.Ai.OrderedField"
+            ]
+        );
+    }
+
+    #[test]
+    fn batch_module_metas_are_deterministic_for_single_module_compatibility() {
+        let repo = repo_root().expect("repo root should resolve");
+        let existing =
+            package_manifest_module_metas(&repo.join("proofs")).expect("manifest should parse");
+        let basic_meta = existing
+            .get(BASIC_MODULE.module)
+            .expect("basic metadata should exist")
+            .clone();
+
+        let mut build_module_metas = BTreeMap::new();
+        build_module_metas.insert(BASIC_MODULE.module.to_owned(), basic_meta.clone());
+        let mut build_modules_metas = BTreeMap::new();
+        build_modules_metas.insert(BASIC_MODULE.module.to_owned(), basic_meta);
+
+        let from_build_module = batch_module_metas(existing.clone(), build_module_metas)
+            .expect("single-module metadata merge should work");
+        let from_build_modules = batch_module_metas(existing, build_modules_metas)
+            .expect("batch metadata merge should work");
+
+        assert_eq!(
+            manifest_toml(&from_build_module),
+            manifest_toml(&from_build_modules)
+        );
+        let external_imports =
+            generated_external_std_imports().expect("external imports should generate");
+        assert_eq!(
+            package_manifest_toml(&from_build_module, &external_imports)
+                .expect("single-module package manifest should render"),
+            package_manifest_toml(&from_build_modules, &external_imports)
+                .expect("batch package manifest should render")
+        );
+    }
+
+    #[test]
     fn declaration_header_parser_preserves_dotted_names_and_strips_universes() {
         assert_eq!(
             declaration_name_from_header("theorem Foo.bar.{u} : Type :=", "theorem "),
@@ -31523,5 +36192,184 @@ mod tests {
         assert!(replay.contains("\"declaration\": \"id\""));
         assert!(replay.contains("\"source_kind\": \"explicit_term\""));
         assert!(!replay.contains("const_left"));
+    }
+
+    fn test_temp_dir(name: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("npa-proof-corpus-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("test temp dir");
+        dir
+    }
+
+    fn test_tree_hashes(root: &Path) -> BTreeMap<String, String> {
+        let mut hashes = BTreeMap::new();
+        collect_test_tree_hashes(root, root, &mut hashes);
+        hashes
+    }
+
+    fn collect_test_tree_hashes(root: &Path, path: &Path, hashes: &mut BTreeMap<String, String>) {
+        let mut entries = fs::read_dir(path)
+            .expect("test tree should be readable")
+            .map(|entry| entry.expect("test tree entry").path())
+            .collect::<Vec<_>>();
+        entries.sort();
+        for entry in entries {
+            if entry.is_dir() {
+                collect_test_tree_hashes(root, &entry, hashes);
+            } else {
+                let relative = entry
+                    .strip_prefix(root)
+                    .expect("test path should be under root")
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                let bytes = fs::read(&entry).expect("test file should be readable");
+                hashes.insert(relative, tagged_sha256(&bytes));
+            }
+        }
+    }
+
+    fn test_basic_promotion_plan(target_module: &str, alias_missing: bool) -> String {
+        let alias_status = if alias_missing {
+            "Missing evidence"
+        } else {
+            "Verified evidence"
+        };
+        format!(
+            "\
+# Promotion Plan: Proofs.Ai.Basic -> {target_module}
+
+## Module Mapping
+
+- Corpus module: `Proofs.Ai.Basic`
+- Target module: `{target_module}`
+
+## Direct Import Mapping
+
+- No direct imports.
+
+## Import Closure
+
+| Corpus module | Proposed target module | Certificate | Source imports | Package imports | Axioms |
+| --- | --- | --- | --- | --- | --- |
+| `Proofs.Ai.Basic` | `{target_module}` | `Proofs/Ai/Basic/certificate.npcert` | `none` | `none` | `none` |
+
+## Axiom Policy Diff
+
+| Item | Corpus value | Target action |
+| --- | --- | --- |
+| `allow_custom_axioms` | `false` | Keep `false`. |
+| `allowed_axioms` | `Eq.rec` | Keep current package policy. |
+
+## Evidence
+
+| Evidence | Path | Status | Detail |
+| --- | --- | --- | --- |
+| Compatibility alias review | `manual` | {alias_status} | Decide whether aliases are needed. |
+"
+        )
+    }
+
+    fn write_minimal_mathlib_manifest(root: &Path) {
+        fs::create_dir_all(root).expect("mathlib root");
+        fs::write(root.join(PACKAGE_MANIFEST_PATH), minimal_mathlib_manifest())
+            .expect("mathlib manifest");
+    }
+
+    fn minimal_mathlib_manifest() -> String {
+        format!(
+            "\
+schema = \"{}\"
+package = \"npa-mathlib-test\"
+version = \"0.1.0\"
+license = \"Apache-2.0\"
+
+core_spec = \"{}\"
+kernel_profile = \"{}\"
+certificate_format = \"{}\"
+checker_profile = \"{}\"
+
+[policy]
+allow_custom_axioms = false
+allowed_axioms = [\"Eq.rec\"]
+
+[[modules]]
+module = \"Mathlib.Placeholder\"
+source = \"Mathlib/Placeholder/source.npa\"
+certificate = \"Mathlib/Placeholder/certificate.npcert\"
+meta = \"Mathlib/Placeholder/meta.json\"
+replay = \"Mathlib/Placeholder/replay.json\"
+producer_profile = \"human-surface-explicit-term\"
+expected_source_hash = \"{}\"
+expected_certificate_file_hash = \"{}\"
+expected_export_hash = \"{}\"
+expected_axiom_report_hash = \"{}\"
+expected_certificate_hash = \"{}\"
+imports = []
+definitions = []
+theorems = []
+axioms = []
+",
+            npa_package::PACKAGE_MANIFEST_SCHEMA,
+            npa_package::CORE_SPEC_V0_1,
+            npa_package::KERNEL_PROFILE_V0_1,
+            npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1,
+            npa_package::CHECKER_PROFILE_REFERENCE_V0_1,
+            sample_hash('0'),
+            sample_hash('0'),
+            sample_hash('0'),
+            sample_hash('0'),
+            sample_hash('0')
+        )
+    }
+
+    fn sample_verified_cache_key_input() -> VerifiedCacheKeyInput {
+        let policy =
+            npa_cert::AxiomPolicy::normal().with_core_feature(npa_cert::CoreFeature::QuotientV1);
+        VerifiedCacheKeyInput {
+            schema: VERIFIED_CACHE_SCHEMA.to_owned(),
+            core_spec: npa_package::CORE_SPEC_V0_1.to_owned(),
+            certificate_format: npa_package::CERTIFICATE_FORMAT_CANONICAL_V0_1.to_owned(),
+            kernel_profile: npa_package::KERNEL_PROFILE_V0_1.to_owned(),
+            verifier_profile: npa_package::CHECKER_PROFILE_REFERENCE_V0_1.to_owned(),
+            binary_build_identity: default_binary_build_identity(),
+            module: "Proofs.Ai.Sample".to_owned(),
+            certificate_hash: sample_hash('1'),
+            certificate_file_hash: sample_hash('2'),
+            direct_imports: vec![VerifiedCacheImportIdentity {
+                module: "Proofs.Ai.Import".to_owned(),
+                export_hash: sample_hash('3'),
+                certificate_hash: sample_hash('4'),
+            }],
+            import_closure_certificate_file_hashes: vec![VerifiedCacheDependencyIdentity {
+                module: "Proofs.Ai.Import".to_owned(),
+                certificate_file_hash: sample_hash('5'),
+            }],
+            axiom_policy_fingerprint: verified_cache_axiom_policy_fingerprint(&policy),
+            enabled_core_features: vec!["quotient_v1".to_owned()],
+        }
+    }
+
+    fn basic_verified_cache_entry() -> (VerifiedCacheEntry, npa_cert::VerifiedModule) {
+        let repo = repo_root().expect("repo root should resolve");
+        let certificate_bytes = fs::read(repo.join("proofs").join(BASIC_MODULE.certificate_path))
+            .expect("basic certificate should be readable");
+        let mut session = npa_cert::VerifierSession::new();
+        let policy = npa_cert::AxiomPolicy::normal();
+        let verified = npa_cert::verify_module_cert(&certificate_bytes, &mut session, &policy)
+            .expect("basic certificate should verify");
+        let key_input = verified_cache_key_input_from_verified_module(
+            &verified,
+            tagged_sha256(&certificate_bytes),
+            Vec::new(),
+            Vec::new(),
+            &policy,
+        );
+        let entry = verified_cache_entry_from_verified_module(key_input, &verified);
+        (entry, verified)
+    }
+
+    fn sample_hash(ch: char) -> String {
+        format!("sha256:{}", ch.to_string().repeat(64))
     }
 }

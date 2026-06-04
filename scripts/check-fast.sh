@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # Default development gate for non-corpus changes. Keep the proof corpus out of
-# the hot path; run scripts/check-corpus.sh only when the corpus gate conditions
+# the hot path; run the split corpus gates only when the corpus gate conditions
 # in AGENTS.md apply.
 echo "[1/3] Formatting check"
 cargo fmt --all -- --check

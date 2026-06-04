@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFieldHom",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FieldHomLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => forall (P : Prop), forall (mk : forall (ring_hom_law : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f), forall (hom_inv_nonzero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))), forall (hom_div_law : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))), forall (hom_preserves_nonzero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)), P), P"
+    },
+    {
+      "declaration": "field_hom_as_ring_hom",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun field_hom_args => field_hom_args (@RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) (fun (ring_hom_arg : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) => fun (hom_inv_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))) => fun (hom_div_arg : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) => fun (hom_preserves_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)) => ring_hom_arg)"
+    },
+    {
+      "declaration": "field_hom_inv_of_nonzero",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun field_hom_args => fun a => fun ha => field_hom_args (@Eq.{v} S (f (invR a)) (invS (f a))) (fun (ring_hom_arg : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) => fun (hom_inv_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))) => fun (hom_div_arg : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) => fun (hom_preserves_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)) => hom_inv_nonzero_arg a ha)"
+    },
+    {
+      "declaration": "field_hom_div",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun field_hom_args => fun a => fun b => fun hb => field_hom_args (@Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) (fun (ring_hom_arg : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) => fun (hom_inv_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))) => fun (hom_div_arg : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) => fun (hom_preserves_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)) => hom_div_arg a b hb)"
+    },
+    {
+      "declaration": "field_hom_preserves_nonzero",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun field_hom_args => fun a => fun ha => field_hom_args (@Nonzero.{v} S zeroS (f a)) (fun (ring_hom_arg : @RingHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR S zeroS oneS addS negS subS mulS f) => fun (hom_inv_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Eq.{v} S (f (invR a)) (invS (f a))) => fun (hom_div_arg : forall (a : R), forall (b : R), forall (hb : @Nonzero.{u} R zeroR b), @Eq.{v} S (f (@div.{u} R mulR invR a b)) (@div.{v} S mulS invS (f a) (f b))) => fun (hom_preserves_nonzero_arg : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)) => hom_preserves_nonzero_arg a ha)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractFieldHom/certificate.npcert"
+  }
+}

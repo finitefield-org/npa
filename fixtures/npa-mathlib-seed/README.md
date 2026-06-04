@@ -1,5 +1,12 @@
 # npa-mathlib-seed Scope
 
+Visibility: internal test fixture note.
+
+This fixture is retained for package-boundary regression coverage and historical
+dogfood evidence. It is not the public package-author entry path. Public docs
+should prefer `fixtures/npa-mathlib/`, `fixtures/npa-mathlib-downstream/`, and
+`fixtures/npa-std/` when showing reusable examples.
+
 This fixture records the CLR-09-01 boundary and initial module-scope decision
 for the external `npa-mathlib-seed` theorem library dogfood.
 

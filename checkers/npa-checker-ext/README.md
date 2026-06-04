@@ -1,15 +1,136 @@
-# npa-checker-ext OCaml Project
+# npa-checker-ext
 
-This directory is the clean-room OCaml project for `npa-checker-ext`.
-It is intentionally outside the Cargo workspace and has no Rust crate
-dependency.
+`npa-checker-ext` is the clean-room OCaml external checker prototype for NPA
+high-trust release workflows. It is intentionally outside the Cargo workspace
+and has no Rust crate dependency.
 
-## Commands
+This checker is not part of the default public package-author path. Base
+external package CI remains reference-checker-only, with an optional labeled
+fast-kernel verifier result. External checker evidence is optional high-trust
+release evidence only when the release workflow supplies pinned checker
+binaries, runner policy, checker registry, release policy, and release audit
+evidence.
+
+## Trust Boundary
+
+The external checker path is source-free. High-trust verifier commands may read:
+
+```text
+package metadata
+package lock
+canonical .npcert files
+import certificates
+runner policy
+checker registry
+checker executable bytes
+axiom policy
+```
+
+They must not trust:
+
+```text
+.npa source files
+replay files
+meta files
+theorem indexes
+AI traces
+tactic traces
+registry network data
+hidden package caches
+plugins
+source-derived unchecked environments
+```
+
+GitHub Actions status, release pages, registry metadata, benchmark rows, and
+uploaded artifacts are review or release metadata. They are not proof evidence
+by themselves.
+
+## High-Trust Use
+
+Use this checker only through an explicit high-trust release workflow such as
+`ci-templates/github-actions/npa-package-high-trust.yml`. That workflow must
+provide all of these inputs before external checker commands run:
+
+```text
+NPA_CHECKER_EXT_BINARY_PATH
+NPA_RELEASE_POLICY_HASH
+NPA_RUNNER_POLICY_HASH
+NPA_CHALLENGE_RUNNER_POLICY_HASH
+ci/release.high-trust.json
+ci/runner.high-trust.json
+ci/runner.challenge.json
+ci/checker-binaries.json
+generated/release-audit/manifest.json
+```
+
+The external checker command shape is:
+
+```sh
+npa package verify-certs --root . --checker external \
+  --runner-policy ci/runner.high-trust.json \
+  --runner-policy-hash "$NPA_RUNNER_POLICY_HASH" \
+  --checker-registry ci/checker-binaries.json \
+  --json
+```
+
+`verified_high_trust` must be generated or checked only after external checker
+and high-trust-reference release audit evidence validates. It must not be
+emitted from reference-checker-only release evidence.
+
+Do not depend on runner caches, package registries, implicit latest resolution,
+or unpinned checker binaries for high-trust evidence.
+
+## Current Scope
+
+The current executable still uses the first-release skeleton check path. It
+provides deterministic CLI behavior for `--version`, deterministic errors for
+incomplete CLI input, and a stable failed raw result for complete check-shaped
+invocations.
+
+The OCaml modules and fixtures cover the checker substrate:
+
+```text
+source-free certificate decoding
+canonical hash recomputation
+import store loading
+normal and high-trust import policy
+type checking
+conversion
+simple inductive and recursor checks
+axiom report recomputation
+axiom policy parsing and enforcement
+```
+
+These modules are not yet wired into the standalone executable's complete check
+path. Rust-side runner and package integration lives in `crates/npa-api` and
+`crates/npa-cli`.
+
+## Build
+
+Build the checker from this directory:
 
 ```sh
 scripts/build.sh
 _build/npa-checker-ext --version
+```
+
+`scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
+`ocamlc`. Generated files stay under `_build/`.
+
+Set `OCAMLC=/path/to/ocamlc` when `ocamlc` is not on `PATH`. On macOS the
+scripts also check Homebrew's `ocaml` prefix.
+
+## Test
+
+Run the full external checker test suite from this directory:
+
+```sh
 scripts/test.sh
+```
+
+Targeted suites can be run by passing a suite name:
+
+```sh
 scripts/test.sh cli
 scripts/test.sh sha256
 scripts/test.sh feature-policy
@@ -39,107 +160,7 @@ scripts/test.sh positivity
 scripts/test.sh recursor
 ```
 
-`scripts/build.sh` builds one executable at `_build/npa-checker-ext` using
-`ocamlc`. Generated files stay under `_build/`.
-
-Set `OCAMLC=/path/to/ocamlc` when `ocamlc` is not on `PATH`. On macOS the
-scripts also check Homebrew's `ocaml` prefix.
-
-## Current Scope
-
-The current executable still uses the first-release skeleton check path. It
-provides deterministic CLI behavior for `--version`, deterministic errors for
-incomplete CLI input, and a stable failed raw result for complete check-shaped
-invocations.
-
-The OCaml source modules and fixtures already cover the M0-M7 checker substrate:
-source-free certificate decoding, canonical hash recomputation, import store
-loading, normal and high-trust import policy, type checking, conversion,
-simple inductive/recursor checks, axiom report recomputation, and axiom policy
-parsing/enforcement. These modules are not yet wired into the standalone
-executable's complete check path.
-
-Rust-side runner and package integration lives in `crates/npa-api` and
-`crates/npa-cli`. `verified_high_trust` generation and full external-checker
-release CI remain separate high-trust integration work.
-
-M0-03 adds a vendored SHA-256 implementation in `src/ext_sha256.ml`. It is used
-by `src/ext_hash.ml` and by the checker build hash material.
-
-M0-04 fixes the first-release CLI boundary:
-
-```text
---cert path
---import-dir path
---policy path
---output json
---version
-```
-
-`--version` must be used alone and prints deterministic build identity fields.
-Check-shaped invocations write only checker raw result JSON to stdout.
-
-M0-05 pins the first-release core feature policy. The supported core feature set
-is empty, so `quotient_v1`, `quotient_v2`, and `quotient_v3` certificate feature
-reports fail deterministically with `unsupported_core_feature`. This policy is
-driven only by the canonical certificate feature report; AI sidecars, package
-metadata, and source-derived data cannot enable features. Adding quotient support
-requires expanding fast-kernel, reference-checker, and external-checker golden
-corpora before the feature is enabled. The feature policy contract is included
-in `--version` build identity material.
-
-M1-01 adds the source-free byte reader foundation. `src/ext_bytes.ml` tracks
-certificate section and byte offsets, keeps input bytes immutable after reader
-construction, and rejects malformed canonical unsigned LEB128 with structured
-decode errors. The byte reader has no filesystem or JSON output dependency.
-
-M1-02 adds source-free header and name grammar decoding. The decoder requires
-`NPA-CERT-0.1` and `NPA-Core-0.1`, decodes names into structured components,
-and rejects invalid UTF-8, empty names, empty components, dotted components,
-and duplicate name table entries with structured reasons.
-
-M1-03 adds source-free level and term table decoding. Level and term nodes are
-kept as OCaml algebraic data types, not source text. The decoder rejects
-unknown tags, dangling table references, non-normalized level entries,
-duplicate term entries, and unresolved universe metavariable names before
-semantic checking.
-
-M1-04 adds source-free decoding for imports, declarations, export block, axiom
-report, optional core feature report, and stored module hash trailer. Declaration
-payloads, dependencies, axiom references, export entries, and hash fields are
-kept as structured OCaml values. Duplicate declaration names and export-local
-dangling term/declaration references reject deterministically; axiom report
-length mismatches are decoded and preserved for later axiom-report validation.
-
-M1-05 validates decoded module table reachability and canonical order before a
-module is accepted. The validator marks roots from the header, imports,
-declarations, exports, and axiom report, traverses reachable terms and levels,
-rejects unused name/level/term table entries, enforces canonical table ordering,
-and rejects bytes after the module hash trailer.
-
-M2-01 adds canonical hash input encoders in `src/ext_canonical.ml`. These
-encoders produce domain-separated inputs for level, term, declaration
-dependency, axiom dependency, declaration payload, export block, and axiom
-report hashing without reading source spans, debug sidecars, filesystem paths,
-pretty printers, or JSON output.
-
-M2-02 makes level and term table hash recomputation table-order based. Child
-level and term references must resolve to already hashed table entries, and the
-`hash-level-term` fixture pins the expected Rust-compatible hash bytes plus
-dependent-hash mutation behavior.
-
-M2-03 recomputes stored declaration interface and declaration certificate
-hashes from decoded canonical certificate data. The `hash-declarations` fixture
-checks golden certificates and rejects mutations to declaration type, body,
-dependency, and axiom dependency material with deterministic declaration-section
-offsets.
-
-M2-04 recomputes the final export, axiom report, and module certificate hashes.
-The export hash is checked against an export block rebuilt from declaration
-interfaces, while the module certificate hash uses the exact original
-certificate bytes before the stored certificate hash.
-
-M3-01 adds an explicit source-free import store loader. `--import-dir` style
-directories are traversed only for `.npcert` files, each import certificate is
-decoded and hash-verified before its public environment is exposed, and duplicate
-module/export-hash bindings are rejected.
+The tests are local checker development tests. External theorem package CI
+should use the package workflows documented in
+`docs/external-theorem-library-ci.md` instead of copying these development
+commands.

@@ -316,7 +316,7 @@ core_spec = "npa.core.v0.1"
 kernel_profile = "npa.kernel.v0.1"
 certificate_format = "npa.certificate.canonical.v0.1"
 checker_profile = "npa.checker.reference.v0.1"
-license = "MIT"
+license = "Apache-2.0"
 repository = "https://example.invalid/npa-proof-corpus"
 description = "proof corpus fixture"
 

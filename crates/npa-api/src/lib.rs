@@ -530,14 +530,14 @@ pub use snapshot::{
 };
 pub use std_library::{
     audit_machine_std_mvp_release_artifacts, audit_machine_std_mvp_validated_release,
-    finalize_machine_std_mvp_import_bundle_recipes, finalize_machine_std_mvp_theorem_index,
-    generate_human_std_module_debug_views, generate_human_std_theorem_search_view,
-    generate_machine_std_mvp_final_import_bundle_set, generate_machine_std_mvp_final_theorem_index,
-    generate_machine_std_mvp_import_bundle_set, generate_machine_std_mvp_rewrite_profile_set,
-    generate_machine_std_mvp_simp_profile_set, generate_machine_std_mvp_theorem_index,
-    human_std_theorem_search_view_canonical_bytes, human_std_theorem_search_view_hash,
-    load_machine_std_certificates_from_locators, load_machine_std_mvp_certificates,
-    load_machine_std_mvp_release,
+    build_legacy_std_package_module_cert, finalize_machine_std_mvp_import_bundle_recipes,
+    finalize_machine_std_mvp_theorem_index, generate_human_std_module_debug_views,
+    generate_human_std_theorem_search_view, generate_machine_std_mvp_final_import_bundle_set,
+    generate_machine_std_mvp_final_theorem_index, generate_machine_std_mvp_import_bundle_set,
+    generate_machine_std_mvp_rewrite_profile_set, generate_machine_std_mvp_simp_profile_set,
+    generate_machine_std_mvp_theorem_index, human_std_theorem_search_view_canonical_bytes,
+    human_std_theorem_search_view_hash, load_machine_std_certificates_from_locators,
+    load_machine_std_mvp_certificates, load_machine_std_mvp_release,
     load_machine_std_mvp_release_with_optional_prompt_metadata_from_json,
     load_machine_std_mvp_release_with_sidecars_from_json, machine_std_audit_check_canonical_bytes,
     machine_std_audit_report_canonical_bytes, machine_std_audit_report_hash,
@@ -587,7 +587,7 @@ pub use std_library::{
     MachineStdSimpProfile, MachineStdSimpProfileError, MachineStdSimpProfileSet,
     MachineStdSourcePackageEntry, MachineStdTacticOptionsRecipe, MachineStdTheoremEntry,
     MachineStdTheoremIndex, MachineStdTheoremIndexError, MachineStdTheoremKind,
-    MachineStdValidatedRelease,
+    MachineStdValidatedRelease, LEGACY_STD_PACKAGE_PRODUCER_PROFILE,
 };
 pub use tactic::{
     parse_machine_tactic_batch_request, parse_machine_tactic_run_request,
