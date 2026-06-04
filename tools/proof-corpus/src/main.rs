@@ -174,6 +174,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
     &ABSTRACT_SCALAR_DERIVE_MODULE,
     &ABSTRACT_VECTOR_SPACE_MODULE,
+    &LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE,
+    &LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1752,6 +1754,36 @@ const ABSTRACT_VECTOR_SPACE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+    source_path: "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace"],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+    source_path: "Proofs/Ai/LinearAlgebra/Subspace/Basic/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Subspace/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Subspace/Basic/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Subspace/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_SUBSPACE_BASIC_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_SUBSPACE_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -2188,6 +2220,23 @@ macro_rules! abstract_ordered_field_field_abs {
 }
 
 macro_rules! abstract_vector_space_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            $($tail),+
+        )
+    };
     ($tail:literal) => {
         concat!(
             "forall (Scalar : Sort u), ",
@@ -2217,6 +2266,42 @@ macro_rules! abstract_vector_space_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_subspace_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (carrier : forall (x : Vector), Prop), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_subspace_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => ",
             $tail
         )
     };
@@ -29512,6 +29597,271 @@ const ABSTRACT_VECTOR_SPACE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "LinearAlgebraVectorSpaceLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_vector_space_params!("Prop"),
+        value: abstract_vector_space_abs!(
+            "@VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul"
+        ),
+    }];
+
+const LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "linear_algebra_vector_space_from_abstract_space",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul"
+        ),
+        proof: abstract_vector_space_abs!("fun vector_args => vector_args"),
+    },
+    TheoremArtifact {
+        name: "abstract_space_from_linear_algebra_vector_space",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (vector_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul"
+        ),
+        proof: abstract_vector_space_abs!("fun vector_args => vector_args"),
+    },
+];
+
+const LINEAR_ALGEBRA_SUBSPACE_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "Subspace",
+        universe_params: &["u", "v"],
+        ty: linear_algebra_subspace_params!("Prop"),
+        value: linear_algebra_subspace_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (zero_mem : carrier vzero), ",
+            "forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)), ",
+            "forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SubspaceIntersection",
+        universe_params: &["v"],
+        ty: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (x : Vector), Prop"
+        ),
+        value: concat!(
+            "fun Vector => fun left => fun right => fun x => ",
+            "forall (P : Prop), forall (mk : forall (left_mem : left x), forall (right_mem : right x), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SubspaceSum",
+        universe_params: &["v"],
+        ty: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (x : Vector), Prop"
+        ),
+        value: concat!(
+            "fun Vector => fun vadd => fun left => fun right => fun x => ",
+            "forall (P : Prop), forall (mk : forall (y : Vector), forall (z : Vector), ",
+            "forall (left_mem : left y), forall (right_mem : right z), ",
+            "forall (sum_eq : @Eq.{v} Vector x (vadd y z)), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SubspaceSumArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_vector_space_params!(concat!(
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (sum : forall (x : Vector), Prop), Prop"
+        )),
+        value: abstract_vector_space_abs!(concat!(
+            "fun left => fun right => fun sum => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (left_in : forall (x : Vector), forall (hx : left x), sum x), ",
+            "forall (right_in : forall (x : Vector), forall (hx : right x), sum x), ",
+            "forall (pair_mem : forall (x : Vector), forall (y : Vector), forall (hx : left x), forall (hy : right y), sum (vadd x y)), ",
+            "forall (zero_mem : sum vzero), ",
+            "forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : sum x), forall (hy : sum y), sum (vadd x y)), ",
+            "forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : sum x), sum (smul a x)), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_SUBSPACE_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "subspace_criterion",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (vector_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (carrier : forall (x : Vector), Prop), forall (zero_mem : carrier vzero), forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)), forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)), @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul carrier"
+        ),
+        proof: abstract_vector_space_abs!(concat!(
+            "fun vector_args => fun carrier => fun zero_mem => fun add_mem => fun smul_mem => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (zero_mem : carrier vzero), ",
+            "forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)), ",
+            "forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)), P) => ",
+            "mk zero_mem add_mem smul_mem"
+        )),
+    },
+    TheoremArtifact {
+        name: "subspace_zero_mem",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_subspace_params!(
+            "forall (subspace_args : @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul carrier), carrier vzero"
+        ),
+        proof: linear_algebra_subspace_abs!(
+            "fun subspace_args => subspace_args (carrier vzero) (fun (zero_mem : carrier vzero) => fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)) => fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)) => zero_mem)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subspace_add_mem",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_subspace_params!(
+            "forall (subspace_args : @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul carrier), forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)"
+        ),
+        proof: linear_algebra_subspace_abs!(concat!(
+            "fun subspace_args => fun x => fun y => fun hx => fun hy => ",
+            "subspace_args (carrier (vadd x y)) ",
+            "(fun (zero_mem : carrier vzero) => ",
+            "fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)) => ",
+            "fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)) => add_mem x y hx hy)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subspace_smul_mem",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_subspace_params!(
+            "forall (subspace_args : @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul carrier), forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)"
+        ),
+        proof: linear_algebra_subspace_abs!(concat!(
+            "fun subspace_args => fun a => fun x => fun hx => ",
+            "subspace_args (carrier (smul a x)) ",
+            "(fun (zero_mem : carrier vzero) => ",
+            "fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)) => ",
+            "fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)) => smul_mem a x hx)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subspace_intersection_intro",
+        universe_params: &["v"],
+        statement: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (x : Vector), forall (left_mem : left x), forall (right_mem : right x), ",
+            "@SubspaceIntersection.{v} Vector left right x"
+        ),
+        proof: concat!(
+            "fun Vector => fun left => fun right => fun x => fun left_mem => fun right_mem => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (left_mem : left x), forall (right_mem : right x), P) => ",
+            "mk left_mem right_mem"
+        ),
+    },
+    TheoremArtifact {
+        name: "subspace_intersection_left_mem",
+        universe_params: &["v"],
+        statement: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (x : Vector), forall (h : @SubspaceIntersection.{v} Vector left right x), left x"
+        ),
+        proof: concat!(
+            "fun Vector => fun left => fun right => fun x => fun h => ",
+            "h (left x) (fun (left_mem : left x) => fun (right_mem : right x) => left_mem)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subspace_intersection_right_mem",
+        universe_params: &["v"],
+        statement: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (x : Vector), forall (h : @SubspaceIntersection.{v} Vector left right x), right x"
+        ),
+        proof: concat!(
+            "fun Vector => fun left => fun right => fun x => fun h => ",
+            "h (right x) (fun (left_mem : left x) => fun (right_mem : right x) => right_mem)"
+        ),
+    },
+    TheoremArtifact {
+        name: "subspace_intersection_is_subspace",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (vector_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (left : forall (x : Vector), Prop), forall (right : forall (x : Vector), Prop), forall (left_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left), forall (right_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right), @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul (@SubspaceIntersection.{v} Vector left right)"
+        ),
+        proof: abstract_vector_space_abs!(concat!(
+            "fun vector_args => fun left => fun right => fun left_subspace => fun right_subspace => ",
+            "@subspace_criterion.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul vector_args ",
+            "(@SubspaceIntersection.{v} Vector left right) ",
+            "(@subspace_intersection_intro.{v} Vector left right vzero ",
+            "(@subspace_zero_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left left_subspace) ",
+            "(@subspace_zero_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right right_subspace)) ",
+            "(fun (x : Vector) => fun (y : Vector) => ",
+            "fun (hx : @SubspaceIntersection.{v} Vector left right x) => ",
+            "fun (hy : @SubspaceIntersection.{v} Vector left right y) => ",
+            "hx (@SubspaceIntersection.{v} Vector left right (vadd x y)) ",
+            "(fun (left_x : left x) => fun (right_x : right x) => ",
+            "hy (@SubspaceIntersection.{v} Vector left right (vadd x y)) ",
+            "(fun (left_y : left y) => fun (right_y : right y) => ",
+            "@subspace_intersection_intro.{v} Vector left right (vadd x y) ",
+            "(@subspace_add_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left left_subspace x y left_x left_y) ",
+            "(@subspace_add_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right right_subspace x y right_x right_y)))) ",
+            "(fun (a : Scalar) => fun (x : Vector) => ",
+            "fun (hx : @SubspaceIntersection.{v} Vector left right x) => ",
+            "hx (@SubspaceIntersection.{v} Vector left right (smul a x)) ",
+            "(fun (left_x : left x) => fun (right_x : right x) => ",
+            "@subspace_intersection_intro.{v} Vector left right (smul a x) ",
+            "(@subspace_smul_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left left_subspace a x left_x) ",
+            "(@subspace_smul_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right right_subspace a x right_x)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "subspace_sum_intro",
+        universe_params: &["v"],
+        statement: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (left : forall (x : Vector), Prop), ",
+            "forall (right : forall (x : Vector), Prop), ",
+            "forall (x : Vector), forall (y : Vector), ",
+            "forall (left_mem : left x), forall (right_mem : right y), ",
+            "@SubspaceSum.{v} Vector vadd left right (vadd x y)"
+        ),
+        proof: concat!(
+            "fun Vector => fun vadd => fun left => fun right => fun x => fun y => ",
+            "fun left_mem => fun right_mem => fun (P : Prop) => ",
+            "fun (mk : forall (left_w : Vector), forall (right_w : Vector), ",
+            "forall (left_mem : left left_w), forall (right_mem : right right_w), ",
+            "forall (sum_eq : @Eq.{v} Vector (vadd x y) (vadd left_w right_w)), P) => ",
+            "mk x y left_mem right_mem (@Eq.refl.{v} Vector (vadd x y))"
+        ),
+    },
+    TheoremArtifact {
+        name: "subspace_sum_from_evidence",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (vector_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (left : forall (x : Vector), Prop), forall (right : forall (x : Vector), Prop), forall (sum : forall (x : Vector), Prop), forall (sum_args : @SubspaceSumArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left right sum), @Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul sum"
+        ),
+        proof: abstract_vector_space_abs!(concat!(
+            "fun vector_args => fun left => fun right => fun sum => fun sum_args => ",
+            "sum_args (@Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul sum) ",
+            "(fun (left_in : forall (x : Vector), forall (hx : left x), sum x) => ",
+            "fun (right_in : forall (x : Vector), forall (hx : right x), sum x) => ",
+            "fun (pair_mem : forall (x : Vector), forall (y : Vector), forall (hx : left x), forall (hy : right y), sum (vadd x y)) => ",
+            "fun (zero_mem : sum vzero) => ",
+            "fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : sum x), forall (hy : sum y), sum (vadd x y)) => ",
+            "fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : sum x), sum (smul a x)) => ",
+            "@subspace_criterion.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul vector_args sum zero_mem add_mem smul_mem)"
+        )),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -37409,6 +37759,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
+        || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
+        || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);

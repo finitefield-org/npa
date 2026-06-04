@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+  "source": "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f3c5fd3b1ecb66f0ef8edf2d85edb29c521ca9362eecb577ce02bd0811056e27",
+  "certificate_file_sha256": "sha256:bfac869a99641f0911d702b8e8e8c8b4d2cda9c3957021d1b159c428a2d1b668",
+  "export_hash": "sha256:b12a46ef70f2cb332948ab1d4e612a61e2cf16f1cbae5aacdbb03b454161604b",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4f778a99da3104303f058563c7503d63ed888e1a4146aa541b7038e1d8474aa5",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LinearAlgebraVectorSpaceLawArgs", "kind": "def" },
+    { "name": "linear_algebra_vector_space_from_abstract_space", "kind": "theorem" },
+    { "name": "abstract_space_from_linear_algebra_vector_space", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

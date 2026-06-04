@@ -1265,6 +1265,42 @@ theorems = ["vec_sub_def", "vec_add_assoc", "vec_add_comm", "vec_add_zero", "vec
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.VectorSpace.Basic"
+source = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f3c5fd3b1ecb66f0ef8edf2d85edb29c521ca9362eecb577ce02bd0811056e27"
+certificate_file_sha256 = "sha256:bfac869a99641f0911d702b8e8e8c8b4d2cda9c3957021d1b159c428a2d1b668"
+export_hash = "sha256:b12a46ef70f2cb332948ab1d4e612a61e2cf16f1cbae5aacdbb03b454161604b"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:4f778a99da3104303f058563c7503d63ed888e1a4146aa541b7038e1d8474aa5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace"]
+definitions = ["LinearAlgebraVectorSpaceLawArgs"]
+theorems = ["linear_algebra_vector_space_from_abstract_space", "abstract_space_from_linear_algebra_vector_space"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Subspace.Basic"
+source = "Proofs/Ai/LinearAlgebra/Subspace/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Subspace/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Subspace/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Subspace/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:ef5255fd73b9a8a9a20605b2cf9990cabdcb035a9413cb2e6f591357f3110c22"
+certificate_file_sha256 = "sha256:be79234cdb4648d2c969604acd0aa9a664f0de1039f05e9996aab93de5148bc6"
+export_hash = "sha256:4951bd0aa3ac5e03b7df05cafb6dd27967b8f4246787cced077aeaa9de744e8b"
+axiom_report_hash = "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699"
+certificate_hash = "sha256:8cf6e1362992829da8aff47e9c929bfee25a49003b44b1e6a917d8a7075d384d"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic"]
+definitions = ["Subspace", "SubspaceIntersection", "SubspaceSum", "SubspaceSumArgs"]
+theorems = ["subspace_criterion", "subspace_zero_mem", "subspace_add_mem", "subspace_smul_mem", "subspace_intersection_intro", "subspace_intersection_left_mem", "subspace_intersection_right_mem", "subspace_intersection_is_subspace", "subspace_sum_intro", "subspace_sum_from_evidence"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"

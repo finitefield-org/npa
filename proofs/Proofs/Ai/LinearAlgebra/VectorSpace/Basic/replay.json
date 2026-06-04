@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LinearAlgebraVectorSpaceLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul"
+    },
+    {
+      "declaration": "linear_algebra_vector_space_from_abstract_space",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => vector_args"
+    },
+    {
+      "declaration": "abstract_space_from_linear_algebra_vector_space",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => vector_args"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/certificate.npcert"
+  }
+}

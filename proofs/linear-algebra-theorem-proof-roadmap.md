@@ -323,7 +323,10 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-01 Vector-Space And Subspace Foundations
 
-- Status: planned.
+- Status: `LAQ-002` complete for the vector-space law bridge, subspace
+  criterion, subspace projections, intersection subspace certificate, and sum
+  evidence interface. Zero/kernel/image-shaped subspaces and direct-sum
+  uniqueness remain planned for later `LIN-01` work.
 - Depends on: existing `Proofs.Ai.Algebra.AbstractField` and
   `Proofs.Ai.Vector.AbstractSpace`.
 - Target modules:
