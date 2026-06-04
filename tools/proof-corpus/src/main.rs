@@ -184,6 +184,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE,
     &LINEAR_ALGEBRA_MATRIX_DETERMINANT_MODULE,
     &LINEAR_ALGEBRA_MATRIX_ADJUGATE_MODULE,
+    &LINEAR_ALGEBRA_MATRIX_RANK_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1937,6 +1938,30 @@ const LINEAR_ALGEBRA_MATRIX_ADJUGATE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_MATRIX_RANK_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Matrix.Rank",
+    source_path: "Proofs/Ai/LinearAlgebra/Matrix/Rank/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Matrix/Rank/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Matrix/Rank/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Matrix/Rank/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+        "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+        "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+        "Proofs.Ai.LinearAlgebra.LinearMap.Basic",
+        "Proofs.Ai.LinearAlgebra.Matrix.Basic",
+        "Proofs.Ai.LinearAlgebra.Systems.Basic",
+        "Proofs.Ai.LinearAlgebra.Matrix.Elimination",
+        "Proofs.Ai.LinearAlgebra.Matrix.Representation",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_MATRIX_RANK_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_MATRIX_RANK_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -3191,6 +3216,80 @@ macro_rules! linear_algebra_cramer_abs {
     ($tail:literal) => {
         linear_algebra_adjugate_abs!(concat!(
             "fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_matrix_rank_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_matrix_params!(concat!(
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (Dimension : Sort d), ",
+            "forall (row_rank_dim : Dimension), ",
+            "forall (column_rank_dim : Dimension), ",
+            "forall (row_rank_law : Prop), ",
+            "forall (column_rank_law : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_matrix_params!(concat!(
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (Dimension : Sort d), ",
+            "forall (row_rank_dim : Dimension), ",
+            "forall (column_rank_dim : Dimension), ",
+            "forall (row_rank_law : Prop), ",
+            "forall (column_rank_law : Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_matrix_rank_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_matrix_abs!(concat!(
+            "fun entries => fun Dimension => fun row_rank_dim => fun column_rank_dim => fun row_rank_law => fun column_rank_law => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_matrix_abs!(concat!(
+            "fun entries => fun Dimension => fun row_rank_dim => fun column_rank_dim => fun row_rank_law => fun column_rank_law => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_rank_normal_form_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_matrix_rank_params!(concat!(
+            "forall (normal_entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (normal_form_law : Prop), ",
+            "forall (rank_preservation_law : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_matrix_rank_params!(concat!(
+            "forall (normal_entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (normal_form_law : Prop), ",
+            "forall (rank_preservation_law : Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_rank_normal_form_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_matrix_rank_abs!(concat!(
+            "fun normal_entries => fun normal_form_law => fun rank_preservation_law => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_matrix_rank_abs!(concat!(
+            "fun normal_entries => fun normal_form_law => fun rank_preservation_law => ",
             $tail
         ))
     };
@@ -32973,6 +33072,264 @@ const LINEAR_ALGEBRA_MATRIX_ADJUGATE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_MATRIX_RANK_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "MatrixRowRankCertificate",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_matrix_rank_params!("Prop"),
+        value: linear_algebra_matrix_rank_abs!("row_rank_law"),
+    },
+    DefinitionArtifact {
+        name: "MatrixColumnRankCertificate",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_matrix_rank_params!("Prop"),
+        value: linear_algebra_matrix_rank_abs!("column_rank_law"),
+    },
+    DefinitionArtifact {
+        name: "RowColumnRankEqualityEvidence",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_matrix_rank_params!("Prop"),
+        value: linear_algebra_matrix_rank_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), ",
+            "forall (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), ",
+            "forall (same_rank : @Eq.{d} Dimension row_rank_dim column_rank_dim), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MatrixRankCertificate",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_matrix_rank_params!("Prop"),
+        value: linear_algebra_matrix_rank_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), ",
+            "forall (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), ",
+            "forall (row_column_equality : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MatrixRankNullityAliasEvidence",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_matrix_rank_params!("forall (rank_nullity_law : Prop), Prop"),
+        value: linear_algebra_matrix_rank_abs!(concat!(
+            "fun rank_nullity_law => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), ",
+            "forall (rank_nullity_evidence : rank_nullity_law), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "RankNormalFormEvidence",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_rank_normal_form_params!("Prop"),
+        value: linear_algebra_rank_normal_form_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), ",
+            "forall (normal_form : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law), ",
+            "forall (rank_preservation : rank_preservation_law), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_MATRIX_RANK_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "matrix_row_rank_certificate_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (row_rank_evidence : row_rank_law), @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!("fun row_rank_evidence => row_rank_evidence"),
+    },
+    TheoremArtifact {
+        name: "matrix_column_rank_certificate_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (column_rank_evidence : column_rank_law), @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun column_rank_evidence => column_rank_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_column_rank_equality_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (same_rank : @Eq.{d} Dimension row_rank_dim column_rank_dim), @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun row_rank_certificate => fun column_rank_certificate => fun same_rank => fun (P : Prop) => fun (mk : forall (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (same_rank : @Eq.{d} Dimension row_rank_dim column_rank_dim), P) => mk row_rank_certificate column_rank_certificate same_rank"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_column_rank_equality_row",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (evidence : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun evidence => evidence (@MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) (fun (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (same_rank : @Eq.{d} Dimension row_rank_dim column_rank_dim) => row_rank_certificate)"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_column_rank_equality_column",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (evidence : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun evidence => evidence (@MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) (fun (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (same_rank : @Eq.{d} Dimension row_rank_dim column_rank_dim) => column_rank_certificate)"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_rank_eq_column_rank",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (evidence : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @Eq.{d} Dimension row_rank_dim column_rank_dim"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun evidence => evidence (@Eq.{d} Dimension row_rank_dim column_rank_dim) (fun (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (same_rank : @Eq.{d} Dimension row_rank_dim column_rank_dim) => same_rank)"
+        ),
+    },
+    TheoremArtifact {
+        name: "row_rank_equals_column_rank",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (evidence : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @Eq.{d} Dimension row_rank_dim column_rank_dim"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun evidence => @row_rank_eq_column_rank.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_certificate_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (row_column_equality : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun row_rank_certificate => fun column_rank_certificate => fun row_column_equality => fun (P : Prop) => fun (mk : forall (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (row_column_equality : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), P) => mk row_rank_certificate column_rank_certificate row_column_equality"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_row_certificate",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (rank_certificate : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun rank_certificate => rank_certificate (@MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) (fun (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (row_column_equality : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => row_rank_certificate)"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_column_certificate",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (rank_certificate : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun rank_certificate => rank_certificate (@MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) (fun (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (row_column_equality : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => column_rank_certificate)"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_row_eq_column",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (rank_certificate : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), @Eq.{d} Dimension row_rank_dim column_rank_dim"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun rank_certificate => rank_certificate (@Eq.{d} Dimension row_rank_dim column_rank_dim) (fun (row_rank_certificate : @MatrixRowRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (column_rank_certificate : @MatrixColumnRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (row_column_equality : @RowColumnRankEqualityEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => @row_rank_eq_column_rank.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law row_column_equality)"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_nullity_alias_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (rank_nullity_law : Prop), forall (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (rank_nullity_evidence : rank_nullity_law), @MatrixRankNullityAliasEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law rank_nullity_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun rank_nullity_law => fun matrix_rank => fun rank_nullity_evidence => fun (P : Prop) => fun (mk : forall (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (rank_nullity_evidence : rank_nullity_law), P) => mk matrix_rank rank_nullity_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_aliases_rank_nullity",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_matrix_rank_params!(
+            "forall (rank_nullity_law : Prop), forall (alias_evidence : @MatrixRankNullityAliasEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law rank_nullity_law), rank_nullity_law"
+        ),
+        proof: linear_algebra_matrix_rank_abs!(
+            "fun rank_nullity_law => fun alias_evidence => alias_evidence rank_nullity_law (fun (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (rank_nullity_evidence : rank_nullity_law) => rank_nullity_evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rank_normal_form_evidence_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (normal_form : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law), forall (rank_preservation : rank_preservation_law), @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!(
+            "fun matrix_rank => fun normal_form => fun rank_preservation => fun (P : Prop) => fun (mk : forall (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law), forall (normal_form : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law), forall (rank_preservation : rank_preservation_law), P) => mk matrix_rank normal_form rank_preservation"
+        ),
+    },
+    TheoremArtifact {
+        name: "rank_normal_form_rank_certificate",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (evidence : @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law), @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!(
+            "fun evidence => evidence (@MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) (fun (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (normal_form : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law) => fun (rank_preservation : rank_preservation_law) => matrix_rank)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rank_normal_form_matrix",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (evidence : @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law), @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!(
+            "fun evidence => evidence (@ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law) (fun (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (normal_form : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law) => fun (rank_preservation : rank_preservation_law) => normal_form)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rank_normal_form_preserves_rank",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (evidence : @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law), rank_preservation_law"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!(
+            "fun evidence => evidence rank_preservation_law (fun (matrix_rank : @MatrixRankCertificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law) => fun (normal_form : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law) => fun (rank_preservation : rank_preservation_law) => rank_preservation)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rank_normal_form_row_rank_eq_column_rank",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (evidence : @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law), @Eq.{d} Dimension row_rank_dim column_rank_dim"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!(
+            "fun evidence => @matrix_rank_row_eq_column.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law (@rank_normal_form_rank_certificate.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_rank_normal_form",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (evidence : @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law), @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col normal_entries normal_form_law"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!(
+            "fun evidence => @rank_normal_form_matrix.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "rank_normal_form_route",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_rank_normal_form_params!(
+            "forall (evidence : @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law), @RankNormalFormEvidence.{d,u,v,w} Scalar zero one add neg sub mul Row Col entries Dimension row_rank_dim column_rank_dim row_rank_law column_rank_law normal_entries normal_form_law rank_preservation_law"
+        ),
+        proof: linear_algebra_rank_normal_form_abs!("fun evidence => evidence"),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -40880,6 +41237,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE.module
         || config.module == LINEAR_ALGEBRA_MATRIX_DETERMINANT_MODULE.module
         || config.module == LINEAR_ALGEBRA_MATRIX_ADJUGATE_MODULE.module
+        || config.module == LINEAR_ALGEBRA_MATRIX_RANK_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);

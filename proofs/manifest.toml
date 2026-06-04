@@ -1445,6 +1445,24 @@ theorems = ["adjugate_formula_evidence_intro", "adjugate_left_formula", "adjugat
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Rank"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Rank/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Rank/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Rank/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Rank/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0984ea30ee00ed1f4c06496b01e68ecefd045099eda58055457eb03b0b0a94dc"
+certificate_file_sha256 = "sha256:53fdf1bf9964b7ee125c95bf0f249a6973b6b94b975f85eb699d6dc667bf7c81"
+export_hash = "sha256:6c69274ce76220642bc22b7dcd2403d5c7f4e238939b59ea6bcae121b6a65c42"
+axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+certificate_hash = "sha256:24502cf7a89e4b45421948060cd3433d5ca511926ed75fc8556225254b444d0b"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Representation"]
+definitions = ["MatrixRowRankCertificate", "MatrixColumnRankCertificate", "RowColumnRankEqualityEvidence", "MatrixRankCertificate", "MatrixRankNullityAliasEvidence", "RankNormalFormEvidence"]
+theorems = ["matrix_row_rank_certificate_intro", "matrix_column_rank_certificate_intro", "row_column_rank_equality_intro", "row_column_rank_equality_row", "row_column_rank_equality_column", "row_rank_eq_column_rank", "row_rank_equals_column_rank", "matrix_rank_certificate_intro", "matrix_rank_row_certificate", "matrix_rank_column_certificate", "matrix_rank_row_eq_column", "matrix_rank_nullity_alias_intro", "matrix_rank_aliases_rank_nullity", "rank_normal_form_evidence_intro", "rank_normal_form_rank_certificate", "rank_normal_form_matrix", "rank_normal_form_preserves_rank", "rank_normal_form_row_rank_eq_column_rank", "matrix_rank_normal_form", "rank_normal_form_route"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"

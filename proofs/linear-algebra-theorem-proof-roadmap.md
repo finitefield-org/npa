@@ -552,7 +552,13 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-07 Rank Theory And Factorizations
 
-- Status: planned.
+- Status: `LAQ-012` complete for `Proofs.Ai.LinearAlgebra.Matrix.Rank`:
+  row/column rank certificates, row-rank equals column-rank equality evidence,
+  matrix-rank certificates, rank-nullity alias evidence, and rank-normal-form
+  evidence/projections are available. Row/column operation preservation beyond
+  the normal-form route, rank of transpose, product/Sylvester/Frobenius rank
+  inequalities, rank-minor criteria, rank factorization, and low-rank
+  approximation prerequisites remain planned.
 - Depends on: `LIN-03`, `LIN-05`, and `LIN-06`.
 - Target modules:
   - `Proofs.Ai.LinearAlgebra.Matrix.Rank`
@@ -578,6 +584,7 @@ secondary area must import, specialize, or expose a compatibility alias.
     construction.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Rank`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Rank`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.RankFactorization`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
