@@ -1382,6 +1382,33 @@ Theorem targets:
 | `field_hom_div` | projects division preservation with explicit nonzero evidence for the denominator |
 | `field_hom_preserves_nonzero` | projects preservation of source-side `Nonzero` evidence across the homomorphism |
 
+#### `Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
+
+This module is the first direct downstream consumer of `AbstractFieldHom`. It keeps kernel, image,
+embedding, and isomorphism construction data explicit instead of introducing concrete quotient or
+subtype machinery into the trusted surface.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldHomKernelImageArgs` | packages nonzero image preservation and injectivity evidence for a field hom |
+| `FieldHomImageFieldArgs` | packages explicit image-carrier field laws plus the image embedding field hom |
+| `FieldEmbeddingLawArgs` | packages a field hom together with injectivity evidence |
+| `FieldIsoLawArgs` | packages forward/backward field embeddings and inverse laws |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_hom_kernel_zero_of_nonzero` | reuses `field_hom_preserves_nonzero` as the kernel-zero exclusion projection |
+| `field_hom_injective_of_nonzero` | projects explicit injectivity evidence from `FieldHomKernelImageArgs` |
+| `field_hom_image_field_laws` | projects field laws for an explicitly supplied image carrier |
+| `field_embedding_as_field_hom` | projects the underlying `FieldHomLawArgs` from an embedding package |
+| `field_embedding_comp` | records composition as explicit `FieldEmbeddingLawArgs` evidence |
+| `field_iso_symm` | swaps forward and backward embedding evidence for a field isomorphism |
+| `field_iso_trans` | records transitivity as explicit composite isomorphism evidence |
+
 #### `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
 
 This bridge imports `AbstractField` and the existing UFD-style integral-domain API. It does not

@@ -147,6 +147,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_FIELD_MODULE,
     &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
     &ABSTRACT_FIELD_HOM_MODULE,
+    &ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE,
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
@@ -1285,6 +1286,31 @@ const ABSTRACT_FIELD_HOM_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldHomKernelImage/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldHomKernelImage/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldHomKernelImage/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldHomKernelImage/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_HOM_KERNEL_IMAGE_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_HOM_KERNEL_IMAGE_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_RING_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRingFirstIso",
     source_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
@@ -1834,6 +1860,28 @@ macro_rules! abstract_field_quotient_abs {
 }
 
 macro_rules! abstract_field_hom_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (R : Sort u), ",
+            "forall (zeroR : R), ",
+            "forall (oneR : R), ",
+            "forall (addR : forall (a : R), forall (b : R), R), ",
+            "forall (negR : forall (a : R), R), ",
+            "forall (subR : forall (a : R), forall (b : R), R), ",
+            "forall (mulR : forall (a : R), forall (b : R), R), ",
+            "forall (invR : forall (a : R), R), ",
+            "forall (S : Sort v), ",
+            "forall (zeroS : S), ",
+            "forall (oneS : S), ",
+            "forall (addS : forall (a : S), forall (b : S), S), ",
+            "forall (negS : forall (a : S), S), ",
+            "forall (subS : forall (a : S), forall (b : S), S), ",
+            "forall (mulS : forall (a : S), forall (b : S), S), ",
+            "forall (invS : forall (a : S), S), ",
+            "forall (f : forall (a : R), S), ",
+            $($tail)+
+        )
+    };
     ($tail:literal) => {
         concat!(
             "forall (R : Sort u), ",
@@ -15093,6 +15141,197 @@ const ABSTRACT_FIELD_HOM_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldHomKernelImageArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), Prop"
+        ),
+        value: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => forall (P : Prop), forall (mk : ",
+            "forall (kernel_zero_law : forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)), ",
+            "forall (injective_law : forall (a : R), forall (b : R), forall (himage : @Eq.{v} S (f a) (f b)), @Eq.{u} R a b), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldHomImageFieldArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (Image : Sort w), ",
+            "forall (zeroI : Image), ",
+            "forall (oneI : Image), ",
+            "forall (addI : forall (a : Image), forall (b : Image), Image), ",
+            "forall (negI : forall (a : Image), Image), ",
+            "forall (subI : forall (a : Image), forall (b : Image), Image), ",
+            "forall (mulI : forall (a : Image), forall (b : Image), Image), ",
+            "forall (invI : forall (a : Image), Image), ",
+            "forall (embedI : forall (x : Image), S), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun Image => fun zeroI => fun oneI => fun addI => fun negI => fun subI => fun mulI => fun invI => fun embedI => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (image_field_law : @FieldLawArgs.{w} Image zeroI oneI addI negI subI mulI invI), ",
+            "forall (image_embedding_law : @FieldHomLawArgs.{w,v} Image zeroI oneI addI negI subI mulI invI S zeroS oneS addS negS subS mulS invS embedI), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldEmbeddingLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("Prop"),
+        value: abstract_field_hom_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (field_hom_law : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (injective_law : forall (a : R), forall (b : R), forall (himage : @Eq.{v} S (f a) (f b)), @Eq.{u} R a b), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldIsoLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("forall (g : forall (b : S), R), Prop"),
+        value: abstract_field_hom_abs!(concat!(
+            "fun g => forall (P : Prop), forall (mk : ",
+            "forall (forward_embedding : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (backward_embedding : @FieldEmbeddingLawArgs.{v,u} S zeroS oneS addS negS subS mulS invS R zeroR oneR addR negR subR mulR invR g), ",
+            "forall (left_inverse : forall (a : R), @Eq.{u} R (g (f a)) a), ",
+            "forall (right_inverse : forall (b : S), @Eq.{v} S (f (g b)) b), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_hom_kernel_zero_of_nonzero",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (a : R), forall (ha : @Nonzero.{u} R zeroR a), @Nonzero.{v} S zeroS (f a)"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun a => fun ha => ",
+            "@field_hom_preserves_nonzero.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f field_hom_args a ha"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_injective_of_nonzero",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (kernel_image_args : @FieldHomKernelImageArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f field_hom_args), forall (a : R), forall (b : R), forall (himage : @Eq.{v} S (f a) (f b)), @Eq.{u} R a b"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun kernel_image_args => fun a => fun b => fun himage => ",
+            "kernel_image_args (@Eq.{u} R a b) ",
+            "(fun (kernel_zero_arg : forall (x : R), forall (hx : @Nonzero.{u} R zeroR x), @Nonzero.{v} S zeroS (f x)) => ",
+            "fun (injective_arg : forall (x : R), forall (y : R), forall (hxy : @Eq.{v} S (f x) (f y)), @Eq.{u} R x y) => injective_arg a b himage)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_hom_image_field_laws",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (field_hom_args : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (Image : Sort w), ",
+            "forall (zeroI : Image), ",
+            "forall (oneI : Image), ",
+            "forall (addI : forall (a : Image), forall (b : Image), Image), ",
+            "forall (negI : forall (a : Image), Image), ",
+            "forall (subI : forall (a : Image), forall (b : Image), Image), ",
+            "forall (mulI : forall (a : Image), forall (b : Image), Image), ",
+            "forall (invI : forall (a : Image), Image), ",
+            "forall (embedI : forall (x : Image), S), ",
+            "forall (image_args : @FieldHomImageFieldArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f field_hom_args Image zeroI oneI addI negI subI mulI invI embedI), ",
+            "@FieldLawArgs.{w} Image zeroI oneI addI negI subI mulI invI"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun field_hom_args => fun Image => fun zeroI => fun oneI => fun addI => fun negI => fun subI => fun mulI => fun invI => fun embedI => fun image_args => ",
+            "image_args (@FieldLawArgs.{w} Image zeroI oneI addI negI subI mulI invI) ",
+            "(fun (image_field_law : @FieldLawArgs.{w} Image zeroI oneI addI negI subI mulI invI) => ",
+            "fun (image_embedding_law : @FieldHomLawArgs.{w,v} Image zeroI oneI addI negI subI mulI invI S zeroS oneS addS negS subS mulS invS embedI) => image_field_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_embedding_as_field_hom",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (embedding_args : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun embedding_args => ",
+            "embedding_args (@FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) ",
+            "(fun (field_hom_arg : @FieldHomLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (injective_arg : forall (a : R), forall (b : R), forall (himage : @Eq.{v} S (f a) (f b)), @Eq.{u} R a b) => field_hom_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_embedding_comp",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (T : Sort w), ",
+            "forall (zeroT : T), ",
+            "forall (oneT : T), ",
+            "forall (addT : forall (a : T), forall (b : T), T), ",
+            "forall (negT : forall (a : T), T), ",
+            "forall (subT : forall (a : T), forall (b : T), T), ",
+            "forall (mulT : forall (a : T), forall (b : T), T), ",
+            "forall (invT : forall (a : T), T), ",
+            "forall (g : forall (b : S), T), ",
+            "forall (embedding_f : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (embedding_g : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (composite_embedding : @FieldEmbeddingLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "@FieldEmbeddingLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => ",
+            "fun embedding_f => fun embedding_g => fun composite_embedding => composite_embedding"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_iso_symm",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (g : forall (b : S), R), forall (iso_args : @FieldIsoLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f g), @FieldIsoLawArgs.{v,u} S zeroS oneS addS negS subS mulS invS R zeroR oneR addR negR subR mulR invR g f"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun g => fun iso_args => fun (P : Prop) => ",
+            "fun (mk : forall (forward_embedding : @FieldEmbeddingLawArgs.{v,u} S zeroS oneS addS negS subS mulS invS R zeroR oneR addR negR subR mulR invR g), ",
+            "forall (backward_embedding : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (left_inverse : forall (b : S), @Eq.{v} S (f (g b)) b), ",
+            "forall (right_inverse : forall (a : R), @Eq.{u} R (g (f a)) a), P) => ",
+            "iso_args P ",
+            "(fun (forward_embedding : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (backward_embedding : @FieldEmbeddingLawArgs.{v,u} S zeroS oneS addS negS subS mulS invS R zeroR oneR addR negR subR mulR invR g) => ",
+            "fun (left_inverse : forall (a : R), @Eq.{u} R (g (f a)) a) => ",
+            "fun (right_inverse : forall (b : S), @Eq.{v} S (f (g b)) b) => ",
+            "mk backward_embedding forward_embedding right_inverse left_inverse)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_iso_trans",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (T : Sort w), ",
+            "forall (zeroT : T), ",
+            "forall (oneT : T), ",
+            "forall (addT : forall (a : T), forall (b : T), T), ",
+            "forall (negT : forall (a : T), T), ",
+            "forall (subT : forall (a : T), forall (b : T), T), ",
+            "forall (mulT : forall (a : T), forall (b : T), T), ",
+            "forall (invT : forall (a : T), T), ",
+            "forall (g : forall (b : S), T), ",
+            "forall (f_inv : forall (b : S), R), ",
+            "forall (g_inv : forall (c : T), S), ",
+            "forall (iso_rs : @FieldIsoLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f f_inv), ",
+            "forall (iso_st : @FieldIsoLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g g_inv), ",
+            "forall (trans_iso : @FieldIsoLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) (fun (c : T) => f_inv (g_inv c))), ",
+            "@FieldIsoLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) (fun (c : T) => f_inv (g_inv c))"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => ",
+            "fun f_inv => fun g_inv => fun iso_rs => fun iso_st => fun trans_iso => trans_iso"
+        )),
+    },
+];
+
 const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "RingHomLawArgs",
@@ -22040,6 +22279,38 @@ fn run_full() -> Result<(), String> {
         &abstract_field_hom_imports,
         &abstract_field_hom_source_interfaces,
     )?;
+    let abstract_field_hom_kernel_image_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+    ];
+    let abstract_field_hom_kernel_image_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+    ];
+    let abstract_field_hom_kernel_image = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE,
+        &abstract_field_hom_kernel_image_imports,
+        &abstract_field_hom_kernel_image_source_interfaces,
+    )?;
     let abstract_ring_first_iso_imports = vec![
         eq_import.clone(),
         eq_reasoning.verified_module.clone(),
@@ -22692,6 +22963,7 @@ fn run_full() -> Result<(), String> {
         abstract_field,
         abstract_ring_first_iso_base,
         abstract_field_hom,
+        abstract_field_hom_kernel_image,
         abstract_ring_first_iso,
         abstract_ring_chinese_remainder,
         abstract_ufd_prime_factorization,
@@ -24938,6 +25210,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
         || module == ABSTRACT_FIELD_HOM_MODULE.module
+        || module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
@@ -25275,6 +25548,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_FINAL_MODULE.module
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
         || config.module == ABSTRACT_FIELD_HOM_MODULE.module
+        || config.module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
