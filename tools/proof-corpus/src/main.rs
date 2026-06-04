@@ -166,6 +166,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_FINITE_FIELD_MODULE,
     &ABSTRACT_SPLITTING_FIELD_MODULE,
     &ABSTRACT_ALGEBRAIC_CLOSURE_MODULE,
+    &ABSTRACT_GALOIS_STARTER_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -1763,6 +1764,53 @@ const ABSTRACT_ALGEBRAIC_CLOSURE_MODULE: ModuleArtifact = ModuleArtifact {
     definitions: ABSTRACT_ALGEBRAIC_CLOSURE_DEFINITIONS,
     theorems: ABSTRACT_ALGEBRAIC_CLOSURE_THEOREMS,
     expected_axioms: &[],
+};
+
+const ABSTRACT_GALOIS_STARTER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGaloisStarter",
+    source_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+        "Proofs.Ai.Algebra.AbstractSplittingField",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GALOIS_STARTER_DEFINITIONS,
+    theorems: ABSTRACT_GALOIS_STARTER_THEOREMS,
+    expected_axioms: &["Eq.rec"],
 };
 
 const DERIVED_AFFINE_SCHEMES_MODULE: ModuleArtifact = ModuleArtifact {
@@ -26640,6 +26688,290 @@ const ABSTRACT_ALGEBRAIC_CLOSURE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+macro_rules! field_automorphism_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_params!(concat!(
+            "forall (Aut : Sort a), ",
+            "forall (aut_one : Aut), ",
+            "forall (aut_mul : forall (sigma : Aut), forall (tau : Aut), Aut), ",
+            "forall (aut_inv : forall (sigma : Aut), Aut), ",
+            "forall (aut_apply : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (aut_apply_inv : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (field_args : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_laws : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! field_automorphism_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_abs!(concat!(
+            "fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => ",
+            "fun field_args => fun extension_field_laws => fun extension_args => ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! field_automorphism_args_app {
+    () => {
+        concat!(
+            "@FieldAutomorphismGroupArgs.{a,u,v} R zeroR oneR addR negR subR mulR invR ",
+            "S zeroS oneS addS negS subS mulS invS f Aut aut_one aut_mul aut_inv aut_apply aut_apply_inv ",
+            "field_args extension_field_laws extension_args"
+        )
+    };
+}
+
+macro_rules! fixed_field_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_params!(concat!(
+            "forall (Fixed : Sort w), ",
+            "forall (fixed_zero : Fixed), ",
+            "forall (fixed_one : Fixed), ",
+            "forall (fixed_add : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_neg : forall (a : Fixed), Fixed), ",
+            "forall (fixed_sub : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_mul : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_inv : forall (a : Fixed), Fixed), ",
+            "forall (fixed_embed : forall (x : Fixed), S), ",
+            "forall (fixed_pred : forall (x : S), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_laws : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! fixed_field_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_abs!(concat!(
+            "fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => ",
+            "fun fixed_embed => fun fixed_pred => fun field_args => fun extension_field_laws => fun extension_args => ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! fixed_field_args_app {
+    () => {
+        concat!(
+            "@FixedFieldLawArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR ",
+            "S zeroS oneS addS negS subS mulS invS f Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv ",
+            "fixed_embed fixed_pred field_args extension_field_laws extension_args"
+        )
+    };
+}
+
+macro_rules! galois_correspondence_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (G : Sort succ g), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (Hpred2 : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ g} G oneG mulG invG), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ g} G oneG mulG invG N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ g} G oneG mulG invG Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (K : forall (q : @NormalQuot.{g} G oneG mulG invG N group_args n_normal), Prop), ",
+            "forall (K2 : forall (q : @NormalQuot.{g} G oneG mulG invG N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ g} (@NormalQuot.{g} G oneG mulG invG N group_args n_normal) (@NormalQuotOne.{g} G oneG mulG invG N group_args n_normal) (@NormalQuotMul.{g} G oneG mulG invG N group_args n_normal) (@NormalQuotInv.{g} G oneG mulG invG N group_args n_normal) K), ",
+            "forall (h_le : @SubgroupLe.{succ g} G Hpred Hpred2), ",
+            "forall (k_le : @SubgroupLe.{succ g} (@NormalQuot.{g} G oneG mulG invG N group_args n_normal) K K2), ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! galois_correspondence_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun G => fun oneG => fun mulG => fun invG => fun N => fun Hpred => fun Hpred2 => ",
+            "fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! correspondence_order_evidence_app {
+    () => {
+        concat!(
+            "@CorrespondenceOrderEvidence.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h ",
+            "K K2 k_args h_le k_le"
+        )
+    };
+}
+
+macro_rules! galois_correspondence_bridge_args_app {
+    () => {
+        concat!(
+            "@GaloisCorrespondenceBridgeArgs.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h ",
+            "K K2 k_args h_le k_le"
+        )
+    };
+}
+
+const ABSTRACT_GALOIS_STARTER_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldAutomorphismGroupArgs",
+        universe_params: &["a", "u", "v"],
+        ty: field_automorphism_params!(concat!("Prop")),
+        value: field_automorphism_abs!(concat!(
+            "forall (Q : Prop), forall (mk : ",
+            "forall (automorphism_group_law : @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv), ",
+            "forall (automorphism_field_iso_law : forall (sigma : Aut), @FieldIsoLawArgs.{v,v} S zeroS oneS addS negS subS mulS invS S zeroS oneS addS negS subS mulS invS (aut_apply sigma) (aut_apply_inv sigma)), ",
+            "forall (automorphism_fixes_base_law : forall (sigma : Aut), forall (x : R), @Eq.{v} S (aut_apply sigma (f x)) (f x)), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FixedFieldLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: fixed_field_params!(concat!("Prop")),
+        value: fixed_field_abs!(concat!(
+            "forall (Q : Prop), forall (mk : ",
+            "forall (fixed_field_law : @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv), ",
+            "forall (fixed_embedding_law : @FieldEmbeddingLawArgs.{w,v} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv S zeroS oneS addS negS subS mulS invS fixed_embed), ",
+            "forall (fixed_predicate_law : forall (x : Fixed), fixed_pred (fixed_embed x)), ",
+            "forall (base_lands_in_fixed_law : forall (x : R), fixed_pred (f x)), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GaloisExtensionArgs",
+        universe_params: &["a", "u", "v", "w"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (Aut : Sort a), ",
+            "forall (aut_one : Aut), ",
+            "forall (aut_mul : forall (sigma : Aut), forall (tau : Aut), Aut), ",
+            "forall (aut_inv : forall (sigma : Aut), Aut), ",
+            "forall (aut_apply : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (aut_apply_inv : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (Fixed : Sort w), ",
+            "forall (fixed_zero : Fixed), ",
+            "forall (fixed_one : Fixed), ",
+            "forall (fixed_add : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_neg : forall (a : Fixed), Fixed), ",
+            "forall (fixed_sub : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_mul : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_inv : forall (a : Fixed), Fixed), ",
+            "forall (fixed_embed : forall (x : Fixed), S), ",
+            "forall (fixed_pred : forall (x : S), Prop), ",
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (SplittingConstruction : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_laws : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_args : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "forall (splitting_construction : @SplittingFieldConstructionEvidence.{v,u} R S f SplittingConstruction), ",
+            "forall (automorphism_args : ",
+            field_automorphism_args_app!(),
+            "), ",
+            "forall (fixed_args : ",
+            fixed_field_args_app!(),
+            "), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => ",
+            "fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => ",
+            "fun fixed_embed => fun fixed_pred => fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun SplittingConstruction => ",
+            "fun field_args => fun extension_field_laws => fun extension_args => fun finite_args => fun splitting_construction => fun automorphism_args => fun fixed_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (field_extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_extension_law : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "forall (splitting_construction_law : @SplittingFieldConstructionEvidence.{v,u} R S f SplittingConstruction), ",
+            "forall (automorphism_law : ",
+            field_automorphism_args_app!(),
+            "), ",
+            "forall (fixed_field_law : ",
+            fixed_field_args_app!(),
+            "), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GaloisCorrespondenceBridgeArgs",
+        universe_params: &["g"],
+        ty: galois_correspondence_params!(concat!("Prop")),
+        value: galois_correspondence_abs!(concat!(
+            "forall (Q : Prop), forall (mk : forall (correspondence_order_law : ",
+            correspondence_order_evidence_app!(),
+            "), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_GALOIS_STARTER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "automorphism_group_laws",
+        universe_params: &["a", "u", "v"],
+        statement: field_automorphism_params!(concat!(
+            "forall (automorphism_args : ",
+            field_automorphism_args_app!(),
+            "), @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv"
+        )),
+        proof: field_automorphism_abs!(concat!(
+            "fun automorphism_args => ",
+            "automorphism_args (@GroupLawArgs.{a} Aut aut_one aut_mul aut_inv) ",
+            "(fun (automorphism_group_law : @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv) => ",
+            "fun (automorphism_field_iso_law : forall (sigma : Aut), @FieldIsoLawArgs.{v,v} S zeroS oneS addS negS subS mulS invS S zeroS oneS addS negS subS mulS invS (aut_apply sigma) (aut_apply_inv sigma)) => ",
+            "fun (automorphism_fixes_base_law : forall (sigma : Aut), forall (x : R), @Eq.{v} S (aut_apply sigma (f x)) (f x)) => automorphism_group_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_field_laws",
+        universe_params: &["u", "v", "w"],
+        statement: fixed_field_params!(concat!(
+            "forall (fixed_args : ",
+            fixed_field_args_app!(),
+            "), ",
+            fixed_field_args_app!()
+        )),
+        proof: fixed_field_abs!(concat!("fun fixed_args => fixed_args")),
+    },
+    TheoremArtifact {
+        name: "fixed_field_is_field",
+        universe_params: &["u", "v", "w"],
+        statement: fixed_field_params!(concat!(
+            "forall (fixed_args : ",
+            fixed_field_args_app!(),
+            "), @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv"
+        )),
+        proof: fixed_field_abs!(concat!(
+            "fun fixed_args => ",
+            "fixed_args (@FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv) ",
+            "(fun (fixed_field_law : @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv) => ",
+            "fun (fixed_embedding_law : @FieldEmbeddingLawArgs.{w,v} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv S zeroS oneS addS negS subS mulS invS fixed_embed) => ",
+            "fun (fixed_predicate_law : forall (x : Fixed), fixed_pred (fixed_embed x)) => ",
+            "fun (base_lands_in_fixed_law : forall (x : R), fixed_pred (f x)) => fixed_field_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "galois_correspondence_order_bridge",
+        universe_params: &["g"],
+        statement: galois_correspondence_params!(concat!(
+            "forall (correspondence_args : ",
+            galois_correspondence_bridge_args_app!(),
+            "), ",
+            correspondence_order_evidence_app!()
+        )),
+        proof: galois_correspondence_abs!(concat!(
+            "fun correspondence_args => correspondence_args (",
+            correspondence_order_evidence_app!(),
+            ") (fun (correspondence_order_law : ",
+            correspondence_order_evidence_app!(),
+            ") => correspondence_order_law)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -34184,6 +34516,88 @@ fn run_full() -> Result<(), String> {
         &abstract_algebraic_closure_imports,
         &abstract_algebraic_closure_source_interfaces,
     )?;
+    let abstract_galois_starter_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_subgroup_order.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_correspondence.verified_module.clone(),
+        abstract_group_correspondence_order.verified_module.clone(),
+        abstract_group_correspondence_final.verified_module.clone(),
+        abstract_group_correspondence_order_final
+            .verified_module
+            .clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+        abstract_finite_field_extension.verified_module.clone(),
+        abstract_splitting_field.verified_module.clone(),
+    ];
+    let abstract_galois_starter_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_subgroup_order.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_correspondence.source_interface.clone(),
+        abstract_group_correspondence_order.source_interface.clone(),
+        abstract_group_correspondence_final.source_interface.clone(),
+        abstract_group_correspondence_order_final
+            .source_interface
+            .clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+        abstract_finite_field_extension.source_interface.clone(),
+        abstract_splitting_field.source_interface.clone(),
+    ];
+    let abstract_galois_starter = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GALOIS_STARTER_MODULE,
+        &abstract_galois_starter_imports,
+        &abstract_galois_starter_source_interfaces,
+    )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
     let quasi_coherent_sheaves_imports = vec![derived_affine_schemes.verified_module.clone()];
@@ -34740,6 +35154,7 @@ fn run_full() -> Result<(), String> {
         abstract_finite_field,
         abstract_splitting_field,
         abstract_algebraic_closure,
+        abstract_galois_starter,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -36995,6 +37410,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_FINITE_FIELD_MODULE.module
         || module == ABSTRACT_SPLITTING_FIELD_MODULE.module
         || module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
+        || module == ABSTRACT_GALOIS_STARTER_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -37339,6 +37755,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FINITE_FIELD_MODULE.module
         || config.module == ABSTRACT_SPLITTING_FIELD_MODULE.module
         || config.module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
+        || config.module == ABSTRACT_GALOIS_STARTER_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {

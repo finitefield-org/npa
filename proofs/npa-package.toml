@@ -1087,6 +1087,23 @@ theorems = ["algebraic_closure_is_algebraic", "algebraic_closure_polynomial_has_
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Algebra.AbstractGaloisStarter"
+source = "Proofs/Ai/Algebra/AbstractGaloisStarter/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGaloisStarter/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGaloisStarter/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGaloisStarter/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:800276c049b983c43fd16445e968e347371aa6122d56991360baee48fedf2386"
+expected_certificate_file_hash = "sha256:09376fc83ec5a7d95bd8965ab39f6bd7821007f2703d51996eeaa79faee501f0"
+expected_export_hash = "sha256:18c6423c75fd5b68830f51c42db8bd1f9da272484ee6c23675760ee53ab38e98"
+expected_axiom_report_hash = "sha256:174ce481559e21fb2793d69b152bc1923209c1290981ab40ece27d948162926f"
+expected_certificate_hash = "sha256:c0622cab8a5a8d9a98e7074bfc2feeaaccd8aa08c4efcad380781e37b637bf23"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupCorrespondence", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractSplittingField"]
+definitions = ["FieldAutomorphismGroupArgs", "FixedFieldLawArgs", "GaloisExtensionArgs", "GaloisCorrespondenceBridgeArgs"]
+theorems = ["automorphism_group_laws", "fixed_field_laws", "fixed_field_is_field", "galois_correspondence_order_bridge"]
+axioms = ["Eq.rec"]
+
+[[modules]]
 module = "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"
 source = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa"
 certificate = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"

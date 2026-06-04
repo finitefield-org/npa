@@ -824,7 +824,7 @@ Implication:
 
 ### FT-15 Add Galois Theory Starter
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-10, FT-12, FT-14
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractFieldExtension`
@@ -862,8 +862,13 @@ Implication:
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "FieldAutomorphismGroupArgs|fixed_field_is_field|galois_correspondence_order_bridge" proofs tools`
 - Notes:
-  - This is the heaviest planned field-theory layer. Start only after extension and splitting-field
-    evidence packages are stable.
+  - Added `Proofs.Ai.Algebra.AbstractGaloisStarter` as a corpus staging layer above field
+    extensions, finite extensions, splitting fields, and the existing group-correspondence modules.
+  - The module keeps automorphism-group and fixed-field construction evidence explicit, and the
+    correspondence theorem target is a bridge to existing group correspondence order evidence.
+  - Expected axiom policy is `Eq.rec`, inherited from the existing group-correspondence closure.
+  - This is not promoted to `npa-mathlib`; promotion still requires a separate closure audit,
+    package hash/index/axiom report verification, and an alias decision.
 
 ---
 

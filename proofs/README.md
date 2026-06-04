@@ -1818,6 +1818,32 @@ Theorem targets:
 The `HasRoot` predicate is intentionally abstract, so downstream modules can encode nonconstant or
 positive-degree side conditions there without changing the trusted certificate boundary.
 
+#### `Proofs.Ai.Algebra.AbstractGaloisStarter`
+
+Implemented definitions / API declarations, not construction-heavy proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldAutomorphismGroupArgs` | packages an explicit automorphism group law, per-automorphism field isomorphism law, and base-fixing law |
+| `FixedFieldLawArgs` | packages an explicit fixed-field carrier, field law, embedding law, fixed predicate, and base-in-fixed evidence |
+| `GaloisExtensionArgs` | packages finite-extension, splitting-construction, automorphism-group, and fixed-field evidence for a staged Galois extension API |
+| `GaloisCorrespondenceBridgeArgs` | bridges to the existing group-correspondence order evidence without restating subgroup correspondence theory |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `automorphism_group_laws` | projects the automorphism group law from `FieldAutomorphismGroupArgs` |
+| `fixed_field_laws` | keeps the fixed-field evidence package available as an explicit theorem target |
+| `fixed_field_is_field` | projects the field law for the fixed-field carrier |
+| `galois_correspondence_order_bridge` | projects existing `CorrespondenceOrderEvidence` through the Galois bridge package |
+
+This module is corpus staging, not a promotion to public `npa-mathlib`. Its import closure brings
+field-extension, finite-extension, splitting-field, and group-correspondence modules together only at
+this layer, so earlier field-extension modules do not import group correspondence. Promotion requires
+a separate closure audit and an explicit decision about aliases, axiom policy, and package reports.
+The expected axiom report includes `Eq.rec`, matching the existing group-correspondence closure.
+
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
 Implemented definitions / API declarations, not proof targets:

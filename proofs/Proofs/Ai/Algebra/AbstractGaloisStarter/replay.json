@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractGaloisStarter",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FieldAutomorphismGroupArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => fun field_args => fun extension_field_laws => fun extension_args => forall (Q : Prop), forall (mk : forall (automorphism_group_law : @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv), forall (automorphism_field_iso_law : forall (sigma : Aut), @FieldIsoLawArgs.{v,v} S zeroS oneS addS negS subS mulS invS S zeroS oneS addS negS subS mulS invS (aut_apply sigma) (aut_apply_inv sigma)), forall (automorphism_fixes_base_law : forall (sigma : Aut), forall (x : R), @Eq.{v} S (aut_apply sigma (f x)) (f x)), Q), Q"
+    },
+    {
+      "declaration": "FixedFieldLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => fun fixed_embed => fun fixed_pred => fun field_args => fun extension_field_laws => fun extension_args => forall (Q : Prop), forall (mk : forall (fixed_field_law : @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv), forall (fixed_embedding_law : @FieldEmbeddingLawArgs.{w,v} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv S zeroS oneS addS negS subS mulS invS fixed_embed), forall (fixed_predicate_law : forall (x : Fixed), fixed_pred (fixed_embed x)), forall (base_lands_in_fixed_law : forall (x : R), fixed_pred (f x)), Q), Q"
+    },
+    {
+      "declaration": "GaloisExtensionArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => fun fixed_embed => fun fixed_pred => fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun SplittingConstruction => fun field_args => fun extension_field_laws => fun extension_args => fun finite_args => fun splitting_construction => fun automorphism_args => fun fixed_args => forall (Q : Prop), forall (mk : forall (field_extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (finite_extension_law : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), forall (splitting_construction_law : @SplittingFieldConstructionEvidence.{v,u} R S f SplittingConstruction), forall (automorphism_law : @FieldAutomorphismGroupArgs.{a,u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f Aut aut_one aut_mul aut_inv aut_apply aut_apply_inv field_args extension_field_laws extension_args), forall (fixed_field_law : @FixedFieldLawArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv fixed_embed fixed_pred field_args extension_field_laws extension_args), Q), Q"
+    },
+    {
+      "declaration": "GaloisCorrespondenceBridgeArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => forall (Q : Prop), forall (mk : forall (correspondence_order_law : @CorrespondenceOrderEvidence.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h K K2 k_args h_le k_le), Q), Q"
+    },
+    {
+      "declaration": "automorphism_group_laws",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => fun field_args => fun extension_field_laws => fun extension_args => fun automorphism_args => automorphism_args (@GroupLawArgs.{a} Aut aut_one aut_mul aut_inv) (fun (automorphism_group_law : @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv) => fun (automorphism_field_iso_law : forall (sigma : Aut), @FieldIsoLawArgs.{v,v} S zeroS oneS addS negS subS mulS invS S zeroS oneS addS negS subS mulS invS (aut_apply sigma) (aut_apply_inv sigma)) => fun (automorphism_fixes_base_law : forall (sigma : Aut), forall (x : R), @Eq.{v} S (aut_apply sigma (f x)) (f x)) => automorphism_group_law)"
+    },
+    {
+      "declaration": "fixed_field_laws",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => fun fixed_embed => fun fixed_pred => fun field_args => fun extension_field_laws => fun extension_args => fun fixed_args => fixed_args"
+    },
+    {
+      "declaration": "fixed_field_is_field",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => fun fixed_embed => fun fixed_pred => fun field_args => fun extension_field_laws => fun extension_args => fun fixed_args => fixed_args (@FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv) (fun (fixed_field_law : @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv) => fun (fixed_embedding_law : @FieldEmbeddingLawArgs.{w,v} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv S zeroS oneS addS negS subS mulS invS fixed_embed) => fun (fixed_predicate_law : forall (x : Fixed), fixed_pred (fixed_embed x)) => fun (base_lands_in_fixed_law : forall (x : R), fixed_pred (f x)) => fixed_field_law)"
+    },
+    {
+      "declaration": "galois_correspondence_order_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun oneG => fun mulG => fun invG => fun N => fun Hpred => fun Hpred2 => fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => fun correspondence_args => correspondence_args (@CorrespondenceOrderEvidence.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h K K2 k_args h_le k_le) (fun (correspondence_order_law : @CorrespondenceOrderEvidence.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h K K2 k_args h_le k_le) => correspondence_order_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractGaloisStarter/certificate.npcert"
+  }
+}
