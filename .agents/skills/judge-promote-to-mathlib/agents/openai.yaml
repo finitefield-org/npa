@@ -1,0 +1,4 @@
+interface:
+  display_name: "Judge Promote to Mathlib"
+  short_description: "Assess proof corpus promotion readiness"
+  default_prompt: "Use $judge-promote-to-mathlib to decide whether this proof corpus theorem or module should be promoted to npa-mathlib."
