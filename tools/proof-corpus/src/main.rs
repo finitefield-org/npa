@@ -29992,6 +29992,80 @@ const LINEAR_ALGEBRA_BASIS_DIMENSION_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P), P"
         )),
     },
+    DefinitionArtifact {
+        name: "SteinitzExchangeResult",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_basis_params!(
+            "forall (inserted : Vector), forall (dropped : Index), Prop"
+        ),
+        value: linear_algebra_basis_abs!(concat!(
+            "fun inserted => fun dropped => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (exchanged_vec : forall (i : Index), Vector), ",
+            "forall (exchanged_lincomb : forall (coeffs : forall (i : Index), Scalar), Vector), ",
+            "forall (exchange_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index exchanged_vec exchanged_lincomb), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "BasisExtensionResult",
+        universe_params: &["u", "v", "w", "z"],
+        ty: linear_algebra_basis_params!(concat!(
+            "forall (SeedIndex : Sort z), ",
+            "forall (seed_vec : forall (j : SeedIndex), Vector), Prop"
+        )),
+        value: linear_algebra_basis_abs!(concat!(
+            "fun SeedIndex => fun seed_vec => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (extension_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (contains_seed : forall (j : SeedIndex), forall (Q : Prop), forall (build : forall (i : Index), forall (h : @Eq.{v} Vector (basis_vec i) (seed_vec j)), Q), Q), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GeneratingSetReductionResult",
+        universe_params: &["u", "v", "w", "z"],
+        ty: linear_algebra_basis_params!(concat!(
+            "forall (GeneratingIndex : Sort z), ",
+            "forall (generating_vec : forall (j : GeneratingIndex), Vector), Prop"
+        )),
+        value: linear_algebra_basis_abs!(concat!(
+            "fun GeneratingIndex => fun generating_vec => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (reduced_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (chosen_from_generating : forall (i : Index), forall (Q : Prop), forall (build : forall (j : GeneratingIndex), forall (h : @Eq.{v} Vector (basis_vec i) (generating_vec j)), Q), Q), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteDimensionCertificate",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_basis_params!(concat!(
+            "forall (Dimension : Sort d), ",
+            "forall (dim : Dimension), Prop"
+        )),
+        value: linear_algebra_basis_abs!(concat!(
+            "fun Dimension => fun dim => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteBasisCardinalityAgreement",
+        universe_params: &["d", "u", "v", "w", "z"],
+        ty: linear_algebra_basis_params!(concat!(
+            "forall (RightIndex : Sort z), ",
+            "forall (right_basis_vec : forall (j : RightIndex), Vector), ",
+            "forall (right_lincomb : forall (coeffs : forall (j : RightIndex), Scalar), Vector), ",
+            "forall (Dimension : Sort d), ",
+            "forall (left_dim : Dimension), ",
+            "forall (right_dim : Dimension), Prop"
+        )),
+        value: linear_algebra_basis_abs!(concat!(
+            "fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (left_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (right_basis : @Basis.{u,v,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul RightIndex right_basis_vec right_lincomb), ",
+            "forall (dim_eq : @Eq.{d} Dimension left_dim right_dim), P), P"
+        )),
+    },
 ];
 
 const LINEAR_ALGEBRA_BASIS_DIMENSION_THEOREMS: &[TheoremArtifact] = &[
@@ -30138,6 +30212,143 @@ const LINEAR_ALGEBRA_BASIS_DIMENSION_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: linear_algebra_basis_abs!(
             "fun basis => fun x => fun left => fun right => fun left_rep => fun right_rep => fun i => (@basis_coordinate_unique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb basis) x left right left_rep right_rep i"
+        ),
+    },
+    TheoremArtifact {
+        name: "steinitz_exchange_result_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (inserted : Vector), forall (dropped : Index), forall (exchanged_vec : forall (i : Index), Vector), forall (exchanged_lincomb : forall (coeffs : forall (i : Index), Scalar), Vector), forall (exchange_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index exchanged_vec exchanged_lincomb), @SteinitzExchangeResult.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb inserted dropped"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun inserted => fun dropped => fun exchanged_vec => fun exchanged_lincomb => fun exchange_basis => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (exchanged_vec : forall (i : Index), Vector), ",
+            "forall (exchanged_lincomb : forall (coeffs : forall (i : Index), Scalar), Vector), ",
+            "forall (exchange_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index exchanged_vec exchanged_lincomb), P) => ",
+            "mk exchanged_vec exchanged_lincomb exchange_basis"
+        )),
+    },
+    TheoremArtifact {
+        name: "steinitz_exchange",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (inserted : Vector), forall (dropped : Index), forall (exchange_evidence : @SteinitzExchangeResult.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb inserted dropped), @SteinitzExchangeResult.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb inserted dropped"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun basis => fun inserted => fun dropped => fun exchange_evidence => exchange_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "basis_extension_result_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (SeedIndex : Sort z), forall (seed_vec : forall (j : SeedIndex), Vector), forall (extension_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (contains_seed : forall (j : SeedIndex), forall (Q : Prop), forall (build : forall (i : Index), forall (h : @Eq.{v} Vector (basis_vec i) (seed_vec j)), Q), Q), @BasisExtensionResult.{u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb SeedIndex seed_vec"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun SeedIndex => fun seed_vec => fun extension_basis => fun contains_seed => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (extension_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (contains_seed : forall (j : SeedIndex), forall (Q : Prop), forall (build : forall (i : Index), forall (h : @Eq.{v} Vector (basis_vec i) (seed_vec j)), Q), Q), P) => ",
+            "mk extension_basis contains_seed"
+        )),
+    },
+    TheoremArtifact {
+        name: "basis_extension_theorem",
+        universe_params: &["u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (SeedIndex : Sort z), forall (seed_vec : forall (j : SeedIndex), Vector), forall (seed_independent : Prop), forall (extension_evidence : @BasisExtensionResult.{u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb SeedIndex seed_vec), @BasisExtensionResult.{u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb SeedIndex seed_vec"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun SeedIndex => fun seed_vec => fun seed_independent => fun extension_evidence => extension_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "generating_set_reduction_result_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (GeneratingIndex : Sort z), forall (generating_vec : forall (j : GeneratingIndex), Vector), forall (reduced_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (chosen_from_generating : forall (i : Index), forall (Q : Prop), forall (build : forall (j : GeneratingIndex), forall (h : @Eq.{v} Vector (basis_vec i) (generating_vec j)), Q), Q), @GeneratingSetReductionResult.{u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb GeneratingIndex generating_vec"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun GeneratingIndex => fun generating_vec => fun reduced_basis => fun chosen_from_generating => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (reduced_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (chosen_from_generating : forall (i : Index), forall (Q : Prop), forall (build : forall (j : GeneratingIndex), forall (h : @Eq.{v} Vector (basis_vec i) (generating_vec j)), Q), Q), P) => ",
+            "mk reduced_basis chosen_from_generating"
+        )),
+    },
+    TheoremArtifact {
+        name: "generating_set_reduction_theorem",
+        universe_params: &["u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (GeneratingIndex : Sort z), forall (generating_vec : forall (j : GeneratingIndex), Vector), forall (generating_spans : Prop), forall (reduction_evidence : @GeneratingSetReductionResult.{u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb GeneratingIndex generating_vec), @GeneratingSetReductionResult.{u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb GeneratingIndex generating_vec"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun GeneratingIndex => fun generating_vec => fun generating_spans => fun reduction_evidence => reduction_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_dimension_certificate_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (Dimension : Sort d), forall (dim : Dimension), forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), @FiniteDimensionCertificate.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension dim"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun Dimension => fun dim => fun basis => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P) => ",
+            "mk basis"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_dimension_basis",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (Dimension : Sort d), forall (dim : Dimension), forall (cert : @FiniteDimensionCertificate.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension dim), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun Dimension => fun dim => fun cert => ",
+            "cert (@Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) ",
+            "(fun (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => basis)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_bases_cardinality_agreement_intro",
+        universe_params: &["d", "u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (RightIndex : Sort z), forall (right_basis_vec : forall (j : RightIndex), Vector), forall (right_lincomb : forall (coeffs : forall (j : RightIndex), Scalar), Vector), forall (Dimension : Sort d), forall (left_dim : Dimension), forall (right_dim : Dimension), forall (left_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (right_basis : @Basis.{u,v,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul RightIndex right_basis_vec right_lincomb), forall (dim_eq : @Eq.{d} Dimension left_dim right_dim), @FiniteBasisCardinalityAgreement.{d,u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb RightIndex right_basis_vec right_lincomb Dimension left_dim right_dim"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => fun left_basis => fun right_basis => fun dim_eq => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (left_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (right_basis : @Basis.{u,v,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul RightIndex right_basis_vec right_lincomb), ",
+            "forall (dim_eq : @Eq.{d} Dimension left_dim right_dim), P) => ",
+            "mk left_basis right_basis dim_eq"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_bases_cardinality_eq",
+        universe_params: &["d", "u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (RightIndex : Sort z), forall (right_basis_vec : forall (j : RightIndex), Vector), forall (right_lincomb : forall (coeffs : forall (j : RightIndex), Scalar), Vector), forall (Dimension : Sort d), forall (left_dim : Dimension), forall (right_dim : Dimension), forall (agreement : @FiniteBasisCardinalityAgreement.{d,u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb RightIndex right_basis_vec right_lincomb Dimension left_dim right_dim), @Eq.{d} Dimension left_dim right_dim"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => fun agreement => ",
+            "agreement (@Eq.{d} Dimension left_dim right_dim) ",
+            "(fun (left_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (right_basis : @Basis.{u,v,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul RightIndex right_basis_vec right_lincomb) => ",
+            "fun (dim_eq : @Eq.{d} Dimension left_dim right_dim) => dim_eq)"
+        )),
+    },
+    TheoremArtifact {
+        name: "dimension_theorem",
+        universe_params: &["d", "u", "v", "w", "z"],
+        statement: linear_algebra_basis_params!(
+            "forall (RightIndex : Sort z), forall (right_basis_vec : forall (j : RightIndex), Vector), forall (right_lincomb : forall (coeffs : forall (j : RightIndex), Scalar), Vector), forall (Dimension : Sort d), forall (left_dim : Dimension), forall (right_dim : Dimension), forall (left_cert : @FiniteDimensionCertificate.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension left_dim), forall (right_cert : @FiniteDimensionCertificate.{d,u,v,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul RightIndex right_basis_vec right_lincomb Dimension right_dim), forall (agreement : @FiniteBasisCardinalityAgreement.{d,u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb RightIndex right_basis_vec right_lincomb Dimension left_dim right_dim), @Eq.{d} Dimension left_dim right_dim"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => fun left_cert => fun right_cert => fun agreement => @finite_bases_cardinality_eq.{d,u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb RightIndex right_basis_vec right_lincomb Dimension left_dim right_dim agreement"
         ),
     },
 ];

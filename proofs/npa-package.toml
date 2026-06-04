@@ -1263,14 +1263,14 @@ certificate = "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert"
 meta = "Proofs/Ai/LinearAlgebra/Basis/Dimension/meta.json"
 replay = "Proofs/Ai/LinearAlgebra/Basis/Dimension/replay.json"
 producer_profile = "human-surface-explicit-term"
-expected_source_hash = "sha256:557de0b06d6491a1b4c2804e3912698d9773ed4aa37175cf504f9287e441a027"
-expected_certificate_file_hash = "sha256:d0a919bf2d2620a36496f293f2b566edbedee45e1a24bab424da6916f5a68e00"
-expected_export_hash = "sha256:014bde9aa7378ab13a7e794aefcdf636de5d5f36d9bf083a8c74cdad58bfe9a1"
-expected_axiom_report_hash = "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3"
-expected_certificate_hash = "sha256:47709c2daa18e055032bce68b861f08cecf1b8feb67b5e8b01459055f2d1c150"
+expected_source_hash = "sha256:89e8ca7767100101c2dc6cfb5c0e6d043027d0aa934821862a0db28a699f7555"
+expected_certificate_file_hash = "sha256:da7bdc6f3f10e3fd2875251e86ab1e10bb540ad62c08410143bf52949b495fc8"
+expected_export_hash = "sha256:18062c32082941e67e3953650be4860f5d5592b9b4cb5f6e48df14767dc4f71b"
+expected_axiom_report_hash = "sha256:c80adca130b0ae3aaffee3a8b42c4e6fbe1c78b860571b24c54a96159a221002"
+expected_certificate_hash = "sha256:d3b8a3c454e473cb9d9ccad585448e930f90d5d2e6b8eea98b4d87ff36ca2cb1"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"]
-definitions = ["CoordinateRepresentation", "LinearIndependent", "Spanning", "CoordinateUnique", "Basis"]
-theorems = ["coordinate_representation_intro", "coordinate_representation_eq", "linear_independent_intro", "linear_independent_coeff_zero", "spanning_intro", "spanning_has_coordinates", "coordinate_unique_intro", "coordinate_unique_coeff_eq", "basis_intro", "basis_linear_independent", "basis_spanning", "basis_coordinate_unique", "basis_coordinates_exist", "basis_coordinate_eq"]
+definitions = ["CoordinateRepresentation", "LinearIndependent", "Spanning", "CoordinateUnique", "Basis", "SteinitzExchangeResult", "BasisExtensionResult", "GeneratingSetReductionResult", "FiniteDimensionCertificate", "FiniteBasisCardinalityAgreement"]
+theorems = ["coordinate_representation_intro", "coordinate_representation_eq", "linear_independent_intro", "linear_independent_coeff_zero", "spanning_intro", "spanning_has_coordinates", "coordinate_unique_intro", "coordinate_unique_coeff_eq", "basis_intro", "basis_linear_independent", "basis_spanning", "basis_coordinate_unique", "basis_coordinates_exist", "basis_coordinate_eq", "steinitz_exchange_result_intro", "steinitz_exchange", "basis_extension_result_intro", "basis_extension_theorem", "generating_set_reduction_result_intro", "generating_set_reduction_theorem", "finite_dimension_certificate_intro", "finite_dimension_basis", "finite_bases_cardinality_agreement_intro", "finite_bases_cardinality_eq", "dimension_theorem"]
 axioms = []
 
 [[modules]]

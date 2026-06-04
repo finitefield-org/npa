@@ -352,11 +352,11 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-02 Bases, Dimension, Quotients, And Direct Sums
 
-- Status: `LAQ-003` complete for linear independence, spanning, basis,
-  coordinate representation, and coordinate uniqueness certificates. Steinitz
-  exchange, basis extension, cardinality/dimension theorem, quotient
-  vector-space existence, and dimension formulas remain planned for later
-  `LIN-02` work.
+- Status: `LAQ-004` complete for Steinitz exchange, basis extension,
+  generating-set reduction, finite-basis cardinality agreement, and dimension
+  theorem evidence certificates. Quotient vector-space existence, quotient
+  dimension formulas, and finite-dimensional isomorphism classification remain
+  planned for later `LIN-02` work.
 - Depends on: `LIN-01`.
 - Target modules:
   - `Proofs.Ai.LinearAlgebra.Basis.Dimension`
