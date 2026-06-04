@@ -1,0 +1,222 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Real.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ClosedInterval",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun lower => fun upper => fun x => forall (P : Prop), forall (mk : forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), P), P"
+    },
+    {
+      "declaration": "OpenInterval",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun lower => fun upper => fun x => forall (P : Prop), forall (mk : forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), P), P"
+    },
+    {
+      "declaration": "UpperBound",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun bound => forall (x : Scalar), forall (hx : set x), le_rel x bound"
+    },
+    {
+      "declaration": "LowerBound",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun bound => forall (x : Scalar), forall (hx : set x), le_rel bound x"
+    },
+    {
+      "declaration": "BoundedAbove",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => forall (P : Prop), forall (mk : forall (bound : Scalar), forall (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), P), P"
+    },
+    {
+      "declaration": "BoundedBelow",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => forall (P : Prop), forall (mk : forall (bound : Scalar), forall (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), P), P"
+    },
+    {
+      "declaration": "NonemptySet",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => forall (P : Prop), forall (mk : forall (x : Scalar), forall (hx : set x), P), P"
+    },
+    {
+      "declaration": "SupremumEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun sup => forall (P : Prop), forall (mk : forall (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), forall (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound), P), P"
+    },
+    {
+      "declaration": "InfimumEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun inf => forall (P : Prop), forall (mk : forall (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), forall (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf), P), P"
+    },
+    {
+      "declaration": "IntervalLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => forall (P : Prop), forall (mk : forall (closed_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), forall (open_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), @OpenInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), P), P"
+    },
+    {
+      "declaration": "OrderCompletenessLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => forall (P : Prop), forall (mk : forall (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q), forall (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q), P), P"
+    },
+    {
+      "declaration": "ArchimedeanLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => forall (P : Prop), forall (mk : forall (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q), P), P"
+    },
+    {
+      "declaration": "CompleteOrderedFieldArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => forall (P : Prop), forall (mk : forall (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args), forall (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args), forall (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast), P), P"
+    },
+    {
+      "declaration": "AbstractRealFoundation",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => @CompleteOrderedFieldArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast"
+    },
+    {
+      "declaration": "closed_interval_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun lower => fun upper => fun x => fun lower_le => fun upper_le => fun (P : Prop) => fun (mk : forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), P) => mk lower_le upper_le"
+    },
+    {
+      "declaration": "closed_interval_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun lower => fun upper => fun x => fun h => fun P => fun mk => h P mk"
+    },
+    {
+      "declaration": "open_interval_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun lower => fun upper => fun x => fun lower_lt => fun upper_lt => fun (P : Prop) => fun (mk : forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), P) => mk lower_lt upper_lt"
+    },
+    {
+      "declaration": "open_interval_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun lower => fun upper => fun x => fun h => fun P => fun mk => h P mk"
+    },
+    {
+      "declaration": "upper_bound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun bound => fun hbound => fun x => fun hx => hbound x hx"
+    },
+    {
+      "declaration": "lower_bound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun bound => fun hbound => fun x => fun hx => hbound x hx"
+    },
+    {
+      "declaration": "bounded_above_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun bound => fun upper_bound => fun (P : Prop) => fun (mk : forall (bound : Scalar), forall (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), P) => mk bound upper_bound"
+    },
+    {
+      "declaration": "bounded_below_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun bound => fun lower_bound => fun (P : Prop) => fun (mk : forall (bound : Scalar), forall (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), P) => mk bound lower_bound"
+    },
+    {
+      "declaration": "nonempty_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun x => fun hx => fun (P : Prop) => fun (mk : forall (x : Scalar), forall (hx : set x), P) => mk x hx"
+    },
+    {
+      "declaration": "supremum_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun sup => fun upper_bound => fun least_upper_bound => fun (P : Prop) => fun (mk : forall (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), forall (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound), P) => mk upper_bound least_upper_bound"
+    },
+    {
+      "declaration": "supremum_upper_bound",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun sup => fun hsup => hsup (@UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup) (fun (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup) => fun (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound) => upper_bound)"
+    },
+    {
+      "declaration": "supremum_least",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun sup => fun hsup => fun bound => fun hbound => hsup (le_rel sup bound) (fun (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup) => fun (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound) => least_upper_bound bound hbound)"
+    },
+    {
+      "declaration": "infimum_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun inf => fun lower_bound => fun greatest_lower_bound => fun (P : Prop) => fun (mk : forall (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), forall (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf), P) => mk lower_bound greatest_lower_bound"
+    },
+    {
+      "declaration": "infimum_lower_bound",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun inf => fun hinf => hinf (@LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf) (fun (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf) => fun (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf) => lower_bound)"
+    },
+    {
+      "declaration": "infimum_greatest",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun set => fun inf => fun hinf => fun bound => fun hbound => hinf (le_rel bound inf) (fun (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf) => fun (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf) => greatest_lower_bound bound hbound)"
+    },
+    {
+      "declaration": "interval_law_args_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun (P : Prop) => fun (mk : forall (closed_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), forall (open_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), @OpenInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), P) => mk (@closed_interval_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) (@open_interval_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args)"
+    },
+    {
+      "declaration": "order_completeness_law_args_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun supremum_exists => fun infimum_exists => fun (P : Prop) => fun (mk : forall (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q), forall (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q), P) => mk supremum_exists infimum_exists"
+    },
+    {
+      "declaration": "supremum_exists_from_completeness",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun complete => fun set => fun nonempty => fun bounded_above => fun Q => fun choose => complete Q (fun (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q) => fun (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q) => supremum_exists set nonempty bounded_above Q choose)"
+    },
+    {
+      "declaration": "infimum_exists_from_completeness",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun complete => fun set => fun nonempty => fun bounded_below => fun Q => fun choose => complete Q (fun (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q) => fun (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q) => infimum_exists set nonempty bounded_below Q choose)"
+    },
+    {
+      "declaration": "archimedean_law_args_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun archimedean_upper => fun (P : Prop) => fun (mk : forall (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q), P) => mk archimedean_upper"
+    },
+    {
+      "declaration": "archimedean_upper",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun archimedean => fun x => fun Q => fun choose => archimedean Q (fun (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q) => archimedean_upper x Q choose)"
+    },
+    {
+      "declaration": "complete_ordered_field_args_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun interval_laws => fun order_complete => fun archimedean_laws => fun (P : Prop) => fun (mk : forall (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args), forall (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args), forall (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast), P) => mk ordered_args bridge_args interval_laws order_complete archimedean_laws"
+    },
+    {
+      "declaration": "complete_ordered_field_ordered_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete => complete (@OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => ordered_laws)"
+    },
+    {
+      "declaration": "complete_ordered_field_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete => complete (@OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => field_bridge)"
+    },
+    {
+      "declaration": "complete_ordered_field_interval_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete => complete (@IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => interval_laws)"
+    },
+    {
+      "declaration": "complete_ordered_field_order_completeness",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete => complete (@OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => order_complete)"
+    },
+    {
+      "declaration": "complete_ordered_field_archimedean_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete => complete (@ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => archimedean_laws)"
+    },
+    {
+      "declaration": "abstract_real_foundation",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete => complete"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Real/Basic/certificate.npcert"
+  }
+}

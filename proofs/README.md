@@ -27,6 +27,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractMetricTopology/`: predicate-level metric ball, neighborhood, local
   membership, local predicate, local equality, and local uniqueness API for the inverse/implicit
   function route.
+- `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
+  carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
+  evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
 - `Proofs/Ai/Analysis/AbstractNormedSpace/`: explicit-law normed-space distance, product
   operation, product norm, projection/pairing, and product norm estimate API for the
   inverse/implicit function route.

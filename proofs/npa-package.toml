@@ -1172,6 +1172,23 @@ theorems = ["ordered_field_field_laws", "ordered_field_nonzero_of_positive", "or
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Real.Basic"
+source = "Proofs/Ai/Analysis/Real/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Real/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Real/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Real/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:98770051b126d087bd78dcee80d14e22c5ac96eee452bd29ed77346e6c89696a"
+expected_certificate_file_hash = "sha256:f5835d40f783e936840333df843d2e24429b3a6b13d25b1890b9a51190475d02"
+expected_export_hash = "sha256:f9974144cc2ba5d39e55e52c8e2641a50024c8164bc55c1faff604db044dbaef"
+expected_axiom_report_hash = "sha256:3abd9e97baa525d711d168a8c590d47ada282e4ac4f2ad6e88a7407f927f8bcf"
+expected_certificate_hash = "sha256:b64358b6542d860c1e687413554ffd314a5205008791ded22d36240999353067"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge"]
+definitions = ["ClosedInterval", "OpenInterval", "UpperBound", "LowerBound", "BoundedAbove", "BoundedBelow", "NonemptySet", "SupremumEvidence", "InfimumEvidence", "IntervalLawArgs", "OrderCompletenessLawArgs", "ArchimedeanLawArgs", "CompleteOrderedFieldArgs", "AbstractRealFoundation"]
+theorems = ["closed_interval_intro", "closed_interval_elim", "open_interval_intro", "open_interval_elim", "upper_bound_apply", "lower_bound_apply", "bounded_above_intro", "bounded_below_intro", "nonempty_set_intro", "supremum_evidence_intro", "supremum_upper_bound", "supremum_least", "infimum_evidence_intro", "infimum_lower_bound", "infimum_greatest", "interval_law_args_intro", "order_completeness_law_args_intro", "supremum_exists_from_completeness", "infimum_exists_from_completeness", "archimedean_law_args_intro", "archimedean_upper", "complete_ordered_field_args_intro", "complete_ordered_field_ordered_laws", "complete_ordered_field_bridge", "complete_ordered_field_interval_laws", "complete_ordered_field_order_completeness", "complete_ordered_field_archimedean_laws", "abstract_real_foundation"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractSquareNormalize"
 source = "Proofs/Ai/Algebra/AbstractSquareNormalize/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractSquareNormalize/certificate.npcert"

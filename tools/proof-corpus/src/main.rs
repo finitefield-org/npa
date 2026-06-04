@@ -171,6 +171,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &SIMPLICIAL_COMMUTATIVE_RING_CDGA_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
     &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
+    &ANALYSIS_REAL_BASIC_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
     &ABSTRACT_SCALAR_DERIVE_MODULE,
     &ABSTRACT_VECTOR_SPACE_MODULE,
@@ -1710,6 +1711,25 @@ const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE: ModuleArtifact = ModuleArtifac
     expected_axioms: &[],
 };
 
+const ANALYSIS_REAL_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Real.Basic",
+    source_path: "Proofs/Ai/Analysis/Real/Basic/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Real/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Real/Basic/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Real/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_REAL_BASIC_DEFINITIONS,
+    theorems: ANALYSIS_REAL_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_SQUARE_NORMALIZE_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractSquareNormalize",
     source_path: "Proofs/Ai/Algebra/AbstractSquareNormalize/source.npa",
@@ -2364,6 +2384,22 @@ macro_rules! abstract_ordered_field_abs {
 }
 
 macro_rules! abstract_ordered_field_field_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            $($tail)+
+        )
+    };
     ($tail:literal) => {
         concat!(
             "forall (Scalar : Sort u), ",
@@ -2394,6 +2430,133 @@ macro_rules! abstract_ordered_field_field_abs {
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => ",
             $tail
         )
+    };
+}
+
+macro_rules! analysis_real_basic_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_ordered_field_field_params!(concat!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), ",
+            "forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        abstract_ordered_field_field_params!(concat!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), ",
+            "forall (bridge_args : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! analysis_real_basic_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        abstract_ordered_field_field_abs!(concat!(
+            "fun ordered_args => fun bridge_args => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! upper_bound_app {
+    ($set:literal, $bound:literal) => {
+        concat!(
+            "@UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set,
+            " ",
+            $bound
+        )
+    };
+}
+
+macro_rules! lower_bound_app {
+    ($set:literal, $bound:literal) => {
+        concat!(
+            "@LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set,
+            " ",
+            $bound
+        )
+    };
+}
+
+macro_rules! supremum_evidence_app {
+    ($set:literal, $sup:literal) => {
+        concat!(
+            "@SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set,
+            " ",
+            $sup
+        )
+    };
+}
+
+macro_rules! infimum_evidence_app {
+    ($set:literal, $inf:literal) => {
+        concat!(
+            "@InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set,
+            " ",
+            $inf
+        )
+    };
+}
+
+macro_rules! nonempty_set_app {
+    ($set:literal) => {
+        concat!(
+            "@NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set
+        )
+    };
+}
+
+macro_rules! bounded_above_app {
+    ($set:literal) => {
+        concat!(
+            "@BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set
+        )
+    };
+}
+
+macro_rules! bounded_below_app {
+    ($set:literal) => {
+        concat!(
+            "@BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $set
+        )
+    };
+}
+
+macro_rules! order_completeness_app {
+    () => {
+        "@OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args"
+    };
+}
+
+macro_rules! interval_laws_app {
+    () => {
+        "@IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args"
+    };
+}
+
+macro_rules! archimedean_laws_app {
+    () => {
+        "@ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast"
+    };
+}
+
+macro_rules! complete_ordered_field_app {
+    () => {
+        "@CompleteOrderedFieldArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast"
     };
 }
 
@@ -29850,6 +30013,545 @@ const ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_REAL_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "ClosedInterval",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(
+            "fun lower => fun upper => fun x => forall (P : Prop), forall (mk : forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "OpenInterval",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(
+            "fun lower => fun upper => fun x => forall (P : Prop), forall (mk : forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "UpperBound",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (set : forall (x : Scalar), Prop), forall (bound : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(
+            "fun set => fun bound => forall (x : Scalar), forall (hx : set x), le_rel x bound"
+        ),
+    },
+    DefinitionArtifact {
+        name: "LowerBound",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (set : forall (x : Scalar), Prop), forall (bound : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(
+            "fun set => fun bound => forall (x : Scalar), forall (hx : set x), le_rel bound x"
+        ),
+    },
+    DefinitionArtifact {
+        name: "BoundedAbove",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!("forall (set : forall (x : Scalar), Prop), Prop"),
+        value: analysis_real_basic_abs!(concat!(
+            "fun set => forall (P : Prop), forall (mk : forall (bound : Scalar), forall (upper_bound : ",
+            upper_bound_app!("set", "bound"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "BoundedBelow",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!("forall (set : forall (x : Scalar), Prop), Prop"),
+        value: analysis_real_basic_abs!(concat!(
+            "fun set => forall (P : Prop), forall (mk : forall (bound : Scalar), forall (lower_bound : ",
+            lower_bound_app!("set", "bound"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NonemptySet",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!("forall (set : forall (x : Scalar), Prop), Prop"),
+        value: analysis_real_basic_abs!(
+            "fun set => forall (P : Prop), forall (mk : forall (x : Scalar), forall (hx : set x), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SupremumEvidence",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (set : forall (x : Scalar), Prop), forall (sup : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun set => fun sup => forall (P : Prop), forall (mk : forall (upper_bound : ",
+            upper_bound_app!("set", "sup"),
+            "), forall (least_upper_bound : forall (bound : Scalar), forall (hbound : ",
+            upper_bound_app!("set", "bound"),
+            "), le_rel sup bound), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "InfimumEvidence",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (set : forall (x : Scalar), Prop), forall (inf : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun set => fun inf => forall (P : Prop), forall (mk : forall (lower_bound : ",
+            lower_bound_app!("set", "inf"),
+            "), forall (greatest_lower_bound : forall (bound : Scalar), forall (hbound : ",
+            lower_bound_app!("set", "bound"),
+            "), le_rel bound inf), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalLawArgs",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!("Prop"),
+        value: analysis_real_basic_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (closed_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), ",
+            "forall (open_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), @OpenInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "OrderCompletenessLawArgs",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!("Prop"),
+        value: analysis_real_basic_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : ",
+            nonempty_set_app!("set"),
+            "), forall (bounded_above : ",
+            bounded_above_app!("set"),
+            "), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("set", "sup"),
+            "), Q), Q), ",
+            "forall (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : ",
+            nonempty_set_app!("set"),
+            "), forall (bounded_below : ",
+            bounded_below_app!("set"),
+            "), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : ",
+            infimum_evidence_app!("set", "inf"),
+            "), Q), Q), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ArchimedeanLawArgs",
+        universe_params: &["n", "u"],
+        ty: analysis_real_basic_params!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => forall (P : Prop), forall (mk : forall (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "CompleteOrderedFieldArgs",
+        universe_params: &["n", "u"],
+        ty: analysis_real_basic_params!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun NatIndex => fun nat_cast => forall (P : Prop), forall (mk : ",
+            "forall (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), ",
+            "forall (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), ",
+            "forall (interval_laws : ",
+            interval_laws_app!(),
+            "), forall (order_complete : ",
+            order_completeness_app!(),
+            "), forall (archimedean_laws : ",
+            archimedean_laws_app!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "AbstractRealFoundation",
+        universe_params: &["n", "u"],
+        ty: analysis_real_basic_params!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun NatIndex => fun nat_cast => ",
+            complete_ordered_field_app!()
+        )),
+    },
+];
+
+const ANALYSIS_REAL_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "closed_interval_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x"
+        ),
+        proof: analysis_real_basic_abs!(
+            "fun lower => fun upper => fun x => fun lower_le => fun upper_le => fun (P : Prop) => fun (mk : forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), P) => mk lower_le upper_le"
+        ),
+    },
+    TheoremArtifact {
+        name: "closed_interval_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (h : @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), forall (P : Prop), forall (mk : forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), P), P"
+        ),
+        proof: analysis_real_basic_abs!(
+            "fun lower => fun upper => fun x => fun h => fun P => fun mk => h P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "open_interval_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), @OpenInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x"
+        ),
+        proof: analysis_real_basic_abs!(
+            "fun lower => fun upper => fun x => fun lower_lt => fun upper_lt => fun (P : Prop) => fun (mk : forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), P) => mk lower_lt upper_lt"
+        ),
+    },
+    TheoremArtifact {
+        name: "open_interval_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (h : @OpenInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), forall (P : Prop), forall (mk : forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), P), P"
+        ),
+        proof: analysis_real_basic_abs!(
+            "fun lower => fun upper => fun x => fun h => fun P => fun mk => h P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "upper_bound_apply",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (bound : Scalar), forall (hbound : ",
+            upper_bound_app!("set", "bound"),
+            "), forall (x : Scalar), forall (hx : set x), le_rel x bound"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun bound => fun hbound => fun x => fun hx => hbound x hx"
+        ),
+    },
+    TheoremArtifact {
+        name: "lower_bound_apply",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (bound : Scalar), forall (hbound : ",
+            lower_bound_app!("set", "bound"),
+            "), forall (x : Scalar), forall (hx : set x), le_rel bound x"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun bound => fun hbound => fun x => fun hx => hbound x hx"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_above_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (bound : Scalar), forall (upper_bound : ",
+            upper_bound_app!("set", "bound"),
+            "), ",
+            bounded_above_app!("set")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun bound => fun upper_bound => fun (P : Prop) => fun (mk : forall (bound : Scalar), forall (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), P) => mk bound upper_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_below_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (bound : Scalar), forall (lower_bound : ",
+            lower_bound_app!("set", "bound"),
+            "), ",
+            bounded_below_app!("set")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun bound => fun lower_bound => fun (P : Prop) => fun (mk : forall (bound : Scalar), forall (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), P) => mk bound lower_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonempty_set_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (x : Scalar), forall (hx : set x), ",
+            nonempty_set_app!("set")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun x => fun hx => fun (P : Prop) => fun (mk : forall (x : Scalar), forall (hx : set x), P) => mk x hx"
+        ),
+    },
+    TheoremArtifact {
+        name: "supremum_evidence_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (sup : Scalar), forall (upper_bound : ",
+            upper_bound_app!("set", "sup"),
+            "), forall (least_upper_bound : forall (bound : Scalar), forall (hbound : ",
+            upper_bound_app!("set", "bound"),
+            "), le_rel sup bound), ",
+            supremum_evidence_app!("set", "sup")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun sup => fun upper_bound => fun least_upper_bound => fun (P : Prop) => fun (mk : forall (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), forall (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound), P) => mk upper_bound least_upper_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "supremum_upper_bound",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("set", "sup"),
+            "), ",
+            upper_bound_app!("set", "sup")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun sup => fun hsup => hsup (@UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup) (fun (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup) => fun (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound) => upper_bound)"
+        ),
+    },
+    TheoremArtifact {
+        name: "supremum_least",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("set", "sup"),
+            "), forall (bound : Scalar), forall (hbound : ",
+            upper_bound_app!("set", "bound"),
+            "), le_rel sup bound"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun sup => fun hsup => fun bound => fun hbound => hsup (le_rel sup bound) (fun (upper_bound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup) => fun (least_upper_bound : forall (bound : Scalar), forall (hbound : @UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel sup bound) => least_upper_bound bound hbound)"
+        ),
+    },
+    TheoremArtifact {
+        name: "infimum_evidence_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (inf : Scalar), forall (lower_bound : ",
+            lower_bound_app!("set", "inf"),
+            "), forall (greatest_lower_bound : forall (bound : Scalar), forall (hbound : ",
+            lower_bound_app!("set", "bound"),
+            "), le_rel bound inf), ",
+            infimum_evidence_app!("set", "inf")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun inf => fun lower_bound => fun greatest_lower_bound => fun (P : Prop) => fun (mk : forall (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), forall (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf), P) => mk lower_bound greatest_lower_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "infimum_lower_bound",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (inf : Scalar), forall (hinf : ",
+            infimum_evidence_app!("set", "inf"),
+            "), ",
+            lower_bound_app!("set", "inf")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun inf => fun hinf => hinf (@LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf) (fun (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf) => fun (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf) => lower_bound)"
+        ),
+    },
+    TheoremArtifact {
+        name: "infimum_greatest",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (set : forall (x : Scalar), Prop), forall (inf : Scalar), forall (hinf : ",
+            infimum_evidence_app!("set", "inf"),
+            "), forall (bound : Scalar), forall (hbound : ",
+            lower_bound_app!("set", "bound"),
+            "), le_rel bound inf"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun set => fun inf => fun hinf => fun bound => fun hbound => hinf (le_rel bound inf) (fun (lower_bound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf) => fun (greatest_lower_bound : forall (bound : Scalar), forall (hbound : @LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set bound), le_rel bound inf) => greatest_lower_bound bound hbound)"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_law_args_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(interval_laws_app!()),
+        proof: analysis_real_basic_abs!(
+            "fun (P : Prop) => fun (mk : forall (closed_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_le : le_rel lower x), forall (upper_le : le_rel x upper), @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), forall (open_intro : forall (lower : Scalar), forall (upper : Scalar), forall (x : Scalar), forall (lower_lt : lt_rel lower x), forall (upper_lt : lt_rel x upper), @OpenInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args lower upper x), P) => mk (@closed_interval_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) (@open_interval_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args)"
+        ),
+    },
+    TheoremArtifact {
+        name: "order_completeness_law_args_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : ",
+            nonempty_set_app!("set"),
+            "), forall (bounded_above : ",
+            bounded_above_app!("set"),
+            "), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("set", "sup"),
+            "), Q), Q), forall (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : ",
+            nonempty_set_app!("set"),
+            "), forall (bounded_below : ",
+            bounded_below_app!("set"),
+            "), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : ",
+            infimum_evidence_app!("set", "inf"),
+            "), Q), Q), ",
+            order_completeness_app!()
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun supremum_exists => fun infimum_exists => fun (P : Prop) => fun (mk : forall (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q), forall (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q), P) => mk supremum_exists infimum_exists"
+        ),
+    },
+    TheoremArtifact {
+        name: "supremum_exists_from_completeness",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (complete : ",
+            order_completeness_app!(),
+            "), forall (set : forall (x : Scalar), Prop), forall (nonempty : ",
+            nonempty_set_app!("set"),
+            "), forall (bounded_above : ",
+            bounded_above_app!("set"),
+            "), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("set", "sup"),
+            "), Q), Q"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun complete => fun set => fun nonempty => fun bounded_above => fun Q => fun choose => complete Q (fun (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q) => fun (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q) => supremum_exists set nonempty bounded_above Q choose)"
+        ),
+    },
+    TheoremArtifact {
+        name: "infimum_exists_from_completeness",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (complete : ",
+            order_completeness_app!(),
+            "), forall (set : forall (x : Scalar), Prop), forall (nonempty : ",
+            nonempty_set_app!("set"),
+            "), forall (bounded_below : ",
+            bounded_below_app!("set"),
+            "), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : ",
+            infimum_evidence_app!("set", "inf"),
+            "), Q), Q"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun complete => fun set => fun nonempty => fun bounded_below => fun Q => fun choose => complete Q (fun (supremum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_above : @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set sup), Q), Q) => fun (infimum_exists : forall (set : forall (x : Scalar), Prop), forall (nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (bounded_below : @BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set), forall (Q : Prop), forall (choose : forall (inf : Scalar), forall (hinf : @InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args set inf), Q), Q) => infimum_exists set nonempty bounded_below Q choose)"
+        ),
+    },
+    TheoremArtifact {
+        name: "archimedean_law_args_intro",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q), ",
+            archimedean_laws_app!()
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun archimedean_upper => fun (P : Prop) => fun (mk : forall (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q), P) => mk archimedean_upper"
+        ),
+    },
+    TheoremArtifact {
+        name: "archimedean_upper",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (archimedean : ",
+            archimedean_laws_app!(),
+            "), forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun archimedean => fun x => fun Q => fun choose => archimedean Q (fun (archimedean_upper : forall (x : Scalar), forall (Q : Prop), forall (choose : forall (n : NatIndex), forall (hupper : le_rel x (nat_cast n)), Q), Q) => archimedean_upper x Q choose)"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_ordered_field_args_intro",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (interval_laws : ",
+            interval_laws_app!(),
+            "), forall (order_complete : ",
+            order_completeness_app!(),
+            "), forall (archimedean_laws : ",
+            archimedean_laws_app!(),
+            "), ",
+            complete_ordered_field_app!()
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun interval_laws => fun order_complete => fun archimedean_laws => fun (P : Prop) => fun (mk : forall (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args), forall (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args), forall (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args), forall (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast), P) => mk ordered_args bridge_args interval_laws order_complete archimedean_laws"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_ordered_field_ordered_laws",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (complete : ",
+            complete_ordered_field_app!(),
+            "), @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun complete => complete (@OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => ordered_laws)"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_ordered_field_bridge",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (complete : ",
+            complete_ordered_field_app!(),
+            "), @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun complete => complete (@OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => field_bridge)"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_ordered_field_interval_laws",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (complete : ",
+            complete_ordered_field_app!(),
+            "), ",
+            interval_laws_app!()
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun complete => complete (@IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => interval_laws)"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_ordered_field_order_completeness",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (complete : ",
+            complete_ordered_field_app!(),
+            "), ",
+            order_completeness_app!()
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun complete => complete (@OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => order_complete)"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_ordered_field_archimedean_laws",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (complete : ",
+            complete_ordered_field_app!(),
+            "), ",
+            archimedean_laws_app!()
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun NatIndex => fun nat_cast => fun complete => complete (@ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) (fun (ordered_laws : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn) => fun (field_bridge : @OrderedFieldFieldBridgeArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args) => fun (interval_laws : @IntervalLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (order_complete : @OrderCompletenessLawArgs.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args) => fun (archimedean_laws : @ArchimedeanLawArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast) => archimedean_laws)"
+        ),
+    },
+    TheoremArtifact {
+        name: "abstract_real_foundation",
+        universe_params: &["n", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), forall (nat_cast : forall (n : NatIndex), Scalar), forall (complete : ",
+            complete_ordered_field_app!(),
+            "), @AbstractRealFoundation.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast"
+        )),
+        proof: analysis_real_basic_abs!("fun NatIndex => fun nat_cast => fun complete => complete"),
+    },
+];
+
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "square_def",
@@ -38180,6 +38882,26 @@ fn run_full() -> Result<(), String> {
         &abstract_ordered_field_field_bridge_imports,
         &abstract_ordered_field_field_bridge_source_interfaces,
     )?;
+    let analysis_real_basic_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+    ];
+    let analysis_real_basic_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+    ];
+    let analysis_real_basic = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_REAL_BASIC_MODULE,
+        &analysis_real_basic_imports,
+        &analysis_real_basic_source_interfaces,
+    )?;
     let abstract_square_normalize_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -38649,6 +39371,7 @@ fn run_full() -> Result<(), String> {
         simplicial_commutative_ring_cdga,
         abstract_ordered_field,
         abstract_ordered_field_field_bridge,
+        analysis_real_basic,
         abstract_square_normalize,
         abstract_scalar_derive,
         abstract_vector_space,
@@ -41227,6 +41950,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
+        || config.module == ANALYSIS_REAL_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module

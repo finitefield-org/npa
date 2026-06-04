@@ -190,7 +190,11 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T01 Fix Real And Complete Ordered Field Statement Shape
 
-- Status: Pending
+- Status: `ANQ-001` complete. `Proofs.Ai.Analysis.Real.Basic` now keeps the
+  first real-analysis foundation fully abstract over a `Scalar`, with
+  `CompleteOrderedFieldArgs` packaging ordered-field laws, field bridge laws,
+  interval laws, order completeness, and Archimedean evidence. No named `Real`
+  carrier or completeness primitive was added to the kernel.
 - Depends on: ANA-T00
 - Inputs:
   - `proofs/analysis-theorem-proof-roadmap.md` section `ANA-01`
@@ -224,11 +228,13 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Real.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Real.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
 - Notes:
-  - If no source module is added, replace the build commands with documented
-    review plus `git diff --check` and keep the milestone at statement audit
-    level.
+  - Downstream sequence, series, and continuity modules should import this
+    abstract complete ordered-field evidence rather than assuming a trusted
+    real-number primitive.
 
 ### ANA-T02 Add Sequence Convergence Core
 
