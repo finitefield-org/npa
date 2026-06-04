@@ -165,6 +165,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
+    &NUMBER_THEORY_UFD_BRIDGE_MODULE,
+    &NUMBER_THEORY_FACTORIZATION_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1592,6 +1594,45 @@ const ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_UFD_PRIME_FACTORIZATION_DEFINITIONS,
     theorems: ABSTRACT_UFD_PRIME_FACTORIZATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_UFD_BRIDGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.UfdBridge",
+    source_path: "Proofs/Ai/NumberTheory/UfdBridge/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/UfdBridge/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/UfdBridge/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/UfdBridge/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+        "Proofs.Ai.NumberTheory.Composite",
+        "Proofs.Ai.NumberTheory.Bezout",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_UFD_BRIDGE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_FACTORIZATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Factorization",
+    source_path: "Proofs/Ai/NumberTheory/Factorization/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Factorization/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Factorization/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Factorization/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+        "Proofs.Ai.NumberTheory.Composite",
+        "Proofs.Ai.NumberTheory.Bezout",
+        "Proofs.Ai.NumberTheory.UfdBridge",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_FACTORIZATION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9981,6 +10022,140 @@ const NUMBER_THEORY_COMPOSITE_THEOREMS: &[TheoremArtifact] = &[
             "forall (CompositePackage : Type), forall (PrimeFactorization : Type), forall (FactorizationBoundary : forall (composite : CompositePackage), forall (factorization : PrimeFactorization), Prop), forall (boundary_law : forall (composite : CompositePackage), forall (factorization : PrimeFactorization), FactorizationBoundary composite factorization), forall (composite : CompositePackage), forall (factorization : PrimeFactorization), FactorizationBoundary composite factorization",
         proof:
             "fun CompositePackage => fun PrimeFactorization => fun FactorizationBoundary => fun boundary_law => fun composite => fun factorization => boundary_law composite factorization",
+    },
+];
+
+const NUMBER_THEORY_UFD_BRIDGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ufd_bridge_prime_nat_to_prime_element_surface",
+        universe_params: &["u"],
+        statement:
+            "forall (Nat : Type), forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (EmbedNat : forall (n : Nat), R), forall (PrimeNat : forall (n : Nat), Prop), forall (BridgeEvidence : forall (n : Nat), Prop), forall (bridge_law : forall (n : Nat), forall (prime_n : PrimeNat n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedNat n)), forall (n : Nat), forall (prime_n : PrimeNat n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedNat n)",
+        proof:
+            "fun Nat => fun R => fun zero => fun one => fun mul => fun EmbedNat => fun PrimeNat => fun BridgeEvidence => fun bridge_law => fun n => fun prime_n => fun evidence => bridge_law n prime_n evidence",
+    },
+    TheoremArtifact {
+        name: "ufd_bridge_prime_int_to_prime_element_surface",
+        universe_params: &["u"],
+        statement:
+            "forall (Int : Type), forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (EmbedInt : forall (n : Int), R), forall (PrimeInt : forall (n : Int), Prop), forall (BridgeEvidence : forall (n : Int), Prop), forall (bridge_law : forall (n : Int), forall (prime_n : PrimeInt n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedInt n)), forall (n : Int), forall (prime_n : PrimeInt n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedInt n)",
+        proof:
+            "fun Int => fun R => fun zero => fun one => fun mul => fun EmbedInt => fun PrimeInt => fun BridgeEvidence => fun bridge_law => fun n => fun prime_n => fun evidence => bridge_law n prime_n evidence",
+    },
+    TheoremArtifact {
+        name: "ufd_bridge_divisibility_translation_surface",
+        universe_params: &["u"],
+        statement:
+            "forall (Int : Type), forall (R : Sort u), forall (mul : forall (a : R), forall (b : R), R), forall (EmbedInt : forall (n : Int), R), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (BridgeEvidence : forall (d : Int), forall (n : Int), Prop), forall (translation_law : forall (d : Int), forall (n : Int), forall (divides_dn : DividesInt d n), forall (evidence : BridgeEvidence d n), @Divides.{u} R mul (EmbedInt d) (EmbedInt n)), forall (d : Int), forall (n : Int), forall (divides_dn : DividesInt d n), forall (evidence : BridgeEvidence d n), @Divides.{u} R mul (EmbedInt d) (EmbedInt n)",
+        proof:
+            "fun Int => fun R => fun mul => fun EmbedInt => fun DividesInt => fun BridgeEvidence => fun translation_law => fun d => fun n => fun divides_dn => fun evidence => translation_law d n divides_dn evidence",
+    },
+    TheoremArtifact {
+        name: "ufd_bridge_factorization_law_package_surface",
+        universe_params: &["f", "u"],
+        statement:
+            "forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (Factorization : Sort f), forall (factor_value : forall (fac : Factorization), R), forall (all_irreducible : forall (fac : Factorization), Prop), forall (all_prime : forall (fac : Factorization), Prop), forall (factor_equiv : forall (left : Factorization), forall (right : Factorization), Prop), forall (BridgeEvidence : Prop), forall (UfdBridgePackage : Prop), forall (package_law : forall (ufd_laws : @UniqueFactorizationDomainLawArgs.{f,u} R zero one add neg sub mul Factorization factor_value all_irreducible all_prime factor_equiv), forall (bridge : BridgeEvidence), UfdBridgePackage), forall (ufd_laws : @UniqueFactorizationDomainLawArgs.{f,u} R zero one add neg sub mul Factorization factor_value all_irreducible all_prime factor_equiv), forall (bridge : BridgeEvidence), UfdBridgePackage",
+        proof:
+            "fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Factorization => fun factor_value => fun all_irreducible => fun all_prime => fun factor_equiv => fun BridgeEvidence => fun UfdBridgePackage => fun package_law => fun ufd_laws => fun bridge => package_law ufd_laws bridge",
+    },
+    TheoremArtifact {
+        name: "euclid_lemma_from_bezout_ufd_packaged",
+        universe_params: &["u"],
+        statement:
+            "forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (p : R), forall (a : R), forall (b : R), forall (BezoutIdentity : forall (p : R), forall (a : R), forall (b : R), Prop), forall (bezout_identity : BezoutIdentity p a b), forall (prime_p : @PrimeElement.{u} R zero one mul p), forall (divides_product : @Divides.{u} R mul p (mul a b)), UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)",
+        proof:
+            "fun R => fun zero => fun one => fun mul => fun p => fun a => fun b => fun BezoutIdentity => fun bezout_identity => fun prime_p => fun divides_product => prime_p (UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)) (fun (nonzero : @UfdNonzero.{u} R zero p) => fun (nonunit : @Nonunit.{u} R one mul p) => fun (divides_mul : forall (a_arg : R), forall (b_arg : R), forall (h : @Divides.{u} R mul p (mul a_arg b_arg)), UfdOr (@Divides.{u} R mul p a_arg) (@Divides.{u} R mul p b_arg)) => divides_mul a b divides_product)",
+    },
+    TheoremArtifact {
+        name: "prime_divides_product_from_ufd_bridge_packaged",
+        universe_params: &["u"],
+        statement:
+            "forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (p : R), forall (a : R), forall (b : R), forall (prime_p : @PrimeElement.{u} R zero one mul p), forall (divides_product : @Divides.{u} R mul p (mul a b)), UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)",
+        proof:
+            "fun R => fun zero => fun one => fun mul => fun p => fun a => fun b => fun prime_p => fun divides_product => prime_p (UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)) (fun (nonzero : @UfdNonzero.{u} R zero p) => fun (nonunit : @Nonunit.{u} R one mul p) => fun (divides_mul : forall (a_arg : R), forall (b_arg : R), forall (h : @Divides.{u} R mul p (mul a_arg b_arg)), UfdOr (@Divides.{u} R mul p a_arg) (@Divides.{u} R mul p b_arg)) => divides_mul a b divides_product)",
+    },
+    TheoremArtifact {
+        name: "ufd_bridge_no_reverse_dependency_boundary",
+        universe_params: &[],
+        statement:
+            "forall (NumberTheoryPrimePackage : Type), forall (AbstractUfdPackage : Type), forall (NoReverseDependencyBoundary : forall (number_theory : NumberTheoryPrimePackage), forall (ufd : AbstractUfdPackage), Prop), forall (boundary_law : forall (number_theory : NumberTheoryPrimePackage), forall (ufd : AbstractUfdPackage), NoReverseDependencyBoundary number_theory ufd), forall (number_theory : NumberTheoryPrimePackage), forall (ufd : AbstractUfdPackage), NoReverseDependencyBoundary number_theory ufd",
+        proof:
+            "fun NumberTheoryPrimePackage => fun AbstractUfdPackage => fun NoReverseDependencyBoundary => fun boundary_law => fun number_theory => fun ufd => boundary_law number_theory ufd",
+    },
+    TheoremArtifact {
+        name: "ufd_bridge_no_fta_uniqueness_assumption_boundary",
+        universe_params: &[],
+        statement:
+            "forall (UfdBridgePackage : Type), forall (UniqueFactorizationTheorem : Type), forall (NoFtaUniquenessAssumption : forall (bridge : UfdBridgePackage), forall (fta : UniqueFactorizationTheorem), Prop), forall (boundary_law : forall (bridge : UfdBridgePackage), forall (fta : UniqueFactorizationTheorem), NoFtaUniquenessAssumption bridge fta), forall (bridge : UfdBridgePackage), forall (fta : UniqueFactorizationTheorem), NoFtaUniquenessAssumption bridge fta",
+        proof:
+            "fun UfdBridgePackage => fun UniqueFactorizationTheorem => fun NoFtaUniquenessAssumption => fun boundary_law => fun bridge => fun fta => boundary_law bridge fta",
+    },
+];
+
+const NUMBER_THEORY_FACTORIZATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "prime_factor_extraction_from_composite_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (FactorExtractionEvidence : forall (n : Nat), Prop), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (extraction_law : forall (n : Nat), forall (composite_n : CompositeNat n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExists n), forall (n : Nat), forall (composite_n : CompositeNat n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExists n",
+        proof:
+            "fun Nat => fun CompositeNat => fun FactorExtractionEvidence => fun PrimeFactorExists => fun extraction_law => fun n => fun composite_n => fun evidence => extraction_law n composite_n evidence",
+    },
+    TheoremArtifact {
+        name: "prime_factor_extraction_int_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CompositeInt : forall (n : Int), Prop), forall (FactorExtractionEvidence : forall (n : Int), Prop), forall (PrimeFactorExistsInt : forall (n : Int), Prop), forall (extraction_law : forall (n : Int), forall (composite_n : CompositeInt n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExistsInt n), forall (n : Int), forall (composite_n : CompositeInt n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExistsInt n",
+        proof:
+            "fun Int => fun CompositeInt => fun FactorExtractionEvidence => fun PrimeFactorExistsInt => fun extraction_law => fun n => fun composite_n => fun evidence => extraction_law n composite_n evidence",
+    },
+    TheoremArtifact {
+        name: "prime_factorization_existence_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationEvidence : forall (n : Nat), Prop), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (existence_law : forall (n : Nat), forall (evidence : PrimeFactorizationEvidence n), PrimeFactorizationSurface n), forall (n : Nat), forall (evidence : PrimeFactorizationEvidence n), PrimeFactorizationSurface n",
+        proof:
+            "fun Nat => fun PrimeFactorizationEvidence => fun PrimeFactorizationSurface => fun existence_law => fun n => fun evidence => existence_law n evidence",
+    },
+    TheoremArtifact {
+        name: "factorization_erases_to_composite_divisor_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (NontrivialDivisor : forall (n : Nat), Prop), forall (erasure_law : forall (n : Nat), forall (factor_exists : PrimeFactorExists n), NontrivialDivisor n), forall (n : Nat), forall (factor_exists : PrimeFactorExists n), NontrivialDivisor n",
+        proof:
+            "fun Nat => fun PrimeFactorExists => fun NontrivialDivisor => fun erasure_law => fun n => fun factor_exists => erasure_law n factor_exists",
+    },
+    TheoremArtifact {
+        name: "factorization_diophantine_reuse_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (DiophantineFactorInput : forall (n : Nat), Prop), forall (reuse_law : forall (n : Nat), forall (factor_exists : PrimeFactorExists n), DiophantineFactorInput n), forall (n : Nat), forall (factor_exists : PrimeFactorExists n), DiophantineFactorInput n",
+        proof:
+            "fun Nat => fun PrimeFactorExists => fun DiophantineFactorInput => fun reuse_law => fun n => fun factor_exists => reuse_law n factor_exists",
+    },
+    TheoremArtifact {
+        name: "factorization_arithmetic_function_reuse_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (ArithmeticFunctionFactorInput : forall (n : Nat), Prop), forall (reuse_law : forall (n : Nat), forall (factor_exists : PrimeFactorExists n), ArithmeticFunctionFactorInput n), forall (n : Nat), forall (factor_exists : PrimeFactorExists n), ArithmeticFunctionFactorInput n",
+        proof:
+            "fun Nat => fun PrimeFactorExists => fun ArithmeticFunctionFactorInput => fun reuse_law => fun n => fun factor_exists => reuse_law n factor_exists",
+    },
+    TheoremArtifact {
+        name: "factorization_no_unique_factorization_assumption_boundary",
+        universe_params: &[],
+        statement:
+            "forall (PrimeFactorExtractionPackage : Type), forall (UniqueFactorizationTheorem : Type), forall (NoUniqueFactorizationAssumption : forall (package : PrimeFactorExtractionPackage), forall (unique_factorization : UniqueFactorizationTheorem), Prop), forall (boundary_law : forall (package : PrimeFactorExtractionPackage), forall (unique_factorization : UniqueFactorizationTheorem), NoUniqueFactorizationAssumption package unique_factorization), forall (package : PrimeFactorExtractionPackage), forall (unique_factorization : UniqueFactorizationTheorem), NoUniqueFactorizationAssumption package unique_factorization",
+        proof:
+            "fun PrimeFactorExtractionPackage => fun UniqueFactorizationTheorem => fun NoUniqueFactorizationAssumption => fun boundary_law => fun package => fun unique_factorization => boundary_law package unique_factorization",
+    },
+    TheoremArtifact {
+        name: "factorization_sign_unit_normalization_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (PrimeFactorExistsInt : forall (n : Int), Prop), forall (UnitNormalizedFactorization : forall (n : Int), Prop), forall (SignUnitNormalizationEvidence : forall (n : Int), Prop), forall (normalization_law : forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (evidence : SignUnitNormalizationEvidence n), UnitNormalizedFactorization n), forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (evidence : SignUnitNormalizationEvidence n), UnitNormalizedFactorization n",
+        proof:
+            "fun Int => fun PrimeFactorExistsInt => fun UnitNormalizedFactorization => fun SignUnitNormalizationEvidence => fun normalization_law => fun n => fun factor_exists => fun evidence => normalization_law n factor_exists evidence",
     },
 ];
 
@@ -38444,6 +38619,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_BEZOUT_MODULE.module
         || config.module == NUMBER_THEORY_PRIME_MODULE.module
         || config.module == NUMBER_THEORY_COMPOSITE_MODULE.module
+        || config.module == NUMBER_THEORY_UFD_BRIDGE_MODULE.module
+        || config.module == NUMBER_THEORY_FACTORIZATION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

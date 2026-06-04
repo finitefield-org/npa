@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Factorization",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "prime_factor_extraction_from_composite_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CompositeNat => fun FactorExtractionEvidence => fun PrimeFactorExists => fun extraction_law => fun n => fun composite_n => fun evidence => extraction_law n composite_n evidence"
+    },
+    {
+      "declaration": "prime_factor_extraction_int_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeInt => fun FactorExtractionEvidence => fun PrimeFactorExistsInt => fun extraction_law => fun n => fun composite_n => fun evidence => extraction_law n composite_n evidence"
+    },
+    {
+      "declaration": "prime_factorization_existence_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationEvidence => fun PrimeFactorizationSurface => fun existence_law => fun n => fun evidence => existence_law n evidence"
+    },
+    {
+      "declaration": "factorization_erases_to_composite_divisor_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorExists => fun NontrivialDivisor => fun erasure_law => fun n => fun factor_exists => erasure_law n factor_exists"
+    },
+    {
+      "declaration": "factorization_diophantine_reuse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorExists => fun DiophantineFactorInput => fun reuse_law => fun n => fun factor_exists => reuse_law n factor_exists"
+    },
+    {
+      "declaration": "factorization_arithmetic_function_reuse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorExists => fun ArithmeticFunctionFactorInput => fun reuse_law => fun n => fun factor_exists => reuse_law n factor_exists"
+    },
+    {
+      "declaration": "factorization_no_unique_factorization_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimeFactorExtractionPackage => fun UniqueFactorizationTheorem => fun NoUniqueFactorizationAssumption => fun boundary_law => fun package => fun unique_factorization => boundary_law package unique_factorization"
+    },
+    {
+      "declaration": "factorization_sign_unit_normalization_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun PrimeFactorExistsInt => fun UnitNormalizedFactorization => fun SignUnitNormalizationEvidence => fun normalization_law => fun n => fun factor_exists => fun evidence => normalization_law n factor_exists evidence"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Factorization/certificate.npcert"
+  }
+}

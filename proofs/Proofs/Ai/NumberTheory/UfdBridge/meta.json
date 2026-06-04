@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.UfdBridge",
+  "source": "Proofs/Ai/NumberTheory/UfdBridge/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/UfdBridge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e74b96622c98c75b59547a339c25209cedfa39beeefccfa83f1839c3ec9924cd",
+  "certificate_file_sha256": "sha256:5befb0f6849d6f622048c1178fe27edbc016f7034a0ebd8663d36053b7cdfc74",
+  "export_hash": "sha256:201b8a7e38d68d4f3f2d1cf2555095531925cfb0d9d91ce237db094c5ad541f4",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:e7c9e579d40d9c7a4462d1107c15ed3bbb322230aea1f6735436a8f68d658f46",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ufd_bridge_prime_nat_to_prime_element_surface", "kind": "theorem" },
+    { "name": "ufd_bridge_prime_int_to_prime_element_surface", "kind": "theorem" },
+    { "name": "ufd_bridge_divisibility_translation_surface", "kind": "theorem" },
+    { "name": "ufd_bridge_factorization_law_package_surface", "kind": "theorem" },
+    { "name": "euclid_lemma_from_bezout_ufd_packaged", "kind": "theorem" },
+    { "name": "prime_divides_product_from_ufd_bridge_packaged", "kind": "theorem" },
+    { "name": "ufd_bridge_no_reverse_dependency_boundary", "kind": "theorem" },
+    { "name": "ufd_bridge_no_fta_uniqueness_assumption_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

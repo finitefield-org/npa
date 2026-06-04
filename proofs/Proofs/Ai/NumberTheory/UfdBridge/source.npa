@@ -1,0 +1,37 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractUfdPrimeFactorization
+import Proofs.Ai.NumberTheory.Composite
+import Proofs.Ai.NumberTheory.Bezout
+
+theorem ufd_bridge_prime_nat_to_prime_element_surface.{u} :
+  forall (Nat : Type), forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (EmbedNat : forall (n : Nat), R), forall (PrimeNat : forall (n : Nat), Prop), forall (BridgeEvidence : forall (n : Nat), Prop), forall (bridge_law : forall (n : Nat), forall (prime_n : PrimeNat n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedNat n)), forall (n : Nat), forall (prime_n : PrimeNat n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedNat n) :=
+  fun Nat => fun R => fun zero => fun one => fun mul => fun EmbedNat => fun PrimeNat => fun BridgeEvidence => fun bridge_law => fun n => fun prime_n => fun evidence => bridge_law n prime_n evidence
+
+theorem ufd_bridge_prime_int_to_prime_element_surface.{u} :
+  forall (Int : Type), forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (EmbedInt : forall (n : Int), R), forall (PrimeInt : forall (n : Int), Prop), forall (BridgeEvidence : forall (n : Int), Prop), forall (bridge_law : forall (n : Int), forall (prime_n : PrimeInt n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedInt n)), forall (n : Int), forall (prime_n : PrimeInt n), forall (evidence : BridgeEvidence n), @PrimeElement.{u} R zero one mul (EmbedInt n) :=
+  fun Int => fun R => fun zero => fun one => fun mul => fun EmbedInt => fun PrimeInt => fun BridgeEvidence => fun bridge_law => fun n => fun prime_n => fun evidence => bridge_law n prime_n evidence
+
+theorem ufd_bridge_divisibility_translation_surface.{u} :
+  forall (Int : Type), forall (R : Sort u), forall (mul : forall (a : R), forall (b : R), R), forall (EmbedInt : forall (n : Int), R), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (BridgeEvidence : forall (d : Int), forall (n : Int), Prop), forall (translation_law : forall (d : Int), forall (n : Int), forall (divides_dn : DividesInt d n), forall (evidence : BridgeEvidence d n), @Divides.{u} R mul (EmbedInt d) (EmbedInt n)), forall (d : Int), forall (n : Int), forall (divides_dn : DividesInt d n), forall (evidence : BridgeEvidence d n), @Divides.{u} R mul (EmbedInt d) (EmbedInt n) :=
+  fun Int => fun R => fun mul => fun EmbedInt => fun DividesInt => fun BridgeEvidence => fun translation_law => fun d => fun n => fun divides_dn => fun evidence => translation_law d n divides_dn evidence
+
+theorem ufd_bridge_factorization_law_package_surface.{f,u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (add : forall (a : R), forall (b : R), R), forall (neg : forall (a : R), R), forall (sub : forall (a : R), forall (b : R), R), forall (mul : forall (a : R), forall (b : R), R), forall (Factorization : Sort f), forall (factor_value : forall (fac : Factorization), R), forall (all_irreducible : forall (fac : Factorization), Prop), forall (all_prime : forall (fac : Factorization), Prop), forall (factor_equiv : forall (left : Factorization), forall (right : Factorization), Prop), forall (BridgeEvidence : Prop), forall (UfdBridgePackage : Prop), forall (package_law : forall (ufd_laws : @UniqueFactorizationDomainLawArgs.{f,u} R zero one add neg sub mul Factorization factor_value all_irreducible all_prime factor_equiv), forall (bridge : BridgeEvidence), UfdBridgePackage), forall (ufd_laws : @UniqueFactorizationDomainLawArgs.{f,u} R zero one add neg sub mul Factorization factor_value all_irreducible all_prime factor_equiv), forall (bridge : BridgeEvidence), UfdBridgePackage :=
+  fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Factorization => fun factor_value => fun all_irreducible => fun all_prime => fun factor_equiv => fun BridgeEvidence => fun UfdBridgePackage => fun package_law => fun ufd_laws => fun bridge => package_law ufd_laws bridge
+
+theorem euclid_lemma_from_bezout_ufd_packaged.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (p : R), forall (a : R), forall (b : R), forall (BezoutIdentity : forall (p : R), forall (a : R), forall (b : R), Prop), forall (bezout_identity : BezoutIdentity p a b), forall (prime_p : @PrimeElement.{u} R zero one mul p), forall (divides_product : @Divides.{u} R mul p (mul a b)), UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b) :=
+  fun R => fun zero => fun one => fun mul => fun p => fun a => fun b => fun BezoutIdentity => fun bezout_identity => fun prime_p => fun divides_product => prime_p (UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)) (fun (nonzero : @UfdNonzero.{u} R zero p) => fun (nonunit : @Nonunit.{u} R one mul p) => fun (divides_mul : forall (a_arg : R), forall (b_arg : R), forall (h : @Divides.{u} R mul p (mul a_arg b_arg)), UfdOr (@Divides.{u} R mul p a_arg) (@Divides.{u} R mul p b_arg)) => divides_mul a b divides_product)
+
+theorem prime_divides_product_from_ufd_bridge_packaged.{u} :
+  forall (R : Sort u), forall (zero : R), forall (one : R), forall (mul : forall (a : R), forall (b : R), R), forall (p : R), forall (a : R), forall (b : R), forall (prime_p : @PrimeElement.{u} R zero one mul p), forall (divides_product : @Divides.{u} R mul p (mul a b)), UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b) :=
+  fun R => fun zero => fun one => fun mul => fun p => fun a => fun b => fun prime_p => fun divides_product => prime_p (UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)) (fun (nonzero : @UfdNonzero.{u} R zero p) => fun (nonunit : @Nonunit.{u} R one mul p) => fun (divides_mul : forall (a_arg : R), forall (b_arg : R), forall (h : @Divides.{u} R mul p (mul a_arg b_arg)), UfdOr (@Divides.{u} R mul p a_arg) (@Divides.{u} R mul p b_arg)) => divides_mul a b divides_product)
+
+theorem ufd_bridge_no_reverse_dependency_boundary :
+  forall (NumberTheoryPrimePackage : Type), forall (AbstractUfdPackage : Type), forall (NoReverseDependencyBoundary : forall (number_theory : NumberTheoryPrimePackage), forall (ufd : AbstractUfdPackage), Prop), forall (boundary_law : forall (number_theory : NumberTheoryPrimePackage), forall (ufd : AbstractUfdPackage), NoReverseDependencyBoundary number_theory ufd), forall (number_theory : NumberTheoryPrimePackage), forall (ufd : AbstractUfdPackage), NoReverseDependencyBoundary number_theory ufd :=
+  fun NumberTheoryPrimePackage => fun AbstractUfdPackage => fun NoReverseDependencyBoundary => fun boundary_law => fun number_theory => fun ufd => boundary_law number_theory ufd
+
+theorem ufd_bridge_no_fta_uniqueness_assumption_boundary :
+  forall (UfdBridgePackage : Type), forall (UniqueFactorizationTheorem : Type), forall (NoFtaUniquenessAssumption : forall (bridge : UfdBridgePackage), forall (fta : UniqueFactorizationTheorem), Prop), forall (boundary_law : forall (bridge : UfdBridgePackage), forall (fta : UniqueFactorizationTheorem), NoFtaUniquenessAssumption bridge fta), forall (bridge : UfdBridgePackage), forall (fta : UniqueFactorizationTheorem), NoFtaUniquenessAssumption bridge fta :=
+  fun UfdBridgePackage => fun UniqueFactorizationTheorem => fun NoFtaUniquenessAssumption => fun boundary_law => fun bridge => fun fta => boundary_law bridge fta

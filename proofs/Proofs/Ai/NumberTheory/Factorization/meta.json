@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Factorization",
+  "source": "Proofs/Ai/NumberTheory/Factorization/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Factorization/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:46d1f16e7c0d033f26cfb651588ce68af6f8df8b1dd3f7c9ebbeef3437f59868",
+  "certificate_file_sha256": "sha256:eb4cf95dc8f1134dc1a5bd8612417d66354ea6227ed8ce281ef944665bd7c9e8",
+  "export_hash": "sha256:dc9e163bf1a0c5cdf06ff1ef4b46452c05dddec68645a9a0f22325ccbfc10193",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:0e9fadb53434f1d1eab1c71e9e4ae3c418c2c3a05586c037d389f0b2fffbb61d",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge"],
+  "axioms": [],
+  "declarations": [
+    { "name": "prime_factor_extraction_from_composite_packaged", "kind": "theorem" },
+    { "name": "prime_factor_extraction_int_packaged", "kind": "theorem" },
+    { "name": "prime_factorization_existence_surface", "kind": "theorem" },
+    { "name": "factorization_erases_to_composite_divisor_surface", "kind": "theorem" },
+    { "name": "factorization_diophantine_reuse_surface", "kind": "theorem" },
+    { "name": "factorization_arithmetic_function_reuse_surface", "kind": "theorem" },
+    { "name": "factorization_no_unique_factorization_assumption_boundary", "kind": "theorem" },
+    { "name": "factorization_sign_unit_normalization_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

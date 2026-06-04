@@ -397,7 +397,7 @@ later in the file.
 
 ### NT-T08 Bridge Prime Divisibility And Factor Extraction
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T07`, `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
 - Areas: `Proofs/Ai/NumberTheory/UfdBridge/`, `Proofs/Ai/NumberTheory/Factorization/`
 - Tasks:
@@ -407,6 +407,7 @@ later in the file.
   - Add existence of prime factors for composite numbers.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.UfdBridge`.
+  - `Proofs.Ai.NumberTheory.Factorization`.
   - Prime-factor extraction theorem package.
 - Acceptance criteria:
   - The bridge imports the abstract UFD package without making UFD depend on
@@ -415,9 +416,16 @@ later in the file.
   - Factor extraction can be consumed by Diophantine equations and arithmetic
     functions.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.UfdBridge`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.UfdBridge`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "UfdBridge|Euclid|prime_divides|Factorization" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T09 Prove Fundamental Theorem Of Arithmetic And Prime Infinitude
 

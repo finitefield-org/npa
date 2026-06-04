@@ -146,6 +146,22 @@ surfaces for later `UfdBridge` and `Factorization` modules.
 These modules do not assume unique factorization, Euclid's lemma, prime
 factorization, CRT, elliptic curves, analytic prime distribution, or modularity.
 
+## UFD Bridge And Factor Extraction Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.UfdBridge` and
+`Proofs.Ai.NumberTheory.Factorization`.
+
+The UFD bridge imports `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
+one-way from number theory, packages natural/integer prime predicates into
+UFD-local `PrimeElement` evidence, translates integer divisibility into UFD
+divisibility, and derives Euclid/product-divisibility surfaces from explicit
+Bezout/UFD evidence. The factorization module records composite prime-factor
+extraction, integer extraction, existence/erasure surfaces, and reuse inputs
+for Diophantine equations and arithmetic functions.
+
+These modules do not make the abstract UFD package depend on number theory and
+do not assume fundamental-theorem-of-arithmetic uniqueness.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

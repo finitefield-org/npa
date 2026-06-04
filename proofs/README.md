@@ -100,6 +100,14 @@ Current bundles:
   prime package, preserving natural-number and integer composite predicates, nontrivial-divisor
   projections, sign-normalized composite surfaces, `Nat`/`Int` translation, factor-extraction
   input surfaces, and the boundary excluding unique factorization assumptions.
+- `Proofs/Ai/NumberTheory/UfdBridge/`: certificate-backed bridge from number-theory prime and
+  composite predicates to the abstract UFD prime-factorization API, preserving one-way imports
+  into `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`, Euclid/product-divisibility surfaces
+  derived from explicit Bezout/UFD evidence, and the boundary excluding FTA uniqueness assumptions.
+- `Proofs/Ai/NumberTheory/Factorization/`: certificate-backed prime-factor extraction package
+  downstream of `UfdBridge`, preserving composite prime-factor existence, integer extraction,
+  factorization-existence and erasure surfaces, Diophantine/arithmetic-function reuse inputs,
+  unit/sign normalization, and the boundary excluding unique factorization assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

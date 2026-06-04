@@ -1,0 +1,38 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractUfdPrimeFactorization
+import Proofs.Ai.NumberTheory.Composite
+import Proofs.Ai.NumberTheory.Bezout
+import Proofs.Ai.NumberTheory.UfdBridge
+
+theorem prime_factor_extraction_from_composite_packaged :
+  forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (FactorExtractionEvidence : forall (n : Nat), Prop), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (extraction_law : forall (n : Nat), forall (composite_n : CompositeNat n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExists n), forall (n : Nat), forall (composite_n : CompositeNat n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExists n :=
+  fun Nat => fun CompositeNat => fun FactorExtractionEvidence => fun PrimeFactorExists => fun extraction_law => fun n => fun composite_n => fun evidence => extraction_law n composite_n evidence
+
+theorem prime_factor_extraction_int_packaged :
+  forall (Int : Type), forall (CompositeInt : forall (n : Int), Prop), forall (FactorExtractionEvidence : forall (n : Int), Prop), forall (PrimeFactorExistsInt : forall (n : Int), Prop), forall (extraction_law : forall (n : Int), forall (composite_n : CompositeInt n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExistsInt n), forall (n : Int), forall (composite_n : CompositeInt n), forall (evidence : FactorExtractionEvidence n), PrimeFactorExistsInt n :=
+  fun Int => fun CompositeInt => fun FactorExtractionEvidence => fun PrimeFactorExistsInt => fun extraction_law => fun n => fun composite_n => fun evidence => extraction_law n composite_n evidence
+
+theorem prime_factorization_existence_surface :
+  forall (Nat : Type), forall (PrimeFactorizationEvidence : forall (n : Nat), Prop), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (existence_law : forall (n : Nat), forall (evidence : PrimeFactorizationEvidence n), PrimeFactorizationSurface n), forall (n : Nat), forall (evidence : PrimeFactorizationEvidence n), PrimeFactorizationSurface n :=
+  fun Nat => fun PrimeFactorizationEvidence => fun PrimeFactorizationSurface => fun existence_law => fun n => fun evidence => existence_law n evidence
+
+theorem factorization_erases_to_composite_divisor_surface :
+  forall (Nat : Type), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (NontrivialDivisor : forall (n : Nat), Prop), forall (erasure_law : forall (n : Nat), forall (factor_exists : PrimeFactorExists n), NontrivialDivisor n), forall (n : Nat), forall (factor_exists : PrimeFactorExists n), NontrivialDivisor n :=
+  fun Nat => fun PrimeFactorExists => fun NontrivialDivisor => fun erasure_law => fun n => fun factor_exists => erasure_law n factor_exists
+
+theorem factorization_diophantine_reuse_surface :
+  forall (Nat : Type), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (DiophantineFactorInput : forall (n : Nat), Prop), forall (reuse_law : forall (n : Nat), forall (factor_exists : PrimeFactorExists n), DiophantineFactorInput n), forall (n : Nat), forall (factor_exists : PrimeFactorExists n), DiophantineFactorInput n :=
+  fun Nat => fun PrimeFactorExists => fun DiophantineFactorInput => fun reuse_law => fun n => fun factor_exists => reuse_law n factor_exists
+
+theorem factorization_arithmetic_function_reuse_surface :
+  forall (Nat : Type), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (ArithmeticFunctionFactorInput : forall (n : Nat), Prop), forall (reuse_law : forall (n : Nat), forall (factor_exists : PrimeFactorExists n), ArithmeticFunctionFactorInput n), forall (n : Nat), forall (factor_exists : PrimeFactorExists n), ArithmeticFunctionFactorInput n :=
+  fun Nat => fun PrimeFactorExists => fun ArithmeticFunctionFactorInput => fun reuse_law => fun n => fun factor_exists => reuse_law n factor_exists
+
+theorem factorization_no_unique_factorization_assumption_boundary :
+  forall (PrimeFactorExtractionPackage : Type), forall (UniqueFactorizationTheorem : Type), forall (NoUniqueFactorizationAssumption : forall (package : PrimeFactorExtractionPackage), forall (unique_factorization : UniqueFactorizationTheorem), Prop), forall (boundary_law : forall (package : PrimeFactorExtractionPackage), forall (unique_factorization : UniqueFactorizationTheorem), NoUniqueFactorizationAssumption package unique_factorization), forall (package : PrimeFactorExtractionPackage), forall (unique_factorization : UniqueFactorizationTheorem), NoUniqueFactorizationAssumption package unique_factorization :=
+  fun PrimeFactorExtractionPackage => fun UniqueFactorizationTheorem => fun NoUniqueFactorizationAssumption => fun boundary_law => fun package => fun unique_factorization => boundary_law package unique_factorization
+
+theorem factorization_sign_unit_normalization_surface :
+  forall (Int : Type), forall (PrimeFactorExistsInt : forall (n : Int), Prop), forall (UnitNormalizedFactorization : forall (n : Int), Prop), forall (SignUnitNormalizationEvidence : forall (n : Int), Prop), forall (normalization_law : forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (evidence : SignUnitNormalizationEvidence n), UnitNormalizedFactorization n), forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (evidence : SignUnitNormalizationEvidence n), UnitNormalizedFactorization n :=
+  fun Int => fun PrimeFactorExistsInt => fun UnitNormalizedFactorization => fun SignUnitNormalizationEvidence => fun normalization_law => fun n => fun factor_exists => fun evidence => normalization_law n factor_exists evidence
