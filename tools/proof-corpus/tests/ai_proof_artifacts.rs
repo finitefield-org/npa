@@ -675,6 +675,27 @@ const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
     "opposite_category_laws",
 ];
 
+const MODEL_CATEGORY_DEFINITIONS: &[&str] = &["ModelCategoryLawArgs"];
+
+const MODEL_CATEGORY_THEOREMS: &[&str] = &[
+    "model_category_definition_intro",
+    "model_category_has_category_laws",
+    "model_category_complete",
+    "model_category_cocomplete",
+    "model_category_cofibration_id",
+    "model_category_fibration_id",
+    "model_category_weak_equivalence_id",
+    "model_category_weak_equivalence_comp",
+    "model_category_weak_equivalence_two_of_three_left",
+    "model_category_weak_equivalence_two_of_three_right",
+    "model_category_trivial_cofibration_lifting",
+    "model_category_trivial_fibration_lifting",
+    "model_category_cofibration_trivial_fibration_factorization",
+    "model_category_trivial_cofibration_fibration_factorization",
+    "model_category",
+    "model_categories",
+];
+
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[&str] = &[
     "SimplexCategoryLawArgs",
     "SimplicialSetLawArgs",
@@ -2224,6 +2245,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: CLASSICAL_CATEGORY_DEFINITIONS,
         theorems: CLASSICAL_CATEGORY_THEOREMS,
         axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.ModelCategory",
+        source: "Proofs/Ai/Category/ModelCategory/source.npa",
+        certificate: "Proofs/Ai/Category/ModelCategory/certificate.npcert",
+        meta: "Proofs/Ai/Category/ModelCategory/meta.json",
+        replay: "Proofs/Ai/Category/ModelCategory/replay.json",
+        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: MODEL_CATEGORY_DEFINITIONS,
+        theorems: MODEL_CATEGORY_THEOREMS,
+        axioms: &[],
     },
     ExpectedModule {
         module: "Proofs.Ai.Category.Infinity.SimplicialSet",

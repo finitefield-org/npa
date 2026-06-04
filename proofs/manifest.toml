@@ -309,6 +309,24 @@ theorems = ["category_definition_intro", "functor_definition_intro", "functor_pr
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Category.ModelCategory"
+source = "Proofs/Ai/Category/ModelCategory/source.npa"
+certificate = "Proofs/Ai/Category/ModelCategory/certificate.npcert"
+meta = "Proofs/Ai/Category/ModelCategory/meta.json"
+replay = "Proofs/Ai/Category/ModelCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4327d2411725d1a0b4bad403dbd4a9914d2d042bfdb6f2c40cc48d22af0cc2ed"
+certificate_file_sha256 = "sha256:f20f8e9ef7d499b4c5f0f7c19b0b4ef230774c65fb0891259d43fb6303f389f0"
+export_hash = "sha256:3e3258bc5e1e940c697498d3c50f8c249c94a4177513b3a667c05c279a3c8eea"
+axiom_report_hash = "sha256:55932adb6d068a32ac76b43afee2b808d61b89bb36b85b1805fe77d82a1028b3"
+certificate_hash = "sha256:531497823a48e12162c1a01d7288ed864afbde72a6afaf1fbf394d87c2b70a5c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
+definitions = ["ModelCategoryLawArgs"]
+theorems = ["model_category_definition_intro", "model_category_has_category_laws", "model_category_complete", "model_category_cocomplete", "model_category_cofibration_id", "model_category_fibration_id", "model_category_weak_equivalence_id", "model_category_weak_equivalence_comp", "model_category_weak_equivalence_two_of_three_left", "model_category_weak_equivalence_two_of_three_right", "model_category_trivial_cofibration_lifting", "model_category_trivial_fibration_lifting", "model_category_cofibration_trivial_fibration_factorization", "model_category_trivial_cofibration_fibration_factorization", "model_category", "model_categories"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Category.Infinity.SimplicialSet"
 source = "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa"
 certificate = "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert"

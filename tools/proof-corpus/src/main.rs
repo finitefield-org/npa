@@ -121,6 +121,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &METRIC_MODULE,
     &IFF_MODULE,
     &CLASSICAL_CATEGORY_MODULE,
+    &MODEL_CATEGORY_MODULE,
     &INFINITY_SIMPLICIAL_SET_MODULE,
     &ABSTRACT_GROUP_MODULE,
     &ABSTRACT_GROUP_KERNEL_MODULE,
@@ -780,6 +781,19 @@ const CLASSICAL_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
     definitions: CLASSICAL_CATEGORY_DEFINITIONS,
     theorems: CLASSICAL_CATEGORY_THEOREMS,
     expected_axioms: &["Eq.rec"],
+};
+
+const MODEL_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Category.ModelCategory",
+    source_path: "Proofs/Ai/Category/ModelCategory/source.npa",
+    certificate_path: "Proofs/Ai/Category/ModelCategory/certificate.npcert",
+    meta_path: "Proofs/Ai/Category/ModelCategory/meta.json",
+    replay_path: "Proofs/Ai/Category/ModelCategory/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Category.Classical"],
+    inductives: &[],
+    definitions: MODEL_CATEGORY_DEFINITIONS,
+    theorems: MODEL_CATEGORY_THEOREMS,
+    expected_axioms: &[],
 };
 
 const INFINITY_SIMPLICIAL_SET_MODULE: ModuleArtifact = ModuleArtifact {
@@ -3541,6 +3555,247 @@ macro_rules! category_abs {
     };
     ($tail:literal) => {
         category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! model_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        category_params!(concat!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (Cofibration : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), Prop), ",
+            "forall (Fibration : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), Prop), ",
+            "forall (WeakEquivalence : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), Prop), ",
+            "forall (HasAllLimits : Prop), ",
+            "forall (HasAllColimits : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        model_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! model_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        category_abs!(concat!(
+            "fun category_args => fun Cofibration => fun Fibration => ",
+            "fun WeakEquivalence => fun HasAllLimits => fun HasAllColimits => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        model_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! model_category_category_law_type {
+    () => {
+        "@CategoryLawArgs.{u,v} Obj Hom id comp"
+    };
+}
+
+macro_rules! model_category_cofibration_id_law_type {
+    () => {
+        "forall (X : Obj), Cofibration X X (id X)"
+    };
+}
+
+macro_rules! model_category_fibration_id_law_type {
+    () => {
+        "forall (X : Obj), Fibration X X (id X)"
+    };
+}
+
+macro_rules! model_category_weak_equivalence_id_law_type {
+    () => {
+        "forall (X : Obj), WeakEquivalence X X (id X)"
+    };
+}
+
+macro_rules! model_category_weak_equivalence_comp_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (Y : Obj), forall (Z : Obj), ",
+            "forall (g : Hom Y Z), forall (f : Hom X Y), ",
+            "forall (hf : WeakEquivalence X Y f), ",
+            "forall (hg : WeakEquivalence Y Z g), ",
+            "WeakEquivalence X Z (comp X Y Z g f)"
+        )
+    };
+}
+
+macro_rules! model_category_weak_equivalence_two_of_three_left_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (Y : Obj), forall (Z : Obj), ",
+            "forall (g : Hom Y Z), forall (f : Hom X Y), ",
+            "forall (hgf : WeakEquivalence X Z (comp X Y Z g f)), ",
+            "forall (hg : WeakEquivalence Y Z g), ",
+            "WeakEquivalence X Y f"
+        )
+    };
+}
+
+macro_rules! model_category_weak_equivalence_two_of_three_right_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (Y : Obj), forall (Z : Obj), ",
+            "forall (g : Hom Y Z), forall (f : Hom X Y), ",
+            "forall (hf : WeakEquivalence X Y f), ",
+            "forall (hgf : WeakEquivalence X Z (comp X Y Z g f)), ",
+            "WeakEquivalence Y Z g"
+        )
+    };
+}
+
+macro_rules! model_category_trivial_cofibration_lifting_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), ",
+            "forall (i : Hom A B), forall (p : Hom X Y), ",
+            "forall (hi : Cofibration A B i), ",
+            "forall (hwi : WeakEquivalence A B i), ",
+            "forall (hp : Fibration X Y p), ",
+            "forall (top : Hom A X), forall (bottom : Hom B Y), ",
+            "forall (comm : @Eq.{v} (Hom A Y) (comp A X Y p top) (comp A B Y bottom i)), ",
+            "forall (P : Prop), ",
+            "forall (choose : forall (lift : Hom B X), ",
+            "forall (left_law : @Eq.{v} (Hom A X) (comp A B X lift i) top), ",
+            "forall (right_law : @Eq.{v} (Hom B Y) (comp B X Y p lift) bottom), P), P"
+        )
+    };
+}
+
+macro_rules! model_category_trivial_fibration_lifting_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), ",
+            "forall (i : Hom A B), forall (p : Hom X Y), ",
+            "forall (hi : Cofibration A B i), ",
+            "forall (hp : Fibration X Y p), ",
+            "forall (hwp : WeakEquivalence X Y p), ",
+            "forall (top : Hom A X), forall (bottom : Hom B Y), ",
+            "forall (comm : @Eq.{v} (Hom A Y) (comp A X Y p top) (comp A B Y bottom i)), ",
+            "forall (P : Prop), ",
+            "forall (choose : forall (lift : Hom B X), ",
+            "forall (left_law : @Eq.{v} (Hom A X) (comp A B X lift i) top), ",
+            "forall (right_law : @Eq.{v} (Hom B Y) (comp B X Y p lift) bottom), P), P"
+        )
+    };
+}
+
+macro_rules! model_category_cofibration_trivial_fibration_factorization_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (f : Hom A B), ",
+            "forall (P : Prop), ",
+            "forall (factor : forall (M : Obj), forall (i : Hom A M), ",
+            "forall (p : Hom M B), ",
+            "forall (factor_law : @Eq.{v} (Hom A B) (comp A M B p i) f), ",
+            "forall (hi : Cofibration A M i), ",
+            "forall (hp : Fibration M B p), ",
+            "forall (hwp : WeakEquivalence M B p), P), P"
+        )
+    };
+}
+
+macro_rules! model_category_trivial_cofibration_fibration_factorization_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (f : Hom A B), ",
+            "forall (P : Prop), ",
+            "forall (factor : forall (M : Obj), forall (i : Hom A M), ",
+            "forall (p : Hom M B), ",
+            "forall (factor_law : @Eq.{v} (Hom A B) (comp A M B p i) f), ",
+            "forall (hi : Cofibration A M i), ",
+            "forall (hwi : WeakEquivalence A M i), ",
+            "forall (hp : Fibration M B p), P), P"
+        )
+    };
+}
+
+macro_rules! model_category_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (category_law : ",
+            model_category_category_law_type!(),
+            "), ",
+            "forall (complete_law : HasAllLimits), ",
+            "forall (cocomplete_law : HasAllColimits), ",
+            "forall (cofibration_id_law : ",
+            model_category_cofibration_id_law_type!(),
+            "), ",
+            "forall (fibration_id_law : ",
+            model_category_fibration_id_law_type!(),
+            "), ",
+            "forall (weak_equivalence_id_law : ",
+            model_category_weak_equivalence_id_law_type!(),
+            "), ",
+            "forall (weak_equivalence_comp_law : ",
+            model_category_weak_equivalence_comp_law_type!(),
+            "), ",
+            "forall (weak_equivalence_two_of_three_left_law : ",
+            model_category_weak_equivalence_two_of_three_left_law_type!(),
+            "), ",
+            "forall (weak_equivalence_two_of_three_right_law : ",
+            model_category_weak_equivalence_two_of_three_right_law_type!(),
+            "), ",
+            "forall (trivial_cofibration_lifting_law : ",
+            model_category_trivial_cofibration_lifting_law_type!(),
+            "), ",
+            "forall (trivial_fibration_lifting_law : ",
+            model_category_trivial_fibration_lifting_law_type!(),
+            "), ",
+            "forall (cofibration_trivial_fibration_factorization_law : ",
+            model_category_cofibration_trivial_fibration_factorization_law_type!(),
+            "), ",
+            "forall (trivial_cofibration_fibration_factorization_law : ",
+            model_category_trivial_cofibration_fibration_factorization_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! model_category_law_args_app {
+    () => {
+        "@ModelCategoryLawArgs.{u,v} Obj Hom id comp category_args Cofibration Fibration WeakEquivalence HasAllLimits HasAllColimits"
+    };
+}
+
+macro_rules! model_category_projection_proof {
+    ($target:expr, $selected:literal) => {
+        model_category_abs!(concat!(
+            "fun model_category_args => model_category_args (",
+            $target,
+            ") (fun (category_law : ",
+            model_category_category_law_type!(),
+            ") => fun (complete_law : HasAllLimits) => ",
+            "fun (cocomplete_law : HasAllColimits) => ",
+            "fun (cofibration_id_law : ",
+            model_category_cofibration_id_law_type!(),
+            ") => fun (fibration_id_law : ",
+            model_category_fibration_id_law_type!(),
+            ") => fun (weak_equivalence_id_law : ",
+            model_category_weak_equivalence_id_law_type!(),
+            ") => fun (weak_equivalence_comp_law : ",
+            model_category_weak_equivalence_comp_law_type!(),
+            ") => fun (weak_equivalence_two_of_three_left_law : ",
+            model_category_weak_equivalence_two_of_three_left_law_type!(),
+            ") => fun (weak_equivalence_two_of_three_right_law : ",
+            model_category_weak_equivalence_two_of_three_right_law_type!(),
+            ") => fun (trivial_cofibration_lifting_law : ",
+            model_category_trivial_cofibration_lifting_law_type!(),
+            ") => fun (trivial_fibration_lifting_law : ",
+            model_category_trivial_fibration_lifting_law_type!(),
+            ") => fun (cofibration_trivial_fibration_factorization_law : ",
+            model_category_cofibration_trivial_fibration_factorization_law_type!(),
+            ") => fun (trivial_cofibration_fibration_factorization_law : ",
+            model_category_trivial_cofibration_fibration_factorization_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
     };
 }
 
@@ -13716,6 +13971,17 @@ const CLASSICAL_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[
     },
 ];
 
+const MODEL_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "ModelCategoryLawArgs",
+    universe_params: &["u", "v"],
+    ty: model_category_params!("Prop"),
+    value: model_category_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        model_category_law_binders!("P"),
+        "), P"
+    )),
+}];
+
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "SimplexCategoryLawArgs",
@@ -17714,6 +17980,240 @@ const CLASSICAL_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
             "(comp D C A (comp C B A f g) h) ",
             "(comp D B A f (comp D C B g h)) ",
             "(@category_comp_assoc.{u,v} Obj Hom id comp category_args D C B A f g h))"
+        )),
+    },
+];
+
+const MODEL_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "model_category_definition_intro",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(model_category_law_binders!(concat!(
+            model_category_law_args_app!()
+        )))),
+        proof: model_category_abs!(concat!(
+            "fun category_law => fun complete_law => fun cocomplete_law => ",
+            "fun cofibration_id_law => fun fibration_id_law => ",
+            "fun weak_equivalence_id_law => fun weak_equivalence_comp_law => ",
+            "fun weak_equivalence_two_of_three_left_law => ",
+            "fun weak_equivalence_two_of_three_right_law => ",
+            "fun trivial_cofibration_lifting_law => fun trivial_fibration_lifting_law => ",
+            "fun cofibration_trivial_fibration_factorization_law => ",
+            "fun trivial_cofibration_fibration_factorization_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            model_category_law_binders!("P"),
+            ") => mk category_law complete_law cocomplete_law cofibration_id_law ",
+            "fibration_id_law weak_equivalence_id_law weak_equivalence_comp_law ",
+            "weak_equivalence_two_of_three_left_law weak_equivalence_two_of_three_right_law ",
+            "trivial_cofibration_lifting_law trivial_fibration_lifting_law ",
+            "cofibration_trivial_fibration_factorization_law ",
+            "trivial_cofibration_fibration_factorization_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "model_category_has_category_laws",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_category_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_category_law_type!(),
+            "category_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_complete",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), HasAllLimits"
+        )),
+        proof: model_category_projection_proof!("HasAllLimits", "complete_law"),
+    },
+    TheoremArtifact {
+        name: "model_category_cocomplete",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), HasAllColimits"
+        )),
+        proof: model_category_projection_proof!("HasAllColimits", "cocomplete_law"),
+    },
+    TheoremArtifact {
+        name: "model_category_cofibration_id",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_cofibration_id_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_cofibration_id_law_type!(),
+            "cofibration_id_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_fibration_id",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_fibration_id_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_fibration_id_law_type!(),
+            "fibration_id_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_weak_equivalence_id",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_weak_equivalence_id_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_weak_equivalence_id_law_type!(),
+            "weak_equivalence_id_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_weak_equivalence_comp",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_weak_equivalence_comp_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_weak_equivalence_comp_law_type!(),
+            "weak_equivalence_comp_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_weak_equivalence_two_of_three_left",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_weak_equivalence_two_of_three_left_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_weak_equivalence_two_of_three_left_law_type!(),
+            "weak_equivalence_two_of_three_left_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_weak_equivalence_two_of_three_right",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_weak_equivalence_two_of_three_right_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_weak_equivalence_two_of_three_right_law_type!(),
+            "weak_equivalence_two_of_three_right_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_trivial_cofibration_lifting",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_trivial_cofibration_lifting_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_trivial_cofibration_lifting_law_type!(),
+            "trivial_cofibration_lifting_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_trivial_fibration_lifting",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_trivial_fibration_lifting_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_trivial_fibration_lifting_law_type!(),
+            "trivial_fibration_lifting_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_cofibration_trivial_fibration_factorization",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_cofibration_trivial_fibration_factorization_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_cofibration_trivial_fibration_factorization_law_type!(),
+            "cofibration_trivial_fibration_factorization_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category_trivial_cofibration_fibration_factorization",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            model_category_trivial_cofibration_fibration_factorization_law_type!()
+        )),
+        proof: model_category_projection_proof!(
+            model_category_trivial_cofibration_fibration_factorization_law_type!(),
+            "trivial_cofibration_fibration_factorization_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "model_category",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            model_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: model_category_abs!(concat!(
+            "fun model_category_args => fun (P : Prop) => fun (mk : ",
+            model_category_law_binders!("P"),
+            ") => model_category_args P mk"
+        )),
+    },
+    TheoremArtifact {
+        name: "model_categories",
+        universe_params: &["u", "v"],
+        statement: model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            model_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: model_category_abs!(concat!(
+            "fun model_category_args => fun (P : Prop) => fun (mk : ",
+            model_category_law_binders!("P"),
+            ") => model_category_args P mk"
         )),
     },
 ];
@@ -31332,6 +31832,20 @@ fn run_full() -> Result<(), String> {
         &classical_category_imports,
         &classical_category_source_interfaces,
     )?;
+    let model_category_imports = vec![
+        eq_import.clone(),
+        classical_category.verified_module.clone(),
+    ];
+    let model_category_source_interfaces = vec![
+        eq_source_interface.clone(),
+        classical_category.source_interface.clone(),
+    ];
+    let model_category = build_and_write_module(
+        &proof_root,
+        &MODEL_CATEGORY_MODULE,
+        &model_category_imports,
+        &model_category_source_interfaces,
+    )?;
     let abstract_group_imports = vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
     let abstract_group_source_interfaces = vec![
         eq_source_interface.clone(),
@@ -32655,6 +33169,7 @@ fn run_full() -> Result<(), String> {
         metric,
         iff,
         classical_category,
+        model_category,
         abstract_group,
         abstract_group_kernel,
         abstract_group_image,
