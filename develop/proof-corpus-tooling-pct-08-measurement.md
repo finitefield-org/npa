@@ -98,11 +98,11 @@ Cleanup performed:
   `check-corpus-authoring.sh` as the theorem batch boundary and documents the
   `--promote-plan` / `--promote-materialize` commands as untrusted promotion
   helpers.
-- `skills/prove-theorem/SKILL.md` now uses local module verification and
+- `.agents/skills/prove-theorem/SKILL.md` now uses local module verification and
   `check-corpus-authoring.sh` as the default completion path, reserving
   package/full gates for compatibility, push readiness, release handoff, or an
   explicit user request.
-- `skills/closure-audit/SKILL.md` now prefers the PCT-07 materialize command
+- `.agents/skills/closure-audit/SKILL.md` now prefers the PCT-07 materialize command
   and uses sibling repository paths instead of placeholder absolute paths.
 
 ## Workflow Conclusion

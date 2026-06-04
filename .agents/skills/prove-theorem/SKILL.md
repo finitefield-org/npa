@@ -58,6 +58,7 @@ cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.X::theorem_name /tmp/r
 ```
 
 9. Before finishing an authoring turn, run the local proof checks above and `./scripts/check-fast.sh` when appropriate. For a coherent theorem batch, run `./scripts/check-corpus-authoring.sh`. Do not run `./scripts/check-corpus.sh` as part of every proof attempt or repair loop.
+10. After the theorem proof is verified and the intended theorem batch is complete, commit and push the proof changes. Stage only files that belong to the theorem work; leave unrelated user changes unstaged.
 
 ## Gate Policy
 
@@ -85,12 +86,31 @@ corpus coverage. The legacy `./scripts/check-corpus.sh` name remains a full
 gate wrapper. If the package/full gate is skipped, say so in the final response
 with the local checks that did run.
 
+## Finalization
+
+After the proof is complete and the local gates for that theorem or theorem
+batch pass:
+
+1. Inspect `git status --short` and identify only the files changed for this
+   theorem work.
+2. Stage the theorem source, generated certificates, replay/meta sidecars,
+   manifest/package/index/report updates, README or roadmap updates, and any
+   directly related tooling changes.
+3. Do not stage unrelated dirty files or unrelated user changes, even if they
+   are present in the worktree.
+4. Commit with a concise theorem-focused message.
+5. Push the current branch.
+6. In the final response, report the commit hash, pushed branch, local proof
+   checks run, and any expensive package/full corpus gate that was intentionally
+   skipped.
+
 ## Guardrails
 
 - Prefer adding a small lemma in the same narrow module over widening imports.
 - Rebuild downstream modules only if a changed foundational module changes export hashes.
 - Keep sidecars deterministic and untrusted; final acceptance is the `.npcert` verification result.
 - If the theorem target or intended statement is ambiguous, ask one concise clarification before editing.
+- Never commit or push a theorem proof before certificate verification succeeds.
 
 ## Reference
 

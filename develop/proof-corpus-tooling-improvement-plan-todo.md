@@ -308,7 +308,7 @@ package artifact checks を改めて通す。
   - `CONTRIBUTING.md`
   - `README.md`
   - `develop/proof-corpus-ai-workflow.md`
-  - `skills/prove-theorem/SKILL.md`
+  - `.agents/skills/prove-theorem/SKILL.md`
   - `judge-promote-to-mathlib` skill
 - Deliverables:
   - Before/after timing summary.

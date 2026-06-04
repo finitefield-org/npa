@@ -45,7 +45,7 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 - 独立 checker: `develop/phase8-human.md`, `develop/phase8-ai.md`
 - 高度化: `develop/phase9-human.md`, `develop/phase9-ai.md`
 - proof corpus を AI で拡大する作業: `develop/proof-corpus-ai-workflow.md`
-- 定理証明用 repo-local skill: `skills/prove-theorem/SKILL.md`
+- 定理証明用 repo-local skill: `.agents/skills/prove-theorem/SKILL.md`
 
 ## Rust kernel の設計ルール
 
