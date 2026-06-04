@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Lcm",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "lcm_existence_from_gcd_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun Lcm => fun GcdEvidence => fun LcmEvidence => fun existence_law => fun a => fun b => fun gcd_evidence => existence_law a b gcd_evidence"
+    },
+    {
+      "declaration": "lcm_multiple_left_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Multiple => fun LcmEvidence => fun left_multiple_law => fun a => fun b => fun l => fun lcm_evidence => left_multiple_law a b l lcm_evidence"
+    },
+    {
+      "declaration": "lcm_multiple_right_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Multiple => fun LcmEvidence => fun right_multiple_law => fun a => fun b => fun l => fun lcm_evidence => right_multiple_law a b l lcm_evidence"
+    },
+    {
+      "declaration": "lcm_least_common_multiple_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun LcmEvidence => fun least_law => fun a => fun b => fun m => fun l => fun lcm_evidence => fun divides_am => fun divides_bm => least_law a b m l lcm_evidence divides_am divides_bm"
+    },
+    {
+      "declaration": "lcm_uniqueness_normalized_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun EqualInt => fun NormalizedLcm => fun LcmEvidence => fun uniqueness_law => fun a => fun b => fun l1 => fun l2 => fun ev1 => fun ev2 => fun norm1 => fun norm2 => uniqueness_law a b l1 l2 ev1 ev2 norm1 norm2"
+    },
+    {
+      "declaration": "lcm_normalized_sign_convention_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonnegative => fun NormalizedLcm => fun LcmEvidence => fun normalization_law => fun a => fun b => fun l => fun lcm_evidence => fun nonnegative_l => normalization_law a b l lcm_evidence nonnegative_l"
+    },
+    {
+      "declaration": "gcd_lcm_product_formula_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun Lcm => fun Mul => fun EqualInt => fun ProductFormulaHypothesis => fun product_law => fun a => fun b => fun hypothesis => product_law a b hypothesis"
+    },
+    {
+      "declaration": "lcm_congruence_normal_form_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CongruenceNormalForm => fun LcmEvidence => fun surface_law => fun a => fun b => fun l => fun lcm_evidence => surface_law a b l lcm_evidence"
+    },
+    {
+      "declaration": "lcm_diophantine_normal_form_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun DiophantineNormalForm => fun LcmEvidence => fun surface_law => fun a => fun b => fun l => fun lcm_evidence => surface_law a b l lcm_evidence"
+    },
+    {
+      "declaration": "lcm_no_bezout_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun LcmNormalForm => fun BezoutIdentity => fun NoBezoutAssumption => fun boundary_law => fun lcm_form => fun bezout => boundary_law lcm_form bezout"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Lcm/certificate.npcert"
+  }
+}

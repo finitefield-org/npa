@@ -113,6 +113,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
     &NUMBER_THEORY_EUCLIDEAN_DIVISION_MODULE,
     &NUMBER_THEORY_DESCENT_MODULE,
+    &NUMBER_THEORY_GCD_MODULE,
+    &NUMBER_THEORY_LCM_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
     &ABSTRACT_METRIC_TOPOLOGY_MODULE,
@@ -527,6 +529,32 @@ const NUMBER_THEORY_DESCENT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DESCENT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_GCD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Gcd",
+    source_path: "Proofs/Ai/NumberTheory/Gcd/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Gcd/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Gcd/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Gcd/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Descent"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_GCD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_LCM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Lcm",
+    source_path: "Proofs/Ai/NumberTheory/Lcm/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Lcm/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Lcm/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Lcm/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Gcd"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_LCM_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9479,6 +9507,172 @@ const NUMBER_THEORY_DESCENT_THEOREMS: &[TheoremArtifact] = &[
             "forall (MathematicalDescent : Type), forall (AlgorithmExtraction : Type), forall (ExtractionBoundary : forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), Prop), forall (boundary_law : forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), ExtractionBoundary descent algorithm), forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), ExtractionBoundary descent algorithm",
         proof:
             "fun MathematicalDescent => fun AlgorithmExtraction => fun ExtractionBoundary => fun boundary_law => fun descent => fun algorithm => boundary_law descent algorithm",
+    },
+];
+
+const NUMBER_THEORY_GCD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "gcd_existence_from_euclidean_division_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (EuclideanDivisionWitness : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (existence_law : forall (a : Int), forall (b : Int), forall (euclidean_witness : EuclideanDivisionWitness a b), GcdEvidence a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (euclidean_witness : EuclideanDivisionWitness a b), GcdEvidence a b (Gcd a b)",
+        proof:
+            "fun Int => fun Gcd => fun EuclideanDivisionWitness => fun GcdEvidence => fun existence_law => fun a => fun b => fun euclidean_witness => existence_law a b euclidean_witness",
+    },
+    TheoremArtifact {
+        name: "gcd_divides_left_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (left_divisor_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g a), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g a",
+        proof:
+            "fun Int => fun Divides => fun GcdEvidence => fun left_divisor_law => fun a => fun b => fun g => fun gcd_evidence => left_divisor_law a b g gcd_evidence",
+    },
+    TheoremArtifact {
+        name: "gcd_divides_right_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (right_divisor_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g b), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g b",
+        proof:
+            "fun Int => fun Divides => fun GcdEvidence => fun right_divisor_law => fun a => fun b => fun g => fun gcd_evidence => right_divisor_law a b g gcd_evidence",
+    },
+    TheoremArtifact {
+        name: "gcd_greatest_common_divisor_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (greatest_law : forall (a : Int), forall (b : Int), forall (d : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (divides_da : Divides d a), forall (divides_db : Divides d b), Divides d g), forall (a : Int), forall (b : Int), forall (d : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (divides_da : Divides d a), forall (divides_db : Divides d b), Divides d g",
+        proof:
+            "fun Int => fun Divides => fun GcdEvidence => fun greatest_law => fun a => fun b => fun d => fun g => fun gcd_evidence => fun divides_da => fun divides_db => greatest_law a b d g gcd_evidence divides_da divides_db",
+    },
+    TheoremArtifact {
+        name: "gcd_uniqueness_normalized_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (NormalizedGcd : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (uniqueness_law : forall (a : Int), forall (b : Int), forall (g1 : Int), forall (g2 : Int), forall (ev1 : GcdEvidence a b g1), forall (ev2 : GcdEvidence a b g2), forall (norm1 : NormalizedGcd a b g1), forall (norm2 : NormalizedGcd a b g2), EqualInt g1 g2), forall (a : Int), forall (b : Int), forall (g1 : Int), forall (g2 : Int), forall (ev1 : GcdEvidence a b g1), forall (ev2 : GcdEvidence a b g2), forall (norm1 : NormalizedGcd a b g1), forall (norm2 : NormalizedGcd a b g2), EqualInt g1 g2",
+        proof:
+            "fun Int => fun EqualInt => fun NormalizedGcd => fun GcdEvidence => fun uniqueness_law => fun a => fun b => fun g1 => fun g2 => fun ev1 => fun ev2 => fun norm1 => fun norm2 => uniqueness_law a b g1 g2 ev1 ev2 norm1 norm2",
+    },
+    TheoremArtifact {
+        name: "gcd_symmetry_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (symmetry_law : forall (a : Int), forall (b : Int), EqualInt (Gcd a b) (Gcd b a)), forall (a : Int), forall (b : Int), EqualInt (Gcd a b) (Gcd b a)",
+        proof:
+            "fun Int => fun Gcd => fun EqualInt => fun symmetry_law => fun a => fun b => symmetry_law a b",
+    },
+    TheoremArtifact {
+        name: "gcd_normalized_sign_convention_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonnegative : forall (x : Int), Prop), forall (NormalizedGcd : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (normalization_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (nonnegative_g : Nonnegative g), NormalizedGcd a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (nonnegative_g : Nonnegative g), NormalizedGcd a b g",
+        proof:
+            "fun Int => fun Nonnegative => fun NormalizedGcd => fun GcdEvidence => fun normalization_law => fun a => fun b => fun g => fun gcd_evidence => fun nonnegative_g => normalization_law a b g gcd_evidence nonnegative_g",
+    },
+    TheoremArtifact {
+        name: "gcd_congruence_normal_form_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CongruenceNormalForm : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), CongruenceNormalForm a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), CongruenceNormalForm a b g",
+        proof:
+            "fun Int => fun CongruenceNormalForm => fun GcdEvidence => fun surface_law => fun a => fun b => fun g => fun gcd_evidence => surface_law a b g gcd_evidence",
+    },
+    TheoremArtifact {
+        name: "gcd_diophantine_normal_form_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (DiophantineNormalForm : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), DiophantineNormalForm a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), DiophantineNormalForm a b g",
+        proof:
+            "fun Int => fun DiophantineNormalForm => fun GcdEvidence => fun surface_law => fun a => fun b => fun g => fun gcd_evidence => surface_law a b g gcd_evidence",
+    },
+    TheoremArtifact {
+        name: "gcd_no_bezout_assumption_boundary",
+        universe_params: &[],
+        statement:
+            "forall (GcdNormalForm : Type), forall (BezoutIdentity : Type), forall (NoBezoutAssumption : forall (gcd_form : GcdNormalForm), forall (bezout : BezoutIdentity), Prop), forall (boundary_law : forall (gcd_form : GcdNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption gcd_form bezout), forall (gcd_form : GcdNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption gcd_form bezout",
+        proof:
+            "fun GcdNormalForm => fun BezoutIdentity => fun NoBezoutAssumption => fun boundary_law => fun gcd_form => fun bezout => boundary_law gcd_form bezout",
+    },
+];
+
+const NUMBER_THEORY_LCM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "lcm_existence_from_gcd_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (Lcm : forall (a : Int), forall (b : Int), Int), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (existence_law : forall (a : Int), forall (b : Int), forall (gcd_evidence : GcdEvidence a b (Gcd a b)), LcmEvidence a b (Lcm a b)), forall (a : Int), forall (b : Int), forall (gcd_evidence : GcdEvidence a b (Gcd a b)), LcmEvidence a b (Lcm a b)",
+        proof:
+            "fun Int => fun Gcd => fun Lcm => fun GcdEvidence => fun LcmEvidence => fun existence_law => fun a => fun b => fun gcd_evidence => existence_law a b gcd_evidence",
+    },
+    TheoremArtifact {
+        name: "lcm_multiple_left_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Multiple : forall (base : Int), forall (value : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (left_multiple_law : forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), Multiple a l), forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), Multiple a l",
+        proof:
+            "fun Int => fun Multiple => fun LcmEvidence => fun left_multiple_law => fun a => fun b => fun l => fun lcm_evidence => left_multiple_law a b l lcm_evidence",
+    },
+    TheoremArtifact {
+        name: "lcm_multiple_right_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Multiple : forall (base : Int), forall (value : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (right_multiple_law : forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), Multiple b l), forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), Multiple b l",
+        proof:
+            "fun Int => fun Multiple => fun LcmEvidence => fun right_multiple_law => fun a => fun b => fun l => fun lcm_evidence => right_multiple_law a b l lcm_evidence",
+    },
+    TheoremArtifact {
+        name: "lcm_least_common_multiple_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (least_law : forall (a : Int), forall (b : Int), forall (m : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), forall (divides_am : Divides a m), forall (divides_bm : Divides b m), Divides l m), forall (a : Int), forall (b : Int), forall (m : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), forall (divides_am : Divides a m), forall (divides_bm : Divides b m), Divides l m",
+        proof:
+            "fun Int => fun Divides => fun LcmEvidence => fun least_law => fun a => fun b => fun m => fun l => fun lcm_evidence => fun divides_am => fun divides_bm => least_law a b m l lcm_evidence divides_am divides_bm",
+    },
+    TheoremArtifact {
+        name: "lcm_uniqueness_normalized_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (NormalizedLcm : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (uniqueness_law : forall (a : Int), forall (b : Int), forall (l1 : Int), forall (l2 : Int), forall (ev1 : LcmEvidence a b l1), forall (ev2 : LcmEvidence a b l2), forall (norm1 : NormalizedLcm a b l1), forall (norm2 : NormalizedLcm a b l2), EqualInt l1 l2), forall (a : Int), forall (b : Int), forall (l1 : Int), forall (l2 : Int), forall (ev1 : LcmEvidence a b l1), forall (ev2 : LcmEvidence a b l2), forall (norm1 : NormalizedLcm a b l1), forall (norm2 : NormalizedLcm a b l2), EqualInt l1 l2",
+        proof:
+            "fun Int => fun EqualInt => fun NormalizedLcm => fun LcmEvidence => fun uniqueness_law => fun a => fun b => fun l1 => fun l2 => fun ev1 => fun ev2 => fun norm1 => fun norm2 => uniqueness_law a b l1 l2 ev1 ev2 norm1 norm2",
+    },
+    TheoremArtifact {
+        name: "lcm_normalized_sign_convention_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonnegative : forall (x : Int), Prop), forall (NormalizedLcm : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (normalization_law : forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), forall (nonnegative_l : Nonnegative l), NormalizedLcm a b l), forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), forall (nonnegative_l : Nonnegative l), NormalizedLcm a b l",
+        proof:
+            "fun Int => fun Nonnegative => fun NormalizedLcm => fun LcmEvidence => fun normalization_law => fun a => fun b => fun l => fun lcm_evidence => fun nonnegative_l => normalization_law a b l lcm_evidence nonnegative_l",
+    },
+    TheoremArtifact {
+        name: "gcd_lcm_product_formula_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (Lcm : forall (a : Int), forall (b : Int), Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (ProductFormulaHypothesis : forall (a : Int), forall (b : Int), Prop), forall (product_law : forall (a : Int), forall (b : Int), forall (hypothesis : ProductFormulaHypothesis a b), EqualInt (Mul (Gcd a b) (Lcm a b)) (Mul a b)), forall (a : Int), forall (b : Int), forall (hypothesis : ProductFormulaHypothesis a b), EqualInt (Mul (Gcd a b) (Lcm a b)) (Mul a b)",
+        proof:
+            "fun Int => fun Gcd => fun Lcm => fun Mul => fun EqualInt => fun ProductFormulaHypothesis => fun product_law => fun a => fun b => fun hypothesis => product_law a b hypothesis",
+    },
+    TheoremArtifact {
+        name: "lcm_congruence_normal_form_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CongruenceNormalForm : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), CongruenceNormalForm a b l), forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), CongruenceNormalForm a b l",
+        proof:
+            "fun Int => fun CongruenceNormalForm => fun LcmEvidence => fun surface_law => fun a => fun b => fun l => fun lcm_evidence => surface_law a b l lcm_evidence",
+    },
+    TheoremArtifact {
+        name: "lcm_diophantine_normal_form_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (DiophantineNormalForm : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (LcmEvidence : forall (a : Int), forall (b : Int), forall (l : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), DiophantineNormalForm a b l), forall (a : Int), forall (b : Int), forall (l : Int), forall (lcm_evidence : LcmEvidence a b l), DiophantineNormalForm a b l",
+        proof:
+            "fun Int => fun DiophantineNormalForm => fun LcmEvidence => fun surface_law => fun a => fun b => fun l => fun lcm_evidence => surface_law a b l lcm_evidence",
+    },
+    TheoremArtifact {
+        name: "lcm_no_bezout_assumption_boundary",
+        universe_params: &[],
+        statement:
+            "forall (LcmNormalForm : Type), forall (BezoutIdentity : Type), forall (NoBezoutAssumption : forall (lcm_form : LcmNormalForm), forall (bezout : BezoutIdentity), Prop), forall (boundary_law : forall (lcm_form : LcmNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption lcm_form bezout), forall (lcm_form : LcmNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption lcm_form bezout",
+        proof:
+            "fun LcmNormalForm => fun BezoutIdentity => fun NoBezoutAssumption => fun boundary_law => fun lcm_form => fun bezout => boundary_law lcm_form bezout",
     },
 ];
 
@@ -37936,6 +38130,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_DIVISIBILITY_MODULE.module
         || config.module == NUMBER_THEORY_EUCLIDEAN_DIVISION_MODULE.module
         || config.module == NUMBER_THEORY_DESCENT_MODULE.module
+        || config.module == NUMBER_THEORY_GCD_MODULE.module
+        || config.module == NUMBER_THEORY_LCM_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

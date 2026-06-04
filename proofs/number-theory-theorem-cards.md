@@ -94,6 +94,23 @@ fraction, Diophantine, and extraction-boundary surfaces.
 These declarations are still `L1 Evidence package` interfaces. They do not
 assume gcd, prime factorization, elliptic curves, or modularity.
 
+## Gcd And Lcm Normal-Form Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.Gcd` and
+`Proofs.Ai.NumberTheory.Lcm`.
+
+The gcd module records checked theorem targets for Euclidean-division-backed
+gcd existence, left and right divisor projections, greatest-common-divisor
+characterization, normalized uniqueness, symmetry, normalized sign convention,
+and the normal forms consumed by congruence and Diophantine reduction. The lcm
+module records lcm existence from gcd evidence, left and right multiple
+projections, least-common-multiple characterization, normalized uniqueness,
+normalized sign convention, an explicit `gcd_lcm` product-formula hypothesis,
+and the matching congruence and Diophantine normal forms.
+
+These modules still do not assume Bezout, Euclid's lemma, Gauss's lemma, prime
+factorization, CRT, elliptic curves, or modularity.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

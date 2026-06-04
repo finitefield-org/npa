@@ -163,6 +163,42 @@ theorems = ["finite_descent_step_packaged", "well_founded_minimization_packaged"
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Gcd"
+source = "Proofs/Ai/NumberTheory/Gcd/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Gcd/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Gcd/meta.json"
+replay = "Proofs/Ai/NumberTheory/Gcd/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:851a32cd036cb1f43a9215ac37b9850d69b75a6200097c9d38c4562fe739f3fd"
+certificate_file_sha256 = "sha256:4877f170c3a44b7b7dcc6ddea88473ec43c85ec106bfe2f72124e43c9ddbd44e"
+export_hash = "sha256:801530494c74c95f9f02d4b5b2be643d3a614688f64a727b09c6123a82fa65f9"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:8034f12093881fa7d8df0e895d3b8929239bc3739b684268c66043ece89bd4af"
+imports = ["Proofs.Ai.NumberTheory.Descent"]
+definitions = []
+theorems = ["gcd_existence_from_euclidean_division_packaged", "gcd_divides_left_packaged", "gcd_divides_right_packaged", "gcd_greatest_common_divisor_packaged", "gcd_uniqueness_normalized_packaged", "gcd_symmetry_packaged", "gcd_normalized_sign_convention_packaged", "gcd_congruence_normal_form_surface", "gcd_diophantine_normal_form_surface", "gcd_no_bezout_assumption_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Lcm"
+source = "Proofs/Ai/NumberTheory/Lcm/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Lcm/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Lcm/meta.json"
+replay = "Proofs/Ai/NumberTheory/Lcm/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:21eeaaf62e7f19a12728b9f1fa807aa82039b9c0e2405e9a26e41acc12d90326"
+certificate_file_sha256 = "sha256:7969260986b0e7755e797a2d22f3fa45496aa13b0249652ddbf4def8f4ebc65b"
+export_hash = "sha256:405dafd865bebdebe189b2cf9558b749c7b8415113205d4f6129f05b0dfb71d7"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:75ad4699286563bd05b8c2041dc3b29929fb12569ddec56adc0d1168a7068983"
+imports = ["Proofs.Ai.NumberTheory.Gcd"]
+definitions = []
+theorems = ["lcm_existence_from_gcd_packaged", "lcm_multiple_left_packaged", "lcm_multiple_right_packaged", "lcm_least_common_multiple_packaged", "lcm_uniqueness_normalized_packaged", "lcm_normalized_sign_convention_packaged", "gcd_lcm_product_formula_packaged", "lcm_congruence_normal_form_surface", "lcm_diophantine_normal_form_surface", "lcm_no_bezout_assumption_boundary"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"

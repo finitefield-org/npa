@@ -1,0 +1,41 @@
+import Proofs.Ai.NumberTheory.Descent
+
+theorem gcd_existence_from_euclidean_division_packaged :
+  forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (EuclideanDivisionWitness : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (existence_law : forall (a : Int), forall (b : Int), forall (euclidean_witness : EuclideanDivisionWitness a b), GcdEvidence a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (euclidean_witness : EuclideanDivisionWitness a b), GcdEvidence a b (Gcd a b) :=
+  fun Int => fun Gcd => fun EuclideanDivisionWitness => fun GcdEvidence => fun existence_law => fun a => fun b => fun euclidean_witness => existence_law a b euclidean_witness
+
+theorem gcd_divides_left_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (left_divisor_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g a), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g a :=
+  fun Int => fun Divides => fun GcdEvidence => fun left_divisor_law => fun a => fun b => fun g => fun gcd_evidence => left_divisor_law a b g gcd_evidence
+
+theorem gcd_divides_right_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (right_divisor_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g b), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), Divides g b :=
+  fun Int => fun Divides => fun GcdEvidence => fun right_divisor_law => fun a => fun b => fun g => fun gcd_evidence => right_divisor_law a b g gcd_evidence
+
+theorem gcd_greatest_common_divisor_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (greatest_law : forall (a : Int), forall (b : Int), forall (d : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (divides_da : Divides d a), forall (divides_db : Divides d b), Divides d g), forall (a : Int), forall (b : Int), forall (d : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (divides_da : Divides d a), forall (divides_db : Divides d b), Divides d g :=
+  fun Int => fun Divides => fun GcdEvidence => fun greatest_law => fun a => fun b => fun d => fun g => fun gcd_evidence => fun divides_da => fun divides_db => greatest_law a b d g gcd_evidence divides_da divides_db
+
+theorem gcd_uniqueness_normalized_packaged :
+  forall (Int : Type), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (NormalizedGcd : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (uniqueness_law : forall (a : Int), forall (b : Int), forall (g1 : Int), forall (g2 : Int), forall (ev1 : GcdEvidence a b g1), forall (ev2 : GcdEvidence a b g2), forall (norm1 : NormalizedGcd a b g1), forall (norm2 : NormalizedGcd a b g2), EqualInt g1 g2), forall (a : Int), forall (b : Int), forall (g1 : Int), forall (g2 : Int), forall (ev1 : GcdEvidence a b g1), forall (ev2 : GcdEvidence a b g2), forall (norm1 : NormalizedGcd a b g1), forall (norm2 : NormalizedGcd a b g2), EqualInt g1 g2 :=
+  fun Int => fun EqualInt => fun NormalizedGcd => fun GcdEvidence => fun uniqueness_law => fun a => fun b => fun g1 => fun g2 => fun ev1 => fun ev2 => fun norm1 => fun norm2 => uniqueness_law a b g1 g2 ev1 ev2 norm1 norm2
+
+theorem gcd_symmetry_packaged :
+  forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (symmetry_law : forall (a : Int), forall (b : Int), EqualInt (Gcd a b) (Gcd b a)), forall (a : Int), forall (b : Int), EqualInt (Gcd a b) (Gcd b a) :=
+  fun Int => fun Gcd => fun EqualInt => fun symmetry_law => fun a => fun b => symmetry_law a b
+
+theorem gcd_normalized_sign_convention_packaged :
+  forall (Int : Type), forall (Nonnegative : forall (x : Int), Prop), forall (NormalizedGcd : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (normalization_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (nonnegative_g : Nonnegative g), NormalizedGcd a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (nonnegative_g : Nonnegative g), NormalizedGcd a b g :=
+  fun Int => fun Nonnegative => fun NormalizedGcd => fun GcdEvidence => fun normalization_law => fun a => fun b => fun g => fun gcd_evidence => fun nonnegative_g => normalization_law a b g gcd_evidence nonnegative_g
+
+theorem gcd_congruence_normal_form_surface :
+  forall (Int : Type), forall (CongruenceNormalForm : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), CongruenceNormalForm a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), CongruenceNormalForm a b g :=
+  fun Int => fun CongruenceNormalForm => fun GcdEvidence => fun surface_law => fun a => fun b => fun g => fun gcd_evidence => surface_law a b g gcd_evidence
+
+theorem gcd_diophantine_normal_form_surface :
+  forall (Int : Type), forall (DiophantineNormalForm : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), DiophantineNormalForm a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), DiophantineNormalForm a b g :=
+  fun Int => fun DiophantineNormalForm => fun GcdEvidence => fun surface_law => fun a => fun b => fun g => fun gcd_evidence => surface_law a b g gcd_evidence
+
+theorem gcd_no_bezout_assumption_boundary :
+  forall (GcdNormalForm : Type), forall (BezoutIdentity : Type), forall (NoBezoutAssumption : forall (gcd_form : GcdNormalForm), forall (bezout : BezoutIdentity), Prop), forall (boundary_law : forall (gcd_form : GcdNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption gcd_form bezout), forall (gcd_form : GcdNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption gcd_form bezout :=
+  fun GcdNormalForm => fun BezoutIdentity => fun NoBezoutAssumption => fun boundary_law => fun gcd_form => fun bezout => boundary_law gcd_form bezout

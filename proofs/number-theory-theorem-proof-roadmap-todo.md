@@ -291,7 +291,7 @@ later in the file.
 
 ### NT-T04 Add Gcd And Lcm Normal Forms
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T03`
 - Areas: `Proofs/Ai/NumberTheory/Gcd/`, `Proofs/Ai/NumberTheory/Lcm/`
 - Tasks:
@@ -309,8 +309,14 @@ later in the file.
   - No theorem assumes Bezout before `NT-T05`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Gcd`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Lcm`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Gcd`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Lcm`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Gcd|Lcm|gcd_lcm|normalized" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T05 Prove Euclid Algorithm And Bezout Package
 

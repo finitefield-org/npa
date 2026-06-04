@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Gcd",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "gcd_existence_from_euclidean_division_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun EuclideanDivisionWitness => fun GcdEvidence => fun existence_law => fun a => fun b => fun euclidean_witness => existence_law a b euclidean_witness"
+    },
+    {
+      "declaration": "gcd_divides_left_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun GcdEvidence => fun left_divisor_law => fun a => fun b => fun g => fun gcd_evidence => left_divisor_law a b g gcd_evidence"
+    },
+    {
+      "declaration": "gcd_divides_right_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun GcdEvidence => fun right_divisor_law => fun a => fun b => fun g => fun gcd_evidence => right_divisor_law a b g gcd_evidence"
+    },
+    {
+      "declaration": "gcd_greatest_common_divisor_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun GcdEvidence => fun greatest_law => fun a => fun b => fun d => fun g => fun gcd_evidence => fun divides_da => fun divides_db => greatest_law a b d g gcd_evidence divides_da divides_db"
+    },
+    {
+      "declaration": "gcd_uniqueness_normalized_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun EqualInt => fun NormalizedGcd => fun GcdEvidence => fun uniqueness_law => fun a => fun b => fun g1 => fun g2 => fun ev1 => fun ev2 => fun norm1 => fun norm2 => uniqueness_law a b g1 g2 ev1 ev2 norm1 norm2"
+    },
+    {
+      "declaration": "gcd_symmetry_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun EqualInt => fun symmetry_law => fun a => fun b => symmetry_law a b"
+    },
+    {
+      "declaration": "gcd_normalized_sign_convention_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonnegative => fun NormalizedGcd => fun GcdEvidence => fun normalization_law => fun a => fun b => fun g => fun gcd_evidence => fun nonnegative_g => normalization_law a b g gcd_evidence nonnegative_g"
+    },
+    {
+      "declaration": "gcd_congruence_normal_form_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CongruenceNormalForm => fun GcdEvidence => fun surface_law => fun a => fun b => fun g => fun gcd_evidence => surface_law a b g gcd_evidence"
+    },
+    {
+      "declaration": "gcd_diophantine_normal_form_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun DiophantineNormalForm => fun GcdEvidence => fun surface_law => fun a => fun b => fun g => fun gcd_evidence => surface_law a b g gcd_evidence"
+    },
+    {
+      "declaration": "gcd_no_bezout_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun GcdNormalForm => fun BezoutIdentity => fun NoBezoutAssumption => fun boundary_law => fun gcd_form => fun bezout => boundary_law gcd_form bezout"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Gcd/certificate.npcert"
+  }
+}

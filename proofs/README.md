@@ -76,6 +76,14 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/Descent/`: certificate-backed finite-descent and minimization
   interface for later gcd, continued-fraction, and Diophantine modules, with well-founded
   measures and algorithm extraction kept as explicit law-package evidence.
+- `Proofs/Ai/NumberTheory/Gcd/`: certificate-backed gcd normal-form interface derived from
+  Euclidean-division or explicit law evidence, preserving divisor projections, greatest-common-
+  divisor characterization, normalized sign convention, symmetry, uniqueness, and congruence/
+  Diophantine reduction surfaces without assuming Bezout.
+- `Proofs/Ai/NumberTheory/Lcm/`: certificate-backed lcm normal-form interface over gcd evidence,
+  preserving multiple projections, least-common-multiple characterization, normalized sign
+  convention, uniqueness, the explicit `gcd_lcm` product formula hypothesis, and downstream
+  congruence/Diophantine reduction surfaces without assuming Bezout.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
