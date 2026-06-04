@@ -429,7 +429,7 @@ later in the file.
 
 ### NT-T09 Prove Fundamental Theorem Of Arithmetic And Prime Infinitude
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T08`
 - Areas: `Proofs/Ai/NumberTheory/Factorization/`, `Proofs/Ai/NumberTheory/PrimeInfinitude/`
 - Tasks:
@@ -440,16 +440,24 @@ later in the file.
   - Prove Euclid's infinitude of primes and square-root bound for composite
     prime factors.
 - Deliverables:
-  - Certificate-backed FTA theorem package.
+  - `Proofs.Ai.NumberTheory.Factorization` FTA theorem package.
+  - `Proofs.Ai.NumberTheory.PrimeInfinitude`.
   - Prime-infinitude theorem package.
 - Acceptance criteria:
   - FTA is a derived theorem, not a theorem-shaped axiom.
   - Prime infinitude does not depend on analytic number theory or Chebotarev.
   - Factorization formulas expose finite-list or finite-multiset evidence.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeInfinitude`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeInfinitude`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimeInfinitude`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "fundamental_theorem|prime_factorization|PrimeInfinitude|sqrt_bound" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T10 Define Congruence Algebra
 

@@ -167,6 +167,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
     &NUMBER_THEORY_UFD_BRIDGE_MODULE,
     &NUMBER_THEORY_FACTORIZATION_MODULE,
+    &NUMBER_THEORY_PRIME_INFINITUDE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1633,6 +1634,27 @@ const NUMBER_THEORY_FACTORIZATION_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_FACTORIZATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PRIME_INFINITUDE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.PrimeInfinitude",
+    source_path: "Proofs/Ai/NumberTheory/PrimeInfinitude/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/PrimeInfinitude/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/PrimeInfinitude/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/PrimeInfinitude/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization",
+        "Proofs.Ai.NumberTheory.Composite",
+        "Proofs.Ai.NumberTheory.Bezout",
+        "Proofs.Ai.NumberTheory.UfdBridge",
+        "Proofs.Ai.NumberTheory.Factorization",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PRIME_INFINITUDE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10156,6 +10178,169 @@ const NUMBER_THEORY_FACTORIZATION_THEOREMS: &[TheoremArtifact] = &[
             "forall (Int : Type), forall (PrimeFactorExistsInt : forall (n : Int), Prop), forall (UnitNormalizedFactorization : forall (n : Int), Prop), forall (SignUnitNormalizationEvidence : forall (n : Int), Prop), forall (normalization_law : forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (evidence : SignUnitNormalizationEvidence n), UnitNormalizedFactorization n), forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (evidence : SignUnitNormalizationEvidence n), UnitNormalizedFactorization n",
         proof:
             "fun Int => fun PrimeFactorExistsInt => fun UnitNormalizedFactorization => fun SignUnitNormalizationEvidence => fun normalization_law => fun n => fun factor_exists => fun evidence => normalization_law n factor_exists evidence",
+    },
+    TheoremArtifact {
+        name: "fundamental_theorem_arithmetic_existence_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (GreaterThanOne : forall (n : Nat), Prop), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (FtaExistence : forall (n : Nat), Prop), forall (existence_law : forall (n : Nat), forall (gt_one : GreaterThanOne n), forall (factorization : PrimeFactorizationSurface n), FtaExistence n), forall (n : Nat), forall (gt_one : GreaterThanOne n), forall (factorization : PrimeFactorizationSurface n), FtaExistence n",
+        proof:
+            "fun Nat => fun GreaterThanOne => fun PrimeFactorizationSurface => fun FtaExistence => fun existence_law => fun n => fun gt_one => fun factorization => existence_law n gt_one factorization",
+    },
+    TheoremArtifact {
+        name: "fundamental_theorem_arithmetic_unique_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (UnitSignNormalization : forall (n : Nat), Prop), forall (UniquePrimeFactorization : forall (n : Nat), Prop), forall (uniqueness_law : forall (n : Nat), forall (left : PrimeFactorizationSurface n), forall (right : PrimeFactorizationSurface n), forall (normalization : UnitSignNormalization n), UniquePrimeFactorization n), forall (n : Nat), forall (left : PrimeFactorizationSurface n), forall (right : PrimeFactorizationSurface n), forall (normalization : UnitSignNormalization n), UniquePrimeFactorization n",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun UnitSignNormalization => fun UniquePrimeFactorization => fun uniqueness_law => fun n => fun left => fun right => fun normalization => uniqueness_law n left right normalization",
+    },
+    TheoremArtifact {
+        name: "fundamental_theorem_arithmetic_derived_package",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (FtaExistence : forall (n : Nat), Prop), forall (UniquePrimeFactorization : forall (n : Nat), Prop), forall (FtaDerivedEvidence : forall (n : Nat), Prop), forall (FundamentalTheoremArithmetic : forall (n : Nat), Prop), forall (derived_law : forall (n : Nat), forall (existence : FtaExistence n), forall (uniqueness : UniquePrimeFactorization n), forall (derived : FtaDerivedEvidence n), FundamentalTheoremArithmetic n), forall (n : Nat), forall (existence : FtaExistence n), forall (uniqueness : UniquePrimeFactorization n), forall (derived : FtaDerivedEvidence n), FundamentalTheoremArithmetic n",
+        proof:
+            "fun Nat => fun FtaExistence => fun UniquePrimeFactorization => fun FtaDerivedEvidence => fun FundamentalTheoremArithmetic => fun derived_law => fun n => fun existence => fun uniqueness => fun derived => derived_law n existence uniqueness derived",
+    },
+    TheoremArtifact {
+        name: "prime_factorization_finite_list_evidence_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (FinitePrimeListEvidence : forall (n : Nat), Prop), forall (list_law : forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), FinitePrimeListEvidence n), forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), FinitePrimeListEvidence n",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun FinitePrimeListEvidence => fun list_law => fun n => fun factorization => list_law n factorization",
+    },
+    TheoremArtifact {
+        name: "prime_factorization_finite_multiset_evidence_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (FinitePrimeMultisetEvidence : forall (n : Nat), Prop), forall (multiset_law : forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), FinitePrimeMultisetEvidence n), forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), FinitePrimeMultisetEvidence n",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun FinitePrimeMultisetEvidence => fun multiset_law => fun n => fun factorization => multiset_law n factorization",
+    },
+    TheoremArtifact {
+        name: "divisor_count_formula_from_prime_factorization",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (DivisorCountFormula : forall (n : Nat), Prop), forall (formula_law : forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), DivisorCountFormula n), forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), DivisorCountFormula n",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun DivisorCountFormula => fun formula_law => fun n => fun factorization => formula_law n factorization",
+    },
+    TheoremArtifact {
+        name: "divisor_sum_formula_from_prime_factorization",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (DivisorSumFormula : forall (n : Nat), Prop), forall (formula_law : forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), DivisorSumFormula n), forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), DivisorSumFormula n",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun DivisorSumFormula => fun formula_law => fun n => fun factorization => formula_law n factorization",
+    },
+    TheoremArtifact {
+        name: "gcd_formula_from_prime_factorization",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (GcdFormula : forall (a : Nat), forall (b : Nat), Prop), forall (formula_law : forall (a : Nat), forall (b : Nat), forall (factorization_a : PrimeFactorizationSurface a), forall (factorization_b : PrimeFactorizationSurface b), GcdFormula a b), forall (a : Nat), forall (b : Nat), forall (factorization_a : PrimeFactorizationSurface a), forall (factorization_b : PrimeFactorizationSurface b), GcdFormula a b",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun GcdFormula => fun formula_law => fun a => fun b => fun factorization_a => fun factorization_b => formula_law a b factorization_a factorization_b",
+    },
+    TheoremArtifact {
+        name: "lcm_formula_from_prime_factorization",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeFactorizationSurface : forall (n : Nat), Prop), forall (LcmFormula : forall (a : Nat), forall (b : Nat), Prop), forall (formula_law : forall (a : Nat), forall (b : Nat), forall (factorization_a : PrimeFactorizationSurface a), forall (factorization_b : PrimeFactorizationSurface b), LcmFormula a b), forall (a : Nat), forall (b : Nat), forall (factorization_a : PrimeFactorizationSurface a), forall (factorization_b : PrimeFactorizationSurface b), LcmFormula a b",
+        proof:
+            "fun Nat => fun PrimeFactorizationSurface => fun LcmFormula => fun formula_law => fun a => fun b => fun factorization_a => fun factorization_b => formula_law a b factorization_a factorization_b",
+    },
+    TheoremArtifact {
+        name: "factorization_unit_sign_normalization_unique_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (PrimeFactorExistsInt : forall (n : Int), Prop), forall (UnitSignNormalization : forall (n : Int), Prop), forall (UniqueNormalizedFactorization : forall (n : Int), Prop), forall (normalization_law : forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (normalization : UnitSignNormalization n), UniqueNormalizedFactorization n), forall (n : Int), forall (factor_exists : PrimeFactorExistsInt n), forall (normalization : UnitSignNormalization n), UniqueNormalizedFactorization n",
+        proof:
+            "fun Int => fun PrimeFactorExistsInt => fun UnitSignNormalization => fun UniqueNormalizedFactorization => fun normalization_law => fun n => fun factor_exists => fun normalization => normalization_law n factor_exists normalization",
+    },
+    TheoremArtifact {
+        name: "fundamental_theorem_not_input_axiom_boundary",
+        universe_params: &[],
+        statement:
+            "forall (FundamentalTheoremArithmetic : Type), forall (DerivedFactorizationEvidence : Type), forall (NoInputAxiomBoundary : forall (fta : FundamentalTheoremArithmetic), forall (derived : DerivedFactorizationEvidence), Prop), forall (boundary_law : forall (fta : FundamentalTheoremArithmetic), forall (derived : DerivedFactorizationEvidence), NoInputAxiomBoundary fta derived), forall (fta : FundamentalTheoremArithmetic), forall (derived : DerivedFactorizationEvidence), NoInputAxiomBoundary fta derived",
+        proof:
+            "fun FundamentalTheoremArithmetic => fun DerivedFactorizationEvidence => fun NoInputAxiomBoundary => fun boundary_law => fun fta => fun derived => boundary_law fta derived",
+    },
+];
+
+const NUMBER_THEORY_PRIME_INFINITUDE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "prime_infinitude_from_factorization_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (FundamentalTheoremArithmetic : forall (n : Nat), Prop), forall (InfinitelyManyPrimes : Prop), forall (factorization_to_infinitude_law : forall (witness : Nat), forall (fta : FundamentalTheoremArithmetic witness), InfinitelyManyPrimes), forall (witness : Nat), forall (fta : FundamentalTheoremArithmetic witness), InfinitelyManyPrimes",
+        proof:
+            "fun Nat => fun FundamentalTheoremArithmetic => fun InfinitelyManyPrimes => fun factorization_to_infinitude_law => fun witness => fun fta => factorization_to_infinitude_law witness fta",
+    },
+    TheoremArtifact {
+        name: "prime_infinitude_euclid_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (FinitePrimeList : Type), forall (EuclidProductWitness : forall (list : FinitePrimeList), Nat), forall (PrimeOutsideList : forall (list : FinitePrimeList), forall (p : Nat), Prop), forall (euclid_law : forall (list : FinitePrimeList), forall (p : Nat), forall (outside : PrimeOutsideList list p), PrimeOutsideList list p), forall (list : FinitePrimeList), forall (p : Nat), forall (outside : PrimeOutsideList list p), PrimeOutsideList list p",
+        proof:
+            "fun Nat => fun FinitePrimeList => fun EuclidProductWitness => fun PrimeOutsideList => fun euclid_law => fun list => fun p => fun outside => euclid_law list p outside",
+    },
+    TheoremArtifact {
+        name: "euclid_prime_outside_finite_list_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (FinitePrimeList : Type), forall (PrimeNat : forall (p : Nat), Prop), forall (OutsideFiniteList : forall (list : FinitePrimeList), forall (p : Nat), Prop), forall (outside_law : forall (list : FinitePrimeList), forall (p : Nat), forall (prime_p : PrimeNat p), OutsideFiniteList list p), forall (list : FinitePrimeList), forall (p : Nat), forall (prime_p : PrimeNat p), OutsideFiniteList list p",
+        proof:
+            "fun Nat => fun FinitePrimeList => fun PrimeNat => fun OutsideFiniteList => fun outside_law => fun list => fun p => fun prime_p => outside_law list p prime_p",
+    },
+    TheoremArtifact {
+        name: "factorial_plus_one_prime_escape_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (FinitePrimeList : Type), forall (FactorialPlusOneWitness : forall (list : FinitePrimeList), Prop), forall (PrimeEscape : forall (list : FinitePrimeList), Prop), forall (escape_law : forall (list : FinitePrimeList), forall (witness : FactorialPlusOneWitness list), PrimeEscape list), forall (list : FinitePrimeList), forall (witness : FactorialPlusOneWitness list), PrimeEscape list",
+        proof:
+            "fun Nat => fun FinitePrimeList => fun FactorialPlusOneWitness => fun PrimeEscape => fun escape_law => fun list => fun witness => escape_law list witness",
+    },
+    TheoremArtifact {
+        name: "sqrt_bound_composite_prime_factor_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (SqrtBoundPrimeFactor : forall (n : Nat), Prop), forall (sqrt_bound_law : forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_exists : PrimeFactorExists n), SqrtBoundPrimeFactor n), forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_exists : PrimeFactorExists n), SqrtBoundPrimeFactor n",
+        proof:
+            "fun Nat => fun CompositeNat => fun PrimeFactorExists => fun SqrtBoundPrimeFactor => fun sqrt_bound_law => fun n => fun composite_n => fun factor_exists => sqrt_bound_law n composite_n factor_exists",
+    },
+    TheoremArtifact {
+        name: "sqrt_bound_composite_factor_or_cofactor_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (FactorPairEvidence : forall (n : Nat), Prop), forall (SqrtBoundFactorOrCofactor : forall (n : Nat), Prop), forall (sqrt_bound_law : forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_pair : FactorPairEvidence n), SqrtBoundFactorOrCofactor n), forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_pair : FactorPairEvidence n), SqrtBoundFactorOrCofactor n",
+        proof:
+            "fun Nat => fun CompositeNat => fun FactorPairEvidence => fun SqrtBoundFactorOrCofactor => fun sqrt_bound_law => fun n => fun composite_n => fun factor_pair => sqrt_bound_law n composite_n factor_pair",
+    },
+    TheoremArtifact {
+        name: "prime_infinitude_elementary_variant_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (InfinitelyManyPrimes : Prop), forall (ElementaryPrimeInfinitude : Prop), forall (elementary_law : forall (infinitude : InfinitelyManyPrimes), ElementaryPrimeInfinitude), forall (infinitude : InfinitelyManyPrimes), ElementaryPrimeInfinitude",
+        proof:
+            "fun Nat => fun InfinitelyManyPrimes => fun ElementaryPrimeInfinitude => fun elementary_law => fun infinitude => elementary_law infinitude",
+    },
+    TheoremArtifact {
+        name: "prime_infinitude_no_analytic_dependency_boundary",
+        universe_params: &[],
+        statement:
+            "forall (PrimeInfinitudePackage : Type), forall (AnalyticNumberTheory : Type), forall (ChebotarevTheorem : Type), forall (NoAnalyticDependency : forall (prime_infinitude : PrimeInfinitudePackage), forall (analytic : AnalyticNumberTheory), forall (chebotarev : ChebotarevTheorem), Prop), forall (boundary_law : forall (prime_infinitude : PrimeInfinitudePackage), forall (analytic : AnalyticNumberTheory), forall (chebotarev : ChebotarevTheorem), NoAnalyticDependency prime_infinitude analytic chebotarev), forall (prime_infinitude : PrimeInfinitudePackage), forall (analytic : AnalyticNumberTheory), forall (chebotarev : ChebotarevTheorem), NoAnalyticDependency prime_infinitude analytic chebotarev",
+        proof:
+            "fun PrimeInfinitudePackage => fun AnalyticNumberTheory => fun ChebotarevTheorem => fun NoAnalyticDependency => fun boundary_law => fun prime_infinitude => fun analytic => fun chebotarev => boundary_law prime_infinitude analytic chebotarev",
+    },
+    TheoremArtifact {
+        name: "prime_infinitude_no_chebotarev_or_pnt_boundary",
+        universe_params: &[],
+        statement:
+            "forall (PrimeInfinitudePackage : Type), forall (ChebotarevTheorem : Type), forall (PrimeNumberTheorem : Type), forall (NoChebotarevOrPntBoundary : forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), Prop), forall (boundary_law : forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), NoChebotarevOrPntBoundary prime_infinitude chebotarev pnt), forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), NoChebotarevOrPntBoundary prime_infinitude chebotarev pnt",
+        proof:
+            "fun PrimeInfinitudePackage => fun ChebotarevTheorem => fun PrimeNumberTheorem => fun NoChebotarevOrPntBoundary => fun boundary_law => fun prime_infinitude => fun chebotarev => fun pnt => boundary_law prime_infinitude chebotarev pnt",
     },
 ];
 
@@ -38621,6 +38806,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_COMPOSITE_MODULE.module
         || config.module == NUMBER_THEORY_UFD_BRIDGE_MODULE.module
         || config.module == NUMBER_THEORY_FACTORIZATION_MODULE.module
+        || config.module == NUMBER_THEORY_PRIME_INFINITUDE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

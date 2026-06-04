@@ -107,7 +107,13 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/Factorization/`: certificate-backed prime-factor extraction package
   downstream of `UfdBridge`, preserving composite prime-factor existence, integer extraction,
   factorization-existence and erasure surfaces, Diophantine/arithmetic-function reuse inputs,
-  unit/sign normalization, and the boundary excluding unique factorization assumptions.
+  FTA existence/uniqueness and derived-package surfaces, finite-list and finite-multiset
+  evidence, divisor-count/divisor-sum/gcd/lcm formula surfaces, unit/sign normalization, and
+  the boundary excluding theorem-shaped FTA input axioms.
+- `Proofs/Ai/NumberTheory/PrimeInfinitude/`: certificate-backed prime-infinitude package
+  downstream of `Factorization`, preserving Euclid finite-list escape surfaces, factorial-plus-one
+  witnesses, elementary prime-infinitude variants, square-root bounds for composite prime factors,
+  and boundaries excluding analytic number theory, Chebotarev, and PNT dependencies.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

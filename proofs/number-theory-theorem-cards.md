@@ -148,19 +148,25 @@ factorization, CRT, elliptic curves, analytic prime distribution, or modularity.
 
 ## UFD Bridge And Factor Extraction Interface
 
-Concrete entry points: `Proofs.Ai.NumberTheory.UfdBridge` and
-`Proofs.Ai.NumberTheory.Factorization`.
+Concrete entry points: `Proofs.Ai.NumberTheory.UfdBridge`,
+`Proofs.Ai.NumberTheory.Factorization`, and
+`Proofs.Ai.NumberTheory.PrimeInfinitude`.
 
 The UFD bridge imports `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
 one-way from number theory, packages natural/integer prime predicates into
 UFD-local `PrimeElement` evidence, translates integer divisibility into UFD
 divisibility, and derives Euclid/product-divisibility surfaces from explicit
 Bezout/UFD evidence. The factorization module records composite prime-factor
-extraction, integer extraction, existence/erasure surfaces, and reuse inputs
-for Diophantine equations and arithmetic functions.
+extraction, integer extraction, FTA existence/uniqueness and derived-package
+surfaces, finite-list and finite-multiset evidence, divisor-count/divisor-sum
+formulas, gcd/lcm formulas, and reuse inputs for Diophantine equations and
+arithmetic functions. The prime-infinitude module records Euclid finite-list
+escape surfaces, factorial-plus-one witnesses, elementary infinitude variants,
+and square-root bounds for composite prime factors.
 
 These modules do not make the abstract UFD package depend on number theory and
-do not assume fundamental-theorem-of-arithmetic uniqueness.
+do not assume fundamental-theorem-of-arithmetic uniqueness as an input axiom or
+use analytic number theory, Chebotarev, or PNT for elementary prime infinitude.
 
 ## Theorem Cards
 

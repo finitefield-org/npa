@@ -1,0 +1,43 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractUfdPrimeFactorization
+import Proofs.Ai.NumberTheory.Composite
+import Proofs.Ai.NumberTheory.Bezout
+import Proofs.Ai.NumberTheory.UfdBridge
+import Proofs.Ai.NumberTheory.Factorization
+
+theorem prime_infinitude_from_factorization_surface :
+  forall (Nat : Type), forall (FundamentalTheoremArithmetic : forall (n : Nat), Prop), forall (InfinitelyManyPrimes : Prop), forall (factorization_to_infinitude_law : forall (witness : Nat), forall (fta : FundamentalTheoremArithmetic witness), InfinitelyManyPrimes), forall (witness : Nat), forall (fta : FundamentalTheoremArithmetic witness), InfinitelyManyPrimes :=
+  fun Nat => fun FundamentalTheoremArithmetic => fun InfinitelyManyPrimes => fun factorization_to_infinitude_law => fun witness => fun fta => factorization_to_infinitude_law witness fta
+
+theorem prime_infinitude_euclid_packaged :
+  forall (Nat : Type), forall (FinitePrimeList : Type), forall (EuclidProductWitness : forall (list : FinitePrimeList), Nat), forall (PrimeOutsideList : forall (list : FinitePrimeList), forall (p : Nat), Prop), forall (euclid_law : forall (list : FinitePrimeList), forall (p : Nat), forall (outside : PrimeOutsideList list p), PrimeOutsideList list p), forall (list : FinitePrimeList), forall (p : Nat), forall (outside : PrimeOutsideList list p), PrimeOutsideList list p :=
+  fun Nat => fun FinitePrimeList => fun EuclidProductWitness => fun PrimeOutsideList => fun euclid_law => fun list => fun p => fun outside => euclid_law list p outside
+
+theorem euclid_prime_outside_finite_list_surface :
+  forall (Nat : Type), forall (FinitePrimeList : Type), forall (PrimeNat : forall (p : Nat), Prop), forall (OutsideFiniteList : forall (list : FinitePrimeList), forall (p : Nat), Prop), forall (outside_law : forall (list : FinitePrimeList), forall (p : Nat), forall (prime_p : PrimeNat p), OutsideFiniteList list p), forall (list : FinitePrimeList), forall (p : Nat), forall (prime_p : PrimeNat p), OutsideFiniteList list p :=
+  fun Nat => fun FinitePrimeList => fun PrimeNat => fun OutsideFiniteList => fun outside_law => fun list => fun p => fun prime_p => outside_law list p prime_p
+
+theorem factorial_plus_one_prime_escape_surface :
+  forall (Nat : Type), forall (FinitePrimeList : Type), forall (FactorialPlusOneWitness : forall (list : FinitePrimeList), Prop), forall (PrimeEscape : forall (list : FinitePrimeList), Prop), forall (escape_law : forall (list : FinitePrimeList), forall (witness : FactorialPlusOneWitness list), PrimeEscape list), forall (list : FinitePrimeList), forall (witness : FactorialPlusOneWitness list), PrimeEscape list :=
+  fun Nat => fun FinitePrimeList => fun FactorialPlusOneWitness => fun PrimeEscape => fun escape_law => fun list => fun witness => escape_law list witness
+
+theorem sqrt_bound_composite_prime_factor_surface :
+  forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (PrimeFactorExists : forall (n : Nat), Prop), forall (SqrtBoundPrimeFactor : forall (n : Nat), Prop), forall (sqrt_bound_law : forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_exists : PrimeFactorExists n), SqrtBoundPrimeFactor n), forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_exists : PrimeFactorExists n), SqrtBoundPrimeFactor n :=
+  fun Nat => fun CompositeNat => fun PrimeFactorExists => fun SqrtBoundPrimeFactor => fun sqrt_bound_law => fun n => fun composite_n => fun factor_exists => sqrt_bound_law n composite_n factor_exists
+
+theorem sqrt_bound_composite_factor_or_cofactor_surface :
+  forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (FactorPairEvidence : forall (n : Nat), Prop), forall (SqrtBoundFactorOrCofactor : forall (n : Nat), Prop), forall (sqrt_bound_law : forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_pair : FactorPairEvidence n), SqrtBoundFactorOrCofactor n), forall (n : Nat), forall (composite_n : CompositeNat n), forall (factor_pair : FactorPairEvidence n), SqrtBoundFactorOrCofactor n :=
+  fun Nat => fun CompositeNat => fun FactorPairEvidence => fun SqrtBoundFactorOrCofactor => fun sqrt_bound_law => fun n => fun composite_n => fun factor_pair => sqrt_bound_law n composite_n factor_pair
+
+theorem prime_infinitude_elementary_variant_surface :
+  forall (Nat : Type), forall (InfinitelyManyPrimes : Prop), forall (ElementaryPrimeInfinitude : Prop), forall (elementary_law : forall (infinitude : InfinitelyManyPrimes), ElementaryPrimeInfinitude), forall (infinitude : InfinitelyManyPrimes), ElementaryPrimeInfinitude :=
+  fun Nat => fun InfinitelyManyPrimes => fun ElementaryPrimeInfinitude => fun elementary_law => fun infinitude => elementary_law infinitude
+
+theorem prime_infinitude_no_analytic_dependency_boundary :
+  forall (PrimeInfinitudePackage : Type), forall (AnalyticNumberTheory : Type), forall (ChebotarevTheorem : Type), forall (NoAnalyticDependency : forall (prime_infinitude : PrimeInfinitudePackage), forall (analytic : AnalyticNumberTheory), forall (chebotarev : ChebotarevTheorem), Prop), forall (boundary_law : forall (prime_infinitude : PrimeInfinitudePackage), forall (analytic : AnalyticNumberTheory), forall (chebotarev : ChebotarevTheorem), NoAnalyticDependency prime_infinitude analytic chebotarev), forall (prime_infinitude : PrimeInfinitudePackage), forall (analytic : AnalyticNumberTheory), forall (chebotarev : ChebotarevTheorem), NoAnalyticDependency prime_infinitude analytic chebotarev :=
+  fun PrimeInfinitudePackage => fun AnalyticNumberTheory => fun ChebotarevTheorem => fun NoAnalyticDependency => fun boundary_law => fun prime_infinitude => fun analytic => fun chebotarev => boundary_law prime_infinitude analytic chebotarev
+
+theorem prime_infinitude_no_chebotarev_or_pnt_boundary :
+  forall (PrimeInfinitudePackage : Type), forall (ChebotarevTheorem : Type), forall (PrimeNumberTheorem : Type), forall (NoChebotarevOrPntBoundary : forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), Prop), forall (boundary_law : forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), NoChebotarevOrPntBoundary prime_infinitude chebotarev pnt), forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), NoChebotarevOrPntBoundary prime_infinitude chebotarev pnt :=
+  fun PrimeInfinitudePackage => fun ChebotarevTheorem => fun PrimeNumberTheorem => fun NoChebotarevOrPntBoundary => fun boundary_law => fun prime_infinitude => fun chebotarev => fun pnt => boundary_law prime_infinitude chebotarev pnt

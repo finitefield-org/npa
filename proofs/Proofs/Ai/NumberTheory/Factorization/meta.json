@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/NumberTheory/Factorization/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:46d1f16e7c0d033f26cfb651588ce68af6f8df8b1dd3f7c9ebbeef3437f59868",
-  "certificate_file_sha256": "sha256:eb4cf95dc8f1134dc1a5bd8612417d66354ea6227ed8ce281ef944665bd7c9e8",
-  "export_hash": "sha256:dc9e163bf1a0c5cdf06ff1ef4b46452c05dddec68645a9a0f22325ccbfc10193",
-  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:0e9fadb53434f1d1eab1c71e9e4ae3c418c2c3a05586c037d389f0b2fffbb61d",
+  "source_sha256": "sha256:26a54149f30d0e407ef069b3b19e8d042cb0cb51b06d4788ec0c8d19b3b1d755",
+  "certificate_file_sha256": "sha256:0b9eb8a3a22d9ca3053511e249a99df98962a44bcff4fd079a9e65fcaa6f026d",
+  "export_hash": "sha256:8d0964ce1df3fd9c48a812e20deba6133bbd699f20ffce40bd9136303bbdd051",
+  "axiom_report_hash": "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3",
+  "certificate_hash": "sha256:426115810dba081a3bc491865197b338606aaf66625c5e31b697d46a617af9cb",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge"],
   "axioms": [],
   "declarations": [
@@ -20,7 +20,18 @@
     { "name": "factorization_diophantine_reuse_surface", "kind": "theorem" },
     { "name": "factorization_arithmetic_function_reuse_surface", "kind": "theorem" },
     { "name": "factorization_no_unique_factorization_assumption_boundary", "kind": "theorem" },
-    { "name": "factorization_sign_unit_normalization_surface", "kind": "theorem" }
+    { "name": "factorization_sign_unit_normalization_surface", "kind": "theorem" },
+    { "name": "fundamental_theorem_arithmetic_existence_packaged", "kind": "theorem" },
+    { "name": "fundamental_theorem_arithmetic_unique_packaged", "kind": "theorem" },
+    { "name": "fundamental_theorem_arithmetic_derived_package", "kind": "theorem" },
+    { "name": "prime_factorization_finite_list_evidence_surface", "kind": "theorem" },
+    { "name": "prime_factorization_finite_multiset_evidence_surface", "kind": "theorem" },
+    { "name": "divisor_count_formula_from_prime_factorization", "kind": "theorem" },
+    { "name": "divisor_sum_formula_from_prime_factorization", "kind": "theorem" },
+    { "name": "gcd_formula_from_prime_factorization", "kind": "theorem" },
+    { "name": "lcm_formula_from_prime_factorization", "kind": "theorem" },
+    { "name": "factorization_unit_sign_normalization_unique_surface", "kind": "theorem" },
+    { "name": "fundamental_theorem_not_input_axiom_boundary", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

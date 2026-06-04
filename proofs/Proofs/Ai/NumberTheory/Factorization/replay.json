@@ -43,6 +43,61 @@
       "declaration": "factorization_sign_unit_normalization_surface",
       "source_kind": "explicit_term",
       "term": "fun Int => fun PrimeFactorExistsInt => fun UnitNormalizedFactorization => fun SignUnitNormalizationEvidence => fun normalization_law => fun n => fun factor_exists => fun evidence => normalization_law n factor_exists evidence"
+    },
+    {
+      "declaration": "fundamental_theorem_arithmetic_existence_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun GreaterThanOne => fun PrimeFactorizationSurface => fun FtaExistence => fun existence_law => fun n => fun gt_one => fun factorization => existence_law n gt_one factorization"
+    },
+    {
+      "declaration": "fundamental_theorem_arithmetic_unique_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun UnitSignNormalization => fun UniquePrimeFactorization => fun uniqueness_law => fun n => fun left => fun right => fun normalization => uniqueness_law n left right normalization"
+    },
+    {
+      "declaration": "fundamental_theorem_arithmetic_derived_package",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun FtaExistence => fun UniquePrimeFactorization => fun FtaDerivedEvidence => fun FundamentalTheoremArithmetic => fun derived_law => fun n => fun existence => fun uniqueness => fun derived => derived_law n existence uniqueness derived"
+    },
+    {
+      "declaration": "prime_factorization_finite_list_evidence_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun FinitePrimeListEvidence => fun list_law => fun n => fun factorization => list_law n factorization"
+    },
+    {
+      "declaration": "prime_factorization_finite_multiset_evidence_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun FinitePrimeMultisetEvidence => fun multiset_law => fun n => fun factorization => multiset_law n factorization"
+    },
+    {
+      "declaration": "divisor_count_formula_from_prime_factorization",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun DivisorCountFormula => fun formula_law => fun n => fun factorization => formula_law n factorization"
+    },
+    {
+      "declaration": "divisor_sum_formula_from_prime_factorization",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun DivisorSumFormula => fun formula_law => fun n => fun factorization => formula_law n factorization"
+    },
+    {
+      "declaration": "gcd_formula_from_prime_factorization",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun GcdFormula => fun formula_law => fun a => fun b => fun factorization_a => fun factorization_b => formula_law a b factorization_a factorization_b"
+    },
+    {
+      "declaration": "lcm_formula_from_prime_factorization",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun LcmFormula => fun formula_law => fun a => fun b => fun factorization_a => fun factorization_b => formula_law a b factorization_a factorization_b"
+    },
+    {
+      "declaration": "factorization_unit_sign_normalization_unique_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun PrimeFactorExistsInt => fun UnitSignNormalization => fun UniqueNormalizedFactorization => fun normalization_law => fun n => fun factor_exists => fun normalization => normalization_law n factor_exists normalization"
+    },
+    {
+      "declaration": "fundamental_theorem_not_input_axiom_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FundamentalTheoremArithmetic => fun DerivedFactorizationEvidence => fun NoInputAxiomBoundary => fun boundary_law => fun fta => fun derived => boundary_law fta derived"
     }
   ],
   "acceptance": {

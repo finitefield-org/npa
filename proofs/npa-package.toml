@@ -1093,14 +1093,31 @@ certificate = "Proofs/Ai/NumberTheory/Factorization/certificate.npcert"
 meta = "Proofs/Ai/NumberTheory/Factorization/meta.json"
 replay = "Proofs/Ai/NumberTheory/Factorization/replay.json"
 producer_profile = "human-surface-explicit-term"
-expected_source_hash = "sha256:46d1f16e7c0d033f26cfb651588ce68af6f8df8b1dd3f7c9ebbeef3437f59868"
-expected_certificate_file_hash = "sha256:eb4cf95dc8f1134dc1a5bd8612417d66354ea6227ed8ce281ef944665bd7c9e8"
-expected_export_hash = "sha256:dc9e163bf1a0c5cdf06ff1ef4b46452c05dddec68645a9a0f22325ccbfc10193"
-expected_axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
-expected_certificate_hash = "sha256:0e9fadb53434f1d1eab1c71e9e4ae3c418c2c3a05586c037d389f0b2fffbb61d"
+expected_source_hash = "sha256:26a54149f30d0e407ef069b3b19e8d042cb0cb51b06d4788ec0c8d19b3b1d755"
+expected_certificate_file_hash = "sha256:0b9eb8a3a22d9ca3053511e249a99df98962a44bcff4fd079a9e65fcaa6f026d"
+expected_export_hash = "sha256:8d0964ce1df3fd9c48a812e20deba6133bbd699f20ffce40bd9136303bbdd051"
+expected_axiom_report_hash = "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3"
+expected_certificate_hash = "sha256:426115810dba081a3bc491865197b338606aaf66625c5e31b697d46a617af9cb"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge"]
 definitions = []
-theorems = ["prime_factor_extraction_from_composite_packaged", "prime_factor_extraction_int_packaged", "prime_factorization_existence_surface", "factorization_erases_to_composite_divisor_surface", "factorization_diophantine_reuse_surface", "factorization_arithmetic_function_reuse_surface", "factorization_no_unique_factorization_assumption_boundary", "factorization_sign_unit_normalization_surface"]
+theorems = ["prime_factor_extraction_from_composite_packaged", "prime_factor_extraction_int_packaged", "prime_factorization_existence_surface", "factorization_erases_to_composite_divisor_surface", "factorization_diophantine_reuse_surface", "factorization_arithmetic_function_reuse_surface", "factorization_no_unique_factorization_assumption_boundary", "factorization_sign_unit_normalization_surface", "fundamental_theorem_arithmetic_existence_packaged", "fundamental_theorem_arithmetic_unique_packaged", "fundamental_theorem_arithmetic_derived_package", "prime_factorization_finite_list_evidence_surface", "prime_factorization_finite_multiset_evidence_surface", "divisor_count_formula_from_prime_factorization", "divisor_sum_formula_from_prime_factorization", "gcd_formula_from_prime_factorization", "lcm_formula_from_prime_factorization", "factorization_unit_sign_normalization_unique_surface", "fundamental_theorem_not_input_axiom_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.PrimeInfinitude"
+source = "Proofs/Ai/NumberTheory/PrimeInfinitude/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PrimeInfinitude/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PrimeInfinitude/meta.json"
+replay = "Proofs/Ai/NumberTheory/PrimeInfinitude/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:1d147c2a026584b1eda2f5e2ced9de7d3f32bd832e95480c1414c4421713d6b4"
+expected_certificate_file_hash = "sha256:a8bda2fd96751f83360db953612a351cbfc00272b18fc6fe8de784f8bafe7475"
+expected_export_hash = "sha256:5585f08021ad55ccfca8f9506ec746c8df784531e644079a885130602f654597"
+expected_axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+expected_certificate_hash = "sha256:46014e9a220b8848e5c9f01d3e8d1f1e821bc5c6e9413b502ea7bd5c6d7a38d9"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge", "Proofs.Ai.NumberTheory.Factorization"]
+definitions = []
+theorems = ["prime_infinitude_from_factorization_surface", "prime_infinitude_euclid_packaged", "euclid_prime_outside_finite_list_surface", "factorial_plus_one_prime_escape_surface", "sqrt_bound_composite_prime_factor_surface", "sqrt_bound_composite_factor_or_cofactor_surface", "prime_infinitude_elementary_variant_surface", "prime_infinitude_no_analytic_dependency_boundary", "prime_infinitude_no_chebotarev_or_pnt_boundary"]
 axioms = []
 
 [[modules]]
