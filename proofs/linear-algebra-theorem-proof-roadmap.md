@@ -426,7 +426,16 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-04 Matrix Representation And Basis Change
 
-- Status: planned.
+- Status: `LAQ-007` complete for `Proofs.Ai.LinearAlgebra.Matrix.Basic`
+  and `Proofs.Ai.LinearAlgebra.Matrix.Representation`: matrices are modeled as
+  indexed entry functions with pointwise equality, entrywise addition,
+  transpose, explicit matrix-product evidence, and square matrix
+  multiplication law packages. Linear-map matrix representation is now exposed
+  through column coordinate certificates relative to chosen bases, and
+  `linear_map_composition_corresponds_to_matrix_product` projects the product
+  equality for a composed linear map from explicit representation and product
+  evidence. Identity, inverse, basis-change/similarity, and dual-map matrix
+  representation routes remain planned.
 - Depends on: `LIN-02` and `LIN-03`.
 - Target modules:
   - `Proofs.Ai.LinearAlgebra.Matrix.Basic`

@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Representation",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/Representation/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/Representation/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4ad3aaf71b365420dfea28777da66b387fce2a204219c4d60a378e62ec0cbd53",
+  "certificate_file_sha256": "sha256:980c7876073541e1675fb1dc1478517a7913117dc83a88797a1af70bc89c6213",
+  "export_hash": "sha256:205f7651314cf0104ff67e31cbe643c732e2e7dc63c4a479f811453dedaa0ea9",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:0959271f1b9976115fdc2277f85c2fc8cd48698d5064d265d05289950d414a36",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LinearMapMatrixRepresentation", "kind": "def" },
+    { "name": "MatrixRepresentationCompositionEvidence", "kind": "def" },
+    { "name": "linear_map_matrix_representation_intro", "kind": "theorem" },
+    { "name": "linear_map_matrix_representation_column", "kind": "theorem" },
+    { "name": "matrix_representation_composition_evidence_intro", "kind": "theorem" },
+    { "name": "matrix_representation_composition_product", "kind": "theorem" },
+    { "name": "linear_map_composition_corresponds_to_matrix_product", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

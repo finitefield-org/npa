@@ -178,6 +178,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE,
     &LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE,
     &LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE,
+    &LINEAR_ALGEBRA_MATRIX_BASIC_MODULE,
+    &LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1824,6 +1826,40 @@ const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const LINEAR_ALGEBRA_MATRIX_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Matrix.Basic",
+    source_path: "Proofs/Ai/LinearAlgebra/Matrix/Basic/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Matrix/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Matrix/Basic/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Matrix/Basic/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_MATRIX_BASIC_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_MATRIX_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Matrix.Representation",
+    source_path: "Proofs/Ai/LinearAlgebra/Matrix/Representation/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Matrix/Representation/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Matrix/Representation/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Matrix/Representation/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+        "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+        "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+        "Proofs.Ai.LinearAlgebra.LinearMap.Basic",
+        "Proofs.Ai.LinearAlgebra.Matrix.Basic",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_MATRIX_REPRESENTATION_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_MATRIX_REPRESENTATION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -2556,6 +2592,278 @@ macro_rules! linear_algebra_rank_nullity_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun DomainIndex => fun domain_basis_vec => fun domain_lincomb => fun KernelIndex => fun kernel_basis_vec => fun kernel_lincomb => fun ImageIndex => fun image_basis_vec => fun image_lincomb => fun Dimension => fun dim_add => fun domain_dim => fun nullity_dim => fun rank_dim => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Row : Sort v), ",
+            "forall (Col : Sort w), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_square_matrix_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Index : Sort v), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Index : Sort v), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_square_matrix_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_representation_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            "forall (DomainIndex : Sort x), ",
+            "forall (domain_basis_vec : forall (i : DomainIndex), Domain), ",
+            "forall (domain_lincomb : forall (coeffs : forall (i : DomainIndex), Scalar), Domain), ",
+            "forall (CodomainIndex : Sort y), ",
+            "forall (codomain_basis_vec : forall (i : CodomainIndex), Codomain), ",
+            "forall (codomain_lincomb : forall (coeffs : forall (i : CodomainIndex), Scalar), Codomain), ",
+            "forall (matrix_entries : forall (i : CodomainIndex), forall (j : DomainIndex), Scalar), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            "forall (DomainIndex : Sort x), ",
+            "forall (domain_basis_vec : forall (i : DomainIndex), Domain), ",
+            "forall (domain_lincomb : forall (coeffs : forall (i : DomainIndex), Scalar), Domain), ",
+            "forall (CodomainIndex : Sort y), ",
+            "forall (codomain_basis_vec : forall (i : CodomainIndex), Codomain), ",
+            "forall (codomain_lincomb : forall (coeffs : forall (i : CodomainIndex), Scalar), Codomain), ",
+            "forall (matrix_entries : forall (i : CodomainIndex), forall (j : DomainIndex), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_representation_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun DomainIndex => fun domain_basis_vec => fun domain_lincomb => fun CodomainIndex => fun codomain_basis_vec => fun codomain_lincomb => fun matrix_entries => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun DomainIndex => fun domain_basis_vec => fun domain_lincomb => fun CodomainIndex => fun codomain_basis_vec => fun codomain_lincomb => fun matrix_entries => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_composition_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Source : Sort v), ",
+            "forall (szero : Source), ",
+            "forall (sadd : forall (x : Source), forall (y : Source), Source), ",
+            "forall (sneg : forall (x : Source), Source), ",
+            "forall (ssmul : forall (a : Scalar), forall (x : Source), Source), ",
+            "forall (Middle : Sort w), ",
+            "forall (mzero : Middle), ",
+            "forall (madd : forall (x : Middle), forall (y : Middle), Middle), ",
+            "forall (mneg : forall (x : Middle), Middle), ",
+            "forall (msmul : forall (a : Scalar), forall (x : Middle), Middle), ",
+            "forall (Target : Sort t), ",
+            "forall (tzero : Target), ",
+            "forall (tadd : forall (x : Target), forall (y : Target), Target), ",
+            "forall (tneg : forall (x : Target), Target), ",
+            "forall (tsmul : forall (a : Scalar), forall (x : Target), Target), ",
+            "forall (f : forall (x : Source), Middle), ",
+            "forall (g : forall (x : Middle), Target), ",
+            "forall (h : forall (x : Source), Target), ",
+            "forall (SourceIndex : Sort x), ",
+            "forall (source_basis_vec : forall (i : SourceIndex), Source), ",
+            "forall (source_lincomb : forall (coeffs : forall (i : SourceIndex), Scalar), Source), ",
+            "forall (MiddleIndex : Sort y), ",
+            "forall (middle_basis_vec : forall (i : MiddleIndex), Middle), ",
+            "forall (middle_lincomb : forall (coeffs : forall (i : MiddleIndex), Scalar), Middle), ",
+            "forall (TargetIndex : Sort z), ",
+            "forall (target_basis_vec : forall (i : TargetIndex), Target), ",
+            "forall (target_lincomb : forall (coeffs : forall (i : TargetIndex), Scalar), Target), ",
+            "forall (matrix_f : forall (i : MiddleIndex), forall (j : SourceIndex), Scalar), ",
+            "forall (matrix_g : forall (i : TargetIndex), forall (j : MiddleIndex), Scalar), ",
+            "forall (matrix_h : forall (i : TargetIndex), forall (j : SourceIndex), Scalar), ",
+            "forall (matrix_mul : forall (left : forall (i : TargetIndex), forall (j : MiddleIndex), Scalar), forall (right : forall (i : MiddleIndex), forall (j : SourceIndex), Scalar), forall (i : TargetIndex), forall (j : SourceIndex), Scalar), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Source : Sort v), ",
+            "forall (szero : Source), ",
+            "forall (sadd : forall (x : Source), forall (y : Source), Source), ",
+            "forall (sneg : forall (x : Source), Source), ",
+            "forall (ssmul : forall (a : Scalar), forall (x : Source), Source), ",
+            "forall (Middle : Sort w), ",
+            "forall (mzero : Middle), ",
+            "forall (madd : forall (x : Middle), forall (y : Middle), Middle), ",
+            "forall (mneg : forall (x : Middle), Middle), ",
+            "forall (msmul : forall (a : Scalar), forall (x : Middle), Middle), ",
+            "forall (Target : Sort t), ",
+            "forall (tzero : Target), ",
+            "forall (tadd : forall (x : Target), forall (y : Target), Target), ",
+            "forall (tneg : forall (x : Target), Target), ",
+            "forall (tsmul : forall (a : Scalar), forall (x : Target), Target), ",
+            "forall (f : forall (x : Source), Middle), ",
+            "forall (g : forall (x : Middle), Target), ",
+            "forall (h : forall (x : Source), Target), ",
+            "forall (SourceIndex : Sort x), ",
+            "forall (source_basis_vec : forall (i : SourceIndex), Source), ",
+            "forall (source_lincomb : forall (coeffs : forall (i : SourceIndex), Scalar), Source), ",
+            "forall (MiddleIndex : Sort y), ",
+            "forall (middle_basis_vec : forall (i : MiddleIndex), Middle), ",
+            "forall (middle_lincomb : forall (coeffs : forall (i : MiddleIndex), Scalar), Middle), ",
+            "forall (TargetIndex : Sort z), ",
+            "forall (target_basis_vec : forall (i : TargetIndex), Target), ",
+            "forall (target_lincomb : forall (coeffs : forall (i : TargetIndex), Scalar), Target), ",
+            "forall (matrix_f : forall (i : MiddleIndex), forall (j : SourceIndex), Scalar), ",
+            "forall (matrix_g : forall (i : TargetIndex), forall (j : MiddleIndex), Scalar), ",
+            "forall (matrix_h : forall (i : TargetIndex), forall (j : SourceIndex), Scalar), ",
+            "forall (matrix_mul : forall (left : forall (i : TargetIndex), forall (j : MiddleIndex), Scalar), forall (right : forall (i : MiddleIndex), forall (j : SourceIndex), Scalar), forall (i : TargetIndex), forall (j : SourceIndex), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_matrix_composition_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Source => fun szero => fun sadd => fun sneg => fun ssmul => fun Middle => fun mzero => fun madd => fun mneg => fun msmul => fun Target => fun tzero => fun tadd => fun tneg => fun tsmul => fun f => fun g => fun h => fun SourceIndex => fun source_basis_vec => fun source_lincomb => fun MiddleIndex => fun middle_basis_vec => fun middle_lincomb => fun TargetIndex => fun target_basis_vec => fun target_lincomb => fun matrix_f => fun matrix_g => fun matrix_h => fun matrix_mul => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Source => fun szero => fun sadd => fun sneg => fun ssmul => fun Middle => fun mzero => fun madd => fun mneg => fun msmul => fun Target => fun tzero => fun tadd => fun tneg => fun tsmul => fun f => fun g => fun h => fun SourceIndex => fun source_basis_vec => fun source_lincomb => fun MiddleIndex => fun middle_basis_vec => fun middle_lincomb => fun TargetIndex => fun target_basis_vec => fun target_lincomb => fun matrix_f => fun matrix_g => fun matrix_h => fun matrix_mul => ",
             $tail
         )
     };
@@ -30971,6 +31279,281 @@ const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_MATRIX_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "Matrix",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_params!(
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), Prop"
+        ),
+        value: linear_algebra_matrix_abs!(
+            "fun entries => forall (P : Prop), forall (mk : P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "MatrixEq",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_params!(concat!(
+            "forall (left : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (right : forall (i : Row), forall (j : Col), Scalar), Prop"
+        )),
+        value: linear_algebra_matrix_abs!(
+            "fun left => fun right => forall (i : Row), forall (j : Col), @Eq.{u} Scalar (left i j) (right i j)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "MatrixAdd",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_params!(concat!(
+            "forall (left : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (right : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (i : Row), forall (j : Col), Scalar"
+        )),
+        value: linear_algebra_matrix_abs!(
+            "fun left => fun right => fun i => fun j => add (left i j) (right i j)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "MatrixTranspose",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_matrix_params!(concat!(
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (j : Col), forall (i : Row), Scalar"
+        )),
+        value: linear_algebra_matrix_abs!(
+            "fun entries => fun j => fun i => entries i j"
+        ),
+    },
+    DefinitionArtifact {
+        name: "MatrixProductEvidence",
+        universe_params: &["u", "v", "w", "z"],
+        ty: linear_algebra_matrix_params!(concat!(
+            "forall (Mid : Sort z), ",
+            "forall (matrix_mul : forall (left : forall (i : Row), forall (j : Mid), Scalar), forall (right : forall (i : Mid), forall (j : Col), Scalar), forall (i : Row), forall (j : Col), Scalar), ",
+            "forall (left : forall (i : Row), forall (j : Mid), Scalar), ",
+            "forall (right : forall (i : Mid), forall (j : Col), Scalar), ",
+            "forall (product : forall (i : Row), forall (j : Col), Scalar), Prop"
+        )),
+        value: linear_algebra_matrix_abs!(concat!(
+            "fun Mid => fun matrix_mul => fun left => fun right => fun product => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SquareMatrixMulLawArgs",
+        universe_params: &["u", "v"],
+        ty: linear_algebra_square_matrix_params!(concat!(
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), ",
+            "forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), Prop"
+        )),
+        value: linear_algebra_square_matrix_abs!(concat!(
+            "fun matrix_mul => fun matrix_one => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))), ",
+            "forall (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A), ",
+            "forall (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_MATRIX_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "matrix_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_params!(
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), @Matrix.{u,v,w} Scalar zero one add neg sub mul Row Col entries"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun entries => fun (P : Prop) => fun (mk : P) => mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_eq_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_params!(
+            "forall (left : forall (i : Row), forall (j : Col), Scalar), forall (right : forall (i : Row), forall (j : Col), Scalar), forall (pointwise : forall (i : Row), forall (j : Col), @Eq.{u} Scalar (left i j) (right i j)), @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col left right"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun left => fun right => fun pointwise => pointwise"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_eq_apply",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_params!(
+            "forall (left : forall (i : Row), forall (j : Col), Scalar), forall (right : forall (i : Row), forall (j : Col), Scalar), forall (matrix_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col left right), forall (i : Row), forall (j : Col), @Eq.{u} Scalar (left i j) (right i j)"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun left => fun right => fun matrix_eq => fun i => fun j => matrix_eq i j"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_add_entry",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_params!(
+            "forall (left : forall (i : Row), forall (j : Col), Scalar), forall (right : forall (i : Row), forall (j : Col), Scalar), forall (i : Row), forall (j : Col), @Eq.{u} Scalar (@MatrixAdd.{u,v,w} Scalar zero one add neg sub mul Row Col left right i j) (add (left i j) (right i j))"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun left => fun right => fun i => fun j => @Eq.refl.{u} Scalar (add (left i j) (right i j))"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_transpose_entry",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_matrix_params!(
+            "forall (entries : forall (i : Row), forall (j : Col), Scalar), forall (j : Col), forall (i : Row), @Eq.{u} Scalar (@MatrixTranspose.{u,v,w} Scalar zero one add neg sub mul Row Col entries j i) (entries i j)"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun entries => fun j => fun i => @Eq.refl.{u} Scalar (entries i j)"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_product_evidence_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: linear_algebra_matrix_params!(
+            "forall (Mid : Sort z), forall (matrix_mul : forall (left : forall (i : Row), forall (j : Mid), Scalar), forall (right : forall (i : Mid), forall (j : Col), Scalar), forall (i : Row), forall (j : Col), Scalar), forall (left : forall (i : Row), forall (j : Mid), Scalar), forall (right : forall (i : Mid), forall (j : Col), Scalar), forall (product : forall (i : Row), forall (j : Col), Scalar), forall (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)), @MatrixProductEvidence.{u,v,w,z} Scalar zero one add neg sub mul Row Col Mid matrix_mul left right product"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun Mid => fun matrix_mul => fun left => fun right => fun product => fun product_eq => fun (P : Prop) => fun (mk : forall (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)), P) => mk product_eq"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_product_eq",
+        universe_params: &["u", "v", "w", "z"],
+        statement: linear_algebra_matrix_params!(
+            "forall (Mid : Sort z), forall (matrix_mul : forall (left : forall (i : Row), forall (j : Mid), Scalar), forall (right : forall (i : Mid), forall (j : Col), Scalar), forall (i : Row), forall (j : Col), Scalar), forall (left : forall (i : Row), forall (j : Mid), Scalar), forall (right : forall (i : Mid), forall (j : Col), Scalar), forall (product : forall (i : Row), forall (j : Col), Scalar), forall (product_evidence : @MatrixProductEvidence.{u,v,w,z} Scalar zero one add neg sub mul Row Col Mid matrix_mul left right product), @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)"
+        ),
+        proof: linear_algebra_matrix_abs!(
+            "fun Mid => fun matrix_mul => fun left => fun right => fun product => fun product_evidence => product_evidence (@MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)) (fun (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)) => product_eq)"
+        ),
+    },
+    TheoremArtifact {
+        name: "square_matrix_mul_law_args_intro",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_square_matrix_params!(
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), forall (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))), forall (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A), forall (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A), @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one"
+        ),
+        proof: linear_algebra_square_matrix_abs!(
+            "fun matrix_mul => fun matrix_one => fun mul_assoc => fun left_unit => fun right_unit => fun (P : Prop) => fun (mk : forall (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))), forall (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A), forall (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A), P) => mk mul_assoc left_unit right_unit"
+        ),
+    },
+    TheoremArtifact {
+        name: "square_matrix_mul_assoc",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_square_matrix_params!(
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), forall (law_args : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one), forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))"
+        ),
+        proof: linear_algebra_square_matrix_abs!(
+            "fun matrix_mul => fun matrix_one => fun law_args => fun A => fun B => fun C => law_args (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) (fun (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) => fun (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) => fun (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) => mul_assoc A B C)"
+        ),
+    },
+    TheoremArtifact {
+        name: "square_matrix_left_unit",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_square_matrix_params!(
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), forall (law_args : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one), forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A"
+        ),
+        proof: linear_algebra_square_matrix_abs!(
+            "fun matrix_mul => fun matrix_one => fun law_args => fun A => law_args (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) (fun (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) => fun (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) => fun (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) => left_unit A)"
+        ),
+    },
+    TheoremArtifact {
+        name: "square_matrix_right_unit",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_square_matrix_params!(
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), forall (law_args : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one), forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A"
+        ),
+        proof: linear_algebra_square_matrix_abs!(
+            "fun matrix_mul => fun matrix_one => fun law_args => fun A => law_args (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) (fun (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) => fun (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) => fun (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) => right_unit A)"
+        ),
+    },
+];
+
+const LINEAR_ALGEBRA_MATRIX_REPRESENTATION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "LinearMapMatrixRepresentation",
+        universe_params: &["u", "v", "w", "x", "y"],
+        ty: linear_algebra_matrix_representation_params!("Prop"),
+        value: linear_algebra_matrix_representation_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (domain_basis : @Basis.{u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb), ",
+            "forall (codomain_basis : @Basis.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb), ",
+            "forall (column_representation : forall (j : DomainIndex), @CoordinateRepresentation.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb (f (domain_basis_vec j)) (fun (i : CodomainIndex) => matrix_entries i j)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MatrixRepresentationCompositionEvidence",
+        universe_params: &["t", "u", "v", "w", "x", "y", "z"],
+        ty: linear_algebra_matrix_composition_params!("Prop"),
+        value: linear_algebra_matrix_composition_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (linear_map_f : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f), ",
+            "forall (linear_map_g : @LinearMap.{u,w,t} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g), ",
+            "forall (linear_map_h : @LinearMap.{u,v,t} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h), ",
+            "forall (composition_law : forall (source : Source), @Eq.{t} Target (h source) (g (f source))), ",
+            "forall (representation_f : @LinearMapMatrixRepresentation.{u,v,w,x,y} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb matrix_f), ",
+            "forall (representation_g : @LinearMapMatrixRepresentation.{u,w,t,y,z} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_g), ",
+            "forall (representation_h : @LinearMapMatrixRepresentation.{u,v,t,x,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h SourceIndex source_basis_vec source_lincomb TargetIndex target_basis_vec target_lincomb matrix_h), ",
+            "forall (product_evidence : @MatrixProductEvidence.{u,z,x,y} Scalar zero one add neg sub mul TargetIndex SourceIndex MiddleIndex matrix_mul matrix_g matrix_f matrix_h), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_MATRIX_REPRESENTATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "linear_map_matrix_representation_intro",
+        universe_params: &["u", "v", "w", "x", "y"],
+        statement: linear_algebra_matrix_representation_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (domain_basis : @Basis.{u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb), forall (codomain_basis : @Basis.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb), forall (column_representation : forall (j : DomainIndex), @CoordinateRepresentation.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb (f (domain_basis_vec j)) (fun (i : CodomainIndex) => matrix_entries i j)), @LinearMapMatrixRepresentation.{u,v,w,x,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f DomainIndex domain_basis_vec domain_lincomb CodomainIndex codomain_basis_vec codomain_lincomb matrix_entries"
+        ),
+        proof: linear_algebra_matrix_representation_abs!(
+            "fun linear_map => fun domain_basis => fun codomain_basis => fun column_representation => fun (P : Prop) => fun (mk : forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (domain_basis : @Basis.{u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb), forall (codomain_basis : @Basis.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb), forall (column_representation : forall (j : DomainIndex), @CoordinateRepresentation.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb (f (domain_basis_vec j)) (fun (i : CodomainIndex) => matrix_entries i j)), P) => mk linear_map domain_basis codomain_basis column_representation"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_matrix_representation_column",
+        universe_params: &["u", "v", "w", "x", "y"],
+        statement: linear_algebra_matrix_representation_params!(
+            "forall (representation : @LinearMapMatrixRepresentation.{u,v,w,x,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f DomainIndex domain_basis_vec domain_lincomb CodomainIndex codomain_basis_vec codomain_lincomb matrix_entries), forall (j : DomainIndex), @CoordinateRepresentation.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb (f (domain_basis_vec j)) (fun (i : CodomainIndex) => matrix_entries i j)"
+        ),
+        proof: linear_algebra_matrix_representation_abs!(
+            "fun representation => fun j => representation (@CoordinateRepresentation.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb (f (domain_basis_vec j)) (fun (i : CodomainIndex) => matrix_entries i j)) (fun (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (domain_basis : @Basis.{u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb) => fun (codomain_basis : @Basis.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb) => fun (column_representation : forall (j : DomainIndex), @CoordinateRepresentation.{u,w,y} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul CodomainIndex codomain_basis_vec codomain_lincomb (f (domain_basis_vec j)) (fun (i : CodomainIndex) => matrix_entries i j)) => column_representation j)"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_representation_composition_evidence_intro",
+        universe_params: &["t", "u", "v", "w", "x", "y", "z"],
+        statement: linear_algebra_matrix_composition_params!(
+            "forall (linear_map_f : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f), forall (linear_map_g : @LinearMap.{u,w,t} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g), forall (linear_map_h : @LinearMap.{u,v,t} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h), forall (composition_law : forall (source : Source), @Eq.{t} Target (h source) (g (f source))), forall (representation_f : @LinearMapMatrixRepresentation.{u,v,w,x,y} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb matrix_f), forall (representation_g : @LinearMapMatrixRepresentation.{u,w,t,y,z} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_g), forall (representation_h : @LinearMapMatrixRepresentation.{u,v,t,x,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h SourceIndex source_basis_vec source_lincomb TargetIndex target_basis_vec target_lincomb matrix_h), forall (product_evidence : @MatrixProductEvidence.{u,z,x,y} Scalar zero one add neg sub mul TargetIndex SourceIndex MiddleIndex matrix_mul matrix_g matrix_f matrix_h), @MatrixRepresentationCompositionEvidence.{t,u,v,w,x,y,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul f g h SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_f matrix_g matrix_h matrix_mul"
+        ),
+        proof: linear_algebra_matrix_composition_abs!(
+            "fun linear_map_f => fun linear_map_g => fun linear_map_h => fun composition_law => fun representation_f => fun representation_g => fun representation_h => fun product_evidence => fun (P : Prop) => fun (mk : forall (linear_map_f : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f), forall (linear_map_g : @LinearMap.{u,w,t} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g), forall (linear_map_h : @LinearMap.{u,v,t} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h), forall (composition_law : forall (source : Source), @Eq.{t} Target (h source) (g (f source))), forall (representation_f : @LinearMapMatrixRepresentation.{u,v,w,x,y} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb matrix_f), forall (representation_g : @LinearMapMatrixRepresentation.{u,w,t,y,z} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_g), forall (representation_h : @LinearMapMatrixRepresentation.{u,v,t,x,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h SourceIndex source_basis_vec source_lincomb TargetIndex target_basis_vec target_lincomb matrix_h), forall (product_evidence : @MatrixProductEvidence.{u,z,x,y} Scalar zero one add neg sub mul TargetIndex SourceIndex MiddleIndex matrix_mul matrix_g matrix_f matrix_h), P) => mk linear_map_f linear_map_g linear_map_h composition_law representation_f representation_g representation_h product_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "matrix_representation_composition_product",
+        universe_params: &["t", "u", "v", "w", "x", "y", "z"],
+        statement: linear_algebra_matrix_composition_params!(
+            "forall (evidence : @MatrixRepresentationCompositionEvidence.{t,u,v,w,x,y,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul f g h SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_f matrix_g matrix_h matrix_mul), @MatrixEq.{u,z,x} Scalar zero one add neg sub mul TargetIndex SourceIndex matrix_h (matrix_mul matrix_g matrix_f)"
+        ),
+        proof: linear_algebra_matrix_composition_abs!(
+            "fun evidence => evidence (@MatrixEq.{u,z,x} Scalar zero one add neg sub mul TargetIndex SourceIndex matrix_h (matrix_mul matrix_g matrix_f)) (fun (linear_map_f : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f) => fun (linear_map_g : @LinearMap.{u,w,t} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g) => fun (linear_map_h : @LinearMap.{u,v,t} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h) => fun (composition_law : forall (source : Source), @Eq.{t} Target (h source) (g (f source))) => fun (representation_f : @LinearMapMatrixRepresentation.{u,v,w,x,y} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul f SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb matrix_f) => fun (representation_g : @LinearMapMatrixRepresentation.{u,w,t,y,z} Scalar zero one add neg sub mul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul g MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_g) => fun (representation_h : @LinearMapMatrixRepresentation.{u,v,t,x,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Target tzero tadd tneg tsmul h SourceIndex source_basis_vec source_lincomb TargetIndex target_basis_vec target_lincomb matrix_h) => fun (product_evidence : @MatrixProductEvidence.{u,z,x,y} Scalar zero one add neg sub mul TargetIndex SourceIndex MiddleIndex matrix_mul matrix_g matrix_f matrix_h) => @matrix_product_eq.{u,z,x,y} Scalar zero one add neg sub mul TargetIndex SourceIndex MiddleIndex matrix_mul matrix_g matrix_f matrix_h product_evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_composition_corresponds_to_matrix_product",
+        universe_params: &["t", "u", "v", "w", "x", "y", "z"],
+        statement: linear_algebra_matrix_composition_params!(
+            "forall (evidence : @MatrixRepresentationCompositionEvidence.{t,u,v,w,x,y,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul f g h SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_f matrix_g matrix_h matrix_mul), @MatrixEq.{u,z,x} Scalar zero one add neg sub mul TargetIndex SourceIndex matrix_h (matrix_mul matrix_g matrix_f)"
+        ),
+        proof: linear_algebra_matrix_composition_abs!(
+            "fun evidence => @matrix_representation_composition_product.{t,u,v,w,x,y,z} Scalar zero one add neg sub mul Source szero sadd sneg ssmul Middle mzero madd mneg msmul Target tzero tadd tneg tsmul f g h SourceIndex source_basis_vec source_lincomb MiddleIndex middle_basis_vec middle_lincomb TargetIndex target_basis_vec target_lincomb matrix_f matrix_g matrix_h matrix_mul evidence"
+        ),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -38872,6 +39455,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module
         || config.module == LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE.module
+        || config.module == LINEAR_ALGEBRA_MATRIX_BASIC_MODULE.module
+        || config.module == LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);

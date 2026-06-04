@@ -1,0 +1,97 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Matrix",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => forall (P : Prop), forall (mk : P), P"
+    },
+    {
+      "declaration": "MatrixEq",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun left => fun right => forall (i : Row), forall (j : Col), @Eq.{u} Scalar (left i j) (right i j)"
+    },
+    {
+      "declaration": "MatrixAdd",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun left => fun right => fun i => fun j => add (left i j) (right i j)"
+    },
+    {
+      "declaration": "MatrixTranspose",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun j => fun i => entries i j"
+    },
+    {
+      "declaration": "MatrixProductEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun Mid => fun matrix_mul => fun left => fun right => fun product => forall (P : Prop), forall (mk : forall (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)), P), P"
+    },
+    {
+      "declaration": "SquareMatrixMulLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun matrix_mul => fun matrix_one => forall (P : Prop), forall (mk : forall (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))), forall (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A), forall (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A), P), P"
+    },
+    {
+      "declaration": "matrix_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun (P : Prop) => fun (mk : P) => mk"
+    },
+    {
+      "declaration": "matrix_eq_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun left => fun right => fun pointwise => pointwise"
+    },
+    {
+      "declaration": "matrix_eq_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun left => fun right => fun matrix_eq => fun i => fun j => matrix_eq i j"
+    },
+    {
+      "declaration": "matrix_add_entry",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun left => fun right => fun i => fun j => @Eq.refl.{u} Scalar (add (left i j) (right i j))"
+    },
+    {
+      "declaration": "matrix_transpose_entry",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun j => fun i => @Eq.refl.{u} Scalar (entries i j)"
+    },
+    {
+      "declaration": "matrix_product_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun Mid => fun matrix_mul => fun left => fun right => fun product => fun product_eq => fun (P : Prop) => fun (mk : forall (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)), P) => mk product_eq"
+    },
+    {
+      "declaration": "matrix_product_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun Mid => fun matrix_mul => fun left => fun right => fun product => fun product_evidence => product_evidence (@MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)) (fun (product_eq : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col product (matrix_mul left right)) => product_eq)"
+    },
+    {
+      "declaration": "square_matrix_mul_law_args_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun matrix_mul => fun matrix_one => fun mul_assoc => fun left_unit => fun right_unit => fun (P : Prop) => fun (mk : forall (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))), forall (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A), forall (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A), P) => mk mul_assoc left_unit right_unit"
+    },
+    {
+      "declaration": "square_matrix_mul_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun matrix_mul => fun matrix_one => fun law_args => fun A => fun B => fun C => law_args (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) (fun (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) => fun (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) => fun (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) => mul_assoc A B C)"
+    },
+    {
+      "declaration": "square_matrix_left_unit",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun matrix_mul => fun matrix_one => fun law_args => fun A => law_args (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) (fun (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) => fun (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) => fun (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) => left_unit A)"
+    },
+    {
+      "declaration": "square_matrix_right_unit",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun matrix_mul => fun matrix_one => fun law_args => fun A => law_args (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) (fun (mul_assoc : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), forall (C : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (matrix_mul A B) C) (matrix_mul A (matrix_mul B C))) => fun (left_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul matrix_one A) A) => fun (right_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A matrix_one) A) => right_unit A)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Matrix/Basic/certificate.npcert"
+  }
+}
