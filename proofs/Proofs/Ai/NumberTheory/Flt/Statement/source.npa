@@ -1,0 +1,54 @@
+import Std.Logic.Eq
+import Std.Nat.Basic
+
+def FltFalse :
+  Prop :=
+  forall (P : Prop), P
+
+def FltNot :
+  forall (P : Prop), Prop :=
+  fun P => forall (p : P), FltFalse
+
+def FltNatTwo :
+  Nat :=
+  Nat.succ (Nat.succ Nat.zero)
+
+def FltNatNe :
+  forall (a : Nat), forall (b : Nat), Prop :=
+  fun a => fun b => FltNot (@Eq.{1} Nat a b)
+
+def FltNatEquation :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (n : Nat), forall (a : Nat), forall (b : Nat), forall (c : Nat), Prop :=
+  fun add => fun pow => fun n => fun a => fun b => fun c => @Eq.{1} Nat (add (pow a n) (pow b n)) (pow c n)
+
+def fermat_last_theorem :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop :=
+  fun add => fun pow => fun lt => forall (n : Nat), forall (a : Nat), forall (b : Nat), forall (c : Nat), forall (hn : lt FltNatTwo n), forall (ha : FltNatNe a Nat.zero), forall (hb : FltNatNe b Nat.zero), forall (hc : FltNatNe c Nat.zero), forall (heq : FltNatEquation add pow n a b c), FltFalse
+
+def fermat_last_theorem_nat :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop :=
+  fermat_last_theorem
+
+def fermat_last_theorem_positive_nat.{u} :
+  forall (PositiveNat : Sort u), forall (toNat : forall (x : PositiveNat), Nat), forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop :=
+  fun PositiveNat => fun toNat => fun add => fun pow => fun lt => forall (n : Nat), forall (a : PositiveNat), forall (b : PositiveNat), forall (c : PositiveNat), forall (hn : lt FltNatTwo n), forall (heq : FltNatEquation add pow n (toNat a) (toNat b) (toNat c)), FltFalse
+
+def fermat_last_theorem_int.{u} :
+  forall (Int : Sort u), forall (zero : Int), forall (add : forall (x : Int), forall (y : Int), Int), forall (pow : forall (base : Int), forall (exp : Nat), Int), forall (lt : forall (x : Nat), forall (y : Nat), Prop), Prop :=
+  fun Int => fun zero => fun add => fun pow => fun lt => forall (n : Nat), forall (a : Int), forall (b : Int), forall (c : Int), forall (hn : lt FltNatTwo n), forall (ha : FltNot (@Eq.{u} Int a zero)), forall (hb : FltNot (@Eq.{u} Int b zero)), forall (hc : FltNot (@Eq.{u} Int c zero)), forall (heq : @Eq.{u} Int (add (pow a n) (pow b n)) (pow c n)), FltFalse
+
+theorem fermat_last_theorem_shape :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), @Eq.{1} Prop (fermat_last_theorem add pow lt) (forall (n : Nat), forall (a : Nat), forall (b : Nat), forall (c : Nat), forall (hn : lt FltNatTwo n), forall (ha : FltNatNe a Nat.zero), forall (hb : FltNatNe b Nat.zero), forall (hc : FltNatNe c Nat.zero), forall (heq : FltNatEquation add pow n a b c), FltFalse) :=
+  fun add => fun pow => fun lt => @Eq.refl.{1} Prop (fermat_last_theorem add pow lt)
+
+theorem fermat_last_theorem_nat_alias :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), @Eq.{1} Prop (fermat_last_theorem_nat add pow lt) (fermat_last_theorem add pow lt) :=
+  fun add => fun pow => fun lt => @Eq.refl.{1} Prop (fermat_last_theorem add pow lt)
+
+theorem fermat_last_theorem_positive_nat_shape.{u} :
+  forall (PositiveNat : Sort u), forall (toNat : forall (x : PositiveNat), Nat), forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), @Eq.{1} Prop (@fermat_last_theorem_positive_nat.{u} PositiveNat toNat add pow lt) (forall (n : Nat), forall (a : PositiveNat), forall (b : PositiveNat), forall (c : PositiveNat), forall (hn : lt FltNatTwo n), forall (heq : FltNatEquation add pow n (toNat a) (toNat b) (toNat c)), FltFalse) :=
+  fun PositiveNat => fun toNat => fun add => fun pow => fun lt => @Eq.refl.{1} Prop (@fermat_last_theorem_positive_nat.{u} PositiveNat toNat add pow lt)
+
+theorem fermat_last_theorem_int_shape.{u} :
+  forall (Int : Sort u), forall (zero : Int), forall (add : forall (x : Int), forall (y : Int), Int), forall (pow : forall (base : Int), forall (exp : Nat), Int), forall (lt : forall (x : Nat), forall (y : Nat), Prop), @Eq.{1} Prop (@fermat_last_theorem_int.{u} Int zero add pow lt) (forall (n : Nat), forall (a : Int), forall (b : Int), forall (c : Int), forall (hn : lt FltNatTwo n), forall (ha : FltNot (@Eq.{u} Int a zero)), forall (hb : FltNot (@Eq.{u} Int b zero)), forall (hc : FltNot (@Eq.{u} Int c zero)), forall (heq : @Eq.{u} Int (add (pow a n) (pow b n)) (pow c n)), FltFalse) :=
+  fun Int => fun zero => fun add => fun pow => fun lt => @Eq.refl.{1} Prop (@fermat_last_theorem_int.{u} Int zero add pow lt)

@@ -132,7 +132,7 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
 
 ### FLT-00 Project Contract, Statement Freeze, And Library Charter
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `proofs/fermats-last-theorem-proof-phases.md`
@@ -161,7 +161,12 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Flt.Statement`
   - `rg -n "fermat_last_theorem|Flt.BridgeAxiom|library growth" proofs/README.md proofs/Proofs/Ai/NumberTheory`
 - Notes:
-  - This milestone may initially be mostly interface and certificate plumbing, but it fixes the public target for every later milestone.
+  - Implemented in `Proofs.Ai.NumberTheory.Flt.Statement`.
+  - The current statement freezes the final target as a Prop-valued constant
+    parameterized by explicit `add`, `pow`, and `lt` operations because the
+    reusable Nat arithmetic/order APIs are scheduled for NT-01 through NT-03.
+  - It has no `Flt.BridgeAxiom.*` dependency and records the library growth
+    rule in `proofs/README.md`.
 
 ### FLT-01 Bridge Policy And Release-Gate Skeleton
 
