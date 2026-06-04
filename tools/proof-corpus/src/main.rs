@@ -180,6 +180,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE,
     &LINEAR_ALGEBRA_MATRIX_BASIC_MODULE,
     &LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE,
+    &LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1860,6 +1861,26 @@ const LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE: ModuleArtifact = ModuleArtifa
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Systems.Basic",
+    source_path: "Proofs/Ai/LinearAlgebra/Systems/Basic/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Systems/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Systems/Basic/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Systems/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+        "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+        "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+        "Proofs.Ai.LinearAlgebra.LinearMap.Basic",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_SYSTEMS_BASIC_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_SYSTEMS_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -2500,6 +2521,72 @@ macro_rules! linear_algebra_linear_map_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_system_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            "forall (rhs : Codomain), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            "forall (rhs : Codomain), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_system_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun rhs => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun rhs => ",
             $tail
         )
     };
@@ -31554,6 +31641,174 @@ const LINEAR_ALGEBRA_MATRIX_REPRESENTATION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_SYSTEMS_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "HomogeneousSolutionSet",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("forall (x : Domain), Prop"),
+        value: linear_algebra_linear_map_abs!(
+            "fun x => @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NonhomogeneousSolutionSet",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_system_params!("forall (x : Domain), Prop"),
+        value: linear_algebra_system_abs!("fun x => @Eq.{w} Codomain (f x) rhs"),
+    },
+    DefinitionArtifact {
+        name: "HomogeneousSolutionSpaceEvidence",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NonhomogeneousSolutionTranslateEvidence",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_system_params!("forall (particular : Domain), Prop"),
+        value: linear_algebra_system_abs!(concat!(
+            "fun particular => forall (P : Prop), forall (mk : ",
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (particular_solution : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), ",
+            "forall (solution_to_homogeneous_offset : forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))), ",
+            "forall (homogeneous_offset_to_solution : forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_SYSTEMS_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "homogeneous_solution_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), forall (h : @Eq.{w} Codomain (f x) czero), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x"
+        ),
+        proof: linear_algebra_linear_map_abs!("fun x => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "homogeneous_solution_eq_zero",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), forall (hx : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @Eq.{w} Codomain (f x) czero"
+        ),
+        proof: linear_algebra_linear_map_abs!("fun x => fun hx => hx"),
+    },
+    TheoremArtifact {
+        name: "homogeneous_solution_to_kernel",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), forall (hx : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x"
+        ),
+        proof: linear_algebra_linear_map_abs!("fun x => fun hx => hx"),
+    },
+    TheoremArtifact {
+        name: "kernel_to_homogeneous_solution",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x"
+        ),
+        proof: linear_algebra_linear_map_abs!("fun x => fun hx => hx"),
+    },
+    TheoremArtifact {
+        name: "nonhomogeneous_solution_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (x : Domain), forall (h : @Eq.{w} Codomain (f x) rhs), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x"
+        ),
+        proof: linear_algebra_system_abs!("fun x => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "nonhomogeneous_solution_eq_rhs",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @Eq.{w} Codomain (f x) rhs"
+        ),
+        proof: linear_algebra_system_abs!("fun x => fun hx => hx"),
+    },
+    TheoremArtifact {
+        name: "homogeneous_solution_space_evidence_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), @HomogeneousSolutionSpaceEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => fun kernel_subspace => fun (P : Prop) => fun (mk : forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), P) => mk linear_map kernel_subspace"
+        ),
+    },
+    TheoremArtifact {
+        name: "homogeneous_solution_space_kernel_subspace",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (evidence : @HomogeneousSolutionSpaceEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun evidence => evidence (@Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)) (fun (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)) => kernel_subspace)"
+        ),
+    },
+    TheoremArtifact {
+        name: "homogeneous_solution_set_is_kernel_subspace",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (evidence : @HomogeneousSolutionSpaceEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun evidence => @homogeneous_solution_space_kernel_subspace.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonhomogeneous_solution_translate_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (particular : Domain), forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (particular_solution : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), forall (solution_to_homogeneous_offset : forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))), forall (homogeneous_offset_to_solution : forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)), @NonhomogeneousSolutionTranslateEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular"
+        ),
+        proof: linear_algebra_system_abs!(
+            "fun particular => fun linear_map => fun particular_solution => fun solution_to_homogeneous_offset => fun homogeneous_offset_to_solution => fun (P : Prop) => fun (mk : forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (particular_solution : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), forall (solution_to_homogeneous_offset : forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))), forall (homogeneous_offset_to_solution : forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)), P) => mk linear_map particular_solution solution_to_homogeneous_offset homogeneous_offset_to_solution"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonhomogeneous_solution_particular",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (particular : Domain), forall (evidence : @NonhomogeneousSolutionTranslateEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular"
+        ),
+        proof: linear_algebra_system_abs!(
+            "fun particular => fun evidence => evidence (@NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular) (fun (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (particular_solution : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular) => fun (solution_to_homogeneous_offset : forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))) => fun (homogeneous_offset_to_solution : forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)) => particular_solution)"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonhomogeneous_solution_to_homogeneous_offset",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (particular : Domain), forall (evidence : @NonhomogeneousSolutionTranslateEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))"
+        ),
+        proof: linear_algebra_system_abs!(
+            "fun particular => fun evidence => fun x => fun hx => evidence (@HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))) (fun (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (particular_solution : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular) => fun (solution_to_homogeneous_offset : forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))) => fun (homogeneous_offset_to_solution : forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)) => solution_to_homogeneous_offset x hx)"
+        ),
+    },
+    TheoremArtifact {
+        name: "homogeneous_offset_to_nonhomogeneous_solution",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (particular : Domain), forall (evidence : @NonhomogeneousSolutionTranslateEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)"
+        ),
+        proof: linear_algebra_system_abs!(
+            "fun particular => fun evidence => fun k => fun hk => evidence (@NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)) (fun (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (particular_solution : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular) => fun (solution_to_homogeneous_offset : forall (x : Domain), forall (hx : @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs x), @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x (dneg particular))) => fun (homogeneous_offset_to_solution : forall (k : Domain), forall (hk : @HomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f k), @NonhomogeneousSolutionSet.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs (dadd particular k)) => homogeneous_offset_to_solution k hk)"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonhomogeneous_solution_set_is_translate",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_system_params!(
+            "forall (particular : Domain), forall (evidence : @NonhomogeneousSolutionTranslateEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular), @NonhomogeneousSolutionTranslateEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f rhs particular"
+        ),
+        proof: linear_algebra_system_abs!("fun particular => fun evidence => evidence"),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -39457,6 +39712,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_MATRIX_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE.module
+        || config.module == LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);

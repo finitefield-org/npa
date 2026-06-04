@@ -1373,6 +1373,24 @@ theorems = ["linear_map_matrix_representation_intro", "linear_map_matrix_represe
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Systems.Basic"
+source = "Proofs/Ai/LinearAlgebra/Systems/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Systems/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Systems/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Systems/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:62f65a111f494a2a24ce96c5b9cf5fce420e6039ac33a89743465ad7a006f947"
+certificate_file_sha256 = "sha256:8a21594746d68810f6ef5caf35f45107e5e07d52d37d853b7be48122c54cc9d5"
+export_hash = "sha256:2ee4700e088c1d363e86a90ec9376a51ac475eff6ba0b44ad21c752dd6729d38"
+axiom_report_hash = "sha256:6fb10daa6bb059bfea6535d1d96e9ae73c2da1aee15921bf824480bbeee32550"
+certificate_hash = "sha256:15fadcbbe416aa5129d681ae286f0481e166a46e81043274a98b54557a3e4e3f"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic"]
+definitions = ["HomogeneousSolutionSet", "NonhomogeneousSolutionSet", "HomogeneousSolutionSpaceEvidence", "NonhomogeneousSolutionTranslateEvidence"]
+theorems = ["homogeneous_solution_intro", "homogeneous_solution_eq_zero", "homogeneous_solution_to_kernel", "kernel_to_homogeneous_solution", "nonhomogeneous_solution_intro", "nonhomogeneous_solution_eq_rhs", "homogeneous_solution_space_evidence_intro", "homogeneous_solution_space_kernel_subspace", "homogeneous_solution_set_is_kernel_subspace", "nonhomogeneous_solution_translate_intro", "nonhomogeneous_solution_particular", "nonhomogeneous_solution_to_homogeneous_offset", "homogeneous_offset_to_nonhomogeneous_solution", "nonhomogeneous_solution_set_is_translate"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"

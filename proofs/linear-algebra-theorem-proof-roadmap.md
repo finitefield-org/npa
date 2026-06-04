@@ -465,11 +465,17 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-05 Linear Systems And Row Reduction
 
-- Status: planned.
+- Status: `LAQ-008` complete for
+  `Proofs.Ai.LinearAlgebra.Systems.Basic`: homogeneous solutions are exposed
+  as the kernel solution set with explicit kernel/subspace evidence, and
+  nonhomogeneous solution sets are represented by a certified particular
+  solution plus homogeneous offsets. Row-operation preservation, elimination
+  traces, echelon/RREF, pivot/free-variable, Rouche-Capelli, and fundamental
+  solution-system results remain planned.
 - Depends on: `LIN-03` and `LIN-04`.
 - Target modules:
-  - `Proofs.Ai.LinearAlgebra.Matrix.Elimination`
   - `Proofs.Ai.LinearAlgebra.Systems.Basic`
+  - `Proofs.Ai.LinearAlgebra.Matrix.Elimination`
 - Theorem order:
   1. homogeneous solution space theorem;
   2. nonhomogeneous solution set is a translate of the homogeneous solution
@@ -491,7 +497,6 @@ secondary area must import, specialize, or expose a compatibility alias.
     trace.
   - Cramer and determinant criteria remain aliases to `LIN-06`.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Elimination`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Systems.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
