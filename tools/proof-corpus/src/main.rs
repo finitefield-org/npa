@@ -168,6 +168,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_UFD_BRIDGE_MODULE,
     &NUMBER_THEORY_FACTORIZATION_MODULE,
     &NUMBER_THEORY_PRIME_INFINITUDE_MODULE,
+    &NUMBER_THEORY_CONGRUENCE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1655,6 +1656,23 @@ const NUMBER_THEORY_PRIME_INFINITUDE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PRIME_INFINITUDE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CONGRUENCE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Congruence",
+    source_path: "Proofs/Ai/NumberTheory/Congruence/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Congruence/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Congruence/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Congruence/replay.json",
+    imports: &[
+        "Proofs.Ai.NumberTheory.Divisibility",
+        "Proofs.Ai.NumberTheory.Gcd",
+        "Proofs.Ai.NumberTheory.Bezout",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CONGRUENCE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10341,6 +10359,113 @@ const NUMBER_THEORY_PRIME_INFINITUDE_THEOREMS: &[TheoremArtifact] = &[
             "forall (PrimeInfinitudePackage : Type), forall (ChebotarevTheorem : Type), forall (PrimeNumberTheorem : Type), forall (NoChebotarevOrPntBoundary : forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), Prop), forall (boundary_law : forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), NoChebotarevOrPntBoundary prime_infinitude chebotarev pnt), forall (prime_infinitude : PrimeInfinitudePackage), forall (chebotarev : ChebotarevTheorem), forall (pnt : PrimeNumberTheorem), NoChebotarevOrPntBoundary prime_infinitude chebotarev pnt",
         proof:
             "fun PrimeInfinitudePackage => fun ChebotarevTheorem => fun PrimeNumberTheorem => fun NoChebotarevOrPntBoundary => fun boundary_law => fun prime_infinitude => fun chebotarev => fun pnt => boundary_law prime_infinitude chebotarev pnt",
+    },
+];
+
+const NUMBER_THEORY_CONGRUENCE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "congruent_modulo_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (definition_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (divides_difference : DividesInt modulus (Sub a b)), CongruentModulo modulus a b), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (divides_difference : DividesInt modulus (Sub a b)), CongruentModulo modulus a b",
+        proof:
+            "fun Int => fun Sub => fun DividesInt => fun CongruentModulo => fun definition_law => fun modulus => fun a => fun b => fun divides_difference => definition_law modulus a b divides_difference",
+    },
+    TheoremArtifact {
+        name: "congruent_modulo_reflexive",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ZeroInt : Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (SubSelfZeroEvidence : forall (a : Int), Prop), forall (reflexive_law : forall (modulus : Int), forall (a : Int), forall (sub_self_zero : SubSelfZeroEvidence a), forall (divides_zero : DividesInt modulus ZeroInt), CongruentModulo modulus a a), forall (modulus : Int), forall (a : Int), forall (sub_self_zero : SubSelfZeroEvidence a), forall (divides_zero : DividesInt modulus ZeroInt), CongruentModulo modulus a a",
+        proof:
+            "fun Int => fun ZeroInt => fun Sub => fun DividesInt => fun CongruentModulo => fun SubSelfZeroEvidence => fun reflexive_law => fun modulus => fun a => fun sub_self_zero => fun divides_zero => reflexive_law modulus a sub_self_zero divides_zero",
+    },
+    TheoremArtifact {
+        name: "congruent_modulo_symmetric",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (symmetry_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (ab : CongruentModulo modulus a b), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_ba : DividesInt modulus (Sub b a)), CongruentModulo modulus b a), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (ab : CongruentModulo modulus a b), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_ba : DividesInt modulus (Sub b a)), CongruentModulo modulus b a",
+        proof:
+            "fun Int => fun Sub => fun DividesInt => fun CongruentModulo => fun symmetry_law => fun modulus => fun a => fun b => fun ab => fun divides_ab => fun divides_ba => symmetry_law modulus a b ab divides_ab divides_ba",
+    },
+    TheoremArtifact {
+        name: "congruent_modulo_transitive",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (transitive_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (c : Int), forall (ab : CongruentModulo modulus a b), forall (bc : CongruentModulo modulus b c), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_bc : DividesInt modulus (Sub b c)), forall (divides_ac : DividesInt modulus (Sub a c)), CongruentModulo modulus a c), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (c : Int), forall (ab : CongruentModulo modulus a b), forall (bc : CongruentModulo modulus b c), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_bc : DividesInt modulus (Sub b c)), forall (divides_ac : DividesInt modulus (Sub a c)), CongruentModulo modulus a c",
+        proof:
+            "fun Int => fun Sub => fun DividesInt => fun CongruentModulo => fun transitive_law => fun modulus => fun a => fun b => fun c => fun ab => fun bc => fun divides_ab => fun divides_bc => fun divides_ac => transitive_law modulus a b c ab bc divides_ab divides_bc divides_ac",
+    },
+    TheoremArtifact {
+        name: "congruent_addition_preserves",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Add : forall (a : Int), forall (b : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (addition_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (c : Int), forall (d : Int), forall (ab : CongruentModulo modulus a b), forall (cd : CongruentModulo modulus c d), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_cd : DividesInt modulus (Sub c d)), forall (divides_sum : DividesInt modulus (Sub (Add a c) (Add b d))), CongruentModulo modulus (Add a c) (Add b d)), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (c : Int), forall (d : Int), forall (ab : CongruentModulo modulus a b), forall (cd : CongruentModulo modulus c d), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_cd : DividesInt modulus (Sub c d)), forall (divides_sum : DividesInt modulus (Sub (Add a c) (Add b d))), CongruentModulo modulus (Add a c) (Add b d)",
+        proof:
+            "fun Int => fun Add => fun Sub => fun DividesInt => fun CongruentModulo => fun addition_law => fun modulus => fun a => fun b => fun c => fun d => fun ab => fun cd => fun divides_ab => fun divides_cd => fun divides_sum => addition_law modulus a b c d ab cd divides_ab divides_cd divides_sum",
+    },
+    TheoremArtifact {
+        name: "congruent_multiplication_preserves",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (multiplication_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (c : Int), forall (d : Int), forall (ab : CongruentModulo modulus a b), forall (cd : CongruentModulo modulus c d), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_cd : DividesInt modulus (Sub c d)), forall (divides_product : DividesInt modulus (Sub (Mul a c) (Mul b d))), CongruentModulo modulus (Mul a c) (Mul b d)), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (c : Int), forall (d : Int), forall (ab : CongruentModulo modulus a b), forall (cd : CongruentModulo modulus c d), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_cd : DividesInt modulus (Sub c d)), forall (divides_product : DividesInt modulus (Sub (Mul a c) (Mul b d))), CongruentModulo modulus (Mul a c) (Mul b d)",
+        proof:
+            "fun Int => fun Mul => fun Sub => fun DividesInt => fun CongruentModulo => fun multiplication_law => fun modulus => fun a => fun b => fun c => fun d => fun ab => fun cd => fun divides_ab => fun divides_cd => fun divides_product => multiplication_law modulus a b c d ab cd divides_ab divides_cd divides_product",
+    },
+    TheoremArtifact {
+        name: "congruent_negation_preserves",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Neg : forall (a : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (negation_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (ab : CongruentModulo modulus a b), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_neg : DividesInt modulus (Sub (Neg a) (Neg b))), CongruentModulo modulus (Neg a) (Neg b)), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (ab : CongruentModulo modulus a b), forall (divides_ab : DividesInt modulus (Sub a b)), forall (divides_neg : DividesInt modulus (Sub (Neg a) (Neg b))), CongruentModulo modulus (Neg a) (Neg b)",
+        proof:
+            "fun Int => fun Neg => fun Sub => fun DividesInt => fun CongruentModulo => fun negation_law => fun modulus => fun a => fun b => fun ab => fun divides_ab => fun divides_neg => negation_law modulus a b ab divides_ab divides_neg",
+    },
+    TheoremArtifact {
+        name: "congruent_power_preserves_from_exponent_laws",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (Int : Type), forall (Pow : forall (base : Int), forall (exponent : Nat), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (ExponentLawEvidence : forall (a : Int), forall (b : Int), forall (exponent : Nat), Prop), forall (power_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (exponent : Nat), forall (ab : CongruentModulo modulus a b), forall (divides_ab : DividesInt modulus (Sub a b)), forall (exponent_law : ExponentLawEvidence a b exponent), forall (divides_power : DividesInt modulus (Sub (Pow a exponent) (Pow b exponent))), CongruentModulo modulus (Pow a exponent) (Pow b exponent)), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (exponent : Nat), forall (ab : CongruentModulo modulus a b), forall (divides_ab : DividesInt modulus (Sub a b)), forall (exponent_law : ExponentLawEvidence a b exponent), forall (divides_power : DividesInt modulus (Sub (Pow a exponent) (Pow b exponent))), CongruentModulo modulus (Pow a exponent) (Pow b exponent)",
+        proof:
+            "fun Nat => fun Int => fun Pow => fun Sub => fun DividesInt => fun CongruentModulo => fun ExponentLawEvidence => fun power_law => fun modulus => fun a => fun b => fun exponent => fun ab => fun divides_ab => fun exponent_law => fun divides_power => power_law modulus a b exponent ab divides_ab exponent_law divides_power",
+    },
+    TheoremArtifact {
+        name: "congruence_cancellation_with_coprime_factor",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (OneInt : Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (cancellation_law : forall (modulus : Int), forall (factor : Int), forall (a : Int), forall (b : Int), forall (scaled_congruence : CongruentModulo modulus (Mul factor a) (Mul factor b)), forall (scaled_divisibility : DividesInt modulus (Sub (Mul factor a) (Mul factor b))), forall (gcd_one : GcdEvidence factor modulus OneInt), forall (coprime_factor_modulus : CoprimeInt factor modulus), CongruentModulo modulus a b), forall (modulus : Int), forall (factor : Int), forall (a : Int), forall (b : Int), forall (scaled_congruence : CongruentModulo modulus (Mul factor a) (Mul factor b)), forall (scaled_divisibility : DividesInt modulus (Sub (Mul factor a) (Mul factor b))), forall (gcd_one : GcdEvidence factor modulus OneInt), forall (coprime_factor_modulus : CoprimeInt factor modulus), CongruentModulo modulus a b",
+        proof:
+            "fun Int => fun OneInt => fun Mul => fun Sub => fun DividesInt => fun GcdEvidence => fun CoprimeInt => fun CongruentModulo => fun cancellation_law => fun modulus => fun factor => fun a => fun b => fun scaled_congruence => fun scaled_divisibility => fun gcd_one => fun coprime_factor_modulus => cancellation_law modulus factor a b scaled_congruence scaled_divisibility gcd_one coprime_factor_modulus",
+    },
+    TheoremArtifact {
+        name: "congruence_division_with_gcd_condition",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Div : forall (a : Int), forall (factor : Int), Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (division_law : forall (modulus : Int), forall (factor : Int), forall (a : Int), forall (b : Int), forall (g : Int), forall (divides_a : DividesInt factor a), forall (divides_b : DividesInt factor b), forall (gcd_factor_modulus : GcdEvidence factor modulus g), forall (coprime_after_division : CoprimeInt factor modulus), forall (scaled_congruence : CongruentModulo modulus (Mul factor (Div a factor)) (Mul factor (Div b factor))), CongruentModulo modulus (Div a factor) (Div b factor)), forall (modulus : Int), forall (factor : Int), forall (a : Int), forall (b : Int), forall (g : Int), forall (divides_a : DividesInt factor a), forall (divides_b : DividesInt factor b), forall (gcd_factor_modulus : GcdEvidence factor modulus g), forall (coprime_after_division : CoprimeInt factor modulus), forall (scaled_congruence : CongruentModulo modulus (Mul factor (Div a factor)) (Mul factor (Div b factor))), CongruentModulo modulus (Div a factor) (Div b factor)",
+        proof:
+            "fun Int => fun Div => fun Mul => fun Sub => fun DividesInt => fun GcdEvidence => fun CoprimeInt => fun CongruentModulo => fun division_law => fun modulus => fun factor => fun a => fun b => fun g => fun divides_a => fun divides_b => fun gcd_factor_modulus => fun coprime_after_division => fun scaled_congruence => division_law modulus factor a b g divides_a divides_b gcd_factor_modulus coprime_after_division scaled_congruence",
+    },
+    TheoremArtifact {
+        name: "linear_congruence_solution_condition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (LinearCongruence : forall (coefficient : Int), forall (unknown : Int), forall (constant : Int), forall (modulus : Int), Prop), forall (LinearCongruenceSolvable : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), Prop), forall (solution_law : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), LinearCongruenceSolvable coefficient constant modulus), forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), LinearCongruenceSolvable coefficient constant modulus",
+        proof:
+            "fun Int => fun Mul => fun Sub => fun DividesInt => fun GcdEvidence => fun LinearCongruence => fun LinearCongruenceSolvable => fun solution_law => fun coefficient => fun constant => fun modulus => fun g => fun gcd_condition => fun gcd_divides_constant => solution_law coefficient constant modulus g gcd_condition gcd_divides_constant",
+    },
+    TheoremArtifact {
+        name: "congruence_no_hidden_coprime_boundary",
+        universe_params: &[],
+        statement:
+            "forall (CongruencePackage : Type), forall (CancellationPackage : Type), forall (DivisionPackage : Type), forall (CoprimeEvidence : forall (cancellation : CancellationPackage), forall (division : DivisionPackage), Prop), forall (NoHiddenCoprimeBoundary : forall (congruence : CongruencePackage), forall (cancellation : CancellationPackage), forall (division : DivisionPackage), Prop), forall (boundary_law : forall (congruence : CongruencePackage), forall (cancellation : CancellationPackage), forall (division : DivisionPackage), forall (coprime_evidence : CoprimeEvidence cancellation division), NoHiddenCoprimeBoundary congruence cancellation division), forall (congruence : CongruencePackage), forall (cancellation : CancellationPackage), forall (division : DivisionPackage), forall (coprime_evidence : CoprimeEvidence cancellation division), NoHiddenCoprimeBoundary congruence cancellation division",
+        proof:
+            "fun CongruencePackage => fun CancellationPackage => fun DivisionPackage => fun CoprimeEvidence => fun NoHiddenCoprimeBoundary => fun boundary_law => fun congruence => fun cancellation => fun division => fun coprime_evidence => boundary_law congruence cancellation division coprime_evidence",
+    },
+    TheoremArtifact {
+        name: "congruence_powers_use_exponent_laws_boundary",
+        universe_params: &[],
+        statement:
+            "forall (PowerCongruencePackage : Type), forall (ExponentLawPackage : Type), forall (SimplifierPrimitive : Type), forall (NoSimplifierPrimitiveBoundary : forall (power_congruence : PowerCongruencePackage), forall (exponent_laws : ExponentLawPackage), forall (simplifier : SimplifierPrimitive), Prop), forall (boundary_law : forall (power_congruence : PowerCongruencePackage), forall (exponent_laws : ExponentLawPackage), forall (simplifier : SimplifierPrimitive), NoSimplifierPrimitiveBoundary power_congruence exponent_laws simplifier), forall (power_congruence : PowerCongruencePackage), forall (exponent_laws : ExponentLawPackage), forall (simplifier : SimplifierPrimitive), NoSimplifierPrimitiveBoundary power_congruence exponent_laws simplifier",
+        proof:
+            "fun PowerCongruencePackage => fun ExponentLawPackage => fun SimplifierPrimitive => fun NoSimplifierPrimitiveBoundary => fun boundary_law => fun power_congruence => fun exponent_laws => fun simplifier => boundary_law power_congruence exponent_laws simplifier",
     },
 ];
 
@@ -38807,6 +38932,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_UFD_BRIDGE_MODULE.module
         || config.module == NUMBER_THEORY_FACTORIZATION_MODULE.module
         || config.module == NUMBER_THEORY_PRIME_INFINITUDE_MODULE.module
+        || config.module == NUMBER_THEORY_CONGRUENCE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

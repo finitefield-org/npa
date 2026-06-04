@@ -168,6 +168,23 @@ These modules do not make the abstract UFD package depend on number theory and
 do not assume fundamental-theorem-of-arithmetic uniqueness as an input axiom or
 use analytic number theory, Chebotarev, or PNT for elementary prime infinitude.
 
+## Congruence Algebra Interface
+
+Concrete entry point: `Proofs.Ai.NumberTheory.Congruence`.
+
+The congruence module records checked theorem targets for congruence modulo an
+integer as a divisibility-of-difference surface, reflexivity, symmetry,
+transitivity, preservation under addition, multiplication, negation, and
+powers, cancellation by a coprime factor, division with visible gcd and
+coprime conditions, and linear-congruence solvability under the usual
+gcd-divides-constant condition. It imports the divisibility, gcd, and Bezout
+closure only.
+
+These declarations freeze the `CongruentModulo` statement interface for later
+residue-ring and CRT modules. They do not construct residue rings, quotient
+carriers, or CRT witnesses, and power compatibility is routed through explicit
+ordinary exponent-law evidence rather than simplifier primitives.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

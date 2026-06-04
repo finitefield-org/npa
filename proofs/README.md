@@ -114,6 +114,11 @@ Current bundles:
   downstream of `Factorization`, preserving Euclid finite-list escape surfaces, factorial-plus-one
   witnesses, elementary prime-infinitude variants, square-root bounds for composite prime factors,
   and boundaries excluding analytic number theory, Chebotarev, and PNT dependencies.
+- `Proofs/Ai/NumberTheory/Congruence/`: certificate-backed congruence algebra package
+  downstream of divisibility, gcd, and Bezout evidence, preserving congruence modulo an integer,
+  equivalence-relation laws, addition, multiplication, negation, and power compatibility, plus
+  cancellation, division, and linear-congruence solvability surfaces whose `Divides`, `Gcd`, and
+  `Coprime` hypotheses remain explicit.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

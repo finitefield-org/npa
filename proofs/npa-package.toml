@@ -1121,6 +1121,23 @@ theorems = ["prime_infinitude_from_factorization_surface", "prime_infinitude_euc
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.NumberTheory.Congruence"
+source = "Proofs/Ai/NumberTheory/Congruence/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Congruence/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Congruence/meta.json"
+replay = "Proofs/Ai/NumberTheory/Congruence/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:2e8091bf919dfbcb69771311da60cb742851d8bebc5a211bc459cd5e5ed59048"
+expected_certificate_file_hash = "sha256:2a240f5e154a369e1534b3e80bb4b5327d707d0208bd983d9c1b0d319944477c"
+expected_export_hash = "sha256:5e4d717b8651d166c2cdddcb978372b4e6a53c397458256d17aa7ef82e43ccbd"
+expected_axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+expected_certificate_hash = "sha256:ac00bedd16c4cd5b062198ba7fdf65081a97bf1bea46757ec9f4855661f01628"
+imports = ["Proofs.Ai.NumberTheory.Divisibility", "Proofs.Ai.NumberTheory.Gcd", "Proofs.Ai.NumberTheory.Bezout"]
+definitions = []
+theorems = ["congruent_modulo_definition_surface", "congruent_modulo_reflexive", "congruent_modulo_symmetric", "congruent_modulo_transitive", "congruent_addition_preserves", "congruent_multiplication_preserves", "congruent_negation_preserves", "congruent_power_preserves_from_exponent_laws", "congruence_cancellation_with_coprime_factor", "congruence_division_with_gcd_condition", "linear_congruence_solution_condition_surface", "congruence_no_hidden_coprime_boundary", "congruence_powers_use_exponent_laws_boundary"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
 source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"

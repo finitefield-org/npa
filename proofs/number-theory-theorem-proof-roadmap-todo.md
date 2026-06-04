@@ -461,7 +461,7 @@ later in the file.
 
 ### NT-T10 Define Congruence Algebra
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T05`
 - Areas: `Proofs/Ai/NumberTheory/Congruence/`
 - Tasks:
@@ -477,7 +477,11 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Congruence`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Congruence`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Congruent|modulo|cancellation|Coprime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T11 Add Residue Ring And Unit Group Interfaces
 
