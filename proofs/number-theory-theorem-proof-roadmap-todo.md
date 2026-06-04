@@ -567,7 +567,7 @@ later in the file.
 
 ### NT-T14 Prove Fermat, Euler, Wilson, And Carmichael Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T13`
 - Areas: `Proofs/Ai/NumberTheory/FermatEulerWilson/`, `Proofs/Ai/NumberTheory/Carmichael/`
 - Tasks:
@@ -585,6 +585,8 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.FermatEulerWilson`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.FermatEulerWilson`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Carmichael`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Carmichael`
   - `rg -n "Fermat|Euler theorem|Wilson|Carmichael" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T15 Add RSA And Primality-Test Interfaces

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.FermatEulerWilson",
+  "source": "Proofs/Ai/NumberTheory/FermatEulerWilson/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/FermatEulerWilson/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5bfc228b53521b58c22a6d232814d0dd3c01604631a3125a60170d0dfe828668",
+  "certificate_file_sha256": "sha256:67ad9f9a8527bd3c1ab16700d7472bc754ee6209c7b924f50a494ad7d87d94bf",
+  "export_hash": "sha256:c043d3f6d42558501c8dab740453bc310c7e935ff210dacc5f934a2659356b9e",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:f1048ffeb516668423234e9f2c9fc466508a6256baccb857c17678168906cb86",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Phi"],
+  "axioms": [],
+  "declarations": [
+    { "name": "fermat_little_theorem_from_finite_unit_group_order", "kind": "theorem" },
+    { "name": "euler_theorem_from_phi_unit_group_cardinality", "kind": "theorem" },
+    { "name": "fermat_euler_combined_prime_modulus_surface", "kind": "theorem" },
+    { "name": "wilson_theorem_prime_modulus_exact_hypotheses", "kind": "theorem" },
+    { "name": "wilson_converse_exact_modulus_hypotheses", "kind": "theorem" },
+    { "name": "fermat_euler_wilson_no_modular_arithmetic_axiom_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

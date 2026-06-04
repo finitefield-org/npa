@@ -1223,6 +1223,40 @@ theorems = ["euler_phi_unit_group_cardinality_surface", "euler_phi_reduced_resid
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.NumberTheory.FermatEulerWilson"
+source = "Proofs/Ai/NumberTheory/FermatEulerWilson/source.npa"
+certificate = "Proofs/Ai/NumberTheory/FermatEulerWilson/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/FermatEulerWilson/meta.json"
+replay = "Proofs/Ai/NumberTheory/FermatEulerWilson/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:5bfc228b53521b58c22a6d232814d0dd3c01604631a3125a60170d0dfe828668"
+expected_certificate_file_hash = "sha256:67ad9f9a8527bd3c1ab16700d7472bc754ee6209c7b924f50a494ad7d87d94bf"
+expected_export_hash = "sha256:c043d3f6d42558501c8dab740453bc310c7e935ff210dacc5f934a2659356b9e"
+expected_axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+expected_certificate_hash = "sha256:f1048ffeb516668423234e9f2c9fc466508a6256baccb857c17678168906cb86"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Phi"]
+definitions = []
+theorems = ["fermat_little_theorem_from_finite_unit_group_order", "euler_theorem_from_phi_unit_group_cardinality", "fermat_euler_combined_prime_modulus_surface", "wilson_theorem_prime_modulus_exact_hypotheses", "wilson_converse_exact_modulus_hypotheses", "fermat_euler_wilson_no_modular_arithmetic_axiom_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Carmichael"
+source = "Proofs/Ai/NumberTheory/Carmichael/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Carmichael/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Carmichael/meta.json"
+replay = "Proofs/Ai/NumberTheory/Carmichael/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:98f01e29a27747ced57c1bbe4dd05b0fa5d34307c97c5bb566b19214123da262"
+expected_certificate_file_hash = "sha256:63265aa26734561bde3040dc70f3e140f85f77d14db0f8c3f4078a7567e9db44"
+expected_export_hash = "sha256:ce34d0f939d81fd761f540197da60382fdea134946a0af6123756987a66ea2eb"
+expected_axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+expected_certificate_hash = "sha256:685cd0a519e0a775505062333c2fcd894296016eab28f364e51fa73d451e52d7"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.FermatEulerWilson"]
+definitions = []
+theorems = ["carmichael_function_definition_separate_from_phi", "carmichael_exponent_theorem_from_unit_group_exponent", "carmichael_lambda_divides_euler_phi_from_lagrange", "carmichael_exponent_theorem_specializes_euler_theorem", "carmichael_no_phi_duplication_or_rsa_security_boundary"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
 source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"

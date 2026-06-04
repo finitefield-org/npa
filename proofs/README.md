@@ -144,6 +144,15 @@ Current bundles:
   finite unit group cardinality, reduced-residue cardinality evidence, Lagrange specialization for
   finite unit groups, prime_factorization and prime-power formula surfaces, coprime
   multiplicativity, and the boundary excluding analytic number theory dependencies.
+- `Proofs/Ai/NumberTheory/FermatEulerWilson/`: certificate-backed Fermat, Euler, and Wilson
+  theorem interface downstream of finite unit-group order, modular unit groups, `phi`, and prime
+  predicates. Fermat's little theorem is exposed as derived from finite unit-group order evidence,
+  Euler's theorem reuses `phi` cardinality evidence, Wilson theorem and converse keep prime and
+  modulus hypotheses explicit, and a boundary excludes theorem-shaped modular arithmetic axioms.
+- `Proofs/Ai/NumberTheory/Carmichael/`: certificate-backed Carmichael function interface
+  downstream of `phi` and the Fermat/Euler/Wilson surface, preserving a separate
+  `CarmichaelLambda` definition, unit-group exponent theorem, divisibility into `EulerPhi`, and
+  boundaries excluding duplicated `phi` and RSA security claims.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

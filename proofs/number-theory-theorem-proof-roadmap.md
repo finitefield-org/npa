@@ -313,6 +313,10 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-04`, finite group order and unit-group interfaces.
+- Implementation progress: NT-T14 added certificate-backed
+  `Proofs.Ai.NumberTheory.FermatEulerWilson` and `Proofs.Ai.NumberTheory.Carmichael`
+  surfaces for theorem steps 3 through 7. RSA correctness and primality-test interfaces remain
+  in NT-T15.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ModularGroup`
   - `Proofs.Ai.NumberTheory.FermatEulerWilson`

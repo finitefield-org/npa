@@ -174,6 +174,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_MODULAR_GROUP_MODULE,
     &NUMBER_THEORY_CHINESE_REMAINDER_MODULE,
     &NUMBER_THEORY_PHI_MODULE,
+    &NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE,
+    &NUMBER_THEORY_CARMICHAEL_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1773,6 +1775,43 @@ const NUMBER_THEORY_PHI_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PHI_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.FermatEulerWilson",
+    source_path: "Proofs/Ai/NumberTheory/FermatEulerWilson/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/FermatEulerWilson/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/FermatEulerWilson/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/FermatEulerWilson/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Prime",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.Phi",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_FERMAT_EULER_WILSON_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CARMICHAEL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Carmichael",
+    source_path: "Proofs/Ai/NumberTheory/Carmichael/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Carmichael/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Carmichael/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Carmichael/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Phi",
+        "Proofs.Ai.NumberTheory.FermatEulerWilson",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CARMICHAEL_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10972,6 +11011,301 @@ const NUMBER_THEORY_PHI_THEOREMS: &[TheoremArtifact] = &[
             "forall (PhiPackage : Type), forall (FiniteGroupFactsPackage : Type), forall (PrimeFactorizationPackage : Type), forall (AnalyticNumberTheoryPackage : Type), forall (NoAnalyticDependencyBoundary : forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), Prop), forall (boundary_law : forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), NoAnalyticDependencyBoundary phi finite_group_facts prime_factorization analytic), forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), NoAnalyticDependencyBoundary phi finite_group_facts prime_factorization analytic",
         proof:
             "fun PhiPackage => fun FiniteGroupFactsPackage => fun PrimeFactorizationPackage => fun AnalyticNumberTheoryPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun phi => fun finite_group_facts => fun prime_factorization => fun analytic => boundary_law phi finite_group_facts prime_factorization analytic",
+    },
+];
+
+const NUMBER_THEORY_FERMAT_EULER_WILSON_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "fermat_little_theorem_from_finite_unit_group_order",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (Int : Type), forall (modulus : Int), forall (base : Int), ",
+            "forall (PrimeModulus : forall (p : Int), Prop), ",
+            "forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (FiniteUnitGroupOrderEvidence : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), ",
+            "forall (FermatLittleCongruence : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (derivation_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), ",
+            "forall (finite_units : FiniteUnitGroupOrderEvidence laws), ",
+            "forall (prime_modulus : PrimeModulus modulus), ",
+            "forall (coprime_base_modulus : CoprimeInt base modulus), ",
+            "FermatLittleCongruence modulus base), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), ",
+            "forall (finite_units : FiniteUnitGroupOrderEvidence laws), ",
+            "forall (prime_modulus : PrimeModulus modulus), ",
+            "forall (coprime_base_modulus : CoprimeInt base modulus), ",
+            "FermatLittleCongruence modulus base"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => fun Int => ",
+            "fun modulus => fun base => fun PrimeModulus => fun CoprimeInt => ",
+            "fun FiniteUnitGroupOrderEvidence => fun FermatLittleCongruence => ",
+            "fun derivation_law => fun laws => fun finite_units => fun prime_modulus => ",
+            "fun coprime_base_modulus => ",
+            "derivation_law laws finite_units prime_modulus coprime_base_modulus"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_theorem_from_phi_unit_group_cardinality",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (EulerPhi : forall (modulus : Int), Nat), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (UnitGroupCardinalityEvidence : forall (modulus : Int), forall (phi_value : Nat), Prop), ",
+            "forall (EulerTheoremCongruence : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), Prop), ",
+            "forall (euler_law : forall (modulus : Int), forall (a : Int), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (cardinality : UnitGroupCardinalityEvidence modulus (EulerPhi modulus)), ",
+            "EulerTheoremCongruence modulus a (EulerPhi modulus)), ",
+            "forall (modulus : Int), forall (a : Int), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (cardinality : UnitGroupCardinalityEvidence modulus (EulerPhi modulus)), ",
+            "EulerTheoremCongruence modulus a (EulerPhi modulus)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun EulerPhi => fun UnitModulo => ",
+            "fun UnitGroupCardinalityEvidence => fun EulerTheoremCongruence => ",
+            "fun euler_law => fun modulus => fun a => fun unit_a => fun cardinality => ",
+            "euler_law modulus a unit_a cardinality"
+        ),
+    },
+    TheoremArtifact {
+        name: "fermat_euler_combined_prime_modulus_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (EulerPhi : forall (modulus : Int), Nat), ",
+            "forall (PrimeModulus : forall (p : Int), Prop), ",
+            "forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (PrimePhiCompatibility : forall (p : Int), forall (phi_value : Nat), Prop), ",
+            "forall (EulerTheoremCongruence : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), Prop), ",
+            "forall (FermatLittleCongruence : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (combined_law : forall (p : Int), forall (a : Int), ",
+            "forall (prime_p : PrimeModulus p), forall (coprime_ap : CoprimeInt a p), ",
+            "forall (phi_prime : PrimePhiCompatibility p (EulerPhi p)), ",
+            "forall (euler_step : EulerTheoremCongruence p a (EulerPhi p)), ",
+            "FermatLittleCongruence p a), ",
+            "forall (p : Int), forall (a : Int), ",
+            "forall (prime_p : PrimeModulus p), forall (coprime_ap : CoprimeInt a p), ",
+            "forall (phi_prime : PrimePhiCompatibility p (EulerPhi p)), ",
+            "forall (euler_step : EulerTheoremCongruence p a (EulerPhi p)), ",
+            "FermatLittleCongruence p a"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun EulerPhi => fun PrimeModulus => fun CoprimeInt => ",
+            "fun PrimePhiCompatibility => fun EulerTheoremCongruence => ",
+            "fun FermatLittleCongruence => fun combined_law => fun p => fun a => ",
+            "fun prime_p => fun coprime_ap => fun phi_prime => fun euler_step => ",
+            "combined_law p a prime_p coprime_ap phi_prime euler_step"
+        ),
+    },
+    TheoremArtifact {
+        name: "wilson_theorem_prime_modulus_exact_hypotheses",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Pred : forall (n : Int), Int), ",
+            "forall (Factorial : forall (n : Int), Int), ",
+            "forall (NegOne : Int), ",
+            "forall (PrimeModulus : forall (p : Int), Prop), ",
+            "forall (PositiveModulus : forall (p : Int), Prop), ",
+            "forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (wilson_law : forall (p : Int), forall (prime_p : PrimeModulus p), ",
+            "forall (positive_p : PositiveModulus p), ",
+            "CongruentModulo p (Factorial (Pred p)) NegOne), ",
+            "forall (p : Int), forall (prime_p : PrimeModulus p), ",
+            "forall (positive_p : PositiveModulus p), ",
+            "CongruentModulo p (Factorial (Pred p)) NegOne"
+        ),
+        proof: concat!(
+            "fun Int => fun Pred => fun Factorial => fun NegOne => ",
+            "fun PrimeModulus => fun PositiveModulus => fun CongruentModulo => ",
+            "fun wilson_law => fun p => fun prime_p => fun positive_p => ",
+            "wilson_law p prime_p positive_p"
+        ),
+    },
+    TheoremArtifact {
+        name: "wilson_converse_exact_modulus_hypotheses",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Pred : forall (n : Int), Int), ",
+            "forall (Factorial : forall (n : Int), Int), ",
+            "forall (NegOne : Int), ",
+            "forall (PrimeModulus : forall (p : Int), Prop), ",
+            "forall (PositiveModulus : forall (p : Int), Prop), ",
+            "forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (converse_law : forall (p : Int), ",
+            "forall (positive_p : PositiveModulus p), ",
+            "forall (wilson_congruence : CongruentModulo p (Factorial (Pred p)) NegOne), ",
+            "PrimeModulus p), ",
+            "forall (p : Int), forall (positive_p : PositiveModulus p), ",
+            "forall (wilson_congruence : CongruentModulo p (Factorial (Pred p)) NegOne), ",
+            "PrimeModulus p"
+        ),
+        proof: concat!(
+            "fun Int => fun Pred => fun Factorial => fun NegOne => ",
+            "fun PrimeModulus => fun PositiveModulus => fun CongruentModulo => ",
+            "fun converse_law => fun p => fun positive_p => fun wilson_congruence => ",
+            "converse_law p positive_p wilson_congruence"
+        ),
+    },
+    TheoremArtifact {
+        name: "fermat_euler_wilson_no_modular_arithmetic_axiom_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FermatEulerWilsonPackage : Type), ",
+            "forall (FiniteUnitGroupOrderPackage : Type), ",
+            "forall (EulerPhiPackage : Type), ",
+            "forall (WilsonTheoremPackage : Type), ",
+            "forall (TheoremShapedModularArithmeticAxiom : Type), ",
+            "forall (NoAxiomBoundary : forall (fermat_euler_wilson : FermatEulerWilsonPackage), ",
+            "forall (finite_order : FiniteUnitGroupOrderPackage), forall (phi : EulerPhiPackage), ",
+            "forall (wilson : WilsonTheoremPackage), forall (modular_axiom : TheoremShapedModularArithmeticAxiom), Prop), ",
+            "forall (boundary_law : forall (fermat_euler_wilson : FermatEulerWilsonPackage), ",
+            "forall (finite_order : FiniteUnitGroupOrderPackage), forall (phi : EulerPhiPackage), ",
+            "forall (wilson : WilsonTheoremPackage), forall (modular_axiom : TheoremShapedModularArithmeticAxiom), ",
+            "NoAxiomBoundary fermat_euler_wilson finite_order phi wilson modular_axiom), ",
+            "forall (fermat_euler_wilson : FermatEulerWilsonPackage), ",
+            "forall (finite_order : FiniteUnitGroupOrderPackage), forall (phi : EulerPhiPackage), ",
+            "forall (wilson : WilsonTheoremPackage), forall (modular_axiom : TheoremShapedModularArithmeticAxiom), ",
+            "NoAxiomBoundary fermat_euler_wilson finite_order phi wilson modular_axiom"
+        ),
+        proof: concat!(
+            "fun FermatEulerWilsonPackage => fun FiniteUnitGroupOrderPackage => ",
+            "fun EulerPhiPackage => fun WilsonTheoremPackage => ",
+            "fun TheoremShapedModularArithmeticAxiom => fun NoAxiomBoundary => ",
+            "fun boundary_law => fun fermat_euler_wilson => fun finite_order => ",
+            "fun phi => fun wilson => fun modular_axiom => ",
+            "boundary_law fermat_euler_wilson finite_order phi wilson modular_axiom"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CARMICHAEL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "carmichael_function_definition_separate_from_phi",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (EulerPhi : forall (modulus : Int), Nat), ",
+            "forall (CarmichaelLambda : forall (modulus : Int), Nat), ",
+            "forall (CarmichaelDefinitionEvidence : forall (modulus : Int), forall (lambda_value : Nat), Prop), ",
+            "forall (NotPhiAliasEvidence : forall (modulus : Int), Prop), ",
+            "forall (definition_law : forall (modulus : Int), ",
+            "forall (not_phi_alias : NotPhiAliasEvidence modulus), ",
+            "CarmichaelDefinitionEvidence modulus (CarmichaelLambda modulus)), ",
+            "forall (modulus : Int), forall (not_phi_alias : NotPhiAliasEvidence modulus), ",
+            "CarmichaelDefinitionEvidence modulus (CarmichaelLambda modulus)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun EulerPhi => fun CarmichaelLambda => ",
+            "fun CarmichaelDefinitionEvidence => fun NotPhiAliasEvidence => ",
+            "fun definition_law => fun modulus => fun not_phi_alias => ",
+            "definition_law modulus not_phi_alias"
+        ),
+    },
+    TheoremArtifact {
+        name: "carmichael_exponent_theorem_from_unit_group_exponent",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (CarmichaelLambda : forall (modulus : Int), Nat), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (UnitGroupExponentEvidence : forall (modulus : Int), forall (exponent : Nat), Prop), ",
+            "forall (CarmichaelExponentTheorem : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (exponent_law : forall (modulus : Int), forall (a : Int), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (exponent : UnitGroupExponentEvidence modulus (CarmichaelLambda modulus)), ",
+            "CarmichaelExponentTheorem modulus a), ",
+            "forall (modulus : Int), forall (a : Int), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (exponent : UnitGroupExponentEvidence modulus (CarmichaelLambda modulus)), ",
+            "CarmichaelExponentTheorem modulus a"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun CarmichaelLambda => fun UnitModulo => ",
+            "fun UnitGroupExponentEvidence => fun CarmichaelExponentTheorem => ",
+            "fun exponent_law => fun modulus => fun a => fun unit_a => fun exponent => ",
+            "exponent_law modulus a unit_a exponent"
+        ),
+    },
+    TheoremArtifact {
+        name: "carmichael_lambda_divides_euler_phi_from_lagrange",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (EulerPhi : forall (modulus : Int), Nat), ",
+            "forall (CarmichaelLambda : forall (modulus : Int), Nat), ",
+            "forall (UnitGroupExponentEvidence : forall (modulus : Int), forall (exponent : Nat), Prop), ",
+            "forall (UnitGroupCardinalityEvidence : forall (modulus : Int), forall (phi_value : Nat), Prop), ",
+            "forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), ",
+            "forall (divides_law : forall (modulus : Int), ",
+            "forall (exponent : UnitGroupExponentEvidence modulus (CarmichaelLambda modulus)), ",
+            "forall (cardinality : UnitGroupCardinalityEvidence modulus (EulerPhi modulus)), ",
+            "DividesNat (CarmichaelLambda modulus) (EulerPhi modulus)), ",
+            "forall (modulus : Int), ",
+            "forall (exponent : UnitGroupExponentEvidence modulus (CarmichaelLambda modulus)), ",
+            "forall (cardinality : UnitGroupCardinalityEvidence modulus (EulerPhi modulus)), ",
+            "DividesNat (CarmichaelLambda modulus) (EulerPhi modulus)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun EulerPhi => fun CarmichaelLambda => ",
+            "fun UnitGroupExponentEvidence => fun UnitGroupCardinalityEvidence => ",
+            "fun DividesNat => fun divides_law => fun modulus => fun exponent => ",
+            "fun cardinality => divides_law modulus exponent cardinality"
+        ),
+    },
+    TheoremArtifact {
+        name: "carmichael_exponent_theorem_specializes_euler_theorem",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (EulerTheoremPackage : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (CarmichaelExponentTheorem : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (SpecializationEvidence : forall (modulus : Int), Prop), ",
+            "forall (specialization_law : forall (modulus : Int), forall (a : Int), ",
+            "forall (specialization : SpecializationEvidence modulus), ",
+            "forall (carmichael_step : CarmichaelExponentTheorem modulus a), ",
+            "EulerTheoremPackage modulus a), ",
+            "forall (modulus : Int), forall (a : Int), ",
+            "forall (specialization : SpecializationEvidence modulus), ",
+            "forall (carmichael_step : CarmichaelExponentTheorem modulus a), ",
+            "EulerTheoremPackage modulus a"
+        ),
+        proof: concat!(
+            "fun Int => fun EulerTheoremPackage => fun CarmichaelExponentTheorem => ",
+            "fun SpecializationEvidence => fun specialization_law => fun modulus => ",
+            "fun a => fun specialization => fun carmichael_step => ",
+            "specialization_law modulus a specialization carmichael_step"
+        ),
+    },
+    TheoremArtifact {
+        name: "carmichael_no_phi_duplication_or_rsa_security_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (CarmichaelPackage : Type), forall (EulerPhiPackage : Type), ",
+            "forall (RsaCorrectnessPackage : Type), forall (RsaSecurityClaimPackage : Type), ",
+            "forall (NoDuplicationOrSecurityBoundary : forall (carmichael : CarmichaelPackage), ",
+            "forall (phi : EulerPhiPackage), forall (rsa_correctness : RsaCorrectnessPackage), ",
+            "forall (rsa_security : RsaSecurityClaimPackage), Prop), ",
+            "forall (boundary_law : forall (carmichael : CarmichaelPackage), ",
+            "forall (phi : EulerPhiPackage), forall (rsa_correctness : RsaCorrectnessPackage), ",
+            "forall (rsa_security : RsaSecurityClaimPackage), ",
+            "NoDuplicationOrSecurityBoundary carmichael phi rsa_correctness rsa_security), ",
+            "forall (carmichael : CarmichaelPackage), forall (phi : EulerPhiPackage), ",
+            "forall (rsa_correctness : RsaCorrectnessPackage), forall (rsa_security : RsaSecurityClaimPackage), ",
+            "NoDuplicationOrSecurityBoundary carmichael phi rsa_correctness rsa_security"
+        ),
+        proof: concat!(
+            "fun CarmichaelPackage => fun EulerPhiPackage => fun RsaCorrectnessPackage => ",
+            "fun RsaSecurityClaimPackage => fun NoDuplicationOrSecurityBoundary => ",
+            "fun boundary_law => fun carmichael => fun phi => fun rsa_correctness => ",
+            "fun rsa_security => boundary_law carmichael phi rsa_correctness rsa_security"
+        ),
     },
 ];
 
@@ -39445,6 +39779,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_MODULAR_GROUP_MODULE.module
         || config.module == NUMBER_THEORY_CHINESE_REMAINDER_MODULE.module
         || config.module == NUMBER_THEORY_PHI_MODULE.module
+        || config.module == NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE.module
+        || config.module == NUMBER_THEORY_CARMICHAEL_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
