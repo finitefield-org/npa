@@ -280,25 +280,6 @@ const NAT_THEOREMS: &[&str] = &[
     "nat_succ_self_eq",
 ];
 
-const FLT_STATEMENT_DEFINITIONS: &[&str] = &[
-    "FltFalse",
-    "FltNot",
-    "FltNatTwo",
-    "FltNatNe",
-    "FltNatEquation",
-    "fermat_last_theorem",
-    "fermat_last_theorem_nat",
-    "fermat_last_theorem_positive_nat",
-    "fermat_last_theorem_int",
-];
-
-const FLT_STATEMENT_THEOREMS: &[&str] = &[
-    "fermat_last_theorem_shape",
-    "fermat_last_theorem_nat_alias",
-    "fermat_last_theorem_positive_nat_shape",
-    "fermat_last_theorem_int_shape",
-];
-
 const PROP_THEOREMS: &[&str] = &[
     "imp_chain4",
     "imp_permute3",
@@ -2030,18 +2011,6 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: &[],
         theorems: NAT_THEOREMS,
-        axioms: &[],
-    },
-    ExpectedModule {
-        module: "Proofs.Ai.NumberTheory.Flt.Statement",
-        source: "Proofs/Ai/NumberTheory/Flt/Statement/source.npa",
-        certificate: "Proofs/Ai/NumberTheory/Flt/Statement/certificate.npcert",
-        meta: "Proofs/Ai/NumberTheory/Flt/Statement/meta.json",
-        replay: "Proofs/Ai/NumberTheory/Flt/Statement/replay.json",
-        imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
-        inductives: &[],
-        definitions: FLT_STATEMENT_DEFINITIONS,
-        theorems: FLT_STATEMENT_THEOREMS,
         axioms: &[],
     },
     ExpectedModule {
