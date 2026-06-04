@@ -1229,6 +1229,24 @@ theorems = ["unit_modulo_definition_surface", "reduced_residue_class_definition_
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ChineseRemainder"
+source = "Proofs/Ai/NumberTheory/ChineseRemainder/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ChineseRemainder/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ChineseRemainder/meta.json"
+replay = "Proofs/Ai/NumberTheory/ChineseRemainder/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:84db765d61d52b781a7850309bb4565bba8f031abf774f8194ca68fe90cc5cb2"
+certificate_file_sha256 = "sha256:81830758b6439177df9f754a0ca900abaebdabd5d78b41aef4e22ac8aa1d3c96"
+export_hash = "sha256:e843e915b9877c45a874dd1926d60e635a6b4b80864ba4df5e9550c3f39a96fa"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:a1bfd5302e5d6be297675f9408534cd21f9836ee632093e817847967b55b17cf"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupQuotientHom", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.NumberTheory.Congruence", "Proofs.Ai.NumberTheory.ResidueRing"]
+definitions = []
+theorems = ["linear_congruence_solution_count_from_gcd_surface", "crt_pairwise_coprime_residue_ring_specialization", "crt_construction_exists_separated_from_uniqueness", "crt_uniqueness_mod_product_surface", "crt_abstract_ring_chinese_remainder_import_surface", "generalized_crt_compatible_system_surface", "constructive_crt_witness_interface", "garner_algorithmic_interface_marked_nonexecuted", "chinese_remainder_no_duplicate_abstract_crt_boundary"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
 source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"

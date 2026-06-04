@@ -516,7 +516,7 @@ later in the file.
 
 ### NT-T12 Specialize Chinese Remainder Theorem
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T11`, `Proofs.Ai.Algebra.AbstractRingChineseRemainder`
 - Areas: `Proofs/Ai/NumberTheory/ChineseRemainder/`
 - Tasks:
@@ -534,7 +534,11 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ChineseRemainder`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ChineseRemainder`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "ChineseRemainder|linear_congruence|Garner|AbstractRingChineseRemainder" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T13 Add Euler Phi And Finite Unit Group Order
 

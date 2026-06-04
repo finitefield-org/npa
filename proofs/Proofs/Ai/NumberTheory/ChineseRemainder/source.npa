@@ -1,0 +1,51 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.Algebra.AbstractGroupImage
+import Proofs.Ai.Algebra.AbstractGroupQuotient
+import Proofs.Ai.Algebra.AbstractGroupQuotientMul
+import Proofs.Ai.Algebra.AbstractGroupQuotientGroup
+import Proofs.Ai.Algebra.AbstractGroupQuotientHom
+import Proofs.Ai.Algebra.AbstractGroupFirstIsoFull
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractRingFirstIsoBase
+import Proofs.Ai.Algebra.AbstractRingFirstIso
+import Proofs.Ai.Algebra.AbstractRingChineseRemainder
+import Proofs.Ai.NumberTheory.Congruence
+import Proofs.Ai.NumberTheory.ResidueRing
+
+theorem linear_congruence_solution_count_from_gcd_surface :
+  forall (Int : Type), forall (Nat : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (LinearCongruenceSolvable : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), Prop), forall (LinearCongruenceSolutionCount : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (count : Nat), Prop), forall (count_law : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (count : Nat), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), forall (solvable : LinearCongruenceSolvable coefficient constant modulus), forall (solution_count : LinearCongruenceSolutionCount coefficient constant modulus count), LinearCongruenceSolutionCount coefficient constant modulus count), forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (count : Nat), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), forall (solvable : LinearCongruenceSolvable coefficient constant modulus), forall (solution_count : LinearCongruenceSolutionCount coefficient constant modulus count), LinearCongruenceSolutionCount coefficient constant modulus count :=
+  fun Int => fun Nat => fun GcdEvidence => fun DividesInt => fun LinearCongruenceSolvable => fun LinearCongruenceSolutionCount => fun count_law => fun coefficient => fun constant => fun modulus => fun g => fun count => fun gcd_condition => fun gcd_divides_constant => fun solvable => fun solution_count => count_law coefficient constant modulus g count gcd_condition gcd_divides_constant solvable solution_count
+
+theorem crt_pairwise_coprime_residue_ring_specialization :
+  forall (Int : Type), forall (ResidueRingPackage : Type), forall (PairwiseCoprimeModuli : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (ResidueSystem : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (ChineseRemainderSpecialization : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (specialization_law : forall (left_modulus : Int), forall (right_modulus : Int), forall (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus), forall (residue_ring : ResidueRingPackage), forall (system : ResidueSystem left_modulus right_modulus), ChineseRemainderSpecialization left_modulus right_modulus), forall (left_modulus : Int), forall (right_modulus : Int), forall (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus), forall (residue_ring : ResidueRingPackage), forall (system : ResidueSystem left_modulus right_modulus), ChineseRemainderSpecialization left_modulus right_modulus :=
+  fun Int => fun ResidueRingPackage => fun PairwiseCoprimeModuli => fun ResidueSystem => fun ChineseRemainderSpecialization => fun specialization_law => fun left_modulus => fun right_modulus => fun coprime_moduli => fun residue_ring => fun system => specialization_law left_modulus right_modulus coprime_moduli residue_ring system
+
+theorem crt_construction_exists_separated_from_uniqueness :
+  forall (Int : Type), forall (ResidueSystem : forall (modulus_product : Int), Prop), forall (CrtConstruction : forall (modulus_product : Int), Prop), forall (CrtUniqueness : forall (modulus_product : Int), Prop), forall (construction_law : forall (modulus_product : Int), forall (system : ResidueSystem modulus_product), CrtConstruction modulus_product), forall (modulus_product : Int), forall (system : ResidueSystem modulus_product), CrtConstruction modulus_product :=
+  fun Int => fun ResidueSystem => fun CrtConstruction => fun CrtUniqueness => fun construction_law => fun modulus_product => fun system => construction_law modulus_product system
+
+theorem crt_uniqueness_mod_product_surface :
+  forall (Int : Type), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (CrtSolution : forall (modulus_product : Int), forall (solution : Int), Prop), forall (CrtUniqueness : forall (modulus_product : Int), Prop), forall (uniqueness_law : forall (modulus_product : Int), forall (x : Int), forall (y : Int), forall (solution_x : CrtSolution modulus_product x), forall (solution_y : CrtSolution modulus_product y), forall (same_mod_product : CongruentModulo modulus_product x y), CrtUniqueness modulus_product), forall (modulus_product : Int), forall (x : Int), forall (y : Int), forall (solution_x : CrtSolution modulus_product x), forall (solution_y : CrtSolution modulus_product y), forall (same_mod_product : CongruentModulo modulus_product x y), CrtUniqueness modulus_product :=
+  fun Int => fun CongruentModulo => fun CrtSolution => fun CrtUniqueness => fun uniqueness_law => fun modulus_product => fun x => fun y => fun solution_x => fun solution_y => fun same_mod_product => uniqueness_law modulus_product x y solution_x solution_y same_mod_product
+
+theorem crt_abstract_ring_chinese_remainder_import_surface :
+  forall (AbstractRingChineseRemainderPackage : Type), forall (ResidueRingPackage : Type), forall (IntegerResidueRingSpecialization : forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), Prop), forall (import_law : forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), IntegerResidueRingSpecialization abstract_crt residue_ring), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), IntegerResidueRingSpecialization abstract_crt residue_ring :=
+  fun AbstractRingChineseRemainderPackage => fun ResidueRingPackage => fun IntegerResidueRingSpecialization => fun import_law => fun abstract_crt => fun residue_ring => import_law abstract_crt residue_ring
+
+theorem generalized_crt_compatible_system_surface :
+  forall (Int : Type), forall (Index : Type), forall (ResidueSystem : forall (i : Index), Prop), forall (CompatibleResidueSystem : forall (system : forall (i : Index), Prop), Prop), forall (GeneralizedChineseRemainder : forall (system : forall (i : Index), Prop), Prop), forall (generalized_law : forall (system : forall (i : Index), Prop), forall (compatibility : CompatibleResidueSystem system), GeneralizedChineseRemainder system), forall (system : forall (i : Index), Prop), forall (compatibility : CompatibleResidueSystem system), GeneralizedChineseRemainder system :=
+  fun Int => fun Index => fun ResidueSystem => fun CompatibleResidueSystem => fun GeneralizedChineseRemainder => fun generalized_law => fun system => fun compatibility => generalized_law system compatibility
+
+theorem constructive_crt_witness_interface :
+  forall (Int : Type), forall (ResidueSystem : Prop), forall (CrtWitness : forall (system : ResidueSystem), Int), forall (CrtWitnessCorrect : forall (system : ResidueSystem), forall (witness : Int), Prop), forall (construction_law : forall (system : ResidueSystem), CrtWitnessCorrect system (CrtWitness system)), forall (system : ResidueSystem), CrtWitnessCorrect system (CrtWitness system) :=
+  fun Int => fun ResidueSystem => fun CrtWitness => fun CrtWitnessCorrect => fun construction_law => fun system => construction_law system
+
+theorem garner_algorithmic_interface_marked_nonexecuted :
+  forall (Int : Type), forall (GarnerInput : Type), forall (GarnerOutput : Type), forall (GarnerAlgorithmicInterface : forall (input : GarnerInput), forall (output : GarnerOutput), Prop), forall (NoExecutableGarnerFunctionVerified : forall (input : GarnerInput), Prop), forall (garner_law : forall (input : GarnerInput), forall (output : GarnerOutput), forall (algorithmic_marker : NoExecutableGarnerFunctionVerified input), GarnerAlgorithmicInterface input output), forall (input : GarnerInput), forall (output : GarnerOutput), forall (algorithmic_marker : NoExecutableGarnerFunctionVerified input), GarnerAlgorithmicInterface input output :=
+  fun Int => fun GarnerInput => fun GarnerOutput => fun GarnerAlgorithmicInterface => fun NoExecutableGarnerFunctionVerified => fun garner_law => fun input => fun output => fun algorithmic_marker => garner_law input output algorithmic_marker
+
+theorem chinese_remainder_no_duplicate_abstract_crt_boundary :
+  forall (ChineseRemainderPackage : Type), forall (AbstractRingChineseRemainderPackage : Type), forall (DuplicatedAbstractCrtImplementation : Type), forall (NoDuplicateAbstractCrtBoundary : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), Prop), forall (boundary_law : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate), forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate :=
+  fun ChineseRemainderPackage => fun AbstractRingChineseRemainderPackage => fun DuplicatedAbstractCrtImplementation => fun NoDuplicateAbstractCrtBoundary => fun boundary_law => fun number_theory_crt => fun abstract_crt => fun duplicate => boundary_law number_theory_crt abstract_crt duplicate

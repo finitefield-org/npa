@@ -133,6 +133,12 @@ Current bundles:
   residue rings and the abstract group package, preserving unit modulo `n`, reduced residue
   classes, multiplication closure, inverses, group law packaging, `phi` reuse inputs, and boundaries
   excluding Euler/Fermat theorem and CRT assumptions.
+- `Proofs/Ai/NumberTheory/ChineseRemainder/`: certificate-backed Chinese remainder interface
+  downstream of congruence, residue rings, and the abstract ring CRT package, preserving linear
+  congruence solution-count surfaces, pairwise-coprime residue-ring specialization, separated
+  construction and uniqueness claims, generalized compatible-system CRT, constructive witnesses,
+  Garner-style algorithmic interfaces, and the boundary excluding a duplicated abstract CRT
+  implementation.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

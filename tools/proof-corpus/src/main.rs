@@ -172,6 +172,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_CONGRUENCE_MODULE,
     &NUMBER_THEORY_RESIDUE_RING_MODULE,
     &NUMBER_THEORY_MODULAR_GROUP_MODULE,
+    &NUMBER_THEORY_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1724,6 +1725,35 @@ const NUMBER_THEORY_MODULAR_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_MODULAR_GROUP_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CHINESE_REMAINDER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ChineseRemainder",
+    source_path: "Proofs/Ai/NumberTheory/ChineseRemainder/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ChineseRemainder/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ChineseRemainder/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ChineseRemainder/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.NumberTheory.Congruence",
+        "Proofs.Ai.NumberTheory.ResidueRing",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CHINESE_REMAINDER_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10760,6 +10790,81 @@ const NUMBER_THEORY_MODULAR_GROUP_THEOREMS: &[TheoremArtifact] = &[
             "forall (ModularUnitGroupPackage : Type), forall (ChineseRemainderTheorem : Type), forall (NoCrtDependencyBoundary : forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), NoCrtDependencyBoundary unit_group crt), forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), NoCrtDependencyBoundary unit_group crt",
         proof:
             "fun ModularUnitGroupPackage => fun ChineseRemainderTheorem => fun NoCrtDependencyBoundary => fun boundary_law => fun unit_group => fun crt => boundary_law unit_group crt",
+    },
+];
+
+const NUMBER_THEORY_CHINESE_REMAINDER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "linear_congruence_solution_count_from_gcd_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (LinearCongruenceSolvable : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), Prop), forall (LinearCongruenceSolutionCount : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (count : Nat), Prop), forall (count_law : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (count : Nat), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), forall (solvable : LinearCongruenceSolvable coefficient constant modulus), forall (solution_count : LinearCongruenceSolutionCount coefficient constant modulus count), LinearCongruenceSolutionCount coefficient constant modulus count), forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (count : Nat), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), forall (solvable : LinearCongruenceSolvable coefficient constant modulus), forall (solution_count : LinearCongruenceSolutionCount coefficient constant modulus count), LinearCongruenceSolutionCount coefficient constant modulus count",
+        proof:
+            "fun Int => fun Nat => fun GcdEvidence => fun DividesInt => fun LinearCongruenceSolvable => fun LinearCongruenceSolutionCount => fun count_law => fun coefficient => fun constant => fun modulus => fun g => fun count => fun gcd_condition => fun gcd_divides_constant => fun solvable => fun solution_count => count_law coefficient constant modulus g count gcd_condition gcd_divides_constant solvable solution_count",
+    },
+    TheoremArtifact {
+        name: "crt_pairwise_coprime_residue_ring_specialization",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ResidueRingPackage : Type), forall (PairwiseCoprimeModuli : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (ResidueSystem : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (ChineseRemainderSpecialization : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (specialization_law : forall (left_modulus : Int), forall (right_modulus : Int), forall (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus), forall (residue_ring : ResidueRingPackage), forall (system : ResidueSystem left_modulus right_modulus), ChineseRemainderSpecialization left_modulus right_modulus), forall (left_modulus : Int), forall (right_modulus : Int), forall (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus), forall (residue_ring : ResidueRingPackage), forall (system : ResidueSystem left_modulus right_modulus), ChineseRemainderSpecialization left_modulus right_modulus",
+        proof:
+            "fun Int => fun ResidueRingPackage => fun PairwiseCoprimeModuli => fun ResidueSystem => fun ChineseRemainderSpecialization => fun specialization_law => fun left_modulus => fun right_modulus => fun coprime_moduli => fun residue_ring => fun system => specialization_law left_modulus right_modulus coprime_moduli residue_ring system",
+    },
+    TheoremArtifact {
+        name: "crt_construction_exists_separated_from_uniqueness",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ResidueSystem : forall (modulus_product : Int), Prop), forall (CrtConstruction : forall (modulus_product : Int), Prop), forall (CrtUniqueness : forall (modulus_product : Int), Prop), forall (construction_law : forall (modulus_product : Int), forall (system : ResidueSystem modulus_product), CrtConstruction modulus_product), forall (modulus_product : Int), forall (system : ResidueSystem modulus_product), CrtConstruction modulus_product",
+        proof:
+            "fun Int => fun ResidueSystem => fun CrtConstruction => fun CrtUniqueness => fun construction_law => fun modulus_product => fun system => construction_law modulus_product system",
+    },
+    TheoremArtifact {
+        name: "crt_uniqueness_mod_product_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (CrtSolution : forall (modulus_product : Int), forall (solution : Int), Prop), forall (CrtUniqueness : forall (modulus_product : Int), Prop), forall (uniqueness_law : forall (modulus_product : Int), forall (x : Int), forall (y : Int), forall (solution_x : CrtSolution modulus_product x), forall (solution_y : CrtSolution modulus_product y), forall (same_mod_product : CongruentModulo modulus_product x y), CrtUniqueness modulus_product), forall (modulus_product : Int), forall (x : Int), forall (y : Int), forall (solution_x : CrtSolution modulus_product x), forall (solution_y : CrtSolution modulus_product y), forall (same_mod_product : CongruentModulo modulus_product x y), CrtUniqueness modulus_product",
+        proof:
+            "fun Int => fun CongruentModulo => fun CrtSolution => fun CrtUniqueness => fun uniqueness_law => fun modulus_product => fun x => fun y => fun solution_x => fun solution_y => fun same_mod_product => uniqueness_law modulus_product x y solution_x solution_y same_mod_product",
+    },
+    TheoremArtifact {
+        name: "crt_abstract_ring_chinese_remainder_import_surface",
+        universe_params: &[],
+        statement:
+            "forall (AbstractRingChineseRemainderPackage : Type), forall (ResidueRingPackage : Type), forall (IntegerResidueRingSpecialization : forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), Prop), forall (import_law : forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), IntegerResidueRingSpecialization abstract_crt residue_ring), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), IntegerResidueRingSpecialization abstract_crt residue_ring",
+        proof:
+            "fun AbstractRingChineseRemainderPackage => fun ResidueRingPackage => fun IntegerResidueRingSpecialization => fun import_law => fun abstract_crt => fun residue_ring => import_law abstract_crt residue_ring",
+    },
+    TheoremArtifact {
+        name: "generalized_crt_compatible_system_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Index : Type), forall (ResidueSystem : forall (i : Index), Prop), forall (CompatibleResidueSystem : forall (system : forall (i : Index), Prop), Prop), forall (GeneralizedChineseRemainder : forall (system : forall (i : Index), Prop), Prop), forall (generalized_law : forall (system : forall (i : Index), Prop), forall (compatibility : CompatibleResidueSystem system), GeneralizedChineseRemainder system), forall (system : forall (i : Index), Prop), forall (compatibility : CompatibleResidueSystem system), GeneralizedChineseRemainder system",
+        proof:
+            "fun Int => fun Index => fun ResidueSystem => fun CompatibleResidueSystem => fun GeneralizedChineseRemainder => fun generalized_law => fun system => fun compatibility => generalized_law system compatibility",
+    },
+    TheoremArtifact {
+        name: "constructive_crt_witness_interface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ResidueSystem : Prop), forall (CrtWitness : forall (system : ResidueSystem), Int), forall (CrtWitnessCorrect : forall (system : ResidueSystem), forall (witness : Int), Prop), forall (construction_law : forall (system : ResidueSystem), CrtWitnessCorrect system (CrtWitness system)), forall (system : ResidueSystem), CrtWitnessCorrect system (CrtWitness system)",
+        proof:
+            "fun Int => fun ResidueSystem => fun CrtWitness => fun CrtWitnessCorrect => fun construction_law => fun system => construction_law system",
+    },
+    TheoremArtifact {
+        name: "garner_algorithmic_interface_marked_nonexecuted",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (GarnerInput : Type), forall (GarnerOutput : Type), forall (GarnerAlgorithmicInterface : forall (input : GarnerInput), forall (output : GarnerOutput), Prop), forall (NoExecutableGarnerFunctionVerified : forall (input : GarnerInput), Prop), forall (garner_law : forall (input : GarnerInput), forall (output : GarnerOutput), forall (algorithmic_marker : NoExecutableGarnerFunctionVerified input), GarnerAlgorithmicInterface input output), forall (input : GarnerInput), forall (output : GarnerOutput), forall (algorithmic_marker : NoExecutableGarnerFunctionVerified input), GarnerAlgorithmicInterface input output",
+        proof:
+            "fun Int => fun GarnerInput => fun GarnerOutput => fun GarnerAlgorithmicInterface => fun NoExecutableGarnerFunctionVerified => fun garner_law => fun input => fun output => fun algorithmic_marker => garner_law input output algorithmic_marker",
+    },
+    TheoremArtifact {
+        name: "chinese_remainder_no_duplicate_abstract_crt_boundary",
+        universe_params: &[],
+        statement:
+            "forall (ChineseRemainderPackage : Type), forall (AbstractRingChineseRemainderPackage : Type), forall (DuplicatedAbstractCrtImplementation : Type), forall (NoDuplicateAbstractCrtBoundary : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), Prop), forall (boundary_law : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate), forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate",
+        proof:
+            "fun ChineseRemainderPackage => fun AbstractRingChineseRemainderPackage => fun DuplicatedAbstractCrtImplementation => fun NoDuplicateAbstractCrtBoundary => fun boundary_law => fun number_theory_crt => fun abstract_crt => fun duplicate => boundary_law number_theory_crt abstract_crt duplicate",
     },
 ];
 
@@ -38858,6 +38963,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
+        || module == NUMBER_THEORY_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
         || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
@@ -39230,6 +39336,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_CONGRUENCE_MODULE.module
         || config.module == NUMBER_THEORY_RESIDUE_RING_MODULE.module
         || config.module == NUMBER_THEORY_MODULAR_GROUP_MODULE.module
+        || config.module == NUMBER_THEORY_CHINESE_REMAINDER_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

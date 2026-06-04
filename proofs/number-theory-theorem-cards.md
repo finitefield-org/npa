@@ -218,6 +218,21 @@ These modules make quotient and group-law requirements visible before CRT,
 Euler, Fermat, Wilson, Carmichael, and RSA milestones. They do not prove
 Euler's theorem or import a CRT package.
 
+## Chinese Remainder Interface
+
+Concrete entry point: `Proofs.Ai.NumberTheory.ChineseRemainder`.
+
+The Chinese remainder module records checked theorem targets for linear
+congruence solution counts from gcd evidence, pairwise-coprime residue-ring
+specialization, construction and uniqueness as separate surfaces, reuse of the
+imported `Proofs.Ai.Algebra.AbstractRingChineseRemainder` package, generalized
+CRT for compatible residue systems, constructive CRT witnesses, and a
+Garner-style interface explicitly marked as algorithmic when no executable
+function has been verified.
+
+This module imports the abstract ring CRT and residue-ring interfaces rather
+than duplicating their quotient and ring-theoretic construction data.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |
