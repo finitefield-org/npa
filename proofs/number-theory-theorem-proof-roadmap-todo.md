@@ -489,7 +489,7 @@ later in the file.
 
 ### NT-T11 Add Residue Ring And Unit Group Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T10`, `Proofs.Ai.Algebra.AbstractRing`
 - Areas: `Proofs/Ai/NumberTheory/ResidueRing/`, `Proofs/Ai/NumberTheory/ModularGroup/`
 - Tasks:
@@ -506,7 +506,13 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ResidueRing`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ResidueRing`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ModularGroup`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ModularGroup`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "ResidueRing|unit modulo|quotient|core-feature" proofs/Proofs/Ai/NumberTheory proofs/generated proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T12 Specialize Chinese Remainder Theorem
 

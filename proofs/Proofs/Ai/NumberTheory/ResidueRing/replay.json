@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ResidueRing",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "residue_class_modulo_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Residue => fun ClassOf => fun CongruentModulo => fun SameResidueClass => fun class_law => fun modulus => fun a => fun b => fun congruent_ab => class_law modulus a b congruent_ab"
+    },
+    {
+      "declaration": "residue_quotient_core_feature_report_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Residue => fun QuotientCoreFeature => fun DeterministicQuotientReport => fun report_law => fun modulus => fun quotient_feature => report_law modulus quotient_feature"
+    },
+    {
+      "declaration": "residue_operations_well_defined_from_congruence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Add => fun Neg => fun Mul => fun CongruentModulo => fun OperationCompatibilityEvidence => fun WellDefinedResidueOperations => fun operation_law => fun modulus => fun compatibility => operation_law modulus compatibility"
+    },
+    {
+      "declaration": "residue_ring_law_package_from_abstract_ring",
+      "source_kind": "explicit_term",
+      "term": "fun Residue => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ResidueRingLawPackage => fun package_law => fun laws => package_law laws"
+    },
+    {
+      "declaration": "residue_ring_operations_descend_to_classes",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Residue => fun ClassOf => fun ResidueAdd => fun ResidueNeg => fun ResidueMul => fun DescentEvidence => fun ResidueOperationDescent => fun descent_law => fun modulus => fun descent_evidence => descent_law modulus descent_evidence"
+    },
+    {
+      "declaration": "residue_ring_crt_reuse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun ResidueRingPackage => fun CrtInputPackage => fun ResidueRingReusableByCrt => fun reuse_law => fun residue_ring => fun crt_input => reuse_law residue_ring crt_input"
+    },
+    {
+      "declaration": "residue_ring_no_hidden_crt_or_euler_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ResidueRingPackage => fun ChineseRemainderTheorem => fun EulerTheorem => fun NoHiddenCrtOrEulerBoundary => fun boundary_law => fun residue_ring => fun crt => fun euler => boundary_law residue_ring crt euler"
+    },
+    {
+      "declaration": "residue_ring_deterministic_package_report",
+      "source_kind": "explicit_term",
+      "term": "fun ResidueRingPackage => fun PackageReport => fun PackageHash => fun deterministic_law => fun residue_ring => fun report => deterministic_law residue_ring report"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ResidueRing/certificate.npcert"
+  }
+}

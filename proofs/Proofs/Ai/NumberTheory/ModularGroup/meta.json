@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ModularGroup",
+  "source": "Proofs/Ai/NumberTheory/ModularGroup/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ModularGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c4f46be31ce4ef459a17ee64b82c2383714cfcb6108282eecdcc43a97e7047b4",
+  "certificate_file_sha256": "sha256:374d2ca6cd98b80baface64ff182f572909d807aa38643dfb6365b52a9fa1834",
+  "export_hash": "sha256:771954098c7cb46a3d6f286e661b88de9b4692a685106ef6b3bdee1e1d36c669",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:d7dc5e893c8c0cfd3acc14f930b197d43bfd4571d38a5fcd515c9e0c55961012",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.ResidueRing"],
+  "axioms": [],
+  "declarations": [
+    { "name": "unit_modulo_definition_surface", "kind": "theorem" },
+    { "name": "reduced_residue_class_definition_surface", "kind": "theorem" },
+    { "name": "modular_unit_multiplication_closed", "kind": "theorem" },
+    { "name": "modular_unit_inverse_surface", "kind": "theorem" },
+    { "name": "modular_unit_group_law_package_from_abstract_group", "kind": "theorem" },
+    { "name": "modular_group_residue_ring_dependency_surface", "kind": "theorem" },
+    { "name": "modular_group_no_euler_theorem_assumption_boundary", "kind": "theorem" },
+    { "name": "modular_group_phi_reuse_surface", "kind": "theorem" },
+    { "name": "modular_group_no_crt_dependency_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

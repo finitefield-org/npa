@@ -1155,6 +1155,40 @@ theorems = ["congruent_modulo_definition_surface", "congruent_modulo_reflexive",
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.NumberTheory.ResidueRing"
+source = "Proofs/Ai/NumberTheory/ResidueRing/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ResidueRing/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ResidueRing/meta.json"
+replay = "Proofs/Ai/NumberTheory/ResidueRing/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:4ec97309154b06605c642ff2b43840cd8ac030abd1cad3fd5e45e5df336189cc"
+expected_certificate_file_hash = "sha256:0e2a827fb3c66c736d5ca7abe993f098e134ea324cf9a0c17a4fffffa6dacc2f"
+expected_export_hash = "sha256:4226f8ff7e7a27303763a70df9c3812420b3f2856d758f4e91cd834855ba2f85"
+expected_axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+expected_certificate_hash = "sha256:4348d3b01e5cf9504ba011ba5b610b03471bf12fbae1554c4b163ad9a7d2a785"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.Congruence"]
+definitions = []
+theorems = ["residue_class_modulo_definition_surface", "residue_quotient_core_feature_report_surface", "residue_operations_well_defined_from_congruence", "residue_ring_law_package_from_abstract_ring", "residue_ring_operations_descend_to_classes", "residue_ring_crt_reuse_surface", "residue_ring_no_hidden_crt_or_euler_boundary", "residue_ring_deterministic_package_report"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.ModularGroup"
+source = "Proofs/Ai/NumberTheory/ModularGroup/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ModularGroup/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ModularGroup/meta.json"
+replay = "Proofs/Ai/NumberTheory/ModularGroup/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:c4f46be31ce4ef459a17ee64b82c2383714cfcb6108282eecdcc43a97e7047b4"
+expected_certificate_file_hash = "sha256:374d2ca6cd98b80baface64ff182f572909d807aa38643dfb6365b52a9fa1834"
+expected_export_hash = "sha256:771954098c7cb46a3d6f286e661b88de9b4692a685106ef6b3bdee1e1d36c669"
+expected_axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+expected_certificate_hash = "sha256:d7dc5e893c8c0cfd3acc14f930b197d43bfd4571d38a5fcd515c9e0c55961012"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.ResidueRing"]
+definitions = []
+theorems = ["unit_modulo_definition_surface", "reduced_residue_class_definition_surface", "modular_unit_multiplication_closed", "modular_unit_inverse_surface", "modular_unit_group_law_package_from_abstract_group", "modular_group_residue_ring_dependency_surface", "modular_group_no_euler_theorem_assumption_boundary", "modular_group_phi_reuse_surface", "modular_group_no_crt_dependency_boundary"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
 source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"

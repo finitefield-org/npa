@@ -1,0 +1,40 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.NumberTheory.ResidueRing
+
+theorem unit_modulo_definition_surface :
+  forall (Int : Type), forall (OneInt : Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (definition_law : forall (modulus : Int), forall (a : Int), forall (coprime_a_modulus : CoprimeInt a modulus), UnitModulo modulus a), forall (modulus : Int), forall (a : Int), forall (coprime_a_modulus : CoprimeInt a modulus), UnitModulo modulus a :=
+  fun Int => fun OneInt => fun Mul => fun CoprimeInt => fun UnitModulo => fun definition_law => fun modulus => fun a => fun coprime_a_modulus => definition_law modulus a coprime_a_modulus
+
+theorem reduced_residue_class_definition_surface :
+  forall (Int : Type), forall (Residue : Type), forall (ClassOf : forall (a : Int), Residue), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (ReducedResidueClass : forall (modulus : Int), forall (residue_class : Residue), Prop), forall (reduced_law : forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), ReducedResidueClass modulus (ClassOf a)), forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), ReducedResidueClass modulus (ClassOf a) :=
+  fun Int => fun Residue => fun ClassOf => fun UnitModulo => fun ReducedResidueClass => fun reduced_law => fun modulus => fun a => fun unit_a => reduced_law modulus a unit_a
+
+theorem modular_unit_multiplication_closed :
+  forall (Int : Type), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (closure_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (unit_a : UnitModulo modulus a), forall (unit_b : UnitModulo modulus b), UnitModulo modulus (Mul a b)), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (unit_a : UnitModulo modulus a), forall (unit_b : UnitModulo modulus b), UnitModulo modulus (Mul a b) :=
+  fun Int => fun Mul => fun UnitModulo => fun closure_law => fun modulus => fun a => fun b => fun unit_a => fun unit_b => closure_law modulus a b unit_a unit_b
+
+theorem modular_unit_inverse_surface :
+  forall (Int : Type), forall (InverseModulo : forall (modulus : Int), forall (a : Int), Int), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (inverse_law : forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), UnitModulo modulus (InverseModulo modulus a)), forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), UnitModulo modulus (InverseModulo modulus a) :=
+  fun Int => fun InverseModulo => fun UnitModulo => fun inverse_law => fun modulus => fun a => fun unit_a => inverse_law modulus a unit_a
+
+theorem modular_unit_group_law_package_from_abstract_group.{u} :
+  forall (Unit : Sort u), forall (one : Unit), forall (mul : forall (a : Unit), forall (b : Unit), Unit), forall (inv : forall (a : Unit), Unit), forall (ModularUnitGroupPackage : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), forall (package_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), ModularUnitGroupPackage laws), forall (laws : @GroupLawArgs.{u} Unit one mul inv), ModularUnitGroupPackage laws :=
+  fun Unit => fun one => fun mul => fun inv => fun ModularUnitGroupPackage => fun package_law => fun laws => package_law laws
+
+theorem modular_group_residue_ring_dependency_surface :
+  forall (ResidueRingPackage : Type), forall (UnitModuloPackage : Type), forall (ModularUnitGroupPackage : forall (residue_ring : ResidueRingPackage), forall (unit_package : UnitModuloPackage), Prop), forall (dependency_law : forall (residue_ring : ResidueRingPackage), forall (unit_package : UnitModuloPackage), ModularUnitGroupPackage residue_ring unit_package), forall (residue_ring : ResidueRingPackage), forall (unit_package : UnitModuloPackage), ModularUnitGroupPackage residue_ring unit_package :=
+  fun ResidueRingPackage => fun UnitModuloPackage => fun ModularUnitGroupPackage => fun dependency_law => fun residue_ring => fun unit_package => dependency_law residue_ring unit_package
+
+theorem modular_group_no_euler_theorem_assumption_boundary :
+  forall (ModularUnitGroupPackage : Type), forall (EulerTheorem : Type), forall (FermatTheorem : Type), forall (NoEulerAssumptionBoundary : forall (unit_group : ModularUnitGroupPackage), forall (euler : EulerTheorem), forall (fermat : FermatTheorem), Prop), forall (boundary_law : forall (unit_group : ModularUnitGroupPackage), forall (euler : EulerTheorem), forall (fermat : FermatTheorem), NoEulerAssumptionBoundary unit_group euler fermat), forall (unit_group : ModularUnitGroupPackage), forall (euler : EulerTheorem), forall (fermat : FermatTheorem), NoEulerAssumptionBoundary unit_group euler fermat :=
+  fun ModularUnitGroupPackage => fun EulerTheorem => fun FermatTheorem => fun NoEulerAssumptionBoundary => fun boundary_law => fun unit_group => fun euler => fun fermat => boundary_law unit_group euler fermat
+
+theorem modular_group_phi_reuse_surface :
+  forall (ModularUnitGroupPackage : Type), forall (EulerPhiPackage : Type), forall (PhiInputSurface : forall (unit_group : ModularUnitGroupPackage), forall (phi : EulerPhiPackage), Prop), forall (reuse_law : forall (unit_group : ModularUnitGroupPackage), forall (phi : EulerPhiPackage), PhiInputSurface unit_group phi), forall (unit_group : ModularUnitGroupPackage), forall (phi : EulerPhiPackage), PhiInputSurface unit_group phi :=
+  fun ModularUnitGroupPackage => fun EulerPhiPackage => fun PhiInputSurface => fun reuse_law => fun unit_group => fun phi => reuse_law unit_group phi
+
+theorem modular_group_no_crt_dependency_boundary :
+  forall (ModularUnitGroupPackage : Type), forall (ChineseRemainderTheorem : Type), forall (NoCrtDependencyBoundary : forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), NoCrtDependencyBoundary unit_group crt), forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), NoCrtDependencyBoundary unit_group crt :=
+  fun ModularUnitGroupPackage => fun ChineseRemainderTheorem => fun NoCrtDependencyBoundary => fun boundary_law => fun unit_group => fun crt => boundary_law unit_group crt

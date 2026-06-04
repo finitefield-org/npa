@@ -124,6 +124,15 @@ Current bundles:
   equivalence-relation laws, addition, multiplication, negation, and power compatibility, plus
   cancellation, division, and linear-congruence solvability surfaces whose `Divides`, `Gcd`, and
   `Coprime` hypotheses remain explicit.
+- `Proofs/Ai/NumberTheory/ResidueRing/`: certificate-backed residue-ring interface downstream of
+  congruence algebra and the abstract ring package, preserving residue classes modulo `n`,
+  quotient/core-feature reports, well-defined operation descent, abstract ring law packaging, CRT
+  reuse surfaces, deterministic package reports, and boundaries excluding hidden CRT or Euler
+  theorem assumptions.
+- `Proofs/Ai/NumberTheory/ModularGroup/`: certificate-backed unit-group interface downstream of
+  residue rings and the abstract group package, preserving unit modulo `n`, reduced residue
+  classes, multiplication closure, inverses, group law packaging, `phi` reuse inputs, and boundaries
+  excluding Euler/Fermat theorem and CRT assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
