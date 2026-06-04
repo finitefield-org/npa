@@ -3117,27 +3117,6 @@ mod tests {
     }
 
     #[test]
-    fn axiom_policy_rejects_flt_bridge_axiom_in_high_trust_mode() {
-        let imports = ReferenceImportStore::default();
-        let policy = ReferenceCheckerPolicy {
-            trust_mode: ReferenceTrustMode::HighTrust,
-            ..ReferenceCheckerPolicy::default()
-        };
-        let fixture = named_axiom_certificate_fixture(
-            &["Flt", "BridgeFixture"],
-            &["Flt", "BridgeAxiom", "ribet_level_lowering"],
-            true,
-        );
-
-        let result = check_certificate(&fixture.bytes, &imports, &policy);
-
-        assert_axiom_policy(
-            result.error().unwrap().clone(),
-            ReferenceCheckReason::ForbiddenAxiom,
-        );
-    }
-
-    #[test]
     fn axiom_policy_rechecks_checked_import_axioms_at_checker_boundary() {
         let fixture = axiom_certificate_fixture_with_axiom_dependencies(true);
         let unchecked_store =

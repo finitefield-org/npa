@@ -12,7 +12,6 @@ const PROOF_CORPUS_VERSION: &str = "0.1.0";
 const PROOF_CORPUS_LICENSE: &str = "Apache-2.0";
 const PLANNED_PACKAGE_EXTERNAL_IMPORTS: &[&str] = &["Std.Logic.Eq", "Std.Nat.Basic"];
 const PACKAGE_POLICY_ALLOWED_AXIOMS: &[&str] = &["Eq.rec"];
-const LEGACY_ONLY_PROOF_MODULES: &[&str] = &["Proofs.Ai.NumberTheory.Flt.Bridge"];
 const PACKAGE_MODULE_HASH_FIELDS: &[&str] = &[
     "expected_source_hash",
     "expected_certificate_file_hash",
@@ -401,33 +400,25 @@ fn package_manifest_parity_matches_legacy_manifest() {
 
     let legacy_modules = array_field(&legacy_manifest, "proof_modules");
     let package_modules = array_field(&package_manifest, "modules");
-    let legacy_by_module = module_map(legacy_modules, "legacy proof_modules");
-    let package_by_module = module_map(package_modules, "package modules");
-    let expected_package_modules = legacy_by_module
-        .keys()
-        .copied()
-        .filter(|module| !is_legacy_only_module(module))
-        .collect::<Vec<_>>();
-
     assert_eq!(
         package_modules.len(),
-        expected_package_modules.len(),
-        "package fixture must contain exactly the package-ready legacy proof modules"
+        legacy_modules.len(),
+        "package fixture must contain exactly the legacy local proof modules"
     );
+
+    let legacy_by_module = module_map(legacy_modules, "legacy proof_modules");
+    let package_by_module = module_map(package_modules, "package modules");
 
     assert_eq!(
         package_by_module.keys().copied().collect::<Vec<_>>(),
-        expected_package_modules,
-        "package fixture must not add or omit package-ready local modules"
+        legacy_by_module.keys().copied().collect::<Vec<_>>(),
+        "package fixture must not add or omit local modules"
     );
 
-    let local_modules = package_by_module.keys().copied().collect::<BTreeSet<_>>();
+    let local_modules = legacy_by_module.keys().copied().collect::<BTreeSet<_>>();
     let mut external_imports_from_legacy = BTreeSet::new();
 
     for (module_name, legacy_module) in &legacy_by_module {
-        if is_legacy_only_module(module_name) {
-            continue;
-        }
         let package_module = package_by_module
             .get(module_name)
             .unwrap_or_else(|| panic!("package module {module_name} should exist"));
@@ -612,9 +603,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
         }
 
         for axiom in string_array_field(module, "axioms") {
-            if !is_legacy_only_module(module_name) {
-                discovered_axioms.insert(axiom.to_owned());
-            }
+            discovered_axioms.insert(axiom.to_owned());
         }
     }
 
@@ -632,10 +621,6 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
             .map(|name| (*name).to_owned())
             .collect::<BTreeSet<_>>()
     );
-}
-
-fn is_legacy_only_module(module: &str) -> bool {
-    LEGACY_ONLY_PROOF_MODULES.contains(&module)
 }
 
 #[test]

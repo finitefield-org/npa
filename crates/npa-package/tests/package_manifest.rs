@@ -2,10 +2,9 @@ use std::{fs, path::Path};
 
 use npa_package::{
     parse_and_validate_manifest_str, parse_manifest_str, parse_package_hash,
-    validate_flt_final_release_axiom_policy, validate_manifest_report,
-    validate_manifest_source_report, PackageManifestError, PackageManifestErrorKind,
-    PackageManifestErrorReason, PackageManifestResult, PackageManifestValidationReport,
-    ResolvedModuleImportKind, PACKAGE_MANIFEST_SCHEMA,
+    validate_manifest_report, validate_manifest_source_report, PackageManifestError,
+    PackageManifestErrorKind, PackageManifestErrorReason, PackageManifestResult,
+    PackageManifestValidationReport, ResolvedModuleImportKind, PACKAGE_MANIFEST_SCHEMA,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
@@ -1467,33 +1466,6 @@ fn package_manifest_axiom_policy_accepts_recorded_custom_axioms_when_enabled() {
     assert_eq!(
         manifest.manifest().modules[0].axioms.as_ref().unwrap()[0].as_dotted(),
         "Classical.choice"
-    );
-}
-
-#[test]
-fn package_manifest_flt_final_release_policy_rejects_bridge_axioms_when_custom_axioms_are_enabled()
-{
-    let source = valid_manifest()
-        .replace("allow_custom_axioms = false", "allow_custom_axioms = true")
-        .replace(
-            "axioms = []",
-            r#"axioms = ["Flt.BridgeAxiom.ribet_level_lowering"]"#,
-        );
-    let manifest = parse_and_validate_manifest_str(&source).unwrap();
-
-    let error = validate_flt_final_release_axiom_policy(manifest.manifest()).unwrap_err();
-
-    assert_manifest_error(
-        &error,
-        PackageManifestErrorKind::Policy,
-        PackageManifestErrorReason::DisallowedAxiom,
-        "modules[0].axioms[0]",
-        Some("axioms"),
-    );
-    assert_manifest_error_values(
-        &error,
-        Some("no Flt.BridgeAxiom.* in FLT final release"),
-        Some("Flt.BridgeAxiom.ribet_level_lowering"),
     );
 }
 

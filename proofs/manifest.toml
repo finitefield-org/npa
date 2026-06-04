@@ -73,24 +73,6 @@ theorems = ["fermat_last_theorem_shape", "fermat_last_theorem_nat_alias", "ferma
 axioms = []
 
 [[proof_modules]]
-module = "Proofs.Ai.NumberTheory.Flt.Bridge"
-source = "Proofs/Ai/NumberTheory/Flt/Bridge/source.npa"
-certificate = "Proofs/Ai/NumberTheory/Flt/Bridge/certificate.npcert"
-meta = "Proofs/Ai/NumberTheory/Flt/Bridge/meta.json"
-replay = "Proofs/Ai/NumberTheory/Flt/Bridge/replay.json"
-producer_profile = "human-surface-explicit-term"
-trusted_status = "verified_by_certificate"
-source_sha256 = "sha256:abf0aa678ac05be355b24a93279c10946162c252f29a25053323f36e33292042"
-certificate_file_sha256 = "sha256:3c52b0e92173b95dc77eb67d11faff8b7cefb0d956f070a52d433484b4845516"
-export_hash = "sha256:a667be4212125db6fd8663f0bf39d75826b719f0a16d518298a7cd817986f947"
-axiom_report_hash = "sha256:84e9c5e46d27773df0b0c403b9e2cc3875119ce86f07a58701a743d6752305f2"
-certificate_hash = "sha256:e8e18eb3221ae0194319fdb9a4c6fa6503b76e32c70d7f0c7e4bae27234cc024"
-imports = ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.NumberTheory.Flt.Statement"]
-definitions = []
-theorems = ["bridge_ribet_level_lowering_visible", "bridge_semistable_modularity_visible"]
-axioms = ["Flt.BridgeAxiom.ribet_level_lowering", "Flt.BridgeAxiom.semistable_modularity"]
-
-[[proof_modules]]
 module = "Proofs.Ai.Prop"
 source = "Proofs/Ai/Prop/source.npa"
 certificate = "Proofs/Ai/Prop/certificate.npcert"
