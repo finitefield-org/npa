@@ -190,9 +190,11 @@ semantics.
      module, dependencies, and acceptance gate;
   4. mark conjectural statements and conditional theorem forms explicitly.
 - Deliverables:
-  - Number-theory theorem cards.
+  - Number-theory theorem cards in
+    `proofs/number-theory-theorem-cards.md`.
   - Duplicate-home map for modularity, Chebotarev, class field theory, finite
-    fields, additive combinatorics, and analytic number theory.
+    fields, additive combinatorics, and analytic number theory in
+    `proofs/number-theory-theorem-cards.md`.
 - Acceptance criteria:
   - Every theorem family has one primary home.
   - Cross-roadmap aliases point to the primary theorem instead of duplicating

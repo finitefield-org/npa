@@ -179,7 +179,7 @@ later in the file.
 
 ### NT-T00 Build Number-Theory Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Areas: `proofs/README.md`, theorem-card documentation, AI theorem index sidecars
 - Tasks:
@@ -190,8 +190,10 @@ later in the file.
   - Label conjectures, conditional theorem forms, bridge interfaces, and
     derived theorem targets separately.
 - Deliverables:
-  - Number-theory theorem-card inventory.
-  - Duplicate-home and conjecture-status map.
+  - `proofs/number-theory-theorem-cards.md` number-theory theorem-card
+    inventory.
+  - Duplicate-home and conjecture-status map in
+    `proofs/number-theory-theorem-cards.md`.
 - Acceptance criteria:
   - Every roadmap theorem family has a card or an intentionally grouped card.
   - Conjectures are never marked as `L2` derived theorem targets.

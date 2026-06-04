@@ -368,6 +368,12 @@ Planning documents:
   theorem route.
 - `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
   implicit-function theorem route.
+- `number-theory-theorem-proof-roadmap.md`: NT-00 through NT-24 plan for number-theory theorem
+  families, from elementary arithmetic through promotion.
+- `number-theory-theorem-proof-roadmap-todo.md`: NT-T00 through NT-T70 implementation task
+  breakdown for the number-theory roadmap.
+- `number-theory-theorem-cards.md`: NT-T00 theorem-card inventory, duplicate-home map, and
+  conjecture-status map. It is a planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route
 
