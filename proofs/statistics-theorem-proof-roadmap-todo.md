@@ -119,8 +119,9 @@ promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `STAT-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
-| `STAT-T01`, `STAT-T04`, `STAT-T09`, `STAT-T10`, `STAT-T11`, `STAT-T17`, `STAT-T23`, `STAT-T25`, `STAT-T33`, `STAT-T43`, `STAT-T44`, `STAT-T79` | `L2` derived certificates for finite, discrete, simple-function, or finite-dimensional theorem families |
-| `STAT-T02`, `STAT-T05`, `STAT-T06`, `STAT-T07`, `STAT-T12`, `STAT-T14`, `STAT-T19`, `STAT-T22`, `STAT-T28`, `STAT-T32`, `STAT-T36`, `STAT-T39`, `STAT-T47`, `STAT-T55`, `STAT-T58`, `STAT-T62`, `STAT-T65`, `STAT-T68`, `STAT-T71`, `STAT-T75`, `STAT-T82` | `L1` interface or evidence-package foundation first, followed by `L2` lemmas once prerequisites exist |
+| `STAT-T01` | `L1` finite law-package foundation first, with `L2` complement and nonnegativity lemmas before downstream use |
+| `STAT-T02`, `STAT-T04`, `STAT-T09`, `STAT-T10`, `STAT-T11`, `STAT-T15`, `STAT-T17`, `STAT-T23`, `STAT-T25`, `STAT-T26`, `STAT-T33`, `STAT-T43`, `STAT-T44`, `STAT-T79` | `L2` derived certificates for finite, discrete, simple-function, or finite-dimensional theorem families |
+| `STAT-T05`, `STAT-T06`, `STAT-T07`, `STAT-T12`, `STAT-T14`, `STAT-T19`, `STAT-T22`, `STAT-T28`, `STAT-T32`, `STAT-T36`, `STAT-T39`, `STAT-T47`, `STAT-T55`, `STAT-T58`, `STAT-T62`, `STAT-T65`, `STAT-T68`, `STAT-T71`, `STAT-T75`, `STAT-T82` | `L1` interface or evidence-package foundation first, followed by `L2` lemmas once prerequisites exist |
 | `STAT-T03`, `STAT-T08`, `STAT-T13`, `STAT-T16`, `STAT-T18`, `STAT-T20`, `STAT-T21`, `STAT-T24`, `STAT-T27`, `STAT-T29` through `STAT-T31`, `STAT-T34`, `STAT-T35`, `STAT-T37`, `STAT-T38`, `STAT-T40` through `STAT-T42`, `STAT-T45`, `STAT-T46`, `STAT-T48` through `STAT-T54`, `STAT-T56`, `STAT-T57`, `STAT-T59` through `STAT-T61`, `STAT-T63`, `STAT-T64`, `STAT-T66`, `STAT-T67`, `STAT-T69`, `STAT-T70`, `STAT-T72` through `STAT-T74`, `STAT-T76` through `STAT-T78`, `STAT-T80`, `STAT-T81`, `STAT-T83`, `STAT-T84` | split before source edits if prerequisites are absent; otherwise target `L2` derived certificates with explicit imports |
 | `STAT-T85` | `L3` public closure and package verification |
 
@@ -988,7 +989,7 @@ promotion into a high-trust closure.
 ### STAT-T47 Add Multivariate Normal Core
 
 - Status: Pending
-- Depends on: `STAT-T20`, `STAT-T22`
+- Depends on: `STAT-T10`, `STAT-T22`
 - Areas: `Proofs.Ai.Statistics.Multivariate.Normal`
 - Tasks:
   - Define multivariate normal law package, mean vector, covariance matrix, and linear transform statements.
@@ -999,6 +1000,8 @@ promotion into a high-trust closure.
 - Acceptance criteria:
   - Positive semidefinite covariance assumptions are explicit.
   - Univariate normal aliases import named distribution facts instead of redefining them.
+- Notes:
+  - Multivariate CLT and Delta-method aliases depend on `STAT-T20`; this core milestone only prepares the law package and finite-dimensional covariance vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Multivariate.Normal`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Multivariate.Normal`
@@ -1132,7 +1135,7 @@ promotion into a high-trust closure.
 ### STAT-T55 Add Stationarity And Autocovariance Core
 
 - Status: Pending
-- Depends on: `STAT-T10`, `STAT-T20`
+- Depends on: `STAT-T10`
 - Areas: `Proofs.Ai.Statistics.TimeSeries.Stationary`
 - Tasks:
   - Define strict stationarity, weak stationarity, autocovariance, autocorrelation, and white-noise statements.
@@ -1143,6 +1146,8 @@ promotion into a high-trust closure.
 - Acceptance criteria:
   - Strict and weak stationarity are distinct predicates.
   - Autocovariance facts import moment and covariance results explicitly.
+- Notes:
+  - Martingale-difference and time-series CLT items depend on `STAT-T20` and stay in later time-series milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.TimeSeries.Stationary`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.TimeSeries.Stationary`
@@ -1691,28 +1696,28 @@ promotion into a high-trust closure.
 
 ## First Execution Queue
 
-| Queue item | First deliverable | Primary task |
-| --- | --- | --- |
-| `STQ-001` | theorem-card inventory and duplicate map | `STAT-T00` |
-| `STQ-002` | probability-space law package and complement rule | `STAT-T01` |
-| `STQ-003` | finite additivity, monotonicity, Boole, Bonferroni | `STAT-T02` |
-| `STQ-004` | finite conditional probability, multiplication, total probability, Bayes | `STAT-T04` |
-| `STQ-005` | event independence, pairwise versus mutual independence | `STAT-T05` |
-| `STQ-006` | random variable and distribution statement API | `STAT-T06` |
-| `STQ-007` | CDF basic properties and monotone-transform formula | `STAT-T07` |
-| `STQ-008` | finite/simple expectation linearity and LOTUS | `STAT-T09` |
-| `STQ-009` | variance, covariance, and correlation range | `STAT-T10` |
-| `STQ-010` | Markov and Chebyshev inequalities | `STAT-T11` |
-| `STQ-011` | conditional expectation statement shape and tower property interface | `STAT-T12` |
-| `STQ-012` | convergence modes and implication chain through probability convergence | `STAT-T14`, then `STAT-T15` |
-| `STQ-013` | Chebyshev weak law of large numbers | `STAT-T17` |
-| `STQ-014` | De Moivre-Laplace or Lindeberg-Levy CLT statement split | `STAT-T19` |
-| `STQ-015` | sample mean expectation and variance | `STAT-T23` |
-| `STQ-016` | sample variance unbiasedness | `STAT-T23` |
-| `STQ-017` | Fisher-Neyman factorization theorem finite/discrete case | `STAT-T25` |
-| `STQ-018` | Rao-Blackwell theorem finite/discrete case | `STAT-T26` |
-| `STQ-019` | Neyman-Pearson lemma finite simple-vs-simple case | `STAT-T33` |
-| `STQ-020` | Gauss-Markov theorem fixed-design finite-dimensional case | `STAT-T44` |
+| Queue item | First deliverable | Target level | Primary task |
+| --- | --- | --- | --- |
+| `STQ-001` | theorem-card inventory and duplicate map | `L0` | `STAT-T00` |
+| `STQ-002` | probability-space law package and complement rule | `L1` then `L2` | `STAT-T01` |
+| `STQ-003` | finite additivity, monotonicity, Boole, Bonferroni | `L2` | `STAT-T02` |
+| `STQ-004` | finite conditional probability, multiplication, total probability, Bayes | `L2` | `STAT-T04` |
+| `STQ-005` | event independence, pairwise versus mutual independence | `L2` | `STAT-T05` |
+| `STQ-006` | random variable and distribution statement API | `L1` | `STAT-T06` |
+| `STQ-007` | CDF basic properties and monotone-transform formula | `L2` after real/measure foundations | `STAT-T07` |
+| `STQ-008` | finite/simple expectation linearity and LOTUS | `L2` | `STAT-T09` |
+| `STQ-009` | variance, covariance, and correlation range | `L2` | `STAT-T10` |
+| `STQ-010` | Markov and Chebyshev inequalities | `L2` | `STAT-T11` |
+| `STQ-011` | conditional expectation statement shape and tower property interface | `L1` | `STAT-T12` |
+| `STQ-012` | convergence modes and implication chain through probability convergence | `L2` | `STAT-T14`, then `STAT-T15` |
+| `STQ-013` | Chebyshev weak law of large numbers | `L2` | `STAT-T17` |
+| `STQ-014` | De Moivre-Laplace or Lindeberg-Levy CLT statement split | `L1` then `L2` | `STAT-T19` |
+| `STQ-015` | sample mean expectation and variance | `L2` | `STAT-T23` |
+| `STQ-016` | sample variance unbiasedness | `L2` | `STAT-T23` |
+| `STQ-017` | Fisher-Neyman factorization theorem finite/discrete case | `L2` | `STAT-T25` |
+| `STQ-018` | Rao-Blackwell theorem finite/discrete case | `L2` | `STAT-T26` |
+| `STQ-019` | Neyman-Pearson lemma finite simple-vs-simple case | `L2` | `STAT-T33` |
+| `STQ-020` | Gauss-Markov theorem fixed-design finite-dimensional case | `L2` | `STAT-T44` |
 
 After `STQ-020`, choose the next branch by project priority:
 
