@@ -233,7 +233,7 @@ later in the file.
 
 ### NT-T02 Define Integer And Divisibility Core Interface
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T01`
 - Areas: `Proofs/Ai/NumberTheory/Elementary/`, `Proofs/Ai/NumberTheory/Divisibility/`, `proofs/README.md`
 - Tasks:
@@ -254,7 +254,11 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Divisibility`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Divisibility`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Divides|divisibility|kernel primitive" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T03 Add Euclidean Division And Descent Interfaces
 

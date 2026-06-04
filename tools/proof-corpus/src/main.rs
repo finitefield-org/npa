@@ -109,6 +109,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NAT_MODULE,
     &PROP_MODULE,
     &NUMBER_THEORY_INVENTORY_MODULE,
+    &NUMBER_THEORY_ELEMENTARY_MODULE,
+    &NUMBER_THEORY_DIVISIBILITY_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
     &ABSTRACT_METRIC_TOPOLOGY_MODULE,
@@ -471,6 +473,32 @@ const NUMBER_THEORY_INVENTORY_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_INVENTORY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ELEMENTARY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Elementary",
+    source_path: "Proofs/Ai/NumberTheory/Elementary/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Elementary/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Elementary/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Elementary/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Inventory"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_ELEMENTARY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DIVISIBILITY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Divisibility",
+    source_path: "Proofs/Ai/NumberTheory/Divisibility/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Divisibility/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Divisibility/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Divisibility/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Elementary"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DIVISIBILITY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9155,6 +9183,140 @@ const NUMBER_THEORY_INVENTORY_THEOREMS: &[TheoremArtifact] = &[
             "forall (TheoremTarget : Type), forall (SourceFreeCertificateVerdict : forall (target : TheoremTarget), Prop), forall (target : TheoremTarget), forall (verdict : SourceFreeCertificateVerdict target), SourceFreeCertificateVerdict target",
         proof:
             "fun TheoremTarget => fun SourceFreeCertificateVerdict => fun target => fun verdict => verdict",
+    },
+];
+
+const NUMBER_THEORY_ELEMENTARY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "integer_carrier_surface_preserves_evidence",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (IntegerStructure : forall (x : Int), Prop), forall (x : Int), forall (evidence : IntegerStructure x), IntegerStructure x",
+        proof:
+            "fun Int => fun IntegerStructure => fun x => fun evidence => evidence",
+    },
+    TheoremArtifact {
+        name: "nat_int_translation_surface_preserves_evidence",
+        universe_params: &[],
+        statement:
+            "forall (NatCarrier : Type), forall (Int : Type), forall (toInt : forall (n : NatCarrier), Int), forall (TranslationEvidence : forall (n : NatCarrier), Prop), forall (n : NatCarrier), forall (evidence : TranslationEvidence n), TranslationEvidence n",
+        proof:
+            "fun NatCarrier => fun Int => fun toInt => fun TranslationEvidence => fun n => fun evidence => evidence",
+    },
+    TheoremArtifact {
+        name: "positive_surface_preserves_evidence",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Positive : forall (x : Int), Prop), forall (x : Int), forall (positive_evidence : Positive x), Positive x",
+        proof:
+            "fun Int => fun Positive => fun x => fun positive_evidence => positive_evidence",
+    },
+    TheoremArtifact {
+        name: "nonzero_surface_preserves_evidence",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (x : Int), forall (nonzero_evidence : Nonzero x), Nonzero x",
+        proof:
+            "fun Int => fun Nonzero => fun x => fun nonzero_evidence => nonzero_evidence",
+    },
+    TheoremArtifact {
+        name: "positivity_nonzero_joint_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Positive : forall (x : Int), Prop), forall (Nonzero : forall (x : Int), Prop), forall (x : Int), forall (positive_evidence : Positive x), forall (nonzero_evidence : Nonzero x), Nonzero x",
+        proof:
+            "fun Int => fun Positive => fun Nonzero => fun x => fun positive_evidence => fun nonzero_evidence => nonzero_evidence",
+    },
+    TheoremArtifact {
+        name: "arithmetic_structure_is_ordinary_theorem_surface",
+        universe_params: &[],
+        statement:
+            "forall (ArithmeticSurface : Type), forall (OrdinaryTheoremTarget : forall (surface : ArithmeticSurface), Prop), forall (surface : ArithmeticSurface), forall (evidence : OrdinaryTheoremTarget surface), OrdinaryTheoremTarget surface",
+        proof:
+            "fun ArithmeticSurface => fun OrdinaryTheoremTarget => fun surface => fun evidence => evidence",
+    },
+];
+
+const NUMBER_THEORY_DIVISIBILITY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "divides_reflexivity_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (reflexive_law : forall (a : Int), Divides a a), forall (a : Int), Divides a a",
+        proof:
+            "fun Int => fun Divides => fun reflexive_law => fun a => reflexive_law a",
+    },
+    TheoremArtifact {
+        name: "divides_transitivity_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (transitive_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), forall (divides_bc : Divides b c), Divides a c), forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), forall (divides_bc : Divides b c), Divides a c",
+        proof:
+            "fun Int => fun Divides => fun transitive_law => fun a => fun b => fun c => fun divides_ab => fun divides_bc => transitive_law a b c divides_ab divides_bc",
+    },
+    TheoremArtifact {
+        name: "sign_normalized_divisibility_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (NormalizedDivides : forall (a : Int), forall (b : Int), Prop), forall (Nonnegative : forall (x : Int), Prop), forall (normalize_law : forall (a : Int), forall (b : Int), forall (nonnegative_b : Nonnegative b), forall (divides_ab : Divides a b), NormalizedDivides a b), forall (a : Int), forall (b : Int), forall (nonnegative_b : Nonnegative b), forall (divides_ab : Divides a b), NormalizedDivides a b",
+        proof:
+            "fun Int => fun Divides => fun NormalizedDivides => fun Nonnegative => fun normalize_law => fun a => fun b => fun nonnegative_b => fun divides_ab => normalize_law a b nonnegative_b divides_ab",
+    },
+    TheoremArtifact {
+        name: "normalized_divisibility_antisymmetry_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (NormalizedDivides : forall (a : Int), forall (b : Int), Prop), forall (EquivalentInt : forall (a : Int), forall (b : Int), Prop), forall (antisymmetry_law : forall (a : Int), forall (b : Int), forall (divides_ab : NormalizedDivides a b), forall (divides_ba : NormalizedDivides b a), EquivalentInt a b), forall (a : Int), forall (b : Int), forall (divides_ab : NormalizedDivides a b), forall (divides_ba : NormalizedDivides b a), EquivalentInt a b",
+        proof:
+            "fun Int => fun NormalizedDivides => fun EquivalentInt => fun antisymmetry_law => fun a => fun b => fun divides_ab => fun divides_ba => antisymmetry_law a b divides_ab divides_ba",
+    },
+    TheoremArtifact {
+        name: "divides_sign_rule_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Neg : forall (x : Int), Int), forall (sign_law : forall (a : Int), forall (b : Int), forall (divides_ab : Divides a b), Divides (Neg a) (Neg b)), forall (a : Int), forall (b : Int), forall (divides_ab : Divides a b), Divides (Neg a) (Neg b)",
+        proof:
+            "fun Int => fun Divides => fun Neg => fun sign_law => fun a => fun b => fun divides_ab => sign_law a b divides_ab",
+    },
+    TheoremArtifact {
+        name: "divisor_from_divides_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Divisor : forall (d : Int), forall (n : Int), Prop), forall (divisor_law : forall (d : Int), forall (n : Int), forall (divides_dn : Divides d n), Divisor d n), forall (d : Int), forall (n : Int), forall (divides_dn : Divides d n), Divisor d n",
+        proof:
+            "fun Int => fun Divides => fun Divisor => fun divisor_law => fun d => fun n => fun divides_dn => divisor_law d n divides_dn",
+    },
+    TheoremArtifact {
+        name: "multiple_from_divides_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Multiple : forall (n : Int), forall (m : Int), Prop), forall (multiple_law : forall (n : Int), forall (m : Int), forall (divides_nm : Divides n m), Multiple n m), forall (n : Int), forall (m : Int), forall (divides_nm : Divides n m), Multiple n m",
+        proof:
+            "fun Int => fun Divides => fun Multiple => fun multiple_law => fun n => fun m => fun divides_nm => multiple_law n m divides_nm",
+    },
+    TheoremArtifact {
+        name: "divides_mul_right_closure_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (closure_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), Divides a (Mul b c)), forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), Divides a (Mul b c)",
+        proof:
+            "fun Int => fun Divides => fun Mul => fun closure_law => fun a => fun b => fun c => fun divides_ab => closure_law a b c divides_ab",
+    },
+    TheoremArtifact {
+        name: "nat_int_divisibility_translation_packaged",
+        universe_params: &[],
+        statement:
+            "forall (NatCarrier : Type), forall (Int : Type), forall (toInt : forall (n : NatCarrier), Int), forall (NatDivides : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (IntDivides : forall (a : Int), forall (b : Int), Prop), forall (PositiveNat : forall (n : NatCarrier), Prop), forall (translation_law : forall (a : NatCarrier), forall (b : NatCarrier), forall (positive_b : PositiveNat b), forall (nat_divides_ab : NatDivides a b), IntDivides (toInt a) (toInt b)), forall (a : NatCarrier), forall (b : NatCarrier), forall (positive_b : PositiveNat b), forall (nat_divides_ab : NatDivides a b), IntDivides (toInt a) (toInt b)",
+        proof:
+            "fun NatCarrier => fun Int => fun toInt => fun NatDivides => fun IntDivides => fun PositiveNat => fun translation_law => fun a => fun b => fun positive_b => fun nat_divides_ab => translation_law a b positive_b nat_divides_ab",
+    },
+    TheoremArtifact {
+        name: "divisibility_simplification_theorem_target",
+        universe_params: &[],
+        statement:
+            "forall (DivisibilitySimplification : Type), forall (OrdinaryTheoremTarget : forall (target : DivisibilitySimplification), Prop), forall (target : DivisibilitySimplification), forall (evidence : OrdinaryTheoremTarget target), OrdinaryTheoremTarget target",
+        proof:
+            "fun DivisibilitySimplification => fun OrdinaryTheoremTarget => fun target => fun evidence => evidence",
     },
 ];
 
@@ -37608,6 +37770,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_GALOIS_STARTER_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == NUMBER_THEORY_INVENTORY_MODULE.module
+        || config.module == NUMBER_THEORY_ELEMENTARY_MODULE.module
+        || config.module == NUMBER_THEORY_DIVISIBILITY_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

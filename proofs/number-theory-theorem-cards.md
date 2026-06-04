@@ -59,6 +59,23 @@ Namespace ownership rules:
 - Bridge assumptions must use localized names, such as
   `ClassFieldBridgeAxiom.*`, and may not be hidden behind `L2` labels.
 
+## Elementary Divisibility Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.Elementary` and
+`Proofs.Ai.NumberTheory.Divisibility`.
+
+The elementary module records checked projection theorems for explicit `Int`
+carriers, `Nat`-to-`Int` translation evidence, positivity evidence, nonzero
+evidence, and ordinary arithmetic theorem targets. The divisibility module
+records checked theorem targets for `Divides`, sign-normalized divisibility,
+normalized antisymmetry evidence, divisor/multiple projections, sign rules,
+right-multiplication closure, `Nat`/`Int` translation with positivity
+hypotheses, and divisibility simplification as an ordinary theorem target.
+
+These modules remain `L1 Evidence package` interfaces. They do not add
+arithmetic automation to the trusted core and do not import prime
+factorization, elliptic-curve, or modularity modules.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

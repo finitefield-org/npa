@@ -114,6 +114,40 @@ theorems = ["arithmetic_object_structure_policy", "external_owner_alias_policy",
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.NumberTheory.Elementary"
+source = "Proofs/Ai/NumberTheory/Elementary/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Elementary/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Elementary/meta.json"
+replay = "Proofs/Ai/NumberTheory/Elementary/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:b707a8237acbafb3e333f733f034a16ffd76b9147239cbb0cb88ab5fb5e3e9aa"
+expected_certificate_file_hash = "sha256:fdfd307f8a7d4a2fb8e56a6a5caab410585955338f44cd9656b23b5f9ea460eb"
+expected_export_hash = "sha256:8b4931d8e693cf27167be34c9eea1424e48b043269b4b0ddfeb75409fc8cbdcc"
+expected_axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+expected_certificate_hash = "sha256:95a91695118ef7a6ac69f0cfc8d18ef245f7598e3782768da4eb0e285b4059e9"
+imports = ["Proofs.Ai.NumberTheory.Inventory"]
+definitions = []
+theorems = ["integer_carrier_surface_preserves_evidence", "nat_int_translation_surface_preserves_evidence", "positive_surface_preserves_evidence", "nonzero_surface_preserves_evidence", "positivity_nonzero_joint_surface", "arithmetic_structure_is_ordinary_theorem_surface"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Divisibility"
+source = "Proofs/Ai/NumberTheory/Divisibility/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Divisibility/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Divisibility/meta.json"
+replay = "Proofs/Ai/NumberTheory/Divisibility/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:47b764561588aebd6aff93c07339d0d7433565f526227dd96aa16b8a020e41f2"
+expected_certificate_file_hash = "sha256:29fe6e8f0449445b19a61e638382a12ee928f48bf0e3116610ca1310e8b21962"
+expected_export_hash = "sha256:ba4385582c059d21b127a5bceb4a3c8d91b90c80683e90a7f13b51854fbdf391"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:02bfd3da621ab93923668fd1d7cbe0512c630408a0dc720a863c53aa13b97351"
+imports = ["Proofs.Ai.NumberTheory.Elementary"]
+definitions = []
+theorems = ["divides_reflexivity_packaged", "divides_transitivity_packaged", "sign_normalized_divisibility_packaged", "normalized_divisibility_antisymmetry_packaged", "divides_sign_rule_packaged", "divisor_from_divides_packaged", "multiple_from_divides_packaged", "divides_mul_right_closure_packaged", "nat_int_divisibility_translation_packaged", "divisibility_simplification_theorem_target"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"
