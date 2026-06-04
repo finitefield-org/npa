@@ -163,6 +163,69 @@ fn universe_meta_param_certificate_bytes() -> Vec<u8> {
 }
 
 #[test]
+fn canonical_certificate_name_grammar_allows_ascii_prime() {
+    assert!(Name::from_dotted("Math.Algebra.eq_trans'").is_canonical());
+    assert!(Name::from_dotted("Foo.Bar.baz''").is_canonical());
+    assert!(Name::from_dotted("_Private._helper2'").is_canonical());
+
+    let cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test.NameGrammar"),
+            declarations: vec![Decl::Axiom {
+                name: "p'".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::zero()),
+            }],
+        },
+        &[],
+    )
+    .unwrap();
+    assert_eq!(
+        cert.name_table
+            .iter()
+            .map(Name::as_dotted)
+            .collect::<Vec<_>>(),
+        vec!["Test.NameGrammar", "p'"]
+    );
+}
+
+#[test]
+fn canonical_certificate_name_grammar_rejects_operator_and_unicode_prime() {
+    for name in [
+        "",
+        ".Nat",
+        "Nat.",
+        "Nat..add",
+        "2Nat",
+        "Nat.2add",
+        "Nat.+",
+        "Nat.mul*",
+        "Nat.add-prime",
+        "Nat.add′",
+        "'Nat",
+    ] {
+        assert!(!Name::from_dotted(name).is_canonical(), "{name}");
+    }
+
+    let err = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test.NameGrammar"),
+            declarations: vec![Decl::Axiom {
+                name: "p+".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::zero()),
+            }],
+        },
+        &[],
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "Name" }
+    ));
+}
+
+#[test]
 fn universe_constraints_canonical_hash_accepts_empty_and_non_empty_sets() {
     let params = vec!["u".to_owned(), "v".to_owned(), "w".to_owned()];
     let empty = universe_constraints_hash(&params, &[]).unwrap();
@@ -200,9 +263,7 @@ fn universe_constraints_reject_unresolved_meta_params() {
     );
     assert!(matches!(
         cert,
-        Err(CertError::Kernel(
-            npa_kernel::Error::UnresolvedUniverseMeta(param)
-        )) if param == "z?meta"
+        Err(CertError::NonCanonicalEncoding { object: "Name" })
     ));
 }
 
@@ -288,8 +349,7 @@ fn universe_meta_param_fixture_rejected_by_fast_verifier() {
 
     assert!(matches!(
         err,
-        CertError::Kernel(npa_kernel::Error::UnresolvedUniverseMeta(param))
-            if param == "z?meta"
+        CertError::NonCanonicalEncoding { object: "Name" }
     ));
 }
 

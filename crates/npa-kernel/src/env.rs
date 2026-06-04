@@ -17,6 +17,7 @@ use crate::{
         ensure_level_wf, ensure_universe_constraints_wf, level_eq, levels_eq,
         validate_universe_params, Level, UniverseConstraint,
     },
+    name::is_canonical_dotted_name,
     positivity::approved_nested_functor,
     subst::{instantiate, shift, subst_levels_expr},
 };
@@ -602,6 +603,9 @@ impl Env {
     }
 
     fn ensure_fresh(&self, name: &str) -> Result<()> {
+        if !is_canonical_dotted_name(name) {
+            return Err(Error::InvalidDeclarationName(name.to_owned()));
+        }
         if self.decls.contains_key(name) {
             Err(Error::DuplicateDecl(name.to_owned()))
         } else {

@@ -36,38 +36,49 @@ For ordinary development, run the fast gate first:
 This is the default hot-path check for changes outside the proof corpus and
 certificate/checker compatibility surface.
 
-Run the corpus gate only when a change affects one of these areas:
+The in-repo proof corpus is a staging workspace. For ordinary theorem
+authoring, run only the local build/source-free checks and the lightweight
+authoring gate:
 
-- `proofs/**`
-- `tools/proof-corpus/**`
+```sh
+cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
+./scripts/check-corpus-authoring.sh
+```
+
+`./scripts/check-corpus.sh` remains valid as a compatibility alias for the
+lightweight authoring gate.
+
+Run the package/full corpus gate only when a change affects one of these areas:
+
+- `tools/proof-corpus/**` package metadata, promotion, package lock, or artifact generation
+- `proofs/npa-package.toml`, `proofs/generated/package-lock.json`, axiom-report,
+  theorem-index, publish-plan, or other package generated artifacts
 - canonical certificate encode, decode, hash, import, or axiom report behavior
 - kernel core semantics, typecheck, reduction, universe, or inductive behavior
 - independent checker, package verifier, package lock, or artifact validation
 - `.npcert` generation or verification compatibility
-- release or high-trust evidence
+- `npa-mathlib` promotion readiness, release, or high-trust evidence
 
-For those changes, choose the split corpus gate that matches the change:
+For those changes, choose the explicit package/full gate that matches the change:
 
 ```sh
-./scripts/check-corpus-authoring.sh
 ./scripts/check-corpus-package.sh
 ./scripts/check-corpus-full.sh
 ```
 
-Use `check-corpus-authoring.sh` for normal proof-corpus theorem authoring
-completion. It excludes package-wide CLI examples. Use
-`check-corpus-package.sh` for package verifier coverage, package CLI examples,
-axiom-report, index, and publish-plan regression. Use
-`check-corpus-full.sh` for push readiness, release handoff, high-trust-adjacent
-changes, or broad certificate/package/checker compatibility changes. The
-legacy `./scripts/check-corpus.sh` name remains valid as a compatibility
-wrapper around `check-corpus-full.sh`.
+`check-corpus-package.sh` covers package verifier behavior, package CLI
+examples, axiom-report, index, and publish-plan regression. Use
+`check-corpus-full.sh` for promotion readiness, release handoff,
+high-trust-adjacent changes, or broad certificate/package/checker compatibility
+changes.
 
 When adding or editing proof corpus theorems, use the targeted authoring
 commands from `develop/proof-corpus-ai-workflow.md` for the normal repair loop.
-Do not run the full corpus gate after every proof attempt; reserve it for batch
-boundaries, commit/push readiness, release handoff, or certificate/package/checker
-compatibility changes.
+Do not run the package/full corpus gate after every proof attempt; reserve it
+for promotion, release handoff, or certificate/package/checker compatibility
+changes.
 
 ## Certificate Compatibility
 

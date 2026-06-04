@@ -26,6 +26,7 @@ type decode_error_reason =
   | Empty_name
   | Empty_name_component
   | Dotted_name_component
+  | Invalid_name_component
   | Duplicate_name
   | Duplicate_declaration
   | Unknown_tag of int
@@ -90,6 +91,7 @@ let reason_code reason =
   | Empty_name -> "empty_name"
   | Empty_name_component -> "empty_name_component"
   | Dotted_name_component -> "dotted_name_component"
+  | Invalid_name_component -> "invalid_name_component"
   | Duplicate_name -> "duplicate_name"
   | Duplicate_declaration -> "duplicate_declaration"
   | Unknown_tag _ -> "unknown_tag"

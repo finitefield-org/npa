@@ -491,23 +491,23 @@ galois_correspondence_order_bridge
 
 ## 8. 検証
 
-proof corpus に体論 module を追加する作業では、full corpus gate を毎回走らせず、
+proof corpus に体論 module を追加する作業では、package/full corpus gate を毎回走らせず、
 局所確認を優先します。
 
 例:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractField
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ```
 
 複数 module の export hash に影響する変更、certificate encode / decode / hash、
 kernel semantics、independent checker、package verifier に関わる変更では、
-最後に corpus gate を実行します。
+最後に package/full corpus gate を明示的に実行します。
 
 ```sh
-./scripts/check-corpus.sh
+./scripts/check-corpus-full.sh
 ```
 
 通常の code / doc 変更だけなら、まず fast gate を使います。

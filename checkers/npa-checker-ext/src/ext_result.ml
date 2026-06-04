@@ -181,6 +181,7 @@ let decode_error_kind error =
   | Ext_bytes.Empty_name
   | Ext_bytes.Empty_name_component
   | Ext_bytes.Dotted_name_component
+  | Ext_bytes.Invalid_name_component
   | Ext_bytes.Duplicate_name
   | Ext_bytes.Duplicate_declaration
   | Ext_bytes.Non_normalized_level

@@ -86,10 +86,13 @@ Sigma |- module ok
 名前は global constant とデバッグ用 binder name に使います。束縛構造は名前ではなく de Bruijn index で表します。
 
 ```text
-Name ::= UTF-8 module-qualified identifier
+DeclarationName = Component ("." Component)*
+Component       = [A-Za-z_][A-Za-z0-9_']*
 ```
 
-certificate hashing では名前を canonical name table に入れ、term は name id を参照します。
+`'` は ASCII apostrophe (`U+0027`) だけを許可します。Unicode prime-like 文字や
+operator 記号は declaration name に入りません。certificate hashing では名前を
+canonical name table に入れ、term は name id を参照します。
 
 ### 3.2 Universe Levels
 

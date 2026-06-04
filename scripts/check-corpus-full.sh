@@ -3,8 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-# Full corpus gate for push readiness, release handoff, and high-trust-adjacent
-# changes. It composes the authoring gate and the package-wide gate.
+# Full corpus gate for npa-mathlib promotion readiness, release handoff,
+# package-tooling changes, and high-trust-adjacent checks. Normal proof-corpus
+# authoring should use check-corpus-authoring.sh instead.
 echo "[1/2] Proof corpus authoring gate"
 bash scripts/check-corpus-authoring.sh
 

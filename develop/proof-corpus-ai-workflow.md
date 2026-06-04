@@ -35,7 +35,7 @@ Machine Surface、tactic candidate、source-free certificate verification を優
 4. 追加した module と import closure だけを source から再生成する。
 5. 追加した module だけ source-free に検査する。
 6. 失敗した declaration だけ focused replay に切り出して AI repair に戻す。
-7. まとまったところで changed-only と `./scripts/check-corpus-authoring.sh` を実行する。
+7. まとまったところで `./scripts/check-corpus-authoring.sh` を実行する。
 
 よく使うコマンド:
 
@@ -54,7 +54,7 @@ cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Basic::id proofs/gener
 Human Surface source から compile し、`source.npa`、`certificate.npcert`、`meta.json`、`replay.json`、
 `manifest.toml`、`npa-package.toml`、`generated/package-lock.json`、AI theorem index を更新します。
 下流 module は再生成しないため、基礎 module の export hash が変わった場合は、必要な下流 module も
-順に `--build-module` するか、最後に full corpus gate で検出します。
+順に `--build-module` するか、promote / package gate 前に検出します。
 
 複数 module をまとめる場合は、batch build で import closure と package-wide metadata 更新を
 一度に処理します。
@@ -70,8 +70,10 @@ cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-bat
 同じ certificate を繰り返し確認する authoring 中だけ、`--verified-cache authoring` を付けると
 process 間で versioned verified cache を再利用できます。cache mode を有効にした場合、出力には
 `cache_status = "hit"` / `"miss"` / `"stale"` と `cache_mode = "authoring"` が出ます。
-既定は `off` であり、`./scripts/check-corpus.sh`、full gate、release / high-trust 相当の確認では
-authoring cache を使いません。cache の挙動を調べる場合は `--verified-cache read-through` を使い、
+既定は `off` です。通常 authoring gate の `./scripts/check-corpus-authoring.sh` と
+互換 wrapper の `./scripts/check-corpus.sh` は authoring cache を使いますが、
+package/full gate、release / high-trust 相当の確認では authoring cache を使いません。
+cache の挙動を調べる場合は `--verified-cache read-through` を使い、
 live verifier result と cache entry の比較を行います。
 
 ## Shard
@@ -156,18 +158,20 @@ source-free verifier / package hash / index / axiom-report の代わりにはな
 
 通常開発では `./scripts/check-fast.sh` を使います。
 
-proof corpus theorem authoring の通常完了確認では、作業中に毎回 full corpus gate を
+proof corpus theorem authoring の通常完了確認では、作業中に毎回 package/full corpus gate を
 回さず、`--module`、`--changed-only`、`--shard` で局所確認してから
-`./scripts/check-corpus-authoring.sh` を通します。この gate は package-wide CLI examples を
-含めません。
+`./scripts/check-corpus-authoring.sh` を通します。この gate は changed modules の source-free
+検査だけを `--verified-cache authoring` 付きで実行し、package-wide CLI examples、
+axiom-report、theorem-index、publish-plan は含めません。既存の `./scripts/check-corpus.sh` は
+互換 wrapper として同じ軽量 authoring gate を実行します。
 
-certificate / kernel / checker / package verification の互換性に関わる変更、または
-package metadata / package CLI examples / axiom-report / index / publish-plan の回帰確認では、
-`./scripts/check-corpus-package.sh` を実行します。push 前、release / high-trust 手前、
-または authoring と package の両方をまとめて確認する場合は
-`./scripts/check-corpus-full.sh` を実行します。既存の `./scripts/check-corpus.sh` は
-互換 wrapper として full gate を実行します。
+certificate / kernel / checker / package verification の互換性に関わる変更、package metadata /
+package CLI examples / axiom-report / index / publish-plan の回帰確認、または `npa-mathlib`
+への promote 直前では、`./scripts/check-corpus-package.sh` を実行します。release /
+high-trust 手前、または authoring と package の両方をまとめて確認する場合は
+`./scripts/check-corpus-full.sh` を明示的に実行します。
 
-PCT-08 の計測では、局所 small-module authoring loop は baseline full corpus gate より約 394 倍短く、
-`check-corpus-authoring.sh` は baseline full gate より約 9.2 倍短い結果でした。詳細は
+PCT-08 の計測では、局所 small-module authoring loop は baseline full corpus gate より約 394 倍短い
+結果でした。現在の `check-corpus-authoring.sh` はこの局所 authoring 方針へさらに寄せ、
+changed-only source-free 検査だけを実行します。過去の計測詳細は
 `develop/proof-corpus-tooling-pct-08-measurement.md` に記録しています。

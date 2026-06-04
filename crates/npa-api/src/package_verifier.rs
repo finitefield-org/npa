@@ -1561,6 +1561,7 @@ fn reference_check_reason_code(reason: ReferenceCheckReason) -> &'static str {
         ReferenceCheckReason::EmptyModuleName => "empty_module_name",
         ReferenceCheckReason::EmptyModuleNameComponent => "empty_module_name_component",
         ReferenceCheckReason::DottedNameComponent => "dotted_name_component",
+        ReferenceCheckReason::InvalidNameComponent => "invalid_name_component",
         ReferenceCheckReason::DanglingReference => "dangling_reference",
         ReferenceCheckReason::NonCanonicalOrder => "non_canonical_order",
         ReferenceCheckReason::DuplicateName => "duplicate_name",

@@ -6,13 +6,13 @@ use std::{
 use sha2::{Digest, Sha256};
 
 use crate::{
-    ReferenceAxiomDependency, ReferenceCertificateHeader, ReferenceCertificateSection,
-    ReferenceCheckError, ReferenceCheckReason, ReferenceCheckedModule, ReferenceCheckerPolicy,
-    ReferenceCoreExpr, ReferenceCoreFeature, ReferenceCoreGlobalRef, ReferenceCoreLevel,
-    ReferenceDecodedCertificate, ReferenceDecodedCertificateCounts, ReferenceExportKind,
-    ReferenceHash, ReferenceHashObject, ReferenceImportEntry, ReferenceImportEnvironment,
-    ReferenceImportStore, ReferenceModuleHashes, ReferenceModuleName, ReferencePublicEnvironment,
-    ReferencePublicExport, ReferenceResolvedImport, ReferenceTrustMode,
+    reference_name_component_is_canonical, ReferenceAxiomDependency, ReferenceCertificateHeader,
+    ReferenceCertificateSection, ReferenceCheckError, ReferenceCheckReason, ReferenceCheckedModule,
+    ReferenceCheckerPolicy, ReferenceCoreExpr, ReferenceCoreFeature, ReferenceCoreGlobalRef,
+    ReferenceCoreLevel, ReferenceDecodedCertificate, ReferenceDecodedCertificateCounts,
+    ReferenceExportKind, ReferenceHash, ReferenceHashObject, ReferenceImportEntry,
+    ReferenceImportEnvironment, ReferenceImportStore, ReferenceModuleHashes, ReferenceModuleName,
+    ReferencePublicEnvironment, ReferencePublicExport, ReferenceResolvedImport, ReferenceTrustMode,
     REFERENCE_CERTIFICATE_FORMAT, REFERENCE_CORE_SPEC,
 };
 
@@ -7915,6 +7915,13 @@ impl<'a> Decoder<'a> {
                     section,
                     self.offset,
                     ReferenceCheckReason::DottedNameComponent,
+                ));
+            }
+            if !reference_name_component_is_canonical(&component) {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    self.offset,
+                    ReferenceCheckReason::InvalidNameComponent,
                 ));
             }
             components.push(component);

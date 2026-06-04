@@ -40,6 +40,7 @@ pub enum Error {
         lhs: Expr,
         rhs: Expr,
     },
+    InvalidDeclarationName(String),
     DuplicateDecl(String),
     InvalidInductive(String),
     NonPositiveOccurrence {

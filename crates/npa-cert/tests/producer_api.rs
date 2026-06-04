@@ -542,8 +542,7 @@ fn check_core_decl_candidates_rejects_placeholder_like_ai_candidates() {
     ));
     assert!(matches!(
         &result.statuses[2],
-        CandidateStatus::Rejected(CertError::Kernel(KernelError::UnresolvedUniverseMeta(param)))
-            if param == "?m"
+        CandidateStatus::Rejected(CertError::NonCanonicalEncoding { object: "Name" })
     ));
 }
 
