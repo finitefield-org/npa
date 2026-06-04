@@ -84,6 +84,14 @@ Current bundles:
   preserving multiple projections, least-common-multiple characterization, normalized sign
   convention, uniqueness, the explicit `gcd_lcm` product formula hypothesis, and downstream
   congruence/Diophantine reduction surfaces without assuming Bezout.
+- `Proofs/Ai/NumberTheory/EuclideanAlgorithm/`: certificate-backed Euclid algorithm interface
+  over gcd evidence, preserving descent termination evidence, remainder-step gcd preservation,
+  gcd correctness, extended Euclidean algorithm correctness, and the boundary separating
+  algorithmic correctness from runtime complexity.
+- `Proofs/Ai/NumberTheory/Bezout/`: certificate-backed Bezout interface downstream of the
+  Euclidean algorithm package, preserving Bezout identities, gcd linear-combination
+  characterization, explicit integer and natural coprimality variants, `Nat`/`Int` translation,
+  and the boundary excluding prime-factorization and CRT imports.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

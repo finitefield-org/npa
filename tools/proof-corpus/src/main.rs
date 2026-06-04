@@ -115,6 +115,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_DESCENT_MODULE,
     &NUMBER_THEORY_GCD_MODULE,
     &NUMBER_THEORY_LCM_MODULE,
+    &NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE,
+    &NUMBER_THEORY_BEZOUT_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
     &ABSTRACT_METRIC_TOPOLOGY_MODULE,
@@ -555,6 +557,32 @@ const NUMBER_THEORY_LCM_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_LCM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.EuclideanAlgorithm",
+    source_path: "Proofs/Ai/NumberTheory/EuclideanAlgorithm/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/EuclideanAlgorithm/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/EuclideanAlgorithm/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/EuclideanAlgorithm/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Gcd"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_EUCLIDEAN_ALGORITHM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_BEZOUT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Bezout",
+    source_path: "Proofs/Ai/NumberTheory/Bezout/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Bezout/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Bezout/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Bezout/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.EuclideanAlgorithm"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_BEZOUT_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9673,6 +9701,108 @@ const NUMBER_THEORY_LCM_THEOREMS: &[TheoremArtifact] = &[
             "forall (LcmNormalForm : Type), forall (BezoutIdentity : Type), forall (NoBezoutAssumption : forall (lcm_form : LcmNormalForm), forall (bezout : BezoutIdentity), Prop), forall (boundary_law : forall (lcm_form : LcmNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption lcm_form bezout), forall (lcm_form : LcmNormalForm), forall (bezout : BezoutIdentity), NoBezoutAssumption lcm_form bezout",
         proof:
             "fun LcmNormalForm => fun BezoutIdentity => fun NoBezoutAssumption => fun boundary_law => fun lcm_form => fun bezout => boundary_law lcm_form bezout",
+    },
+];
+
+const NUMBER_THEORY_EUCLIDEAN_ALGORITHM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "euclidean_algorithm_terminates_from_descent_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (DescentMeasure : forall (a : Int), forall (b : Int), Prop), forall (EuclideanAlgorithmTerminates : forall (a : Int), forall (b : Int), Prop), forall (descent_law : forall (a : Int), forall (b : Int), forall (measure : DescentMeasure a b), EuclideanAlgorithmTerminates a b), forall (a : Int), forall (b : Int), forall (measure : DescentMeasure a b), EuclideanAlgorithmTerminates a b",
+        proof:
+            "fun Int => fun DescentMeasure => fun EuclideanAlgorithmTerminates => fun descent_law => fun a => fun b => fun measure => descent_law a b measure",
+    },
+    TheoremArtifact {
+        name: "euclidean_algorithm_remainder_step_preserves_gcd_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (RemainderStepEvidence : forall (a : Int), forall (b : Int), forall (r : Int), Prop), forall (PreservesGcd : forall (a : Int), forall (b : Int), forall (r : Int), forall (g : Int), Prop), forall (preservation_law : forall (a : Int), forall (b : Int), forall (r : Int), forall (g : Int), forall (step : RemainderStepEvidence a b r), forall (gcd_evidence : GcdEvidence a b g), PreservesGcd a b r g), forall (a : Int), forall (b : Int), forall (r : Int), forall (g : Int), forall (step : RemainderStepEvidence a b r), forall (gcd_evidence : GcdEvidence a b g), PreservesGcd a b r g",
+        proof:
+            "fun Int => fun GcdEvidence => fun RemainderStepEvidence => fun PreservesGcd => fun preservation_law => fun a => fun b => fun r => fun g => fun step => fun gcd_evidence => preservation_law a b r g step gcd_evidence",
+    },
+    TheoremArtifact {
+        name: "euclidean_algorithm_gcd_correctness_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (EuclideanAlgorithm : forall (a : Int), forall (b : Int), Int), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (correctness_law : forall (a : Int), forall (b : Int), GcdEvidence a b (EuclideanAlgorithm a b)), forall (a : Int), forall (b : Int), GcdEvidence a b (EuclideanAlgorithm a b)",
+        proof:
+            "fun Int => fun EuclideanAlgorithm => fun GcdEvidence => fun correctness_law => fun a => fun b => correctness_law a b",
+    },
+    TheoremArtifact {
+        name: "extended_euclidean_algorithm_correctness_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (ExtendedEuclideanAlgorithmEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (ExtendedEuclideanAlgorithmCorrect : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (correctness_law : forall (a : Int), forall (b : Int), forall (output : ExtendedEuclideanAlgorithmEvidence a b (Gcd a b)), forall (gcd_evidence : GcdEvidence a b (Gcd a b)), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), ExtendedEuclideanAlgorithmCorrect a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (output : ExtendedEuclideanAlgorithmEvidence a b (Gcd a b)), forall (gcd_evidence : GcdEvidence a b (Gcd a b)), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), ExtendedEuclideanAlgorithmCorrect a b (Gcd a b)",
+        proof:
+            "fun Int => fun Gcd => fun ExtendedEuclideanAlgorithmEvidence => fun GcdEvidence => fun BezoutIdentity => fun ExtendedEuclideanAlgorithmCorrect => fun correctness_law => fun a => fun b => fun output => fun gcd_evidence => fun bezout_identity => correctness_law a b output gcd_evidence bezout_identity",
+    },
+    TheoremArtifact {
+        name: "euclidean_algorithm_correctness_separate_from_complexity",
+        universe_params: &[],
+        statement:
+            "forall (AlgorithmCorrectness : Type), forall (RuntimeComplexity : Type), forall (CorrectnessSeparateFromComplexity : forall (correctness : AlgorithmCorrectness), forall (complexity : RuntimeComplexity), Prop), forall (separation_law : forall (correctness : AlgorithmCorrectness), forall (complexity : RuntimeComplexity), CorrectnessSeparateFromComplexity correctness complexity), forall (correctness : AlgorithmCorrectness), forall (complexity : RuntimeComplexity), CorrectnessSeparateFromComplexity correctness complexity",
+        proof:
+            "fun AlgorithmCorrectness => fun RuntimeComplexity => fun CorrectnessSeparateFromComplexity => fun separation_law => fun correctness => fun complexity => separation_law correctness complexity",
+    },
+];
+
+const NUMBER_THEORY_BEZOUT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "bezout_identity_from_extended_euclid_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (ExtendedEuclideanAlgorithmEvidence : forall (a : Int), forall (b : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (bezout_law : forall (a : Int), forall (b : Int), forall (extended_euclid : ExtendedEuclideanAlgorithmEvidence a b), BezoutIdentity a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (extended_euclid : ExtendedEuclideanAlgorithmEvidence a b), BezoutIdentity a b (Gcd a b)",
+        proof:
+            "fun Int => fun Gcd => fun ExtendedEuclideanAlgorithmEvidence => fun BezoutIdentity => fun bezout_law => fun a => fun b => fun extended_euclid => bezout_law a b extended_euclid",
+    },
+    TheoremArtifact {
+        name: "bezout_coefficients_linear_combination_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (LinearCombination : forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (value : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (coefficient_law : forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (linear_combination : LinearCombination a b x y (Gcd a b)), BezoutIdentity a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (linear_combination : LinearCombination a b x y (Gcd a b)), BezoutIdentity a b (Gcd a b)",
+        proof:
+            "fun Int => fun Gcd => fun LinearCombination => fun BezoutIdentity => fun coefficient_law => fun a => fun b => fun x => fun y => fun linear_combination => coefficient_law a b x y linear_combination",
+    },
+    TheoremArtifact {
+        name: "gcd_linear_combination_characterization_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdLinearCombinationCharacterization : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (characterization_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (bezout_identity : BezoutIdentity a b g), GcdLinearCombinationCharacterization a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (bezout_identity : BezoutIdentity a b g), GcdLinearCombinationCharacterization a b g",
+        proof:
+            "fun Int => fun GcdEvidence => fun BezoutIdentity => fun GcdLinearCombinationCharacterization => fun characterization_law => fun a => fun b => fun g => fun gcd_evidence => fun bezout_identity => characterization_law a b g gcd_evidence bezout_identity",
+    },
+    TheoremArtifact {
+        name: "coprime_iff_linear_combination_int_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (LinearCombinationEqualsOneInt : forall (a : Int), forall (b : Int), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (iff_law : forall (a : Int), forall (b : Int), IffEvidence (CoprimeInt a b) (LinearCombinationEqualsOneInt a b)), forall (a : Int), forall (b : Int), IffEvidence (CoprimeInt a b) (LinearCombinationEqualsOneInt a b)",
+        proof:
+            "fun Int => fun CoprimeInt => fun LinearCombinationEqualsOneInt => fun IffEvidence => fun iff_law => fun a => fun b => iff_law a b",
+    },
+    TheoremArtifact {
+        name: "coprime_iff_linear_combination_nat_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CoprimeNat : forall (a : Nat), forall (b : Nat), Prop), forall (LinearCombinationEqualsOneNat : forall (a : Nat), forall (b : Nat), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (iff_law : forall (a : Nat), forall (b : Nat), IffEvidence (CoprimeNat a b) (LinearCombinationEqualsOneNat a b)), forall (a : Nat), forall (b : Nat), IffEvidence (CoprimeNat a b) (LinearCombinationEqualsOneNat a b)",
+        proof:
+            "fun Nat => fun CoprimeNat => fun LinearCombinationEqualsOneNat => fun IffEvidence => fun iff_law => fun a => fun b => iff_law a b",
+    },
+    TheoremArtifact {
+        name: "coprime_nat_int_translation_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (Int : Type), forall (ToInt : forall (n : Nat), Int), forall (CoprimeNat : forall (a : Nat), forall (b : Nat), Prop), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (TranslationEvidence : forall (a : Nat), forall (b : Nat), Prop), forall (translation_law : forall (a : Nat), forall (b : Nat), forall (translation : TranslationEvidence a b), forall (coprime_nat : CoprimeNat a b), CoprimeInt (ToInt a) (ToInt b)), forall (a : Nat), forall (b : Nat), forall (translation : TranslationEvidence a b), forall (coprime_nat : CoprimeNat a b), CoprimeInt (ToInt a) (ToInt b)",
+        proof:
+            "fun Nat => fun Int => fun ToInt => fun CoprimeNat => fun CoprimeInt => fun TranslationEvidence => fun translation_law => fun a => fun b => fun translation => fun coprime_nat => translation_law a b translation coprime_nat",
+    },
+    TheoremArtifact {
+        name: "bezout_no_prime_factorization_or_crt_boundary",
+        universe_params: &[],
+        statement:
+            "forall (BezoutPackage : Type), forall (PrimeFactorization : Type), forall (ChineseRemainderTheorem : Type), forall (NoImportBoundary : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt), forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt",
+        proof:
+            "fun BezoutPackage => fun PrimeFactorization => fun ChineseRemainderTheorem => fun NoImportBoundary => fun boundary_law => fun bezout => fun prime_factorization => fun crt => boundary_law bezout prime_factorization crt",
     },
 ];
 
@@ -38132,6 +38262,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_DESCENT_MODULE.module
         || config.module == NUMBER_THEORY_GCD_MODULE.module
         || config.module == NUMBER_THEORY_LCM_MODULE.module
+        || config.module == NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE.module
+        || config.module == NUMBER_THEORY_BEZOUT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

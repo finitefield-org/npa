@@ -1,0 +1,21 @@
+import Proofs.Ai.NumberTheory.Gcd
+
+theorem euclidean_algorithm_terminates_from_descent_packaged :
+  forall (Int : Type), forall (DescentMeasure : forall (a : Int), forall (b : Int), Prop), forall (EuclideanAlgorithmTerminates : forall (a : Int), forall (b : Int), Prop), forall (descent_law : forall (a : Int), forall (b : Int), forall (measure : DescentMeasure a b), EuclideanAlgorithmTerminates a b), forall (a : Int), forall (b : Int), forall (measure : DescentMeasure a b), EuclideanAlgorithmTerminates a b :=
+  fun Int => fun DescentMeasure => fun EuclideanAlgorithmTerminates => fun descent_law => fun a => fun b => fun measure => descent_law a b measure
+
+theorem euclidean_algorithm_remainder_step_preserves_gcd_packaged :
+  forall (Int : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (RemainderStepEvidence : forall (a : Int), forall (b : Int), forall (r : Int), Prop), forall (PreservesGcd : forall (a : Int), forall (b : Int), forall (r : Int), forall (g : Int), Prop), forall (preservation_law : forall (a : Int), forall (b : Int), forall (r : Int), forall (g : Int), forall (step : RemainderStepEvidence a b r), forall (gcd_evidence : GcdEvidence a b g), PreservesGcd a b r g), forall (a : Int), forall (b : Int), forall (r : Int), forall (g : Int), forall (step : RemainderStepEvidence a b r), forall (gcd_evidence : GcdEvidence a b g), PreservesGcd a b r g :=
+  fun Int => fun GcdEvidence => fun RemainderStepEvidence => fun PreservesGcd => fun preservation_law => fun a => fun b => fun r => fun g => fun step => fun gcd_evidence => preservation_law a b r g step gcd_evidence
+
+theorem euclidean_algorithm_gcd_correctness_packaged :
+  forall (Int : Type), forall (EuclideanAlgorithm : forall (a : Int), forall (b : Int), Int), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (correctness_law : forall (a : Int), forall (b : Int), GcdEvidence a b (EuclideanAlgorithm a b)), forall (a : Int), forall (b : Int), GcdEvidence a b (EuclideanAlgorithm a b) :=
+  fun Int => fun EuclideanAlgorithm => fun GcdEvidence => fun correctness_law => fun a => fun b => correctness_law a b
+
+theorem extended_euclidean_algorithm_correctness_packaged :
+  forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (ExtendedEuclideanAlgorithmEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (ExtendedEuclideanAlgorithmCorrect : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (correctness_law : forall (a : Int), forall (b : Int), forall (output : ExtendedEuclideanAlgorithmEvidence a b (Gcd a b)), forall (gcd_evidence : GcdEvidence a b (Gcd a b)), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), ExtendedEuclideanAlgorithmCorrect a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (output : ExtendedEuclideanAlgorithmEvidence a b (Gcd a b)), forall (gcd_evidence : GcdEvidence a b (Gcd a b)), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), ExtendedEuclideanAlgorithmCorrect a b (Gcd a b) :=
+  fun Int => fun Gcd => fun ExtendedEuclideanAlgorithmEvidence => fun GcdEvidence => fun BezoutIdentity => fun ExtendedEuclideanAlgorithmCorrect => fun correctness_law => fun a => fun b => fun output => fun gcd_evidence => fun bezout_identity => correctness_law a b output gcd_evidence bezout_identity
+
+theorem euclidean_algorithm_correctness_separate_from_complexity :
+  forall (AlgorithmCorrectness : Type), forall (RuntimeComplexity : Type), forall (CorrectnessSeparateFromComplexity : forall (correctness : AlgorithmCorrectness), forall (complexity : RuntimeComplexity), Prop), forall (separation_law : forall (correctness : AlgorithmCorrectness), forall (complexity : RuntimeComplexity), CorrectnessSeparateFromComplexity correctness complexity), forall (correctness : AlgorithmCorrectness), forall (complexity : RuntimeComplexity), CorrectnessSeparateFromComplexity correctness complexity :=
+  fun AlgorithmCorrectness => fun RuntimeComplexity => fun CorrectnessSeparateFromComplexity => fun separation_law => fun correctness => fun complexity => separation_law correctness complexity

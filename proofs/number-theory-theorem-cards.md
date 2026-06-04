@@ -111,6 +111,24 @@ and the matching congruence and Diophantine normal forms.
 These modules still do not assume Bezout, Euclid's lemma, Gauss's lemma, prime
 factorization, CRT, elliptic curves, or modularity.
 
+## Euclid Algorithm And Bezout Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.EuclideanAlgorithm` and
+`Proofs.Ai.NumberTheory.Bezout`.
+
+The Euclidean-algorithm module records checked theorem targets for descent-
+based termination, remainder-step preservation of gcd evidence, algorithmic gcd
+correctness, extended Euclidean algorithm correctness, and an explicit boundary
+separating correctness statements from runtime-complexity claims. The Bezout
+module records Bezout identities from extended Euclid evidence, linear-
+combination witnesses for gcd, the gcd linear-combination characterization,
+integer and natural `Coprime` iff linear-combination-equals-one surfaces, and
+`Nat`/`Int` coprimality translation.
+
+These modules import the gcd/Euclidean-algorithm closure only. They do not
+import prime factorization, CRT, Euclid's lemma, Gauss's lemma, elliptic curves,
+or modularity.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

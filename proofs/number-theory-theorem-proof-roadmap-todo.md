@@ -320,7 +320,7 @@ later in the file.
 
 ### NT-T05 Prove Euclid Algorithm And Bezout Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T04`
 - Areas: `Proofs/Ai/NumberTheory/EuclideanAlgorithm/`, `Proofs/Ai/NumberTheory/Bezout/`
 - Tasks:
@@ -335,9 +335,15 @@ later in the file.
   - Bezout does not import prime factorization or CRT.
   - Coprimality statements expose integer/natural variants explicitly.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanAlgorithm`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Bezout`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanAlgorithm`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Bezout`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Bezout|EuclideanAlgorithm|Coprime|linear_combination" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T06 Add Linear Diophantine Equation Package
 

@@ -199,6 +199,42 @@ theorems = ["lcm_existence_from_gcd_packaged", "lcm_multiple_left_packaged", "lc
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.EuclideanAlgorithm"
+source = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/source.npa"
+certificate = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/meta.json"
+replay = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d7f940b53724b0ae948f7e05993bbc8b73ed99ae7747d56504f3a6487cac05c1"
+certificate_file_sha256 = "sha256:1d53e2ac1ca6c77e8116a7695c31f4227381770e1c018d106283fc2317683532"
+export_hash = "sha256:7d37f097817d586f21c57eecc2d429ef6bdb79cdbe71f0eac395f51f57311418"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:04f930e37982ce2b62e65be1cf883e52cbbbf5af7ce93408b6f13ddb1378f500"
+imports = ["Proofs.Ai.NumberTheory.Gcd"]
+definitions = []
+theorems = ["euclidean_algorithm_terminates_from_descent_packaged", "euclidean_algorithm_remainder_step_preserves_gcd_packaged", "euclidean_algorithm_gcd_correctness_packaged", "extended_euclidean_algorithm_correctness_packaged", "euclidean_algorithm_correctness_separate_from_complexity"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Bezout"
+source = "Proofs/Ai/NumberTheory/Bezout/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Bezout/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Bezout/meta.json"
+replay = "Proofs/Ai/NumberTheory/Bezout/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:b318717d2b2aeedc197c82639d5069613e95a8dac9da2f7be93d02a5f279c6ae"
+certificate_file_sha256 = "sha256:6d34b57c974607ade07d416854e24a21adf5132911dfb5e9e7e0fef7f391b495"
+export_hash = "sha256:0785719103c440ce24b8cea54532c19ed1b29c7b2b82414addfc051686debbe3"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:c335efa933ff4a46ce03bcb53e59917627df51acd51164942f5c4dcf856ad779"
+imports = ["Proofs.Ai.NumberTheory.EuclideanAlgorithm"]
+definitions = []
+theorems = ["bezout_identity_from_extended_euclid_packaged", "bezout_coefficients_linear_combination_packaged", "gcd_linear_combination_characterization_packaged", "coprime_iff_linear_combination_int_packaged", "coprime_iff_linear_combination_nat_packaged", "coprime_nat_int_translation_surface", "bezout_no_prime_factorization_or_crt_boundary"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"
