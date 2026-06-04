@@ -117,6 +117,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_LCM_MODULE,
     &NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE,
     &NUMBER_THEORY_BEZOUT_MODULE,
+    &NUMBER_THEORY_LINEAR_DIOPHANTINE_MODULE,
     &NUMBER_THEORY_PRIME_MODULE,
     &NUMBER_THEORY_COMPOSITE_MODULE,
     &REDUCTION_MODULE,
@@ -589,6 +590,19 @@ const NUMBER_THEORY_BEZOUT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_BEZOUT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_LINEAR_DIOPHANTINE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.LinearDiophantine",
+    source_path: "Proofs/Ai/NumberTheory/LinearDiophantine/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/LinearDiophantine/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/LinearDiophantine/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/LinearDiophantine/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Bezout"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_LINEAR_DIOPHANTINE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9912,6 +9926,89 @@ const NUMBER_THEORY_BEZOUT_THEOREMS: &[TheoremArtifact] = &[
             "forall (BezoutPackage : Type), forall (PrimeFactorization : Type), forall (ChineseRemainderTheorem : Type), forall (NoImportBoundary : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt), forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt",
         proof:
             "fun BezoutPackage => fun PrimeFactorization => fun ChineseRemainderTheorem => fun NoImportBoundary => fun boundary_law => fun bezout => fun prime_factorization => fun crt => boundary_law bezout prime_factorization crt",
+    },
+];
+
+const NUMBER_THEORY_LINEAR_DIOPHANTINE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "linear_diophantine_ax_plus_by_eq_c_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (LinearCombination : forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (value : Int), Prop), forall (LinearDiophantineEquation : forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), forall (linear_combination : LinearCombination a b x y c), LinearDiophantineEquation a b c x y), forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), forall (linear_combination : LinearCombination a b x y c), LinearDiophantineEquation a b c x y",
+        proof:
+            "fun Int => fun LinearCombination => fun LinearDiophantineEquation => fun surface_law => fun a => fun b => fun c => fun x => fun y => fun linear_combination => surface_law a b c x y linear_combination",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_solvable_if_gcd_divides_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (Divides : forall (d : Int), forall (n : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (LinearDiophantineSolvable : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (solvability_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (gcd_divides_c : Divides (Gcd a b) c), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), LinearDiophantineSolvable a b c), forall (a : Int), forall (b : Int), forall (c : Int), forall (gcd_divides_c : Divides (Gcd a b) c), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), LinearDiophantineSolvable a b c",
+        proof:
+            "fun Int => fun Gcd => fun Divides => fun BezoutIdentity => fun LinearDiophantineSolvable => fun solvability_law => fun a => fun b => fun c => fun gcd_divides_c => fun bezout_identity => solvability_law a b c gcd_divides_c bezout_identity",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_solution_implies_gcd_divides_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (d : Int), forall (n : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (LinearDiophantineEquation : forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), Prop), forall (necessity_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (solution : LinearDiophantineEquation a b c x y), Divides g c), forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (solution : LinearDiophantineEquation a b c x y), Divides g c",
+        proof:
+            "fun Int => fun Divides => fun GcdEvidence => fun LinearDiophantineEquation => fun necessity_law => fun a => fun b => fun c => fun x => fun y => fun g => fun gcd_evidence => fun solution => necessity_law a b c x y g gcd_evidence solution",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_solvability_iff_gcd_divides_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (LinearDiophantineSolvable : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (GcdDividesRightSide : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (iff_law : forall (a : Int), forall (b : Int), forall (c : Int), IffEvidence (LinearDiophantineSolvable a b c) (GcdDividesRightSide a b c)), forall (a : Int), forall (b : Int), forall (c : Int), IffEvidence (LinearDiophantineSolvable a b c) (GcdDividesRightSide a b c)",
+        proof:
+            "fun Int => fun LinearDiophantineSolvable => fun GcdDividesRightSide => fun IffEvidence => fun iff_law => fun a => fun b => fun c => iff_law a b c",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_particular_solution_from_bezout_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (Divides : forall (d : Int), forall (n : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (ParticularLinearDiophantineSolution : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (construction_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (gcd_divides_c : Divides (Gcd a b) c), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), ParticularLinearDiophantineSolution a b c), forall (a : Int), forall (b : Int), forall (c : Int), forall (gcd_divides_c : Divides (Gcd a b) c), forall (bezout_identity : BezoutIdentity a b (Gcd a b)), ParticularLinearDiophantineSolution a b c",
+        proof:
+            "fun Int => fun Gcd => fun Divides => fun BezoutIdentity => fun ParticularLinearDiophantineSolution => fun construction_law => fun a => fun b => fun c => fun gcd_divides_c => fun bezout_identity => construction_law a b c gcd_divides_c bezout_identity",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_general_solution_formula_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Divides : forall (d : Int), forall (n : Int), Prop), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (LinearDiophantineEquation : forall (a : Int), forall (b : Int), forall (c : Int), forall (x : Int), forall (y : Int), Prop), forall (GeneralSolutionFormula : forall (a : Int), forall (b : Int), forall (c : Int), forall (g : Int), forall (x0 : Int), forall (y0 : Int), forall (t : Int), forall (x : Int), forall (y : Int), Prop), forall (formula_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (g : Int), forall (x0 : Int), forall (y0 : Int), forall (t : Int), forall (x : Int), forall (y : Int), forall (gcd_evidence : GcdEvidence a b g), forall (gcd_divides_c : Divides g c), forall (particular_solution : LinearDiophantineEquation a b c x0 y0), GeneralSolutionFormula a b c g x0 y0 t x y), forall (a : Int), forall (b : Int), forall (c : Int), forall (g : Int), forall (x0 : Int), forall (y0 : Int), forall (t : Int), forall (x : Int), forall (y : Int), forall (gcd_evidence : GcdEvidence a b g), forall (gcd_divides_c : Divides g c), forall (particular_solution : LinearDiophantineEquation a b c x0 y0), GeneralSolutionFormula a b c g x0 y0 t x y",
+        proof:
+            "fun Int => fun Divides => fun GcdEvidence => fun LinearDiophantineEquation => fun GeneralSolutionFormula => fun formula_law => fun a => fun b => fun c => fun g => fun x0 => fun y0 => fun t => fun x => fun y => fun gcd_evidence => fun gcd_divides_c => fun particular_solution => formula_law a b c g x0 y0 t x y gcd_evidence gcd_divides_c particular_solution",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_zero_coefficient_edge_cases_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ZeroCoefficientHypotheses : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (ZeroCoefficientLinearDiophantineCases : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (edge_case_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (zero_cases : ZeroCoefficientHypotheses a b c), ZeroCoefficientLinearDiophantineCases a b c), forall (a : Int), forall (b : Int), forall (c : Int), forall (zero_cases : ZeroCoefficientHypotheses a b c), ZeroCoefficientLinearDiophantineCases a b c",
+        proof:
+            "fun Int => fun ZeroCoefficientHypotheses => fun ZeroCoefficientLinearDiophantineCases => fun edge_case_law => fun a => fun b => fun c => fun zero_cases => edge_case_law a b c zero_cases",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_sign_normal_form_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (SignNormalizationEvidence : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (LinearDiophantineNormalForm : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (normalization_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (sign_evidence : SignNormalizationEvidence a b c), LinearDiophantineNormalForm a b c), forall (a : Int), forall (b : Int), forall (c : Int), forall (sign_evidence : SignNormalizationEvidence a b c), LinearDiophantineNormalForm a b c",
+        proof:
+            "fun Int => fun SignNormalizationEvidence => fun LinearDiophantineNormalForm => fun normalization_law => fun a => fun b => fun c => fun sign_evidence => normalization_law a b c sign_evidence",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_reusable_normal_form_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (LinearDiophantineNormalForm : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (ReusableDiophantineInterface : forall (a : Int), forall (b : Int), forall (c : Int), Prop), forall (reuse_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (normal_form : LinearDiophantineNormalForm a b c), ReusableDiophantineInterface a b c), forall (a : Int), forall (b : Int), forall (c : Int), forall (normal_form : LinearDiophantineNormalForm a b c), ReusableDiophantineInterface a b c",
+        proof:
+            "fun Int => fun LinearDiophantineNormalForm => fun ReusableDiophantineInterface => fun reuse_law => fun a => fun b => fun c => fun normal_form => reuse_law a b c normal_form",
+    },
+    TheoremArtifact {
+        name: "linear_diophantine_depends_on_gcd_bezout_not_solver",
+        universe_params: &[],
+        statement:
+            "forall (GcdPackage : Type), forall (BezoutPackage : Type), forall (HiddenDiophantineSolver : Type), forall (DependencyBoundary : forall (gcd_package : GcdPackage), forall (bezout_package : BezoutPackage), forall (solver : HiddenDiophantineSolver), Prop), forall (boundary_law : forall (gcd_package : GcdPackage), forall (bezout_package : BezoutPackage), forall (solver : HiddenDiophantineSolver), DependencyBoundary gcd_package bezout_package solver), forall (gcd_package : GcdPackage), forall (bezout_package : BezoutPackage), forall (solver : HiddenDiophantineSolver), DependencyBoundary gcd_package bezout_package solver",
+        proof:
+            "fun GcdPackage => fun BezoutPackage => fun HiddenDiophantineSolver => fun DependencyBoundary => fun boundary_law => fun gcd_package => fun bezout_package => fun solver => boundary_law gcd_package bezout_package solver",
     },
 ];
 
@@ -38927,6 +39024,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_LCM_MODULE.module
         || config.module == NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE.module
         || config.module == NUMBER_THEORY_BEZOUT_MODULE.module
+        || config.module == NUMBER_THEORY_LINEAR_DIOPHANTINE_MODULE.module
         || config.module == NUMBER_THEORY_PRIME_MODULE.module
         || config.module == NUMBER_THEORY_COMPOSITE_MODULE.module
         || config.module == NUMBER_THEORY_UFD_BRIDGE_MODULE.module

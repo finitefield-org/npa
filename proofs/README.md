@@ -92,6 +92,11 @@ Current bundles:
   Euclidean algorithm package, preserving Bezout identities, gcd linear-combination
   characterization, explicit integer and natural coprimality variants, `Nat`/`Int` translation,
   and the boundary excluding prime-factorization and CRT imports.
+- `Proofs/Ai/NumberTheory/LinearDiophantine/`: certificate-backed linear Diophantine equation
+  interface downstream of the gcd/Bezout closure, preserving the `a*x + b*y = c` surface,
+  solvability iff gcd-divisibility, particular solutions from Bezout evidence, general solution
+  formulas under gcd-divisibility hypotheses, zero-coefficient and sign-normalized edge-case
+  surfaces, and reusable normal forms without adding a hidden Diophantine solver.
 - `Proofs/Ai/NumberTheory/Prime/`: certificate-backed prime predicate interface over divisibility,
   preserving natural-number and integer prime predicates, unit and associated predicates,
   sign-normalized integer primes, `1`-is-not-prime targets, trivial-divisor characterizations,

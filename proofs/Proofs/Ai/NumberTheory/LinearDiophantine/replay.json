@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.LinearDiophantine",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "linear_diophantine_ax_plus_by_eq_c_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun LinearCombination => fun LinearDiophantineEquation => fun surface_law => fun a => fun b => fun c => fun x => fun y => fun linear_combination => surface_law a b c x y linear_combination"
+    },
+    {
+      "declaration": "linear_diophantine_solvable_if_gcd_divides_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun Divides => fun BezoutIdentity => fun LinearDiophantineSolvable => fun solvability_law => fun a => fun b => fun c => fun gcd_divides_c => fun bezout_identity => solvability_law a b c gcd_divides_c bezout_identity"
+    },
+    {
+      "declaration": "linear_diophantine_solution_implies_gcd_divides_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun GcdEvidence => fun LinearDiophantineEquation => fun necessity_law => fun a => fun b => fun c => fun x => fun y => fun g => fun gcd_evidence => fun solution => necessity_law a b c x y g gcd_evidence solution"
+    },
+    {
+      "declaration": "linear_diophantine_solvability_iff_gcd_divides_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun LinearDiophantineSolvable => fun GcdDividesRightSide => fun IffEvidence => fun iff_law => fun a => fun b => fun c => iff_law a b c"
+    },
+    {
+      "declaration": "linear_diophantine_particular_solution_from_bezout_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun Divides => fun BezoutIdentity => fun ParticularLinearDiophantineSolution => fun construction_law => fun a => fun b => fun c => fun gcd_divides_c => fun bezout_identity => construction_law a b c gcd_divides_c bezout_identity"
+    },
+    {
+      "declaration": "linear_diophantine_general_solution_formula_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun GcdEvidence => fun LinearDiophantineEquation => fun GeneralSolutionFormula => fun formula_law => fun a => fun b => fun c => fun g => fun x0 => fun y0 => fun t => fun x => fun y => fun gcd_evidence => fun gcd_divides_c => fun particular_solution => formula_law a b c g x0 y0 t x y gcd_evidence gcd_divides_c particular_solution"
+    },
+    {
+      "declaration": "linear_diophantine_zero_coefficient_edge_cases_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun ZeroCoefficientHypotheses => fun ZeroCoefficientLinearDiophantineCases => fun edge_case_law => fun a => fun b => fun c => fun zero_cases => edge_case_law a b c zero_cases"
+    },
+    {
+      "declaration": "linear_diophantine_sign_normal_form_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun SignNormalizationEvidence => fun LinearDiophantineNormalForm => fun normalization_law => fun a => fun b => fun c => fun sign_evidence => normalization_law a b c sign_evidence"
+    },
+    {
+      "declaration": "linear_diophantine_reusable_normal_form_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun LinearDiophantineNormalForm => fun ReusableDiophantineInterface => fun reuse_law => fun a => fun b => fun c => fun normal_form => reuse_law a b c normal_form"
+    },
+    {
+      "declaration": "linear_diophantine_depends_on_gcd_bezout_not_solver",
+      "source_kind": "explicit_term",
+      "term": "fun GcdPackage => fun BezoutPackage => fun HiddenDiophantineSolver => fun DependencyBoundary => fun boundary_law => fun gcd_package => fun bezout_package => fun solver => boundary_law gcd_package bezout_package solver"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/LinearDiophantine/certificate.npcert"
+  }
+}
