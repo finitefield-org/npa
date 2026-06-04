@@ -238,7 +238,12 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T02 Add Sequence Convergence Core
 
-- Status: Pending
+- Status: `ANQ-002` complete. `Proofs.Ai.Analysis.Sequence.Basic` now defines
+  the reusable sequence, subsequence, limit, eventuality, boundedness, and
+  limit-uniqueness vocabulary over the abstract complete ordered-field
+  foundation from `ANA-T01`. It also exposes checked aliases to the existing
+  `AbstractFixedPoint` `ConvergesTo` and `CauchySeq` concepts without changing
+  that module.
 - Depends on: ANA-T01
 - Inputs:
   - `Proofs.Ai.Analysis.Real.Basic`
@@ -267,6 +272,16 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
+- Notes:
+  - The checked `sequence_limit_unique` theorem derives equality from explicit
+    local `SequenceLimitUniquenessEvidence`; uniqueness is not installed as a
+    trusted kernel primitive or module-level law package.
+  - Later series, compactness, and continuity modules should import
+    `Proofs.Ai.Analysis.Sequence.Basic` rather than redefining convergence
+    vocabulary.
 
 ### ANA-T03 Add Cauchy And Completeness Sequence Theorems
 

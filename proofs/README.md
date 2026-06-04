@@ -42,6 +42,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
+- `Proofs/Ai/Analysis/Sequence/Basic/`: abstract scalar sequence vocabulary over
+  `Analysis.Real.Basic`, with convergence, eventuality, subsequence, boundedness, limit-uniqueness
+  evidence, and bridges to `AbstractFixedPoint` `ConvergesTo`/`CauchySeq`.
 - `Proofs/Ai/Analysis/AbstractInverseFunction/`: residual/Newton-map definitions, local inverse
   evidence/result packaging, uniqueness/differentiability projections, and quantitative inverse
   function theorem API for the implicit-function route.
@@ -1712,6 +1715,49 @@ The field-theory route through `AbstractField`, `AbstractFieldHom`,
 complete as verified corpus staging. Public `npa-mathlib` materialization is deferred to a separate
 closure audit that checks import closure size, axiom policy, statement stability, and compatibility
 alias requirements.
+
+#### `Proofs.Ai.Analysis.Sequence.Basic`
+
+This module is the first sequence-convergence layer over `Proofs.Ai.Analysis.Real.Basic`. It stays
+abstract over the scalar carrier, complete ordered-field evidence, sequence index type, sequence
+function, and the small-radius `NearLimit` predicate. It imports `AbstractFixedPoint` only to expose
+checked aliases for the existing `ConvergesTo` and `CauchySeq` surfaces; the fixed-point module is
+not modified.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SequenceValue` | Church-encoded evidence that a scalar appears as some term of the sequence |
+| `Eventually` | eventual predicate package over the explicit sequence index carrier |
+| `Subsequence` | subsequence selector and term-equality predicate |
+| `SequenceConvergesTo` | positive-radius convergence predicate using the supplied `NearLimit` relation |
+| `SequenceLimit` | public limit vocabulary alias for `SequenceConvergesTo` |
+| `BoundedSequenceBy` | lower/upper bound package for all sequence terms |
+| `BoundedSequence` | existential-style bounded sequence package hiding the chosen bounds |
+| `SequenceLimitUniquenessEvidence` | local evidence package containing two convergence witnesses and their equality conclusion |
+| `FixedPointConvergesToAlias` | bridge alias to `AbstractFixedPoint.ConvergesTo` on the scalar-as-vector instance |
+| `FixedPointCauchySeqAlias` | bridge alias to `AbstractFixedPoint.CauchySeq` on the scalar-as-vector instance |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `sequence_value_intro`, `sequence_value_elim` | introduce and eliminate sequence-value evidence |
+| `eventually_intro`, `eventually_elim` | package and unpack eventual predicates |
+| `subsequence_intro`, `subsequence_term` | build a subsequence witness and project term equality |
+| `sequence_converges_to_intro`, `sequence_converges_to_small` | build convergence from positive-radius smallness and project the smallness condition |
+| `sequence_limit_def` | definitional equality between `SequenceLimit` and `SequenceConvergesTo` |
+| `bounded_sequence_by_intro`, `bounded_sequence_by_lower`, `bounded_sequence_by_upper` | build explicit bounds and project lower/upper inequalities |
+| `bounded_sequence_intro`, `bounded_sequence_elim` | hide and recover explicit bound witnesses |
+| `sequence_limit_uniqueness_intro` | package local uniqueness evidence from two convergence witnesses and an equality proof |
+| `sequence_limit_uniqueness_left`, `sequence_limit_uniqueness_right` | recover the two convergence witnesses from uniqueness evidence |
+| `sequence_limit_unique`, `limit_unique` | derive equality of limits from local uniqueness evidence |
+| `fixed_point_converges_to_alias_intro`, `fixed_point_converges_to_alias_project` | bridge to and from `AbstractFixedPoint.ConvergesTo` |
+| `fixed_point_cauchy_seq_alias_intro`, `fixed_point_cauchy_seq_alias_project` | bridge to and from `AbstractFixedPoint.CauchySeq` |
+
+The module has an empty axiom report. Limit uniqueness is not a global law package field: the
+checked `sequence_limit_unique` theorem extracts equality from an explicit local evidence package.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

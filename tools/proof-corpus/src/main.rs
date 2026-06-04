@@ -190,6 +190,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
     &ABSTRACT_FIXED_POINT_MODULE,
+    &ANALYSIS_SEQUENCE_BASIC_MODULE,
     &ABSTRACT_INVERSE_FUNCTION_MODULE,
     &ABSTRACT_IMPLICIT_PHI_MODULE,
     &ABSTRACT_IMPLICIT_FUNCTION_MODULE,
@@ -591,6 +592,30 @@ const ABSTRACT_FIXED_POINT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_FIXED_POINT_DEFINITIONS,
     theorems: ABSTRACT_FIXED_POINT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_SEQUENCE_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Sequence.Basic",
+    source_path: "Proofs/Ai/Analysis/Sequence/Basic/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Sequence/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Sequence/Basic/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Sequence/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_SEQUENCE_BASIC_DEFINITIONS,
+    theorems: ANALYSIS_SEQUENCE_BASIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -2462,6 +2487,147 @@ macro_rules! analysis_real_basic_abs {
             "fun ordered_args => fun bridge_args => ",
             $tail
         ))
+    };
+}
+
+macro_rules! analysis_sequence_basic_params {
+    (concat!($($tail:tt)+)) => {
+        analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), ",
+            "forall (nat_cast : forall (n : NatIndex), Scalar), ",
+            "forall (complete_ordered_field : @CompleteOrderedFieldArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast), ",
+            "forall (SequenceIndex : Sort i), ",
+            "forall (seq : forall (n : SequenceIndex), Scalar), ",
+            "forall (NearLimit : forall (seq : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        analysis_real_basic_params!(concat!(
+            "forall (NatIndex : Sort n), ",
+            "forall (nat_cast : forall (n : NatIndex), Scalar), ",
+            "forall (complete_ordered_field : @CompleteOrderedFieldArgs.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast), ",
+            "forall (SequenceIndex : Sort i), ",
+            "forall (seq : forall (n : SequenceIndex), Scalar), ",
+            "forall (NearLimit : forall (seq : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! analysis_sequence_basic_abs {
+    (concat!($($tail:tt)+)) => {
+        analysis_real_basic_abs!(concat!(
+            "fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        analysis_real_basic_abs!(concat!(
+            "fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! sequence_value_app {
+    ($value:literal) => {
+        concat!(
+            "@SequenceValue.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $value
+        )
+    };
+}
+
+macro_rules! eventually_app {
+    ($predicate:literal) => {
+        concat!(
+            "@Eventually.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $predicate
+        )
+    };
+}
+
+macro_rules! subsequence_app {
+    ($sub_index:literal, $selector:literal, $subseq:literal) => {
+        concat!(
+            "@Subsequence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $sub_index,
+            " ",
+            $selector,
+            " ",
+            $subseq
+        )
+    };
+}
+
+macro_rules! sequence_converges_to_app {
+    ($limit:literal) => {
+        concat!(
+            "@SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $limit
+        )
+    };
+}
+
+macro_rules! sequence_limit_app {
+    ($limit:literal) => {
+        concat!(
+            "@SequenceLimit.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $limit
+        )
+    };
+}
+
+macro_rules! bounded_sequence_by_app {
+    ($lower:literal, $upper:literal) => {
+        concat!(
+            "@BoundedSequenceBy.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper
+        )
+    };
+}
+
+macro_rules! bounded_sequence_app {
+    () => {
+        "@BoundedSequence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
+    };
+}
+
+macro_rules! sequence_limit_uniqueness_evidence_app {
+    ($left:literal, $right:literal) => {
+        concat!(
+            "@SequenceLimitUniquenessEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $left,
+            " ",
+            $right
+        )
+    };
+}
+
+macro_rules! fixed_point_converges_to_alias_app {
+    ($norm:literal, $small:literal, $limit:literal) => {
+        concat!(
+            "@FixedPointConvergesToAlias.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $norm,
+            " ",
+            $small,
+            " ",
+            $limit
+        )
+    };
+}
+
+macro_rules! fixed_point_cauchy_seq_alias_app {
+    ($norm:literal, $small:literal) => {
+        concat!(
+            "@FixedPointCauchySeqAlias.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $norm,
+            " ",
+            $small
+        )
     };
 }
 
@@ -30552,6 +30718,387 @@ const ANALYSIS_REAL_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_SEQUENCE_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SequenceValue",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("forall (value : Scalar), Prop"),
+        value: analysis_sequence_basic_abs!(
+            "fun value => forall (P : Prop), forall (mk : forall (n : SequenceIndex), forall (hvalue : @Eq.{u} Scalar (seq n) value), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "Eventually",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (predicate : forall (n : SequenceIndex), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun predicate => forall (P : Prop), forall (mk : forall (start : SequenceIndex), forall (eventual : forall (n : SequenceIndex), predicate n), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "Subsequence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun SubIndex => fun selector => fun subseq => forall (k : SubIndex), @Eq.{u} Scalar (subseq k) (seq (selector k))"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceConvergesTo",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("forall (limit : Scalar), Prop"),
+        value: analysis_sequence_basic_abs!(
+            "fun limit => forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), NearLimit seq limit eps"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceLimit",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("forall (limit : Scalar), Prop"),
+        value: analysis_sequence_basic_abs!(
+            "fun limit => @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit limit"
+        ),
+    },
+    DefinitionArtifact {
+        name: "BoundedSequenceBy",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower : Scalar), forall (upper : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => forall (P : Prop), forall (mk : forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "BoundedSequence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("Prop"),
+        value: analysis_sequence_basic_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SequenceLimitUniquenessEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (left : Scalar), forall (right : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun left => fun right => forall (P : Prop), forall (mk : forall (left_converges : ",
+            sequence_converges_to_app!("left"),
+            "), forall (right_converges : ",
+            sequence_converges_to_app!("right"),
+            "), forall (limits_equal : @Eq.{u} Scalar left right), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FixedPointConvergesToAlias",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun norm => fun ConvergesSmall => fun limit => @ConvergesTo.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm ConvergesSmall SequenceIndex seq limit"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FixedPointCauchySeqAlias",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun norm => fun CauchySmall => @CauchySeq.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm CauchySmall SequenceIndex seq"
+        ),
+    },
+];
+
+const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "sequence_value_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (value : Scalar), forall (index : SequenceIndex), forall (hvalue : @Eq.{u} Scalar (seq index) value), ",
+            sequence_value_app!("value")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun value => fun index => fun hvalue => fun (P : Prop) => fun (mk : forall (n : SequenceIndex), forall (hvalue : @Eq.{u} Scalar (seq n) value), P) => mk index hvalue"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_value_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (value : Scalar), forall (hvalue : ",
+            sequence_value_app!("value"),
+            "), forall (P : Prop), forall (mk : forall (index : SequenceIndex), forall (value_eq : @Eq.{u} Scalar (seq index) value), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!("fun value => fun hvalue => fun P => fun mk => hvalue P mk"),
+    },
+    TheoremArtifact {
+        name: "eventually_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (predicate : forall (n : SequenceIndex), Prop), forall (start : SequenceIndex), forall (eventual : forall (n : SequenceIndex), predicate n), ",
+            eventually_app!("predicate")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun predicate => fun start => fun eventual => fun (P : Prop) => fun (mk : forall (start : SequenceIndex), forall (eventual : forall (n : SequenceIndex), predicate n), P) => mk start eventual"
+        ),
+    },
+    TheoremArtifact {
+        name: "eventually_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (predicate : forall (n : SequenceIndex), Prop), forall (eventuality : ",
+            eventually_app!("predicate"),
+            "), forall (P : Prop), forall (mk : forall (start : SequenceIndex), forall (eventual : forall (n : SequenceIndex), predicate n), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun predicate => fun eventuality => fun P => fun mk => eventuality P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "subsequence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (term_eq : forall (k : SubIndex), @Eq.{u} Scalar (subseq k) (seq (selector k))), ",
+            subsequence_app!("SubIndex", "selector", "subseq")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun SubIndex => fun selector => fun subseq => fun term_eq => term_eq"
+        ),
+    },
+    TheoremArtifact {
+        name: "subsequence_term",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (hsub : ",
+            subsequence_app!("SubIndex", "selector", "subseq"),
+            "), forall (k : SubIndex), @Eq.{u} Scalar (subseq k) (seq (selector k))"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun SubIndex => fun selector => fun subseq => fun hsub => fun k => hsub k"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_converges_to_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (limit : Scalar), forall (small : forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), NearLimit seq limit eps), ",
+            sequence_converges_to_app!("limit")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun limit => fun small => small"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_converges_to_small",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (limit : Scalar), forall (converges : ",
+            sequence_converges_to_app!("limit"),
+            "), forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), NearLimit seq limit eps"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun limit => fun converges => fun eps => fun eps_pos => converges eps eps_pos"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_limit_def",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (limit : Scalar), @Eq.{1} Prop (",
+            sequence_limit_app!("limit"),
+            ") (",
+            sequence_converges_to_app!("limit"),
+            ")"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun limit => @Eq.refl.{1} Prop (@SequenceLimit.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit limit)"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_sequence_by_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), ",
+            bounded_sequence_by_app!("lower", "upper")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun lower_bound => fun upper_bound => fun (P : Prop) => fun (mk : forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P) => mk lower_bound upper_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_sequence_by_lower",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), forall (index : SequenceIndex), le_rel lower (seq index)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun index => bounds (le_rel lower (seq index)) (fun (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)) => fun (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper) => lower_bound index)"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_sequence_by_upper",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), forall (index : SequenceIndex), le_rel (seq index) upper"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun index => bounds (le_rel (seq index) upper) (fun (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)) => fun (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper) => upper_bound index)"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_sequence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), ",
+            bounded_sequence_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun (P : Prop) => fun (mk : forall (lower : Scalar), forall (upper : Scalar), forall (bounds : @BoundedSequenceBy.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper), P) => mk lower upper bounds"
+        ),
+    },
+    TheoremArtifact {
+        name: "bounded_sequence_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (P : Prop), forall (mk : forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun bounded => fun P => fun mk => bounded P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_limit_uniqueness_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (left : Scalar), forall (right : Scalar), forall (left_converges : ",
+            sequence_converges_to_app!("left"),
+            "), forall (right_converges : ",
+            sequence_converges_to_app!("right"),
+            "), forall (limits_equal : @Eq.{u} Scalar left right), ",
+            sequence_limit_uniqueness_evidence_app!("left", "right")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun left => fun right => fun left_converges => fun right_converges => fun limits_equal => fun (P : Prop) => fun (mk : forall (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left), forall (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right), forall (limits_equal : @Eq.{u} Scalar left right), P) => mk left_converges right_converges limits_equal"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_limit_uniqueness_left",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (left : Scalar), forall (right : Scalar), forall (evidence : ",
+            sequence_limit_uniqueness_evidence_app!("left", "right"),
+            "), ",
+            sequence_converges_to_app!("left")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun left => fun right => fun evidence => evidence (@SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left) (fun (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left) => fun (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right) => fun (limits_equal : @Eq.{u} Scalar left right) => left_converges)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_limit_uniqueness_right",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (left : Scalar), forall (right : Scalar), forall (evidence : ",
+            sequence_limit_uniqueness_evidence_app!("left", "right"),
+            "), ",
+            sequence_converges_to_app!("right")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun left => fun right => fun evidence => evidence (@SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right) (fun (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left) => fun (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right) => fun (limits_equal : @Eq.{u} Scalar left right) => right_converges)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_limit_unique",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (left : Scalar), forall (right : Scalar), forall (evidence : ",
+            sequence_limit_uniqueness_evidence_app!("left", "right"),
+            "), @Eq.{u} Scalar left right"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun left => fun right => fun evidence => evidence (@Eq.{u} Scalar left right) (fun (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left) => fun (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right) => fun (limits_equal : @Eq.{u} Scalar left right) => limits_equal)"
+        ),
+    },
+    TheoremArtifact {
+        name: "limit_unique",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (left : Scalar), forall (right : Scalar), forall (evidence : ",
+            sequence_limit_uniqueness_evidence_app!("left", "right"),
+            "), @Eq.{u} Scalar left right"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun left => fun right => fun evidence => @sequence_limit_unique.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left right evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_converges_to_alias_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (h : @ConvergesTo.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm ConvergesSmall SequenceIndex seq limit), ",
+            fixed_point_converges_to_alias_app!("norm", "ConvergesSmall", "limit")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun norm => fun ConvergesSmall => fun limit => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_converges_to_alias_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (h : ",
+            fixed_point_converges_to_alias_app!("norm", "ConvergesSmall", "limit"),
+            "), @ConvergesTo.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm ConvergesSmall SequenceIndex seq limit"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun norm => fun ConvergesSmall => fun limit => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_cauchy_seq_alias_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (h : @CauchySeq.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm CauchySmall SequenceIndex seq), ",
+            fixed_point_cauchy_seq_alias_app!("norm", "CauchySmall")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun norm => fun CauchySmall => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "fixed_point_cauchy_seq_alias_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (h : ",
+            fixed_point_cauchy_seq_alias_app!("norm", "CauchySmall"),
+            "), @CauchySeq.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm CauchySmall SequenceIndex seq"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun norm => fun CauchySmall => fun h => h"
+        ),
+    },
+];
+
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "square_def",
@@ -39027,6 +39574,36 @@ fn run_full() -> Result<(), String> {
         &abstract_fixed_point_imports,
         &abstract_fixed_point_source_interfaces,
     )?;
+    let analysis_sequence_basic_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+    ];
+    let analysis_sequence_basic_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+    ];
+    let analysis_sequence_basic = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_SEQUENCE_BASIC_MODULE,
+        &analysis_sequence_basic_imports,
+        &analysis_sequence_basic_source_interfaces,
+    )?;
     let abstract_inverse_function_imports = vec![
         eq_import.clone(),
         abstract_metric_topology.verified_module.clone(),
@@ -39379,6 +39956,7 @@ fn run_full() -> Result<(), String> {
         abstract_linear_map,
         abstract_derivative,
         abstract_fixed_point,
+        analysis_sequence_basic,
         abstract_inverse_function,
         abstract_implicit_phi,
         abstract_implicit_function,
@@ -41951,6 +42529,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == ANALYSIS_REAL_BASIC_MODULE.module
+        || config.module == ANALYSIS_SEQUENCE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module

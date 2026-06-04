@@ -1495,6 +1495,23 @@ theorems = ["cauchy_seq_intro", "cauchy_seq_apply", "converges_to_intro", "conve
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Sequence.Basic"
+source = "Proofs/Ai/Analysis/Sequence/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Sequence/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Sequence/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Sequence/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:02b38954b7eed66c1b1e6a91ea2fdc2b71cdf9494451e69b978665118f01eeca"
+expected_certificate_file_hash = "sha256:dbe7629ae50a79e39b2d6a89e8a4414abe70417eefbaf8aa7bd94196e1bbc3b8"
+expected_export_hash = "sha256:ef6bbd3c88576c5a2aabfa9d54407480f0b4fdfe619c7af77eba04a98bafcedc"
+expected_axiom_report_hash = "sha256:9ce9f1ee79084f04cf740fea7eb29e010979a9a529978a7f8bc7f94fe1890d9a"
+expected_certificate_hash = "sha256:cb0acc00534e533e4f03671d7aee69de8940b086d182b22c327b0f3f76b2dd10"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint"]
+definitions = ["SequenceValue", "Eventually", "Subsequence", "SequenceConvergesTo", "SequenceLimit", "BoundedSequenceBy", "BoundedSequence", "SequenceLimitUniquenessEvidence", "FixedPointConvergesToAlias", "FixedPointCauchySeqAlias"]
+theorems = ["sequence_value_intro", "sequence_value_elim", "eventually_intro", "eventually_elim", "subsequence_intro", "subsequence_term", "sequence_converges_to_intro", "sequence_converges_to_small", "sequence_limit_def", "bounded_sequence_by_intro", "bounded_sequence_by_lower", "bounded_sequence_by_upper", "bounded_sequence_intro", "bounded_sequence_elim", "sequence_limit_uniqueness_intro", "sequence_limit_uniqueness_left", "sequence_limit_uniqueness_right", "sequence_limit_unique", "limit_unique", "fixed_point_converges_to_alias_intro", "fixed_point_converges_to_alias_project", "fixed_point_cauchy_seq_alias_intro", "fixed_point_cauchy_seq_alias_project"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.AbstractInverseFunction"
 source = "Proofs/Ai/Analysis/AbstractInverseFunction/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert"
