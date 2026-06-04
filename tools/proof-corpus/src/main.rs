@@ -2596,6 +2596,47 @@ macro_rules! bounded_sequence_app {
     };
 }
 
+macro_rules! sequence_bounded_above_app {
+    () => {
+        "@SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
+    };
+}
+
+macro_rules! sequence_bounded_below_app {
+    () => {
+        "@SequenceBoundedBelow.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
+    };
+}
+
+macro_rules! sequence_monotone_increasing_app {
+    ($index_le:literal) => {
+        concat!(
+            "@SequenceMonotoneIncreasing.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $index_le
+        )
+    };
+}
+
+macro_rules! sequence_monotone_decreasing_app {
+    ($index_le:literal) => {
+        concat!(
+            "@SequenceMonotoneDecreasing.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $index_le
+        )
+    };
+}
+
+macro_rules! sequence_monotone_completeness_evidence_app {
+    ($index_le:literal, $value_set:literal) => {
+        concat!(
+            "@SequenceMonotoneCompletenessEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $index_le,
+            " ",
+            $value_set
+        )
+    };
+}
+
 macro_rules! sequence_limit_uniqueness_evidence_app {
     ($left:literal, $right:literal) => {
         concat!(
@@ -2724,7 +2765,7 @@ macro_rules! sequence_cauchy_completeness_evidence_elim {
 }
 
 macro_rules! upper_bound_app {
-    ($set:literal, $bound:literal) => {
+    ($set:expr, $bound:expr) => {
         concat!(
             "@UpperBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set,
@@ -2735,7 +2776,7 @@ macro_rules! upper_bound_app {
 }
 
 macro_rules! lower_bound_app {
-    ($set:literal, $bound:literal) => {
+    ($set:expr, $bound:expr) => {
         concat!(
             "@LowerBound.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set,
@@ -2746,7 +2787,7 @@ macro_rules! lower_bound_app {
 }
 
 macro_rules! supremum_evidence_app {
-    ($set:literal, $sup:literal) => {
+    ($set:expr, $sup:expr) => {
         concat!(
             "@SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set,
@@ -2757,7 +2798,7 @@ macro_rules! supremum_evidence_app {
 }
 
 macro_rules! infimum_evidence_app {
-    ($set:literal, $inf:literal) => {
+    ($set:expr, $inf:expr) => {
         concat!(
             "@InfimumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set,
@@ -2768,7 +2809,7 @@ macro_rules! infimum_evidence_app {
 }
 
 macro_rules! nonempty_set_app {
-    ($set:literal) => {
+    ($set:expr) => {
         concat!(
             "@NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set
@@ -2777,7 +2818,7 @@ macro_rules! nonempty_set_app {
 }
 
 macro_rules! bounded_above_app {
-    ($set:literal) => {
+    ($set:expr) => {
         concat!(
             "@BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set
@@ -2786,7 +2827,7 @@ macro_rules! bounded_above_app {
 }
 
 macro_rules! bounded_below_app {
-    ($set:literal) => {
+    ($set:expr) => {
         concat!(
             "@BoundedBelow.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
             $set
@@ -30876,6 +30917,66 @@ const ANALYSIS_SEQUENCE_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "SequenceBoundedAbove",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("Prop"),
+        value: analysis_sequence_basic_abs!(
+            "forall (P : Prop), forall (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceBoundedBelow",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("Prop"),
+        value: analysis_sequence_basic_abs!(
+            "forall (P : Prop), forall (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceMonotoneIncreasing",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun IndexLe => forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq m) (seq n)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceMonotoneDecreasing",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun IndexLe => forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq n) (seq m)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceMonotoneCompletenessEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (ValueSet : forall (x : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun ValueSet => forall (P : Prop), forall (mk : forall (value_nonempty : ",
+            nonempty_set_app!("ValueSet"),
+            "), forall (value_bounded_above : forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            bounded_above_app!("ValueSet"),
+            "), forall (supremum_converges : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("ValueSet", "sup"),
+            "), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            sequence_converges_to_app!("sup"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
         name: "SequenceLimitUniquenessEvidence",
         universe_params: &["i", "n", "u"],
         ty: analysis_sequence_basic_params!(
@@ -31121,6 +31222,124 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "sequence_bounded_above_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), ",
+            sequence_bounded_above_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun upper => fun upper_bound => fun (P : Prop) => fun (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P) => mk upper upper_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_bounded_above_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), forall (P : Prop), forall (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun bounded_above => fun P => fun mk => bounded_above P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_bounded_below_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), ",
+            sequence_bounded_below_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun lower_bound => fun (P : Prop) => fun (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P) => mk lower lower_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_bounded_below_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (bounded_below : ",
+            sequence_bounded_below_app!(),
+            "), forall (P : Prop), forall (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun bounded_below => fun P => fun mk => bounded_below P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_bounded_above_from_bounds",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), ",
+            sequence_bounded_above_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun (P : Prop) => fun (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P) => mk upper (fun (index : SequenceIndex) => @bounded_sequence_by_upper.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper bounds index)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_bounded_below_from_bounds",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : Scalar), forall (upper : Scalar), forall (bounds : ",
+            bounded_sequence_by_app!("lower", "upper"),
+            "), ",
+            sequence_bounded_below_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun (P : Prop) => fun (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P) => mk lower (fun (index : SequenceIndex) => @bounded_sequence_by_lower.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper bounds index)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_monotone_increasing_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (monotone_step : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq m) (seq n)), ",
+            sequence_monotone_increasing_app!("IndexLe")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun monotone_step => monotone_step"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_monotone_increasing_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq m) (seq n)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun monotone => fun m => fun n => fun hmn => monotone m n hmn"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_monotone_decreasing_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (monotone_step : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq n) (seq m)), ",
+            sequence_monotone_decreasing_app!("IndexLe")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun monotone_step => monotone_step"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_monotone_decreasing_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (monotone : ",
+            sequence_monotone_decreasing_app!("IndexLe"),
+            "), forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq n) (seq m)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun monotone => fun m => fun n => fun hmn => monotone m n hmn"
+        ),
+    },
+    TheoremArtifact {
         name: "sequence_limit_uniqueness_intro",
         universe_params: &["i", "n", "u"],
         statement: analysis_sequence_basic_params!(concat!(
@@ -31278,6 +31497,101 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
             "), P), P"
         )),
         proof: analysis_sequence_basic_abs!("fun choice => fun P => fun choose => choice P choose"),
+    },
+    TheoremArtifact {
+        name: "sequence_monotone_completeness_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (ValueSet : forall (x : Scalar), Prop), forall (value_nonempty : ",
+            nonempty_set_app!("ValueSet"),
+            "), forall (value_bounded_above : forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            bounded_above_app!("ValueSet"),
+            "), forall (supremum_converges : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("ValueSet", "sup"),
+            "), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            sequence_converges_to_app!("sup"),
+            "), ",
+            sequence_monotone_completeness_evidence_app!("IndexLe", "ValueSet")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun ValueSet => fun value_nonempty => fun value_bounded_above => fun supremum_converges => fun (P : Prop) => fun (mk : forall (value_nonempty : ",
+            nonempty_set_app!("ValueSet"),
+            "), forall (value_bounded_above : forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            bounded_above_app!("ValueSet"),
+            "), forall (supremum_converges : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("ValueSet", "sup"),
+            "), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            sequence_converges_to_app!("sup"),
+            "), P) => mk value_nonempty value_bounded_above supremum_converges"
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_monotone_converges_from_completeness",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (ValueSet : forall (x : Scalar), Prop), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), forall (evidence : ",
+            sequence_monotone_completeness_evidence_app!("IndexLe", "ValueSet"),
+            "), ",
+            sequence_convergence_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun ValueSet => fun monotone => fun bounded_above => fun evidence => evidence (",
+            sequence_convergence_choice_app!(),
+            ") (fun (value_nonempty : ",
+            nonempty_set_app!("ValueSet"),
+            ") => fun (value_bounded_above : forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            bounded_above_app!("ValueSet"),
+            ") => fun (supremum_converges : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!("ValueSet", "sup"),
+            "), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), ",
+            sequence_converges_to_app!("sup"),
+            ") => @supremum_exists_from_completeness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args (@complete_ordered_field_order_completeness.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field) (",
+            "ValueSet",
+            ") value_nonempty (value_bounded_above bounded_above) (",
+            sequence_convergence_choice_app!(),
+            ") (fun (sup : Scalar) => fun (hsup : ",
+            supremum_evidence_app!("ValueSet", "sup"),
+            ") => @sequence_convergence_choice_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit sup (supremum_converges sup hsup monotone bounded_above)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "monotone_convergence_theorem",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (ValueSet : forall (x : Scalar), Prop), forall (monotone : ",
+            sequence_monotone_increasing_app!("IndexLe"),
+            "), forall (bounded_above : ",
+            sequence_bounded_above_app!(),
+            "), forall (evidence : ",
+            sequence_monotone_completeness_evidence_app!("IndexLe", "ValueSet"),
+            "), ",
+            sequence_convergence_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun ValueSet => fun monotone => fun bounded_above => fun evidence => @sequence_monotone_converges_from_completeness.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe ValueSet monotone bounded_above evidence"
+        ),
     },
     TheoremArtifact {
         name: "sequence_cauchy_completeness_evidence_intro",

@@ -44,7 +44,8 @@ Current bundles:
   inverse/implicit function route.
 - `Proofs/Ai/Analysis/Sequence/Basic/`: abstract scalar sequence vocabulary over
   `Analysis.Real.Basic`, with convergence, eventuality, subsequence, boundedness, limit-uniqueness
-  evidence, and bridges to `AbstractFixedPoint` `ConvergesTo`/`CauchySeq`.
+  evidence, monotone convergence evidence, and bridges to `AbstractFixedPoint` `ConvergesTo` and
+  `CauchySeq`.
 - `Proofs/Ai/Analysis/AbstractInverseFunction/`: residual/Newton-map definitions, local inverse
   evidence/result packaging, uniqueness/differentiability projections, and quantitative inverse
   function theorem API for the implicit-function route.
@@ -1735,6 +1736,9 @@ Implemented definitions / API declarations:
 | `SequenceLimit` | public limit vocabulary alias for `SequenceConvergesTo` |
 | `BoundedSequenceBy` | lower/upper bound package for all sequence terms |
 | `BoundedSequence` | existential-style bounded sequence package hiding the chosen bounds |
+| `SequenceBoundedAbove`, `SequenceBoundedBelow` | one-sided boundedness packages for monotone and compactness routes |
+| `SequenceMonotoneIncreasing`, `SequenceMonotoneDecreasing` | monotonicity predicates over an explicit index preorder relation |
+| `SequenceMonotoneCompletenessEvidence` | explicit package connecting a value set, one-sided boundedness, supremum evidence, and sequence convergence |
 | `SequenceLimitUniquenessEvidence` | local evidence package containing two convergence witnesses and their equality conclusion |
 | `FixedPointConvergesToAlias` | bridge alias to `AbstractFixedPoint.ConvergesTo` on the scalar-as-vector instance |
 | `FixedPointCauchySeqAlias` | bridge alias to `AbstractFixedPoint.CauchySeq` on the scalar-as-vector instance |
@@ -1753,6 +1757,11 @@ Theorem targets:
 | `sequence_limit_def` | definitional equality between `SequenceLimit` and `SequenceConvergesTo` |
 | `bounded_sequence_by_intro`, `bounded_sequence_by_lower`, `bounded_sequence_by_upper` | build explicit bounds and project lower/upper inequalities |
 | `bounded_sequence_intro`, `bounded_sequence_elim` | hide and recover explicit bound witnesses |
+| `sequence_bounded_above_intro`, `sequence_bounded_above_elim` | build and eliminate one-sided upper-bounded sequence evidence |
+| `sequence_bounded_below_intro`, `sequence_bounded_below_elim` | build and eliminate one-sided lower-bounded sequence evidence |
+| `sequence_bounded_above_from_bounds`, `sequence_bounded_below_from_bounds` | derive one-sided boundedness from a two-sided `BoundedSequenceBy` package |
+| `sequence_monotone_increasing_intro`, `sequence_monotone_increasing_apply` | build and apply monotone-increasing sequence evidence |
+| `sequence_monotone_decreasing_intro`, `sequence_monotone_decreasing_apply` | build and apply monotone-decreasing sequence evidence |
 | `sequence_limit_uniqueness_intro` | package local uniqueness evidence from two convergence witnesses and an equality proof |
 | `sequence_limit_uniqueness_left`, `sequence_limit_uniqueness_right` | recover the two convergence witnesses from uniqueness evidence |
 | `sequence_limit_unique`, `limit_unique` | derive equality of limits from local uniqueness evidence |
@@ -1766,6 +1775,9 @@ Theorem targets:
 | `sequence_fixed_point_converges_to_sequence` | converts fixed-point `ConvergesTo` evidence back to `SequenceConvergesTo` |
 | `sequence_cauchy_converges_from_completeness` | derives a sequence convergence choice from Cauchy evidence via `CompleteMetricArgs` |
 | `sequence_cauchy_convergence_criterion`, `cauchy_convergence_criterion` | stable aliases for later series imports |
+| `sequence_monotone_completeness_evidence_intro` | packages the value-set nonempty/bounded-above bridges and supremum-to-limit convergence bridge |
+| `sequence_monotone_converges_from_completeness` | derives a sequence convergence choice by extracting order completeness and choosing a supremum |
+| `monotone_convergence_theorem` | stable alias for the sequence monotone convergence theorem |
 
 The module has an empty axiom report. Limit uniqueness is not a global law package field: the
 checked `sequence_limit_unique` theorem extracts equality from an explicit local evidence package.
@@ -1773,6 +1785,9 @@ The Cauchy criterion is likewise derived through `SequenceCauchyCompletenessEvid
 must expose the `CompleteOrderedFieldArgs` already in the module context plus a fixed-point
 `CompleteMetricArgs` witness and bridge maps, and the checked theorem calls the fixed-point
 completeness eliminator rather than assuming the final sequence-convergence choice directly.
+The monotone convergence theorem similarly calls `supremum_exists_from_completeness` after
+extracting order completeness from `CompleteOrderedFieldArgs`; the theorem takes a separate
+`ValueSet` and bridge evidence package instead of assuming supremum existence as a theorem input.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

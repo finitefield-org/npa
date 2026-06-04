@@ -40,6 +40,31 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => forall (P : Prop), forall (mk : forall (lower : Scalar), forall (upper : Scalar), forall (bounds : @BoundedSequenceBy.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper), P), P"
     },
     {
+      "declaration": "SequenceBoundedAbove",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => forall (P : Prop), forall (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P), P"
+    },
+    {
+      "declaration": "SequenceBoundedBelow",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => forall (P : Prop), forall (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P), P"
+    },
+    {
+      "declaration": "SequenceMonotoneIncreasing",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq m) (seq n)"
+    },
+    {
+      "declaration": "SequenceMonotoneDecreasing",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), le_rel (seq n) (seq m)"
+    },
+    {
+      "declaration": "SequenceMonotoneCompletenessEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun ValueSet => forall (P : Prop), forall (mk : forall (value_nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet), forall (value_bounded_above : forall (bounded_above : @SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet), forall (supremum_converges : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet sup), forall (monotone : @SequenceMonotoneIncreasing.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe), forall (bounded_above : @SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit sup), P), P"
+    },
+    {
       "declaration": "SequenceLimitUniquenessEvidence",
       "source_kind": "explicit_def_value",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun left => fun right => forall (P : Prop), forall (mk : forall (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left), forall (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right), forall (limits_equal : @Eq.{u} Scalar left right), P), P"
@@ -140,6 +165,56 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun bounded => fun P => fun mk => bounded P mk"
     },
     {
+      "declaration": "sequence_bounded_above_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun upper => fun upper_bound => fun (P : Prop) => fun (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P) => mk upper upper_bound"
+    },
+    {
+      "declaration": "sequence_bounded_above_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun bounded_above => fun P => fun mk => bounded_above P mk"
+    },
+    {
+      "declaration": "sequence_bounded_below_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun lower => fun lower_bound => fun (P : Prop) => fun (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P) => mk lower lower_bound"
+    },
+    {
+      "declaration": "sequence_bounded_below_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun bounded_below => fun P => fun mk => bounded_below P mk"
+    },
+    {
+      "declaration": "sequence_bounded_above_from_bounds",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun lower => fun upper => fun bounds => fun (P : Prop) => fun (mk : forall (upper : Scalar), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) upper), P) => mk upper (fun (index : SequenceIndex) => @bounded_sequence_by_upper.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper bounds index)"
+    },
+    {
+      "declaration": "sequence_bounded_below_from_bounds",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun lower => fun upper => fun bounds => fun (P : Prop) => fun (mk : forall (lower : Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel lower (seq n)), P) => mk lower (fun (index : SequenceIndex) => @bounded_sequence_by_lower.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper bounds index)"
+    },
+    {
+      "declaration": "sequence_monotone_increasing_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun monotone_step => monotone_step"
+    },
+    {
+      "declaration": "sequence_monotone_increasing_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun monotone => fun m => fun n => fun hmn => monotone m n hmn"
+    },
+    {
+      "declaration": "sequence_monotone_decreasing_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun monotone_step => monotone_step"
+    },
+    {
+      "declaration": "sequence_monotone_decreasing_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun monotone => fun m => fun n => fun hmn => monotone m n hmn"
+    },
+    {
       "declaration": "sequence_limit_uniqueness_intro",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun left => fun right => fun left_converges => fun right_converges => fun limits_equal => fun (P : Prop) => fun (mk : forall (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left), forall (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right), forall (limits_equal : @Eq.{u} Scalar left right), P) => mk left_converges right_converges limits_equal"
@@ -203,6 +278,21 @@
       "declaration": "sequence_convergence_choice_elim",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun choice => fun P => fun choose => choice P choose"
+    },
+    {
+      "declaration": "sequence_monotone_completeness_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun ValueSet => fun value_nonempty => fun value_bounded_above => fun supremum_converges => fun (P : Prop) => fun (mk : forall (value_nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet), forall (value_bounded_above : forall (bounded_above : @SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet), forall (supremum_converges : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet sup), forall (monotone : @SequenceMonotoneIncreasing.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe), forall (bounded_above : @SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit sup), P) => mk value_nonempty value_bounded_above supremum_converges"
+    },
+    {
+      "declaration": "sequence_monotone_converges_from_completeness",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun ValueSet => fun monotone => fun bounded_above => fun evidence => evidence (@SequenceConvergenceChoice.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit) (fun (value_nonempty : @NonemptySet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet) => fun (value_bounded_above : forall (bounded_above : @SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), @BoundedAbove.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet) => fun (supremum_converges : forall (sup : Scalar), forall (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet sup), forall (monotone : @SequenceMonotoneIncreasing.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe), forall (bounded_above : @SequenceBoundedAbove.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit sup) => @supremum_exists_from_completeness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args (@complete_ordered_field_order_completeness.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field) (ValueSet) value_nonempty (value_bounded_above bounded_above) (@SequenceConvergenceChoice.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit) (fun (sup : Scalar) => fun (hsup : @SupremumEvidence.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ValueSet sup) => @sequence_convergence_choice_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit sup (supremum_converges sup hsup monotone bounded_above)))"
+    },
+    {
+      "declaration": "monotone_convergence_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun IndexLe => fun ValueSet => fun monotone => fun bounded_above => fun evidence => @sequence_monotone_converges_from_completeness.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe ValueSet monotone bounded_above evidence"
     },
     {
       "declaration": "sequence_cauchy_completeness_evidence_intro",

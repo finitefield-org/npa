@@ -333,7 +333,11 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T04 Add Monotone, Squeeze, And Interval-Nesting Theorems
 
-- Status: Pending
+- Status: `ANQ-004` complete for monotone convergence; `ANQ-005` squeeze and
+  `ANQ-006` interval nesting remain pending. `Proofs.Ai.Analysis.Sequence.Basic`
+  now defines one-sided boundedness, monotone increasing/decreasing predicates,
+  and explicit monotone-completeness evidence, with checked theorem names
+  deriving a sequence convergence choice through the real-order supremum route.
 - Depends on: ANA-T03
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -343,14 +347,15 @@ guessing. The split must preserve the dependency order in this document.
   - `Proofs/Ai/Analysis/Sequence/Monotone/` if split
   - `Proofs/Ai/Analysis/Real/Basic/`
 - Tasks:
-  - Define monotone sequence, bounded-above/bounded-below sequence, squeeze
-    hypotheses, nested closed intervals, and shrinking interval length.
+  - Define monotone sequence and bounded-above/bounded-below sequence evidence.
   - Prove monotone convergence theorem for sequences.
+  - Define squeeze hypotheses, nested closed intervals, and shrinking interval
+    length.
   - Prove squeeze theorem.
   - Prove interval nesting theorem from completeness.
 - Deliverables:
-  - Certificates for monotone convergence, squeeze theorem, and interval
-    nesting.
+  - Certificate-backed monotone convergence theorem for sequences.
+  - Certificates for squeeze theorem and interval nesting.
   - Imports ready for continuity and compactness milestones.
 - Acceptance criteria:
   - Nested intervals use explicit closed interval and length hypotheses.
@@ -362,6 +367,21 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_monotone_converges_from_completeness /tmp/anq004-sequence-monotone-converges-replay.json`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
+- Notes:
+  - `sequence_monotone_converges_from_completeness` extracts
+    `OrderCompletenessLawArgs` from the ambient `CompleteOrderedFieldArgs` and
+    calls `supremum_exists_from_completeness` for the supplied value set. The
+    final convergence choice is produced from the returned supremum evidence by
+    `SequenceMonotoneCompletenessEvidence`; supremum existence is not assumed as
+    a separate theorem input.
+  - Stable downstream import names are
+    `sequence_monotone_converges_from_completeness` and
+    `monotone_convergence_theorem`.
+  - Squeeze and interval-nesting statements remain for ANQ-005 and ANQ-006.
 
 ### ANA-T05 Add Bolzano-Weierstrass And Sequence Compactness
 
