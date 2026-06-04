@@ -167,6 +167,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &DERIVED_CATEGORY_MODULE,
     &TOR_EXT_MODULE,
     &COTANGENT_COMPLEX_MODULE,
+    &SIMPLICIAL_COMMUTATIVE_RING_CDGA_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
     &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
@@ -1632,6 +1633,24 @@ const COTANGENT_COMPLEX_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: COTANGENT_COMPLEX_DEFINITIONS,
     theorems: COTANGENT_COMPLEX_THEOREMS,
+    expected_axioms: &[],
+};
+
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.SimplicialCommutativeRingCdga",
+    source_path: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/source.npa",
+    certificate_path:
+        "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Category.Classical",
+    ],
+    inductives: &[],
+    definitions: SIMPLICIAL_COMMUTATIVE_RING_CDGA_DEFINITIONS,
+    theorems: SIMPLICIAL_COMMUTATIVE_RING_CDGA_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -4319,6 +4338,341 @@ macro_rules! cotangent_complex_law_binders {
     };
     ($tail:literal) => {
         cotangent_complex_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_params!(concat!(
+            "forall (Carrier : forall (n : DeltaObj), Sort w), ",
+            "forall (zero : forall (n : DeltaObj), Carrier n), ",
+            "forall (one : forall (n : DeltaObj), Carrier n), ",
+            "forall (add : forall (n : DeltaObj), forall (a : Carrier n), forall (b : Carrier n), Carrier n), ",
+            "forall (neg : forall (n : DeltaObj), forall (a : Carrier n), Carrier n), ",
+            "forall (sub : forall (n : DeltaObj), forall (a : Carrier n), forall (b : Carrier n), Carrier n), ",
+            "forall (mul : forall (n : DeltaObj), forall (a : Carrier n), forall (b : Carrier n), Carrier n), ",
+            "forall (restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Carrier n), Carrier m), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        simplicial_commutative_ring_params!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_abs!(concat!(
+            "fun Carrier => fun zero => fun one => ",
+            "fun add => fun neg => fun sub => fun mul => fun restrict => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        simplicial_commutative_ring_abs!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_law_args_app {
+    () => {
+        concat!(
+            "@SimplicialCommutativeRingLawArgs.{u,v,w} DeltaObj DeltaHom delta_id ",
+            "delta_comp delta_category_args Carrier zero one add neg sub mul restrict"
+        )
+    };
+}
+
+macro_rules! simplicial_commutative_ring_level_ring_law_type {
+    () => {
+        "forall (n : DeltaObj), @RingLawArgs.{w} (Carrier n) (zero n) (one n) (add n) (neg n) (sub n) (mul n)"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_id_law_type {
+    () => {
+        "forall (n : DeltaObj), forall (x : Carrier n), @Eq.{w} (Carrier n) (restrict n n (delta_id n) x) x"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_comp_law_type {
+    () => {
+        "forall (l : DeltaObj), forall (m : DeltaObj), forall (n : DeltaObj), forall (beta : DeltaHom m n), forall (alpha : DeltaHom l m), forall (x : Carrier n), @Eq.{w} (Carrier l) (restrict l n (delta_comp l m n beta alpha) x) (restrict l m alpha (restrict m n beta x))"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_zero_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), @Eq.{w} (Carrier m) (restrict m n alpha (zero n)) (zero m)"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_one_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), @Eq.{w} (Carrier m) (restrict m n alpha (one n)) (one m)"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_add_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Carrier n), forall (y : Carrier n), @Eq.{w} (Carrier m) (restrict m n alpha (add n x y)) (add m (restrict m n alpha x) (restrict m n alpha y))"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_neg_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Carrier n), @Eq.{w} (Carrier m) (restrict m n alpha (neg n x)) (neg m (restrict m n alpha x))"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_sub_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Carrier n), forall (y : Carrier n), @Eq.{w} (Carrier m) (restrict m n alpha (sub n x y)) (sub m (restrict m n alpha x) (restrict m n alpha y))"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_restrict_mul_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Carrier n), forall (y : Carrier n), @Eq.{w} (Carrier m) (restrict m n alpha (mul n x y)) (mul m (restrict m n alpha x) (restrict m n alpha y))"
+    };
+}
+
+macro_rules! simplicial_commutative_ring_law_binders {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (restrict_id_law : ",
+            simplicial_commutative_ring_restrict_id_law_type!(),
+            "), ",
+            "forall (restrict_comp_law : ",
+            simplicial_commutative_ring_restrict_comp_law_type!(),
+            "), ",
+            "forall (level_ring_law : ",
+            simplicial_commutative_ring_level_ring_law_type!(),
+            "), ",
+            "forall (restrict_preserves_zero_law : ",
+            simplicial_commutative_ring_restrict_zero_law_type!(),
+            "), ",
+            "forall (restrict_preserves_one_law : ",
+            simplicial_commutative_ring_restrict_one_law_type!(),
+            "), ",
+            "forall (restrict_preserves_add_law : ",
+            simplicial_commutative_ring_restrict_add_law_type!(),
+            "), ",
+            "forall (restrict_preserves_neg_law : ",
+            simplicial_commutative_ring_restrict_neg_law_type!(),
+            "), ",
+            "forall (restrict_preserves_sub_law : ",
+            simplicial_commutative_ring_restrict_sub_law_type!(),
+            "), ",
+            "forall (restrict_preserves_mul_law : ",
+            simplicial_commutative_ring_restrict_mul_law_type!(),
+            "), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        simplicial_commutative_ring_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_projection_proof {
+    ($target_ty:expr, $target:literal) => {
+        simplicial_commutative_ring_abs!(concat!(
+            "fun simplicial_commutative_ring_args => simplicial_commutative_ring_args (",
+            $target_ty,
+            ") (fun (restrict_id_law : ",
+            simplicial_commutative_ring_restrict_id_law_type!(),
+            ") => fun (restrict_comp_law : ",
+            simplicial_commutative_ring_restrict_comp_law_type!(),
+            ") => fun (level_ring_law : ",
+            simplicial_commutative_ring_level_ring_law_type!(),
+            ") => fun (restrict_preserves_zero_law : ",
+            simplicial_commutative_ring_restrict_zero_law_type!(),
+            ") => fun (restrict_preserves_one_law : ",
+            simplicial_commutative_ring_restrict_one_law_type!(),
+            ") => fun (restrict_preserves_add_law : ",
+            simplicial_commutative_ring_restrict_add_law_type!(),
+            ") => fun (restrict_preserves_neg_law : ",
+            simplicial_commutative_ring_restrict_neg_law_type!(),
+            ") => fun (restrict_preserves_sub_law : ",
+            simplicial_commutative_ring_restrict_sub_law_type!(),
+            ") => fun (restrict_preserves_mul_law : ",
+            simplicial_commutative_ring_restrict_mul_law_type!(),
+            ") => ",
+            $target,
+            ")"
+        ))
+    };
+}
+
+macro_rules! cdga_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Degree : Sort d), ",
+            "forall (Carrier : Sort u), ",
+            "forall (zero : Carrier), ",
+            "forall (one : Carrier), ",
+            "forall (add : forall (a : Carrier), forall (b : Carrier), Carrier), ",
+            "forall (neg : forall (a : Carrier), Carrier), ",
+            "forall (sub : forall (a : Carrier), forall (b : Carrier), Carrier), ",
+            "forall (mul : forall (a : Carrier), forall (b : Carrier), Carrier), ",
+            "forall (differential : forall (degree : Degree), forall (x : Carrier), Carrier), ",
+            "forall (degree_add : forall (p : Degree), forall (q : Degree), Degree), ",
+            "forall (degree_zero : Degree), ",
+            "forall (GradedCommutative : Prop), ",
+            "forall (DifferentialSquaresZero : Prop), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        cdga_params!(concat!($tail))
+    };
+}
+
+macro_rules! cdga_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Degree => fun Carrier => fun zero => fun one => fun add => fun neg => ",
+            "fun sub => fun mul => fun differential => fun degree_add => fun degree_zero => ",
+            "fun GradedCommutative => fun DifferentialSquaresZero => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        cdga_abs!(concat!($tail))
+    };
+}
+
+macro_rules! cdga_law_args_app {
+    () => {
+        concat!(
+            "@CdgaLawArgs.{d,u} Degree Carrier zero one add neg sub mul differential ",
+            "degree_add degree_zero GradedCommutative DifferentialSquaresZero"
+        )
+    };
+}
+
+macro_rules! cdga_ring_law_type {
+    () => {
+        "@RingLawArgs.{u} Carrier zero one add neg sub mul"
+    };
+}
+
+macro_rules! cdga_differential_add_law_type {
+    () => {
+        "forall (degree : Degree), forall (x : Carrier), forall (y : Carrier), @Eq.{u} Carrier (differential degree (add x y)) (add (differential degree x) (differential degree y))"
+    };
+}
+
+macro_rules! cdga_differential_leibniz_law_type {
+    () => {
+        "forall (p : Degree), forall (q : Degree), forall (x : Carrier), forall (y : Carrier), @Eq.{u} Carrier (differential (degree_add p q) (mul x y)) (add (mul (differential p x) y) (mul x (differential q y)))"
+    };
+}
+
+macro_rules! cdga_law_binders {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ring_law : ",
+            cdga_ring_law_type!(),
+            "), ",
+            "forall (graded_commutative_law : GradedCommutative), ",
+            "forall (differential_add_law : ",
+            cdga_differential_add_law_type!(),
+            "), ",
+            "forall (differential_leibniz_law : ",
+            cdga_differential_leibniz_law_type!(),
+            "), ",
+            "forall (differential_square_zero_law : DifferentialSquaresZero), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        cdga_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! cdga_projection_proof {
+    ($target_ty:expr, $target:literal) => {
+        cdga_abs!(concat!(
+            "fun cdga_args => cdga_args (",
+            $target_ty,
+            ") (fun (ring_law : ",
+            cdga_ring_law_type!(),
+            ") => fun (graded_commutative_law : GradedCommutative) => ",
+            "fun (differential_add_law : ",
+            cdga_differential_add_law_type!(),
+            ") => fun (differential_leibniz_law : ",
+            cdga_differential_leibniz_law_type!(),
+            ") => fun (differential_square_zero_law : DifferentialSquaresZero) => ",
+            $target,
+            ")"
+        ))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_cdga_comparison_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (SimplicialCommutativeRingObj : Sort u), ",
+            "forall (CdgaObj : Sort v), ",
+            "forall (normalize : forall (scr : SimplicialCommutativeRingObj), CdgaObj), ",
+            "forall (denormalize : forall (cdga : CdgaObj), SimplicialCommutativeRingObj), ",
+            "forall (NormalizationMonoidal : Prop), ",
+            "forall (DoldKanEquivalence : Prop), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        simplicial_commutative_ring_cdga_comparison_params!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_cdga_comparison_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun SimplicialCommutativeRingObj => fun CdgaObj => fun normalize => ",
+            "fun denormalize => fun NormalizationMonoidal => fun DoldKanEquivalence => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        simplicial_commutative_ring_cdga_comparison_abs!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_cdga_comparison_law_args_app {
+    () => {
+        concat!(
+            "@SimplicialCommutativeRingCdgaComparisonLawArgs.{u,v} ",
+            "SimplicialCommutativeRingObj CdgaObj normalize denormalize ",
+            "NormalizationMonoidal DoldKanEquivalence"
+        )
+    };
+}
+
+macro_rules! simplicial_commutative_ring_cdga_comparison_law_binders {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (normalization_monoidal_law : NormalizationMonoidal), ",
+            "forall (dold_kan_equivalence_law : DoldKanEquivalence), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        simplicial_commutative_ring_cdga_comparison_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_commutative_ring_cdga_comparison_projection_proof {
+    ($target_ty:expr, $target:literal) => {
+        simplicial_commutative_ring_cdga_comparison_abs!(concat!(
+            "fun comparison_args => comparison_args ",
+            $target_ty,
+            " (fun (normalization_monoidal_law : NormalizationMonoidal) => ",
+            "fun (dold_kan_equivalence_law : DoldKanEquivalence) => ",
+            $target,
+            ")"
+        ))
     };
 }
 
@@ -27055,6 +27409,386 @@ const COTANGENT_COMPLEX_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SimplicialCommutativeRingLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: simplicial_commutative_ring_params!("Prop"),
+        value: simplicial_commutative_ring_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            simplicial_commutative_ring_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CdgaLawArgs",
+        universe_params: &["d", "u"],
+        ty: cdga_params!("Prop"),
+        value: cdga_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            cdga_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SimplicialCommutativeRingCdgaComparisonLawArgs",
+        universe_params: &["u", "v"],
+        ty: simplicial_commutative_ring_cdga_comparison_params!("Prop"),
+        value: simplicial_commutative_ring_cdga_comparison_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            simplicial_commutative_ring_cdga_comparison_law_binders!("P"),
+            "), P"
+        )),
+    },
+];
+
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_definition_intro",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            simplicial_commutative_ring_law_binders!(concat!(
+                simplicial_commutative_ring_law_args_app!()
+            ))
+        )),
+        proof: simplicial_commutative_ring_abs!(concat!(
+            "fun restrict_id_law => fun restrict_comp_law => fun level_ring_law => ",
+            "fun restrict_preserves_zero_law => fun restrict_preserves_one_law => ",
+            "fun restrict_preserves_add_law => fun restrict_preserves_neg_law => ",
+            "fun restrict_preserves_sub_law => fun restrict_preserves_mul_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            simplicial_commutative_ring_law_binders!("P"),
+            ") => mk restrict_id_law restrict_comp_law level_ring_law ",
+            "restrict_preserves_zero_law restrict_preserves_one_law restrict_preserves_add_law ",
+            "restrict_preserves_neg_law restrict_preserves_sub_law restrict_preserves_mul_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_simplicial_set",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), forall (P : Prop), forall (mk : forall (restrict_id_law : ",
+            simplicial_commutative_ring_restrict_id_law_type!(),
+            "), forall (restrict_comp_law : ",
+            simplicial_commutative_ring_restrict_comp_law_type!(),
+            "), P), P"
+        )),
+        proof: simplicial_commutative_ring_abs!(concat!(
+            "fun simplicial_commutative_ring_args => fun (P : Prop) => fun (mk : ",
+            "forall (restrict_id_law : ",
+            simplicial_commutative_ring_restrict_id_law_type!(),
+            "), forall (restrict_comp_law : ",
+            simplicial_commutative_ring_restrict_comp_law_type!(),
+            "), P) => simplicial_commutative_ring_args P ",
+            "(fun (restrict_id_law : ",
+            simplicial_commutative_ring_restrict_id_law_type!(),
+            ") => fun (restrict_comp_law : ",
+            simplicial_commutative_ring_restrict_comp_law_type!(),
+            ") => fun (level_ring_law : ",
+            simplicial_commutative_ring_level_ring_law_type!(),
+            ") => fun (restrict_preserves_zero_law : ",
+            simplicial_commutative_ring_restrict_zero_law_type!(),
+            ") => fun (restrict_preserves_one_law : ",
+            simplicial_commutative_ring_restrict_one_law_type!(),
+            ") => fun (restrict_preserves_add_law : ",
+            simplicial_commutative_ring_restrict_add_law_type!(),
+            ") => fun (restrict_preserves_neg_law : ",
+            simplicial_commutative_ring_restrict_neg_law_type!(),
+            ") => fun (restrict_preserves_sub_law : ",
+            simplicial_commutative_ring_restrict_sub_law_type!(),
+            ") => fun (restrict_preserves_mul_law : ",
+            simplicial_commutative_ring_restrict_mul_law_type!(),
+            ") => mk restrict_id_law restrict_comp_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_identity",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_id_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_id_law_type!(),
+            "restrict_id_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_composition",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_comp_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_comp_law_type!(),
+            "restrict_comp_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_level_commutative_ring",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_level_ring_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_level_ring_law_type!(),
+            "level_ring_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_preserves_zero",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_zero_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_zero_law_type!(),
+            "restrict_preserves_zero_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_preserves_one",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_one_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_one_law_type!(),
+            "restrict_preserves_one_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_preserves_add",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_add_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_add_law_type!(),
+            "restrict_preserves_add_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_preserves_neg",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_neg_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_neg_law_type!(),
+            "restrict_preserves_neg_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_preserves_sub",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_sub_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_sub_law_type!(),
+            "restrict_preserves_sub_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_restrict_preserves_mul",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), ",
+            simplicial_commutative_ring_restrict_mul_law_type!()
+        )),
+        proof: simplicial_commutative_ring_projection_proof!(
+            simplicial_commutative_ring_restrict_mul_law_type!(),
+            "restrict_preserves_mul_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_rings",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_commutative_ring_params!(concat!(
+            "forall (simplicial_commutative_ring_args : ",
+            simplicial_commutative_ring_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            simplicial_commutative_ring_law_binders!("P"),
+            "), P"
+        )),
+        proof: simplicial_commutative_ring_abs!(concat!(
+            "fun simplicial_commutative_ring_args => fun (P : Prop) => fun (mk : ",
+            simplicial_commutative_ring_law_binders!("P"),
+            ") => simplicial_commutative_ring_args P mk"
+        )),
+    },
+    TheoremArtifact {
+        name: "cdga_definition_intro",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(cdga_law_binders!(concat!(cdga_law_args_app!())))),
+        proof: cdga_abs!(concat!(
+            "fun ring_law => fun graded_commutative_law => ",
+            "fun differential_add_law => fun differential_leibniz_law => ",
+            "fun differential_square_zero_law => fun (P : Prop) => fun (mk : ",
+            cdga_law_binders!("P"),
+            ") => mk ring_law graded_commutative_law differential_add_law ",
+            "differential_leibniz_law differential_square_zero_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "cdga_underlying_commutative_ring",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(
+            "forall (cdga_args : ",
+            cdga_law_args_app!(),
+            "), ",
+            cdga_ring_law_type!()
+        )),
+        proof: cdga_projection_proof!(cdga_ring_law_type!(), "ring_law"),
+    },
+    TheoremArtifact {
+        name: "cdga_graded_commutative",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(
+            "forall (cdga_args : ",
+            cdga_law_args_app!(),
+            "), GradedCommutative"
+        )),
+        proof: cdga_projection_proof!("GradedCommutative", "graded_commutative_law"),
+    },
+    TheoremArtifact {
+        name: "cdga_differential_preserves_add",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(
+            "forall (cdga_args : ",
+            cdga_law_args_app!(),
+            "), ",
+            cdga_differential_add_law_type!()
+        )),
+        proof: cdga_projection_proof!(cdga_differential_add_law_type!(), "differential_add_law"),
+    },
+    TheoremArtifact {
+        name: "cdga_differential_leibniz",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(
+            "forall (cdga_args : ",
+            cdga_law_args_app!(),
+            "), ",
+            cdga_differential_leibniz_law_type!()
+        )),
+        proof: cdga_projection_proof!(
+            cdga_differential_leibniz_law_type!(),
+            "differential_leibniz_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "cdga_differential_squares_zero",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(
+            "forall (cdga_args : ",
+            cdga_law_args_app!(),
+            "), DifferentialSquaresZero"
+        )),
+        proof: cdga_projection_proof!("DifferentialSquaresZero", "differential_square_zero_law"),
+    },
+    TheoremArtifact {
+        name: "cdga",
+        universe_params: &["d", "u"],
+        statement: cdga_params!(concat!(
+            "forall (cdga_args : ",
+            cdga_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            cdga_law_binders!("P"),
+            "), P"
+        )),
+        proof: cdga_abs!(concat!(
+            "fun cdga_args => fun (P : Prop) => fun (mk : ",
+            cdga_law_binders!("P"),
+            ") => cdga_args P mk"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_cdga_comparison_definition_intro",
+        universe_params: &["u", "v"],
+        statement: simplicial_commutative_ring_cdga_comparison_params!(concat!(
+            simplicial_commutative_ring_cdga_comparison_law_binders!(concat!(
+                simplicial_commutative_ring_cdga_comparison_law_args_app!()
+            ))
+        )),
+        proof: simplicial_commutative_ring_cdga_comparison_abs!(concat!(
+            "fun normalization_monoidal_law => fun dold_kan_equivalence_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            simplicial_commutative_ring_cdga_comparison_law_binders!("P"),
+            ") => mk normalization_monoidal_law dold_kan_equivalence_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_cdga_comparison_normalization_monoidal",
+        universe_params: &["u", "v"],
+        statement: simplicial_commutative_ring_cdga_comparison_params!(concat!(
+            "forall (comparison_args : ",
+            simplicial_commutative_ring_cdga_comparison_law_args_app!(),
+            "), NormalizationMonoidal"
+        )),
+        proof: simplicial_commutative_ring_cdga_comparison_projection_proof!(
+            "NormalizationMonoidal",
+            "normalization_monoidal_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_ring_cdga_comparison_dold_kan_equivalence",
+        universe_params: &["u", "v"],
+        statement: simplicial_commutative_ring_cdga_comparison_params!(concat!(
+            "forall (comparison_args : ",
+            simplicial_commutative_ring_cdga_comparison_law_args_app!(),
+            "), DoldKanEquivalence"
+        )),
+        proof: simplicial_commutative_ring_cdga_comparison_projection_proof!(
+            "DoldKanEquivalence",
+            "dold_kan_equivalence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "simplicial_commutative_rings_cdga",
+        universe_params: &["u", "v"],
+        statement: simplicial_commutative_ring_cdga_comparison_params!(concat!(
+            "forall (comparison_args : ",
+            simplicial_commutative_ring_cdga_comparison_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            simplicial_commutative_ring_cdga_comparison_law_binders!("P"),
+            "), P"
+        )),
+        proof: simplicial_commutative_ring_cdga_comparison_abs!(concat!(
+            "fun comparison_args => fun (P : Prop) => fun (mk : ",
+            simplicial_commutative_ring_cdga_comparison_law_binders!("P"),
+            ") => comparison_args P mk"
+        )),
+    },
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "le",
@@ -33228,6 +33962,22 @@ fn run_full() -> Result<(), String> {
         &cotangent_complex_imports,
         &cotangent_complex_source_interfaces,
     )?;
+    let simplicial_commutative_ring_cdga_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        classical_category.verified_module.clone(),
+    ];
+    let simplicial_commutative_ring_cdga_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        classical_category.source_interface.clone(),
+    ];
+    let simplicial_commutative_ring_cdga = build_and_write_module(
+        &proof_root,
+        &SIMPLICIAL_COMMUTATIVE_RING_CDGA_MODULE,
+        &simplicial_commutative_ring_cdga_imports,
+        &simplicial_commutative_ring_cdga_source_interfaces,
+    )?;
     let abstract_ordered_field_imports =
         vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_ordered_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
@@ -33719,6 +34469,7 @@ fn run_full() -> Result<(), String> {
         derived_category,
         tor_ext,
         cotangent_complex,
+        simplicial_commutative_ring_cdga,
         abstract_ordered_field,
         abstract_ordered_field_field_bridge,
         abstract_square_normalize,

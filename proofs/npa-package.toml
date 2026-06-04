@@ -1104,6 +1104,23 @@ theorems = ["cotangent_complex_definition_intro", "cotangent_complex_derived_cat
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.AlgebraicGeometry.SimplicialCommutativeRingCdga"
+source = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:bcb121576042e7f9e28def82219e0a76188502f5a4091f5d1b31b5483c247a91"
+expected_certificate_file_hash = "sha256:41b57fa252c6dca1191985cfb695a983d3dfe1643da1e9c82052b14c8a45e9cd"
+expected_export_hash = "sha256:1542a36b59dbe51e499c1636dced5a048b23b489d106b85c79db035aad58a832"
+expected_axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+expected_certificate_hash = "sha256:7ecea78da0e0ce71e0f53174e8f628785a78cbd84fe618900d5c86856b8e0ac0"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Category.Classical"]
+definitions = ["SimplicialCommutativeRingLawArgs", "CdgaLawArgs", "SimplicialCommutativeRingCdgaComparisonLawArgs"]
+theorems = ["simplicial_commutative_ring_definition_intro", "simplicial_commutative_ring_simplicial_set", "simplicial_commutative_ring_restrict_identity", "simplicial_commutative_ring_restrict_composition", "simplicial_commutative_ring_level_commutative_ring", "simplicial_commutative_ring_restrict_preserves_zero", "simplicial_commutative_ring_restrict_preserves_one", "simplicial_commutative_ring_restrict_preserves_add", "simplicial_commutative_ring_restrict_preserves_neg", "simplicial_commutative_ring_restrict_preserves_sub", "simplicial_commutative_ring_restrict_preserves_mul", "simplicial_commutative_rings", "cdga_definition_intro", "cdga_underlying_commutative_ring", "cdga_graded_commutative", "cdga_differential_preserves_add", "cdga_differential_leibniz", "cdga_differential_squares_zero", "cdga", "simplicial_commutative_ring_cdga_comparison_definition_intro", "simplicial_commutative_ring_cdga_comparison_normalization_monoidal", "simplicial_commutative_ring_cdga_comparison_dold_kan_equivalence", "simplicial_commutative_rings_cdga"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractOrderedField"
 source = "Proofs/Ai/Algebra/AbstractOrderedField/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert"

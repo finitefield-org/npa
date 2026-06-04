@@ -1438,6 +1438,38 @@ const COTANGENT_COMPLEX_THEOREMS: &[&str] = &[
     "cotangent_complex",
 ];
 
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_DEFINITIONS: &[&str] = &[
+    "SimplicialCommutativeRingLawArgs",
+    "CdgaLawArgs",
+    "SimplicialCommutativeRingCdgaComparisonLawArgs",
+];
+
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_THEOREMS: &[&str] = &[
+    "simplicial_commutative_ring_definition_intro",
+    "simplicial_commutative_ring_simplicial_set",
+    "simplicial_commutative_ring_restrict_identity",
+    "simplicial_commutative_ring_restrict_composition",
+    "simplicial_commutative_ring_level_commutative_ring",
+    "simplicial_commutative_ring_restrict_preserves_zero",
+    "simplicial_commutative_ring_restrict_preserves_one",
+    "simplicial_commutative_ring_restrict_preserves_add",
+    "simplicial_commutative_ring_restrict_preserves_neg",
+    "simplicial_commutative_ring_restrict_preserves_sub",
+    "simplicial_commutative_ring_restrict_preserves_mul",
+    "simplicial_commutative_rings",
+    "cdga_definition_intro",
+    "cdga_underlying_commutative_ring",
+    "cdga_graded_commutative",
+    "cdga_differential_preserves_add",
+    "cdga_differential_leibniz",
+    "cdga_differential_squares_zero",
+    "cdga",
+    "simplicial_commutative_ring_cdga_comparison_definition_intro",
+    "simplicial_commutative_ring_cdga_comparison_normalization_monoidal",
+    "simplicial_commutative_ring_cdga_comparison_dold_kan_equivalence",
+    "simplicial_commutative_rings_cdga",
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[&str] = &[
     "le",
     "lt",
@@ -2964,6 +2996,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: COTANGENT_COMPLEX_DEFINITIONS,
         theorems: COTANGENT_COMPLEX_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.SimplicialCommutativeRingCdga",
+        source: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Category.Classical",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: SIMPLICIAL_COMMUTATIVE_RING_CDGA_DEFINITIONS,
+        theorems: SIMPLICIAL_COMMUTATIVE_RING_CDGA_THEOREMS,
         axioms: &[],
     },
     ExpectedModule {
