@@ -760,23 +760,24 @@ measure-theoretic results as fully derived `L2` theorems.
 Start with small batches that create reusable APIs without requiring the entire
 classical measure stack:
 
-1. `MEA-T01`: create theorem cards and target-module names for the inventory.
-2. `MEA-T02`: add `SigmaAlgebra` statement and closure-law interface.
-3. `MEA-T03`: add generated sigma algebra and minimality theorem.
-4. `MEA-T04`: add pi-lambda and monotone-class theorem interfaces.
-5. `MEA-T05`: add `MeasureSpace` and basic additivity/monotonicity theorem
-   targets.
-6. `MEA-T06`: derive continuity from below and above under explicit
+1. `MEA-T00`: create theorem cards and target-module names for the inventory.
+2. `MEA-T01`: create the namespace skeleton and statement policy.
+3. `MEA-T02`: add `SigmaAlgebra` statement and closure-law interface.
+4. `MEA-T03`: add generated sigma algebra and minimality theorem.
+5. `MEA-T04`: add pi-lambda and monotone-class theorem interfaces.
+6. `MEA-T05`: add measurable-space and product-sigma interfaces.
+7. `MEA-T06`: add `MeasureSpace` and basic additivity theorem targets.
+8. `MEA-T07`: derive monotonicity, subadditivity, and difference laws.
+9. `MEA-T08`: derive continuity from below and above under explicit
    hypotheses.
-7. `MEA-T07`: add `OuterMeasure` and Caratheodory measurable-set statements.
-8. `MEA-T08`: add simple-function and measurable-function statement layer.
-9. `MEA-T09`: add nonnegative integral construction interface.
-10. `MEA-T10`: prove or package the monotone convergence theorem route.
+10. `MEA-T09`: add `OuterMeasure` and Caratheodory measurable-set statements.
+11. `MEA-T10`: prove Caratheodory measurable sets form a sigma algebra.
 
-After `MEA-T10`, decide whether to continue directly through Fatou and
-dominated convergence or to switch to the real-line Lebesgue-measure branch.
-The choice should be made from actual dependency pressure in the corpus, not
-from the size of the theorem inventory.
+After `MEA-T10`, continue through extension uniqueness (`MEA-T11` and
+`MEA-T12`), then decide whether to prioritize the abstract integration route
+(`MEA-T16` through `MEA-T25`) or the real-line Lebesgue-measure branch
+(`MEA-T13` through `MEA-T15`). The choice should be made from actual
+dependency pressure in the corpus, not from the size of the theorem inventory.
 
 ## Verification Checklist
 

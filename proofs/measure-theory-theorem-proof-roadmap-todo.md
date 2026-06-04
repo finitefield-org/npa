@@ -87,6 +87,10 @@ promotion into a high-trust closure.
 - The analysis roadmap already has coarse measure milestones `ANA-T24` through
   `ANA-T26`; this document decomposes those coarse milestones into
   measure-specific `MEA-Txx` work units.
+- Older analysis-roadmap wording used `Proofs.Ai.Measure.Construction` as a
+  coarse construction bucket. The detailed route splits that bucket into
+  `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, and
+  `Proofs.Ai.Measure.Extension`.
 - Statistics and probability work should wait for the appropriate measure
   milestones or remain at statement and evidence-package level.
 - Public `npa-mathlib` has already materialized several analysis closures
@@ -193,8 +197,9 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Create the first `Proofs.Ai.Measure.Inventory` or equivalent statement
     module if the authoring route needs a concrete module.
-  - Add namespace conventions for `Measure.Basic`, `Measure.Construction`,
-    `Measure.Integral`, `Measure.Product`, and `Measure.Decomposition`.
+  - Add namespace conventions for `Measure.Basic`, `Measure.Outer`,
+    `Measure.Caratheodory`, `Measure.Extension`, `Measure.Integral`,
+    `Measure.Product`, and `Measure.Decomposition`.
   - Record the trusted-boundary statement policy inside theorem cards or
     module comments.
 - Deliverables:
@@ -1230,7 +1235,7 @@ guessing. The split must preserve the dependency order in this document.
 ### MEA-T52 Define Hausdorff Measure And Dimension Interfaces
 
 - Status: Pending
-- Depends on: `MEA-T11`, topology and metric foundations
+- Depends on: `MEA-T11`, `MEA-T37`, topology and metric foundations
 - Areas: `Proofs/Ai/Measure/Geometric/`
 - Tasks:
   - Define Hausdorff measure and Hausdorff dimension statement shapes.
@@ -1337,7 +1342,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ## Review Findings And Resolutions
 
-Initial self-review against
+Review passes against
 `proofs/measure-theory-theorem-proof-roadmap.md`,
 `proofs/analysis-theorem-proof-roadmap-todo.md`,
 `proofs/statistics-theorem-proof-roadmap.md`, and the current proof corpus
@@ -1350,6 +1355,9 @@ produced these findings and resolutions:
 | The abstract integration route and real-line Lebesgue construction branch have different dependency pressure. | Put Lebesgue-measure construction after the abstract extension route, but kept it as a branch that can be scheduled after the first convergence batch when corpus needs dictate. |
 | Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L1` interfaces first and added acceptance criteria preventing imports into the basic measure route. |
 | Verification commands must not imply full package gates are required for every local authoring task. | Added the local authoring loop and reserved package/full gates for promotion, compatibility, or package-wide changes. |
+| The source roadmap's initial execution queue used `MEA-T01` for theorem cards while this task document uses `MEA-T00`. | Updated the source roadmap queue to match `MEA-T00` through `MEA-T10` and clarified the branch point after Caratheodory. |
+| Analysis roadmap tasks still referred to a coarse `Proofs.Ai.Measure.Construction` module that the detailed measure todo did not create. | Split the analysis references into `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, and `Proofs.Ai.Measure.Extension`, and documented the compatibility split here. |
+| `MEA-T52` depended on task `MEA-T11` only, while the source roadmap's `MEA-15` dependency points to the later regularity/differentiation milestone `MEA-11`. | Added `MEA-T37` as the explicit regularity-route dependency while keeping `MEA-T11` for outer-measure construction support. |
 
 No open findings remain after this pass.
 

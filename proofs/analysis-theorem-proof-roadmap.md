@@ -385,7 +385,9 @@ semantics.
 - Detailed roadmap: `proofs/measure-theory-theorem-proof-roadmap.md`.
 - Target modules:
   - `Proofs.Ai.Measure.Basic`
-  - `Proofs.Ai.Measure.Construction`
+  - `Proofs.Ai.Measure.Outer`
+  - `Proofs.Ai.Measure.Caratheodory`
+  - `Proofs.Ai.Measure.Extension`
   - `Proofs.Ai.Measure.Integral`
   - `Proofs.Ai.Measure.Product`
   - `Proofs.Ai.Measure.Decomposition`
