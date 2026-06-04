@@ -1401,8 +1401,11 @@ const ABSTRACT_KRULL_THEOREM_THEOREMS: &[&str] = &[
 
 const DERIVED_AFFINE_SCHEMES_DEFINITIONS: &[&str] = &["DerivedAffineSchemeLawArgs"];
 
-const DERIVED_AFFINE_SCHEMES_THEOREMS: &[&str] =
-    &["affine_schemes_definition_intro", "affine_schemes"];
+const DERIVED_AFFINE_SCHEMES_THEOREMS: &[&str] = &[
+    "affine_schemes_definition_intro",
+    "affine_schemes",
+    "derived_affine_schemes",
+];
 
 const QUASI_COHERENT_SHEAVES_DEFINITIONS: &[&str] = &["QuasiCoherentSheafLawArgs"];
 

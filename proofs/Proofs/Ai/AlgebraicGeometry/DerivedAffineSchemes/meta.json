@@ -5,17 +5,18 @@
   "certificate": "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:d3f39392a3a7b721172d3462469884b5511e73927541ac539d39dbc8f13490e5",
-  "certificate_file_sha256": "sha256:d1116e82875455f07d0257d3e3230d864db96f189733f920395e5716a4af16a3",
-  "export_hash": "sha256:71d36383b4094ce0474de73d54bd5f221bb2af4764a32e7453756cb41fce1fa2",
-  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
-  "certificate_hash": "sha256:fddae1ef941a35bbf46d0b787fc2d40a8adf2c35a02c53b42b9758fa65d1d038",
+  "source_sha256": "sha256:1850c803b016bb80318bd0a5bbcb5f1ae55f8a1b82cdf51913a9190b2cca4dd1",
+  "certificate_file_sha256": "sha256:6fb958710ca401f692a0366d81929616c23914c482afccbff68bb7f7e059c874",
+  "export_hash": "sha256:65728c48c8479648b70e24854aa5912abdb39073496bc0e4cdd8706a3560a0ca",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:12421242722b72cdf17caad5996307c98819ffe5d3c73b1aeb19d23d9a068765",
   "imports": [],
   "axioms": [],
   "declarations": [
     { "name": "DerivedAffineSchemeLawArgs", "kind": "def" },
     { "name": "affine_schemes_definition_intro", "kind": "theorem" },
-    { "name": "affine_schemes", "kind": "theorem" }
+    { "name": "affine_schemes", "kind": "theorem" },
+    { "name": "derived_affine_schemes", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

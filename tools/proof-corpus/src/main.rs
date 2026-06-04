@@ -27045,6 +27045,26 @@ const DERIVED_AFFINE_SCHEMES_THEOREMS: &[TheoremArtifact] = &[
             "spec_affine_law)"
         ),
     },
+    TheoremArtifact {
+        name: "derived_affine_schemes",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (A : DerivedRing), IsAffineScheme (Spec A)"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => ",
+            "affine_scheme_args (forall (A : DerivedRing), IsAffineScheme (Spec A)) ",
+            "(fun (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)) => ",
+            "spec_affine_law)"
+        ),
+    },
 ];
 
 const QUASI_COHERENT_SHEAVES_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
