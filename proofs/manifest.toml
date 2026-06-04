@@ -73,6 +73,24 @@ theorems = ["imp_chain4", "imp_permute3", "imp_apply_twice", "imp_const3", "imp_
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Inventory"
+source = "Proofs/Ai/NumberTheory/Inventory/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Inventory/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Inventory/meta.json"
+replay = "Proofs/Ai/NumberTheory/Inventory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:9812803dc5169eb3dbd3afb07f52112ec86a1ae434cb936336d383bc06986bf6"
+certificate_file_sha256 = "sha256:2df5f2b02076372aeaa9dd6045a5c5ae60efb1a2ff6099cbd8fdf898a0703234"
+export_hash = "sha256:5e32357c79517c01c304db468ef7ba65053ebe9769db9f26a101103ca8a4fd6f"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:7f29bf4d79384fb62a289f49202b1aab5282295b90a3982c41ebb3f39e7f8841"
+imports = []
+definitions = []
+theorems = ["arithmetic_object_structure_policy", "external_owner_alias_policy", "bridge_assumption_named_policy", "conjecture_assumption_explicit_policy", "derived_target_certificate_policy"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"

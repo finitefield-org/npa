@@ -108,6 +108,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &EQ_MODULE,
     &NAT_MODULE,
     &PROP_MODULE,
+    &NUMBER_THEORY_INVENTORY_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
     &ABSTRACT_METRIC_TOPOLOGY_MODULE,
@@ -457,6 +458,19 @@ const PROP_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: PROP_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_INVENTORY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Inventory",
+    source_path: "Proofs/Ai/NumberTheory/Inventory/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Inventory/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Inventory/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Inventory/replay.json",
+    imports: &[],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_INVENTORY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9098,6 +9112,49 @@ const BASIC_THEOREMS: &[TheoremArtifact] = &[
         statement:
             "forall (A : Type), forall (B : Type), forall (C : Type), forall (h : forall (f : forall (x : A), B), C), forall (f : forall (x : A), B), C",
         proof: "fun A => fun B => fun C => fun h => fun f => h f",
+    },
+];
+
+const NUMBER_THEORY_INVENTORY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "arithmetic_object_structure_policy",
+        universe_params: &[],
+        statement:
+            "forall (ArithmeticObject : Type), forall (OrdinaryProofCorpusStructure : forall (x : ArithmeticObject), Prop), forall (object : ArithmeticObject), forall (evidence : OrdinaryProofCorpusStructure object), OrdinaryProofCorpusStructure object",
+        proof:
+            "fun ArithmeticObject => fun OrdinaryProofCorpusStructure => fun object => fun evidence => evidence",
+    },
+    TheoremArtifact {
+        name: "external_owner_alias_policy",
+        universe_params: &[],
+        statement:
+            "forall (ExternalOwner : Type), forall (NumberTheoryAlias : Type), forall (PointsToExternalOwner : forall (owner : ExternalOwner), forall (alias : NumberTheoryAlias), Prop), forall (owner : ExternalOwner), forall (alias : NumberTheoryAlias), forall (evidence : PointsToExternalOwner owner alias), PointsToExternalOwner owner alias",
+        proof:
+            "fun ExternalOwner => fun NumberTheoryAlias => fun PointsToExternalOwner => fun owner => fun alias => fun evidence => evidence",
+    },
+    TheoremArtifact {
+        name: "bridge_assumption_named_policy",
+        universe_params: &[],
+        statement:
+            "forall (BridgeAxiom : Type), forall (NamedBridgeAssumption : forall (bridge : BridgeAxiom), Prop), forall (bridge : BridgeAxiom), forall (evidence : NamedBridgeAssumption bridge), NamedBridgeAssumption bridge",
+        proof:
+            "fun BridgeAxiom => fun NamedBridgeAssumption => fun bridge => fun evidence => evidence",
+    },
+    TheoremArtifact {
+        name: "conjecture_assumption_explicit_policy",
+        universe_params: &[],
+        statement:
+            "forall (Conjecture : Type), forall (ExplicitConjectureAssumption : forall (statement : Conjecture), Prop), forall (statement : Conjecture), forall (evidence : ExplicitConjectureAssumption statement), ExplicitConjectureAssumption statement",
+        proof:
+            "fun Conjecture => fun ExplicitConjectureAssumption => fun statement => fun evidence => evidence",
+    },
+    TheoremArtifact {
+        name: "derived_target_certificate_policy",
+        universe_params: &[],
+        statement:
+            "forall (TheoremTarget : Type), forall (SourceFreeCertificateVerdict : forall (target : TheoremTarget), Prop), forall (target : TheoremTarget), forall (verdict : SourceFreeCertificateVerdict target), SourceFreeCertificateVerdict target",
+        proof:
+            "fun TheoremTarget => fun SourceFreeCertificateVerdict => fun target => fun verdict => verdict",
     },
 ];
 
@@ -37550,6 +37607,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
         || config.module == ABSTRACT_GALOIS_STARTER_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
+        || config.module == NUMBER_THEORY_INVENTORY_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

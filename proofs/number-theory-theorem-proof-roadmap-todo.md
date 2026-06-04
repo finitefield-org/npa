@@ -205,25 +205,29 @@ later in the file.
 
 ### NT-T01 Create Number-Theory Namespace Contract And Statement Policy
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T00`
 - Areas: `Proofs/Ai/NumberTheory/Inventory/`, `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/README.md`
 - Tasks:
-  - Create `Proofs.Ai.NumberTheory.Inventory` or a documented statement-only
-    entry point if the authoring route does not yet need a concrete module.
+  - Create `Proofs.Ai.NumberTheory.Inventory` as the concrete
+    certificate-backed namespace-policy entry point.
   - Record namespace ownership rules for arithmetic-owned modules and external
     owner namespaces such as `EllipticCurve`, `ModularForms`,
     `GaloisRepresentation`, `AlgebraicGeometry`, and `Algebra.AbstractFiniteField`.
   - Add trusted-boundary wording to theorem cards or module comments.
 - Deliverables:
-  - Number-theory namespace entry point or statement-only plan.
-  - Namespace ownership contract.
+  - `Proofs.Ai.NumberTheory.Inventory` namespace-policy entry point.
+  - Namespace ownership contract in
+    `proofs/number-theory-theorem-cards.md`.
 - Acceptance criteria:
   - Arithmetic objects are ordinary proof-corpus structures, not kernel
     primitives.
   - External owner namespaces are not duplicated under `Proofs.Ai.NumberTheory`.
   - Bridge assumptions and conjectures remain explicitly named.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Inventory`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Inventory`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Proofs.Ai.NumberTheory|kernel primitive|AbstractFiniteField|BridgeAxiom" proofs`
   - `git diff --check`
 

@@ -57,6 +57,10 @@ Current bundles:
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
+- `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
+  entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
+  structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
+  named, conjectures are explicit, and derived targets require source-free certificate verdicts.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

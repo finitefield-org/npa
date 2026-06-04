@@ -26,11 +26,44 @@ Conjectures and broad program statements are never marked `L2`. They remain
 `L0 Statement` cards, or appear only as explicitly conditional assumptions for
 future theorem forms.
 
+## Namespace Contract
+
+Concrete entry point: `Proofs.Ai.NumberTheory.Inventory`.
+
+This module is a certificate-backed policy entry point, not a mathematical
+number-theory foundation. Its checked declarations are projection theorems over
+explicit evidence:
+
+| Checked theorem | Contract evidence it preserves |
+| --- | --- |
+| `arithmetic_object_structure_policy` | arithmetic objects are ordinary proof-corpus structures supplied by later modules |
+| `external_owner_alias_policy` | number-theory aliases point to external owner namespaces instead of duplicating them |
+| `bridge_assumption_named_policy` | each `BridgeAxiom`-style development assumption is named explicitly |
+| `conjecture_assumption_explicit_policy` | conjectures appear only as explicit statement or conditional-assumption evidence |
+| `derived_target_certificate_policy` | derived theorem targets require source-free certificate-verdict evidence |
+
+Namespace ownership rules:
+
+- Arithmetic-owned modules live under `Proofs.Ai.NumberTheory.*` only when the
+  roadmap owns the definitions or theorem specialization.
+- `Proofs.Ai.EllipticCurve.*`, `Proofs.Ai.ModularForms.*`,
+  `Proofs.Ai.Modularity.*`, `Proofs.Ai.GaloisRepresentation.*`,
+  `Proofs.Ai.AlgebraicGeometry.*`, and
+  `Proofs.Ai.Algebra.AbstractFiniteField` remain external owner namespaces.
+- Number-theory modules may import or alias external owner results, but must
+  not re-create private duplicates under `Proofs.Ai.NumberTheory`.
+- `Nat`, `Int`, divisibility, primality, congruence, residue rings, ideals,
+  fields, elliptic curves, modular forms, Galois representations, and
+  cryptographic assumptions are ordinary library structures or explicit law
+  packages. They are not kernel primitives.
+- Bridge assumptions must use localized names, such as
+  `ClassFieldBridgeAxiom.*`, and may not be hidden behind `L2` labels.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |
 | --- | --- | --- | --- | --- | --- |
-| `NT-00` inventory and statement policy | `number_theory_inventory_policy` | `L0 Statement` | `Proofs.Ai.NumberTheory.Inventory` documentation | statement-policy | `rg -n "NT-00|NT-24|Riemann hypothesis|Birch|Langlands|sidecar" proofs`; `git diff --check` |
+| `NT-00` inventory and statement policy | `number_theory_inventory_policy` | `L0 Statement` | `Proofs.Ai.NumberTheory.Inventory` | statement-policy | `rg -n "NT-00|NT-24|Riemann hypothesis|Birch|Langlands|sidecar" proofs`; `git diff --check` |
 | `NT-01` integers, divisibility, and Euclidean division | `integer_divisibility_euclidean_division` | `L1 Evidence package` until `Nat`/`Int` APIs are stable, then `L2 Derived certificate` | `Proofs.Ai.NumberTheory.Elementary`, `Proofs.Ai.NumberTheory.Divisibility`, `Proofs.Ai.NumberTheory.EuclideanDivision` | derived-target | `--build-module Proofs.Ai.NumberTheory.EuclideanDivision`; `--module Proofs.Ai.NumberTheory.EuclideanDivision` |
 | `NT-02` gcd, lcm, Euclid algorithm, and Bezout | `gcd_lcm_euclid_bezout` | `L1 Evidence package` until `NT-01` lands, then `L2 Derived certificate` | `Proofs.Ai.NumberTheory.Gcd`, `Proofs.Ai.NumberTheory.Bezout`, `Proofs.Ai.NumberTheory.EuclideanAlgorithm` | derived-target | `--build-module Proofs.Ai.NumberTheory.Bezout`; `--module Proofs.Ai.NumberTheory.Bezout` |
 | `NT-03` primes and unique factorization | `prime_unique_factorization` | `L2 Derived certificate` after `NT-02` and UFD bridge | `Proofs.Ai.NumberTheory.Prime`, `Proofs.Ai.NumberTheory.Factorization`, `Proofs.Ai.NumberTheory.UfdBridge` | derived-target | `--build-module Proofs.Ai.NumberTheory.Factorization`; `--module Proofs.Ai.NumberTheory.Factorization` |
@@ -97,3 +130,6 @@ future theorem forms.
   theorem targets are labeled separately.
 - No card treats source, replay, theorem indexes, AI output, metadata,
   sidecars, or this document as proof evidence.
+- The namespace contract above names the checked entry point and keeps
+  arithmetic structures, external owner aliases, bridge assumptions, and
+  conjectures explicit.
