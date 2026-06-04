@@ -174,9 +174,10 @@ pub use theorem_index::{
     PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
 };
 pub use validate::{
-    parse_and_validate_manifest_str, validate_manifest, validate_manifest_report,
-    validate_manifest_source_report, validate_manifest_with_options, validate_package_version,
-    PackageManifestValidationOptions, PackageManifestValidationReport, ValidatedPackageManifest,
+    parse_and_validate_manifest_str, validate_flt_final_release_axiom_policy, validate_manifest,
+    validate_manifest_report, validate_manifest_source_report, validate_manifest_with_options,
+    validate_package_version, PackageManifestValidationOptions, PackageManifestValidationReport,
+    ValidatedPackageManifest, FLT_BRIDGE_AXIOM_PREFIX,
 };
 pub use verified_high_trust::{
     compute_package_verified_high_trust_hash, parse_package_verified_high_trust_json,

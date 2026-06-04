@@ -22,6 +22,9 @@ use crate::{
     },
 };
 
+/// Prefix reserved for development-only Fermat Last Theorem bridge axioms.
+pub const FLT_BRIDGE_AXIOM_PREFIX: &str = "Flt.BridgeAxiom.";
+
 /// Options for manifest validation.
 ///
 /// The current CLR-01 scalar validator has no tunable behavior, but this type
@@ -134,6 +137,34 @@ pub fn validate_manifest_report(manifest: PackageManifest) -> PackageManifestVal
         Ok(_) => PackageManifestValidationReport::valid(),
         Err(error) => PackageManifestValidationReport::from_error(error),
     }
+}
+
+/// Validate that an FLT final-release manifest contains no bridge axioms.
+///
+/// This is a reusable release-gate skeleton for FLT milestones: ordinary
+/// manifest validation may accept custom axioms for development fixtures, but a
+/// final theorem release must reject any transitive axiom recorded under
+/// `Flt.BridgeAxiom.*`.
+pub fn validate_flt_final_release_axiom_policy(
+    manifest: &PackageManifest,
+) -> PackageManifestResult<()> {
+    for (module_index, module) in manifest.modules.iter().enumerate() {
+        let Some(axioms) = &module.axioms else {
+            continue;
+        };
+        for (axiom_index, axiom) in axioms.iter().enumerate() {
+            let axiom_name = axiom.as_dotted();
+            if axiom_name.starts_with(FLT_BRIDGE_AXIOM_PREFIX) {
+                return Err(PackageManifestError::disallowed_axiom(
+                    format!("modules[{module_index}].axioms[{axiom_index}]"),
+                    "axioms",
+                    "no Flt.BridgeAxiom.* in FLT final release",
+                    axiom_name,
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Validate an already parsed package manifest.

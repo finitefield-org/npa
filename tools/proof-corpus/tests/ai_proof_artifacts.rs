@@ -25,6 +25,7 @@ struct VerifiedCorpusImports<'a> {
     eq_reasoning: &'a VerifiedModule,
     classical_category: &'a VerifiedModule,
     nat: &'a VerifiedModule,
+    flt_statement: &'a VerifiedModule,
     ring: &'a VerifiedModule,
     square: &'a VerifiedModule,
     ordered_field: &'a VerifiedModule,
@@ -297,6 +298,16 @@ const FLT_STATEMENT_THEOREMS: &[&str] = &[
     "fermat_last_theorem_nat_alias",
     "fermat_last_theorem_positive_nat_shape",
     "fermat_last_theorem_int_shape",
+];
+
+const FLT_BRIDGE_THEOREMS: &[&str] = &[
+    "bridge_ribet_level_lowering_visible",
+    "bridge_semistable_modularity_visible",
+];
+
+const FLT_BRIDGE_AXIOMS: &[&str] = &[
+    "Flt.BridgeAxiom.ribet_level_lowering",
+    "Flt.BridgeAxiom.semistable_modularity",
 ];
 
 const PROP_THEOREMS: &[&str] = &[
@@ -2045,6 +2056,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.NumberTheory.Flt.Bridge",
+        source: "Proofs/Ai/NumberTheory/Flt/Bridge/source.npa",
+        certificate: "Proofs/Ai/NumberTheory/Flt/Bridge/certificate.npcert",
+        meta: "Proofs/Ai/NumberTheory/Flt/Bridge/meta.json",
+        replay: "Proofs/Ai/NumberTheory/Flt/Bridge/replay.json",
+        imports: &[
+            "Proofs.Ai.NumberTheory.Flt.Statement",
+            "Std.Logic.Eq",
+            "Std.Nat.Basic",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: FLT_BRIDGE_THEOREMS,
+        axioms: FLT_BRIDGE_AXIOMS,
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Prop",
         source: "Proofs/Ai/Prop/source.npa",
         certificate: "Proofs/Ai/Prop/certificate.npcert",
@@ -3305,6 +3332,7 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     );
     let eq_import = verified_eq_import_module();
     let nat_import = verified_nat_import_module();
+    let flt_statement_import = verified_flt_statement_import_module(&root, &eq_import, &nat_import);
     let eq_reasoning_import = verified_eq_reasoning_import_module(&root, &eq_import);
     let classical_category_import =
         verified_classical_category_import_module(&root, &eq_import, &eq_reasoning_import);
@@ -3698,6 +3726,7 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         eq_reasoning: &eq_reasoning_import,
         classical_category: &classical_category_import,
         nat: &nat_import,
+        flt_statement: &flt_statement_import,
         ring: &ring_import,
         square: &square_import,
         ordered_field: &ordered_field_import,
@@ -3815,8 +3844,10 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
             expected_core_features(expected.module)
         );
 
+        let declared_axioms = declared_axioms_for_expected_module(expected);
         assert_definition_exports(&decoded, expected.definitions);
         assert_inductive_exports(&decoded, expected.inductives);
+        assert_axiom_exports(&decoded, declared_axioms);
         assert_theorem_exports(&decoded, expected.theorems);
         if expected.module == "Proofs.Ai.Algebra.Ring" {
             assert_export(&decoded, "RingElem.unit", ExportKind::Constructor);
@@ -3828,6 +3859,7 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         }
         assert_declarations(
             &decoded,
+            declared_axioms,
             expected.inductives,
             expected.definitions,
             expected.theorems,
@@ -3880,6 +3912,9 @@ fn register_expected_imports(
                 session.register_verified_module(verified_imports.classical_category.clone())
             }
             "Std.Nat.Basic" => session.register_verified_module(verified_imports.nat.clone()),
+            "Proofs.Ai.NumberTheory.Flt.Statement" => {
+                session.register_verified_module(verified_imports.flt_statement.clone())
+            }
             "Proofs.Ai.Algebra.Ring" => {
                 session.register_verified_module(verified_imports.ring.clone())
             }
@@ -4047,6 +4082,19 @@ fn verified_nat_import_module() -> VerifiedModule {
             data: Box::new(npa_kernel::nat_inductive()),
         }],
     })
+}
+
+fn verified_flt_statement_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    nat_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/NumberTheory/Flt/Statement/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(nat_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("FLT statement corpus certificate should verify for bridge imports")
 }
 
 fn verified_eq_reasoning_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
@@ -5082,6 +5130,14 @@ fn assert_imports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     assert_eq!(actual, expected);
 }
 
+fn declared_axioms_for_expected_module(expected: &ExpectedModule) -> &[&str] {
+    if expected.module == "Proofs.Ai.NumberTheory.Flt.Bridge" {
+        expected.axioms
+    } else {
+        &[]
+    }
+}
+
 fn assert_axioms(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     let actual = cert
         .axiom_report
@@ -5219,6 +5275,24 @@ fn assert_inductive_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     assert_eq!(actual, expected);
 }
 
+fn assert_axiom_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
+    let mut actual = cert
+        .export_block
+        .iter()
+        .filter(|entry| entry.kind == ExportKind::Axiom)
+        .map(|entry| cert.name_table[entry.name].as_dotted())
+        .collect::<Vec<_>>();
+    actual.sort();
+
+    let mut expected = expected
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect::<Vec<_>>();
+    expected.sort();
+
+    assert_eq!(actual, expected);
+}
+
 fn assert_theorem_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     let mut actual = cert
         .export_block
@@ -5248,6 +5322,7 @@ fn assert_export(cert: &npa_cert::ModuleCert, expected_name: &str, expected_kind
 
 fn assert_declarations(
     cert: &npa_cert::ModuleCert,
+    axioms: &[&str],
     inductives: &[&str],
     definitions: &[&str],
     theorems: &[&str],
@@ -5256,6 +5331,7 @@ fn assert_declarations(
         .declarations
         .iter()
         .map(|decl| match &decl.decl {
+            DeclPayload::Axiom { name, .. } => (cert.name_table[*name].as_dotted(), "axiom"),
             DeclPayload::Inductive { name, .. } => {
                 (cert.name_table[*name].as_dotted(), "inductive")
             }
@@ -5263,16 +5339,21 @@ fn assert_declarations(
             DeclPayload::Theorem { name, .. } => (cert.name_table[*name].as_dotted(), "theorem"),
             other => {
                 panic!(
-                    "AI proof corpus should contain only inductive/def/theorem declarations: {other:?}"
+                    "AI proof corpus should contain only axiom/inductive/def/theorem declarations: {other:?}"
                 )
             }
         })
         .collect::<Vec<_>>();
     actual.sort();
 
-    let mut expected = inductives
+    let mut expected = axioms
         .iter()
-        .map(|name| ((*name).to_owned(), "inductive"))
+        .map(|name| ((*name).to_owned(), "axiom"))
+        .chain(
+            inductives
+                .iter()
+                .map(|name| ((*name).to_owned(), "inductive")),
+        )
         .chain(definitions.iter().map(|name| ((*name).to_owned(), "def")))
         .chain(theorems.iter().map(|name| ((*name).to_owned(), "theorem")))
         .collect::<Vec<_>>();

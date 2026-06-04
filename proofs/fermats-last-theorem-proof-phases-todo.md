@@ -170,7 +170,7 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
 
 ### FLT-01 Bridge Policy And Release-Gate Skeleton
 
-- Status: Pending
+- Status: Completed
 - Depends on: FLT-00
 - Inputs:
   - `proofs/fermats-last-theorem-proof-phases.md`
@@ -200,6 +200,23 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
   - `rg -n "Flt.BridgeAxiom|bridge" proofs crates develop`
 - Notes:
   - This milestone supports engineering smoke certificates only; it does not prove mathematical content.
+  - Implemented `Proofs.Ai.NumberTheory.Flt.Bridge` with the development-only
+    axioms `Flt.BridgeAxiom.ribet_level_lowering` and
+    `Flt.BridgeAxiom.semistable_modularity`. The bridge theorem wrappers make
+    those dependencies visible in the module axiom report.
+  - `proofs/npa-package.toml` remains bridge-free with
+    `allow_custom_axioms = false`; the bridge module is legacy proof-corpus
+    metadata only and is excluded from the release package manifest.
+  - Added `npa_package::validate_flt_final_release_axiom_policy` and tests so
+    final FLT release audits can reject any recorded `Flt.BridgeAxiom.*`
+    dependency even when a development fixture enables custom axioms.
+  - Verified with `cargo run -p npa-proof-corpus -- --module
+    Proofs.Ai.NumberTheory.Flt.Bridge`, `cargo run -p npa-proof-corpus --
+    --changed-only`, `cargo test -p npa-package`, `cargo test -p
+    npa-checker-ref high_trust`, `cargo test -p npa-proof-corpus --test
+    ai_proof_artifacts`, `cargo test -p npa-proof-corpus --test
+    manifest_package_audit`, and `rg -n "Flt.BridgeAxiom|bridge" proofs crates
+    develop`.
 
 ### NT-01 Natural, Integer, Rational, And Positivity Foundations
 

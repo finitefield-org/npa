@@ -60,6 +60,11 @@ Current bundles:
   `Std.Nat.Basic` provides certified `Nat.zero` and `Nat.succ`; addition, exponentiation, and
   order are explicit statement parameters until the reusable number-theory library materializes
   them. This module has no `Flt.BridgeAxiom.*` dependency.
+- `Proofs/Ai/NumberTheory/Flt/Bridge/`: development-only bridge interface for early FLT smoke
+  certificates. It exports `Flt.BridgeAxiom.ribet_level_lowering` and
+  `Flt.BridgeAxiom.semistable_modularity` plus theorem wrappers that make those axiom dependencies
+  visible in the module axiom report. This module is intentionally excluded from the release package
+  manifest.
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
@@ -1353,6 +1358,10 @@ Bridge policy and library growth policy are deliberately separated:
 
 - `Flt.BridgeAxiom.*` declarations are development-only interfaces for later smoke milestones and
   must not be imported by this statement module.
+- `Proofs.Ai.NumberTheory.Flt.Bridge` is present only in the legacy proof-corpus manifest. The
+  package manifest keeps `allow_custom_axioms = false`, and `npa-package` exposes
+  `validate_flt_final_release_axiom_policy` so final release audits reject any recorded
+  `Flt.BridgeAxiom.*` dependency.
 - Domain milestones that follow FLT-00 are incomplete if they only add hidden FLT glue; they must
   contribute reusable number theory, algebra, elliptic-curve, modular-forms, Galois-representation,
   or modularity theorem surfaces that can be used independently of the final FLT proof route.

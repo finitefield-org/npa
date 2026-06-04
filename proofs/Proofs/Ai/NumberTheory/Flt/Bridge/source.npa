@@ -1,0 +1,17 @@
+import Std.Logic.Eq
+import Std.Nat.Basic
+import Proofs.Ai.NumberTheory.Flt.Statement
+
+axiom Flt.BridgeAxiom.ribet_level_lowering :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), fermat_last_theorem add pow lt
+
+axiom Flt.BridgeAxiom.semistable_modularity :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), fermat_last_theorem add pow lt
+
+theorem bridge_ribet_level_lowering_visible :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), fermat_last_theorem add pow lt :=
+  Flt.BridgeAxiom.ribet_level_lowering
+
+theorem bridge_semistable_modularity_visible :
+  forall (add : forall (x : Nat), forall (y : Nat), Nat), forall (pow : forall (base : Nat), forall (exp : Nat), Nat), forall (lt : forall (x : Nat), forall (y : Nat), Prop), fermat_last_theorem add pow lt :=
+  Flt.BridgeAxiom.semistable_modularity

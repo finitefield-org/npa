@@ -108,6 +108,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &EQ_MODULE,
     &NAT_MODULE,
     &FLT_STATEMENT_MODULE,
+    &FLT_BRIDGE_MODULE,
     &PROP_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
@@ -451,6 +452,23 @@ const FLT_STATEMENT_MODULE: ModuleArtifact = ModuleArtifact {
     definitions: FLT_STATEMENT_DEFINITIONS,
     theorems: FLT_STATEMENT_THEOREMS,
     expected_axioms: &[],
+};
+
+const FLT_BRIDGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Flt.Bridge",
+    source_path: "Proofs/Ai/NumberTheory/Flt/Bridge/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Flt/Bridge/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Flt/Bridge/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Flt/Bridge/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Std.Nat.Basic",
+        "Proofs.Ai.NumberTheory.Flt.Statement",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: FLT_BRIDGE_THEOREMS,
+    expected_axioms: FLT_BRIDGE_AXIOMS,
 };
 
 const PROP_MODULE: ModuleArtifact = ModuleArtifact {
@@ -8961,6 +8979,41 @@ const FLT_STATEMENT_THEOREMS: &[TheoremArtifact] = &[
             "fun Int => fun zero => fun add => fun pow => fun lt => ",
             "@Eq.refl.{1} Prop (@fermat_last_theorem_int.{u} Int zero add pow lt)"
         ),
+    },
+];
+
+const FLT_BRIDGE_AXIOMS: &[&str] = &[
+    "Flt.BridgeAxiom.ribet_level_lowering",
+    "Flt.BridgeAxiom.semistable_modularity",
+];
+
+const FLT_BRIDGE_STATEMENT: &str = concat!(
+    "forall (add : forall (x : Nat), forall (y : Nat), Nat), ",
+    "forall (pow : forall (base : Nat), forall (exp : Nat), Nat), ",
+    "forall (lt : forall (x : Nat), forall (y : Nat), Prop), ",
+    "fermat_last_theorem add pow lt"
+);
+
+const FLT_BRIDGE_AXIOM_DECLS: &[(&str, &str)] = &[
+    ("Flt.BridgeAxiom.ribet_level_lowering", FLT_BRIDGE_STATEMENT),
+    (
+        "Flt.BridgeAxiom.semistable_modularity",
+        FLT_BRIDGE_STATEMENT,
+    ),
+];
+
+const FLT_BRIDGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "bridge_ribet_level_lowering_visible",
+        universe_params: &[],
+        statement: FLT_BRIDGE_STATEMENT,
+        proof: "Flt.BridgeAxiom.ribet_level_lowering",
+    },
+    TheoremArtifact {
+        name: "bridge_semistable_modularity_visible",
+        universe_params: &[],
+        statement: FLT_BRIDGE_STATEMENT,
+        proof: "Flt.BridgeAxiom.semistable_modularity",
     },
 ];
 
@@ -30540,7 +30593,7 @@ fn write_batch_metadata_once(
         .iter()
         .map(|(module, generated)| (module.clone(), ModuleMeta::from(generated)))
         .collect::<BTreeMap<_, _>>();
-    let module_metas = batch_module_metas(existing_metas, built_metas)?;
+    let module_metas = batch_module_metas(proof_root, existing_metas, built_metas)?;
     let manifest = manifest_toml(&module_metas);
     let package_manifest = package_manifest_toml(&module_metas, &cache.external_imports)?;
     write(proof_root.join(MANIFEST_PATH), manifest.as_bytes())?;
@@ -30554,6 +30607,7 @@ fn write_batch_metadata_once(
 }
 
 fn batch_module_metas(
+    proof_root: &Path,
     mut existing_metas: BTreeMap<String, ModuleMeta>,
     mut built_metas: BTreeMap<String, ModuleMeta>,
 ) -> Result<Vec<ModuleMeta>, String> {
@@ -30562,9 +30616,18 @@ fn batch_module_metas(
         let meta = if let Some(generated) = built_metas.remove(module_config.module) {
             generated
         } else {
-            existing_metas
-                .remove(module_config.module)
-                .ok_or_else(|| format!("missing existing metadata for {}", module_config.module))?
+            match existing_metas.remove(module_config.module) {
+                Some(meta) => meta,
+                None if !is_release_package_module(module_config) => {
+                    module_meta_from_checked_artifacts(proof_root, module_config)?
+                }
+                None => {
+                    return Err(format!(
+                        "missing existing metadata for {}",
+                        module_config.module
+                    ));
+                }
+            }
         };
         module_metas.push(meta);
     }
@@ -30903,6 +30966,41 @@ fn module_meta_from_package_module(
     }
 }
 
+fn module_meta_from_checked_artifacts(
+    proof_root: &Path,
+    config: &'static ModuleArtifact,
+) -> Result<ModuleMeta, String> {
+    let source_bytes = fs::read(proof_root.join(config.source_path))
+        .map_err(|err| format!("failed to read {}: {err}", config.source_path))?;
+    let certificate_bytes = fs::read(proof_root.join(config.certificate_path))
+        .map_err(|err| format!("failed to read {}: {err}", config.certificate_path))?;
+    let decoded = npa_cert::decode_module_cert(&certificate_bytes)
+        .map_err(|err| format!("failed to decode {}: {err:?}", config.certificate_path))?;
+    if decoded.header.module.as_dotted() != config.module {
+        return Err(format!(
+            "certificate {} is for module {}, expected {}",
+            config.certificate_path,
+            decoded.header.module.as_dotted(),
+            config.module
+        ));
+    }
+    let axioms = decoded
+        .axiom_report
+        .module_axioms
+        .iter()
+        .map(|axiom| decoded.name_table[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    Ok(ModuleMeta {
+        config,
+        source_sha256: tagged_sha256(&source_bytes),
+        certificate_file_sha256: tagged_sha256(&certificate_bytes),
+        export_hash: tagged_hash(decoded.hashes.export_hash),
+        axiom_report_hash: tagged_hash(decoded.hashes.axiom_report_hash),
+        certificate_hash: tagged_hash(decoded.hashes.certificate_hash),
+        axioms,
+    })
+}
+
 fn validate_verified_module(
     config: &ModuleArtifact,
     verified: &npa_cert::VerifiedModule,
@@ -31077,6 +31175,12 @@ fn focused_replay_step(
             &inductive_replay_term(inductive),
         ));
     }
+    if let Some((_, ty)) = axiom_decls_for_module(config)
+        .iter()
+        .find(|(name, _)| *name == declaration)
+    {
+        return Ok(replay_step_json(declaration, "axiom_decl", ty));
+    }
     if let Some(definition) = config
         .definitions
         .iter()
@@ -31150,8 +31254,8 @@ fn run_full() -> Result<(), String> {
     let ring_source_interfaces = vec![eq_source_interface.clone()];
     let nat_imports = vec![eq_import.clone(), nat_import.clone()];
     let nat_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
-    let reduction_imports = vec![nat_import];
-    let reduction_source_interfaces = vec![nat_source_interface];
+    let reduction_imports = vec![nat_import.clone()];
+    let reduction_source_interfaces = vec![nat_source_interface.clone()];
 
     let basic = build_and_write_module(&proof_root, &BASIC_MODULE, &[], &[])?;
     let eq = build_and_write_module(&proof_root, &EQ_MODULE, &eq_imports, &eq_source_interfaces)?;
@@ -31183,6 +31287,22 @@ fn run_full() -> Result<(), String> {
         &FLT_STATEMENT_MODULE,
         &nat_imports,
         &nat_source_interfaces,
+    )?;
+    let flt_bridge_imports = vec![
+        eq_import.clone(),
+        nat_import.clone(),
+        flt_statement.verified_module.clone(),
+    ];
+    let flt_bridge_source_interfaces = vec![
+        eq_source_interface.clone(),
+        nat_source_interface.clone(),
+        flt_statement.source_interface.clone(),
+    ];
+    let flt_bridge = build_and_write_module(
+        &proof_root,
+        &FLT_BRIDGE_MODULE,
+        &flt_bridge_imports,
+        &flt_bridge_source_interfaces,
     )?;
     let prop = build_and_write_module(&proof_root, &PROP_MODULE, &[], &[])?;
     let reduction = build_and_write_module(
@@ -32642,6 +32762,7 @@ fn run_full() -> Result<(), String> {
         eq,
         nat,
         flt_statement,
+        flt_bridge,
         prop,
         reduction,
         eq_reasoning,
@@ -35221,6 +35342,13 @@ fn module_source(config: &ModuleArtifact) -> String {
     if !imports.is_empty() {
         source.push('\n');
     }
+    for (name, ty) in axiom_decls_for_module(config) {
+        source.push_str("axiom ");
+        source.push_str(name);
+        source.push_str(" :\n  ");
+        source.push_str(ty);
+        source.push_str("\n\n");
+    }
     for inductive in config.inductives {
         source.push_str("inductive ");
         source.push_str(inductive.name);
@@ -35279,10 +35407,23 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
+        || config.module == FLT_BRIDGE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
     source
+}
+
+fn axiom_decls_for_module(config: &ModuleArtifact) -> &'static [(&'static str, &'static str)] {
+    if config.module == FLT_BRIDGE_MODULE.module {
+        FLT_BRIDGE_AXIOM_DECLS
+    } else {
+        &[]
+    }
+}
+
+fn is_release_package_module(config: &ModuleArtifact) -> bool {
+    config.module != FLT_BRIDGE_MODULE.module
 }
 
 fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
@@ -35528,6 +35669,9 @@ fn package_manifest_toml(
     }
 
     for module in modules {
+        if !is_release_package_module(module.config) {
+            continue;
+        }
         manifest.push('\n');
         manifest.push_str("[[modules]]\n");
         manifest.push_str(&format!("module = \"{}\"\n", module.config.module));
@@ -35612,6 +35756,9 @@ fn package_manifest_toml(
 }
 
 fn meta_json(module: &ModuleMeta) -> String {
+    let axioms = axiom_decls_for_module(module.config)
+        .iter()
+        .map(|(name, _)| format!("    {{ \"name\": \"{}\", \"kind\": \"axiom\" }}", name));
     let inductives = module.config.inductives.iter().map(|inductive| {
         format!(
             "    {{ \"name\": \"{}\", \"kind\": \"inductive\" }}",
@@ -35630,7 +35777,8 @@ fn meta_json(module: &ModuleMeta) -> String {
             theorem.name
         )
     });
-    let declarations = inductives
+    let declarations = axioms
+        .chain(inductives)
         .chain(definitions)
         .chain(theorems)
         .collect::<Vec<_>>()
@@ -35679,6 +35827,9 @@ fn replay_json(config: &ModuleArtifact, source: &str) -> String {
             .collect::<Vec<_>>()
             .join(",\n")
     } else {
+        let axiom_steps = axiom_decls_for_module(config)
+            .iter()
+            .map(|(name, ty)| replay_step_json(name, "axiom_decl", ty));
         let inductive_steps = config.inductives.iter().map(|inductive| {
             let term = inductive_replay_term(inductive);
             replay_step_json(inductive.name, "inductive_decl", &term)
@@ -35690,7 +35841,8 @@ fn replay_json(config: &ModuleArtifact, source: &str) -> String {
             .theorems
             .iter()
             .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
-        inductive_steps
+        axiom_steps
+            .chain(inductive_steps)
             .chain(definition_steps)
             .chain(theorem_steps)
             .collect::<Vec<_>>()
@@ -36614,8 +36766,8 @@ Proofs.Ai.Eq # inline comments are ignored
     #[test]
     fn batch_module_metas_are_deterministic_for_single_module_compatibility() {
         let repo = repo_root().expect("repo root should resolve");
-        let existing =
-            package_manifest_module_metas(&repo.join("proofs")).expect("manifest should parse");
+        let proof_root = repo.join("proofs");
+        let existing = package_manifest_module_metas(&proof_root).expect("manifest should parse");
         let basic_meta = existing
             .get(BASIC_MODULE.module)
             .expect("basic metadata should exist")
@@ -36626,9 +36778,10 @@ Proofs.Ai.Eq # inline comments are ignored
         let mut build_modules_metas = BTreeMap::new();
         build_modules_metas.insert(BASIC_MODULE.module.to_owned(), basic_meta);
 
-        let from_build_module = batch_module_metas(existing.clone(), build_module_metas)
-            .expect("single-module metadata merge should work");
-        let from_build_modules = batch_module_metas(existing, build_modules_metas)
+        let from_build_module =
+            batch_module_metas(&proof_root, existing.clone(), build_module_metas)
+                .expect("single-module metadata merge should work");
+        let from_build_modules = batch_module_metas(&proof_root, existing, build_modules_metas)
             .expect("batch metadata merge should work");
 
         assert_eq!(
