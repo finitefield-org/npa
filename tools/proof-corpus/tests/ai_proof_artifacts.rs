@@ -24,6 +24,7 @@ struct VerifiedCorpusImports<'a> {
     eq: &'a VerifiedModule,
     eq_reasoning: &'a VerifiedModule,
     classical_category: &'a VerifiedModule,
+    model_category: &'a VerifiedModule,
     nat: &'a VerifiedModule,
     ring: &'a VerifiedModule,
     square: &'a VerifiedModule,
@@ -694,6 +695,26 @@ const MODEL_CATEGORY_THEOREMS: &[&str] = &[
     "model_category_trivial_cofibration_fibration_factorization",
     "model_category",
     "model_categories",
+];
+
+const MONOIDAL_MODEL_CATEGORY_DEFINITIONS: &[&str] = &["MonoidalModelCategoryLawArgs"];
+
+const MONOIDAL_MODEL_CATEGORY_THEOREMS: &[&str] = &[
+    "monoidal_model_category_definition_intro",
+    "monoidal_model_category_has_model_category",
+    "monoidal_model_category_tensor_id",
+    "monoidal_model_category_tensor_comp",
+    "monoidal_model_category_left_unit",
+    "monoidal_model_category_right_unit",
+    "monoidal_model_category_associativity",
+    "monoidal_model_category_closed",
+    "monoidal_model_category_pushout_product_cofibration",
+    "monoidal_model_category_pushout_product_left_trivial",
+    "monoidal_model_category_pushout_product_right_trivial",
+    "monoidal_model_category_unit_replacement_weak_equivalence",
+    "monoidal_model_category_unit_axiom",
+    "monoidal_model_category",
+    "monoidal_model_categories",
 ];
 
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[&str] = &[
@@ -2259,6 +2280,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Category.MonoidalModelCategory",
+        source: "Proofs/Ai/Category/MonoidalModelCategory/source.npa",
+        certificate: "Proofs/Ai/Category/MonoidalModelCategory/certificate.npcert",
+        meta: "Proofs/Ai/Category/MonoidalModelCategory/meta.json",
+        replay: "Proofs/Ai/Category/MonoidalModelCategory/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Classical",
+            "Proofs.Ai.Category.ModelCategory",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: MONOIDAL_MODEL_CATEGORY_DEFINITIONS,
+        theorems: MONOIDAL_MODEL_CATEGORY_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Category.Infinity.SimplicialSet",
         source: "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa",
         certificate: "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert",
@@ -3341,6 +3378,8 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let eq_reasoning_import = verified_eq_reasoning_import_module(&root, &eq_import);
     let classical_category_import =
         verified_classical_category_import_module(&root, &eq_import, &eq_reasoning_import);
+    let model_category_import =
+        verified_model_category_import_module(&root, &eq_import, &classical_category_import);
     let ring_import = verified_ring_import_module(&root, &eq_import);
     let square_import = verified_square_import_module(&root, &eq_import, &ring_import);
     let ordered_field_import =
@@ -3730,6 +3769,7 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         eq: &eq_import,
         eq_reasoning: &eq_reasoning_import,
         classical_category: &classical_category_import,
+        model_category: &model_category_import,
         nat: &nat_import,
         ring: &ring_import,
         square: &square_import,
@@ -3911,6 +3951,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Category.Classical" => {
                 session.register_verified_module(verified_imports.classical_category.clone())
+            }
+            "Proofs.Ai.Category.ModelCategory" => {
+                session.register_verified_module(verified_imports.model_category.clone())
             }
             "Std.Nat.Basic" => session.register_verified_module(verified_imports.nat.clone()),
             "Proofs.Ai.Algebra.Ring" => {
@@ -4101,6 +4144,19 @@ fn verified_classical_category_import_module(
     session.register_verified_module(eq_reasoning_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("Classical category corpus certificate should verify for downstream imports")
+}
+
+fn verified_model_category_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    classical_category_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Category/ModelCategory/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(classical_category_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("ModelCategory corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_group_import_module(

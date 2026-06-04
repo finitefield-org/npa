@@ -122,6 +122,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &IFF_MODULE,
     &CLASSICAL_CATEGORY_MODULE,
     &MODEL_CATEGORY_MODULE,
+    &MONOIDAL_MODEL_CATEGORY_MODULE,
     &INFINITY_SIMPLICIAL_SET_MODULE,
     &ABSTRACT_GROUP_MODULE,
     &ABSTRACT_GROUP_KERNEL_MODULE,
@@ -793,6 +794,23 @@ const MODEL_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: MODEL_CATEGORY_DEFINITIONS,
     theorems: MODEL_CATEGORY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MONOIDAL_MODEL_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Category.MonoidalModelCategory",
+    source_path: "Proofs/Ai/Category/MonoidalModelCategory/source.npa",
+    certificate_path: "Proofs/Ai/Category/MonoidalModelCategory/certificate.npcert",
+    meta_path: "Proofs/Ai/Category/MonoidalModelCategory/meta.json",
+    replay_path: "Proofs/Ai/Category/MonoidalModelCategory/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Category.Classical",
+        "Proofs.Ai.Category.ModelCategory",
+    ],
+    inductives: &[],
+    definitions: MONOIDAL_MODEL_CATEGORY_DEFINITIONS,
+    theorems: MONOIDAL_MODEL_CATEGORY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -3792,6 +3810,245 @@ macro_rules! model_category_projection_proof {
             model_category_cofibration_trivial_fibration_factorization_law_type!(),
             ") => fun (trivial_cofibration_fibration_factorization_law : ",
             model_category_trivial_cofibration_fibration_factorization_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
+    };
+}
+
+macro_rules! monoidal_model_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        model_category_params!(concat!(
+            "forall (model_category_args : ",
+            model_category_law_args_app!(),
+            "), ",
+            "forall (TensorObj : forall (A : Obj), forall (B : Obj), Obj), ",
+            "forall (UnitObj : Obj), ",
+            "forall (TensorMap : forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), forall (f : Hom A B), forall (g : Hom X Y), Hom (TensorObj A X) (TensorObj B Y)), ",
+            "forall (ClosedMonoidal : Prop), ",
+            "forall (Cofibrant : forall (X : Obj), Prop), ",
+            "forall (UnitCofibrantReplacement : Obj), ",
+            "forall (unit_replacement_map : Hom UnitCofibrantReplacement UnitObj), ",
+            "forall (PushoutProductObj : forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), forall (i : Hom A B), forall (j : Hom X Y), Obj), ",
+            "forall (pushout_product_map : forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), forall (i : Hom A B), forall (j : Hom X Y), Hom (PushoutProductObj A B X Y i j) (TensorObj B Y)), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        monoidal_model_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! monoidal_model_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        model_category_abs!(concat!(
+            "fun model_category_args => fun TensorObj => fun UnitObj => ",
+            "fun TensorMap => fun ClosedMonoidal => fun Cofibrant => ",
+            "fun UnitCofibrantReplacement => fun unit_replacement_map => ",
+            "fun PushoutProductObj => fun pushout_product_map => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        monoidal_model_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! monoidal_model_category_law_args_app {
+    () => {
+        concat!(
+            "@MonoidalModelCategoryLawArgs.{u,v} Obj Hom id comp category_args ",
+            "Cofibration Fibration WeakEquivalence HasAllLimits HasAllColimits ",
+            "model_category_args TensorObj UnitObj TensorMap ClosedMonoidal ",
+            "Cofibrant UnitCofibrantReplacement unit_replacement_map ",
+            "PushoutProductObj pushout_product_map"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_model_law_type {
+    () => {
+        model_category_law_args_app!()
+    };
+}
+
+macro_rules! monoidal_model_category_tensor_id_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (X : Obj), ",
+            "@Eq.{v} (Hom (TensorObj A X) (TensorObj A X)) ",
+            "(TensorMap A A X X (id A) (id X)) ",
+            "(id (TensorObj A X))"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_tensor_comp_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (C : Obj), ",
+            "forall (X : Obj), forall (Y : Obj), forall (Z : Obj), ",
+            "forall (f : Hom A B), forall (g : Hom B C), ",
+            "forall (h : Hom X Y), forall (k : Hom Y Z), ",
+            "@Eq.{v} (Hom (TensorObj A X) (TensorObj C Z)) ",
+            "(TensorMap A C X Z (comp A B C g f) (comp X Y Z k h)) ",
+            "(comp (TensorObj A X) (TensorObj B Y) (TensorObj C Z) ",
+            "(TensorMap B C Y Z g k) (TensorMap A B X Y f h))"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_left_unit_law_type {
+    () => {
+        "forall (X : Obj), @Eq.{u} Obj (TensorObj UnitObj X) X"
+    };
+}
+
+macro_rules! monoidal_model_category_right_unit_law_type {
+    () => {
+        "forall (X : Obj), @Eq.{u} Obj (TensorObj X UnitObj) X"
+    };
+}
+
+macro_rules! monoidal_model_category_assoc_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (Y : Obj), forall (Z : Obj), ",
+            "@Eq.{u} Obj (TensorObj (TensorObj X Y) Z) ",
+            "(TensorObj X (TensorObj Y Z))"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_pushout_product_cofibration_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), ",
+            "forall (i : Hom A B), forall (j : Hom X Y), ",
+            "forall (hi : Cofibration A B i), ",
+            "forall (hj : Cofibration X Y j), ",
+            "Cofibration (PushoutProductObj A B X Y i j) (TensorObj B Y) ",
+            "(pushout_product_map A B X Y i j)"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_pushout_product_left_trivial_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), ",
+            "forall (i : Hom A B), forall (j : Hom X Y), ",
+            "forall (hi : Cofibration A B i), ",
+            "forall (hwi : WeakEquivalence A B i), ",
+            "forall (hj : Cofibration X Y j), ",
+            "WeakEquivalence (PushoutProductObj A B X Y i j) (TensorObj B Y) ",
+            "(pushout_product_map A B X Y i j)"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_pushout_product_right_trivial_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (X : Obj), forall (Y : Obj), ",
+            "forall (i : Hom A B), forall (j : Hom X Y), ",
+            "forall (hi : Cofibration A B i), ",
+            "forall (hj : Cofibration X Y j), ",
+            "forall (hwj : WeakEquivalence X Y j), ",
+            "WeakEquivalence (PushoutProductObj A B X Y i j) (TensorObj B Y) ",
+            "(pushout_product_map A B X Y i j)"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_unit_replacement_weak_equivalence_law_type {
+    () => {
+        "WeakEquivalence UnitCofibrantReplacement UnitObj unit_replacement_map"
+    };
+}
+
+macro_rules! monoidal_model_category_unit_axiom_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (hX : Cofibrant X), ",
+            "WeakEquivalence (TensorObj UnitCofibrantReplacement X) ",
+            "(TensorObj UnitObj X) ",
+            "(TensorMap UnitCofibrantReplacement UnitObj X X unit_replacement_map (id X))"
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (model_category_law : ",
+            monoidal_model_category_model_law_type!(),
+            "), ",
+            "forall (tensor_id_law : ",
+            monoidal_model_category_tensor_id_law_type!(),
+            "), ",
+            "forall (tensor_comp_law : ",
+            monoidal_model_category_tensor_comp_law_type!(),
+            "), ",
+            "forall (left_unit_law : ",
+            monoidal_model_category_left_unit_law_type!(),
+            "), ",
+            "forall (right_unit_law : ",
+            monoidal_model_category_right_unit_law_type!(),
+            "), ",
+            "forall (assoc_law : ",
+            monoidal_model_category_assoc_law_type!(),
+            "), ",
+            "forall (closed_law : ClosedMonoidal), ",
+            "forall (pushout_product_cofibration_law : ",
+            monoidal_model_category_pushout_product_cofibration_law_type!(),
+            "), ",
+            "forall (pushout_product_left_trivial_law : ",
+            monoidal_model_category_pushout_product_left_trivial_law_type!(),
+            "), ",
+            "forall (pushout_product_right_trivial_law : ",
+            monoidal_model_category_pushout_product_right_trivial_law_type!(),
+            "), ",
+            "forall (unit_replacement_weak_equivalence_law : ",
+            monoidal_model_category_unit_replacement_weak_equivalence_law_type!(),
+            "), ",
+            "forall (unit_axiom_law : ",
+            monoidal_model_category_unit_axiom_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! monoidal_model_category_projection_proof {
+    ($target:expr, $selected:literal) => {
+        monoidal_model_category_abs!(concat!(
+            "fun monoidal_model_category_args => monoidal_model_category_args (",
+            $target,
+            ") (fun (model_category_law : ",
+            monoidal_model_category_model_law_type!(),
+            ") => fun (tensor_id_law : ",
+            monoidal_model_category_tensor_id_law_type!(),
+            ") => fun (tensor_comp_law : ",
+            monoidal_model_category_tensor_comp_law_type!(),
+            ") => fun (left_unit_law : ",
+            monoidal_model_category_left_unit_law_type!(),
+            ") => fun (right_unit_law : ",
+            monoidal_model_category_right_unit_law_type!(),
+            ") => fun (assoc_law : ",
+            monoidal_model_category_assoc_law_type!(),
+            ") => fun (closed_law : ClosedMonoidal) => ",
+            "fun (pushout_product_cofibration_law : ",
+            monoidal_model_category_pushout_product_cofibration_law_type!(),
+            ") => fun (pushout_product_left_trivial_law : ",
+            monoidal_model_category_pushout_product_left_trivial_law_type!(),
+            ") => fun (pushout_product_right_trivial_law : ",
+            monoidal_model_category_pushout_product_right_trivial_law_type!(),
+            ") => fun (unit_replacement_weak_equivalence_law : ",
+            monoidal_model_category_unit_replacement_weak_equivalence_law_type!(),
+            ") => fun (unit_axiom_law : ",
+            monoidal_model_category_unit_axiom_law_type!(),
             ") => ",
             $selected,
             ")"
@@ -13982,6 +14239,17 @@ const MODEL_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
     )),
 }];
 
+const MONOIDAL_MODEL_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "MonoidalModelCategoryLawArgs",
+    universe_params: &["u", "v"],
+    ty: monoidal_model_category_params!("Prop"),
+    value: monoidal_model_category_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        monoidal_model_category_law_binders!("P"),
+        "), P"
+    )),
+}];
+
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "SimplexCategoryLawArgs",
@@ -18214,6 +18482,227 @@ const MODEL_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
             "fun model_category_args => fun (P : Prop) => fun (mk : ",
             model_category_law_binders!("P"),
             ") => model_category_args P mk"
+        )),
+    },
+];
+
+const MONOIDAL_MODEL_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "monoidal_model_category_definition_intro",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(monoidal_model_category_law_binders!(
+            concat!(monoidal_model_category_law_args_app!())
+        ))),
+        proof: monoidal_model_category_abs!(concat!(
+            "fun model_category_law => fun tensor_id_law => fun tensor_comp_law => ",
+            "fun left_unit_law => fun right_unit_law => fun assoc_law => ",
+            "fun closed_law => fun pushout_product_cofibration_law => ",
+            "fun pushout_product_left_trivial_law => ",
+            "fun pushout_product_right_trivial_law => ",
+            "fun unit_replacement_weak_equivalence_law => fun unit_axiom_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            monoidal_model_category_law_binders!("P"),
+            ") => mk model_category_law tensor_id_law tensor_comp_law ",
+            "left_unit_law right_unit_law assoc_law closed_law ",
+            "pushout_product_cofibration_law pushout_product_left_trivial_law ",
+            "pushout_product_right_trivial_law unit_replacement_weak_equivalence_law ",
+            "unit_axiom_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_has_model_category",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_model_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_model_law_type!(),
+            "model_category_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_tensor_id",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_tensor_id_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_tensor_id_law_type!(),
+            "tensor_id_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_tensor_comp",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_tensor_comp_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_tensor_comp_law_type!(),
+            "tensor_comp_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_left_unit",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_left_unit_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_left_unit_law_type!(),
+            "left_unit_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_right_unit",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_right_unit_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_right_unit_law_type!(),
+            "right_unit_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_associativity",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_assoc_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_assoc_law_type!(),
+            "assoc_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_closed",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ClosedMonoidal"
+        )),
+        proof: monoidal_model_category_projection_proof!("ClosedMonoidal", "closed_law"),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_pushout_product_cofibration",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_pushout_product_cofibration_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_pushout_product_cofibration_law_type!(),
+            "pushout_product_cofibration_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_pushout_product_left_trivial",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_pushout_product_left_trivial_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_pushout_product_left_trivial_law_type!(),
+            "pushout_product_left_trivial_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_pushout_product_right_trivial",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_pushout_product_right_trivial_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_pushout_product_right_trivial_law_type!(),
+            "pushout_product_right_trivial_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_unit_replacement_weak_equivalence",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_unit_replacement_weak_equivalence_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_unit_replacement_weak_equivalence_law_type!(),
+            "unit_replacement_weak_equivalence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category_unit_axiom",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), ",
+            monoidal_model_category_unit_axiom_law_type!()
+        )),
+        proof: monoidal_model_category_projection_proof!(
+            monoidal_model_category_unit_axiom_law_type!(),
+            "unit_axiom_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_category",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            monoidal_model_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: monoidal_model_category_abs!(concat!(
+            "fun monoidal_model_category_args => fun (P : Prop) => fun (mk : ",
+            monoidal_model_category_law_binders!("P"),
+            ") => monoidal_model_category_args P mk"
+        )),
+    },
+    TheoremArtifact {
+        name: "monoidal_model_categories",
+        universe_params: &["u", "v"],
+        statement: monoidal_model_category_params!(concat!(
+            "forall (monoidal_model_category_args : ",
+            monoidal_model_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            monoidal_model_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: monoidal_model_category_abs!(concat!(
+            "fun monoidal_model_category_args => fun (P : Prop) => fun (mk : ",
+            monoidal_model_category_law_binders!("P"),
+            ") => monoidal_model_category_args P mk"
         )),
     },
 ];
@@ -31846,6 +32335,22 @@ fn run_full() -> Result<(), String> {
         &model_category_imports,
         &model_category_source_interfaces,
     )?;
+    let monoidal_model_category_imports = vec![
+        eq_import.clone(),
+        classical_category.verified_module.clone(),
+        model_category.verified_module.clone(),
+    ];
+    let monoidal_model_category_source_interfaces = vec![
+        eq_source_interface.clone(),
+        classical_category.source_interface.clone(),
+        model_category.source_interface.clone(),
+    ];
+    let monoidal_model_category = build_and_write_module(
+        &proof_root,
+        &MONOIDAL_MODEL_CATEGORY_MODULE,
+        &monoidal_model_category_imports,
+        &monoidal_model_category_source_interfaces,
+    )?;
     let abstract_group_imports = vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
     let abstract_group_source_interfaces = vec![
         eq_source_interface.clone(),
@@ -33170,6 +33675,7 @@ fn run_full() -> Result<(), String> {
         iff,
         classical_category,
         model_category,
+        monoidal_model_category,
         abstract_group,
         abstract_group_kernel,
         abstract_group_image,

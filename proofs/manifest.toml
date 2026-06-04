@@ -327,6 +327,24 @@ theorems = ["model_category_definition_intro", "model_category_has_category_laws
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Category.MonoidalModelCategory"
+source = "Proofs/Ai/Category/MonoidalModelCategory/source.npa"
+certificate = "Proofs/Ai/Category/MonoidalModelCategory/certificate.npcert"
+meta = "Proofs/Ai/Category/MonoidalModelCategory/meta.json"
+replay = "Proofs/Ai/Category/MonoidalModelCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:7bd2cce7296affadce0b5f6770459f4bb74930fb06493f0db063514c9f6ccc74"
+certificate_file_sha256 = "sha256:ac43f2745fe1b0be7d15a0d70c02da7f74ce5db262c5c2eac5c3d080ff0a083a"
+export_hash = "sha256:1f8b9cbda801c43a641a5a776ebda84c39af26602812fdd4a8ec7c3a6ddf50c9"
+axiom_report_hash = "sha256:b1c966ff112a4d21e88c23443f7594255da9b1129a7d1cbea048b57e695c9f2e"
+certificate_hash = "sha256:ae93a23208de70b956489546c70d9f9067cbf4c07b77cb859c68de10f670a4fb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical", "Proofs.Ai.Category.ModelCategory"]
+definitions = ["MonoidalModelCategoryLawArgs"]
+theorems = ["monoidal_model_category_definition_intro", "monoidal_model_category_has_model_category", "monoidal_model_category_tensor_id", "monoidal_model_category_tensor_comp", "monoidal_model_category_left_unit", "monoidal_model_category_right_unit", "monoidal_model_category_associativity", "monoidal_model_category_closed", "monoidal_model_category_pushout_product_cofibration", "monoidal_model_category_pushout_product_left_trivial", "monoidal_model_category_pushout_product_right_trivial", "monoidal_model_category_unit_replacement_weak_equivalence", "monoidal_model_category_unit_axiom", "monoidal_model_category", "monoidal_model_categories"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Category.Infinity.SimplicialSet"
 source = "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa"
 certificate = "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert"
