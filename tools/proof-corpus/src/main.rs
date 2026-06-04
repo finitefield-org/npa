@@ -2672,6 +2672,81 @@ macro_rules! sequence_squeeze_convergence_evidence_app {
     };
 }
 
+macro_rules! closed_interval_app {
+    ($lower:literal, $upper:literal, $x:literal) => {
+        concat!(
+            "@ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $x
+        )
+    };
+}
+
+macro_rules! nested_interval_lower_endpoint_set_app {
+    ($lower:literal) => {
+        concat!(
+            "(@NestedIntervalLowerEndpointSet.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            ")"
+        )
+    };
+}
+
+macro_rules! nested_closed_intervals_app {
+    ($index_le:literal, $lower:literal, $upper:literal) => {
+        concat!(
+            "@NestedClosedIntervals.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $index_le,
+            " ",
+            $lower,
+            " ",
+            $upper
+        )
+    };
+}
+
+macro_rules! shrinking_interval_length_app {
+    ($lower:literal, $upper:literal, $length:literal) => {
+        concat!(
+            "@ShrinkingIntervalLength.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $length
+        )
+    };
+}
+
+macro_rules! nested_interval_point_app {
+    ($lower:literal, $upper:literal) => {
+        concat!(
+            "@NestedIntervalPoint.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper
+        )
+    };
+}
+
+macro_rules! nested_interval_completeness_evidence_app {
+    ($index_le:literal, $lower:literal, $upper:literal, $length:literal) => {
+        concat!(
+            "@NestedIntervalCompletenessEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $index_le,
+            " ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $length
+        )
+    };
+}
+
 macro_rules! sequence_limit_uniqueness_evidence_app {
     ($left:literal, $right:literal) => {
         concat!(
@@ -31040,6 +31115,83 @@ const ANALYSIS_SEQUENCE_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "NestedIntervalLowerEndpointSet",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (x : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun lower => fun x => forall (P : Prop), forall (mk : forall (index : SequenceIndex), forall (hvalue : @Eq.{u} Scalar x (lower index)), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NestedClosedIntervals",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => forall (P : Prop), forall (mk : forall (interval_nonempty : forall (n : SequenceIndex), forall (Q : Prop), forall (choose : forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), Q), Q), forall (nested_contains : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), ",
+            closed_interval_app!("(lower m)", "(upper m)", "x"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ShrinkingIntervalLength",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => fun length => forall (P : Prop), forall (mk : forall (length_value : forall (n : SequenceIndex), @Eq.{u} Scalar (length n) (sub (upper n) (lower n))), forall (length_converges_zero : ",
+            sequence_converges_to_for_app!("length", "zero"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NestedIntervalPoint",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => forall (P : Prop), forall (mk : forall (point : Scalar), forall (member : forall (n : SequenceIndex), ",
+            closed_interval_app!("(lower n)", "(upper n)", "point"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NestedIntervalCompletenessEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => fun length => forall (P : Prop), forall (mk : forall (lower_set_nonempty : ",
+            nonempty_set_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            "), forall (lower_set_bounded_above : forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), ",
+            bounded_above_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            "), forall (supremum_to_point : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!(
+                nested_interval_lower_endpoint_set_app!("lower"),
+                "sup"
+            ),
+            "), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), ",
+            nested_interval_point_app!("lower", "upper"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
         name: "SequenceLimitUniquenessEvidence",
         universe_params: &["i", "n", "u"],
         ty: analysis_sequence_basic_params!(
@@ -31502,6 +31654,264 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_sequence_basic_abs!(
             "fun lower => fun upper => fun limit => fun bounds => fun evidence => @sequence_squeeze_converges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper limit bounds evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "nested_interval_lower_endpoint_set_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (index : SequenceIndex), ",
+            nested_interval_lower_endpoint_set_app!("lower"),
+            " (lower index)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun index => fun (P : Prop) => fun (mk : forall (witness : SequenceIndex), forall (hvalue : @Eq.{u} Scalar (lower index) (lower witness)), P) => mk index (@Eq.refl.{u} Scalar (lower index))"
+        ),
+    },
+    TheoremArtifact {
+        name: "nested_interval_lower_endpoint_set_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (x : Scalar), forall (h : ",
+            nested_interval_lower_endpoint_set_app!("lower"),
+            " x), forall (P : Prop), forall (mk : forall (index : SequenceIndex), forall (hvalue : @Eq.{u} Scalar x (lower index)), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!("fun lower => fun x => fun h => fun P => fun mk => h P mk"),
+    },
+    TheoremArtifact {
+        name: "nested_closed_intervals_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (interval_nonempty : forall (n : SequenceIndex), forall (Q : Prop), forall (choose : forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), Q), Q), forall (nested_contains : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), ",
+            closed_interval_app!("(lower m)", "(upper m)", "x"),
+            "), ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => fun interval_nonempty => fun nested_contains => fun (P : Prop) => fun (mk : forall (interval_nonempty : forall (n : SequenceIndex), forall (Q : Prop), forall (choose : forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), Q), Q), forall (nested_contains : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), ",
+            closed_interval_app!("(lower m)", "(upper m)", "x"),
+            "), P) => mk interval_nonempty nested_contains"
+        )),
+    },
+    TheoremArtifact {
+        name: "nested_closed_intervals_nonempty",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (n : SequenceIndex), forall (Q : Prop), forall (choose : forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), Q), Q"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun lower => fun upper => fun nested => fun n => fun Q => fun choose => nested Q (fun (interval_nonempty : forall (n : SequenceIndex), forall (Q : Prop), forall (choose : forall (x : Scalar), forall (member : @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args (lower n) (upper n) x), Q), Q) => fun (nested_contains : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), forall (x : Scalar), forall (member : @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args (lower n) (upper n) x), @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args (lower m) (upper m) x) => interval_nonempty n Q choose)"
+        ),
+    },
+    TheoremArtifact {
+        name: "nested_closed_intervals_contains",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), ",
+            closed_interval_app!("(lower m)", "(upper m)", "x")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => fun nested => fun m => fun n => fun hmn => fun x => fun member => nested (",
+            closed_interval_app!("(lower m)", "(upper m)", "x"),
+            ") (fun (interval_nonempty : forall (n : SequenceIndex), forall (Q : Prop), forall (choose : forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), Q), Q) => fun (nested_contains : forall (m : SequenceIndex), forall (n : SequenceIndex), forall (hmn : IndexLe m n), forall (x : Scalar), forall (member : ",
+            closed_interval_app!("(lower n)", "(upper n)", "x"),
+            "), ",
+            closed_interval_app!("(lower m)", "(upper m)", "x"),
+            ") => nested_contains m n hmn x member)"
+        )),
+    },
+    TheoremArtifact {
+        name: "shrinking_interval_length_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (length_value : forall (n : SequenceIndex), @Eq.{u} Scalar (length n) (sub (upper n) (lower n))), forall (length_converges_zero : ",
+            sequence_converges_to_for_app!("length", "zero"),
+            "), ",
+            shrinking_interval_length_app!("lower", "upper", "length")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => fun length => fun length_value => fun length_converges_zero => fun (P : Prop) => fun (mk : forall (length_value : forall (n : SequenceIndex), @Eq.{u} Scalar (length n) (sub (upper n) (lower n))), forall (length_converges_zero : ",
+            sequence_converges_to_for_app!("length", "zero"),
+            "), P) => mk length_value length_converges_zero"
+        )),
+    },
+    TheoremArtifact {
+        name: "shrinking_interval_length_value",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), forall (n : SequenceIndex), @Eq.{u} Scalar (length n) (sub (upper n) (lower n))"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun length => fun shrinking => fun n => shrinking (@Eq.{u} Scalar (length n) (sub (upper n) (lower n))) (fun (length_value : forall (n : SequenceIndex), @Eq.{u} Scalar (length n) (sub (upper n) (lower n))) => fun (length_converges_zero : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex length NearLimit zero) => length_value n)"
+        ),
+    },
+    TheoremArtifact {
+        name: "shrinking_interval_length_converges",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), ",
+            sequence_converges_to_for_app!("length", "zero")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun length => fun shrinking => shrinking (@SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex length NearLimit zero) (fun (length_value : forall (n : SequenceIndex), @Eq.{u} Scalar (length n) (sub (upper n) (lower n))) => fun (length_converges_zero : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex length NearLimit zero) => length_converges_zero)"
+        ),
+    },
+    TheoremArtifact {
+        name: "nested_interval_point_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (point : Scalar), forall (member : forall (n : SequenceIndex), ",
+            closed_interval_app!("(lower n)", "(upper n)", "point"),
+            "), ",
+            nested_interval_point_app!("lower", "upper")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => fun point => fun member => fun (P : Prop) => fun (mk : forall (point : Scalar), forall (member : forall (n : SequenceIndex), ",
+            closed_interval_app!("(lower n)", "(upper n)", "point"),
+            "), P) => mk point member"
+        )),
+    },
+    TheoremArtifact {
+        name: "nested_interval_point_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (point_evidence : ",
+            nested_interval_point_app!("lower", "upper"),
+            "), forall (P : Prop), forall (mk : forall (point : Scalar), forall (member : forall (n : SequenceIndex), ",
+            closed_interval_app!("(lower n)", "(upper n)", "point"),
+            "), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun point_evidence => fun P => fun mk => point_evidence P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "nested_interval_completeness_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (lower_set_nonempty : ",
+            nonempty_set_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            "), forall (lower_set_bounded_above : forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), ",
+            bounded_above_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            "), forall (supremum_to_point : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!(
+                nested_interval_lower_endpoint_set_app!("lower"),
+                "sup"
+            ),
+            "), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), ",
+            nested_interval_point_app!("lower", "upper"),
+            "), ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => fun length => fun lower_set_nonempty => fun lower_set_bounded_above => fun supremum_to_point => fun (P : Prop) => fun (mk : forall (lower_set_nonempty : ",
+            nonempty_set_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            "), forall (lower_set_bounded_above : forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), ",
+            bounded_above_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            "), forall (supremum_to_point : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!(
+                nested_interval_lower_endpoint_set_app!("lower"),
+                "sup"
+            ),
+            "), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), ",
+            nested_interval_point_app!("lower", "upper"),
+            "), P) => mk lower_set_nonempty lower_set_bounded_above supremum_to_point"
+        )),
+    },
+    TheoremArtifact {
+        name: "nested_interval_point_from_completeness",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), forall (evidence : ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length"),
+            "), ",
+            nested_interval_point_app!("lower", "upper")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => fun length => fun nested => fun shrinking => fun evidence => evidence (",
+            nested_interval_point_app!("lower", "upper"),
+            ") (fun (lower_set_nonempty : ",
+            nonempty_set_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            ") => fun (lower_set_bounded_above : forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), ",
+            bounded_above_app!(nested_interval_lower_endpoint_set_app!("lower")),
+            ") => fun (supremum_to_point : forall (sup : Scalar), forall (hsup : ",
+            supremum_evidence_app!(
+                nested_interval_lower_endpoint_set_app!("lower"),
+                "sup"
+            ),
+            "), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), ",
+            nested_interval_point_app!("lower", "upper"),
+            ") => @supremum_exists_from_completeness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args (@complete_ordered_field_order_completeness.{n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field) (",
+            nested_interval_lower_endpoint_set_app!("lower"),
+            ") lower_set_nonempty (lower_set_bounded_above nested) (",
+            nested_interval_point_app!("lower", "upper"),
+            ") (fun (sup : Scalar) => fun (hsup : ",
+            supremum_evidence_app!(
+                nested_interval_lower_endpoint_set_app!("lower"),
+                "sup"
+            ),
+            ") => supremum_to_point sup hsup nested shrinking))"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_nesting_theorem",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (nested : ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking : ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), forall (evidence : ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length"),
+            "), ",
+            nested_interval_point_app!("lower", "upper")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun IndexLe => fun lower => fun upper => fun length => fun nested => fun shrinking => fun evidence => @nested_interval_point_from_completeness.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe lower upper length nested shrinking evidence"
         ),
     },
     TheoremArtifact {

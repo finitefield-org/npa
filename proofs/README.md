@@ -1741,6 +1741,11 @@ Implemented definitions / API declarations:
 | `SequenceMonotoneCompletenessEvidence` | explicit package connecting a value set, one-sided boundedness, supremum evidence, and sequence convergence |
 | `SequenceSqueezeBounds` | lower/current/upper pointwise bound package for squeeze arguments |
 | `SequenceSqueezeConvergenceEvidence` | explicit package containing side-sequence convergence and the squeeze bridge to the middle sequence |
+| `NestedIntervalLowerEndpointSet` | lower-endpoint value set used by the interval-nesting completeness route |
+| `NestedClosedIntervals` | nested closed-interval package over an explicit index preorder |
+| `ShrinkingIntervalLength` | explicit interval-length sequence with convergence to zero |
+| `NestedIntervalPoint` | existential-style package for a point contained in every closed interval |
+| `NestedIntervalCompletenessEvidence` | explicit package connecting lower endpoint bounds, supremum evidence, shrinking lengths, and an intersection point |
 | `SequenceLimitUniquenessEvidence` | local evidence package containing two convergence witnesses and their equality conclusion |
 | `FixedPointConvergesToAlias` | bridge alias to `AbstractFixedPoint.ConvergesTo` on the scalar-as-vector instance |
 | `FixedPointCauchySeqAlias` | bridge alias to `AbstractFixedPoint.CauchySeq` on the scalar-as-vector instance |
@@ -1767,6 +1772,12 @@ Theorem targets:
 | `sequence_squeeze_bounds_intro`, `sequence_squeeze_lower_bound`, `sequence_squeeze_upper_bound` | build squeeze bounds and project the lower/upper pointwise inequalities |
 | `sequence_squeeze_convergence_evidence_intro` | package side-sequence convergence and the squeeze bridge |
 | `sequence_squeeze_converges`, `squeeze_theorem` | derive convergence of the middle sequence from explicit squeeze evidence |
+| `nested_interval_lower_endpoint_set_intro`, `nested_interval_lower_endpoint_set_elim` | introduce and eliminate lower-endpoint set membership |
+| `nested_closed_intervals_intro`, `nested_closed_intervals_nonempty`, `nested_closed_intervals_contains` | package nested closed intervals and project nonemptiness/nesting |
+| `shrinking_interval_length_intro`, `shrinking_interval_length_value`, `shrinking_interval_length_converges` | package interval lengths and project their defining equality/convergence |
+| `nested_interval_point_intro`, `nested_interval_point_elim` | package and eliminate a point lying in all closed intervals |
+| `nested_interval_completeness_evidence_intro` | package the lower-endpoint nonempty/bounded-above bridges and supremum-to-point bridge |
+| `nested_interval_point_from_completeness`, `interval_nesting_theorem` | derive an all-interval point by extracting order completeness and choosing a supremum |
 | `sequence_limit_uniqueness_intro` | package local uniqueness evidence from two convergence witnesses and an equality proof |
 | `sequence_limit_uniqueness_left`, `sequence_limit_uniqueness_right` | recover the two convergence witnesses from uniqueness evidence |
 | `sequence_limit_unique`, `limit_unique` | derive equality of limits from local uniqueness evidence |
@@ -1797,6 +1808,11 @@ The squeeze theorem is also evidence-driven: `SequenceSqueezeBounds` stores the 
 inequality families, while `SequenceSqueezeConvergenceEvidence` stores convergence of the lower and
 upper sequences plus the explicit bridge that turns those bounds into convergence of the middle
 sequence.
+The interval nesting theorem uses the real `ClosedInterval` API directly. `NestedClosedIntervals`
+stores explicit closed-interval nonemptiness and containment maps, `ShrinkingIntervalLength` stores
+the length sequence and its convergence to zero, and `nested_interval_point_from_completeness`
+chooses a supremum of the lower-endpoint set through `supremum_exists_from_completeness` before
+applying the explicit supremum-to-intersection bridge.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

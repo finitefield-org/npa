@@ -334,12 +334,14 @@ guessing. The split must preserve the dependency order in this document.
 ### ANA-T04 Add Monotone, Squeeze, And Interval-Nesting Theorems
 
 - Status: `ANQ-004` complete for monotone convergence; `ANQ-005` complete for
-  squeeze; `ANQ-006` interval nesting remains pending.
+  squeeze; `ANQ-006` complete for interval nesting.
   `Proofs.Ai.Analysis.Sequence.Basic` now defines one-sided boundedness,
   monotone increasing/decreasing predicates, explicit monotone-completeness
-  evidence, and explicit squeeze-bounds/convergence evidence, with checked
-  theorem names deriving monotone convergence through the real-order supremum
-  route and deriving middle-sequence convergence through squeeze evidence.
+  evidence, explicit squeeze-bounds/convergence evidence, and explicit nested
+  closed-interval/length evidence, with checked theorem names deriving monotone
+  convergence through the real-order supremum route, deriving middle-sequence
+  convergence through squeeze evidence, and deriving interval nesting through
+  a lower-endpoint supremum route.
 - Depends on: ANA-T03
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -371,6 +373,7 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_monotone_converges_from_completeness /tmp/anq004-sequence-monotone-converges-replay.json`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_squeeze_converges /tmp/anq005-sequence-squeeze-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::nested_interval_point_from_completeness /tmp/anq006-nested-interval-replay.json`
   - `./scripts/check-fast.sh`
   - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
@@ -386,7 +389,8 @@ guessing. The split must preserve the dependency order in this document.
     `monotone_convergence_theorem`.
   - Stable downstream import names for squeeze are `sequence_squeeze_converges`
     and `squeeze_theorem`.
-  - Interval-nesting statements remain for ANQ-006.
+  - Stable downstream import names for interval nesting are
+    `nested_interval_point_from_completeness` and `interval_nesting_theorem`.
 
 ### ANA-T05 Add Bolzano-Weierstrass And Sequence Compactness
 
