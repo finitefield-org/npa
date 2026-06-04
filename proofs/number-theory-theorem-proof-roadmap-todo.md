@@ -363,7 +363,11 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.LinearDiophantine`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.LinearDiophantine`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "LinearDiophantine|ax|Bezout|Coprime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T07 Add Prime And Composite Definitions
 

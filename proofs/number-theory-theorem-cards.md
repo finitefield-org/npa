@@ -129,6 +129,21 @@ These modules import the gcd/Euclidean-algorithm closure only. They do not
 import prime factorization, CRT, Euclid's lemma, Gauss's lemma, elliptic curves,
 or modularity.
 
+## Linear Diophantine Interface
+
+Concrete entry point: `Proofs.Ai.NumberTheory.LinearDiophantine`.
+
+The linear Diophantine module records checked theorem targets for the
+`a*x + b*y = c` equation surface, solvability from gcd-divisibility and Bezout
+evidence, the converse gcd-divisibility necessity, the solvability iff gcd-
+divisibility statement, particular solutions from Bezout evidence, general
+solution formulas under gcd-divisibility hypotheses, zero-coefficient edge
+cases, sign-normalized equation forms, and reusable normal-form exports for
+later Diophantine milestones.
+
+This module imports the Bezout closure only. It does not introduce a hidden
+Diophantine solver, prime factorization, CRT, elliptic curves, or modularity.
+
 ## Prime And Composite Predicate Interface
 
 Concrete entry points: `Proofs.Ai.NumberTheory.Prime` and
