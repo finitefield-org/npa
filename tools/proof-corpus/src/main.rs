@@ -177,6 +177,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE,
     &LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE,
     &LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE,
+    &LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1803,6 +1804,26 @@ const LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.LinearMap.Basic",
+    source_path: "Proofs/Ai/LinearAlgebra/LinearMap/Basic/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/LinearMap/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/LinearMap/Basic/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/LinearMap/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+        "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+        "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_LINEAR_MAP_BASIC_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_LINEAR_MAP_BASIC_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -2379,6 +2400,70 @@ macro_rules! linear_algebra_basis_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_linear_map_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_linear_map_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => ",
             $tail
         )
     };
@@ -30353,6 +30438,280 @@ const LINEAR_ALGEBRA_BASIS_DIMENSION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "LinearMap",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (map_zero : @Eq.{w} Codomain (f dzero) czero), ",
+            "forall (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))), ",
+            "forall (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))), ",
+            "forall (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapKernel",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("forall (x : Domain), Prop"),
+        value: linear_algebra_linear_map_abs!(
+            "fun x => @Eq.{w} Codomain (f x) czero"
+        ),
+    },
+    DefinitionArtifact {
+        name: "LinearMapImage",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("forall (y : Codomain), Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "fun y => forall (P : Prop), forall (mk : ",
+            "forall (x : Domain), forall (h : @Eq.{w} Codomain (f x) y), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapKernelZero",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "forall (x : Domain), ",
+            "forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), ",
+            "@Eq.{v} Domain x dzero"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapInjective",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "forall (x : Domain), forall (y : Domain), ",
+            "forall (h : @Eq.{w} Codomain (f x) (f y)), @Eq.{v} Domain x y"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapSubspaceEvidence",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (kernel_zero_mem : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f dzero), ",
+            "forall (kernel_add_mem : forall (x : Domain), forall (y : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x y)), ",
+            "forall (kernel_smul_mem : forall (a : Scalar), forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dsmul a x)), ",
+            "forall (image_zero_mem : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f czero), ",
+            "forall (image_add_mem : forall (x : Codomain), forall (y : Codomain), forall (hx : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (cadd x y)), ",
+            "forall (image_smul_mem : forall (a : Scalar), forall (y : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (csmul a y)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapInjectiveKernelCriterion",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_linear_map_params!("Prop"),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (kernel_zero_to_injective : forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "linear_map_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (map_zero : @Eq.{w} Codomain (f dzero) czero), forall (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))), forall (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))), forall (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))), @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun map_zero => fun map_add => fun map_neg => fun map_smul => fun (P : Prop) => fun (mk : forall (map_zero : @Eq.{w} Codomain (f dzero) czero), forall (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))), forall (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))), forall (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))), P) => mk map_zero map_add map_neg map_smul"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_zero",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @Eq.{w} Codomain (f dzero) czero"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => linear_map (@Eq.{w} Codomain (f dzero) czero) (fun (map_zero : @Eq.{w} Codomain (f dzero) czero) => fun (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))) => fun (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))) => fun (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))) => map_zero)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_add",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => fun x => fun y => linear_map (@Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))) (fun (map_zero : @Eq.{w} Codomain (f dzero) czero) => fun (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))) => fun (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))) => fun (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))) => map_add x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_neg",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => fun x => linear_map (@Eq.{w} Codomain (f (dneg x)) (cneg (f x))) (fun (map_zero : @Eq.{w} Codomain (f dzero) czero) => fun (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))) => fun (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))) => fun (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))) => map_neg x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_smul",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => fun a => fun x => linear_map (@Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))) (fun (map_zero : @Eq.{w} Codomain (f dzero) czero) => fun (map_add : forall (x : Domain), forall (y : Domain), @Eq.{w} Codomain (f (dadd x y)) (cadd (f x) (f y))) => fun (map_neg : forall (x : Domain), @Eq.{w} Codomain (f (dneg x)) (cneg (f x))) => fun (map_smul : forall (a : Scalar), forall (x : Domain), @Eq.{w} Codomain (f (dsmul a x)) (csmul a (f x))) => map_smul a x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_kernel_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), forall (h : @Eq.{w} Codomain (f x) czero), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x"
+        ),
+        proof: linear_algebra_linear_map_abs!("fun x => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "linear_map_kernel_eq_zero",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @Eq.{w} Codomain (f x) czero"
+        ),
+        proof: linear_algebra_linear_map_abs!("fun x => fun hx => hx"),
+    },
+    TheoremArtifact {
+        name: "linear_map_kernel_zero_mem",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f dzero"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => @linear_map_zero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f linear_map"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_image_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (x : Domain), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (f x)"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun x => fun (P : Prop) => fun (mk : forall (preimage : Domain), forall (h : @Eq.{w} Codomain (f preimage) (f x)), P) => mk x (@Eq.refl.{w} Codomain (f x))"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_image_elim",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (y : Codomain), forall (image_y : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), forall (P : Prop), forall (mk : forall (x : Domain), forall (h : @Eq.{w} Codomain (f x) y), P), P"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun y => fun image_y => fun P => fun mk => image_y P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_image_zero_mem",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f czero"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => fun (P : Prop) => fun (mk : forall (preimage : Domain), forall (h : @Eq.{w} Codomain (f preimage) czero), P) => mk dzero (@linear_map_zero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f linear_map)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_subspace_evidence_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (kernel_zero_mem : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f dzero), forall (kernel_add_mem : forall (x : Domain), forall (y : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x y)), forall (kernel_smul_mem : forall (a : Scalar), forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dsmul a x)), forall (image_zero_mem : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f czero), forall (image_add_mem : forall (x : Codomain), forall (y : Codomain), forall (hx : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (cadd x y)), forall (image_smul_mem : forall (a : Scalar), forall (y : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (csmul a y)), @LinearMapSubspaceEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun kernel_zero_mem => fun kernel_add_mem => fun kernel_smul_mem => fun image_zero_mem => fun image_add_mem => fun image_smul_mem => fun (P : Prop) => fun (mk : forall (kernel_zero_mem : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f dzero), forall (kernel_add_mem : forall (x : Domain), forall (y : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x y)), forall (kernel_smul_mem : forall (a : Scalar), forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dsmul a x)), forall (image_zero_mem : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f czero), forall (image_add_mem : forall (x : Codomain), forall (y : Codomain), forall (hx : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (cadd x y)), forall (image_smul_mem : forall (a : Scalar), forall (y : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (csmul a y)), P) => mk kernel_zero_mem kernel_add_mem kernel_smul_mem image_zero_mem image_add_mem image_smul_mem"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_kernel_is_subspace",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (domain_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul), forall (evidence : @LinearMapSubspaceEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)"
+        ),
+        proof: linear_algebra_linear_map_abs!(concat!(
+            "fun domain_args => fun evidence => ",
+            "evidence (@Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)) ",
+            "(fun (kernel_zero_mem : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f dzero) => ",
+            "fun (kernel_add_mem : forall (x : Domain), forall (y : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x y)) => ",
+            "fun (kernel_smul_mem : forall (a : Scalar), forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dsmul a x)) => ",
+            "fun (image_zero_mem : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f czero) => ",
+            "fun (image_add_mem : forall (x : Codomain), forall (y : Codomain), forall (hx : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (cadd x y)) => ",
+            "fun (image_smul_mem : forall (a : Scalar), forall (y : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (csmul a y)) => ",
+            "@subspace_criterion.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul domain_args ",
+            "(@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) ",
+            "kernel_zero_mem kernel_add_mem kernel_smul_mem)"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_image_is_subspace",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (codomain_args : @LinearAlgebraVectorSpaceLawArgs.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul), forall (evidence : @LinearMapSubspaceEvidence.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @Subspace.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul (@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)"
+        ),
+        proof: linear_algebra_linear_map_abs!(concat!(
+            "fun codomain_args => fun evidence => ",
+            "evidence (@Subspace.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul (@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)) ",
+            "(fun (kernel_zero_mem : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f dzero) => ",
+            "fun (kernel_add_mem : forall (x : Domain), forall (y : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dadd x y)) => ",
+            "fun (kernel_smul_mem : forall (a : Scalar), forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (dsmul a x)) => ",
+            "fun (image_zero_mem : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f czero) => ",
+            "fun (image_add_mem : forall (x : Codomain), forall (y : Codomain), forall (hx : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (cadd x y)) => ",
+            "fun (image_smul_mem : forall (a : Scalar), forall (y : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f y), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (csmul a y)) => ",
+            "@subspace_criterion.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul codomain_args ",
+            "(@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) ",
+            "image_zero_mem image_add_mem image_smul_mem)"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_injective_kernel_criterion_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (kernel_zero_to_injective : forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjectiveKernelCriterion.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun kernel_zero_to_injective => fun injective_to_kernel_zero => fun (P : Prop) => fun (mk : forall (kernel_zero_to_injective : forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), P) => mk kernel_zero_to_injective injective_to_kernel_zero"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_injective_of_kernel_zero",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (criterion : @LinearMapInjectiveKernelCriterion.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun criterion => fun kernel_zero => criterion (@LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) (fun (kernel_zero_to_injective : forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => kernel_zero_to_injective kernel_zero)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_kernel_zero_of_injective",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun linear_map => fun injective => fun (x : Domain) => fun (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x) => injective x dzero (@eq_trans.{w} Codomain (f x) czero (f dzero) hx (@eq_symm.{w} Codomain (f dzero) czero (@linear_map_zero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f linear_map)))"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_kernel_zero_of_injective_criterion",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (criterion : @LinearMapInjectiveKernelCriterion.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun criterion => fun injective => criterion (@LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) (fun (kernel_zero_to_injective : forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => injective_to_kernel_zero injective)"
+        ),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -38253,6 +38612,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module
+        || config.module == LINEAR_ALGEBRA_LINEAR_MAP_BASIC_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
