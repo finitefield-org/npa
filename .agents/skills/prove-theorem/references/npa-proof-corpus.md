@@ -85,15 +85,18 @@ Before final response:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-fast.sh
 ```
 
-Run the full corpus gate only when required by `AGENTS.md` or requested:
+Run the lightweight authoring corpus gate before finishing a theorem batch:
 
 ```sh
 ./scripts/check-corpus.sh
 ```
 
-Report any skipped full corpus gate explicitly.
+This is an alias for `./scripts/check-corpus-authoring.sh`. Run
+`./scripts/check-corpus-package.sh` or `./scripts/check-corpus-full.sh` only
+when required by `AGENTS.md` or explicitly requested. Report any skipped
+package/full corpus gate explicitly.

@@ -471,13 +471,13 @@ Implication:
   - The roadmap and todo document no longer describe completed work as unimplemented work.
   - Any public `npa-mathlib` materialization is explicitly deferred to a separate closure audit.
 - Verification:
-  - `./scripts/check-corpus.sh`
+  - `./scripts/check-corpus-full.sh`
   - `cargo run -p npa-proof-corpus -- --write-ai-index`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "AbstractField|FieldLawArgs|FieldHomLawArgs|field_integral_domain_laws" proofs develop`
   - `git diff --check`
 - Notes:
-  - This is the only milestone that should normally run the full corpus gate for the field route.
+  - This is the only milestone that should normally run the package/full corpus gate for the field route.
     Earlier milestones should prefer `--build-module`, `--module`, and `--changed-only`.
   - Completed as the final field-theory corpus pass after FT-01 through FT-06.
   - `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/package-lock.json`, and

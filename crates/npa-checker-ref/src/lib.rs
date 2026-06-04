@@ -368,6 +368,12 @@ impl ReferenceModuleName {
         {
             return Err(ReferenceNameError::ComponentContainsDot { index });
         }
+        if let Some(index) = components
+            .iter()
+            .position(|component| !reference_name_component_is_canonical(component))
+        {
+            return Err(ReferenceNameError::InvalidComponent { index });
+        }
         Ok(Self { components })
     }
 
@@ -387,6 +393,15 @@ impl ReferenceModuleName {
     }
 }
 
+fn reference_name_component_is_canonical(component: &str) -> bool {
+    let mut bytes = component.bytes();
+    let Some(first) = bytes.next() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == b'_')
+        && bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'\'')
+}
+
 /// Structured error for invalid reference-checker names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReferenceNameError {
@@ -400,6 +415,11 @@ pub enum ReferenceNameError {
     /// One component contains a dotted separator.
     ComponentContainsDot {
         /// Component index that contained a dot.
+        index: usize,
+    },
+    /// One component violates the canonical name component grammar.
+    InvalidComponent {
+        /// Component index that violated the grammar.
         index: usize,
     },
 }
@@ -862,6 +882,8 @@ pub enum ReferenceCheckReason {
     EmptyModuleNameComponent,
     /// A canonical name component contained a dotted separator.
     DottedNameComponent,
+    /// A canonical name component violated `[A-Za-z_][A-Za-z0-9_']*`.
+    InvalidNameComponent,
     /// An index referenced a missing table entry.
     DanglingReference,
     /// A canonical table was not in strict canonical order.
@@ -4226,10 +4248,18 @@ mod tests {
             ReferenceModuleName::from_dotted("Std..Nat"),
             Err(ReferenceNameError::EmptyComponent { index: 1 })
         );
+        assert_eq!(
+            ReferenceModuleName::from_dotted("Std.Nat.+"),
+            Err(ReferenceNameError::InvalidComponent { index: 2 })
+        );
+        assert_eq!(
+            ReferenceModuleName::from_dotted("Std.Nat.add′"),
+            Err(ReferenceNameError::InvalidComponent { index: 2 })
+        );
 
-        let name = ReferenceModuleName::from_dotted("Std.Nat").unwrap();
-        assert_eq!(name.components(), ["Std", "Nat"]);
-        assert_eq!(name.dotted(), "Std.Nat");
+        let name = ReferenceModuleName::from_dotted("Std.Nat.add_comm'").unwrap();
+        assert_eq!(name.components(), ["Std", "Nat", "add_comm'"]);
+        assert_eq!(name.dotted(), "Std.Nat.add_comm'");
     }
 
     fn p8h13_fuzz_artifact_hash(seed: &str, bytes: &[u8]) -> ReferenceHash {
@@ -4793,7 +4823,7 @@ mod tests {
         assert_eq!(decoded.kind, ReferenceCheckErrorKind::MalformedCertificate);
         assert_eq!(
             decoded.reason,
-            Some(ReferenceCheckReason::UnresolvedMetavariable)
+            Some(ReferenceCheckReason::InvalidNameComponent)
         );
 
         let checked = check_certificate(

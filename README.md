@@ -155,26 +155,29 @@ For ordinary development, start with the fast gate:
 ./scripts/check-fast.sh
 ```
 
-Run a corpus gate only for changes that affect proof corpus files, proof corpus
-tooling, canonical certificate compatibility, kernel semantics, independent
-checkers, package verification, package locks, artifact validation, or
-release/high-trust evidence:
+The in-repo proof corpus is a staging workspace. For ordinary theorem
+authoring, keep package-wide checks out of the hot path and use the lightweight
+authoring gate:
 
 ```sh
-./scripts/check-corpus-authoring.sh  # theorem authoring completion
-./scripts/check-corpus-package.sh    # package verifier and package CLI checks
-./scripts/check-corpus-full.sh       # authoring + package
+./scripts/check-corpus-authoring.sh  # changed-only source-free authoring check
+./scripts/check-corpus.sh            # compatibility alias for authoring
 ```
-
-The legacy `./scripts/check-corpus.sh` command remains valid and runs the full
-corpus gate.
 
 For proof-corpus theorem repair, use the targeted local loop first:
 `--build-module` or `--build-modules`, selected `--module`, and
-`--changed-only`. Finish a coherent theorem batch with
-`./scripts/check-corpus-authoring.sh`. Reserve `check-corpus-package.sh` and
-`check-corpus-full.sh` for package verifier changes, compatibility checks, push
-readiness, or release handoff.
+`--changed-only`, preferably with `--verified-cache authoring` for repeated
+local checks. Finish a coherent theorem batch with
+`./scripts/check-corpus-authoring.sh`.
+
+Reserve the package/full corpus gates for package verifier changes, canonical
+certificate/checker compatibility, `npa-mathlib` promotion readiness, release
+handoff, or high-trust evidence:
+
+```sh
+./scripts/check-corpus-package.sh    # package verifier and package CLI checks
+./scripts/check-corpus-full.sh       # authoring + package
+```
 
 For contribution policy and the full local-gate checklist, see
 [CONTRIBUTING.md](CONTRIBUTING.md).

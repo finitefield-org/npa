@@ -5,6 +5,7 @@ pub mod env;
 pub mod error;
 pub mod expr;
 pub mod level;
+pub mod name;
 pub mod positivity;
 pub mod subst;
 
@@ -24,6 +25,7 @@ pub use env::Env;
 pub use error::{Error, ResourceLimitKind, Result};
 pub use expr::Expr;
 pub use level::{Level, UniverseConstraint, UniverseConstraintRelation};
+pub use name::{is_canonical_dotted_name, is_canonical_name_component};
 pub use positivity::{approved_nested_functor, ApprovedNestedFunctor, APPROVED_NESTED_FUNCTORS};
 
 #[cfg(test)]

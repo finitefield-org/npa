@@ -57,7 +57,7 @@ For repeated local rechecks of the same certificate, optionally add
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.X::theorem_name /tmp/replay.json
 ```
 
-9. Before finishing an authoring turn, run the local proof checks above and `./scripts/check-fast.sh` when appropriate. For a coherent theorem batch, run `./scripts/check-corpus-authoring.sh`. Do not run `./scripts/check-corpus.sh` as part of every proof attempt or repair loop.
+9. Before finishing an authoring turn, run the local proof checks above and `./scripts/check-fast.sh` when appropriate. For a coherent theorem batch, run `./scripts/check-corpus-authoring.sh` or its compatibility alias `./scripts/check-corpus.sh`. Do not run package/full corpus gates as part of every proof attempt or repair loop.
 10. After the theorem proof is verified and the intended theorem batch is complete, commit and push the proof changes. Stage only files that belong to the theorem work; leave unrelated user changes unstaged.
 
 ## Gate Policy
@@ -66,8 +66,8 @@ During theorem authoring, the default verification loop is local:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-fast.sh
 ```
 
@@ -75,16 +75,16 @@ Use `--verified-cache authoring` only for repeated local checks where a cached
 verdict can shorten authoring feedback. Cache hits are not proof evidence.
 
 Run `./scripts/check-corpus-authoring.sh` before finishing a theorem batch. It
-is the normal proof-corpus authoring completion gate and excludes package-wide
-CLI examples.
+is the normal proof-corpus authoring completion gate and checks changed modules
+source-free with the authoring cache. `./scripts/check-corpus.sh` is a
+compatibility alias for the same lightweight gate.
 
 `./scripts/check-corpus-package.sh` and `./scripts/check-corpus-full.sh` are
-intentionally expensive. Run them for proof-corpus infrastructure,
-certificate/package/checker compatibility, kernel semantics changes, push
-readiness, release handoff, or when the user explicitly asks for package/full
-corpus coverage. The legacy `./scripts/check-corpus.sh` name remains a full
-gate wrapper. If the package/full gate is skipped, say so in the final response
-with the local checks that did run.
+intentionally expensive. Run them for proof-corpus package infrastructure,
+certificate/package/checker compatibility, kernel semantics changes,
+`npa-mathlib` promotion readiness, release handoff, or when the user explicitly
+asks for package/full corpus coverage. If the package/full gate is skipped, say
+so in the final response with the local checks that did run.
 
 ## Finalization
 

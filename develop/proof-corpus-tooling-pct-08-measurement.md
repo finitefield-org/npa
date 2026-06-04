@@ -93,14 +93,14 @@ rg -n "check-corpus-authoring|check-corpus-package|check-corpus-full|verified-ca
 Cleanup performed:
 
 - The README now points proof-corpus theorem repair at targeted local commands
-  and `check-corpus-authoring.sh` before mentioning full gates.
+  and the lightweight `check-corpus-authoring.sh` before mentioning package/full gates.
 - `develop/proof-corpus-ai-workflow.md` now names
   `check-corpus-authoring.sh` as the theorem batch boundary and documents the
   `--promote-plan` / `--promote-materialize` commands as untrusted promotion
   helpers.
 - `.agents/skills/prove-theorem/SKILL.md` now uses local module verification and
   `check-corpus-authoring.sh` as the default completion path, reserving
-  package/full gates for compatibility, push readiness, release handoff, or an
+  package/full gates for compatibility, npa-mathlib promotion, release handoff, or an
   explicit user request.
 - `.agents/skills/closure-audit/SKILL.md` now prefers the PCT-07 materialize command
   and uses sibling repository paths instead of placeholder absolute paths.
@@ -113,9 +113,10 @@ The default theorem authoring loop is now:
    `--build-modules`, or `--build-modules-file`.
 2. Verify only the target module and changed modules source-free, optionally
    using `--verified-cache authoring` for local repeated checks.
-3. Finish a coherent theorem batch with `./scripts/check-corpus-authoring.sh`.
+3. Finish a coherent theorem batch with `./scripts/check-corpus-authoring.sh`
+   or its compatibility alias `./scripts/check-corpus.sh`.
 4. Run `./scripts/check-corpus-package.sh` or `./scripts/check-corpus-full.sh`
-   only at package/push/release/compatibility boundaries.
+   only at package/promotion/release/compatibility boundaries.
 
 Cache files, promotion plans, theorem indexes, replay files, metadata, CI
 status, and timing logs remain untrusted sidecars. Proof acceptance continues

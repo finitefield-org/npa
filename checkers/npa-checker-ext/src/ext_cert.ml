@@ -736,14 +736,18 @@ let read_name section reader =
             | Ok ((component, component_content_offset), next) ->
                 if component = "" then
                   Ext_bytes.error section component_offset Ext_bytes.Empty_name_component
-                else (
-                  match find_dot_offset component with
-                  | Some dot_offset ->
-                      Ext_bytes.error section (component_content_offset + dot_offset)
-                        Ext_bytes.Dotted_name_component
-                  | None -> loop (remaining - 1) next (component :: components))
-        in
-        loop component_count after_count []
+	                else (
+	                  match find_dot_offset component with
+	                  | Some dot_offset ->
+	                      Ext_bytes.error section (component_content_offset + dot_offset)
+	                        Ext_bytes.Dotted_name_component
+	                  | None ->
+	                      if not (Ext_name.is_component component) then
+	                        Ext_bytes.error section component_content_offset
+	                          Ext_bytes.Invalid_name_component
+	                      else loop (remaining - 1) next (component :: components))
+	        in
+	        loop component_count after_count []
 
 let read_header reader =
   match Ext_bytes.read_string Ext_bytes.Header_format reader with

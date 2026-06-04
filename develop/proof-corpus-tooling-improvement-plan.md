@@ -185,7 +185,7 @@ verified Proofs.Ai.X cache_status = "stale" cache_mode = "read-through"
 
 ### 5.1 背景
 
-`check-corpus.sh` には package-wide CLI examples が含まれ、authoring 直後の feedback loop には重いです。
+以前の `check-corpus.sh` には package-wide CLI examples が含まれ、authoring 直後の feedback loop には重すぎました。
 これらは package CLI の end-to-end 回帰として重要ですが、個々の theorem authoring の毎回確認には
 過剰です。
 
@@ -203,20 +203,22 @@ PCT-03 で追加された gate:
 
 ```text
 check-corpus-authoring.sh
-  proof corpus crate tests、対象 module / changed-only、manifest/package metadata の軽い整合性。
-  package-wide CLI examples は含めない。
+  changed proof corpus modules の source-free 検査だけを authoring cache 付きで実行する。
+  package-wide CLI examples、axiom-report、index、publish-plan は含めない。
 
 check-corpus-package.sh
   package verifier、package CLI examples、publish-plan、index、axiom-report の package-wide 回帰。
-  PR / daily で実行する。
+  npa-mathlib promotion、package tooling、release/high-trust 境界で実行する。
 
 check-corpus-full.sh
-  authoring + package をまとめた high-trust 手前の full gate。
+  authoring + package をまとめた promotion / release / high-trust 手前の full gate。
 ```
 
-既存の `./scripts/check-corpus.sh` は互換性のため残し、`check-corpus-full.sh` を呼ぶ alias とします。
+既存の `./scripts/check-corpus.sh` は互換性のため残し、軽量
+`check-corpus-authoring.sh` を呼ぶ alias とします。重い gate は
+`check-corpus-package.sh` / `check-corpus-full.sh` を明示的に呼びます。
 script 分割前の古い案内では `./scripts/check-corpus.sh` が full corpus gate でしたが、
-PCT-03 以降の AGENTS.md / CONTRIBUTING.md / README.md は split gate 名を案内します。
+現在の AGENTS.md / CONTRIBUTING.md / README.md は staging corpus の通常 authoring を軽量 gate に寄せます。
 
 ### 5.3 完了条件
 
@@ -321,10 +323,11 @@ PCT-00 baseline の full corpus gate は 1059.81s でした。PCT-08 では clea
 authoring loop、つまり `--build-module Proofs.Ai.Basic`、selected module source-free verification、
 `--changed-only` の合計が 2.69s でした。これは baseline full gate より約 394 倍短いです。
 
-`./scripts/check-corpus-authoring.sh` は 115.21s で通り、package-wide CLI examples を含まない
-theorem batch boundary 用 gate として使います。`./scripts/check-corpus-package.sh` は 1122.39s で通り、
+PCT-08 時点の `./scripts/check-corpus-authoring.sh` は 115.21s で通りました。現在の authoring gate は
+さらに changed-only source-free 検査へ絞り、proof corpus staging の通常 batch boundary 用 gate として使います。
+`./scripts/check-corpus-package.sh` は 1122.39s で通り、
 package verifier、package CLI examples、axiom-report、index、publish-plan の回帰を含むため、
-PR / push readiness / release handoff / compatibility changes の境界に寄せます。
+npa-mathlib promotion / release handoff / compatibility changes の境界に寄せます。
 
 cache、promotion plan、promotion dry-run、theorem index、replay、metadata、CI status、timing log は
 すべて未信頼 sidecar です。これらは作業効率や audit の入力には使えますが、証明受理の根拠にはしません。

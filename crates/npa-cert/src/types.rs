@@ -3,7 +3,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
 };
 
-use npa_kernel::{Decl, Reducibility, UniverseConstraintRelation};
+use npa_kernel::{is_canonical_name_component, Decl, Reducibility, UniverseConstraintRelation};
 
 /// SHA-256 digest used for canonical certificate objects.
 pub type Hash = [u8; 32];
@@ -36,12 +36,15 @@ impl Name {
     }
 
     /// Return whether this name is canonical for trusted certificate payloads.
+    ///
+    /// The grammar is `Component ("." Component)*`, where `Component` is
+    /// `[A-Za-z_][A-Za-z0-9_']*`.
     pub fn is_canonical(&self) -> bool {
         !self.0.is_empty()
             && self
                 .0
                 .iter()
-                .all(|component| !component.is_empty() && !component.contains('.'))
+                .all(|component| is_canonical_name_component(component))
     }
 }
 
