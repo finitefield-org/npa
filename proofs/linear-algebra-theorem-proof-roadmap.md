@@ -507,7 +507,13 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-06 Determinants, Adjugates, And Cramer Formulas
 
-- Status: planned.
+- Status: `LAQ-010` complete for
+  `Proofs.Ai.LinearAlgebra.Matrix.Determinant`: determinant identity
+  normalization, transpose invariance, multilinear/alternating evidence
+  packaging, square matrix multiplication law linkage, and determinant product
+  theorem projections from explicit product-derivation evidence are available.
+  Adjugate inverse, determinant-invertibility equivalence, Cramer formula, and
+  advanced determinant identities remain planned.
 - Depends on: `LIN-04`, with `LIN-18` optional if determinant is built through
   exterior algebra.
 - Target modules:

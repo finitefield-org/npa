@@ -1409,6 +1409,24 @@ theorems = ["matrix_system_solution_intro", "matrix_system_solution_eq_rhs", "ec
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Determinant"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8388484869a315e32f15f6f195728fd38b6c4446d1e259e2860e1544ca2daca0"
+certificate_file_sha256 = "sha256:995a8de398b605e1d330e9c494641afbade88b953f109a88185dfad9648501bf"
+export_hash = "sha256:d0d416d83280d97bab0bb9a2c6f159ce49584ff1560db535cbf4c52efa0e3025"
+axiom_report_hash = "sha256:4ce54129453ca5f2cc9726d9e809e739b6640402d7515115c64b8169ae6c93a6"
+certificate_hash = "sha256:3ec8f7dd297be64c1d8a1d1a7a8ef39e4ba11da6464b94d39468aabda89a7c75"
+imports = ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Basic"]
+definitions = ["DeterminantIdentityNormalized", "DeterminantTransposeInvariant", "DeterminantBasicProperties", "DeterminantProductDerivationEvidence"]
+theorems = ["determinant_identity_normalized_intro", "determinant_identity_normalized_eq", "determinant_transpose_invariant_intro", "determinant_transpose", "determinant_basic_properties_intro", "determinant_basic_identity_normalized", "determinant_basic_identity_eq", "determinant_basic_transpose", "determinant_basic_transpose_eq", "determinant_basic_multilinear", "determinant_basic_alternating", "determinant_product_derivation_evidence_intro", "determinant_product_basic_properties", "determinant_product_matrix_mul_laws", "determinant_product_from_derivation", "determinant_product_theorem", "determinant_product"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"

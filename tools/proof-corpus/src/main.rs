@@ -182,6 +182,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE,
     &LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE,
     &LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE,
+    &LINEAR_ALGEBRA_MATRIX_DETERMINANT_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1904,6 +1905,19 @@ const LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE: ModuleArtifact = ModuleArtifact 
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_MATRIX_DETERMINANT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Matrix.Determinant",
+    source_path: "Proofs/Ai/LinearAlgebra/Matrix/Determinant/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Matrix/Determinant/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Matrix/Determinant/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Matrix/Determinant/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Basic"],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_MATRIX_DETERMINANT_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_MATRIX_DETERMINANT_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -3048,6 +3062,40 @@ macro_rules! linear_algebra_square_matrix_abs {
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => ",
             $tail
         )
+    };
+}
+
+macro_rules! linear_algebra_determinant_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_square_matrix_params!(concat!(
+            "forall (det : forall (entries : forall (i : Index), forall (j : Index), Scalar), Scalar), ",
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), ",
+            "forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_square_matrix_params!(concat!(
+            "forall (det : forall (entries : forall (i : Index), forall (j : Index), Scalar), Scalar), ",
+            "forall (matrix_mul : forall (left : forall (i : Index), forall (j : Index), Scalar), forall (right : forall (i : Index), forall (j : Index), Scalar), forall (i : Index), forall (j : Index), Scalar), ",
+            "forall (matrix_one : forall (i : Index), forall (j : Index), Scalar), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! linear_algebra_determinant_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        linear_algebra_square_matrix_abs!(concat!(
+            "fun det => fun matrix_mul => fun matrix_one => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        linear_algebra_square_matrix_abs!(concat!(
+            "fun det => fun matrix_mul => fun matrix_one => ",
+            $tail
+        ))
     };
 }
 
@@ -32329,6 +32377,217 @@ const LINEAR_ALGEBRA_MATRIX_ELIMINATION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_MATRIX_DETERMINANT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "DeterminantIdentityNormalized",
+        universe_params: &["u", "v"],
+        ty: linear_algebra_determinant_params!("Prop"),
+        value: linear_algebra_determinant_abs!("@Eq.{u} Scalar (det matrix_one) one"),
+    },
+    DefinitionArtifact {
+        name: "DeterminantTransposeInvariant",
+        universe_params: &["u", "v"],
+        ty: linear_algebra_determinant_params!("Prop"),
+        value: linear_algebra_determinant_abs!(
+            "forall (A : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (@MatrixTranspose.{u,v,v} Scalar zero one add neg sub mul Index Index A)) (det A)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "DeterminantBasicProperties",
+        universe_params: &["u", "v"],
+        ty: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), Prop"
+        ),
+        value: linear_algebra_determinant_abs!(concat!(
+            "fun multilinear_law => fun alternating_law => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), ",
+            "forall (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), ",
+            "forall (multilinear_evidence : multilinear_law), ",
+            "forall (alternating_evidence : alternating_law), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "DeterminantProductDerivationEvidence",
+        universe_params: &["u", "v"],
+        ty: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), Prop"
+        ),
+        value: linear_algebra_determinant_abs!(concat!(
+            "fun multilinear_law => fun alternating_law => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), ",
+            "forall (matrix_mul_laws : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one), ",
+            "forall (product_derivation : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_MATRIX_DETERMINANT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "determinant_identity_normalized_intro",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (h : @Eq.{u} Scalar (det matrix_one) one), @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one"
+        ),
+        proof: linear_algebra_determinant_abs!("fun h => h"),
+    },
+    TheoremArtifact {
+        name: "determinant_identity_normalized_eq",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), @Eq.{u} Scalar (det matrix_one) one"
+        ),
+        proof: linear_algebra_determinant_abs!("fun normalized => normalized"),
+    },
+    TheoremArtifact {
+        name: "determinant_transpose_invariant_intro",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (transpose_law : forall (A : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (@MatrixTranspose.{u,v,v} Scalar zero one add neg sub mul Index Index A)) (det A)), @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one"
+        ),
+        proof: linear_algebra_determinant_abs!("fun transpose_law => transpose_law"),
+    },
+    TheoremArtifact {
+        name: "determinant_transpose",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (transpose_law : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), forall (A : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (@MatrixTranspose.{u,v,v} Scalar zero one add neg sub mul Index Index A)) (det A)"
+        ),
+        proof: linear_algebra_determinant_abs!("fun transpose_law => fun A => transpose_law A"),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_properties_intro",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), forall (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), forall (multilinear_evidence : multilinear_law), forall (alternating_evidence : alternating_law), @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun identity_normalized => fun transpose_invariant => fun multilinear_evidence => fun alternating_evidence => fun (P : Prop) => fun (mk : forall (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), forall (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one), forall (multilinear_evidence : multilinear_law), forall (alternating_evidence : alternating_law), P) => mk identity_normalized transpose_invariant multilinear_evidence alternating_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_identity_normalized",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => basic_properties (@DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) (fun (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (multilinear_evidence : multilinear_law) => fun (alternating_evidence : alternating_law) => identity_normalized)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_identity_eq",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), @Eq.{u} Scalar (det matrix_one) one"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => @determinant_identity_normalized_eq.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one (@determinant_basic_identity_normalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law basic_properties)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_transpose",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => basic_properties (@DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) (fun (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (multilinear_evidence : multilinear_law) => fun (alternating_evidence : alternating_law) => transpose_invariant)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_transpose_eq",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (A : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (@MatrixTranspose.{u,v,v} Scalar zero one add neg sub mul Index Index A)) (det A)"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => fun A => @determinant_transpose.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one (@determinant_basic_transpose.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law basic_properties) A"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_multilinear",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), multilinear_law"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => basic_properties multilinear_law (fun (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (multilinear_evidence : multilinear_law) => fun (alternating_evidence : alternating_law) => multilinear_evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_basic_alternating",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), alternating_law"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => basic_properties alternating_law (fun (identity_normalized : @DeterminantIdentityNormalized.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (transpose_invariant : @DeterminantTransposeInvariant.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one) => fun (multilinear_evidence : multilinear_law) => fun (alternating_evidence : alternating_law) => alternating_evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_product_derivation_evidence_intro",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (matrix_mul_laws : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one), forall (product_derivation : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))), @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun basic_properties => fun matrix_mul_laws => fun product_derivation => fun (P : Prop) => fun (mk : forall (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (matrix_mul_laws : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one), forall (product_derivation : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))), P) => mk basic_properties matrix_mul_laws product_derivation"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_product_basic_properties",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun evidence => evidence (@DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law) (fun (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law) => fun (matrix_mul_laws : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one) => fun (product_derivation : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))) => basic_properties)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_product_matrix_mul_laws",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun evidence => evidence (@SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one) (fun (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law) => fun (matrix_mul_laws : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one) => fun (product_derivation : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))) => matrix_mul_laws)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_product_from_derivation",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun evidence => fun A => fun B => evidence (@Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))) (fun (basic_properties : @DeterminantBasicProperties.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law) => fun (matrix_mul_laws : @SquareMatrixMulLawArgs.{u,v} Scalar zero one add neg sub mul Index matrix_mul matrix_one) => fun (product_derivation : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))) => product_derivation A B)"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_product_theorem",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun evidence => fun A => fun B => @determinant_product_from_derivation.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law evidence A B"
+        ),
+    },
+    TheoremArtifact {
+        name: "determinant_product",
+        universe_params: &["u", "v"],
+        statement: linear_algebra_determinant_params!(
+            "forall (multilinear_law : Prop), forall (alternating_law : Prop), forall (evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (A : forall (i : Index), forall (j : Index), Scalar), forall (B : forall (i : Index), forall (j : Index), Scalar), @Eq.{u} Scalar (det (matrix_mul A B)) (mul (det A) (det B))"
+        ),
+        proof: linear_algebra_determinant_abs!(
+            "fun multilinear_law => fun alternating_law => fun evidence => fun A => fun B => @determinant_product_theorem.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law evidence A B"
+        ),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -40234,6 +40493,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LINEAR_ALGEBRA_MATRIX_REPRESENTATION_MODULE.module
         || config.module == LINEAR_ALGEBRA_SYSTEMS_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_MATRIX_ELIMINATION_MODULE.module
+        || config.module == LINEAR_ALGEBRA_MATRIX_DETERMINANT_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
