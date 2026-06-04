@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.EuclideanDivision",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "quotient_remainder_existence_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Quotient => fun Remainder => fun Nonzero => fun QuotientRemainder => fun existence_law => fun dividend => fun divisor => fun nonzero_divisor => existence_law dividend divisor nonzero_divisor"
+    },
+    {
+      "declaration": "quotient_remainder_identity_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Add => fun Mul => fun EqualInt => fun QuotientRemainder => fun identity_law => fun dividend => fun divisor => fun quotient => fun remainder => fun qr => identity_law dividend divisor quotient remainder qr"
+    },
+    {
+      "declaration": "remainder_sign_hypothesis_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonzero => fun RemainderSign => fun QuotientRemainder => fun sign_law => fun dividend => fun divisor => fun quotient => fun remainder => fun nonzero_divisor => fun qr => sign_law dividend divisor quotient remainder nonzero_divisor qr"
+    },
+    {
+      "declaration": "remainder_bound_hypothesis_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonzero => fun RemainderBound => fun QuotientRemainder => fun bound_law => fun dividend => fun divisor => fun quotient => fun remainder => fun nonzero_divisor => fun qr => bound_law dividend divisor quotient remainder nonzero_divisor qr"
+    },
+    {
+      "declaration": "quotient_uniqueness_with_bounds_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonzero => fun EqualInt => fun RemainderSignBound => fun QuotientRemainder => fun uniqueness_law => fun dividend => fun divisor => fun q1 => fun r1 => fun q2 => fun r2 => fun nonzero_divisor => fun bound1 => fun bound2 => fun qr1 => fun qr2 => uniqueness_law dividend divisor q1 r1 q2 r2 nonzero_divisor bound1 bound2 qr1 qr2"
+    },
+    {
+      "declaration": "remainder_uniqueness_with_bounds_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonzero => fun EqualInt => fun RemainderSignBound => fun QuotientRemainder => fun uniqueness_law => fun dividend => fun divisor => fun q1 => fun r1 => fun q2 => fun r2 => fun nonzero_divisor => fun bound1 => fun bound2 => fun qr1 => fun qr2 => uniqueness_law dividend divisor q1 r1 q2 r2 nonzero_divisor bound1 bound2 qr1 qr2"
+    },
+    {
+      "declaration": "normalized_euclidean_division_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonzero => fun NormalizedDivisor => fun QuotientRemainder => fun EuclideanDivision => fun normalization_law => fun dividend => fun divisor => fun quotient => fun remainder => fun nonzero_divisor => fun normalized_divisor => fun qr => normalization_law dividend divisor quotient remainder nonzero_divisor normalized_divisor qr"
+    },
+    {
+      "declaration": "nat_int_euclidean_division_translation_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun toInt => fun PositiveNat => fun NatEuclideanDivision => fun IntEuclideanDivision => fun translation_law => fun dividend => fun divisor => fun quotient => fun remainder => fun positive_divisor => fun nat_ediv => translation_law dividend divisor quotient remainder positive_divisor nat_ediv"
+    },
+    {
+      "declaration": "euclidean_division_algorithm_boundary_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun MathematicalExistence => fun AlgorithmExtraction => fun ExtractionBoundary => fun boundary_law => fun existence => fun algorithm => boundary_law existence algorithm"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/EuclideanDivision/certificate.npcert"
+  }
+}

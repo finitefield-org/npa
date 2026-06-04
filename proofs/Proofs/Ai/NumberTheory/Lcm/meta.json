@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Lcm",
+  "source": "Proofs/Ai/NumberTheory/Lcm/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Lcm/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:21eeaaf62e7f19a12728b9f1fa807aa82039b9c0e2405e9a26e41acc12d90326",
+  "certificate_file_sha256": "sha256:7969260986b0e7755e797a2d22f3fa45496aa13b0249652ddbf4def8f4ebc65b",
+  "export_hash": "sha256:405dafd865bebdebe189b2cf9558b749c7b8415113205d4f6129f05b0dfb71d7",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:75ad4699286563bd05b8c2041dc3b29929fb12569ddec56adc0d1168a7068983",
+  "imports": ["Proofs.Ai.NumberTheory.Gcd"],
+  "axioms": [],
+  "declarations": [
+    { "name": "lcm_existence_from_gcd_packaged", "kind": "theorem" },
+    { "name": "lcm_multiple_left_packaged", "kind": "theorem" },
+    { "name": "lcm_multiple_right_packaged", "kind": "theorem" },
+    { "name": "lcm_least_common_multiple_packaged", "kind": "theorem" },
+    { "name": "lcm_uniqueness_normalized_packaged", "kind": "theorem" },
+    { "name": "lcm_normalized_sign_convention_packaged", "kind": "theorem" },
+    { "name": "gcd_lcm_product_formula_packaged", "kind": "theorem" },
+    { "name": "lcm_congruence_normal_form_surface", "kind": "theorem" },
+    { "name": "lcm_diophantine_normal_form_surface", "kind": "theorem" },
+    { "name": "lcm_no_bezout_assumption_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Divisibility",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "divides_reflexivity_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun reflexive_law => fun a => reflexive_law a"
+    },
+    {
+      "declaration": "divides_transitivity_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun transitive_law => fun a => fun b => fun c => fun divides_ab => fun divides_bc => transitive_law a b c divides_ab divides_bc"
+    },
+    {
+      "declaration": "sign_normalized_divisibility_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun NormalizedDivides => fun Nonnegative => fun normalize_law => fun a => fun b => fun nonnegative_b => fun divides_ab => normalize_law a b nonnegative_b divides_ab"
+    },
+    {
+      "declaration": "normalized_divisibility_antisymmetry_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun NormalizedDivides => fun EquivalentInt => fun antisymmetry_law => fun a => fun b => fun divides_ab => fun divides_ba => antisymmetry_law a b divides_ab divides_ba"
+    },
+    {
+      "declaration": "divides_sign_rule_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun Neg => fun sign_law => fun a => fun b => fun divides_ab => sign_law a b divides_ab"
+    },
+    {
+      "declaration": "divisor_from_divides_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun Divisor => fun divisor_law => fun d => fun n => fun divides_dn => divisor_law d n divides_dn"
+    },
+    {
+      "declaration": "multiple_from_divides_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun Multiple => fun multiple_law => fun n => fun m => fun divides_nm => multiple_law n m divides_nm"
+    },
+    {
+      "declaration": "divides_mul_right_closure_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Divides => fun Mul => fun closure_law => fun a => fun b => fun c => fun divides_ab => closure_law a b c divides_ab"
+    },
+    {
+      "declaration": "nat_int_divisibility_translation_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun toInt => fun NatDivides => fun IntDivides => fun PositiveNat => fun translation_law => fun a => fun b => fun positive_b => fun nat_divides_ab => translation_law a b positive_b nat_divides_ab"
+    },
+    {
+      "declaration": "divisibility_simplification_theorem_target",
+      "source_kind": "explicit_term",
+      "term": "fun DivisibilitySimplification => fun OrdinaryTheoremTarget => fun target => fun evidence => evidence"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Divisibility/certificate.npcert"
+  }
+}

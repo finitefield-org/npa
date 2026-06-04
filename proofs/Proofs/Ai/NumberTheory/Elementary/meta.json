@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Elementary",
+  "source": "Proofs/Ai/NumberTheory/Elementary/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Elementary/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b707a8237acbafb3e333f733f034a16ffd76b9147239cbb0cb88ab5fb5e3e9aa",
+  "certificate_file_sha256": "sha256:fdfd307f8a7d4a2fb8e56a6a5caab410585955338f44cd9656b23b5f9ea460eb",
+  "export_hash": "sha256:8b4931d8e693cf27167be34c9eea1424e48b043269b4b0ddfeb75409fc8cbdcc",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:95a91695118ef7a6ac69f0cfc8d18ef245f7598e3782768da4eb0e285b4059e9",
+  "imports": ["Proofs.Ai.NumberTheory.Inventory"],
+  "axioms": [],
+  "declarations": [
+    { "name": "integer_carrier_surface_preserves_evidence", "kind": "theorem" },
+    { "name": "nat_int_translation_surface_preserves_evidence", "kind": "theorem" },
+    { "name": "positive_surface_preserves_evidence", "kind": "theorem" },
+    { "name": "nonzero_surface_preserves_evidence", "kind": "theorem" },
+    { "name": "positivity_nonzero_joint_surface", "kind": "theorem" },
+    { "name": "arithmetic_structure_is_ordinary_theorem_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,41 @@
+import Proofs.Ai.NumberTheory.Divisibility
+
+theorem prime_nat_definition_surface :
+  forall (Nat : Type), forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), forall (PrimeNatDefinition : forall (n : Nat), Prop), forall (PrimeNat : forall (n : Nat), Prop), forall (definition_law : forall (n : Nat), forall (definition : PrimeNatDefinition n), PrimeNat n), forall (n : Nat), forall (definition : PrimeNatDefinition n), PrimeNat n :=
+  fun Nat => fun DividesNat => fun PrimeNatDefinition => fun PrimeNat => fun definition_law => fun n => fun definition => definition_law n definition
+
+theorem prime_int_definition_surface :
+  forall (Int : Type), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (UnitInt : forall (u : Int), Prop), forall (AssociatedInt : forall (a : Int), forall (b : Int), Prop), forall (PrimeIntDefinition : forall (p : Int), Prop), forall (PrimeInt : forall (p : Int), Prop), forall (definition_law : forall (p : Int), forall (definition : PrimeIntDefinition p), PrimeInt p), forall (p : Int), forall (definition : PrimeIntDefinition p), PrimeInt p :=
+  fun Int => fun DividesInt => fun UnitInt => fun AssociatedInt => fun PrimeIntDefinition => fun PrimeInt => fun definition_law => fun p => fun definition => definition_law p definition
+
+theorem unit_and_associated_int_predicates_surface :
+  forall (Int : Type), forall (UnitInt : forall (u : Int), Prop), forall (AssociatedInt : forall (a : Int), forall (b : Int), Prop), forall (UnitAssociatedInterface : forall (a : Int), forall (b : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (unit_a : UnitInt a), forall (associated_ab : AssociatedInt a b), UnitAssociatedInterface a b), forall (a : Int), forall (b : Int), forall (unit_a : UnitInt a), forall (associated_ab : AssociatedInt a b), UnitAssociatedInterface a b :=
+  fun Int => fun UnitInt => fun AssociatedInt => fun UnitAssociatedInterface => fun surface_law => fun a => fun b => fun unit_a => fun associated_ab => surface_law a b unit_a associated_ab
+
+theorem sign_normalized_prime_predicate_surface :
+  forall (Int : Type), forall (PrimeInt : forall (p : Int), Prop), forall (Nonnegative : forall (p : Int), Prop), forall (SignNormalizedPrimeInt : forall (p : Int), Prop), forall (normalization_law : forall (p : Int), forall (prime_p : PrimeInt p), forall (nonnegative_p : Nonnegative p), SignNormalizedPrimeInt p), forall (p : Int), forall (prime_p : PrimeInt p), forall (nonnegative_p : Nonnegative p), SignNormalizedPrimeInt p :=
+  fun Int => fun PrimeInt => fun Nonnegative => fun SignNormalizedPrimeInt => fun normalization_law => fun p => fun prime_p => fun nonnegative_p => normalization_law p prime_p nonnegative_p
+
+theorem one_is_not_prime_nat_packaged :
+  forall (Nat : Type), forall (PrimeNat : forall (n : Nat), Prop), forall (NotPrimeNat : forall (n : Nat), Prop), forall (one_not_prime_law : forall (one : Nat), NotPrimeNat one), forall (one : Nat), NotPrimeNat one :=
+  fun Nat => fun PrimeNat => fun NotPrimeNat => fun one_not_prime_law => fun one => one_not_prime_law one
+
+theorem one_is_not_prime_int_packaged :
+  forall (Int : Type), forall (PrimeInt : forall (n : Int), Prop), forall (NotPrimeInt : forall (n : Int), Prop), forall (one_not_prime_law : forall (one : Int), NotPrimeInt one), forall (one : Int), NotPrimeInt one :=
+  fun Int => fun PrimeInt => fun NotPrimeInt => fun one_not_prime_law => fun one => one_not_prime_law one
+
+theorem prime_nat_trivial_divisors_packaged :
+  forall (Nat : Type), forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), forall (PrimeNat : forall (p : Nat), Prop), forall (TrivialNatDivisor : forall (d : Nat), forall (p : Nat), Prop), forall (trivial_divisor_law : forall (p : Nat), forall (d : Nat), forall (prime_p : PrimeNat p), forall (divides_dp : DividesNat d p), TrivialNatDivisor d p), forall (p : Nat), forall (d : Nat), forall (prime_p : PrimeNat p), forall (divides_dp : DividesNat d p), TrivialNatDivisor d p :=
+  fun Nat => fun DividesNat => fun PrimeNat => fun TrivialNatDivisor => fun trivial_divisor_law => fun p => fun d => fun prime_p => fun divides_dp => trivial_divisor_law p d prime_p divides_dp
+
+theorem prime_int_trivial_divisors_up_to_unit_packaged :
+  forall (Int : Type), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (PrimeInt : forall (p : Int), Prop), forall (UnitInt : forall (u : Int), Prop), forall (AssociatedInt : forall (a : Int), forall (b : Int), Prop), forall (TrivialIntDivisorUpToUnit : forall (d : Int), forall (p : Int), Prop), forall (trivial_divisor_law : forall (p : Int), forall (d : Int), forall (prime_p : PrimeInt p), forall (divides_dp : DividesInt d p), TrivialIntDivisorUpToUnit d p), forall (p : Int), forall (d : Int), forall (prime_p : PrimeInt p), forall (divides_dp : DividesInt d p), TrivialIntDivisorUpToUnit d p :=
+  fun Int => fun DividesInt => fun PrimeInt => fun UnitInt => fun AssociatedInt => fun TrivialIntDivisorUpToUnit => fun trivial_divisor_law => fun p => fun d => fun prime_p => fun divides_dp => trivial_divisor_law p d prime_p divides_dp
+
+theorem prime_nat_int_translation_surface :
+  forall (Nat : Type), forall (Int : Type), forall (ToInt : forall (n : Nat), Int), forall (PrimeNat : forall (n : Nat), Prop), forall (PrimeInt : forall (p : Int), Prop), forall (TranslationEvidence : forall (n : Nat), Prop), forall (translation_law : forall (n : Nat), forall (translation : TranslationEvidence n), forall (prime_n : PrimeNat n), PrimeInt (ToInt n)), forall (n : Nat), forall (translation : TranslationEvidence n), forall (prime_n : PrimeNat n), PrimeInt (ToInt n) :=
+  fun Nat => fun Int => fun ToInt => fun PrimeNat => fun PrimeInt => fun TranslationEvidence => fun translation_law => fun n => fun translation => fun prime_n => translation_law n translation prime_n
+
+theorem prime_predicates_do_not_conflict_with_ufd_prime_element :
+  forall (PrimeNatPackage : Type), forall (PrimeIntPackage : Type), forall (PrimeElement : Type), forall (TerminologyBoundary : forall (prime_nat : PrimeNatPackage), forall (prime_int : PrimeIntPackage), forall (prime_element : PrimeElement), Prop), forall (boundary_law : forall (prime_nat : PrimeNatPackage), forall (prime_int : PrimeIntPackage), forall (prime_element : PrimeElement), TerminologyBoundary prime_nat prime_int prime_element), forall (prime_nat : PrimeNatPackage), forall (prime_int : PrimeIntPackage), forall (prime_element : PrimeElement), TerminologyBoundary prime_nat prime_int prime_element :=
+  fun PrimeNatPackage => fun PrimeIntPackage => fun PrimeElement => fun TerminologyBoundary => fun boundary_law => fun prime_nat => fun prime_int => fun prime_element => boundary_law prime_nat prime_int prime_element

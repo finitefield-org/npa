@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Descent",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "finite_descent_step_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun State => fun NatCarrier => fun Measure => fun Next => fun Smaller => fun Bad => fun descent_step_law => fun state => fun bad_state => descent_step_law state bad_state"
+    },
+    {
+      "declaration": "well_founded_minimization_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Candidate => fun NatCarrier => fun Measure => fun WellFoundedMeasure => fun Admissible => fun Minimal => fun minimization_law => fun candidate => fun well_founded => fun admissible => minimization_law candidate well_founded admissible"
+    },
+    {
+      "declaration": "no_infinite_descent_contradiction_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun State => fun NoInfiniteDescent => fun Contradiction => fun Bad => fun contradiction_law => fun initial => fun no_infinite_descent => fun bad_initial => contradiction_law initial no_infinite_descent bad_initial"
+    },
+    {
+      "declaration": "gcd_descent_measure_surface_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun NatCarrier => fun Measure => fun Divides => fun GcdDescentState => fun surface_law => fun a => fun b => fun divides_ba => surface_law a b divides_ba"
+    },
+    {
+      "declaration": "continued_fraction_descent_surface_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun State => fun NatCarrier => fun Height => fun NextConvergent => fun Smaller => fun ContinuedFractionState => fun surface_law => fun state => fun cf_state => surface_law state cf_state"
+    },
+    {
+      "declaration": "diophantine_descent_surface_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Solution => fun NatCarrier => fun Height => fun NextSolution => fun Smaller => fun EquationSolution => fun surface_law => fun solution => fun equation_solution => surface_law solution equation_solution"
+    },
+    {
+      "declaration": "descent_algorithm_boundary_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun MathematicalDescent => fun AlgorithmExtraction => fun ExtractionBoundary => fun boundary_law => fun descent => fun algorithm => boundary_law descent algorithm"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Descent/certificate.npcert"
+  }
+}

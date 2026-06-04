@@ -179,7 +179,7 @@ later in the file.
 
 ### NT-T00 Build Number-Theory Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Areas: `proofs/README.md`, theorem-card documentation, AI theorem index sidecars
 - Tasks:
@@ -190,8 +190,10 @@ later in the file.
   - Label conjectures, conditional theorem forms, bridge interfaces, and
     derived theorem targets separately.
 - Deliverables:
-  - Number-theory theorem-card inventory.
-  - Duplicate-home and conjecture-status map.
+  - `proofs/number-theory-theorem-cards.md` number-theory theorem-card
+    inventory.
+  - Duplicate-home and conjecture-status map in
+    `proofs/number-theory-theorem-cards.md`.
 - Acceptance criteria:
   - Every roadmap theorem family has a card or an intentionally grouped card.
   - Conjectures are never marked as `L2` derived theorem targets.
@@ -203,31 +205,35 @@ later in the file.
 
 ### NT-T01 Create Number-Theory Namespace Contract And Statement Policy
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T00`
 - Areas: `Proofs/Ai/NumberTheory/Inventory/`, `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/README.md`
 - Tasks:
-  - Create `Proofs.Ai.NumberTheory.Inventory` or a documented statement-only
-    entry point if the authoring route does not yet need a concrete module.
+  - Create `Proofs.Ai.NumberTheory.Inventory` as the concrete
+    certificate-backed namespace-policy entry point.
   - Record namespace ownership rules for arithmetic-owned modules and external
     owner namespaces such as `EllipticCurve`, `ModularForms`,
     `GaloisRepresentation`, `AlgebraicGeometry`, and `Algebra.AbstractFiniteField`.
   - Add trusted-boundary wording to theorem cards or module comments.
 - Deliverables:
-  - Number-theory namespace entry point or statement-only plan.
-  - Namespace ownership contract.
+  - `Proofs.Ai.NumberTheory.Inventory` namespace-policy entry point.
+  - Namespace ownership contract in
+    `proofs/number-theory-theorem-cards.md`.
 - Acceptance criteria:
   - Arithmetic objects are ordinary proof-corpus structures, not kernel
     primitives.
   - External owner namespaces are not duplicated under `Proofs.Ai.NumberTheory`.
   - Bridge assumptions and conjectures remain explicitly named.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Inventory`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Inventory`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Proofs.Ai.NumberTheory|kernel primitive|AbstractFiniteField|BridgeAxiom" proofs`
   - `git diff --check`
 
 ### NT-T02 Define Integer And Divisibility Core Interface
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T01`
 - Areas: `Proofs/Ai/NumberTheory/Elementary/`, `Proofs/Ai/NumberTheory/Divisibility/`, `proofs/README.md`
 - Tasks:
@@ -248,11 +254,15 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Divisibility`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Divisibility`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Divides|divisibility|kernel primitive" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T03 Add Euclidean Division And Descent Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T02`
 - Areas: `Proofs/Ai/NumberTheory/EuclideanDivision/`, `Proofs/Ai/NumberTheory/Descent/`
 - Tasks:
@@ -270,12 +280,18 @@ later in the file.
   - Algorithm extraction is separated from mathematical existence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanDivision`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Descent`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanDivision`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Descent`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "EuclideanDivision|quotient|remainder|Descent" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T04 Add Gcd And Lcm Normal Forms
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T03`
 - Areas: `Proofs/Ai/NumberTheory/Gcd/`, `Proofs/Ai/NumberTheory/Lcm/`
 - Tasks:
@@ -293,12 +309,18 @@ later in the file.
   - No theorem assumes Bezout before `NT-T05`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Gcd`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Lcm`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Gcd`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Lcm`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Gcd|Lcm|gcd_lcm|normalized" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T05 Prove Euclid Algorithm And Bezout Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T04`
 - Areas: `Proofs/Ai/NumberTheory/EuclideanAlgorithm/`, `Proofs/Ai/NumberTheory/Bezout/`
 - Tasks:
@@ -313,13 +335,19 @@ later in the file.
   - Bezout does not import prime factorization or CRT.
   - Coprimality statements expose integer/natural variants explicitly.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanAlgorithm`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Bezout`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanAlgorithm`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Bezout`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Bezout|EuclideanAlgorithm|Coprime|linear_combination" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T06 Add Linear Diophantine Equation Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T05`
 - Areas: `Proofs/Ai/NumberTheory/LinearDiophantine/`
 - Tasks:
@@ -350,6 +378,7 @@ later in the file.
   - Align terminology with `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.Prime`.
+  - `Proofs.Ai.NumberTheory.Composite`.
   - Prime/composite README notes.
 - Acceptance criteria:
   - Prime predicates do not conflict with UFD-local `PrimeElement`.
@@ -357,12 +386,18 @@ later in the file.
   - No unique factorization theorem is assumed yet.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Prime`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Composite`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Prime`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Composite`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "PrimeNat|Composite|PrimeElement|unit|associated" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T08 Bridge Prime Divisibility And Factor Extraction
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T07`, `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`
 - Areas: `Proofs/Ai/NumberTheory/UfdBridge/`, `Proofs/Ai/NumberTheory/Factorization/`
 - Tasks:
@@ -372,6 +407,7 @@ later in the file.
   - Add existence of prime factors for composite numbers.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.UfdBridge`.
+  - `Proofs.Ai.NumberTheory.Factorization`.
   - Prime-factor extraction theorem package.
 - Acceptance criteria:
   - The bridge imports the abstract UFD package without making UFD depend on
@@ -380,13 +416,20 @@ later in the file.
   - Factor extraction can be consumed by Diophantine equations and arithmetic
     functions.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.UfdBridge`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.UfdBridge`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "UfdBridge|Euclid|prime_divides|Factorization" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T09 Prove Fundamental Theorem Of Arithmetic And Prime Infinitude
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T08`
 - Areas: `Proofs/Ai/NumberTheory/Factorization/`, `Proofs/Ai/NumberTheory/PrimeInfinitude/`
 - Tasks:
@@ -397,20 +440,28 @@ later in the file.
   - Prove Euclid's infinitude of primes and square-root bound for composite
     prime factors.
 - Deliverables:
-  - Certificate-backed FTA theorem package.
+  - `Proofs.Ai.NumberTheory.Factorization` FTA theorem package.
+  - `Proofs.Ai.NumberTheory.PrimeInfinitude`.
   - Prime-infinitude theorem package.
 - Acceptance criteria:
   - FTA is a derived theorem, not a theorem-shaped axiom.
   - Prime infinitude does not depend on analytic number theory or Chebotarev.
   - Factorization formulas expose finite-list or finite-multiset evidence.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeInfinitude`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeInfinitude`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimeInfinitude`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "fundamental_theorem|prime_factorization|PrimeInfinitude|sqrt_bound" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T10 Define Congruence Algebra
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T05`
 - Areas: `Proofs/Ai/NumberTheory/Congruence/`
 - Tasks:
@@ -426,7 +477,11 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Congruence`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Congruence`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "Congruent|modulo|cancellation|Coprime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T11 Add Residue Ring And Unit Group Interfaces
 

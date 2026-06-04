@@ -57,6 +57,68 @@ Current bundles:
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
+- `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
+  entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
+  structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
+  named, conjectures are explicit, and derived targets require source-free certificate verdicts.
+- `Proofs/Ai/NumberTheory/Elementary/`: certificate-backed elementary number-theory interface
+  surface for explicit `Int` carriers, `Nat`-to-`Int` translation evidence, positivity, nonzero
+  evidence, and ordinary arithmetic theorem targets. These declarations are library interfaces,
+  not kernel primitive arithmetic.
+- `Proofs/Ai/NumberTheory/Divisibility/`: certificate-backed divisibility interface preserving
+  explicit `Divides`, sign-normalized divisibility, divisor, multiple, sign-rule, closure, and
+  `Nat`/`Int` translation law packages. It imports only the number-theory elementary interface
+  closure and does not import prime factorization, elliptic-curve, or modularity modules.
+- `Proofs/Ai/NumberTheory/EuclideanDivision/`: certificate-backed quotient/remainder interface
+  preserving explicit nonzero divisor hypotheses, remainder sign and bound law packages,
+  quotient and remainder uniqueness under those bounds, normalized Euclidean division, `Nat`/`Int`
+  translation, and the boundary between mathematical existence and algorithm extraction.
+- `Proofs/Ai/NumberTheory/Descent/`: certificate-backed finite-descent and minimization
+  interface for later gcd, continued-fraction, and Diophantine modules, with well-founded
+  measures and algorithm extraction kept as explicit law-package evidence.
+- `Proofs/Ai/NumberTheory/Gcd/`: certificate-backed gcd normal-form interface derived from
+  Euclidean-division or explicit law evidence, preserving divisor projections, greatest-common-
+  divisor characterization, normalized sign convention, symmetry, uniqueness, and congruence/
+  Diophantine reduction surfaces without assuming Bezout.
+- `Proofs/Ai/NumberTheory/Lcm/`: certificate-backed lcm normal-form interface over gcd evidence,
+  preserving multiple projections, least-common-multiple characterization, normalized sign
+  convention, uniqueness, the explicit `gcd_lcm` product formula hypothesis, and downstream
+  congruence/Diophantine reduction surfaces without assuming Bezout.
+- `Proofs/Ai/NumberTheory/EuclideanAlgorithm/`: certificate-backed Euclid algorithm interface
+  over gcd evidence, preserving descent termination evidence, remainder-step gcd preservation,
+  gcd correctness, extended Euclidean algorithm correctness, and the boundary separating
+  algorithmic correctness from runtime complexity.
+- `Proofs/Ai/NumberTheory/Bezout/`: certificate-backed Bezout interface downstream of the
+  Euclidean algorithm package, preserving Bezout identities, gcd linear-combination
+  characterization, explicit integer and natural coprimality variants, `Nat`/`Int` translation,
+  and the boundary excluding prime-factorization and CRT imports.
+- `Proofs/Ai/NumberTheory/Prime/`: certificate-backed prime predicate interface over divisibility,
+  preserving natural-number and integer prime predicates, unit and associated predicates,
+  sign-normalized integer primes, `1`-is-not-prime targets, trivial-divisor characterizations,
+  `Nat`/`Int` translation, and the terminology boundary with UFD-local `PrimeElement`.
+- `Proofs/Ai/NumberTheory/Composite/`: certificate-backed composite predicate interface over the
+  prime package, preserving natural-number and integer composite predicates, nontrivial-divisor
+  projections, sign-normalized composite surfaces, `Nat`/`Int` translation, factor-extraction
+  input surfaces, and the boundary excluding unique factorization assumptions.
+- `Proofs/Ai/NumberTheory/UfdBridge/`: certificate-backed bridge from number-theory prime and
+  composite predicates to the abstract UFD prime-factorization API, preserving one-way imports
+  into `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`, Euclid/product-divisibility surfaces
+  derived from explicit Bezout/UFD evidence, and the boundary excluding FTA uniqueness assumptions.
+- `Proofs/Ai/NumberTheory/Factorization/`: certificate-backed prime-factor extraction package
+  downstream of `UfdBridge`, preserving composite prime-factor existence, integer extraction,
+  factorization-existence and erasure surfaces, Diophantine/arithmetic-function reuse inputs,
+  FTA existence/uniqueness and derived-package surfaces, finite-list and finite-multiset
+  evidence, divisor-count/divisor-sum/gcd/lcm formula surfaces, unit/sign normalization, and
+  the boundary excluding theorem-shaped FTA input axioms.
+- `Proofs/Ai/NumberTheory/PrimeInfinitude/`: certificate-backed prime-infinitude package
+  downstream of `Factorization`, preserving Euclid finite-list escape surfaces, factorial-plus-one
+  witnesses, elementary prime-infinitude variants, square-root bounds for composite prime factors,
+  and boundaries excluding analytic number theory, Chebotarev, and PNT dependencies.
+- `Proofs/Ai/NumberTheory/Congruence/`: certificate-backed congruence algebra package
+  downstream of divisibility, gcd, and Bezout evidence, preserving congruence modulo an integer,
+  equivalence-relation laws, addition, multiplication, negation, and power compatibility, plus
+  cancellation, division, and linear-congruence solvability surfaces whose `Divides`, `Gcd`, and
+  `Coprime` hypotheses remain explicit.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
@@ -368,6 +430,12 @@ Planning documents:
   theorem route.
 - `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
   implicit-function theorem route.
+- `number-theory-theorem-proof-roadmap.md`: NT-00 through NT-24 plan for number-theory theorem
+  families, from elementary arithmetic through promotion.
+- `number-theory-theorem-proof-roadmap-todo.md`: NT-T00 through NT-T70 implementation task
+  breakdown for the number-theory roadmap.
+- `number-theory-theorem-cards.md`: NT-T00 theorem-card inventory, duplicate-home map, and
+  conjecture-status map. It is a planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route
 

@@ -97,6 +97,193 @@ theorems = ["imp_chain4", "imp_permute3", "imp_apply_twice", "imp_const3", "imp_
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.NumberTheory.Inventory"
+source = "Proofs/Ai/NumberTheory/Inventory/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Inventory/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Inventory/meta.json"
+replay = "Proofs/Ai/NumberTheory/Inventory/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:9812803dc5169eb3dbd3afb07f52112ec86a1ae434cb936336d383bc06986bf6"
+expected_certificate_file_hash = "sha256:2df5f2b02076372aeaa9dd6045a5c5ae60efb1a2ff6099cbd8fdf898a0703234"
+expected_export_hash = "sha256:5e32357c79517c01c304db468ef7ba65053ebe9769db9f26a101103ca8a4fd6f"
+expected_axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+expected_certificate_hash = "sha256:7f29bf4d79384fb62a289f49202b1aab5282295b90a3982c41ebb3f39e7f8841"
+imports = []
+definitions = []
+theorems = ["arithmetic_object_structure_policy", "external_owner_alias_policy", "bridge_assumption_named_policy", "conjecture_assumption_explicit_policy", "derived_target_certificate_policy"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Elementary"
+source = "Proofs/Ai/NumberTheory/Elementary/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Elementary/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Elementary/meta.json"
+replay = "Proofs/Ai/NumberTheory/Elementary/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:b707a8237acbafb3e333f733f034a16ffd76b9147239cbb0cb88ab5fb5e3e9aa"
+expected_certificate_file_hash = "sha256:fdfd307f8a7d4a2fb8e56a6a5caab410585955338f44cd9656b23b5f9ea460eb"
+expected_export_hash = "sha256:8b4931d8e693cf27167be34c9eea1424e48b043269b4b0ddfeb75409fc8cbdcc"
+expected_axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+expected_certificate_hash = "sha256:95a91695118ef7a6ac69f0cfc8d18ef245f7598e3782768da4eb0e285b4059e9"
+imports = ["Proofs.Ai.NumberTheory.Inventory"]
+definitions = []
+theorems = ["integer_carrier_surface_preserves_evidence", "nat_int_translation_surface_preserves_evidence", "positive_surface_preserves_evidence", "nonzero_surface_preserves_evidence", "positivity_nonzero_joint_surface", "arithmetic_structure_is_ordinary_theorem_surface"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Divisibility"
+source = "Proofs/Ai/NumberTheory/Divisibility/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Divisibility/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Divisibility/meta.json"
+replay = "Proofs/Ai/NumberTheory/Divisibility/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:47b764561588aebd6aff93c07339d0d7433565f526227dd96aa16b8a020e41f2"
+expected_certificate_file_hash = "sha256:29fe6e8f0449445b19a61e638382a12ee928f48bf0e3116610ca1310e8b21962"
+expected_export_hash = "sha256:ba4385582c059d21b127a5bceb4a3c8d91b90c80683e90a7f13b51854fbdf391"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:02bfd3da621ab93923668fd1d7cbe0512c630408a0dc720a863c53aa13b97351"
+imports = ["Proofs.Ai.NumberTheory.Elementary"]
+definitions = []
+theorems = ["divides_reflexivity_packaged", "divides_transitivity_packaged", "sign_normalized_divisibility_packaged", "normalized_divisibility_antisymmetry_packaged", "divides_sign_rule_packaged", "divisor_from_divides_packaged", "multiple_from_divides_packaged", "divides_mul_right_closure_packaged", "nat_int_divisibility_translation_packaged", "divisibility_simplification_theorem_target"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.EuclideanDivision"
+source = "Proofs/Ai/NumberTheory/EuclideanDivision/source.npa"
+certificate = "Proofs/Ai/NumberTheory/EuclideanDivision/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/EuclideanDivision/meta.json"
+replay = "Proofs/Ai/NumberTheory/EuclideanDivision/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:d67fb005a8457a31f5aaedcea184f6b3023647af3759ae38dc02ba0aed423ade"
+expected_certificate_file_hash = "sha256:bca9e745c24e81c0784bca6e5bbe32b83de5c756b10422a728e051151afb706e"
+expected_export_hash = "sha256:5b239452653cb21a22548aa0a3e41b32f6c6e7eec9da55e22d818067e72635cb"
+expected_axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+expected_certificate_hash = "sha256:82266891f195f429c3adbd4ffe1799ceb40aaa11d64e174774c892878a0a881e"
+imports = ["Proofs.Ai.NumberTheory.Divisibility"]
+definitions = []
+theorems = ["quotient_remainder_existence_packaged", "quotient_remainder_identity_packaged", "remainder_sign_hypothesis_packaged", "remainder_bound_hypothesis_packaged", "quotient_uniqueness_with_bounds_packaged", "remainder_uniqueness_with_bounds_packaged", "normalized_euclidean_division_packaged", "nat_int_euclidean_division_translation_packaged", "euclidean_division_algorithm_boundary_packaged"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Descent"
+source = "Proofs/Ai/NumberTheory/Descent/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Descent/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Descent/meta.json"
+replay = "Proofs/Ai/NumberTheory/Descent/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:91f70f6e7ec3bf284335745632baa900db1f3e0843017dfdfb343a0868379941"
+expected_certificate_file_hash = "sha256:f275f32eeb8eba75922032e6b5260ce278b9a83fa793d34f579aafcba218a325"
+expected_export_hash = "sha256:ca2319aefff23f3d63e06a49a86dc68c3b393d575e0658cd3d30f1e0b033d199"
+expected_axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+expected_certificate_hash = "sha256:7f91e6c2311b41c44ee10596d85a5598b3396bb2a726532dec3f46962bdf1efc"
+imports = ["Proofs.Ai.NumberTheory.EuclideanDivision"]
+definitions = []
+theorems = ["finite_descent_step_packaged", "well_founded_minimization_packaged", "no_infinite_descent_contradiction_packaged", "gcd_descent_measure_surface_packaged", "continued_fraction_descent_surface_packaged", "diophantine_descent_surface_packaged", "descent_algorithm_boundary_packaged"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Gcd"
+source = "Proofs/Ai/NumberTheory/Gcd/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Gcd/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Gcd/meta.json"
+replay = "Proofs/Ai/NumberTheory/Gcd/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:851a32cd036cb1f43a9215ac37b9850d69b75a6200097c9d38c4562fe739f3fd"
+expected_certificate_file_hash = "sha256:4877f170c3a44b7b7dcc6ddea88473ec43c85ec106bfe2f72124e43c9ddbd44e"
+expected_export_hash = "sha256:801530494c74c95f9f02d4b5b2be643d3a614688f64a727b09c6123a82fa65f9"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:8034f12093881fa7d8df0e895d3b8929239bc3739b684268c66043ece89bd4af"
+imports = ["Proofs.Ai.NumberTheory.Descent"]
+definitions = []
+theorems = ["gcd_existence_from_euclidean_division_packaged", "gcd_divides_left_packaged", "gcd_divides_right_packaged", "gcd_greatest_common_divisor_packaged", "gcd_uniqueness_normalized_packaged", "gcd_symmetry_packaged", "gcd_normalized_sign_convention_packaged", "gcd_congruence_normal_form_surface", "gcd_diophantine_normal_form_surface", "gcd_no_bezout_assumption_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Lcm"
+source = "Proofs/Ai/NumberTheory/Lcm/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Lcm/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Lcm/meta.json"
+replay = "Proofs/Ai/NumberTheory/Lcm/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:21eeaaf62e7f19a12728b9f1fa807aa82039b9c0e2405e9a26e41acc12d90326"
+expected_certificate_file_hash = "sha256:7969260986b0e7755e797a2d22f3fa45496aa13b0249652ddbf4def8f4ebc65b"
+expected_export_hash = "sha256:405dafd865bebdebe189b2cf9558b749c7b8415113205d4f6129f05b0dfb71d7"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:75ad4699286563bd05b8c2041dc3b29929fb12569ddec56adc0d1168a7068983"
+imports = ["Proofs.Ai.NumberTheory.Gcd"]
+definitions = []
+theorems = ["lcm_existence_from_gcd_packaged", "lcm_multiple_left_packaged", "lcm_multiple_right_packaged", "lcm_least_common_multiple_packaged", "lcm_uniqueness_normalized_packaged", "lcm_normalized_sign_convention_packaged", "gcd_lcm_product_formula_packaged", "lcm_congruence_normal_form_surface", "lcm_diophantine_normal_form_surface", "lcm_no_bezout_assumption_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.EuclideanAlgorithm"
+source = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/source.npa"
+certificate = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/meta.json"
+replay = "Proofs/Ai/NumberTheory/EuclideanAlgorithm/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:d7f940b53724b0ae948f7e05993bbc8b73ed99ae7747d56504f3a6487cac05c1"
+expected_certificate_file_hash = "sha256:1d53e2ac1ca6c77e8116a7695c31f4227381770e1c018d106283fc2317683532"
+expected_export_hash = "sha256:7d37f097817d586f21c57eecc2d429ef6bdb79cdbe71f0eac395f51f57311418"
+expected_axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+expected_certificate_hash = "sha256:04f930e37982ce2b62e65be1cf883e52cbbbf5af7ce93408b6f13ddb1378f500"
+imports = ["Proofs.Ai.NumberTheory.Gcd"]
+definitions = []
+theorems = ["euclidean_algorithm_terminates_from_descent_packaged", "euclidean_algorithm_remainder_step_preserves_gcd_packaged", "euclidean_algorithm_gcd_correctness_packaged", "extended_euclidean_algorithm_correctness_packaged", "euclidean_algorithm_correctness_separate_from_complexity"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Bezout"
+source = "Proofs/Ai/NumberTheory/Bezout/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Bezout/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Bezout/meta.json"
+replay = "Proofs/Ai/NumberTheory/Bezout/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:b318717d2b2aeedc197c82639d5069613e95a8dac9da2f7be93d02a5f279c6ae"
+expected_certificate_file_hash = "sha256:6d34b57c974607ade07d416854e24a21adf5132911dfb5e9e7e0fef7f391b495"
+expected_export_hash = "sha256:0785719103c440ce24b8cea54532c19ed1b29c7b2b82414addfc051686debbe3"
+expected_axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+expected_certificate_hash = "sha256:c335efa933ff4a46ce03bcb53e59917627df51acd51164942f5c4dcf856ad779"
+imports = ["Proofs.Ai.NumberTheory.EuclideanAlgorithm"]
+definitions = []
+theorems = ["bezout_identity_from_extended_euclid_packaged", "bezout_coefficients_linear_combination_packaged", "gcd_linear_combination_characterization_packaged", "coprime_iff_linear_combination_int_packaged", "coprime_iff_linear_combination_nat_packaged", "coprime_nat_int_translation_surface", "bezout_no_prime_factorization_or_crt_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Prime"
+source = "Proofs/Ai/NumberTheory/Prime/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Prime/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Prime/meta.json"
+replay = "Proofs/Ai/NumberTheory/Prime/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:90e89e53c7741b0d16bc7322c099b0f4acc4a2addc83c2771e2ad1eca170f812"
+expected_certificate_file_hash = "sha256:0327f40944878af5a93fe5f626db4ff811d68edf880740268895649905f28232"
+expected_export_hash = "sha256:0172086fd71393f3f4f0024ec371185915cda99c006eb83e05167b9bdad85f21"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:9281c39d9ec413269c22744d0ada567364b4cb573cd55b4a0b56359182b70fb7"
+imports = ["Proofs.Ai.NumberTheory.Divisibility"]
+definitions = []
+theorems = ["prime_nat_definition_surface", "prime_int_definition_surface", "unit_and_associated_int_predicates_surface", "sign_normalized_prime_predicate_surface", "one_is_not_prime_nat_packaged", "one_is_not_prime_int_packaged", "prime_nat_trivial_divisors_packaged", "prime_int_trivial_divisors_up_to_unit_packaged", "prime_nat_int_translation_surface", "prime_predicates_do_not_conflict_with_ufd_prime_element"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Composite"
+source = "Proofs/Ai/NumberTheory/Composite/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Composite/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Composite/meta.json"
+replay = "Proofs/Ai/NumberTheory/Composite/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:7c28e588c119beb41786ae0850ce29e1acc6056f1648daac37298b04f11329c1"
+expected_certificate_file_hash = "sha256:17fad976c3d8787e5ad1d6534060c392838a1ef04b595b713bfe9d83f80d93c2"
+expected_export_hash = "sha256:82ec7b2a7a55b4d59e2223038e0532433ccf95542a769721caf8134d265706cf"
+expected_axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+expected_certificate_hash = "sha256:75e95e466d4e1e35e1b59fcb9398dd459ed936a988933b2933c2426eaa4ed0e8"
+imports = ["Proofs.Ai.NumberTheory.Prime"]
+definitions = []
+theorems = ["composite_nat_definition_surface", "composite_int_definition_surface", "composite_nat_has_nontrivial_divisors_packaged", "composite_int_has_nontrivial_divisors_packaged", "composite_sign_normal_form_surface", "composite_nat_int_translation_surface", "composite_factor_extraction_input_surface", "composite_no_prime_factorization_assumption_boundary"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"
@@ -880,6 +1067,74 @@ expected_certificate_hash = "sha256:1d624896a2f2cd3b8db01d7a03297f5c06383d3373f4
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"]
 definitions = ["UfdFalse", "UfdNot", "UfdOr", "Divides", "Unit", "Associate", "UfdNonzero", "Nonunit", "PrimeElement", "IrreducibleElement", "IntegralDomainLawArgs", "FactorizationPred", "PrimeFactorizationPred", "UniqueFactorizationDomainLawArgs", "UfdPrimeFactorizationTheorem"]
 theorems = ["ufd_or_inl", "ufd_or_inr", "divides_intro", "divides_elim", "unit_intro", "associate_intro", "integral_domain_law_args_intro", "factorization_pred_intro", "prime_factorization_pred_intro", "prime_factorization_to_factorization", "prime_factorization_all_prime", "ufd_domain_laws", "ufd_factorization_exists", "ufd_factorization_unique", "ufd_irreducible_factors_prime", "ufd_prime_factorization_exists", "ufd_prime_factorization_unique", "ufd_prime_factorization_theorem"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.UfdBridge"
+source = "Proofs/Ai/NumberTheory/UfdBridge/source.npa"
+certificate = "Proofs/Ai/NumberTheory/UfdBridge/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/UfdBridge/meta.json"
+replay = "Proofs/Ai/NumberTheory/UfdBridge/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:e74b96622c98c75b59547a339c25209cedfa39beeefccfa83f1839c3ec9924cd"
+expected_certificate_file_hash = "sha256:5befb0f6849d6f622048c1178fe27edbc016f7034a0ebd8663d36053b7cdfc74"
+expected_export_hash = "sha256:201b8a7e38d68d4f3f2d1cf2555095531925cfb0d9d91ce237db094c5ad541f4"
+expected_axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+expected_certificate_hash = "sha256:e7c9e579d40d9c7a4462d1107c15ed3bbb322230aea1f6735436a8f68d658f46"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout"]
+definitions = []
+theorems = ["ufd_bridge_prime_nat_to_prime_element_surface", "ufd_bridge_prime_int_to_prime_element_surface", "ufd_bridge_divisibility_translation_surface", "ufd_bridge_factorization_law_package_surface", "euclid_lemma_from_bezout_ufd_packaged", "prime_divides_product_from_ufd_bridge_packaged", "ufd_bridge_no_reverse_dependency_boundary", "ufd_bridge_no_fta_uniqueness_assumption_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Factorization"
+source = "Proofs/Ai/NumberTheory/Factorization/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Factorization/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Factorization/meta.json"
+replay = "Proofs/Ai/NumberTheory/Factorization/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:26a54149f30d0e407ef069b3b19e8d042cb0cb51b06d4788ec0c8d19b3b1d755"
+expected_certificate_file_hash = "sha256:0b9eb8a3a22d9ca3053511e249a99df98962a44bcff4fd079a9e65fcaa6f026d"
+expected_export_hash = "sha256:8d0964ce1df3fd9c48a812e20deba6133bbd699f20ffce40bd9136303bbdd051"
+expected_axiom_report_hash = "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3"
+expected_certificate_hash = "sha256:426115810dba081a3bc491865197b338606aaf66625c5e31b697d46a617af9cb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge"]
+definitions = []
+theorems = ["prime_factor_extraction_from_composite_packaged", "prime_factor_extraction_int_packaged", "prime_factorization_existence_surface", "factorization_erases_to_composite_divisor_surface", "factorization_diophantine_reuse_surface", "factorization_arithmetic_function_reuse_surface", "factorization_no_unique_factorization_assumption_boundary", "factorization_sign_unit_normalization_surface", "fundamental_theorem_arithmetic_existence_packaged", "fundamental_theorem_arithmetic_unique_packaged", "fundamental_theorem_arithmetic_derived_package", "prime_factorization_finite_list_evidence_surface", "prime_factorization_finite_multiset_evidence_surface", "divisor_count_formula_from_prime_factorization", "divisor_sum_formula_from_prime_factorization", "gcd_formula_from_prime_factorization", "lcm_formula_from_prime_factorization", "factorization_unit_sign_normalization_unique_surface", "fundamental_theorem_not_input_axiom_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.PrimeInfinitude"
+source = "Proofs/Ai/NumberTheory/PrimeInfinitude/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PrimeInfinitude/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PrimeInfinitude/meta.json"
+replay = "Proofs/Ai/NumberTheory/PrimeInfinitude/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:1d147c2a026584b1eda2f5e2ced9de7d3f32bd832e95480c1414c4421713d6b4"
+expected_certificate_file_hash = "sha256:a8bda2fd96751f83360db953612a351cbfc00272b18fc6fe8de784f8bafe7475"
+expected_export_hash = "sha256:5585f08021ad55ccfca8f9506ec746c8df784531e644079a885130602f654597"
+expected_axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+expected_certificate_hash = "sha256:46014e9a220b8848e5c9f01d3e8d1f1e821bc5c6e9413b502ea7bd5c6d7a38d9"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge", "Proofs.Ai.NumberTheory.Factorization"]
+definitions = []
+theorems = ["prime_infinitude_from_factorization_surface", "prime_infinitude_euclid_packaged", "euclid_prime_outside_finite_list_surface", "factorial_plus_one_prime_escape_surface", "sqrt_bound_composite_prime_factor_surface", "sqrt_bound_composite_factor_or_cofactor_surface", "prime_infinitude_elementary_variant_surface", "prime_infinitude_no_analytic_dependency_boundary", "prime_infinitude_no_chebotarev_or_pnt_boundary"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.NumberTheory.Congruence"
+source = "Proofs/Ai/NumberTheory/Congruence/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Congruence/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Congruence/meta.json"
+replay = "Proofs/Ai/NumberTheory/Congruence/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:2e8091bf919dfbcb69771311da60cb742851d8bebc5a211bc459cd5e5ed59048"
+expected_certificate_file_hash = "sha256:2a240f5e154a369e1534b3e80bb4b5327d707d0208bd983d9c1b0d319944477c"
+expected_export_hash = "sha256:5e4d717b8651d166c2cdddcb978372b4e6a53c397458256d17aa7ef82e43ccbd"
+expected_axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+expected_certificate_hash = "sha256:ac00bedd16c4cd5b062198ba7fdf65081a97bf1bea46757ec9f4855661f01628"
+imports = ["Proofs.Ai.NumberTheory.Divisibility", "Proofs.Ai.NumberTheory.Gcd", "Proofs.Ai.NumberTheory.Bezout"]
+definitions = []
+theorems = ["congruent_modulo_definition_surface", "congruent_modulo_reflexive", "congruent_modulo_symmetric", "congruent_modulo_transitive", "congruent_addition_preserves", "congruent_multiplication_preserves", "congruent_negation_preserves", "congruent_power_preserves_from_exponent_laws", "congruence_cancellation_with_coprime_factor", "congruence_division_with_gcd_condition", "linear_congruence_solution_condition_surface", "congruence_no_hidden_coprime_boundary", "congruence_powers_use_exponent_laws_boundary"]
 axioms = []
 
 [[modules]]

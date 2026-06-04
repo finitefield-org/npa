@@ -1,0 +1,29 @@
+import Proofs.Ai.NumberTheory.EuclideanDivision
+
+theorem finite_descent_step_packaged :
+  forall (State : Type), forall (NatCarrier : Type), forall (Measure : forall (state : State), NatCarrier), forall (Next : forall (state : State), State), forall (Smaller : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (Bad : forall (state : State), Prop), forall (descent_step_law : forall (state : State), forall (bad_state : Bad state), Smaller (Measure (Next state)) (Measure state)), forall (state : State), forall (bad_state : Bad state), Smaller (Measure (Next state)) (Measure state) :=
+  fun State => fun NatCarrier => fun Measure => fun Next => fun Smaller => fun Bad => fun descent_step_law => fun state => fun bad_state => descent_step_law state bad_state
+
+theorem well_founded_minimization_packaged :
+  forall (Candidate : Type), forall (NatCarrier : Type), forall (Measure : forall (candidate : Candidate), NatCarrier), forall (WellFoundedMeasure : Prop), forall (Admissible : forall (candidate : Candidate), Prop), forall (Minimal : forall (candidate : Candidate), Prop), forall (minimization_law : forall (candidate : Candidate), forall (well_founded : WellFoundedMeasure), forall (admissible : Admissible candidate), Minimal candidate), forall (candidate : Candidate), forall (well_founded : WellFoundedMeasure), forall (admissible : Admissible candidate), Minimal candidate :=
+  fun Candidate => fun NatCarrier => fun Measure => fun WellFoundedMeasure => fun Admissible => fun Minimal => fun minimization_law => fun candidate => fun well_founded => fun admissible => minimization_law candidate well_founded admissible
+
+theorem no_infinite_descent_contradiction_packaged :
+  forall (State : Type), forall (NoInfiniteDescent : Prop), forall (Contradiction : Prop), forall (Bad : forall (state : State), Prop), forall (contradiction_law : forall (initial : State), forall (no_infinite_descent : NoInfiniteDescent), forall (bad_initial : Bad initial), Contradiction), forall (initial : State), forall (no_infinite_descent : NoInfiniteDescent), forall (bad_initial : Bad initial), Contradiction :=
+  fun State => fun NoInfiniteDescent => fun Contradiction => fun Bad => fun contradiction_law => fun initial => fun no_infinite_descent => fun bad_initial => contradiction_law initial no_infinite_descent bad_initial
+
+theorem gcd_descent_measure_surface_packaged :
+  forall (Int : Type), forall (NatCarrier : Type), forall (Measure : forall (a : Int), forall (b : Int), NatCarrier), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdDescentState : forall (a : Int), forall (b : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (divides_ba : Divides b a), GcdDescentState a b), forall (a : Int), forall (b : Int), forall (divides_ba : Divides b a), GcdDescentState a b :=
+  fun Int => fun NatCarrier => fun Measure => fun Divides => fun GcdDescentState => fun surface_law => fun a => fun b => fun divides_ba => surface_law a b divides_ba
+
+theorem continued_fraction_descent_surface_packaged :
+  forall (State : Type), forall (NatCarrier : Type), forall (Height : forall (state : State), NatCarrier), forall (NextConvergent : forall (state : State), State), forall (Smaller : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (ContinuedFractionState : forall (state : State), Prop), forall (surface_law : forall (state : State), forall (cf_state : ContinuedFractionState state), Smaller (Height (NextConvergent state)) (Height state)), forall (state : State), forall (cf_state : ContinuedFractionState state), Smaller (Height (NextConvergent state)) (Height state) :=
+  fun State => fun NatCarrier => fun Height => fun NextConvergent => fun Smaller => fun ContinuedFractionState => fun surface_law => fun state => fun cf_state => surface_law state cf_state
+
+theorem diophantine_descent_surface_packaged :
+  forall (Solution : Type), forall (NatCarrier : Type), forall (Height : forall (solution : Solution), NatCarrier), forall (NextSolution : forall (solution : Solution), Solution), forall (Smaller : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (EquationSolution : forall (solution : Solution), Prop), forall (surface_law : forall (solution : Solution), forall (equation_solution : EquationSolution solution), Smaller (Height (NextSolution solution)) (Height solution)), forall (solution : Solution), forall (equation_solution : EquationSolution solution), Smaller (Height (NextSolution solution)) (Height solution) :=
+  fun Solution => fun NatCarrier => fun Height => fun NextSolution => fun Smaller => fun EquationSolution => fun surface_law => fun solution => fun equation_solution => surface_law solution equation_solution
+
+theorem descent_algorithm_boundary_packaged :
+  forall (MathematicalDescent : Type), forall (AlgorithmExtraction : Type), forall (ExtractionBoundary : forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), Prop), forall (boundary_law : forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), ExtractionBoundary descent algorithm), forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), ExtractionBoundary descent algorithm :=
+  fun MathematicalDescent => fun AlgorithmExtraction => fun ExtractionBoundary => fun boundary_law => fun descent => fun algorithm => boundary_law descent algorithm

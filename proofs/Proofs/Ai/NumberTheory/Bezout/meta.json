@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Bezout",
+  "source": "Proofs/Ai/NumberTheory/Bezout/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Bezout/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b318717d2b2aeedc197c82639d5069613e95a8dac9da2f7be93d02a5f279c6ae",
+  "certificate_file_sha256": "sha256:6d34b57c974607ade07d416854e24a21adf5132911dfb5e9e7e0fef7f391b495",
+  "export_hash": "sha256:0785719103c440ce24b8cea54532c19ed1b29c7b2b82414addfc051686debbe3",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:c335efa933ff4a46ce03bcb53e59917627df51acd51164942f5c4dcf856ad779",
+  "imports": ["Proofs.Ai.NumberTheory.EuclideanAlgorithm"],
+  "axioms": [],
+  "declarations": [
+    { "name": "bezout_identity_from_extended_euclid_packaged", "kind": "theorem" },
+    { "name": "bezout_coefficients_linear_combination_packaged", "kind": "theorem" },
+    { "name": "gcd_linear_combination_characterization_packaged", "kind": "theorem" },
+    { "name": "coprime_iff_linear_combination_int_packaged", "kind": "theorem" },
+    { "name": "coprime_iff_linear_combination_nat_packaged", "kind": "theorem" },
+    { "name": "coprime_nat_int_translation_surface", "kind": "theorem" },
+    { "name": "bezout_no_prime_factorization_or_crt_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

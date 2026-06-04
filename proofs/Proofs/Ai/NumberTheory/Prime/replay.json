@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Prime",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "prime_nat_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun DividesNat => fun PrimeNatDefinition => fun PrimeNat => fun definition_law => fun n => fun definition => definition_law n definition"
+    },
+    {
+      "declaration": "prime_int_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun DividesInt => fun UnitInt => fun AssociatedInt => fun PrimeIntDefinition => fun PrimeInt => fun definition_law => fun p => fun definition => definition_law p definition"
+    },
+    {
+      "declaration": "unit_and_associated_int_predicates_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun UnitInt => fun AssociatedInt => fun UnitAssociatedInterface => fun surface_law => fun a => fun b => fun unit_a => fun associated_ab => surface_law a b unit_a associated_ab"
+    },
+    {
+      "declaration": "sign_normalized_prime_predicate_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun PrimeInt => fun Nonnegative => fun SignNormalizedPrimeInt => fun normalization_law => fun p => fun prime_p => fun nonnegative_p => normalization_law p prime_p nonnegative_p"
+    },
+    {
+      "declaration": "one_is_not_prime_nat_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeNat => fun NotPrimeNat => fun one_not_prime_law => fun one => one_not_prime_law one"
+    },
+    {
+      "declaration": "one_is_not_prime_int_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun PrimeInt => fun NotPrimeInt => fun one_not_prime_law => fun one => one_not_prime_law one"
+    },
+    {
+      "declaration": "prime_nat_trivial_divisors_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun DividesNat => fun PrimeNat => fun TrivialNatDivisor => fun trivial_divisor_law => fun p => fun d => fun prime_p => fun divides_dp => trivial_divisor_law p d prime_p divides_dp"
+    },
+    {
+      "declaration": "prime_int_trivial_divisors_up_to_unit_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun DividesInt => fun PrimeInt => fun UnitInt => fun AssociatedInt => fun TrivialIntDivisorUpToUnit => fun trivial_divisor_law => fun p => fun d => fun prime_p => fun divides_dp => trivial_divisor_law p d prime_p divides_dp"
+    },
+    {
+      "declaration": "prime_nat_int_translation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Int => fun ToInt => fun PrimeNat => fun PrimeInt => fun TranslationEvidence => fun translation_law => fun n => fun translation => fun prime_n => translation_law n translation prime_n"
+    },
+    {
+      "declaration": "prime_predicates_do_not_conflict_with_ufd_prime_element",
+      "source_kind": "explicit_term",
+      "term": "fun PrimeNatPackage => fun PrimeIntPackage => fun PrimeElement => fun TerminologyBoundary => fun boundary_law => fun prime_nat => fun prime_int => fun prime_element => boundary_law prime_nat prime_int prime_element"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Prime/certificate.npcert"
+  }
+}

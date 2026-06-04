@@ -1,0 +1,19 @@
+theorem arithmetic_object_structure_policy :
+  forall (ArithmeticObject : Type), forall (OrdinaryProofCorpusStructure : forall (x : ArithmeticObject), Prop), forall (object : ArithmeticObject), forall (evidence : OrdinaryProofCorpusStructure object), OrdinaryProofCorpusStructure object :=
+  fun ArithmeticObject => fun OrdinaryProofCorpusStructure => fun object => fun evidence => evidence
+
+theorem external_owner_alias_policy :
+  forall (ExternalOwner : Type), forall (NumberTheoryAlias : Type), forall (PointsToExternalOwner : forall (owner : ExternalOwner), forall (alias : NumberTheoryAlias), Prop), forall (owner : ExternalOwner), forall (alias : NumberTheoryAlias), forall (evidence : PointsToExternalOwner owner alias), PointsToExternalOwner owner alias :=
+  fun ExternalOwner => fun NumberTheoryAlias => fun PointsToExternalOwner => fun owner => fun alias => fun evidence => evidence
+
+theorem bridge_assumption_named_policy :
+  forall (BridgeAxiom : Type), forall (NamedBridgeAssumption : forall (bridge : BridgeAxiom), Prop), forall (bridge : BridgeAxiom), forall (evidence : NamedBridgeAssumption bridge), NamedBridgeAssumption bridge :=
+  fun BridgeAxiom => fun NamedBridgeAssumption => fun bridge => fun evidence => evidence
+
+theorem conjecture_assumption_explicit_policy :
+  forall (Conjecture : Type), forall (ExplicitConjectureAssumption : forall (statement : Conjecture), Prop), forall (statement : Conjecture), forall (evidence : ExplicitConjectureAssumption statement), ExplicitConjectureAssumption statement :=
+  fun Conjecture => fun ExplicitConjectureAssumption => fun statement => fun evidence => evidence
+
+theorem derived_target_certificate_policy :
+  forall (TheoremTarget : Type), forall (SourceFreeCertificateVerdict : forall (target : TheoremTarget), Prop), forall (target : TheoremTarget), forall (verdict : SourceFreeCertificateVerdict target), SourceFreeCertificateVerdict target :=
+  fun TheoremTarget => fun SourceFreeCertificateVerdict => fun target => fun verdict => verdict

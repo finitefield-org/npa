@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Inventory",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "arithmetic_object_structure_policy",
+      "source_kind": "explicit_term",
+      "term": "fun ArithmeticObject => fun OrdinaryProofCorpusStructure => fun object => fun evidence => evidence"
+    },
+    {
+      "declaration": "external_owner_alias_policy",
+      "source_kind": "explicit_term",
+      "term": "fun ExternalOwner => fun NumberTheoryAlias => fun PointsToExternalOwner => fun owner => fun alias => fun evidence => evidence"
+    },
+    {
+      "declaration": "bridge_assumption_named_policy",
+      "source_kind": "explicit_term",
+      "term": "fun BridgeAxiom => fun NamedBridgeAssumption => fun bridge => fun evidence => evidence"
+    },
+    {
+      "declaration": "conjecture_assumption_explicit_policy",
+      "source_kind": "explicit_term",
+      "term": "fun Conjecture => fun ExplicitConjectureAssumption => fun statement => fun evidence => evidence"
+    },
+    {
+      "declaration": "derived_target_certificate_policy",
+      "source_kind": "explicit_term",
+      "term": "fun TheoremTarget => fun SourceFreeCertificateVerdict => fun target => fun verdict => verdict"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Inventory/certificate.npcert"
+  }
+}

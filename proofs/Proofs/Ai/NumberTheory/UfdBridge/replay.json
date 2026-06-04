@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.UfdBridge",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ufd_bridge_prime_nat_to_prime_element_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun R => fun zero => fun one => fun mul => fun EmbedNat => fun PrimeNat => fun BridgeEvidence => fun bridge_law => fun n => fun prime_n => fun evidence => bridge_law n prime_n evidence"
+    },
+    {
+      "declaration": "ufd_bridge_prime_int_to_prime_element_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun R => fun zero => fun one => fun mul => fun EmbedInt => fun PrimeInt => fun BridgeEvidence => fun bridge_law => fun n => fun prime_n => fun evidence => bridge_law n prime_n evidence"
+    },
+    {
+      "declaration": "ufd_bridge_divisibility_translation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun R => fun mul => fun EmbedInt => fun DividesInt => fun BridgeEvidence => fun translation_law => fun d => fun n => fun divides_dn => fun evidence => translation_law d n divides_dn evidence"
+    },
+    {
+      "declaration": "ufd_bridge_factorization_law_package_surface",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Factorization => fun factor_value => fun all_irreducible => fun all_prime => fun factor_equiv => fun BridgeEvidence => fun UfdBridgePackage => fun package_law => fun ufd_laws => fun bridge => package_law ufd_laws bridge"
+    },
+    {
+      "declaration": "euclid_lemma_from_bezout_ufd_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zero => fun one => fun mul => fun p => fun a => fun b => fun BezoutIdentity => fun bezout_identity => fun prime_p => fun divides_product => prime_p (UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)) (fun (nonzero : @UfdNonzero.{u} R zero p) => fun (nonunit : @Nonunit.{u} R one mul p) => fun (divides_mul : forall (a_arg : R), forall (b_arg : R), forall (h : @Divides.{u} R mul p (mul a_arg b_arg)), UfdOr (@Divides.{u} R mul p a_arg) (@Divides.{u} R mul p b_arg)) => divides_mul a b divides_product)"
+    },
+    {
+      "declaration": "prime_divides_product_from_ufd_bridge_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zero => fun one => fun mul => fun p => fun a => fun b => fun prime_p => fun divides_product => prime_p (UfdOr (@Divides.{u} R mul p a) (@Divides.{u} R mul p b)) (fun (nonzero : @UfdNonzero.{u} R zero p) => fun (nonunit : @Nonunit.{u} R one mul p) => fun (divides_mul : forall (a_arg : R), forall (b_arg : R), forall (h : @Divides.{u} R mul p (mul a_arg b_arg)), UfdOr (@Divides.{u} R mul p a_arg) (@Divides.{u} R mul p b_arg)) => divides_mul a b divides_product)"
+    },
+    {
+      "declaration": "ufd_bridge_no_reverse_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun NumberTheoryPrimePackage => fun AbstractUfdPackage => fun NoReverseDependencyBoundary => fun boundary_law => fun number_theory => fun ufd => boundary_law number_theory ufd"
+    },
+    {
+      "declaration": "ufd_bridge_no_fta_uniqueness_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun UfdBridgePackage => fun UniqueFactorizationTheorem => fun NoFtaUniquenessAssumption => fun boundary_law => fun bridge => fun fta => boundary_law bridge fta"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/UfdBridge/certificate.npcert"
+  }
+}
