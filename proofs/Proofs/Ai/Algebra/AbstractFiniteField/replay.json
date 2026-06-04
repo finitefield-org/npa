@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFiniteField",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteFieldCardinalityEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => CardinalityEvidence"
+    },
+    {
+      "declaration": "FieldCharacteristicPrimeOrZeroEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CharacteristicPrimeOrZero => CharacteristicPrimeOrZero"
+    },
+    {
+      "declaration": "FiniteFieldCharacteristicPrimeEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CharacteristicPrime => CharacteristicPrime"
+    },
+    {
+      "declaration": "FiniteFieldRootOfCardPolynomial",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun RootOfCardPolynomial => fun x => RootOfCardPolynomial x"
+    },
+    {
+      "declaration": "FiniteFieldLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => fun Frobenius => fun pow_card => fun RootOfCardPolynomial => fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun field_args => fun self_extension => forall (Q : Prop), forall (mk : forall (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence), forall (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension), forall (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero), forall (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime), forall (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius), forall (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x), forall (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x), Q), Q"
+    },
+    {
+      "declaration": "field_characteristic_prime_or_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => fun Frobenius => fun pow_card => fun RootOfCardPolynomial => fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun field_args => fun self_extension => fun finite_field_args => finite_field_args (@FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) (fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => fun (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x) => fun (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) => characteristic_prime_or_zero_law)"
+    },
+    {
+      "declaration": "finite_field_characteristic_prime",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => fun Frobenius => fun pow_card => fun RootOfCardPolynomial => fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun field_args => fun self_extension => fun finite_field_args => finite_field_args (@FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) (fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => fun (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x) => fun (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) => finite_characteristic_prime_law)"
+    },
+    {
+      "declaration": "frobenius_is_field_hom",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => fun Frobenius => fun pow_card => fun RootOfCardPolynomial => fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun field_args => fun self_extension => fun finite_field_args => finite_field_args (@FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) (fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => fun (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x) => fun (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) => frobenius_hom_law)"
+    },
+    {
+      "declaration": "finite_field_pow_card_eq_self",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => fun Frobenius => fun pow_card => fun RootOfCardPolynomial => fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun field_args => fun self_extension => fun finite_field_args => fun x => finite_field_args (@Eq.{u} Scalar (pow_card x) x) (fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => fun (pow_card_eq_self_law : forall (x_arg : Scalar), @Eq.{u} Scalar (pow_card x_arg) x_arg) => fun (roots_card_poly_law : forall (x_arg : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x_arg) => pow_card_eq_self_law x)"
+    },
+    {
+      "declaration": "finite_field_roots_x_pow_q_minus_x",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => fun Frobenius => fun pow_card => fun RootOfCardPolynomial => fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun field_args => fun self_extension => fun finite_field_args => fun x => finite_field_args (@FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) (fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => fun (pow_card_eq_self_law : forall (x_arg : Scalar), @Eq.{u} Scalar (pow_card x_arg) x_arg) => fun (roots_card_poly_law : forall (x_arg : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x_arg) => roots_card_poly_law x)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractFiniteField/certificate.npcert"
+  }
+}

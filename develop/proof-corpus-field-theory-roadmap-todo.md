@@ -725,7 +725,7 @@ Implication:
 
 ### FT-13 Add Finite Field And Frobenius Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-10, FT-12
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -763,6 +763,14 @@ Implication:
 - Notes:
   - This is a high-value future `npa-mathlib` candidate, but only after cardinality and polynomial
     APIs stabilize.
+  - Completed with `Proofs.Ai.Algebra.AbstractFiniteField`, adding `FiniteFieldLawArgs` and
+    characteristic, Frobenius, power-cardinality, and root-predicate projection theorem targets.
+  - Frobenius is represented through the existing `FieldHomLawArgs` route.
+  - Cardinality, power, and roots of `x^q - x` remain explicit evidence fields; no hidden finite
+    enumeration, cardinality computation, or root-counting axiom is introduced.
+  - The module imports `AbstractFiniteFieldExtension` so later finite fields can connect back to
+    finite-extension degree evidence, but keeps concrete polynomial-root APIs staged until those
+    statements stabilize.
 
 ### FT-14 Add Splitting Field And Algebraic Closure Evidence Layers
 

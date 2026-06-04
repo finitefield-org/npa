@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFiniteField",
+  "source": "Proofs/Ai/Algebra/AbstractFiniteField/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractFiniteField/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:050226f5be8bceadfe20729299b66ade49cbb60369b7bb7419f60817bafdf8f5",
+  "certificate_file_sha256": "sha256:4633a932d3faca2543e3a2fb5439d7e3dda43ef3b853b5dd0c84e495c7de0a5c",
+  "export_hash": "sha256:6dc5afcafc8bbb25c0875245cb185367d13dd858a84545a52bdbf899a8f7c53f",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:b05f814b04e85a8901d0096f8daa72ff599c381abe75dab8f9f3b0b6227758fd",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteFieldCardinalityEvidence", "kind": "def" },
+    { "name": "FieldCharacteristicPrimeOrZeroEvidence", "kind": "def" },
+    { "name": "FiniteFieldCharacteristicPrimeEvidence", "kind": "def" },
+    { "name": "FiniteFieldRootOfCardPolynomial", "kind": "def" },
+    { "name": "FiniteFieldLawArgs", "kind": "def" },
+    { "name": "field_characteristic_prime_or_zero", "kind": "theorem" },
+    { "name": "finite_field_characteristic_prime", "kind": "theorem" },
+    { "name": "frobenius_is_field_hom", "kind": "theorem" },
+    { "name": "finite_field_pow_card_eq_self", "kind": "theorem" },
+    { "name": "finite_field_roots_x_pow_q_minus_x", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1735,6 +1735,37 @@ The module keeps basis objects, concrete degree arithmetic, and finite-dimension
 construction evidence outside the trusted core. Later finite-field and Galois-theory modules can
 replace the Prop-level evidence with more structured APIs once the import closure is measured.
 
+#### `Proofs.Ai.Algebra.AbstractFiniteField`
+
+This module adds a finite-field staging package on top of the existing field hom and finite
+extension layers. Characteristic, cardinality, Frobenius, power, and root-counting APIs are all
+explicit evidence fields; the module does not perform hidden runtime cardinality computation or
+polynomial root enumeration.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FiniteFieldCardinalityEvidence` | named wrapper for explicit field cardinality evidence |
+| `FieldCharacteristicPrimeOrZeroEvidence` | named wrapper for the general field characteristic alternative |
+| `FiniteFieldCharacteristicPrimeEvidence` | named wrapper for finite-field prime characteristic evidence |
+| `FiniteFieldRootOfCardPolynomial` | named wrapper for roots of the supplied `x^q - x` predicate |
+| `FiniteFieldLawArgs` | packages field laws, finite-extension evidence, characteristic evidence, Frobenius hom evidence, power law, and root predicate evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_characteristic_prime_or_zero` | projects the characteristic-prime-or-zero evidence |
+| `finite_field_characteristic_prime` | projects prime characteristic evidence for finite fields |
+| `frobenius_is_field_hom` | projects the Frobenius `FieldHomLawArgs` |
+| `finite_field_pow_card_eq_self` | projects the supplied `x^q = x` law |
+| `finite_field_roots_x_pow_q_minus_x` | projects the supplied root predicate evidence for every field element |
+
+Frobenius uses the existing `FieldHomLawArgs` route. Cardinality, power, and root facts are
+statement-level evidence in the checked certificate, while `source.npa`, replay, metadata, and the
+AI theorem index remain non-trusted sidecars.
+
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
 Implemented definitions / API declarations, not proof targets:
