@@ -382,6 +382,7 @@ semantics.
 
 - Status: planned.
 - Depends on: `ANA-01`, `ANA-07`, and parts of `ANA-05`.
+- Detailed roadmap: `proofs/measure-theory-theorem-proof-roadmap.md`.
 - Target modules:
   - `Proofs.Ai.Measure.Basic`
   - `Proofs.Ai.Measure.Construction`

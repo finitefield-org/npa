@@ -886,6 +886,7 @@ guessing. The split must preserve the dependency order in this document.
 - Status: Pending
 - Depends on: ANA-T17, ANA-T22
 - Inputs:
+  - detailed measure roadmap from `proofs/measure-theory-theorem-proof-roadmap.md`
   - topology foundation from ANA-T22
   - real and sequence foundations from ANA-T01 through ANA-T05
   - Riemann integration foundation from ANA-T16 through ANA-T17 for the

@@ -71,7 +71,7 @@ statistics milestones:
 | series, continuity, and calculus | `ANA-02` through `ANA-04` |
 | Riemann integration | `ANA-05` |
 | topology and compactness | `ANA-07` |
-| measure and Lebesgue integration | `ANA-08` |
+| measure and Lebesgue integration | `ANA-08`, refined by `proofs/measure-theory-theorem-proof-roadmap.md` |
 | functional analysis and Hilbert spaces | `ANA-09` |
 | Fourier analysis | `ANA-11` |
 | ODE and PDE tools | `ANA-12` and `ANA-13` |
@@ -161,7 +161,7 @@ must have one primary home, with other modules importing or aliasing it:
 | Bayes risk and Bayes decision rules | `STAT-25`, with finite aliases from `STAT-02` or posterior-risk aliases from `STAT-14` only after the decision-risk API exists |
 | Boole, Bonferroni, and multiple-testing Bonferroni | `STAT-01` for probability inequalities; `STAT-12` for testing procedure aliases |
 | Jensen, Markov, Chebyshev, Hoeffding, Bernstein, Bennett, McDiarmid | `STAT-04` for expectation and concentration |
-| Fubini, Tonelli, Radon-Nikodym, dominated convergence | analysis roadmap `ANA-08`; statistics modules import or specialize them |
+| Fubini, Tonelli, Radon-Nikodym, dominated convergence | measure roadmap `MEA-07`, `MEA-08`, and `MEA-10` via analysis `ANA-08`; statistics modules import or specialize them |
 | Slutsky, continuous mapping, Delta method, Cramer-Wold | `STAT-08` |
 | Borel-Cantelli, LLN, Glivenko-Cantelli | `STAT-07` |
 | Donsker, Brownian bridge, empirical process CLT | `STAT-17` |
@@ -229,8 +229,9 @@ must have one primary home, with other modules importing or aliasing it:
 ## STAT-01 Probability Space Basics
 
 - Status: planned.
-- Depends on: analysis roadmap `ANA-08` for full measure-theoretic probability;
-  finite Boolean-event versions may start earlier over explicit event algebras.
+- Depends on: analysis roadmap `ANA-08` and the detailed measure roadmap for
+  full measure-theoretic probability; finite Boolean-event versions may start
+  earlier over explicit event algebras.
 - Target modules:
   - `Proofs.Ai.Probability.Space.Basic`
   - `Proofs.Ai.Probability.Space.Extension`

@@ -69,7 +69,8 @@ promotion into a high-trust closure.
   `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem`, and
   `Proofs.Ai.FunctionalAnalysis.AbstractHilbertSpaceSpectralTheorem`.
 - Full measure-theoretic probability should wait for the analysis roadmap's
-  measure and Lebesgue route, especially `ANA-T24` through `ANA-T26`.
+  measure and Lebesgue route, especially `ANA-T24` through `ANA-T26`, and the
+  detailed measure roadmap in `proofs/measure-theory-theorem-proof-roadmap.md`.
 - Characteristic-function, Fourier, spectral-density, and CLT strengthening
   should remain dependency-tagged until the analysis Fourier route
   `ANA-T31` through `ANA-T32` exists.
