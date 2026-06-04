@@ -780,7 +780,7 @@ guessing. The split must preserve the dependency order in this document.
 ### LIN-T27 Add Positive-Definite Criteria And Variational Eigenvalue Routes
 
 - Status: Pending
-- Depends on: `LIN-T11`, `LIN-T23`, `LIN-T26`
+- Depends on: `LIN-T12`, `LIN-T23`, `LIN-T26`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite`
 - Tasks:
   - Prove Rayleigh quotient, Courant-Fischer min-max route, and interlacing
@@ -867,7 +867,7 @@ guessing. The split must preserve the dependency order in this document.
 ### LIN-T31 Prove QR Decomposition Routes
 
 - Status: Pending
-- Depends on: `LIN-T07`, `LIN-T24`, `LIN-T28`
+- Depends on: `LIN-T07`, `LIN-T24`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
 - Tasks:
   - Prove QR existence through Gram-Schmidt.
@@ -879,6 +879,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - QR by Gram-Schmidt imports orthonormal-basis facts from `LIN-T24`.
   - Householder/Givens variants do not block the basic QR theorem.
+  - Householder and Givens QR variants split into a follow-up that depends on
+    `LIN-T29` if the transformation route is not already available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
@@ -947,7 +949,7 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.SVD`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
-### LIN-T35 Prove Moore-Penrose And Low-Rank Approximation Theorems
+### LIN-T35 Prove Moore-Penrose And Add Low-Rank Interfaces
 
 - Status: Pending
 - Depends on: `LIN-T34`
@@ -955,7 +957,7 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Prove Moore-Penrose inverse existence and uniqueness.
   - Prove Moore-Penrose inverse by SVD.
-  - Prove Eckart-Young and Eckart-Young-Mirsky theorems.
+  - Add Eckart-Young and Eckart-Young-Mirsky statement hooks.
   - Add Ky Fan, Schatten norm, Davis-Kahan, and Wedin alias hooks for
     perturbation work.
 - Deliverables:
@@ -965,6 +967,8 @@ guessing. The split must preserve the dependency order in this document.
   - Low-rank approximation states chosen norm and rank constraint.
   - Normed low-rank approximation theorems import `LIN-T46`; pure
     Moore-Penrose existence does not wait for matrix norm development.
+  - If Eckart-Young is implemented as `L2` in this milestone, split it into a
+    follow-up that depends on `LIN-T46`.
   - Perturbation aliases point to `LIN-T47`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose`
@@ -1203,6 +1207,10 @@ guessing. The split must preserve the dependency order in this document.
   - Each theorem names the norm and scalar assumptions it uses.
   - Normed-space dependencies import analysis foundations rather than
     redefining them.
+- Notes:
+  - Reuse existing `Proofs.Ai.Analysis.AbstractNormedSpace` where possible;
+    any stronger finite-dimensional topology requirement must be split and
+    linked to the analysis topology milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Norm`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Norm`
@@ -1226,6 +1234,10 @@ guessing. The split must preserve the dependency order in this document.
   - Each perturbation theorem names norm and spectral assumptions.
   - Floating-point backward error remains an interface until a floating-point
     model exists.
+- Notes:
+  - Neumann-series inverse routes depend on analysis series foundations
+    `ANA-T06` through `ANA-T09`; keep them as interfaces until those are
+    available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Perturbation`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Perturbation`
@@ -1234,7 +1246,7 @@ guessing. The split must preserve the dependency order in this document.
 ### LIN-T48 Add Matrix Exponential And Function Interface
 
 - Status: Pending
-- Depends on: `LIN-T18`, `LIN-T19`, `LIN-T26`, `LIN-T47`
+- Depends on: `LIN-T18`, `LIN-T19`, `LIN-T26`, `LIN-T46`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Function`
 - Tasks:
   - Define matrix exponential through finite-dimensional power series when
@@ -1250,6 +1262,11 @@ guessing. The split must preserve the dependency order in this document.
   - Matrix exponential existence imports series foundations, not an unchecked
     analytic primitive.
   - ODE aliases point to analysis ODE milestones until those are available.
+- Notes:
+  - Matrix exponential routes depend on analysis series foundations `ANA-T06`
+    through `ANA-T09`.
+  - Linear ODE aliases wait for analysis ODE milestones `ANA-T33` through
+    `ANA-T34`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Function`
   - `rg -n "ANA-T06|ANA-T09|Matrix.Function|matrix exponential" proofs/linear-algebra-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap-todo.md`
@@ -1273,9 +1290,12 @@ guessing. The split must preserve the dependency order in this document.
   - Positive square roots import spectral and positive-definite theory.
   - Holomorphic functional calculus remains an interface until complex
     analysis foundations exist.
+- Notes:
+  - Holomorphic functional calculus waits for complex-analysis milestones
+    `ANA-T29` through `ANA-T30`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Equation`
-  - `rg -n "holomorphic|Sylvester|Lyapunov|Riccati|Matrix.Equation" proofs/linear-algebra-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap-todo.md`
+  - `rg -n "ANA-T29|ANA-T30|holomorphic|Sylvester|Lyapunov|Riccati|Matrix.Equation" proofs/linear-algebra-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
 ### LIN-T50 Prove Matrix Group Basics
@@ -1361,8 +1381,12 @@ guessing. The split must preserve the dependency order in this document.
     exists.
   - Randomized bounds import probability concentration modules from statistics
     when available.
+- Notes:
+  - Randomized concentration routes depend on statistics concentration
+    milestones `STAT-T09` through `STAT-T11`; martingale concentration
+    variants wait for `STAT-T62` through `STAT-T64`.
 - Verification:
-  - `rg -n "STAT-T09|STAT-T11|STAT-T62|Randomized|floating-point" proofs/linear-algebra-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap-todo.md`
+  - `rg -n "STAT-T09|STAT-T11|STAT-T62|STAT-T64|Randomized|floating-point" proofs/linear-algebra-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
 ### LIN-T54 Prove Graph Laplacian Basics And Matrix-Tree Route
@@ -1507,6 +1531,15 @@ Findings fixed during generation:
   Moore-Penrose theory.
 - Determinant, rank, matrix-namespace, positive-definite, and norm
   prerequisites are explicit on theorem batches that use them.
+- QR by Gram-Schmidt no longer waits for Householder/Givens transformation
+  work; those variants split after `LIN-T29`.
+- Normed Eckart-Young style low-rank approximation is no longer scheduled as
+  an unconditional `L2` theorem before the matrix norm milestone.
+- Matrix-function, Neumann-series, holomorphic functional-calculus, ODE, and
+  randomized numerical routes now name the analysis/statistics blockers they
+  need.
+- Matrix exponential now waits on matrix norms, not the full perturbation
+  milestone.
 - Statistical regression and optimization aliases are cross-linked to
   `STAT-T43` through `STAT-T46` and `ANA-T37`.
 
