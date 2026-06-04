@@ -851,6 +851,24 @@ theorems = ["field_hom_kernel_zero_of_nonzero", "field_hom_injective_of_nonzero"
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractFieldExtension"
+source = "Proofs/Ai/Algebra/AbstractFieldExtension/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFieldExtension/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFieldExtension/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFieldExtension/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8b5c6173707051ff654059eac5a89633f4c57d1093ac9802f7253552c456b4ab"
+certificate_file_sha256 = "sha256:78594038cae75fb18b0e4bbfceaa6e0f7a21412fbe53b982449821370719e52e"
+export_hash = "sha256:a1a56b9f9bf60410b5a76aca95cfaa90dbad4ac4e42650fe8ebb1622de58657c"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:290d33b85f5e990938268b10238735a9d2ebcd01a16f31fcdc2d299dea09f41c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage"]
+definitions = ["FieldExtensionLawArgs", "FieldExtensionRestrictScalarsArgs", "FieldExtensionTowerArgs"]
+theorems = ["field_extension_base_embedding", "field_extension_as_field", "field_extension_restrict_scalars", "field_extension_tower", "field_embedding_compose"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractRingFirstIso"
 source = "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractRingFirstIso/certificate.npcert"

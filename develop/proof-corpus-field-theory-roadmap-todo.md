@@ -584,7 +584,7 @@ Implication:
 
 ### FT-10 Add Field Extension Law Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-08
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -619,6 +619,15 @@ Implication:
   - `rg -n "FieldExtensionLawArgs|field_extension_tower|field_embedding_compose" proofs tools`
 - Notes:
   - Module and theorem names are likely to become public later, so keep statements conservative.
+  - Completed with `Proofs.Ai.Algebra.AbstractFieldExtension`, adding
+    `FieldExtensionLawArgs`, `FieldExtensionRestrictScalarsArgs`, and
+    `FieldExtensionTowerArgs`.
+  - The theorem targets remain projection-style evidence theorems:
+    `field_extension_base_embedding`, `field_extension_as_field`,
+    `field_extension_restrict_scalars`, `field_extension_tower`, and
+    `field_embedding_compose`.
+  - The module reuses `FieldEmbeddingLawArgs` from `AbstractFieldHomKernelImage` and does not
+    import polynomial quotient, finite-dimensional vector-space, or Galois machinery.
 
 ### FT-11 Add Algebraic Element And Minimal Polynomial Layer
 

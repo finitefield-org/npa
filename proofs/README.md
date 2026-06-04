@@ -1488,6 +1488,34 @@ Theorem targets:
 | `field_iso_symm` | swaps forward and backward embedding evidence for a field isomorphism |
 | `field_iso_trans` | records transitivity as explicit composite isomorphism evidence |
 
+#### `Proofs.Ai.Algebra.AbstractFieldExtension`
+
+This module packages a field extension as explicit base-field laws, extension-field laws, and a
+base embedding. It reuses `FieldEmbeddingLawArgs` from `AbstractFieldHomKernelImage` instead of
+restating field homomorphism or injectivity laws.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldExtensionLawArgs` | packages `FieldLawArgs` for the base and extension fields plus the embedding evidence `K -> L` |
+| `FieldExtensionRestrictScalarsArgs` | packages explicit scalar-restriction compatibility `scaleK a x = scaleL (i a) x` |
+| `FieldExtensionTowerArgs` | packages explicit `K -> L`, `L -> M`, and composite `K -> M` extension evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_extension_base_embedding` | projects the base embedding as `FieldEmbeddingLawArgs` |
+| `field_extension_as_field` | projects the extension field's `FieldLawArgs` |
+| `field_extension_restrict_scalars` | projects scalar restriction compatibility from explicit evidence |
+| `field_extension_tower` | projects the supplied composite extension evidence for a tower |
+| `field_embedding_compose` | exposes embedding composition through the existing `field_embedding_comp` theorem |
+
+The module deliberately avoids polynomial quotient, finite-dimensional vector-space, and Galois
+machinery. Tower composition and scalar restriction remain explicit evidence, so later algebraic
+and finite-extension modules can import this layer without creating circular dependencies.
+
 #### `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
 
 This bridge imports `AbstractField` and the existing UFD-style integral-domain API. It does not

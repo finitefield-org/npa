@@ -151,6 +151,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
     &ABSTRACT_FIELD_HOM_MODULE,
     &ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE,
+    &ABSTRACT_FIELD_EXTENSION_MODULE,
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
@@ -1360,6 +1361,32 @@ const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldExtension",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldExtension/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldExtension/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldExtension/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldExtension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_EXTENSION_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_EXTENSION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_RING_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRingFirstIso",
     source_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
@@ -2222,6 +2249,52 @@ macro_rules! abstract_field_hom_abs {
             "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => ",
             $tail
         )
+    };
+}
+
+macro_rules! field_extension_tower_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_params!(concat!(
+            "forall (T : Sort w), ",
+            "forall (zeroT : T), ",
+            "forall (oneT : T), ",
+            "forall (addT : forall (a : T), forall (b : T), T), ",
+            "forall (negT : forall (a : T), T), ",
+            "forall (subT : forall (a : T), forall (b : T), T), ",
+            "forall (mulT : forall (a : T), forall (b : T), T), ",
+            "forall (invT : forall (a : T), T), ",
+            "forall (g : forall (b : S), T), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_field_hom_params!(concat!(
+            "forall (T : Sort w), ",
+            "forall (zeroT : T), ",
+            "forall (oneT : T), ",
+            "forall (addT : forall (a : T), forall (b : T), T), ",
+            "forall (negT : forall (a : T), T), ",
+            "forall (subT : forall (a : T), forall (b : T), T), ",
+            "forall (mulT : forall (a : T), forall (b : T), T), ",
+            "forall (invT : forall (a : T), T), ",
+            "forall (g : forall (b : S), T), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! field_extension_tower_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_abs!(concat!(
+            "fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_field_hom_abs!(concat!(
+            "fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => ",
+            $tail
+        ))
     };
 }
 
@@ -24393,6 +24466,123 @@ const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_EXTENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldExtensionLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("Prop"),
+        value: abstract_field_hom_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (base_field_law : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_law : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (base_embedding_law : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldExtensionRestrictScalarsArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (Space : Sort w), ",
+            "forall (scaleS : forall (a : S), forall (x : Space), Space), ",
+            "forall (scaleR : forall (a : R), forall (x : Space), Space), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun extension_args => fun Space => fun scaleS => fun scaleR => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (restrict_scalars_law : forall (a : R), forall (x : Space), @Eq.{w} Space (scaleR a x) (scaleS (f a) x)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldExtensionTowerArgs",
+        universe_params: &["u", "v", "w"],
+        ty: field_extension_tower_params!("Prop"),
+        value: field_extension_tower_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_st : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_extension_base_embedding",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun extension_args => ",
+            "extension_args (@FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) ",
+            "(fun (base_field_arg : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR) => ",
+            "fun (extension_field_arg : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS) => ",
+            "fun (base_embedding_arg : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => base_embedding_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_extension_as_field",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun extension_args => ",
+            "extension_args (@FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS) ",
+            "(fun (base_field_arg : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR) => ",
+            "fun (extension_field_arg : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS) => ",
+            "fun (base_embedding_arg : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => extension_field_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_extension_restrict_scalars",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (Space : Sort w), ",
+            "forall (scaleS : forall (a : S), forall (x : Space), Space), ",
+            "forall (scaleR : forall (a : R), forall (x : Space), Space), ",
+            "forall (restrict_args : @FieldExtensionRestrictScalarsArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f extension_args Space scaleS scaleR), ",
+            "forall (a : R), forall (x : Space), @Eq.{w} Space (scaleR a x) (scaleS (f a) x)"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun extension_args => fun Space => fun scaleS => fun scaleR => fun restrict_args => fun a => fun x => ",
+            "restrict_args (@Eq.{w} Space (scaleR a x) (scaleS (f a) x)) ",
+            "(fun (restrict_scalars_arg : forall (r : R), forall (y : Space), @Eq.{w} Space (scaleR r y) (scaleS (f r) y)) => restrict_scalars_arg a x)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_extension_tower",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (tower_args : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g), ",
+            "@FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun tower_args => ",
+            "tower_args (@FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))) ",
+            "(fun (extension_rs_arg : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (extension_st_arg : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g) => ",
+            "fun (extension_rt_arg : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))) => extension_rt_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_embedding_compose",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (embedding_f : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (embedding_g : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (composite_embedding : @FieldEmbeddingLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "@FieldEmbeddingLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun embedding_f => fun embedding_g => fun composite_embedding => ",
+            "@field_embedding_comp.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g embedding_f embedding_g composite_embedding"
+        )),
+    },
+];
+
 const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "RingHomLawArgs",
@@ -32285,6 +32475,40 @@ fn run_full() -> Result<(), String> {
         &abstract_field_hom_kernel_image_imports,
         &abstract_field_hom_kernel_image_source_interfaces,
     )?;
+    let abstract_field_extension_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+    ];
+    let abstract_field_extension_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+    ];
+    let abstract_field_extension = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_EXTENSION_MODULE,
+        &abstract_field_extension_imports,
+        &abstract_field_extension_source_interfaces,
+    )?;
     let abstract_ring_first_iso_imports = vec![
         eq_import.clone(),
         eq_reasoning.verified_module.clone(),
@@ -33054,6 +33278,7 @@ fn run_full() -> Result<(), String> {
         abstract_ring_first_iso_base,
         abstract_field_hom,
         abstract_field_hom_kernel_image,
+        abstract_field_extension,
         abstract_ring_first_iso,
         abstract_ring_chinese_remainder,
         abstract_ufd_prime_factorization,
@@ -35308,6 +35533,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
         || module == ABSTRACT_FIELD_HOM_MODULE.module
         || module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
+        || module == ABSTRACT_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
@@ -35647,6 +35873,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
         || config.module == ABSTRACT_FIELD_HOM_MODULE.module
         || config.module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
+        || config.module == ABSTRACT_FIELD_EXTENSION_MODULE.module
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
