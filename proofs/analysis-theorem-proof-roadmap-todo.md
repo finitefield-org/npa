@@ -285,7 +285,11 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T03 Add Cauchy And Completeness Sequence Theorems
 
-- Status: Pending
+- Status: `ANQ-003` complete. `Proofs.Ai.Analysis.Sequence.Basic` now includes
+  `SequenceCauchySeq`, `SequenceConvergenceChoice`, and
+  `SequenceCauchyCompletenessEvidence`, plus checked theorem names for deriving
+  sequence convergence from Cauchy evidence through explicit fixed-point metric
+  completeness bridges.
 - Depends on: ANA-T02
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -314,6 +318,18 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_cauchy_converges_from_completeness /tmp/anq003-sequence-cauchy-converges-replay.json`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
+- Notes:
+  - `sequence_cauchy_converges_from_completeness` calls the fixed-point
+    `CompleteMetricArgs` eliminator obtained from explicit
+    `SequenceCauchyCompletenessEvidence`; the final sequence convergence choice
+    is not a renamed assumption.
+  - Stable downstream import names are
+    `sequence_cauchy_convergence_criterion` and
+    `cauchy_convergence_criterion`.
 
 ### ANA-T04 Add Monotone, Squeeze, And Interval-Nesting Theorems
 

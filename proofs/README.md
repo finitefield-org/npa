@@ -1738,6 +1738,9 @@ Implemented definitions / API declarations:
 | `SequenceLimitUniquenessEvidence` | local evidence package containing two convergence witnesses and their equality conclusion |
 | `FixedPointConvergesToAlias` | bridge alias to `AbstractFixedPoint.ConvergesTo` on the scalar-as-vector instance |
 | `FixedPointCauchySeqAlias` | bridge alias to `AbstractFixedPoint.CauchySeq` on the scalar-as-vector instance |
+| `SequenceCauchySeq` | positive-radius Cauchy predicate over the explicit sequence and scalar order |
+| `SequenceConvergenceChoice` | Church-encoded choice of a sequence limit and convergence witness |
+| `SequenceCauchyCompletenessEvidence` | explicit package combining `CompleteOrderedFieldArgs`, fixed-point metric completeness, and bridges back to sequence convergence |
 
 Theorem targets:
 
@@ -1755,9 +1758,21 @@ Theorem targets:
 | `sequence_limit_unique`, `limit_unique` | derive equality of limits from local uniqueness evidence |
 | `fixed_point_converges_to_alias_intro`, `fixed_point_converges_to_alias_project` | bridge to and from `AbstractFixedPoint.ConvergesTo` |
 | `fixed_point_cauchy_seq_alias_intro`, `fixed_point_cauchy_seq_alias_project` | bridge to and from `AbstractFixedPoint.CauchySeq` |
+| `sequence_cauchy_seq_intro`, `sequence_cauchy_seq_small` | build Cauchy evidence from positive-radius smallness and project the smallness condition |
+| `sequence_convergence_choice_intro`, `sequence_convergence_choice_elim` | package and eliminate the chosen limit/convergence witness |
+| `sequence_cauchy_completeness_evidence_intro` | packages ordered-field completeness, fixed-point metric completeness, and Cauchy/convergence bridge maps |
+| `sequence_cauchy_completeness_ordered_field`, `sequence_cauchy_completeness_metric` | project the ordered-field and metric-completeness witnesses from the explicit evidence package |
+| `sequence_cauchy_to_fixed_point_cauchy` | converts sequence Cauchy evidence to the fixed-point `CauchySeq` witness through the package bridge |
+| `sequence_fixed_point_converges_to_sequence` | converts fixed-point `ConvergesTo` evidence back to `SequenceConvergesTo` |
+| `sequence_cauchy_converges_from_completeness` | derives a sequence convergence choice from Cauchy evidence via `CompleteMetricArgs` |
+| `sequence_cauchy_convergence_criterion`, `cauchy_convergence_criterion` | stable aliases for later series imports |
 
 The module has an empty axiom report. Limit uniqueness is not a global law package field: the
 checked `sequence_limit_unique` theorem extracts equality from an explicit local evidence package.
+The Cauchy criterion is likewise derived through `SequenceCauchyCompletenessEvidence`: the package
+must expose the `CompleteOrderedFieldArgs` already in the module context plus a fixed-point
+`CompleteMetricArgs` witness and bridge maps, and the checked theorem calls the fixed-point
+completeness eliminator rather than assuming the final sequence-convergence choice directly.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

@@ -1501,14 +1501,14 @@ certificate = "Proofs/Ai/Analysis/Sequence/Basic/certificate.npcert"
 meta = "Proofs/Ai/Analysis/Sequence/Basic/meta.json"
 replay = "Proofs/Ai/Analysis/Sequence/Basic/replay.json"
 producer_profile = "human-surface-explicit-term"
-expected_source_hash = "sha256:02b38954b7eed66c1b1e6a91ea2fdc2b71cdf9494451e69b978665118f01eeca"
-expected_certificate_file_hash = "sha256:dbe7629ae50a79e39b2d6a89e8a4414abe70417eefbaf8aa7bd94196e1bbc3b8"
-expected_export_hash = "sha256:ef6bbd3c88576c5a2aabfa9d54407480f0b4fdfe619c7af77eba04a98bafcedc"
-expected_axiom_report_hash = "sha256:9ce9f1ee79084f04cf740fea7eb29e010979a9a529978a7f8bc7f94fe1890d9a"
-expected_certificate_hash = "sha256:cb0acc00534e533e4f03671d7aee69de8940b086d182b22c327b0f3f76b2dd10"
+expected_source_hash = "sha256:45b32f521406b9461e0d188a0b984228f2562346d30309c83409870976d63baf"
+expected_certificate_file_hash = "sha256:f1b32d087b100957063f835e942254515dea5eb905cb6e13ec6174805f635f37"
+expected_export_hash = "sha256:0ad23201a969310cefdf0a05eff1f529970bf2dadac80f3a4a9b746fefdae6ca"
+expected_axiom_report_hash = "sha256:a6949982ef75862f3cf289bddeb935a733836b2514495820526110fd272b885c"
+expected_certificate_hash = "sha256:d703404e6cf7c9a35679cc5376d50a2fe8b4c0cf57ebd7f8135fd233584c803a"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint"]
-definitions = ["SequenceValue", "Eventually", "Subsequence", "SequenceConvergesTo", "SequenceLimit", "BoundedSequenceBy", "BoundedSequence", "SequenceLimitUniquenessEvidence", "FixedPointConvergesToAlias", "FixedPointCauchySeqAlias"]
-theorems = ["sequence_value_intro", "sequence_value_elim", "eventually_intro", "eventually_elim", "subsequence_intro", "subsequence_term", "sequence_converges_to_intro", "sequence_converges_to_small", "sequence_limit_def", "bounded_sequence_by_intro", "bounded_sequence_by_lower", "bounded_sequence_by_upper", "bounded_sequence_intro", "bounded_sequence_elim", "sequence_limit_uniqueness_intro", "sequence_limit_uniqueness_left", "sequence_limit_uniqueness_right", "sequence_limit_unique", "limit_unique", "fixed_point_converges_to_alias_intro", "fixed_point_converges_to_alias_project", "fixed_point_cauchy_seq_alias_intro", "fixed_point_cauchy_seq_alias_project"]
+definitions = ["SequenceValue", "Eventually", "Subsequence", "SequenceConvergesTo", "SequenceLimit", "BoundedSequenceBy", "BoundedSequence", "SequenceLimitUniquenessEvidence", "FixedPointConvergesToAlias", "FixedPointCauchySeqAlias", "SequenceCauchySeq", "SequenceConvergenceChoice", "SequenceCauchyCompletenessEvidence"]
+theorems = ["sequence_value_intro", "sequence_value_elim", "eventually_intro", "eventually_elim", "subsequence_intro", "subsequence_term", "sequence_converges_to_intro", "sequence_converges_to_small", "sequence_limit_def", "bounded_sequence_by_intro", "bounded_sequence_by_lower", "bounded_sequence_by_upper", "bounded_sequence_intro", "bounded_sequence_elim", "sequence_limit_uniqueness_intro", "sequence_limit_uniqueness_left", "sequence_limit_uniqueness_right", "sequence_limit_unique", "limit_unique", "fixed_point_converges_to_alias_intro", "fixed_point_converges_to_alias_project", "fixed_point_cauchy_seq_alias_intro", "fixed_point_cauchy_seq_alias_project", "sequence_cauchy_seq_intro", "sequence_cauchy_seq_small", "sequence_convergence_choice_intro", "sequence_convergence_choice_elim", "sequence_cauchy_completeness_evidence_intro", "sequence_cauchy_completeness_ordered_field", "sequence_cauchy_completeness_metric", "sequence_cauchy_to_fixed_point_cauchy", "sequence_fixed_point_converges_to_sequence", "sequence_cauchy_converges_from_completeness", "sequence_cauchy_convergence_criterion", "cauchy_convergence_criterion"]
 axioms = []
 
 [[modules]]

@@ -2631,6 +2631,98 @@ macro_rules! fixed_point_cauchy_seq_alias_app {
     };
 }
 
+macro_rules! sequence_cauchy_seq_app {
+    ($small:literal) => {
+        concat!(
+            "@SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $small
+        )
+    };
+}
+
+macro_rules! sequence_convergence_choice_app {
+    () => {
+        "@SequenceConvergenceChoice.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
+    };
+}
+
+macro_rules! sequence_cauchy_completeness_evidence_app {
+    ($norm:literal, $cauchy_near:literal, $cauchy_small:literal, $converges_small:literal) => {
+        concat!(
+            "@SequenceCauchyCompletenessEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $norm,
+            " ",
+            $cauchy_near,
+            " ",
+            $cauchy_small,
+            " ",
+            $converges_small
+        )
+    };
+}
+
+macro_rules! fixed_point_cauchy_seq_app {
+    ($norm:literal, $small:literal) => {
+        concat!(
+            "@CauchySeq.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul ",
+            $norm,
+            " ",
+            $small,
+            " SequenceIndex seq"
+        )
+    };
+}
+
+macro_rules! fixed_point_converges_to_app {
+    ($norm:literal, $small:literal, $limit:literal) => {
+        concat!(
+            "@ConvergesTo.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul ",
+            $norm,
+            " ",
+            $small,
+            " SequenceIndex seq ",
+            $limit
+        )
+    };
+}
+
+macro_rules! complete_metric_args_app {
+    ($norm:literal, $cauchy_small:literal, $converges_small:literal) => {
+        concat!(
+            "@CompleteMetricArgs.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul ",
+            $norm,
+            " ",
+            $cauchy_small,
+            " ",
+            $converges_small
+        )
+    };
+}
+
+macro_rules! sequence_cauchy_completeness_evidence_elim {
+    ($result:expr, $body:expr) => {
+        concat!(
+            "evidence (",
+            $result,
+            ") (fun (ordered_complete : ",
+            complete_ordered_field_app!(),
+            ") => fun (metric_complete : ",
+            complete_metric_args_app!("norm", "CauchySmall", "ConvergesSmall"),
+            ") => fun (cauchy_bridge : forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            fixed_point_cauchy_seq_app!("norm", "CauchySmall"),
+            ") => fun (converges_bridge : forall (limit : Scalar), forall (converges : ",
+            fixed_point_converges_to_app!("norm", "ConvergesSmall", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            ") => ",
+            $body,
+            ")"
+        )
+    };
+}
+
 macro_rules! upper_bound_app {
     ($set:literal, $bound:literal) => {
         concat!(
@@ -30817,6 +30909,48 @@ const ANALYSIS_SEQUENCE_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
             "fun norm => fun CauchySmall => @CauchySeq.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm CauchySmall SequenceIndex seq"
         ),
     },
+    DefinitionArtifact {
+        name: "SequenceCauchySeq",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun CauchyNear => forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), CauchyNear seq eps"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceConvergenceChoice",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!("Prop"),
+        value: analysis_sequence_basic_abs!(concat!(
+            "forall (P : Prop), forall (choose : forall (limit : Scalar), forall (converges : ",
+            sequence_converges_to_app!("limit"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SequenceCauchyCompletenessEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => forall (P : Prop), forall (mk : forall (ordered_complete : ",
+            complete_ordered_field_app!(),
+            "), forall (metric_complete : ",
+            complete_metric_args_app!("norm", "CauchySmall", "ConvergesSmall"),
+            "), forall (cauchy_bridge : forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            fixed_point_cauchy_seq_app!("norm", "CauchySmall"),
+            "), forall (converges_bridge : forall (limit : Scalar), forall (converges : ",
+            fixed_point_converges_to_app!("norm", "ConvergesSmall", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            "), P), P"
+        )),
+    },
 ];
 
 const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
@@ -31095,6 +31229,255 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_sequence_basic_abs!(
             "fun norm => fun CauchySmall => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_seq_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (small : forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), CauchyNear seq eps), ",
+            sequence_cauchy_seq_app!("CauchyNear")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun CauchyNear => fun small => small"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_seq_small",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), CauchyNear seq eps"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun CauchyNear => fun cauchy => fun eps => fun eps_pos => cauchy eps eps_pos"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_convergence_choice_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (limit : Scalar), forall (converges : ",
+            sequence_converges_to_app!("limit"),
+            "), ",
+            sequence_convergence_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun limit => fun converges => fun (P : Prop) => fun (choose : forall (limit : Scalar), forall (converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit limit), P) => choose limit converges"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_convergence_choice_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (choice : ",
+            sequence_convergence_choice_app!(),
+            "), forall (P : Prop), forall (choose : forall (limit : Scalar), forall (converges : ",
+            sequence_converges_to_app!("limit"),
+            "), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!("fun choice => fun P => fun choose => choice P choose"),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_completeness_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (metric_complete : ",
+            complete_metric_args_app!("norm", "CauchySmall", "ConvergesSmall"),
+            "), forall (cauchy_bridge : forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            fixed_point_cauchy_seq_app!("norm", "CauchySmall"),
+            "), forall (converges_bridge : forall (limit : Scalar), forall (converges : ",
+            fixed_point_converges_to_app!("norm", "ConvergesSmall", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            "), ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun metric_complete => fun cauchy_bridge => fun converges_bridge => fun (P : Prop) => fun (mk : forall (ordered_complete : ",
+            complete_ordered_field_app!(),
+            "), forall (metric_complete : ",
+            complete_metric_args_app!("norm", "CauchySmall", "ConvergesSmall"),
+            "), forall (cauchy_bridge : forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            fixed_point_cauchy_seq_app!("norm", "CauchySmall"),
+            "), forall (converges_bridge : forall (limit : Scalar), forall (converges : ",
+            fixed_point_converges_to_app!("norm", "ConvergesSmall", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            "), P) => mk complete_ordered_field metric_complete cauchy_bridge converges_bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_completeness_ordered_field",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), ",
+            complete_ordered_field_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => ",
+            sequence_cauchy_completeness_evidence_elim!(
+                complete_ordered_field_app!(),
+                "ordered_complete"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_completeness_metric",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), ",
+            complete_metric_args_app!("norm", "CauchySmall", "ConvergesSmall")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => ",
+            sequence_cauchy_completeness_evidence_elim!(
+                complete_metric_args_app!("norm", "CauchySmall", "ConvergesSmall"),
+                "metric_complete"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_to_fixed_point_cauchy",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            fixed_point_cauchy_seq_app!("norm", "CauchySmall")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => ",
+            sequence_cauchy_completeness_evidence_elim!(
+                fixed_point_cauchy_seq_app!("norm", "CauchySmall"),
+                "cauchy_bridge cauchy"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_fixed_point_converges_to_sequence",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (limit : Scalar), forall (converges : ",
+            fixed_point_converges_to_app!("norm", "ConvergesSmall", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun limit => fun converges => ",
+            sequence_cauchy_completeness_evidence_elim!(
+                sequence_converges_to_app!("limit"),
+                "converges_bridge limit converges"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_converges_from_completeness",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            sequence_convergence_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => ",
+            sequence_cauchy_completeness_evidence_elim!(
+                sequence_convergence_choice_app!(),
+                concat!(
+                    "@complete_metric_limit_from_args.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm CauchySmall ConvergesSmall metric_complete SequenceIndex seq (cauchy_bridge cauchy) ",
+                    "(",
+                    sequence_convergence_choice_app!(),
+                    ") (fun (limit : Scalar) => fun (fp_converges : ",
+                    fixed_point_converges_to_app!("norm", "ConvergesSmall", "limit"),
+                    ") => @sequence_convergence_choice_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit limit (converges_bridge limit fp_converges))"
+                )
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_cauchy_convergence_criterion",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            sequence_convergence_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => @sequence_cauchy_converges_from_completeness.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit norm CauchyNear CauchySmall ConvergesSmall evidence cauchy"
+        ),
+    },
+    TheoremArtifact {
+        name: "cauchy_convergence_criterion",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_app!(
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            sequence_cauchy_seq_app!("CauchyNear"),
+            "), ",
+            sequence_convergence_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => @sequence_cauchy_convergence_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit norm CauchyNear CauchySmall ConvergesSmall evidence cauchy"
         ),
     },
 ];
