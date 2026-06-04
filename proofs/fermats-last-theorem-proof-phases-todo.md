@@ -44,13 +44,17 @@ theorem project and a theorem-library growth project.
 
 ## Library Growth Rule
 
-Each implementation milestone must produce a reusable theorem-library surface,
-not only the narrow theorem needed by the final FLT route.
+Each domain implementation milestone must produce a reusable theorem-library
+surface, not only the narrow theorem needed by the final FLT route.
 
 Rules:
 
-- Every non-final milestone must export at least one domain-oriented theorem,
-  definition, or law package that can be used independently of FLT.
+- Every mathematical domain milestone must export at least one domain-oriented
+  theorem, definition, or law package that can be used independently of FLT.
+- Governance, bridge-policy, smoke, and release-audit milestones are exempt
+  from exporting a new domain theorem package, but they must document how they
+  protect the reusable library surface and must route mathematical dependencies
+  through reusable modules.
 - `Proofs.Ai.NumberTheory.Flt.*` glue modules may depend on reusable
   `NumberTheory`, `Algebra`, `EllipticCurve`, `ModularForms`,
   `GaloisRepresentation`, and `Modularity` modules, but reusable modules must
@@ -58,11 +62,14 @@ Rules:
 - If a theorem is introduced only because the Wiles/Ribet route needs it, the
   milestone must also add nearby standard lemmas that make the API usable for
   other number-theory or geometry proofs.
-- Bridge axioms are allowed only in clearly named development modules under
-  `Proofs.Ai.NumberTheory.Flt.Bridge` or another explicitly bridge-marked
-  namespace. They are never accepted as library facts.
+- Bridge axiom declarations use the `Flt.BridgeAxiom.*` prefix and live only in
+  clearly named development modules such as `Proofs.Ai.NumberTheory.Flt.Bridge`
+  or another explicitly bridge-marked namespace. They are never accepted as
+  library facts.
 - The README, package manifest, generated theorem index, and axiom report must
-  make the reusable surface discoverable without trusting any sidecar.
+  make the reusable surface discoverable as metadata. These files remain
+  untrusted sidecars; proof acceptance still comes only from canonical
+  certificates and checker verdicts.
 
 ## Current Implementation Facts
 
@@ -180,6 +187,8 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
   - Bridge axioms are visible in the axiom report when used.
   - Final release policy rejects any transitive `Flt.BridgeAxiom.*`.
   - Bridge policy tests do not modify kernel trusted base.
+  - As a governance milestone, it documents and enforces the library growth
+    rule rather than exporting a domain theorem package.
 - Verification:
   - `cargo test -p npa-package`
   - `cargo test -p npa-checker-ref high_trust`
@@ -923,6 +932,8 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
   - The final theorem shape, import graph, and package metadata are frozen.
   - Bridge-backed smoke output is clearly labeled as conditional or development-only.
   - The negative release gate rejects this module as final if bridge axioms remain.
+  - Smoke glue does not count as reusable library growth by itself; every
+    mathematical dependency points to a reusable domain module.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Flt.ConditionalFinal`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Flt.ConditionalFinal`
@@ -1027,7 +1038,9 @@ RIB-03 + MOD-04 + NT-05 + EC-04 -> FINAL-01 -> FINAL-02 -> FINAL-03 -> REL-01
   - `cargo test --workspace`
   - `git diff --check`
 - Notes:
-  - If `phase8-release-audit.sh` does not yet exist, this milestone must first create the script or replace the command with the repository's current high-trust release gate.
+  - `scripts/phase8-release-audit.sh` currently exists; if it is renamed or
+    superseded, update this milestone to the repository's current high-trust
+    release gate.
 
 ## Review Ledger
 
@@ -1044,5 +1057,20 @@ Review pass 1 findings:
   module generation and source-free module verification.
 
 Review pass 2 findings:
+
+- None.
+
+Review pass 3 findings:
+
+- Fixed in this document: narrowed the library growth rule from every
+  non-final milestone to mathematical domain milestones, and added explicit
+  duties for governance, bridge-policy, smoke, and release-audit milestones.
+- Fixed in this document: clarified that `Flt.BridgeAxiom.*` is the bridge
+  declaration prefix while `Proofs.Ai.NumberTheory.Flt.Bridge` is the intended
+  development module namespace.
+- Fixed in this document: updated the release-audit note now that
+  `scripts/phase8-release-audit.sh` exists in the repository.
+
+Review pass 4 findings:
 
 - None.
