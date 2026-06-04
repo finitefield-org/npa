@@ -113,6 +113,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &RIGHT_TRIANGLE_MODULE,
     &METRIC_MODULE,
     &IFF_MODULE,
+    &CLASSICAL_CATEGORY_MODULE,
+    &INFINITY_SIMPLICIAL_SET_MODULE,
     &ABSTRACT_GROUP_MODULE,
     &ABSTRACT_GROUP_KERNEL_MODULE,
     &ABSTRACT_GROUP_IMAGE_MODULE,
@@ -145,6 +147,12 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
     &ABSTRACT_KRULL_THEOREM_MODULE,
+    &DERIVED_AFFINE_SCHEMES_MODULE,
+    &QUASI_COHERENT_SHEAVES_MODULE,
+    &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
+    &DERIVED_CATEGORY_MODULE,
+    &TOR_EXT_MODULE,
+    &COTANGENT_COMPLEX_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
     &ABSTRACT_SCALAR_DERIVE_MODULE,
@@ -564,6 +572,32 @@ const IFF_MODULE: ModuleArtifact = ModuleArtifact {
     definitions: IFF_DEFINITIONS,
     theorems: IFF_THEOREMS,
     expected_axioms: &["Eq.rec"],
+};
+
+const CLASSICAL_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Category.Classical",
+    source_path: "Proofs/Ai/Category/Classical/source.npa",
+    certificate_path: "Proofs/Ai/Category/Classical/certificate.npcert",
+    meta_path: "Proofs/Ai/Category/Classical/meta.json",
+    replay_path: "Proofs/Ai/Category/Classical/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.EqReasoning"],
+    inductives: &[],
+    definitions: CLASSICAL_CATEGORY_DEFINITIONS,
+    theorems: CLASSICAL_CATEGORY_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
+const INFINITY_SIMPLICIAL_SET_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Category.Infinity.SimplicialSet",
+    source_path: "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa",
+    certificate_path: "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert",
+    meta_path: "Proofs/Ai/Category/Infinity/SimplicialSet/meta.json",
+    replay_path: "Proofs/Ai/Category/Infinity/SimplicialSet/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Category.Classical"],
+    inductives: &[],
+    definitions: INFINITY_SIMPLICIAL_SET_DEFINITIONS,
+    theorems: INFINITY_SIMPLICIAL_SET_THEOREMS,
+    expected_axioms: &[],
 };
 
 const ABSTRACT_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
@@ -1174,6 +1208,92 @@ const ABSTRACT_KRULL_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_KRULL_THEOREM_DEFINITIONS,
     theorems: ABSTRACT_KRULL_THEOREM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const DERIVED_AFFINE_SCHEMES_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+    source_path: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa",
+    certificate_path: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/replay.json",
+    imports: &[],
+    inductives: &[],
+    definitions: DERIVED_AFFINE_SCHEMES_DEFINITIONS,
+    theorems: DERIVED_AFFINE_SCHEMES_THEOREMS,
+    expected_axioms: &[],
+};
+
+const QUASI_COHERENT_SHEAVES_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.QuasiCoherentSheaves",
+    source_path: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/source.npa",
+    certificate_path: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/replay.json",
+    imports: &["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+    inductives: &[],
+    definitions: QUASI_COHERENT_SHEAVES_DEFINITIONS,
+    theorems: QUASI_COHERENT_SHEAVES_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+    source_path: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/source.npa",
+    certificate_path: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/replay.json",
+    imports: &["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+    inductives: &[],
+    definitions: ETALE_SMOOTH_FLAT_TOPOLOGY_DEFINITIONS,
+    theorems: ETALE_SMOOTH_FLAT_TOPOLOGY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const DERIVED_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+    source_path: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/source.npa",
+    certificate_path: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Category.Classical"],
+    inductives: &[],
+    definitions: DERIVED_CATEGORY_DEFINITIONS,
+    theorems: DERIVED_CATEGORY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const TOR_EXT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.TorExt",
+    source_path: "Proofs/Ai/AlgebraicGeometry/TorExt/source.npa",
+    certificate_path: "Proofs/Ai/AlgebraicGeometry/TorExt/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/TorExt/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/TorExt/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Category.Classical",
+        "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+    ],
+    inductives: &[],
+    definitions: TOR_EXT_DEFINITIONS,
+    theorems: TOR_EXT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const COTANGENT_COMPLEX_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.AlgebraicGeometry.CotangentComplex",
+    source_path: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/source.npa",
+    certificate_path: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/certificate.npcert",
+    meta_path: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/meta.json",
+    replay_path: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Category.Classical",
+        "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
+    ],
+    inductives: &[],
+    definitions: COTANGENT_COMPLEX_DEFINITIONS,
+    theorems: COTANGENT_COMPLEX_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -2903,6 +3023,4131 @@ macro_rules! abstract_group_abs {
     };
     ($tail:literal) => {
         concat!("fun G => fun one => fun mul => fun inv => ", $tail)
+    };
+}
+
+macro_rules! category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        category_params!(concat!($tail))
+    };
+}
+
+macro_rules! category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! functor_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (obj_map : forall (A : ObjC), ObjD), ",
+            "forall (hom_map : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (obj_map A) (obj_map B)), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! functor_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => fun obj_map => fun hom_map => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => fun obj_map => fun hom_map => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! derived_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Complex : Sort u), ",
+            "forall (ChainMap : forall (A : Complex), forall (B : Complex), Sort v), ",
+            "forall (complex_id : forall (A : Complex), ChainMap A A), ",
+            "forall (complex_comp : forall (A : Complex), forall (B : Complex), forall (C : Complex), forall (g : ChainMap B C), forall (f : ChainMap A B), ChainMap A C), ",
+            "forall (complex_category_args : @CategoryLawArgs.{u,v} Complex ChainMap complex_id complex_comp), ",
+            "forall (QuasiIso : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), Prop), ",
+            "forall (DerivedObj : Sort w), ",
+            "forall (DerivedHom : forall (X : DerivedObj), forall (Y : DerivedObj), Sort z), ",
+            "forall (derived_id : forall (X : DerivedObj), DerivedHom X X), ",
+            "forall (derived_comp : forall (X : DerivedObj), forall (Y : DerivedObj), forall (Z : DerivedObj), forall (g : DerivedHom Y Z), forall (f : DerivedHom X Y), DerivedHom X Z), ",
+            "forall (localize_obj : forall (A : Complex), DerivedObj), ",
+            "forall (localize_map : forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), DerivedHom (localize_obj A) (localize_obj B)), ",
+            "forall (IsIsoInDerived : forall (X : DerivedObj), forall (Y : DerivedObj), forall (f : DerivedHom X Y), Prop), ",
+            "forall (LocalizationFunctorLaw : Prop), ",
+            "forall (LocalizationUniversal : Prop), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        derived_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! derived_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Complex => fun ChainMap => fun complex_id => fun complex_comp => ",
+            "fun complex_category_args => fun QuasiIso => fun DerivedObj => ",
+            "fun DerivedHom => fun derived_id => fun derived_comp => ",
+            "fun localize_obj => fun localize_map => fun IsIsoInDerived => ",
+            "fun LocalizationFunctorLaw => fun LocalizationUniversal => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        derived_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! derived_category_law_args_app {
+    () => {
+        concat!(
+            "@DerivedCategoryLawArgs.{u,v,w,z} Complex ChainMap complex_id ",
+            "complex_comp complex_category_args QuasiIso DerivedObj DerivedHom ",
+            "derived_id derived_comp localize_obj localize_map IsIsoInDerived ",
+            "LocalizationFunctorLaw LocalizationUniversal"
+        )
+    };
+}
+
+macro_rules! derived_category_category_law_type {
+    () => {
+        "@CategoryLawArgs.{w,z} DerivedObj DerivedHom derived_id derived_comp"
+    };
+}
+
+macro_rules! derived_category_quasi_iso_inverted_law_type {
+    () => {
+        concat!(
+            "forall (A : Complex), forall (B : Complex), forall (f : ChainMap A B), ",
+            "forall (qis : QuasiIso A B f), ",
+            "IsIsoInDerived (localize_obj A) (localize_obj B) (localize_map A B f)"
+        )
+    };
+}
+
+macro_rules! derived_category_law_binders {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (derived_category_law : ",
+            derived_category_category_law_type!(),
+            "), ",
+            "forall (localization_functor_law : LocalizationFunctorLaw), ",
+            "forall (quasi_isomorphism_inverted_law : ",
+            derived_category_quasi_iso_inverted_law_type!(),
+            "), ",
+            "forall (localization_universal_law : LocalizationUniversal), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        derived_category_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! tor_ext_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Degree : Sort a), ",
+            derived_category_params!(concat!(
+                "forall (TensorProduct : forall (A : Complex), forall (B : Complex), Complex), ",
+                "forall (InternalHom : forall (A : Complex), forall (B : Complex), Complex), ",
+                "forall (Tor : forall (i : Degree), forall (A : Complex), forall (B : Complex), DerivedObj), ",
+                "forall (Ext : forall (i : Degree), forall (A : Complex), forall (B : Complex), DerivedObj), ",
+                "forall (TorIsLeftDerivedTensor : Prop), ",
+                "forall (ExtIsRightDerivedHom : Prop), ",
+                "forall (TorExtLongExactSequence : Prop), ",
+                $($tail),+
+            ))
+        )
+    };
+    ($tail:literal) => {
+        tor_ext_params!(concat!($tail))
+    };
+}
+
+macro_rules! tor_ext_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Degree => ",
+            derived_category_abs!(concat!(
+                "fun TensorProduct => fun InternalHom => fun Tor => fun Ext => ",
+                "fun TorIsLeftDerivedTensor => fun ExtIsRightDerivedHom => ",
+                "fun TorExtLongExactSequence => ",
+                $($tail),+
+            ))
+        )
+    };
+    ($tail:literal) => {
+        tor_ext_abs!(concat!($tail))
+    };
+}
+
+macro_rules! tor_ext_law_args_app {
+    () => {
+        concat!(
+            "@TorExtLawArgs.{a,u,v,w,z} Degree Complex ChainMap complex_id ",
+            "complex_comp complex_category_args QuasiIso DerivedObj DerivedHom ",
+            "derived_id derived_comp localize_obj localize_map IsIsoInDerived ",
+            "LocalizationFunctorLaw LocalizationUniversal TensorProduct InternalHom ",
+            "Tor Ext TorIsLeftDerivedTensor ExtIsRightDerivedHom TorExtLongExactSequence"
+        )
+    };
+}
+
+macro_rules! tor_ext_law_binders {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (derived_category_law : ",
+            derived_category_law_args_app!(),
+            "), ",
+            "forall (tor_left_derived_tensor_law : TorIsLeftDerivedTensor), ",
+            "forall (ext_right_derived_hom_law : ExtIsRightDerivedHom), ",
+            "forall (tor_ext_long_exact_sequence_law : TorExtLongExactSequence), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        tor_ext_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! cotangent_complex_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (DerivedRing : Sort r), ",
+            "forall (RingMap : forall (A : DerivedRing), forall (B : DerivedRing), Sort m), ",
+            derived_category_params!(concat!(
+                "forall (ModuleOver : forall (A : DerivedRing), Sort n), ",
+                "forall (CotangentComplex : forall (A : DerivedRing), forall (B : DerivedRing), forall (f : RingMap A B), DerivedObj), ",
+                "forall (Derivation : forall (A : DerivedRing), forall (B : DerivedRing), forall (f : RingMap A B), forall (M : ModuleOver B), Prop), ",
+                "forall (CotangentRepresentsDerivations : Prop), ",
+                "forall (CotangentTransitivityTriangle : Prop), ",
+                "forall (CotangentBaseChange : Prop), ",
+                "forall (CotangentSmoothEtaleVanishing : Prop), ",
+                $($tail),+
+            ))
+        )
+    };
+    ($tail:literal) => {
+        cotangent_complex_params!(concat!($tail))
+    };
+}
+
+macro_rules! cotangent_complex_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun DerivedRing => fun RingMap => ",
+            derived_category_abs!(concat!(
+                "fun ModuleOver => fun CotangentComplex => fun Derivation => ",
+                "fun CotangentRepresentsDerivations => ",
+                "fun CotangentTransitivityTriangle => fun CotangentBaseChange => ",
+                "fun CotangentSmoothEtaleVanishing => ",
+                $($tail),+
+            ))
+        )
+    };
+    ($tail:literal) => {
+        cotangent_complex_abs!(concat!($tail))
+    };
+}
+
+macro_rules! cotangent_complex_law_args_app {
+    () => {
+        concat!(
+            "@CotangentComplexLawArgs.{m,n,r,u,v,w,z} DerivedRing RingMap ",
+            "Complex ChainMap complex_id complex_comp complex_category_args ",
+            "QuasiIso DerivedObj DerivedHom derived_id derived_comp ",
+            "localize_obj localize_map IsIsoInDerived LocalizationFunctorLaw ",
+            "LocalizationUniversal ModuleOver CotangentComplex Derivation ",
+            "CotangentRepresentsDerivations CotangentTransitivityTriangle ",
+            "CotangentBaseChange CotangentSmoothEtaleVanishing"
+        )
+    };
+}
+
+macro_rules! cotangent_complex_law_binders {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (derived_category_law : ",
+            derived_category_law_args_app!(),
+            "), ",
+            "forall (cotangent_represents_derivations_law : CotangentRepresentsDerivations), ",
+            "forall (cotangent_transitivity_triangle_law : CotangentTransitivityTriangle), ",
+            "forall (cotangent_base_change_law : CotangentBaseChange), ",
+            "forall (cotangent_smooth_etale_vanishing_law : CotangentSmoothEtaleVanishing), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        cotangent_complex_law_binders!(concat!($tail))
+    };
+}
+
+macro_rules! natural_transformation_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (objF : forall (A : ObjC), ObjD), ",
+            "forall (homF : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (objF A) (objF B)), ",
+            "forall (functorF_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args objF homF), ",
+            "forall (objG : forall (A : ObjC), ObjD), ",
+            "forall (homG : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (objG A) (objG B)), ",
+            "forall (functorG_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args objG homG), ",
+            "forall (component : forall (A : ObjC), HomD (objF A) (objG A)), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! natural_transformation_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => ",
+            "fun objF => fun homF => fun functorF_args => ",
+            "fun objG => fun homG => fun functorG_args => fun component => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => ",
+            "fun objF => fun homF => fun functorF_args => ",
+            "fun objG => fun homG => fun functorG_args => fun component => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! adjunction_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (Gobj : forall (X : ObjD), ObjC), ",
+            "forall (Gmap : forall (X : ObjD), forall (Y : ObjD), forall (f : HomD X Y), HomC (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap), ",
+            "forall (hom_forward : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), HomC A (Gobj B)), ",
+            "forall (hom_backward : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj A) B), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        adjunction_params!(concat!($tail))
+    };
+}
+
+macro_rules! adjunction_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => ",
+            "fun Fobj => fun Fmap => fun F_args => ",
+            "fun Gobj => fun Gmap => fun G_args => ",
+            "fun hom_forward => fun hom_backward => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        adjunction_abs!(concat!($tail))
+    };
+}
+
+macro_rules! unit_counit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (Gobj : forall (X : ObjD), ObjC), ",
+            "forall (Gmap : forall (X : ObjD), forall (Y : ObjD), forall (f : HomD X Y), HomC (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap), ",
+            "forall (unit : forall (A : ObjC), HomC A (Gobj (Fobj A))), ",
+            "forall (counit : forall (X : ObjD), HomD (Fobj (Gobj X)) X), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        unit_counit_params!(concat!($tail))
+    };
+}
+
+macro_rules! unit_counit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => ",
+            "fun Fobj => fun Fmap => fun F_args => ",
+            "fun Gobj => fun Gmap => fun G_args => ",
+            "fun unit => fun counit => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        unit_counit_abs!(concat!($tail))
+    };
+}
+
+macro_rules! right_adjoint_base_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (Gobj : forall (X : ObjD), ObjC), ",
+            "forall (Gmap : forall (X : ObjD), forall (Y : ObjD), forall (f : HomD X Y), HomC (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        right_adjoint_base_params!(concat!($tail))
+    };
+}
+
+macro_rules! right_adjoint_base_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun source_args => fun target_args => ",
+            "fun Gobj => fun Gmap => fun G_args => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        right_adjoint_base_abs!(concat!($tail))
+    };
+}
+
+macro_rules! freyd_universal_arrow_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        right_adjoint_base_params!(concat!(
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (unit : forall (A : ObjC), HomC A (Gobj (Fobj A))), ",
+            "forall (hom_backward : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj A) B), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        freyd_universal_arrow_params!(concat!($tail))
+    };
+}
+
+macro_rules! freyd_universal_arrow_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        right_adjoint_base_abs!(concat!(
+            "fun Fobj => fun Fmap => fun F_args => ",
+            "fun unit => fun hom_backward => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        freyd_universal_arrow_abs!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (F : forall (X : Obj), Sort w), ",
+            "forall (mapF : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : F Y), F X), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! presheaf_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun F => fun mapF => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun F => fun mapF => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! simplex_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (DeltaObj : Sort u), ",
+            "forall (DeltaHom : forall (A : DeltaObj), forall (B : DeltaObj), Sort v), ",
+            "forall (delta_id : forall (A : DeltaObj), DeltaHom A A), ",
+            "forall (delta_comp : forall (A : DeltaObj), forall (B : DeltaObj), forall (C : DeltaObj), forall (g : DeltaHom B C), forall (f : DeltaHom A B), DeltaHom A C), ",
+            "forall (delta_category_args : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        simplex_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! simplex_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun DeltaObj => fun DeltaHom => fun delta_id => fun delta_comp => fun delta_category_args => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        simplex_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! simplex_category_law_args_app {
+    () => {
+        "@SimplexCategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp delta_category_args"
+    };
+}
+
+macro_rules! simplicial_set_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_params!(concat!(
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), ",
+            "forall (S : forall (n : DeltaObj), Sort w), ",
+            "forall (restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : S n), S m), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        simplicial_set_params!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_set_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_abs!(concat!(
+            "fun simplex_args => fun S => fun restrict => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        simplicial_set_abs!(concat!($tail))
+    };
+}
+
+macro_rules! simplicial_set_law_args_app {
+    () => {
+        "@SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict"
+    };
+}
+
+macro_rules! simplicial_restrict_id_law_type {
+    () => {
+        "forall (n : DeltaObj), forall (x : S n), @Eq.{w} (S n) (restrict n n (delta_id n) x) x"
+    };
+}
+
+macro_rules! simplicial_restrict_comp_law_type {
+    () => {
+        "forall (l : DeltaObj), forall (m : DeltaObj), forall (n : DeltaObj), forall (beta : DeltaHom m n), forall (alpha : DeltaHom l m), forall (x : S n), @Eq.{w} (S l) (restrict l n (delta_comp l m n beta alpha) x) (restrict l m alpha (restrict m n beta x))"
+    };
+}
+
+macro_rules! kan_complex_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplicial_set_params!(concat!(
+            "forall (simplicial_set_args : ",
+            simplicial_set_law_args_app!(),
+            "), ",
+            "forall (HornIndex : forall (n : DeltaObj), Sort z), ",
+            "forall (Horn : forall (n : DeltaObj), forall (k : HornIndex n), Sort zz), ",
+            "forall (fills_horn : forall (n : DeltaObj), forall (k : HornIndex n), forall (horn : Horn n k), forall (simplex : S n), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        kan_complex_params!(concat!($tail))
+    };
+}
+
+macro_rules! kan_complex_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplicial_set_abs!(concat!(
+            "fun simplicial_set_args => fun HornIndex => fun Horn => fun fills_horn => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        kan_complex_abs!(concat!($tail))
+    };
+}
+
+macro_rules! kan_complex_law_args_app {
+    () => {
+        "@KanComplexLawArgs.{u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args HornIndex Horn fills_horn"
+    };
+}
+
+macro_rules! kan_horn_filler_law_type {
+    () => {
+        "forall (n : DeltaObj), forall (k : HornIndex n), forall (horn : Horn n k), forall (P : Prop), forall (build : forall (simplex : S n), forall (fills : fills_horn n k horn simplex), P), P"
+    };
+}
+
+macro_rules! quasicategory_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (DeltaObj : Sort u), ",
+            "forall (DeltaHom : forall (A : DeltaObj), forall (B : DeltaObj), Sort v), ",
+            "forall (delta_id : forall (A : DeltaObj), DeltaHom A A), ",
+            "forall (delta_comp : forall (A : DeltaObj), forall (B : DeltaObj), forall (C : DeltaObj), forall (g : DeltaHom B C), forall (f : DeltaHom A B), DeltaHom A C), ",
+            "forall (delta_category_args : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), ",
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), ",
+            "forall (S : forall (n : DeltaObj), Sort w), ",
+            "forall (restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : S n), S m), ",
+            "forall (simplicial_set_args : ",
+            simplicial_set_law_args_app!(),
+            "), ",
+            "forall (InnerHornIndex : forall (n : DeltaObj), Sort z), ",
+            "forall (InnerHorn : forall (n : DeltaObj), forall (k : InnerHornIndex n), Sort zz), ",
+            "forall (fills_inner_horn : forall (n : DeltaObj), forall (k : InnerHornIndex n), forall (horn : InnerHorn n k), forall (simplex : S n), Prop), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        quasicategory_params!(concat!($tail))
+    };
+}
+
+macro_rules! quasicategory_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun DeltaObj => fun DeltaHom => fun delta_id => fun delta_comp => fun delta_category_args => ",
+            "fun simplex_args => fun S => fun restrict => fun simplicial_set_args => ",
+            "fun InnerHornIndex => fun InnerHorn => fun fills_inner_horn => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        quasicategory_abs!(concat!($tail))
+    };
+}
+
+macro_rules! quasicategory_law_args_app {
+    () => {
+        "@QuasicategoryLawArgs.{u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn"
+    };
+}
+
+macro_rules! quasicategory_inner_horn_filler_law_type {
+    () => {
+        "forall (n : DeltaObj), forall (k : InnerHornIndex n), forall (horn : InnerHorn n k), forall (P : Prop), forall (build : forall (simplex : S n), forall (fills : fills_inner_horn n k horn simplex), P), P"
+    };
+}
+
+macro_rules! homotopy_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        quasicategory_params!(concat!(
+            "forall (quasicategory_args : ",
+            quasicategory_law_args_app!(),
+            "), ",
+            "forall (HoObj : Sort a), ",
+            "forall (HoHom : forall (A : HoObj), forall (B : HoObj), Sort b), ",
+            "forall (ho_id : forall (A : HoObj), HoHom A A), ",
+            "forall (ho_comp : forall (A : HoObj), forall (B : HoObj), forall (C : HoObj), forall (g : HoHom B C), forall (f : HoHom A B), HoHom A C), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        homotopy_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! homotopy_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        quasicategory_abs!(concat!(
+            "fun quasicategory_args => fun HoObj => fun HoHom => fun ho_id => fun ho_comp => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        homotopy_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! homotopy_category_law_args_app {
+    () => {
+        "@HomotopyCategoryLawArgs.{a,b,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp"
+    };
+}
+
+macro_rules! homotopy_category_category_law_args_app {
+    () => {
+        "@CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp"
+    };
+}
+
+macro_rules! infinity_yoneda_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_params!(concat!(
+            "forall (homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            "forall (ho_category_args : @CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp), ",
+            "forall (F : forall (X : HoObj), Sort c), ",
+            "forall (mapF : forall (X : HoObj), forall (Y : HoObj), forall (f : HoHom X Y), forall (x : F Y), F X), ",
+            "forall (presheaf_args : @PresheafLawArgs.{a,b,c} HoObj HoHom ho_id ho_comp ho_category_args F mapF), ",
+            "forall (A : HoObj), ",
+            "forall (alpha : forall (X : HoObj), forall (f : HoHom X A), F X), ",
+            "forall (natural_args : @YonedaNaturalFamilyLawArgs.{a,b,c} HoObj HoHom ho_id ho_comp ho_category_args F mapF presheaf_args A alpha), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_yoneda_params!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_yoneda_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_abs!(concat!(
+            "fun homotopy_category_args => fun ho_category_args => fun F => fun mapF => fun presheaf_args => ",
+            "fun A => fun alpha => fun natural_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_yoneda_abs!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_yoneda_law_type {
+    () => {
+        "forall (X : HoObj), forall (f : HoHom X A), @Eq.{c} (F X) (alpha X f) (mapF X A f (alpha A (ho_id A)))"
+    };
+}
+
+macro_rules! infinity_yoneda_law_args_app {
+    () => {
+        "@InfinityYonedaLawArgs.{a,b,c,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args F mapF presheaf_args A alpha natural_args"
+    };
+}
+
+macro_rules! infinity_kan_extension_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_params!(concat!(
+            "forall (homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            "forall (ho_category_args : @CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp), ",
+            "forall (IndexObj : Sort c), ",
+            "forall (IndexHom : forall (A : IndexObj), forall (B : IndexObj), Sort d), ",
+            "forall (index_id : forall (A : IndexObj), IndexHom A A), ",
+            "forall (index_comp : forall (A : IndexObj), forall (B : IndexObj), forall (C : IndexObj), forall (g : IndexHom B C), forall (f : IndexHom A B), IndexHom A C), ",
+            "forall (index_category_args : @CategoryLawArgs.{c,d} IndexObj IndexHom index_id index_comp), ",
+            "forall (BaseObj : Sort e), ",
+            "forall (BaseHom : forall (A : BaseObj), forall (B : BaseObj), Sort f), ",
+            "forall (base_id : forall (A : BaseObj), BaseHom A A), ",
+            "forall (base_comp : forall (A : BaseObj), forall (B : BaseObj), forall (C : BaseObj), forall (g : BaseHom B C), forall (f : BaseHom A B), BaseHom A C), ",
+            "forall (base_category_args : @CategoryLawArgs.{e,f} BaseObj BaseHom base_id base_comp), ",
+            "forall (u_obj : forall (i : IndexObj), BaseObj), ",
+            "forall (u_map : forall (i : IndexObj), forall (j : IndexObj), forall (m : IndexHom i j), BaseHom (u_obj i) (u_obj j)), ",
+            "forall (u_args : @FunctorLawArgs.{c,d,e,f} IndexObj IndexHom index_id index_comp BaseObj BaseHom base_id base_comp index_category_args base_category_args u_obj u_map), ",
+            "forall (diagram_obj : forall (i : IndexObj), HoObj), ",
+            "forall (diagram_map : forall (i : IndexObj), forall (j : IndexObj), forall (m : IndexHom i j), HoHom (diagram_obj i) (diagram_obj j)), ",
+            "forall (diagram_args : @FunctorLawArgs.{c,d,a,b} IndexObj IndexHom index_id index_comp HoObj HoHom ho_id ho_comp index_category_args ho_category_args diagram_obj diagram_map), ",
+            "forall (left_ext_obj : forall (X : BaseObj), HoObj), ",
+            "forall (left_ext_map : forall (X : BaseObj), forall (Y : BaseObj), forall (m : BaseHom X Y), HoHom (left_ext_obj X) (left_ext_obj Y)), ",
+            "forall (left_ext_args : @FunctorLawArgs.{e,f,a,b} BaseObj BaseHom base_id base_comp HoObj HoHom ho_id ho_comp base_category_args ho_category_args left_ext_obj left_ext_map), ",
+            "forall (left_unit : forall (i : IndexObj), HoHom (diagram_obj i) (left_ext_obj (u_obj i))), ",
+            "forall (right_ext_obj : forall (X : BaseObj), HoObj), ",
+            "forall (right_ext_map : forall (X : BaseObj), forall (Y : BaseObj), forall (m : BaseHom X Y), HoHom (right_ext_obj X) (right_ext_obj Y)), ",
+            "forall (right_ext_args : @FunctorLawArgs.{e,f,a,b} BaseObj BaseHom base_id base_comp HoObj HoHom ho_id ho_comp base_category_args ho_category_args right_ext_obj right_ext_map), ",
+            "forall (right_counit : forall (i : IndexObj), HoHom (right_ext_obj (u_obj i)) (diagram_obj i)), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_kan_extension_params!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_kan_extension_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_abs!(concat!(
+            "fun homotopy_category_args => fun ho_category_args => ",
+            "fun IndexObj => fun IndexHom => fun index_id => fun index_comp => fun index_category_args => ",
+            "fun BaseObj => fun BaseHom => fun base_id => fun base_comp => fun base_category_args => ",
+            "fun u_obj => fun u_map => fun u_args => ",
+            "fun diagram_obj => fun diagram_map => fun diagram_args => ",
+            "fun left_ext_obj => fun left_ext_map => fun left_ext_args => fun left_unit => ",
+            "fun right_ext_obj => fun right_ext_map => fun right_ext_args => fun right_counit => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_kan_extension_abs!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_left_kan_extension_law_type {
+    () => {
+        concat!(
+            "forall (Gobj : forall (X : BaseObj), HoObj), ",
+            "forall (Gmap : forall (X : BaseObj), forall (Y : BaseObj), forall (m : BaseHom X Y), HoHom (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{e,f,a,b} BaseObj BaseHom base_id base_comp HoObj HoHom ho_id ho_comp base_category_args ho_category_args Gobj Gmap), ",
+            "forall (theta : forall (i : IndexObj), HoHom (diagram_obj i) (Gobj (u_obj i))), ",
+            "forall (P : Prop), ",
+            "forall (build : forall (mediator : forall (X : BaseObj), HoHom (left_ext_obj X) (Gobj X)), ",
+            "forall (commutes : forall (i : IndexObj), @Eq.{b} (HoHom (diagram_obj i) (Gobj (u_obj i))) ",
+            "(ho_comp (diagram_obj i) (left_ext_obj (u_obj i)) (Gobj (u_obj i)) (mediator (u_obj i)) (left_unit i)) (theta i)), P), P"
+        )
+    };
+}
+
+macro_rules! infinity_right_kan_extension_law_type {
+    () => {
+        concat!(
+            "forall (Gobj : forall (X : BaseObj), HoObj), ",
+            "forall (Gmap : forall (X : BaseObj), forall (Y : BaseObj), forall (m : BaseHom X Y), HoHom (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{e,f,a,b} BaseObj BaseHom base_id base_comp HoObj HoHom ho_id ho_comp base_category_args ho_category_args Gobj Gmap), ",
+            "forall (theta : forall (i : IndexObj), HoHom (Gobj (u_obj i)) (diagram_obj i)), ",
+            "forall (P : Prop), ",
+            "forall (build : forall (mediator : forall (X : BaseObj), HoHom (Gobj X) (right_ext_obj X)), ",
+            "forall (commutes : forall (i : IndexObj), @Eq.{b} (HoHom (Gobj (u_obj i)) (diagram_obj i)) ",
+            "(ho_comp (Gobj (u_obj i)) (right_ext_obj (u_obj i)) (diagram_obj i) (right_counit i) (mediator (u_obj i))) (theta i)), P), P"
+        )
+    };
+}
+
+macro_rules! infinity_kan_extension_law_type {
+    () => {
+        concat!(
+            "forall (P : Prop), forall (build : forall (left_kan_law : ",
+            infinity_left_kan_extension_law_type!(),
+            "), forall (right_kan_law : ",
+            infinity_right_kan_extension_law_type!(),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! infinity_kan_extension_law_args_app {
+    () => {
+        "@InfinityKanExtensionLawArgs.{a,b,c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args IndexObj IndexHom index_id index_comp index_category_args BaseObj BaseHom base_id base_comp base_category_args u_obj u_map u_args diagram_obj diagram_map diagram_args left_ext_obj left_ext_map left_ext_args left_unit right_ext_obj right_ext_map right_ext_args right_counit"
+    };
+}
+
+macro_rules! presentable_infinity_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_params!(concat!(
+            "forall (homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            "forall (ho_category_args : @CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp), ",
+            "forall (RegularCardinal : Sort c), ",
+            "forall (CompactObject : forall (A : HoObj), Prop), ",
+            "forall (generated_under_filtered_colimits : forall (Generator : Sort c), forall (generator_obj : forall (i : Generator), HoObj), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        presentable_infinity_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! presentable_infinity_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_abs!(concat!(
+            "fun homotopy_category_args => fun ho_category_args => ",
+            "fun RegularCardinal => fun CompactObject => fun generated_under_filtered_colimits => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        presentable_infinity_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! presentable_infinity_accessible_law_type {
+    () => {
+        concat!(
+            "forall (P : Prop), ",
+            "forall (build : forall (kappa : RegularCardinal), ",
+            "forall (Generator : Sort c), ",
+            "forall (generator_obj : forall (i : Generator), HoObj), ",
+            "forall (generator_compact : forall (i : Generator), CompactObject (generator_obj i)), ",
+            "forall (generates : generated_under_filtered_colimits Generator generator_obj), P), P"
+        )
+    };
+}
+
+macro_rules! presentable_infinity_cocomplete_law_type {
+    () => {
+        concat!(
+            "forall (ShapeObj : Sort c), ",
+            "forall (ShapeHom : forall (A : ShapeObj), forall (B : ShapeObj), Sort d), ",
+            "forall (shape_id : forall (A : ShapeObj), ShapeHom A A), ",
+            "forall (shape_comp : forall (A : ShapeObj), forall (B : ShapeObj), forall (C : ShapeObj), forall (g : ShapeHom B C), forall (f : ShapeHom A B), ShapeHom A C), ",
+            "forall (shape_args : @CategoryLawArgs.{c,d} ShapeObj ShapeHom shape_id shape_comp), ",
+            "forall (Dobj : forall (A : ShapeObj), HoObj), ",
+            "forall (Dmap : forall (A : ShapeObj), forall (B : ShapeObj), forall (f : ShapeHom A B), HoHom (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{c,d,a,b} ShapeObj ShapeHom shape_id shape_comp HoObj HoHom ho_id ho_comp shape_args ho_category_args Dobj Dmap), ",
+            "@ColimitExistsArgs.{c,d,a,b} ShapeObj ShapeHom shape_id shape_comp HoObj HoHom ho_id ho_comp shape_args ho_category_args Dobj Dmap diagram_args"
+        )
+    };
+}
+
+macro_rules! presentable_infinity_category_law_type {
+    () => {
+        concat!(
+            "forall (P : Prop), forall (build : forall (accessible_law : ",
+            presentable_infinity_accessible_law_type!(),
+            "), forall (cocomplete_law : ",
+            presentable_infinity_cocomplete_law_type!(),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! presentable_infinity_category_law_args_app {
+    () => {
+        "@PresentableInfinityCategoryLawArgs.{a,b,c,d,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args RegularCardinal CompactObject generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! infinity_adjoint_functor_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_params!(concat!(
+            "forall (source_homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            "forall (source_category_args : @CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp), ",
+            "forall (TargetObj : Sort c), ",
+            "forall (TargetHom : forall (X : TargetObj), forall (Y : TargetObj), Sort d), ",
+            "forall (target_id : forall (X : TargetObj), TargetHom X X), ",
+            "forall (target_comp : forall (X : TargetObj), forall (Y : TargetObj), forall (Z : TargetObj), forall (g : TargetHom Y Z), forall (f : TargetHom X Y), TargetHom X Z), ",
+            "forall (target_homotopy_category_args : @HomotopyCategoryLawArgs.{c,d,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args TargetObj TargetHom target_id target_comp), ",
+            "forall (target_category_args : @CategoryLawArgs.{c,d} TargetObj TargetHom target_id target_comp), ",
+            "forall (RegularCardinal : Sort e), ",
+            "forall (SourceCompactObject : forall (A : HoObj), Prop), ",
+            "forall (source_generated_under_filtered_colimits : forall (Generator : Sort e), forall (generator_obj : forall (i : Generator), HoObj), Prop), ",
+            "forall (source_presentable_args : @PresentableInfinityCategoryLawArgs.{a,b,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp source_homotopy_category_args source_category_args RegularCardinal SourceCompactObject source_generated_under_filtered_colimits), ",
+            "forall (TargetCompactObject : forall (X : TargetObj), Prop), ",
+            "forall (target_generated_under_filtered_colimits : forall (Generator : Sort e), forall (generator_obj : forall (i : Generator), TargetObj), Prop), ",
+            "forall (target_presentable_args : @PresentableInfinityCategoryLawArgs.{c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args TargetObj TargetHom target_id target_comp target_homotopy_category_args target_category_args RegularCardinal TargetCompactObject target_generated_under_filtered_colimits), ",
+            "forall (Gobj : forall (X : TargetObj), HoObj), ",
+            "forall (Gmap : forall (X : TargetObj), forall (Y : TargetObj), forall (m : TargetHom X Y), HoHom (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{c,d,a,b} TargetObj TargetHom target_id target_comp HoObj HoHom ho_id ho_comp target_category_args source_category_args Gobj Gmap), ",
+            "forall (accessible_functor : Prop), ",
+            "forall (preserves_small_limits : Prop), ",
+            "forall (accessible_functor_args : accessible_functor), ",
+            "forall (preserves_small_limits_args : preserves_small_limits), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_adjoint_functor_params!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_adjoint_functor_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_abs!(concat!(
+            "fun source_homotopy_category_args => fun source_category_args => ",
+            "fun TargetObj => fun TargetHom => fun target_id => fun target_comp => ",
+            "fun target_homotopy_category_args => fun target_category_args => ",
+            "fun RegularCardinal => fun SourceCompactObject => fun source_generated_under_filtered_colimits => fun source_presentable_args => ",
+            "fun TargetCompactObject => fun target_generated_under_filtered_colimits => fun target_presentable_args => ",
+            "fun Gobj => fun Gmap => fun G_args => ",
+            "fun accessible_functor => fun preserves_small_limits => ",
+            "fun accessible_functor_args => fun preserves_small_limits_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_adjoint_functor_abs!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_adjoint_functor_left_adjoint_exists_law_type {
+    () => {
+        "@LeftAdjointExistsArgs.{a,b,c,d} HoObj HoHom ho_id ho_comp TargetObj TargetHom target_id target_comp source_category_args target_category_args Gobj Gmap G_args"
+    };
+}
+
+macro_rules! infinity_adjoint_functor_law_args_app {
+    () => {
+        "@InfinityAdjointFunctorTheoremLawArgs.{a,b,c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp source_homotopy_category_args source_category_args TargetObj TargetHom target_id target_comp target_homotopy_category_args target_category_args RegularCardinal SourceCompactObject source_generated_under_filtered_colimits source_presentable_args TargetCompactObject target_generated_under_filtered_colimits target_presentable_args Gobj Gmap G_args accessible_functor preserves_small_limits accessible_functor_args preserves_small_limits_args"
+    };
+}
+
+macro_rules! presheaf_infinity_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_params!(concat!(
+            "forall (homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            "forall (ho_category_args : @CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp), ",
+            "forall (PshObj : Sort c), ",
+            "forall (PshHom : forall (F : PshObj), forall (G : PshObj), Sort d), ",
+            "forall (psh_id : forall (F : PshObj), PshHom F F), ",
+            "forall (psh_comp : forall (F : PshObj), forall (G : PshObj), forall (H : PshObj), forall (beta : PshHom G H), forall (alpha : PshHom F G), PshHom F H), ",
+            "forall (psh_homotopy_category_args : @HomotopyCategoryLawArgs.{c,d,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args PshObj PshHom psh_id psh_comp), ",
+            "forall (psh_category_args : @CategoryLawArgs.{c,d} PshObj PshHom psh_id psh_comp), ",
+            "forall (eval : forall (F : PshObj), forall (X : HoObj), Sort s), ",
+            "forall (reindex : forall (F : PshObj), forall (X : HoObj), forall (Y : HoObj), forall (f : HoHom X Y), forall (x : eval F Y), eval F X), ",
+            "forall (component : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), forall (X : HoObj), forall (x : eval F X), eval G X), ",
+            "forall (psh_args : @PresheafCategoryLawArgs.{a,b,c,d,s} HoObj HoHom ho_id ho_comp ho_category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component), ",
+            "forall (RegularCardinal : Sort e), ",
+            "forall (PshCompactObject : forall (F : PshObj), Prop), ",
+            "forall (psh_generated_under_filtered_colimits : forall (Generator : Sort e), forall (generator_obj : forall (i : Generator), PshObj), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        presheaf_infinity_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_infinity_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_abs!(concat!(
+            "fun homotopy_category_args => fun ho_category_args => ",
+            "fun PshObj => fun PshHom => fun psh_id => fun psh_comp => ",
+            "fun psh_homotopy_category_args => fun psh_category_args => ",
+            "fun eval => fun reindex => fun component => fun psh_args => ",
+            "fun RegularCardinal => fun PshCompactObject => fun psh_generated_under_filtered_colimits => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        presheaf_infinity_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_infinity_category_presentable_law_type {
+    () => {
+        "@PresentableInfinityCategoryLawArgs.{c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args RegularCardinal PshCompactObject psh_generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! presheaf_infinity_category_law_args_app {
+    () => {
+        "@PresheafInfinityCategoryLawArgs.{a,b,c,d,e,f,s,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args eval reindex component psh_args RegularCardinal PshCompactObject psh_generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! accessible_localization_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_params!(concat!(
+            "forall (source_homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            "forall (source_category_args : @CategoryLawArgs.{a,b} HoObj HoHom ho_id ho_comp), ",
+            "forall (RegularCardinal : Sort e), ",
+            "forall (SourceCompactObject : forall (A : HoObj), Prop), ",
+            "forall (source_generated_under_filtered_colimits : forall (Generator : Sort e), forall (generator_obj : forall (i : Generator), HoObj), Prop), ",
+            "forall (source_presentable_args : ",
+            accessible_localization_source_presentable_law_type!(),
+            "), ",
+            "forall (LocalObj : Sort c), ",
+            "forall (LocalHom : forall (X : LocalObj), forall (Y : LocalObj), Sort d), ",
+            "forall (local_id : forall (X : LocalObj), LocalHom X X), ",
+            "forall (local_comp : forall (X : LocalObj), forall (Y : LocalObj), forall (Z : LocalObj), forall (g : LocalHom Y Z), forall (f : LocalHom X Y), LocalHom X Z), ",
+            "forall (local_homotopy_category_args : @HomotopyCategoryLawArgs.{c,d,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args LocalObj LocalHom local_id local_comp), ",
+            "forall (local_category_args : @CategoryLawArgs.{c,d} LocalObj LocalHom local_id local_comp), ",
+            "forall (localize_obj : forall (A : HoObj), LocalObj), ",
+            "forall (localize_map : forall (A : HoObj), forall (B : HoObj), forall (f : HoHom A B), LocalHom (localize_obj A) (localize_obj B)), ",
+            "forall (localize_args : @FunctorLawArgs.{a,b,c,d} HoObj HoHom ho_id ho_comp LocalObj LocalHom local_id local_comp source_category_args local_category_args localize_obj localize_map), ",
+            "forall (local_include_obj : forall (X : LocalObj), HoObj), ",
+            "forall (local_include_map : forall (X : LocalObj), forall (Y : LocalObj), forall (f : LocalHom X Y), HoHom (local_include_obj X) (local_include_obj Y)), ",
+            "forall (local_include_args : @FunctorLawArgs.{c,d,a,b} LocalObj LocalHom local_id local_comp HoObj HoHom ho_id ho_comp local_category_args source_category_args local_include_obj local_include_map), ",
+            "forall (hom_forward : forall (A : HoObj), forall (X : LocalObj), forall (f : LocalHom (localize_obj A) X), HoHom A (local_include_obj X)), ",
+            "forall (hom_backward : forall (A : HoObj), forall (X : LocalObj), forall (g : HoHom A (local_include_obj X)), LocalHom (localize_obj A) X), ",
+            "forall (localization_adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{a,b,c,d} HoObj HoHom ho_id ho_comp LocalObj LocalHom local_id local_comp source_category_args local_category_args localize_obj localize_map localize_args local_include_obj local_include_map local_include_args hom_forward hom_backward), ",
+            "forall (local_include_fully_faithful : Prop), ",
+            "forall (local_include_fully_faithful_args : local_include_fully_faithful), ",
+            "forall (accessible_localization_functor : Prop), ",
+            "forall (accessible_localization_functor_args : accessible_localization_functor), ",
+            "forall (LocalCompactObject : forall (X : LocalObj), Prop), ",
+            "forall (local_generated_under_filtered_colimits : forall (Generator : Sort e), forall (generator_obj : forall (i : Generator), LocalObj), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        accessible_localization_params!(concat!($tail))
+    };
+}
+
+macro_rules! accessible_localization_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        homotopy_category_abs!(concat!(
+            "fun source_homotopy_category_args => fun source_category_args => ",
+            "fun RegularCardinal => fun SourceCompactObject => fun source_generated_under_filtered_colimits => fun source_presentable_args => ",
+            "fun LocalObj => fun LocalHom => fun local_id => fun local_comp => ",
+            "fun local_homotopy_category_args => fun local_category_args => ",
+            "fun localize_obj => fun localize_map => fun localize_args => ",
+            "fun local_include_obj => fun local_include_map => fun local_include_args => ",
+            "fun hom_forward => fun hom_backward => fun localization_adjunction_args => ",
+            "fun local_include_fully_faithful => fun local_include_fully_faithful_args => ",
+            "fun accessible_localization_functor => fun accessible_localization_functor_args => ",
+            "fun LocalCompactObject => fun local_generated_under_filtered_colimits => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        accessible_localization_abs!(concat!($tail))
+    };
+}
+
+macro_rules! accessible_localization_source_presentable_law_type {
+    () => {
+        "@PresentableInfinityCategoryLawArgs.{a,b,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp source_homotopy_category_args source_category_args RegularCardinal SourceCompactObject source_generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! accessible_localization_target_presentable_law_type {
+    () => {
+        "@PresentableInfinityCategoryLawArgs.{c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args LocalObj LocalHom local_id local_comp local_homotopy_category_args local_category_args RegularCardinal LocalCompactObject local_generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! accessible_localization_law_args_app {
+    () => {
+        "@AccessibleLocalizationLawArgs.{a,b,c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp source_homotopy_category_args source_category_args RegularCardinal SourceCompactObject source_generated_under_filtered_colimits source_presentable_args LocalObj LocalHom local_id local_comp local_homotopy_category_args local_category_args localize_obj localize_map localize_args local_include_obj local_include_map local_include_args hom_forward hom_backward localization_adjunction_args local_include_fully_faithful local_include_fully_faithful_args accessible_localization_functor accessible_localization_functor_args LocalCompactObject local_generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! left_exact_localization_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        accessible_localization_params!(concat!(
+            "forall (accessible_localization_args : ",
+            accessible_localization_law_args_app!(),
+            "), ",
+            "forall (preserves_finite_limits : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        left_exact_localization_params!(concat!($tail))
+    };
+}
+
+macro_rules! left_exact_localization_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        accessible_localization_abs!(concat!(
+            "fun accessible_localization_args => fun preserves_finite_limits => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        left_exact_localization_abs!(concat!($tail))
+    };
+}
+
+macro_rules! left_exact_localization_law_type {
+    () => {
+        "preserves_finite_limits"
+    };
+}
+
+macro_rules! left_exact_localization_law_args_app {
+    () => {
+        "@LeftExactLocalizationLawArgs.{a,b,c,d,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp source_homotopy_category_args source_category_args RegularCardinal SourceCompactObject source_generated_under_filtered_colimits source_presentable_args LocalObj LocalHom local_id local_comp local_homotopy_category_args local_category_args localize_obj localize_map localize_args local_include_obj local_include_map local_include_args hom_forward hom_backward localization_adjunction_args local_include_fully_faithful local_include_fully_faithful_args accessible_localization_functor accessible_localization_functor_args LocalCompactObject local_generated_under_filtered_colimits accessible_localization_args preserves_finite_limits"
+    };
+}
+
+macro_rules! sheaves_of_spaces_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        presheaf_infinity_category_params!(concat!(
+            "forall (presheaf_infinity_args : ",
+            presheaf_infinity_category_law_args_app!(),
+            "), ",
+            "forall (psh_presentable_args : ",
+            presheaf_infinity_category_presentable_law_type!(),
+            "), ",
+            "forall (ShvObj : Sort g), ",
+            "forall (ShvHom : forall (A : ShvObj), forall (B : ShvObj), Sort h), ",
+            "forall (shv_id : forall (A : ShvObj), ShvHom A A), ",
+            "forall (shv_comp : forall (A : ShvObj), forall (B : ShvObj), forall (C : ShvObj), forall (beta : ShvHom B C), forall (alpha : ShvHom A B), ShvHom A C), ",
+            "forall (shv_homotopy_category_args : @HomotopyCategoryLawArgs.{g,h,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args ShvObj ShvHom shv_id shv_comp), ",
+            "forall (shv_category_args : @CategoryLawArgs.{g,h} ShvObj ShvHom shv_id shv_comp), ",
+            "forall (sheafify_obj : forall (F : PshObj), ShvObj), ",
+            "forall (sheafify_map : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), ShvHom (sheafify_obj F) (sheafify_obj G)), ",
+            "forall (sheafify_args : @FunctorLawArgs.{c,d,g,h} PshObj PshHom psh_id psh_comp ShvObj ShvHom shv_id shv_comp psh_category_args shv_category_args sheafify_obj sheafify_map), ",
+            "forall (sheaf_include_obj : forall (A : ShvObj), PshObj), ",
+            "forall (sheaf_include_map : forall (A : ShvObj), forall (B : ShvObj), forall (m : ShvHom A B), PshHom (sheaf_include_obj A) (sheaf_include_obj B)), ",
+            "forall (sheaf_include_args : @FunctorLawArgs.{g,h,c,d} ShvObj ShvHom shv_id shv_comp PshObj PshHom psh_id psh_comp shv_category_args psh_category_args sheaf_include_obj sheaf_include_map), ",
+            "forall (hom_forward : forall (F : PshObj), forall (A : ShvObj), forall (m : ShvHom (sheafify_obj F) A), PshHom F (sheaf_include_obj A)), ",
+            "forall (hom_backward : forall (F : PshObj), forall (A : ShvObj), forall (m : PshHom F (sheaf_include_obj A)), ShvHom (sheafify_obj F) A), ",
+            "forall (sheafification_adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{c,d,g,h} PshObj PshHom psh_id psh_comp ShvObj ShvHom shv_id shv_comp psh_category_args shv_category_args sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map sheaf_include_args hom_forward hom_backward), ",
+            "forall (sheaf_include_fully_faithful : Prop), ",
+            "forall (sheaf_include_fully_faithful_args : sheaf_include_fully_faithful), ",
+            "forall (accessible_sheafification_functor : Prop), ",
+            "forall (accessible_sheafification_functor_args : accessible_sheafification_functor), ",
+            "forall (ShvCompactObject : forall (A : ShvObj), Prop), ",
+            "forall (shv_generated_under_filtered_colimits : forall (Generator : Sort e), forall (generator_obj : forall (i : Generator), ShvObj), Prop), ",
+            "forall (accessible_localization_args : ",
+            sheaves_of_spaces_accessible_localization_law_args_app!(),
+            "), ",
+            "forall (preserves_finite_limits : Prop), ",
+            "forall (left_exact_localization_args : ",
+            sheaves_of_spaces_left_exact_localization_law_args_app!(),
+            "), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        sheaves_of_spaces_params!(concat!($tail))
+    };
+}
+
+macro_rules! sheaves_of_spaces_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        presheaf_infinity_category_abs!(concat!(
+            "fun presheaf_infinity_args => fun psh_presentable_args => ",
+            "fun ShvObj => fun ShvHom => fun shv_id => fun shv_comp => ",
+            "fun shv_homotopy_category_args => fun shv_category_args => ",
+            "fun sheafify_obj => fun sheafify_map => fun sheafify_args => ",
+            "fun sheaf_include_obj => fun sheaf_include_map => fun sheaf_include_args => ",
+            "fun hom_forward => fun hom_backward => fun sheafification_adjunction_args => ",
+            "fun sheaf_include_fully_faithful => fun sheaf_include_fully_faithful_args => ",
+            "fun accessible_sheafification_functor => fun accessible_sheafification_functor_args => ",
+            "fun ShvCompactObject => fun shv_generated_under_filtered_colimits => ",
+            "fun accessible_localization_args => fun preserves_finite_limits => ",
+            "fun left_exact_localization_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        sheaves_of_spaces_abs!(concat!($tail))
+    };
+}
+
+macro_rules! sheaves_of_spaces_accessible_localization_law_args_app {
+    () => {
+        "@AccessibleLocalizationLawArgs.{c,d,g,h,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args RegularCardinal PshCompactObject psh_generated_under_filtered_colimits psh_presentable_args ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map sheaf_include_args hom_forward hom_backward sheafification_adjunction_args sheaf_include_fully_faithful sheaf_include_fully_faithful_args accessible_sheafification_functor accessible_sheafification_functor_args ShvCompactObject shv_generated_under_filtered_colimits"
+    };
+}
+
+macro_rules! sheaves_of_spaces_left_exact_localization_law_args_app {
+    () => {
+        "@LeftExactLocalizationLawArgs.{c,d,g,h,e,f,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args RegularCardinal PshCompactObject psh_generated_under_filtered_colimits psh_presentable_args ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map sheaf_include_args hom_forward hom_backward sheafification_adjunction_args sheaf_include_fully_faithful sheaf_include_fully_faithful_args accessible_sheafification_functor accessible_sheafification_functor_args ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args preserves_finite_limits"
+    };
+}
+
+macro_rules! sheaves_of_spaces_law_type {
+    () => {
+        sheaves_of_spaces_left_exact_localization_law_args_app!()
+    };
+}
+
+macro_rules! sheaves_of_spaces_law_args_app {
+    () => {
+        "@SheavesOfSpacesLawArgs.{a,b,c,d,e,f,g,h,s,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args eval reindex component psh_args RegularCardinal PshCompactObject psh_generated_under_filtered_colimits presheaf_infinity_args psh_presentable_args ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map sheaf_include_args hom_forward hom_backward sheafification_adjunction_args sheaf_include_fully_faithful sheaf_include_fully_faithful_args accessible_sheafification_functor accessible_sheafification_functor_args ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args preserves_finite_limits left_exact_localization_args"
+    };
+}
+
+macro_rules! hypercover_descent_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        sheaves_of_spaces_params!(concat!(
+            "forall (sheaves_of_spaces_args : ",
+            sheaves_of_spaces_law_args_app!(),
+            "), ",
+            "forall (Hypercover : forall (X : HoObj), Sort i), ",
+            "forall (hypercover_obj : forall (X : HoObj), forall (U : Hypercover X), forall (n : DeltaObj), HoObj), ",
+            "forall (hypercover_map : forall (X : HoObj), forall (U : Hypercover X), forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), HoHom (hypercover_obj X U m) (hypercover_obj X U n)), ",
+            "forall (hypercover_aug : forall (X : HoObj), forall (U : Hypercover X), forall (n : DeltaObj), HoHom (hypercover_obj X U n) X), ",
+            "forall (hypercover_covering : forall (X : HoObj), forall (U : Hypercover X), Prop), ",
+            "forall (hypercover_descent_holds : forall (F : ShvObj), forall (X : HoObj), forall (U : Hypercover X), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        hypercover_descent_params!(concat!($tail))
+    };
+}
+
+macro_rules! hypercover_descent_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        sheaves_of_spaces_abs!(concat!(
+            "fun sheaves_of_spaces_args => fun Hypercover => fun hypercover_obj => ",
+            "fun hypercover_map => fun hypercover_aug => fun hypercover_covering => ",
+            "fun hypercover_descent_holds => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        hypercover_descent_abs!(concat!($tail))
+    };
+}
+
+macro_rules! hypercover_descent_law_type {
+    () => {
+        concat!(
+            "forall (F : ShvObj), forall (X : HoObj), forall (U : Hypercover X), ",
+            "forall (cover_U : hypercover_covering X U), hypercover_descent_holds F X U"
+        )
+    };
+}
+
+macro_rules! hypercover_descent_law_args_app {
+    () => {
+        "@HypercoverDescentLawArgs.{a,b,c,d,e,f,g,h,i,s,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args eval reindex component psh_args RegularCardinal PshCompactObject psh_generated_under_filtered_colimits presheaf_infinity_args psh_presentable_args ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map sheaf_include_args hom_forward hom_backward sheafification_adjunction_args sheaf_include_fully_faithful sheaf_include_fully_faithful_args accessible_sheafification_functor accessible_sheafification_functor_args ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args preserves_finite_limits left_exact_localization_args sheaves_of_spaces_args Hypercover hypercover_obj hypercover_map hypercover_aug hypercover_covering hypercover_descent_holds"
+    };
+}
+
+macro_rules! infinity_topos_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        hypercover_descent_params!(concat!(
+            "forall (hypercover_descent_args : ",
+            hypercover_descent_law_args_app!(),
+            "), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_topos_params!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_topos_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        hypercover_descent_abs!(concat!("fun hypercover_descent_args => ", $($tail),+))
+    };
+    ($tail:literal) => {
+        infinity_topos_abs!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_topos_law_type {
+    () => {
+        hypercover_descent_law_args_app!()
+    };
+}
+
+macro_rules! infinity_topos_law_args_app {
+    () => {
+        concat!(
+            "@InfinityToposLawArgs.{a,b,c,d,e,f,g,h,i,s,u,v,w,z,zz} ",
+            "DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict ",
+            "simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args ",
+            "HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args ",
+            "PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args ",
+            "eval reindex component psh_args RegularCardinal PshCompactObject ",
+            "psh_generated_under_filtered_colimits presheaf_infinity_args psh_presentable_args ",
+            "ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args ",
+            "sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map ",
+            "sheaf_include_args hom_forward hom_backward sheafification_adjunction_args ",
+            "sheaf_include_fully_faithful sheaf_include_fully_faithful_args ",
+            "accessible_sheafification_functor accessible_sheafification_functor_args ",
+            "ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args ",
+            "preserves_finite_limits left_exact_localization_args sheaves_of_spaces_args Hypercover ",
+            "hypercover_obj hypercover_map hypercover_aug hypercover_covering ",
+            "hypercover_descent_holds hypercover_descent_args"
+        )
+    };
+}
+
+macro_rules! truncation_connectivity_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        infinity_topos_params!(concat!(
+            "forall (infinity_topos_args : ",
+            infinity_topos_law_args_app!(),
+            "), ",
+            "forall (TruncationLevel : Sort j), ",
+            "forall (is_truncated_map : forall (n : TruncationLevel), forall (A : ShvObj), forall (B : ShvObj), forall (f : ShvHom A B), Prop), ",
+            "forall (is_connected_map : forall (n : TruncationLevel), forall (A : ShvObj), forall (B : ShvObj), forall (f : ShvHom A B), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        truncation_connectivity_params!(concat!($tail))
+    };
+}
+
+macro_rules! truncation_connectivity_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        infinity_topos_abs!(concat!(
+            "fun infinity_topos_args => fun TruncationLevel => fun is_truncated_map => ",
+            "fun is_connected_map => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        truncation_connectivity_abs!(concat!($tail))
+    };
+}
+
+macro_rules! truncation_connectivity_law_type {
+    () => {
+        concat!(
+            "forall (n : TruncationLevel), forall (A : ShvObj), forall (B : ShvObj), ",
+            "forall (f : ShvHom A B), forall (Q : Prop), ",
+            "forall (build : forall (Mid : ShvObj), ",
+            "forall (connected_part : ShvHom A Mid), ",
+            "forall (truncated_part : ShvHom Mid B), ",
+            "forall (factor_law : @Eq.{h} (ShvHom A B) ",
+            "(shv_comp A Mid B truncated_part connected_part) f), ",
+            "forall (connected_law : is_connected_map n A Mid connected_part), ",
+            "forall (truncated_law : is_truncated_map n Mid B truncated_part), Q), Q"
+        )
+    };
+}
+
+macro_rules! truncation_connectivity_law_args_app {
+    () => {
+        concat!(
+            "@TruncationConnectivityLawArgs.{a,b,c,d,e,f,g,h,i,j,s,u,v,w,z,zz} ",
+            "DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict ",
+            "simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args ",
+            "HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args ",
+            "PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args ",
+            "eval reindex component psh_args RegularCardinal PshCompactObject ",
+            "psh_generated_under_filtered_colimits presheaf_infinity_args psh_presentable_args ",
+            "ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args ",
+            "sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map ",
+            "sheaf_include_args hom_forward hom_backward sheafification_adjunction_args ",
+            "sheaf_include_fully_faithful sheaf_include_fully_faithful_args ",
+            "accessible_sheafification_functor accessible_sheafification_functor_args ",
+            "ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args ",
+            "preserves_finite_limits left_exact_localization_args sheaves_of_spaces_args Hypercover ",
+            "hypercover_obj hypercover_map hypercover_aug hypercover_covering ",
+            "hypercover_descent_holds hypercover_descent_args infinity_topos_args ",
+            "TruncationLevel is_truncated_map is_connected_map"
+        )
+    };
+}
+
+macro_rules! postnikov_tower_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        truncation_connectivity_params!(concat!(
+            "forall (truncation_connectivity_args : ",
+            truncation_connectivity_law_args_app!(),
+            "), ",
+            "forall (PostnikovTower : forall (A : ShvObj), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        postnikov_tower_params!(concat!($tail))
+    };
+}
+
+macro_rules! postnikov_tower_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        truncation_connectivity_abs!(concat!(
+            "fun truncation_connectivity_args => fun PostnikovTower => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        postnikov_tower_abs!(concat!($tail))
+    };
+}
+
+macro_rules! postnikov_tower_law_type {
+    () => {
+        "forall (A : ShvObj), PostnikovTower A"
+    };
+}
+
+macro_rules! postnikov_tower_law_args_app {
+    () => {
+        concat!(
+            "@PostnikovTowerLawArgs.{a,b,c,d,e,f,g,h,i,j,s,u,v,w,z,zz} ",
+            "DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict ",
+            "simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args ",
+            "HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args ",
+            "PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args ",
+            "eval reindex component psh_args RegularCardinal PshCompactObject ",
+            "psh_generated_under_filtered_colimits presheaf_infinity_args psh_presentable_args ",
+            "ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args ",
+            "sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map ",
+            "sheaf_include_args hom_forward hom_backward sheafification_adjunction_args ",
+            "sheaf_include_fully_faithful sheaf_include_fully_faithful_args ",
+            "accessible_sheafification_functor accessible_sheafification_functor_args ",
+            "ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args ",
+            "preserves_finite_limits left_exact_localization_args sheaves_of_spaces_args Hypercover ",
+            "hypercover_obj hypercover_map hypercover_aug hypercover_covering ",
+            "hypercover_descent_holds hypercover_descent_args infinity_topos_args ",
+            "TruncationLevel is_truncated_map is_connected_map truncation_connectivity_args ",
+            "PostnikovTower"
+        )
+    };
+}
+
+macro_rules! cohomology_in_infinity_topoi_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        postnikov_tower_params!(concat!(
+            "forall (postnikov_tower_args : ",
+            postnikov_tower_law_args_app!(),
+            "), ",
+            "forall (Cohomology : forall (n : TruncationLevel), forall (X : ShvObj), forall (coefficients : ShvObj), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        cohomology_in_infinity_topoi_params!(concat!($tail))
+    };
+}
+
+macro_rules! cohomology_in_infinity_topoi_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        postnikov_tower_abs!(concat!(
+            "fun postnikov_tower_args => fun Cohomology => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        cohomology_in_infinity_topoi_abs!(concat!($tail))
+    };
+}
+
+macro_rules! cohomology_in_infinity_topoi_law_type {
+    () => {
+        "forall (n : TruncationLevel), forall (X : ShvObj), forall (coefficients : ShvObj), Cohomology n X coefficients"
+    };
+}
+
+macro_rules! cohomology_in_infinity_topoi_law_args_app {
+    () => {
+        concat!(
+            "@CohomologyInInfinityTopoiLawArgs.{a,b,c,d,e,f,g,h,i,j,s,u,v,w,z,zz} ",
+            "DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict ",
+            "simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args ",
+            "HoObj HoHom ho_id ho_comp homotopy_category_args ho_category_args ",
+            "PshObj PshHom psh_id psh_comp psh_homotopy_category_args psh_category_args ",
+            "eval reindex component psh_args RegularCardinal PshCompactObject ",
+            "psh_generated_under_filtered_colimits presheaf_infinity_args psh_presentable_args ",
+            "ShvObj ShvHom shv_id shv_comp shv_homotopy_category_args shv_category_args ",
+            "sheafify_obj sheafify_map sheafify_args sheaf_include_obj sheaf_include_map ",
+            "sheaf_include_args hom_forward hom_backward sheafification_adjunction_args ",
+            "sheaf_include_fully_faithful sheaf_include_fully_faithful_args ",
+            "accessible_sheafification_functor accessible_sheafification_functor_args ",
+            "ShvCompactObject shv_generated_under_filtered_colimits accessible_localization_args ",
+            "preserves_finite_limits left_exact_localization_args sheaves_of_spaces_args Hypercover ",
+            "hypercover_obj hypercover_map hypercover_aug hypercover_covering ",
+            "hypercover_descent_holds hypercover_descent_args infinity_topos_args ",
+            "TruncationLevel is_truncated_map is_connected_map truncation_connectivity_args ",
+            "PostnikovTower postnikov_tower_args Cohomology"
+        )
+    };
+}
+
+macro_rules! mapping_space_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        quasicategory_params!(concat!(
+            "forall (quasicategory_args : ",
+            quasicategory_law_args_app!(),
+            "), ",
+            "forall (MapObj : Sort a), ",
+            "forall (MappingSimplex : forall (A : MapObj), forall (B : MapObj), forall (n : DeltaObj), Sort b), ",
+            "forall (mapping_restrict : forall (A : MapObj), forall (B : MapObj), forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : MappingSimplex A B n), MappingSimplex A B m), ",
+            "forall (mapping_simplicial_set_args : forall (A : MapObj), forall (B : MapObj), ",
+            mapping_space_simplicial_set_law_args_app!(),
+            "), ",
+            "forall (MappingHornIndex : forall (A : MapObj), forall (B : MapObj), forall (n : DeltaObj), Sort c), ",
+            "forall (MappingHorn : forall (A : MapObj), forall (B : MapObj), forall (n : DeltaObj), forall (k : MappingHornIndex A B n), Sort d), ",
+            "forall (mapping_fills_horn : forall (A : MapObj), forall (B : MapObj), forall (n : DeltaObj), forall (k : MappingHornIndex A B n), forall (horn : MappingHorn A B n k), forall (simplex : MappingSimplex A B n), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        mapping_space_params!(concat!($tail))
+    };
+}
+
+macro_rules! mapping_space_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        quasicategory_abs!(concat!(
+            "fun quasicategory_args => fun MapObj => fun MappingSimplex => fun mapping_restrict => ",
+            "fun mapping_simplicial_set_args => fun MappingHornIndex => fun MappingHorn => fun mapping_fills_horn => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        mapping_space_abs!(concat!($tail))
+    };
+}
+
+macro_rules! mapping_space_simplicial_set_law_args_app {
+    () => {
+        "@SimplicialSetLawArgs.{u,v,b} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args (MappingSimplex A B) (mapping_restrict A B)"
+    };
+}
+
+macro_rules! mapping_space_kan_complex_law_args_app {
+    () => {
+        "@KanComplexLawArgs.{u,v,b,c,d} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args (MappingSimplex A B) (mapping_restrict A B) (mapping_simplicial_set_args A B) (MappingHornIndex A B) (MappingHorn A B) (mapping_fills_horn A B)"
+    };
+}
+
+macro_rules! mapping_space_kan_law_type {
+    () => {
+        concat!(
+            "forall (A : MapObj), forall (B : MapObj), ",
+            mapping_space_kan_complex_law_args_app!()
+        )
+    };
+}
+
+macro_rules! mapping_space_law_args_app {
+    () => {
+        "@MappingSpaceLawArgs.{a,b,c,d,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args S restrict simplicial_set_args InnerHornIndex InnerHorn fills_inner_horn quasicategory_args MapObj MappingSimplex mapping_restrict mapping_simplicial_set_args MappingHornIndex MappingHorn mapping_fills_horn"
+    };
+}
+
+macro_rules! joyal_model_structure_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_params!(concat!(
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), ",
+            "forall (SSetObj : Sort a), ",
+            "forall (SSetHom : forall (X : SSetObj), forall (Y : SSetObj), Sort b), ",
+            "forall (sset_id : forall (X : SSetObj), SSetHom X X), ",
+            "forall (sset_comp : forall (X : SSetObj), forall (Y : SSetObj), forall (Z : SSetObj), forall (g : SSetHom Y Z), forall (f : SSetHom X Y), SSetHom X Z), ",
+            "forall (sset_category_args : @CategoryLawArgs.{a,b} SSetObj SSetHom sset_id sset_comp), ",
+            "forall (Cofibration : forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), Prop), ",
+            "forall (Fibration : forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), Prop), ",
+            "forall (WeakEquivalence : forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), Prop), ",
+            "forall (FibrantObject : forall (X : SSetObj), Prop), ",
+            "forall (Monomorphism : forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), Prop), ",
+            "forall (CategoricalEquivalence : forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), Prop), ",
+            "forall (QuasicategoryObject : forall (X : SSetObj), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        joyal_model_structure_params!(concat!($tail))
+    };
+}
+
+macro_rules! joyal_model_structure_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_abs!(concat!(
+            "fun simplex_args => fun SSetObj => fun SSetHom => fun sset_id => fun sset_comp => ",
+            "fun sset_category_args => fun Cofibration => fun Fibration => fun WeakEquivalence => ",
+            "fun FibrantObject => fun Monomorphism => fun CategoricalEquivalence => fun QuasicategoryObject => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        joyal_model_structure_abs!(concat!($tail))
+    };
+}
+
+macro_rules! joyal_model_category_law_type {
+    () => {
+        concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (category_arg : @CategoryLawArgs.{a,b} SSetObj SSetHom sset_id sset_comp), ",
+            "forall (cofibration_id_law : forall (X : SSetObj), Cofibration X X (sset_id X)), ",
+            "forall (fibration_id_law : forall (X : SSetObj), Fibration X X (sset_id X)), ",
+            "forall (weak_equivalence_id_law : forall (X : SSetObj), WeakEquivalence X X (sset_id X)), ",
+            "forall (weak_equivalence_comp_law : forall (X : SSetObj), forall (Y : SSetObj), forall (Z : SSetObj), forall (g : SSetHom Y Z), forall (f : SSetHom X Y), forall (hf : WeakEquivalence X Y f), forall (hg : WeakEquivalence Y Z g), WeakEquivalence X Z (sset_comp X Y Z g f)), ",
+            "P), P"
+        )
+    };
+}
+
+macro_rules! joyal_cofibrations_are_monomorphisms_law_type {
+    () => {
+        "forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), forall (hf : Cofibration X Y f), Monomorphism X Y f"
+    };
+}
+
+macro_rules! joyal_monomorphisms_are_cofibrations_law_type {
+    () => {
+        "forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), forall (hf : Monomorphism X Y f), Cofibration X Y f"
+    };
+}
+
+macro_rules! joyal_fibrant_objects_are_quasicategories_law_type {
+    () => {
+        "forall (X : SSetObj), forall (hf : FibrantObject X), QuasicategoryObject X"
+    };
+}
+
+macro_rules! joyal_quasicategories_are_fibrant_law_type {
+    () => {
+        "forall (X : SSetObj), forall (hq : QuasicategoryObject X), FibrantObject X"
+    };
+}
+
+macro_rules! joyal_weak_equivalences_are_categorical_law_type {
+    () => {
+        "forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), forall (hf : WeakEquivalence X Y f), CategoricalEquivalence X Y f"
+    };
+}
+
+macro_rules! joyal_categorical_equivalences_are_weak_law_type {
+    () => {
+        "forall (X : SSetObj), forall (Y : SSetObj), forall (f : SSetHom X Y), forall (hf : CategoricalEquivalence X Y f), WeakEquivalence X Y f"
+    };
+}
+
+macro_rules! joyal_model_structure_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (model_structure_law : ",
+            joyal_model_category_law_type!(),
+            "), ",
+            "forall (cofibrations_are_monomorphisms_law : ",
+            joyal_cofibrations_are_monomorphisms_law_type!(),
+            "), ",
+            "forall (monomorphisms_are_cofibrations_law : ",
+            joyal_monomorphisms_are_cofibrations_law_type!(),
+            "), ",
+            "forall (fibrant_objects_are_quasicategories_law : ",
+            joyal_fibrant_objects_are_quasicategories_law_type!(),
+            "), ",
+            "forall (quasicategories_are_fibrant_law : ",
+            joyal_quasicategories_are_fibrant_law_type!(),
+            "), ",
+            "forall (weak_equivalences_are_categorical_law : ",
+            joyal_weak_equivalences_are_categorical_law_type!(),
+            "), ",
+            "forall (categorical_equivalences_are_weak_law : ",
+            joyal_categorical_equivalences_are_weak_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! joyal_model_structure_law_args_app {
+    () => {
+        "@JoyalModelStructureLawArgs.{a,b,u,v} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args SSetObj SSetHom sset_id sset_comp sset_category_args Cofibration Fibration WeakEquivalence FibrantObject Monomorphism CategoricalEquivalence QuasicategoryObject"
+    };
+}
+
+macro_rules! joyal_model_structure_projection_proof {
+    ($target:expr, $selected:literal) => {
+        joyal_model_structure_abs!(concat!(
+            "fun joyal_model_structure_args => joyal_model_structure_args (",
+            $target,
+            ") (fun (model_structure_arg : ",
+            joyal_model_category_law_type!(),
+            ") => fun (cofibrations_are_monomorphisms_arg : ",
+            joyal_cofibrations_are_monomorphisms_law_type!(),
+            ") => fun (monomorphisms_are_cofibrations_arg : ",
+            joyal_monomorphisms_are_cofibrations_law_type!(),
+            ") => fun (fibrant_objects_are_quasicategories_arg : ",
+            joyal_fibrant_objects_are_quasicategories_law_type!(),
+            ") => fun (quasicategories_are_fibrant_arg : ",
+            joyal_quasicategories_are_fibrant_law_type!(),
+            ") => fun (weak_equivalences_are_categorical_arg : ",
+            joyal_weak_equivalences_are_categorical_law_type!(),
+            ") => fun (categorical_equivalences_are_weak_arg : ",
+            joyal_categorical_equivalences_are_weak_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
+    };
+}
+
+macro_rules! infinity_fibration_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_params!(concat!(
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), ",
+            "forall (Base : forall (n : DeltaObj), Sort w), ",
+            "forall (base_restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Base n), Base m), ",
+            "forall (base_simplicial_set_args : @SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict), ",
+            "forall (BaseInnerHornIndex : forall (n : DeltaObj), Sort c), ",
+            "forall (BaseInnerHorn : forall (n : DeltaObj), forall (k : BaseInnerHornIndex n), Sort d), ",
+            "forall (base_fills_inner_horn : forall (n : DeltaObj), forall (k : BaseInnerHornIndex n), forall (horn : BaseInnerHorn n k), forall (simplex : Base n), Prop), ",
+            "forall (base_quasicategory_args : @QuasicategoryLawArgs.{u,v,w,c,d} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict base_simplicial_set_args BaseInnerHornIndex BaseInnerHorn base_fills_inner_horn), ",
+            "forall (Total : forall (n : DeltaObj), Sort z), ",
+            "forall (total_restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Total n), Total m), ",
+            "forall (total_simplicial_set_args : @SimplicialSetLawArgs.{u,v,z} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Total total_restrict), ",
+            "forall (TotalInnerHornIndex : forall (n : DeltaObj), Sort e), ",
+            "forall (TotalInnerHorn : forall (n : DeltaObj), forall (k : TotalInnerHornIndex n), Sort f), ",
+            "forall (total_fills_inner_horn : forall (n : DeltaObj), forall (k : TotalInnerHornIndex n), forall (horn : TotalInnerHorn n k), forall (simplex : Total n), Prop), ",
+            "forall (total_quasicategory_args : @QuasicategoryLawArgs.{u,v,z,e,f} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Total total_restrict total_simplicial_set_args TotalInnerHornIndex TotalInnerHorn total_fills_inner_horn), ",
+            "forall (fib_map : forall (n : DeltaObj), forall (x : Total n), Base n), ",
+            "forall (InnerFibration : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_fibration_params!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_fibration_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_abs!(concat!(
+            "fun simplex_args => fun Base => fun base_restrict => fun base_simplicial_set_args => ",
+            "fun BaseInnerHornIndex => fun BaseInnerHorn => fun base_fills_inner_horn => fun base_quasicategory_args => ",
+            "fun Total => fun total_restrict => fun total_simplicial_set_args => ",
+            "fun TotalInnerHornIndex => fun TotalInnerHorn => fun total_fills_inner_horn => fun total_quasicategory_args => ",
+            "fun fib_map => fun InnerFibration => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        infinity_fibration_abs!(concat!($tail))
+    };
+}
+
+macro_rules! infinity_fibration_map_law_type {
+    () => {
+        "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Total n), @Eq.{w} (Base m) (base_restrict m n alpha (fib_map n x)) (fib_map m (total_restrict m n alpha x))"
+    };
+}
+
+macro_rules! cartesian_fibration_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        infinity_fibration_params!(concat!(
+            "forall (CartesianLift : forall (n : DeltaObj), forall (base_simplex : Base n), forall (total_simplex : Total n), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        cartesian_fibration_params!(concat!($tail))
+    };
+}
+
+macro_rules! cartesian_fibration_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        infinity_fibration_abs!(concat!("fun CartesianLift => ", $($tail),+))
+    };
+    ($tail:literal) => {
+        cartesian_fibration_abs!(concat!($tail))
+    };
+}
+
+macro_rules! cartesian_lift_exists_law_type {
+    () => {
+        concat!(
+            "forall (n : DeltaObj), forall (base_simplex : Base n), forall (target : Total n), ",
+            "forall (P : Prop), forall (choose : forall (lift : Total n), ",
+            "forall (maps_to_base : @Eq.{w} (Base n) (fib_map n lift) base_simplex), ",
+            "forall (cartesian_law : CartesianLift n base_simplex lift), P), P"
+        )
+    };
+}
+
+macro_rules! cartesian_lift_stable_law_type {
+    () => {
+        concat!(
+            "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), ",
+            "forall (base_simplex : Base n), forall (total_simplex : Total n), ",
+            "forall (hcart : CartesianLift n base_simplex total_simplex), ",
+            "CartesianLift m (base_restrict m n alpha base_simplex) (total_restrict m n alpha total_simplex)"
+        )
+    };
+}
+
+macro_rules! cartesian_fibration_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (map_law : ",
+            infinity_fibration_map_law_type!(),
+            "), ",
+            "forall (inner_fibration_law : InnerFibration), ",
+            "forall (cartesian_lift_exists_law : ",
+            cartesian_lift_exists_law_type!(),
+            "), ",
+            "forall (cartesian_lift_stable_law : ",
+            cartesian_lift_stable_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! cartesian_fibration_law_args_app {
+    () => {
+        "@CartesianFibrationLawArgs.{c,d,e,f,u,v,w,z} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict base_simplicial_set_args BaseInnerHornIndex BaseInnerHorn base_fills_inner_horn base_quasicategory_args Total total_restrict total_simplicial_set_args TotalInnerHornIndex TotalInnerHorn total_fills_inner_horn total_quasicategory_args fib_map InnerFibration CartesianLift"
+    };
+}
+
+macro_rules! cartesian_fibration_projection_proof {
+    ($target:expr, $selected:literal) => {
+        cartesian_fibration_abs!(concat!(
+            "fun cartesian_fibration_args => cartesian_fibration_args (",
+            $target,
+            ") (fun (map_arg : ",
+            infinity_fibration_map_law_type!(),
+            ") => fun (inner_fibration_arg : InnerFibration) => fun (cartesian_lift_exists_arg : ",
+            cartesian_lift_exists_law_type!(),
+            ") => fun (cartesian_lift_stable_arg : ",
+            cartesian_lift_stable_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
+    };
+}
+
+macro_rules! cocartesian_fibration_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        infinity_fibration_params!(concat!(
+            "forall (CoCartesianLift : forall (n : DeltaObj), forall (base_simplex : Base n), forall (total_simplex : Total n), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        cocartesian_fibration_params!(concat!($tail))
+    };
+}
+
+macro_rules! cocartesian_fibration_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        infinity_fibration_abs!(concat!("fun CoCartesianLift => ", $($tail),+))
+    };
+    ($tail:literal) => {
+        cocartesian_fibration_abs!(concat!($tail))
+    };
+}
+
+macro_rules! cocartesian_lift_exists_law_type {
+    () => {
+        concat!(
+            "forall (n : DeltaObj), forall (base_simplex : Base n), forall (source : Total n), ",
+            "forall (P : Prop), forall (choose : forall (lift : Total n), ",
+            "forall (maps_to_base : @Eq.{w} (Base n) (fib_map n lift) base_simplex), ",
+            "forall (cocartesian_law : CoCartesianLift n base_simplex lift), P), P"
+        )
+    };
+}
+
+macro_rules! cocartesian_lift_stable_law_type {
+    () => {
+        concat!(
+            "forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), ",
+            "forall (base_simplex : Base n), forall (total_simplex : Total n), ",
+            "forall (hcocart : CoCartesianLift n base_simplex total_simplex), ",
+            "CoCartesianLift m (base_restrict m n alpha base_simplex) (total_restrict m n alpha total_simplex)"
+        )
+    };
+}
+
+macro_rules! cocartesian_fibration_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (map_law : ",
+            infinity_fibration_map_law_type!(),
+            "), ",
+            "forall (inner_fibration_law : InnerFibration), ",
+            "forall (cocartesian_lift_exists_law : ",
+            cocartesian_lift_exists_law_type!(),
+            "), ",
+            "forall (cocartesian_lift_stable_law : ",
+            cocartesian_lift_stable_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! cocartesian_fibration_law_args_app {
+    () => {
+        "@CoCartesianFibrationLawArgs.{c,d,e,f,u,v,w,z} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict base_simplicial_set_args BaseInnerHornIndex BaseInnerHorn base_fills_inner_horn base_quasicategory_args Total total_restrict total_simplicial_set_args TotalInnerHornIndex TotalInnerHorn total_fills_inner_horn total_quasicategory_args fib_map InnerFibration CoCartesianLift"
+    };
+}
+
+macro_rules! cocartesian_fibration_projection_proof {
+    ($target:expr, $selected:literal) => {
+        cocartesian_fibration_abs!(concat!(
+            "fun cocartesian_fibration_args => cocartesian_fibration_args (",
+            $target,
+            ") (fun (map_arg : ",
+            infinity_fibration_map_law_type!(),
+            ") => fun (inner_fibration_arg : InnerFibration) => fun (cocartesian_lift_exists_arg : ",
+            cocartesian_lift_exists_law_type!(),
+            ") => fun (cocartesian_lift_stable_arg : ",
+            cocartesian_lift_stable_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
+    };
+}
+
+macro_rules! straightening_unstraightening_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_params!(concat!(
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), ",
+            "forall (Base : forall (n : DeltaObj), Sort w), ",
+            "forall (base_restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Base n), Base m), ",
+            "forall (base_simplicial_set_args : @SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict), ",
+            "forall (BaseInnerHornIndex : forall (n : DeltaObj), Sort z), ",
+            "forall (BaseInnerHorn : forall (n : DeltaObj), forall (k : BaseInnerHornIndex n), Sort zz), ",
+            "forall (base_fills_inner_horn : forall (n : DeltaObj), forall (k : BaseInnerHornIndex n), forall (horn : BaseInnerHorn n k), forall (simplex : Base n), Prop), ",
+            "forall (base_quasicategory_args : @QuasicategoryLawArgs.{u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict base_simplicial_set_args BaseInnerHornIndex BaseInnerHorn base_fills_inner_horn), ",
+            "forall (CartFibObj : Sort a), ",
+            "forall (FunctorObj : Sort b), ",
+            "forall (CoCartFibObj : Sort c), ",
+            "forall (CoFunctorObj : Sort d), ",
+            "forall (IsCartesianFibration : forall (E : CartFibObj), Prop), ",
+            "forall (IsFunctor : forall (F : FunctorObj), Prop), ",
+            "forall (straighten : forall (E : CartFibObj), FunctorObj), ",
+            "forall (unstraighten : forall (F : FunctorObj), CartFibObj), ",
+            "forall (IsCoCartesianFibration : forall (E : CoCartFibObj), Prop), ",
+            "forall (IsCoFunctor : forall (F : CoFunctorObj), Prop), ",
+            "forall (costraighten : forall (E : CoCartFibObj), CoFunctorObj), ",
+            "forall (counstraighten : forall (F : CoFunctorObj), CoCartFibObj), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        straightening_unstraightening_params!(concat!($tail))
+    };
+}
+
+macro_rules! straightening_unstraightening_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        simplex_category_abs!(concat!(
+            "fun simplex_args => fun Base => fun base_restrict => fun base_simplicial_set_args => ",
+            "fun BaseInnerHornIndex => fun BaseInnerHorn => fun base_fills_inner_horn => fun base_quasicategory_args => ",
+            "fun CartFibObj => fun FunctorObj => fun CoCartFibObj => fun CoFunctorObj => ",
+            "fun IsCartesianFibration => fun IsFunctor => fun straighten => fun unstraighten => ",
+            "fun IsCoCartesianFibration => fun IsCoFunctor => fun costraighten => fun counstraighten => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        straightening_unstraightening_abs!(concat!($tail))
+    };
+}
+
+macro_rules! straightening_cartesian_preserves_law_type {
+    () => {
+        "forall (E : CartFibObj), forall (hE : IsCartesianFibration E), IsFunctor (straighten E)"
+    };
+}
+
+macro_rules! unstraightening_cartesian_preserves_law_type {
+    () => {
+        "forall (F : FunctorObj), forall (hF : IsFunctor F), IsCartesianFibration (unstraighten F)"
+    };
+}
+
+macro_rules! straightening_cartesian_unit_law_type {
+    () => {
+        "forall (E : CartFibObj), forall (hE : IsCartesianFibration E), @Eq.{a} CartFibObj (unstraighten (straighten E)) E"
+    };
+}
+
+macro_rules! straightening_cartesian_counit_law_type {
+    () => {
+        "forall (F : FunctorObj), forall (hF : IsFunctor F), @Eq.{b} FunctorObj (straighten (unstraighten F)) F"
+    };
+}
+
+macro_rules! straightening_cocartesian_preserves_law_type {
+    () => {
+        "forall (E : CoCartFibObj), forall (hE : IsCoCartesianFibration E), IsCoFunctor (costraighten E)"
+    };
+}
+
+macro_rules! unstraightening_cocartesian_preserves_law_type {
+    () => {
+        "forall (F : CoFunctorObj), forall (hF : IsCoFunctor F), IsCoCartesianFibration (counstraighten F)"
+    };
+}
+
+macro_rules! straightening_cocartesian_unit_law_type {
+    () => {
+        "forall (E : CoCartFibObj), forall (hE : IsCoCartesianFibration E), @Eq.{c} CoCartFibObj (counstraighten (costraighten E)) E"
+    };
+}
+
+macro_rules! straightening_cocartesian_counit_law_type {
+    () => {
+        "forall (F : CoFunctorObj), forall (hF : IsCoFunctor F), @Eq.{d} CoFunctorObj (costraighten (counstraighten F)) F"
+    };
+}
+
+macro_rules! straightening_unstraightening_equivalence_law_type {
+    () => {
+        concat!(
+            "forall (P : Prop), forall (mk : forall (cartesian_unit_arg : ",
+            straightening_cartesian_unit_law_type!(),
+            "), forall (cartesian_counit_arg : ",
+            straightening_cartesian_counit_law_type!(),
+            "), forall (cocartesian_unit_arg : ",
+            straightening_cocartesian_unit_law_type!(),
+            "), forall (cocartesian_counit_arg : ",
+            straightening_cocartesian_counit_law_type!(),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! straightening_unstraightening_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (straightening_cartesian_law : ",
+            straightening_cartesian_preserves_law_type!(),
+            "), ",
+            "forall (unstraightening_cartesian_law : ",
+            unstraightening_cartesian_preserves_law_type!(),
+            "), ",
+            "forall (cartesian_unit_law : ",
+            straightening_cartesian_unit_law_type!(),
+            "), ",
+            "forall (cartesian_counit_law : ",
+            straightening_cartesian_counit_law_type!(),
+            "), ",
+            "forall (straightening_cocartesian_law : ",
+            straightening_cocartesian_preserves_law_type!(),
+            "), ",
+            "forall (unstraightening_cocartesian_law : ",
+            unstraightening_cocartesian_preserves_law_type!(),
+            "), ",
+            "forall (cocartesian_unit_law : ",
+            straightening_cocartesian_unit_law_type!(),
+            "), ",
+            "forall (cocartesian_counit_law : ",
+            straightening_cocartesian_counit_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! straightening_unstraightening_law_args_app {
+    () => {
+        "@StraighteningUnstraighteningLawArgs.{a,b,c,d,u,v,w,z,zz} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args Base base_restrict base_simplicial_set_args BaseInnerHornIndex BaseInnerHorn base_fills_inner_horn base_quasicategory_args CartFibObj FunctorObj CoCartFibObj CoFunctorObj IsCartesianFibration IsFunctor straighten unstraighten IsCoCartesianFibration IsCoFunctor costraighten counstraighten"
+    };
+}
+
+macro_rules! straightening_unstraightening_projection_proof {
+    ($target:expr, $selected:literal) => {
+        straightening_unstraightening_abs!(concat!(
+            "fun straightening_unstraightening_args => straightening_unstraightening_args (",
+            $target,
+            ") (fun (straightening_cartesian_arg : ",
+            straightening_cartesian_preserves_law_type!(),
+            ") => fun (unstraightening_cartesian_arg : ",
+            unstraightening_cartesian_preserves_law_type!(),
+            ") => fun (cartesian_unit_arg : ",
+            straightening_cartesian_unit_law_type!(),
+            ") => fun (cartesian_counit_arg : ",
+            straightening_cartesian_counit_law_type!(),
+            ") => fun (straightening_cocartesian_arg : ",
+            straightening_cocartesian_preserves_law_type!(),
+            ") => fun (unstraightening_cocartesian_arg : ",
+            unstraightening_cocartesian_preserves_law_type!(),
+            ") => fun (cocartesian_unit_arg : ",
+            straightening_cocartesian_unit_law_type!(),
+            ") => fun (cocartesian_counit_arg : ",
+            straightening_cocartesian_counit_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
+    };
+}
+
+macro_rules! nerve_construction_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjC : Sort a), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort b), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (categoryC_args : @CategoryLawArgs.{a,b} ObjC HomC idC compC), ",
+            "forall (DeltaObj : Sort u), ",
+            "forall (DeltaHom : forall (A : DeltaObj), forall (B : DeltaObj), Sort v), ",
+            "forall (delta_id : forall (A : DeltaObj), DeltaHom A A), ",
+            "forall (delta_comp : forall (A : DeltaObj), forall (B : DeltaObj), forall (C : DeltaObj), forall (g : DeltaHom B C), forall (f : DeltaHom A B), DeltaHom A C), ",
+            "forall (delta_category_args : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), ",
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), ",
+            "forall (NerveSimplex : forall (n : DeltaObj), Sort w), ",
+            "forall (nerve_restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : NerveSimplex n), NerveSimplex m), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        nerve_construction_params!(concat!($tail))
+    };
+}
+
+macro_rules! nerve_construction_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => fun categoryC_args => ",
+            "fun DeltaObj => fun DeltaHom => fun delta_id => fun delta_comp => fun delta_category_args => ",
+            "fun simplex_args => fun NerveSimplex => fun nerve_restrict => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        nerve_construction_abs!(concat!($tail))
+    };
+}
+
+macro_rules! nerve_simplicial_set_law_args_app {
+    () => {
+        "@SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args NerveSimplex nerve_restrict"
+    };
+}
+
+macro_rules! nerve_construction_law_args_app {
+    () => {
+        "@NerveConstructionLawArgs.{a,b,u,v,w} ObjC HomC idC compC categoryC_args DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args NerveSimplex nerve_restrict"
+    };
+}
+
+macro_rules! sieve_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (Sieve : forall (X : Obj), Sort w), ",
+            "forall (contains : forall (X : Obj), forall (R : Sieve X), forall (Y : Obj), forall (f : Hom Y X), Prop), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        sieve_params!(concat!($tail))
+    };
+}
+
+macro_rules! sieve_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun Sieve => fun contains => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        sieve_abs!(concat!($tail))
+    };
+}
+
+macro_rules! sieve_precomp_closed_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), forall (Y : Obj), ",
+            "forall (f : Hom Y X), forall (Z : Obj), forall (g : Hom Z Y), ",
+            "forall (hf : contains X R Y f), contains X R Z (comp Z Y X f g)"
+        )
+    };
+}
+
+macro_rules! grothendieck_topology_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        sieve_params!(concat!(
+            "forall (sieve_args : @SieveLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains), ",
+            "forall (pullback : forall (X : Obj), forall (Y : Obj), forall (f : Hom Y X), forall (R : Sieve X), Sieve Y), ",
+            "forall (covers : forall (X : Obj), forall (R : Sieve X), Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        grothendieck_topology_params!(concat!($tail))
+    };
+}
+
+macro_rules! grothendieck_topology_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        sieve_abs!(concat!(
+            "fun sieve_args => fun pullback => fun covers => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        grothendieck_topology_abs!(concat!($tail))
+    };
+}
+
+macro_rules! grothendieck_topology_maximal_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), ",
+            "forall (all_arrows : forall (Y : Obj), forall (f : Hom Y X), contains X R Y f), ",
+            "covers X R"
+        )
+    };
+}
+
+macro_rules! grothendieck_topology_pullback_membership_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (R : Sieve X), forall (Z : Obj), forall (g : Hom Z Y), ",
+            "forall (hg : contains Y (pullback X Y f R) Z g), ",
+            "contains X R Z (comp Z Y X f g)"
+        )
+    };
+}
+
+macro_rules! grothendieck_topology_pullback_reflects_membership_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (R : Sieve X), forall (Z : Obj), forall (g : Hom Z Y), ",
+            "forall (hfg : contains X R Z (comp Z Y X f g)), ",
+            "contains Y (pullback X Y f R) Z g"
+        )
+    };
+}
+
+macro_rules! grothendieck_topology_pullback_stable_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), forall (cover_R : covers X R), ",
+            "forall (Y : Obj), forall (f : Hom Y X), covers Y (pullback X Y f R)"
+        )
+    };
+}
+
+macro_rules! grothendieck_topology_transitive_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), forall (S : Sieve X), ",
+            "forall (cover_R : covers X R), ",
+            "forall (local_cover : forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (hf : contains X R Y f), covers Y (pullback X Y f S)), ",
+            "covers X S"
+        )
+    };
+}
+
+macro_rules! site_presheaf_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            "forall (F : forall (X : Obj), Sort z), ",
+            "forall (mapF : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : F Y), F X), ",
+            "forall (presheaf_args : @PresheafLawArgs.{u,v,z} Obj Hom id comp category_args F mapF), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        site_presheaf_params!(concat!($tail))
+    };
+}
+
+macro_rules! site_presheaf_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun F => fun mapF => fun presheaf_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        site_presheaf_abs!(concat!($tail))
+    };
+}
+
+macro_rules! matching_family_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        site_presheaf_params!(concat!(
+            "forall (MatchingFamily : forall (X : Obj), forall (R : Sieve X), Sort zz), ",
+            "forall (family_section : forall (X : Obj), forall (R : Sieve X), forall (m : MatchingFamily X R), forall (Y : Obj), forall (f : Hom Y X), forall (hf : contains X R Y f), F Y), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        matching_family_params!(concat!($tail))
+    };
+}
+
+macro_rules! matching_family_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        site_presheaf_abs!(concat!(
+            "fun MatchingFamily => fun family_section => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        matching_family_abs!(concat!($tail))
+    };
+}
+
+macro_rules! matching_family_compatible_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), forall (m : MatchingFamily X R), ",
+            "forall (Y : Obj), forall (f : Hom Y X), forall (hf : contains X R Y f), ",
+            "forall (Z : Obj), forall (g : Hom Z Y), ",
+            "forall (hfg : contains X R Z (comp Z Y X f g)), ",
+            "@Eq.{z} (F Z) (family_section X R m Z (comp Z Y X f g) hfg) ",
+            "(mapF Z Y g (family_section X R m Y f hf))"
+        )
+    };
+}
+
+macro_rules! sheaf_condition_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        matching_family_params!(concat!(
+            "forall (matching_args : @MatchingFamilyLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args Sieve contains sieve_args pullback covers topology_args F mapF presheaf_args MatchingFamily family_section), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        sheaf_condition_params!(concat!($tail))
+    };
+}
+
+macro_rules! sheaf_condition_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        matching_family_abs!(concat!(
+            "fun matching_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        sheaf_condition_abs!(concat!($tail))
+    };
+}
+
+macro_rules! sheaf_amalgamation_law_type {
+    ($section:literal, $m:literal) => {
+        concat!(
+            "forall (Y : Obj), forall (f : Hom Y X), forall (hf : contains X R Y f), ",
+            "@Eq.{z} (F Y) (mapF Y X f ",
+            $section,
+            ") (family_section X R ",
+            $m,
+            " Y f hf)"
+        )
+    };
+}
+
+macro_rules! sheaf_amalgamation_exists_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), forall (cover_R : covers X R), ",
+            "forall (m : MatchingFamily X R), forall (P : Prop), ",
+            "forall (build : forall (s : F X), forall (restrict_law : ",
+            sheaf_amalgamation_law_type!("s", "m"),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! sheaf_amalgamation_unique_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (R : Sieve X), forall (cover_R : covers X R), ",
+            "forall (m : MatchingFamily X R), forall (s : F X), forall (t : F X), ",
+            "forall (s_law : ",
+            sheaf_amalgamation_law_type!("s", "m"),
+            "), forall (t_law : ",
+            sheaf_amalgamation_law_type!("t", "m"),
+            "), @Eq.{z} (F X) s t"
+        )
+    };
+}
+
+macro_rules! sheafification_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (Sieve : forall (X : Obj), Sort s), ",
+            "forall (contains : forall (X : Obj), forall (R : Sieve X), forall (Y : Obj), forall (f : Hom Y X), Prop), ",
+            "forall (sieve_args : @SieveLawArgs.{u,v,s} Obj Hom id comp category_args Sieve contains), ",
+            "forall (pullback : forall (X : Obj), forall (Y : Obj), forall (f : Hom Y X), forall (R : Sieve X), Sieve Y), ",
+            "forall (covers : forall (X : Obj), forall (R : Sieve X), Prop), ",
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,s} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            "forall (PshObj : Sort w), ",
+            "forall (PshHom : forall (F : PshObj), forall (G : PshObj), Sort z), ",
+            "forall (psh_id : forall (F : PshObj), PshHom F F), ",
+            "forall (psh_comp : forall (F : PshObj), forall (G : PshObj), forall (H : PshObj), forall (beta : PshHom G H), forall (alpha : PshHom F G), PshHom F H), ",
+            "forall (psh_category_args : @CategoryLawArgs.{w,z} PshObj PshHom psh_id psh_comp), ",
+            "forall (eval : forall (F : PshObj), forall (X : Obj), Sort zz), ",
+            "forall (reindex : forall (F : PshObj), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : eval F Y), eval F X), ",
+            "forall (component : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), forall (X : Obj), forall (x : eval F X), eval G X), ",
+            "forall (psh_args : @PresheafCategoryLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component), ",
+            "forall (Sheaf : forall (F : PshObj), Prop), ",
+            "forall (sheafify : forall (F : PshObj), PshObj), ",
+            "forall (unit : forall (F : PshObj), PshHom F (sheafify F)), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        sheafification_params!(concat!($tail))
+    };
+}
+
+macro_rules! sheafification_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun Sieve => fun contains => fun sieve_args => fun pullback => fun covers => fun topology_args => ",
+            "fun PshObj => fun PshHom => fun psh_id => fun psh_comp => fun psh_category_args => ",
+            "fun eval => fun reindex => fun component => fun psh_args => ",
+            "fun Sheaf => fun sheafify => fun unit => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        sheafification_abs!(concat!($tail))
+    };
+}
+
+macro_rules! sheafification_law_args_app {
+    () => {
+        concat!(
+            "@SheafificationLawArgs.{s,u,v,w,z,zz} Obj Hom id comp category_args ",
+            "Sieve contains sieve_args pullback covers topology_args ",
+            "PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args ",
+            "Sheaf sheafify unit"
+        )
+    };
+}
+
+macro_rules! sheafification_is_sheaf_law_type {
+    () => {
+        "forall (F : PshObj), Sheaf (sheafify F)"
+    };
+}
+
+macro_rules! sheafification_factor_law_type {
+    ($source:literal, $target:literal, $alpha:literal, $beta:literal) => {
+        concat!(
+            "@Eq.{z} (PshHom ",
+            $source,
+            " ",
+            $target,
+            ") (psh_comp ",
+            $source,
+            " (sheafify ",
+            $source,
+            ") ",
+            $target,
+            " ",
+            $beta,
+            " (unit ",
+            $source,
+            ")) ",
+            $alpha
+        )
+    };
+}
+
+macro_rules! sheafification_universal_exists_law_type {
+    () => {
+        concat!(
+            "forall (F : PshObj), forall (S : PshObj), forall (sheaf_S : Sheaf S), ",
+            "forall (alpha : PshHom F S), forall (P : Prop), ",
+            "forall (choose : forall (beta : PshHom (sheafify F) S), forall (factor_law : ",
+            sheafification_factor_law_type!("F", "S", "alpha", "beta"),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! sheafification_universal_unique_law_type {
+    () => {
+        concat!(
+            "forall (F : PshObj), forall (S : PshObj), forall (sheaf_S : Sheaf S), ",
+            "forall (alpha : PshHom F S), ",
+            "forall (beta : PshHom (sheafify F) S), forall (gamma : PshHom (sheafify F) S), ",
+            "forall (beta_law : ",
+            sheafification_factor_law_type!("F", "S", "alpha", "beta"),
+            "), forall (gamma_law : ",
+            sheafification_factor_law_type!("F", "S", "alpha", "gamma"),
+            "), @Eq.{z} (PshHom (sheafify F) S) beta gamma"
+        )
+    };
+}
+
+macro_rules! sheafification_theorem_law_type {
+    () => {
+        concat!(
+            "forall (F : PshObj), forall (Q : Prop), ",
+            "forall (build : forall (AF : PshObj), forall (eta : PshHom F AF), ",
+            "forall (sheaf_AF : Sheaf AF), ",
+            "forall (universal_exists : forall (S : PshObj), forall (sheaf_S : Sheaf S), ",
+            "forall (alpha : PshHom F S), forall (P : Prop), ",
+            "forall (choose : forall (beta : PshHom AF S), forall (factor_law : ",
+            "@Eq.{z} (PshHom F S) (psh_comp F AF S beta eta) alpha), P), P), ",
+            "forall (universal_unique : forall (S : PshObj), forall (sheaf_S : Sheaf S), ",
+            "forall (alpha : PshHom F S), forall (beta : PshHom AF S), forall (gamma : PshHom AF S), ",
+            "forall (beta_law : @Eq.{z} (PshHom F S) (psh_comp F AF S beta eta) alpha), ",
+            "forall (gamma_law : @Eq.{z} (PshHom F S) (psh_comp F AF S gamma eta) alpha), ",
+            "@Eq.{z} (PshHom AF S) beta gamma), Q), Q"
+        )
+    };
+}
+
+macro_rules! sheafification_left_adjoint_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        sheafification_params!(concat!(
+            "forall (sheafification_args : ",
+            sheafification_law_args_app!(),
+            "), ",
+            "forall (ShObj : Sort a), ",
+            "forall (ShHom : forall (S : ShObj), forall (T : ShObj), Sort b), ",
+            "forall (sh_id : forall (S : ShObj), ShHom S S), ",
+            "forall (sh_comp : forall (S : ShObj), forall (T : ShObj), forall (U : ShObj), forall (g : ShHom T U), forall (f : ShHom S T), ShHom S U), ",
+            "forall (sh_category_args : @CategoryLawArgs.{a,b} ShObj ShHom sh_id sh_comp), ",
+            "forall (include : forall (S : ShObj), PshObj), ",
+            "forall (include_map : forall (S : ShObj), forall (T : ShObj), forall (f : ShHom S T), PshHom (include S) (include T)), ",
+            "forall (include_args : @FunctorLawArgs.{a,b,w,z} ShObj ShHom sh_id sh_comp PshObj PshHom psh_id psh_comp sh_category_args psh_category_args include include_map), ",
+            "forall (reflect : forall (F : PshObj), ShObj), ",
+            "forall (reflect_map : forall (F : PshObj), forall (G : PshObj), forall (f : PshHom F G), ShHom (reflect F) (reflect G)), ",
+            "forall (reflect_args : @FunctorLawArgs.{w,z,a,b} PshObj PshHom psh_id psh_comp ShObj ShHom sh_id sh_comp psh_category_args sh_category_args reflect reflect_map), ",
+            "forall (reflect_unit : forall (F : PshObj), PshHom F (include (reflect F))), ",
+            "forall (hom_backward : forall (F : PshObj), forall (S : ShObj), forall (g : PshHom F (include S)), ShHom (reflect F) S), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        sheafification_left_adjoint_params!(concat!($tail))
+    };
+}
+
+macro_rules! sheafification_left_adjoint_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        sheafification_abs!(concat!(
+            "fun sheafification_args => ",
+            "fun ShObj => fun ShHom => fun sh_id => fun sh_comp => fun sh_category_args => ",
+            "fun include => fun include_map => fun include_args => ",
+            "fun reflect => fun reflect_map => fun reflect_args => ",
+            "fun reflect_unit => fun hom_backward => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        sheafification_left_adjoint_abs!(concat!($tail))
+    };
+}
+
+macro_rules! sheafification_freyd_args_type {
+    () => {
+        concat!(
+            "@FreydUniversalArrowLawArgs.{w,z,a,b} PshObj PshHom psh_id psh_comp ",
+            "ShObj ShHom sh_id sh_comp psh_category_args sh_category_args ",
+            "include include_map include_args reflect reflect_map reflect_args reflect_unit hom_backward"
+        )
+    };
+}
+
+macro_rules! sheafification_left_adjoint_exists_type {
+    () => {
+        concat!(
+            "@LeftAdjointExistsArgs.{w,z,a,b} PshObj PshHom psh_id psh_comp ",
+            "ShObj ShHom sh_id sh_comp psh_category_args sh_category_args include include_map include_args"
+        )
+    };
+}
+
+macro_rules! finite_limit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (Terminal : Obj), ",
+            "forall (terminal_map : forall (A : Obj), Hom A Terminal), ",
+            "forall (Product : forall (A : Obj), forall (B : Obj), Obj), ",
+            "forall (product_pr1 : forall (A : Obj), forall (B : Obj), Hom (Product A B) A), ",
+            "forall (product_pr2 : forall (A : Obj), forall (B : Obj), Hom (Product A B) B), ",
+            "forall (product_pair : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom X A), forall (g : Hom X B), Hom X (Product A B)), ",
+            "forall (Equalizer : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), Obj), ",
+            "forall (equalizer_map : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), Hom (Equalizer A B f g) A), ",
+            "forall (equalizer_lift : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), forall (h : Hom X A), forall (equal_law : @Eq.{v} (Hom X B) (comp X A B f h) (comp X A B g h)), Hom X (Equalizer A B f g)), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        finite_limit_params!(concat!($tail))
+    };
+}
+
+macro_rules! finite_limit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun Terminal => fun terminal_map => ",
+            "fun Product => fun product_pr1 => fun product_pr2 => fun product_pair => ",
+            "fun Equalizer => fun equalizer_map => fun equalizer_lift => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        finite_limit_abs!(concat!($tail))
+    };
+}
+
+macro_rules! finite_limit_terminal_unique_law_type {
+    () => {
+        "forall (X : Obj), forall (f : Hom X Terminal), @Eq.{v} (Hom X Terminal) f (terminal_map X)"
+    };
+}
+
+macro_rules! finite_limit_product_pr1_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom X A), forall (g : Hom X B), ",
+            "@Eq.{v} (Hom X A) (comp X (Product A B) A (product_pr1 A B) (product_pair X A B f g)) f"
+        )
+    };
+}
+
+macro_rules! finite_limit_product_pr2_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom X A), forall (g : Hom X B), ",
+            "@Eq.{v} (Hom X B) (comp X (Product A B) B (product_pr2 A B) (product_pair X A B f g)) g"
+        )
+    };
+}
+
+macro_rules! finite_limit_product_unique_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom X A), forall (g : Hom X B), forall (h : Hom X (Product A B)), ",
+            "forall (left_law : @Eq.{v} (Hom X A) (comp X (Product A B) A (product_pr1 A B) h) f), ",
+            "forall (right_law : @Eq.{v} (Hom X B) (comp X (Product A B) B (product_pr2 A B) h) g), ",
+            "@Eq.{v} (Hom X (Product A B)) h (product_pair X A B f g)"
+        )
+    };
+}
+
+macro_rules! finite_limit_equalizer_condition_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), ",
+            "@Eq.{v} (Hom (Equalizer A B f g) B) ",
+            "(comp (Equalizer A B f g) A B f (equalizer_map A B f g)) ",
+            "(comp (Equalizer A B f g) A B g (equalizer_map A B f g))"
+        )
+    };
+}
+
+macro_rules! finite_limit_equalizer_lift_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), forall (h : Hom X A), ",
+            "forall (equal_law : @Eq.{v} (Hom X B) (comp X A B f h) (comp X A B g h)), ",
+            "@Eq.{v} (Hom X A) ",
+            "(comp X (Equalizer A B f g) A (equalizer_map A B f g) (equalizer_lift X A B f g h equal_law)) h"
+        )
+    };
+}
+
+macro_rules! finite_limit_equalizer_unique_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), forall (h : Hom X A), ",
+            "forall (equal_law : @Eq.{v} (Hom X B) (comp X A B f h) (comp X A B g h)), forall (k : Hom X (Equalizer A B f g)), ",
+            "forall (k_law : @Eq.{v} (Hom X A) (comp X (Equalizer A B f g) A (equalizer_map A B f g) k) h), ",
+            "@Eq.{v} (Hom X (Equalizer A B f g)) k (equalizer_lift X A B f g h equal_law)"
+        )
+    };
+}
+
+macro_rules! finite_limit_law_args_app {
+    () => {
+        concat!(
+            "@FiniteLimitLawArgs.{u,v} Obj Hom id comp category_args Terminal terminal_map ",
+            "Product product_pr1 product_pr2 product_pair Equalizer equalizer_map equalizer_lift"
+        )
+    };
+}
+
+macro_rules! cartesian_closed_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        finite_limit_params!(concat!(
+            "forall (Exp : forall (A : Obj), forall (B : Obj), Obj), ",
+            "forall (eval : forall (A : Obj), forall (B : Obj), Hom (Product (Exp A B) A) B), ",
+            "forall (curry : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (h : Hom (Product X A) B), Hom X (Exp A B)), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        cartesian_closed_params!(concat!($tail))
+    };
+}
+
+macro_rules! cartesian_closed_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        finite_limit_abs!(concat!(
+            "fun Exp => fun eval => fun curry => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        cartesian_closed_abs!(concat!($tail))
+    };
+}
+
+macro_rules! cartesian_closed_eval_composite {
+    ($source:literal, $arg:literal, $result:literal, $name:literal) => {
+        concat!(
+            "(comp (Product ",
+            $source,
+            " ",
+            $arg,
+            ") (Product (Exp ",
+            $arg,
+            " ",
+            $result,
+            ") ",
+            $arg,
+            ") ",
+            $result,
+            " (eval ",
+            $arg,
+            " ",
+            $result,
+            ") (product_pair (Product ",
+            $source,
+            " ",
+            $arg,
+            ") (Exp ",
+            $arg,
+            " ",
+            $result,
+            ") ",
+            $arg,
+            " (comp (Product ",
+            $source,
+            " ",
+            $arg,
+            ") ",
+            $source,
+            " (Exp ",
+            $arg,
+            " ",
+            $result,
+            ") ",
+            $name,
+            " (product_pr1 ",
+            $source,
+            " ",
+            $arg,
+            ")) (product_pr2 ",
+            $source,
+            " ",
+            $arg,
+            ")))"
+        )
+    };
+}
+
+macro_rules! cartesian_closed_eval_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (h : Hom (Product X A) B), ",
+            "@Eq.{v} (Hom (Product X A) B) ",
+            cartesian_closed_eval_composite!("X", "A", "B", "(curry X A B h)"),
+            " h"
+        )
+    };
+}
+
+macro_rules! cartesian_closed_unique_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (h : Hom (Product X A) B), forall (k : Hom X (Exp A B)), ",
+            "forall (k_eval_law : @Eq.{v} (Hom (Product X A) B) ",
+            cartesian_closed_eval_composite!("X", "A", "B", "k"),
+            " h), @Eq.{v} (Hom X (Exp A B)) k (curry X A B h)"
+        )
+    };
+}
+
+macro_rules! cartesian_closed_law_args_app {
+    () => {
+        concat!(
+            "@CartesianClosedLawArgs.{u,v} Obj Hom id comp category_args Terminal terminal_map ",
+            "Product product_pr1 product_pr2 product_pair Equalizer equalizer_map equalizer_lift ",
+            "Exp eval curry"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (Terminal : Obj), ",
+            "forall (terminal_map : forall (A : Obj), Hom A Terminal), ",
+            "forall (Omega : Obj), ",
+            "forall (truth : Hom Terminal Omega), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        subobject_classifier_params!(concat!($tail))
+    };
+}
+
+macro_rules! subobject_classifier_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => ",
+            "fun category_args => fun Terminal => fun terminal_map => fun Omega => fun truth => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        subobject_classifier_abs!(concat!($tail))
+    };
+}
+
+macro_rules! subobject_terminal_unique_law_type {
+    () => {
+        "forall (X : Obj), forall (f : Hom X Terminal), @Eq.{v} (Hom X Terminal) f (terminal_map X)"
+    };
+}
+
+macro_rules! subobject_mono_law_type {
+    ($domain:literal, $codomain:literal, $arrow:literal) => {
+        concat!(
+            "forall (X : Obj), forall (f : Hom X ",
+            $domain,
+            "), forall (g : Hom X ",
+            $domain,
+            "), forall (same_composite : @Eq.{v} (Hom X ",
+            $codomain,
+            ") (comp X ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $arrow,
+            " f) (comp X ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $arrow,
+            " g)), @Eq.{v} (Hom X ",
+            $domain,
+            ") f g"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_pullback_square_law_type {
+    ($domain:literal, $codomain:literal, $mono:literal, $characteristic:literal) => {
+        concat!(
+            "@Eq.{v} (Hom ",
+            $domain,
+            " Omega) (comp ",
+            $domain,
+            " ",
+            $codomain,
+            " Omega ",
+            $characteristic,
+            " ",
+            $mono,
+            ") (comp ",
+            $domain,
+            " Terminal Omega truth (terminal_map ",
+            $domain,
+            "))"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_pullback_universal_law_type {
+    ($domain:literal, $codomain:literal, $mono:literal, $characteristic:literal) => {
+        concat!(
+            "forall (X : Obj), forall (f : Hom X ",
+            $codomain,
+            "), forall (g : Hom X Terminal), forall (square_X : @Eq.{v} (Hom X Omega) (comp X ",
+            $codomain,
+            " Omega ",
+            $characteristic,
+            " f) (comp X Terminal Omega truth g)), forall (Q : Prop), forall (build : forall (u : Hom X ",
+            $domain,
+            "), forall (left_law : @Eq.{v} (Hom X ",
+            $codomain,
+            ") (comp X ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $mono,
+            " u) f), forall (right_law : @Eq.{v} (Hom X Terminal) (comp X ",
+            $domain,
+            " Terminal (terminal_map ",
+            $domain,
+            ") u) g), forall (unique_law : forall (u2 : Hom X ",
+            $domain,
+            "), forall (left_law2 : @Eq.{v} (Hom X ",
+            $codomain,
+            ") (comp X ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $mono,
+            " u2) f), forall (right_law2 : @Eq.{v} (Hom X Terminal) (comp X ",
+            $domain,
+            " Terminal (terminal_map ",
+            $domain,
+            ") u2) g), @Eq.{v} (Hom X ",
+            $domain,
+            ") u2 u), Q), Q"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_pullback_law_type {
+    ($domain:literal, $codomain:literal, $mono:literal, $characteristic:literal) => {
+        concat!(
+            "forall (P : Prop), forall (mk : forall (square_law : ",
+            subobject_classifier_pullback_square_law_type!(
+                $domain,
+                $codomain,
+                $mono,
+                $characteristic
+            ),
+            "), forall (universal_law : ",
+            subobject_classifier_pullback_universal_law_type!(
+                $domain,
+                $codomain,
+                $mono,
+                $characteristic
+            ),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_characteristic_exists_law_type {
+    () => {
+        concat!(
+            "forall (M : Obj), forall (A : Obj), forall (m : Hom M A), forall (mono_m : ",
+            subobject_mono_law_type!("M", "A", "m"),
+            "), forall (P : Prop), forall (choose : forall (chi : Hom A Omega), forall (pullback_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "chi"),
+            "), P), P"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_characteristic_unique_law_type {
+    () => {
+        concat!(
+            "forall (M : Obj), forall (A : Obj), forall (m : Hom M A), forall (mono_m : ",
+            subobject_mono_law_type!("M", "A", "m"),
+            "), forall (chosen : Hom A Omega), forall (other : Hom A Omega), forall (chosen_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "chosen"),
+            "), forall (other_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "other"),
+            "), @Eq.{v} (Hom A Omega) other chosen"
+        )
+    };
+}
+
+macro_rules! subobject_classifier_law_args_app {
+    () => {
+        "@SubobjectClassifierLawArgs.{u,v} Obj Hom id comp category_args Terminal terminal_map Omega truth"
+    };
+}
+
+macro_rules! elementary_topos_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        finite_limit_params!(concat!(
+            "forall (Exp : forall (A : Obj), forall (B : Obj), Obj), ",
+            "forall (eval : forall (A : Obj), forall (B : Obj), Hom (Product (Exp A B) A) B), ",
+            "forall (curry : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (h : Hom (Product X A) B), Hom X (Exp A B)), ",
+            "forall (Omega : Obj), ",
+            "forall (truth : Hom Terminal Omega), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        elementary_topos_params!(concat!($tail))
+    };
+}
+
+macro_rules! elementary_topos_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        finite_limit_abs!(concat!(
+            "fun Exp => fun eval => fun curry => fun Omega => fun truth => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        elementary_topos_abs!(concat!($tail))
+    };
+}
+
+macro_rules! elementary_topos_law_args_app {
+    () => {
+        concat!(
+            "@ElementaryToposLawArgs.{u,v} Obj Hom id comp category_args Terminal terminal_map ",
+            "Product product_pr1 product_pr2 product_pair Equalizer equalizer_map equalizer_lift ",
+            "Exp eval curry Omega truth"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            "forall (Formula : forall (X : Obj), Sort a), ",
+            "forall (reindex_formula : forall (X : Obj), forall (Y : Obj), forall (f : Hom Y X), forall (phi : Formula X), Formula Y), ",
+            "forall (forces : forall (X : Obj), forall (phi : Formula X), Prop), ",
+            "forall (top_formula : forall (X : Obj), Formula X), ",
+            "forall (bottom_formula : forall (X : Obj), Formula X), ",
+            "forall (and_formula : forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), Formula X), ",
+            "forall (implies_formula : forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), Formula X), ",
+            "forall (or_formula : forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), Formula X), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        kripke_joyal_params!(concat!($tail))
+    };
+}
+
+macro_rules! kripke_joyal_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun Formula => fun reindex_formula => fun forces => ",
+            "fun top_formula => fun bottom_formula => fun and_formula => fun implies_formula => fun or_formula => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        kripke_joyal_abs!(concat!($tail))
+    };
+}
+
+macro_rules! kripke_joyal_stability_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (hphi : forces X phi), ",
+            "forall (Y : Obj), forall (f : Hom Y X), forces Y (reindex_formula X Y f phi)"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_locality_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (R : Sieve X), ",
+            "forall (cover_R : covers X R), ",
+            "forall (local_forces : forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (hf : contains X R Y f), forces Y (reindex_formula X Y f phi)), ",
+            "forces X phi"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_truth_law_type {
+    () => {
+        "forall (X : Obj), forces X (top_formula X)"
+    };
+}
+
+macro_rules! kripke_joyal_false_elim_law_type {
+    () => {
+        "forall (X : Obj), forall (hfalse : forces X (bottom_formula X)), forall (Q : Prop), Q"
+    };
+}
+
+macro_rules! kripke_joyal_conjunction_intro_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (hphi : forces X phi), forall (hpsi : forces X psi), ",
+            "forces X (and_formula X phi psi)"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_conjunction_left_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (hand : forces X (and_formula X phi psi)), forces X phi"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_conjunction_right_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (hand : forces X (and_formula X phi psi)), forces X psi"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_implication_intro_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (local_imp : forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (hphi : forces Y (reindex_formula X Y f phi)), ",
+            "forces Y (reindex_formula X Y f psi)), ",
+            "forces X (implies_formula X phi psi)"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_implication_elim_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (himp : forces X (implies_formula X phi psi)), ",
+            "forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (hphi : forces Y (reindex_formula X Y f phi)), ",
+            "forces Y (reindex_formula X Y f psi)"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_local_either_type {
+    ($x:literal, $y:literal, $f:literal, $phi:literal, $psi:literal) => {
+        concat!(
+            "forall (B : Prop), ",
+            "forall (left : forall (hleft : forces ",
+            $y,
+            " (reindex_formula ",
+            $x,
+            " ",
+            $y,
+            " ",
+            $f,
+            " ",
+            $phi,
+            ")), B), ",
+            "forall (right : forall (hright : forces ",
+            $y,
+            " (reindex_formula ",
+            $x,
+            " ",
+            $y,
+            " ",
+            $f,
+            " ",
+            $psi,
+            ")), B), B"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_disjunction_local_intro_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (R : Sieve X), forall (cover_R : covers X R), ",
+            "forall (local_branch : forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (hf : contains X R Y f), ",
+            kripke_joyal_local_either_type!("X", "Y", "f", "phi", "psi"),
+            "), forces X (or_formula X phi psi)"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_disjunction_cover_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (phi : Formula X), forall (psi : Formula X), ",
+            "forall (hor : forces X (or_formula X phi psi)), forall (Q : Prop), ",
+            "forall (choose : forall (R : Sieve X), forall (cover_R : covers X R), ",
+            "forall (local_branch : forall (Y : Obj), forall (f : Hom Y X), ",
+            "forall (hf : contains X R Y f), ",
+            kripke_joyal_local_either_type!("X", "Y", "f", "phi", "psi"),
+            "), Q), Q"
+        )
+    };
+}
+
+macro_rules! kripke_joyal_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (stability_law : ",
+            kripke_joyal_stability_law_type!(),
+            "), ",
+            "forall (locality_law : ",
+            kripke_joyal_locality_law_type!(),
+            "), ",
+            "forall (truth_law : ",
+            kripke_joyal_truth_law_type!(),
+            "), ",
+            "forall (false_elim_law : ",
+            kripke_joyal_false_elim_law_type!(),
+            "), ",
+            "forall (conjunction_intro_law : ",
+            kripke_joyal_conjunction_intro_law_type!(),
+            "), ",
+            "forall (conjunction_left_law : ",
+            kripke_joyal_conjunction_left_law_type!(),
+            "), ",
+            "forall (conjunction_right_law : ",
+            kripke_joyal_conjunction_right_law_type!(),
+            "), ",
+            "forall (implication_intro_law : ",
+            kripke_joyal_implication_intro_law_type!(),
+            "), ",
+            "forall (implication_elim_law : ",
+            kripke_joyal_implication_elim_law_type!(),
+            "), ",
+            "forall (disjunction_local_intro_law : ",
+            kripke_joyal_disjunction_local_intro_law_type!(),
+            "), ",
+            "forall (disjunction_cover_law : ",
+            kripke_joyal_disjunction_cover_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! kripke_joyal_law_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "(fun (stability_arg : ",
+            kripke_joyal_stability_law_type!(),
+            ") => fun (locality_arg : ",
+            kripke_joyal_locality_law_type!(),
+            ") => fun (truth_arg : ",
+            kripke_joyal_truth_law_type!(),
+            ") => fun (false_elim_arg : ",
+            kripke_joyal_false_elim_law_type!(),
+            ") => fun (conjunction_intro_arg : ",
+            kripke_joyal_conjunction_intro_law_type!(),
+            ") => fun (conjunction_left_arg : ",
+            kripke_joyal_conjunction_left_law_type!(),
+            ") => fun (conjunction_right_arg : ",
+            kripke_joyal_conjunction_right_law_type!(),
+            ") => fun (implication_intro_arg : ",
+            kripke_joyal_implication_intro_law_type!(),
+            ") => fun (implication_elim_arg : ",
+            kripke_joyal_implication_elim_law_type!(),
+            ") => fun (disjunction_local_intro_arg : ",
+            kripke_joyal_disjunction_local_intro_law_type!(),
+            ") => fun (disjunction_cover_arg : ",
+            kripke_joyal_disjunction_cover_law_type!(),
+            ") => ",
+            $($tail),+,
+            ")"
+        )
+    };
+    ($tail:literal) => {
+        kripke_joyal_law_abs!(concat!($tail))
+    };
+}
+
+macro_rules! kripke_joyal_law_args_app {
+    () => {
+        concat!(
+            "@KripkeJoyalSemanticsLawArgs.{a,u,v,w} Obj Hom id comp category_args ",
+            "Sieve contains sieve_args pullback covers topology_args ",
+            "Formula reindex_formula forces top_formula bottom_formula and_formula implies_formula or_formula"
+        )
+    };
+}
+
+macro_rules! giraud_axioms_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        finite_limit_params!(concat!(
+            "forall (cocomplete_args : @CocompleteCategoryLawArgs.{a,b,u,v} Obj Hom id comp category_args), ",
+            "forall (Initial : Obj), ",
+            "forall (initial_map : forall (A : Obj), Hom Initial A), ",
+            "forall (Coproduct : forall (A : Obj), forall (B : Obj), Obj), ",
+            "forall (coproduct_inl : forall (A : Obj), forall (B : Obj), Hom A (Coproduct A B)), ",
+            "forall (coproduct_inr : forall (A : Obj), forall (B : Obj), Hom B (Coproduct A B)), ",
+            "forall (coproduct_copair : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (f : Hom A X), forall (g : Hom B X), Hom (Coproduct A B) X), ",
+            "forall (Generator : Sort w), ",
+            "forall (generator_obj : forall (i : Generator), Obj), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        giraud_axioms_params!(concat!($tail))
+    };
+}
+
+macro_rules! giraud_axioms_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        finite_limit_abs!(concat!(
+            "fun cocomplete_args => fun Initial => fun initial_map => ",
+            "fun Coproduct => fun coproduct_inl => fun coproduct_inr => fun coproduct_copair => ",
+            "fun Generator => fun generator_obj => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        giraud_axioms_abs!(concat!($tail))
+    };
+}
+
+macro_rules! giraud_initial_unique_law_type {
+    () => {
+        "forall (A : Obj), forall (f : Hom Initial A), @Eq.{v} (Hom Initial A) f (initial_map A)"
+    };
+}
+
+macro_rules! giraud_coproduct_inl_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), ",
+            "forall (f : Hom A X), forall (g : Hom B X), ",
+            "@Eq.{v} (Hom A X) ",
+            "(comp A (Coproduct A B) X (coproduct_copair X A B f g) (coproduct_inl A B)) f"
+        )
+    };
+}
+
+macro_rules! giraud_coproduct_inr_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), ",
+            "forall (f : Hom A X), forall (g : Hom B X), ",
+            "@Eq.{v} (Hom B X) ",
+            "(comp B (Coproduct A B) X (coproduct_copair X A B f g) (coproduct_inr A B)) g"
+        )
+    };
+}
+
+macro_rules! giraud_coproduct_unique_law_type {
+    () => {
+        concat!(
+            "forall (X : Obj), forall (A : Obj), forall (B : Obj), ",
+            "forall (f : Hom A X), forall (g : Hom B X), forall (h : Hom (Coproduct A B) X), ",
+            "forall (left_law : @Eq.{v} (Hom A X) (comp A (Coproduct A B) X h (coproduct_inl A B)) f), ",
+            "forall (right_law : @Eq.{v} (Hom B X) (comp B (Coproduct A B) X h (coproduct_inr A B)) g), ",
+            "@Eq.{v} (Hom (Coproduct A B) X) h (coproduct_copair X A B f g)"
+        )
+    };
+}
+
+macro_rules! giraud_coproducts_stable_disjoint_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (X : Obj), ",
+            "forall (f : Hom X A), forall (g : Hom X B), ",
+            "forall (same_sum : @Eq.{v} (Hom X (Coproduct A B)) ",
+            "(comp X A (Coproduct A B) (coproduct_inl A B) f) ",
+            "(comp X B (Coproduct A B) (coproduct_inr A B) g)), ",
+            "forall (Q : Prop), forall (build : forall (factor : Hom X Initial), ",
+            "forall (left_law : @Eq.{v} (Hom X A) (comp X Initial A (initial_map A) factor) f), ",
+            "forall (right_law : @Eq.{v} (Hom X B) (comp X Initial B (initial_map B) factor) g), Q), Q"
+        )
+    };
+}
+
+macro_rules! giraud_effective_equivalence_relations_law_type {
+    () => {
+        concat!(
+            "forall (R : Obj), forall (A : Obj), forall (r1 : Hom R A), forall (r2 : Hom R A), ",
+            "forall (equivalence_relation_law : Prop), forall (Q : Prop), ",
+            "forall (build : forall (Quot : Obj), forall (quotient_map : Hom A Quot), ",
+            "forall (coequalizes : @Eq.{v} (Hom R Quot) ",
+            "(comp R A Quot quotient_map r1) (comp R A Quot quotient_map r2)), ",
+            "forall (effective_law : forall (X : Obj), forall (x : Hom X A), forall (y : Hom X A), ",
+            "forall (same_quot : @Eq.{v} (Hom X Quot) ",
+            "(comp X A Quot quotient_map x) (comp X A Quot quotient_map y)), ",
+            "forall (P : Prop), forall (choose : forall (u : Hom X R), ",
+            "forall (left_law : @Eq.{v} (Hom X A) (comp X R A r1 u) x), ",
+            "forall (right_law : @Eq.{v} (Hom X A) (comp X R A r2 u) y), P), P), Q), Q"
+        )
+    };
+}
+
+macro_rules! giraud_generators_law_type {
+    () => {
+        concat!(
+            "forall (A : Obj), forall (B : Obj), forall (f : Hom A B), forall (g : Hom A B), ",
+            "forall (pointwise_same : forall (i : Generator), forall (x : Hom (generator_obj i) A), ",
+            "@Eq.{v} (Hom (generator_obj i) B) ",
+            "(comp (generator_obj i) A B f x) (comp (generator_obj i) A B g x)), ",
+            "@Eq.{v} (Hom A B) f g"
+        )
+    };
+}
+
+macro_rules! giraud_axiom_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (finite_limit_args : ",
+            finite_limit_law_args_app!(),
+            "), ",
+            "forall (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} Obj Hom id comp category_args), ",
+            "forall (initial_unique_law : ",
+            giraud_initial_unique_law_type!(),
+            "), ",
+            "forall (coproduct_inl_law : ",
+            giraud_coproduct_inl_law_type!(),
+            "), ",
+            "forall (coproduct_inr_law : ",
+            giraud_coproduct_inr_law_type!(),
+            "), ",
+            "forall (coproduct_unique_law : ",
+            giraud_coproduct_unique_law_type!(),
+            "), ",
+            "forall (coproducts_stable_disjoint_law : ",
+            giraud_coproducts_stable_disjoint_law_type!(),
+            "), ",
+            "forall (effective_equivalence_relations_law : ",
+            giraud_effective_equivalence_relations_law_type!(),
+            "), ",
+            "forall (generators_law : ",
+            giraud_generators_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! giraud_axioms_law_args_app {
+    () => {
+        concat!(
+            "@GiraudAxiomsLawArgs.{a,b,u,v,w} Obj Hom id comp category_args Terminal terminal_map ",
+            "Product product_pr1 product_pr2 product_pair Equalizer equalizer_map equalizer_lift ",
+            "cocomplete_args Initial initial_map Coproduct coproduct_inl coproduct_inr coproduct_copair ",
+            "Generator generator_obj"
+        )
+    };
+}
+
+macro_rules! grothendieck_topos_representation_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        category_params!(concat!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (SiteObj : Sort w), ",
+            "forall (SiteHom : forall (A : SiteObj), forall (B : SiteObj), Sort z), ",
+            "forall (site_id : forall (A : SiteObj), SiteHom A A), ",
+            "forall (site_comp : forall (A : SiteObj), forall (B : SiteObj), forall (C : SiteObj), forall (g : SiteHom B C), forall (f : SiteHom A B), SiteHom A C), ",
+            "forall (site_category_args : @CategoryLawArgs.{w,z} SiteObj SiteHom site_id site_comp), ",
+            "forall (SiteSieve : forall (X : SiteObj), Sort w), ",
+            "forall (site_contains : forall (X : SiteObj), forall (R : SiteSieve X), forall (Y : SiteObj), forall (f : SiteHom Y X), Prop), ",
+            "forall (site_sieve_args : @SieveLawArgs.{w,z,w} SiteObj SiteHom site_id site_comp site_category_args SiteSieve site_contains), ",
+            "forall (site_pullback : forall (X : SiteObj), forall (Y : SiteObj), forall (f : SiteHom Y X), forall (R : SiteSieve X), SiteSieve Y), ",
+            "forall (site_covers : forall (X : SiteObj), forall (R : SiteSieve X), Prop), ",
+            "forall (site_topology_args : @GrothendieckTopologyLawArgs.{w,z,w} SiteObj SiteHom site_id site_comp site_category_args SiteSieve site_contains site_sieve_args site_pullback site_covers), ",
+            "forall (ShObj : Sort w), ",
+            "forall (ShHom : forall (A : ShObj), forall (B : ShObj), Sort z), ",
+            "forall (sh_id : forall (A : ShObj), ShHom A A), ",
+            "forall (sh_comp : forall (A : ShObj), forall (B : ShObj), forall (C : ShObj), forall (g : ShHom B C), forall (f : ShHom A B), ShHom A C), ",
+            "forall (sh_category_args : @CategoryLawArgs.{w,z} ShObj ShHom sh_id sh_comp), ",
+            "forall (to_sheaf_obj : forall (A : Obj), ShObj), ",
+            "forall (to_sheaf_map : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), ShHom (to_sheaf_obj A) (to_sheaf_obj B)), ",
+            "forall (to_sheaf_args : @FunctorLawArgs.{u,v,w,z} Obj Hom id comp ShObj ShHom sh_id sh_comp category_args sh_category_args to_sheaf_obj to_sheaf_map), ",
+            "forall (from_sheaf_obj : forall (S : ShObj), Obj), ",
+            "forall (from_sheaf_map : forall (S : ShObj), forall (T : ShObj), forall (f : ShHom S T), Hom (from_sheaf_obj S) (from_sheaf_obj T)), ",
+            "forall (from_sheaf_args : @FunctorLawArgs.{w,z,u,v} ShObj ShHom sh_id sh_comp Obj Hom id comp sh_category_args category_args from_sheaf_obj from_sheaf_map), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        grothendieck_topos_representation_params!(concat!($tail))
+    };
+}
+
+macro_rules! grothendieck_topos_representation_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        category_abs!(concat!(
+            "fun category_args => fun SiteObj => fun SiteHom => fun site_id => fun site_comp => ",
+            "fun site_category_args => fun SiteSieve => fun site_contains => fun site_sieve_args => ",
+            "fun site_pullback => fun site_covers => fun site_topology_args => ",
+            "fun ShObj => fun ShHom => fun sh_id => fun sh_comp => fun sh_category_args => ",
+            "fun to_sheaf_obj => fun to_sheaf_map => fun to_sheaf_args => ",
+            "fun from_sheaf_obj => fun from_sheaf_map => fun from_sheaf_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        grothendieck_topos_representation_abs!(concat!($tail))
+    };
+}
+
+macro_rules! grothendieck_topos_representation_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (site_topology_law : @GrothendieckTopologyLawArgs.{w,z,w} SiteObj SiteHom site_id site_comp site_category_args SiteSieve site_contains site_sieve_args site_pullback site_covers), ",
+            "forall (sheaf_category_law : @CategoryLawArgs.{w,z} ShObj ShHom sh_id sh_comp), ",
+            "forall (to_sheaf_functor_law : @FunctorLawArgs.{u,v,w,z} Obj Hom id comp ShObj ShHom sh_id sh_comp category_args sh_category_args to_sheaf_obj to_sheaf_map), ",
+            "forall (from_sheaf_functor_law : @FunctorLawArgs.{w,z,u,v} ShObj ShHom sh_id sh_comp Obj Hom id comp sh_category_args category_args from_sheaf_obj from_sheaf_map), ",
+            "forall (unit_equivalence_law : forall (A : Obj), @Eq.{u} Obj (from_sheaf_obj (to_sheaf_obj A)) A), ",
+            "forall (counit_equivalence_law : forall (S : ShObj), @Eq.{w} ShObj (to_sheaf_obj (from_sheaf_obj S)) S), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! grothendieck_topos_representation_law_args_app {
+    () => {
+        concat!(
+            "@GrothendieckToposRepresentationLawArgs.{u,v,w,z} Obj Hom id comp category_args ",
+            "SiteObj SiteHom site_id site_comp site_category_args SiteSieve site_contains site_sieve_args ",
+            "site_pullback site_covers site_topology_args ShObj ShHom sh_id sh_comp sh_category_args ",
+            "to_sheaf_obj to_sheaf_map to_sheaf_args from_sheaf_obj from_sheaf_map from_sheaf_args"
+        )
+    };
+}
+
+macro_rules! giraud_representation_exists_law_type {
+    () => {
+        concat!(
+            "forall (Q : Prop), forall (build : forall (SiteObj : Sort w), ",
+            "forall (SiteHom : forall (A : SiteObj), forall (B : SiteObj), Sort z), ",
+            "forall (site_id : forall (A : SiteObj), SiteHom A A), ",
+            "forall (site_comp : forall (A : SiteObj), forall (B : SiteObj), forall (C : SiteObj), forall (g : SiteHom B C), forall (f : SiteHom A B), SiteHom A C), ",
+            "forall (site_category_args : @CategoryLawArgs.{w,z} SiteObj SiteHom site_id site_comp), ",
+            "forall (SiteSieve : forall (X : SiteObj), Sort w), ",
+            "forall (site_contains : forall (X : SiteObj), forall (R : SiteSieve X), forall (Y : SiteObj), forall (f : SiteHom Y X), Prop), ",
+            "forall (site_sieve_args : @SieveLawArgs.{w,z,w} SiteObj SiteHom site_id site_comp site_category_args SiteSieve site_contains), ",
+            "forall (site_pullback : forall (X : SiteObj), forall (Y : SiteObj), forall (f : SiteHom Y X), forall (R : SiteSieve X), SiteSieve Y), ",
+            "forall (site_covers : forall (X : SiteObj), forall (R : SiteSieve X), Prop), ",
+            "forall (site_topology_args : @GrothendieckTopologyLawArgs.{w,z,w} SiteObj SiteHom site_id site_comp site_category_args SiteSieve site_contains site_sieve_args site_pullback site_covers), ",
+            "forall (ShObj : Sort w), ",
+            "forall (ShHom : forall (A : ShObj), forall (B : ShObj), Sort z), ",
+            "forall (sh_id : forall (A : ShObj), ShHom A A), ",
+            "forall (sh_comp : forall (A : ShObj), forall (B : ShObj), forall (C : ShObj), forall (g : ShHom B C), forall (f : ShHom A B), ShHom A C), ",
+            "forall (sh_category_args : @CategoryLawArgs.{w,z} ShObj ShHom sh_id sh_comp), ",
+            "forall (to_sheaf_obj : forall (A : Obj), ShObj), ",
+            "forall (to_sheaf_map : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), ShHom (to_sheaf_obj A) (to_sheaf_obj B)), ",
+            "forall (to_sheaf_args : @FunctorLawArgs.{u,v,w,z} Obj Hom id comp ShObj ShHom sh_id sh_comp category_args sh_category_args to_sheaf_obj to_sheaf_map), ",
+            "forall (from_sheaf_obj : forall (S : ShObj), Obj), ",
+            "forall (from_sheaf_map : forall (S : ShObj), forall (T : ShObj), forall (f : ShHom S T), Hom (from_sheaf_obj S) (from_sheaf_obj T)), ",
+            "forall (from_sheaf_args : @FunctorLawArgs.{w,z,u,v} ShObj ShHom sh_id sh_comp Obj Hom id comp sh_category_args category_args from_sheaf_obj from_sheaf_map), ",
+            "forall (representation_args : ",
+            grothendieck_topos_representation_law_args_app!(),
+            "), Q), Q"
+        )
+    };
+}
+
+macro_rules! giraud_construction_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        giraud_axioms_params!(concat!(
+            "forall (giraud_axioms : ",
+            giraud_axioms_law_args_app!(),
+            "), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        giraud_construction_params!(concat!($tail))
+    };
+}
+
+macro_rules! giraud_construction_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        giraud_axioms_abs!(concat!(
+            "fun giraud_axioms => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        giraud_construction_abs!(concat!($tail))
+    };
+}
+
+macro_rules! giraud_construction_law_args_app {
+    () => {
+        concat!(
+            "@GiraudRepresentationConstructionArgs.{a,b,u,v,w,z} Obj Hom id comp category_args ",
+            "Terminal terminal_map Product product_pr1 product_pr2 product_pair Equalizer equalizer_map equalizer_lift ",
+            "cocomplete_args Initial initial_map Coproduct coproduct_inl coproduct_inr coproduct_copair ",
+            "Generator generator_obj giraud_axioms"
+        )
+    };
+}
+
+macro_rules! yoneda_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (F : forall (X : Obj), Sort w), ",
+            "forall (mapF : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : F Y), F X), ",
+            "forall (presheaf_args : @PresheafLawArgs.{u,v,w} Obj Hom id comp category_args F mapF), ",
+            "forall (A : Obj), ",
+            "forall (alpha : forall (X : Obj), forall (f : Hom X A), F X), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! yoneda_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun F => fun mapF => fun presheaf_args => fun A => fun alpha => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun F => fun mapF => fun presheaf_args => fun A => fun alpha => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! diagram_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjJ : Sort u), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort v), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (ObjC : Sort w), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort z), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjJ HomJ idJ compJ), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjC HomC idC compC), ",
+            "forall (Dobj : forall (A : ObjJ), ObjC), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        diagram_params!(concat!($tail))
+    };
+}
+
+macro_rules! diagram_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjJ => fun HomJ => fun idJ => fun compJ => ",
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        diagram_abs!(concat!($tail))
+    };
+}
+
+macro_rules! limit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        diagram_params!(concat!(
+            "forall (L : ObjC), ",
+            "forall (cone : forall (j : ObjJ), HomC L (Dobj j)), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        limit_params!(concat!($tail))
+    };
+}
+
+macro_rules! limit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        diagram_abs!(concat!(
+            "fun L => fun cone => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        limit_abs!(concat!($tail))
+    };
+}
+
+macro_rules! colimit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        diagram_params!(concat!(
+            "forall (K : ObjC), ",
+            "forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        colimit_params!(concat!($tail))
+    };
+}
+
+macro_rules! colimit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        diagram_abs!(concat!(
+            "fun K => fun cocone => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        colimit_abs!(concat!($tail))
+    };
+}
+
+macro_rules! complete_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (target_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        complete_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! complete_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        complete_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! complete_category_limit_exists_law_type {
+    () => {
+        concat!(
+            "forall (ObjJ : Sort a), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), ",
+            "forall (Dobj : forall (A : ObjJ), ObjC), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), ",
+            "@LimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args"
+        )
+    };
+}
+
+macro_rules! complete_category_colimit_exists_law_type {
+    () => {
+        concat!(
+            "forall (ObjJ : Sort a), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), ",
+            "forall (Dobj : forall (A : ObjJ), ObjC), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), ",
+            "@ColimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args"
+        )
+    };
+}
+
+macro_rules! presheaf_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (Obj : Sort u), ",
+            "forall (Hom : forall (A : Obj), forall (B : Obj), Sort v), ",
+            "forall (id : forall (A : Obj), Hom A A), ",
+            "forall (comp : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), Hom A C), ",
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (PshObj : Sort w), ",
+            "forall (PshHom : forall (F : PshObj), forall (G : PshObj), Sort z), ",
+            "forall (psh_id : forall (F : PshObj), PshHom F F), ",
+            "forall (psh_comp : forall (F : PshObj), forall (G : PshObj), forall (H : PshObj), forall (beta : PshHom G H), forall (alpha : PshHom F G), PshHom F H), ",
+            "forall (psh_category_args : @CategoryLawArgs.{w,z} PshObj PshHom psh_id psh_comp), ",
+            "forall (eval : forall (F : PshObj), forall (X : Obj), Sort zz), ",
+            "forall (reindex : forall (F : PshObj), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : eval F Y), eval F X), ",
+            "forall (component : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), forall (X : Obj), forall (x : eval F X), eval G X), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        presheaf_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun Obj => fun Hom => fun id => fun comp => fun category_args => ",
+            "fun PshObj => fun PshHom => fun psh_id => fun psh_comp => fun psh_category_args => ",
+            "fun eval => fun reindex => fun component => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        presheaf_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_pointwise_limit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        presheaf_category_params!(concat!(
+            "forall (psh_args : @PresheafCategoryLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        presheaf_pointwise_limit_params!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_pointwise_limit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        presheaf_category_abs!(concat!(
+            "fun psh_args => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        presheaf_pointwise_limit_abs!(concat!($tail))
+    };
+}
+
+macro_rules! presheaf_pointwise_limit_exists_law_type {
+    () => {
+        concat!(
+            "forall (ObjJ : Sort a), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), ",
+            "forall (Dobj : forall (A : ObjJ), PshObj), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), PshHom (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap), ",
+            "@LimitExistsArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap diagram_args"
+        )
+    };
+}
+
+macro_rules! presheaf_pointwise_colimit_exists_law_type {
+    () => {
+        concat!(
+            "forall (ObjJ : Sort a), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), ",
+            "forall (Dobj : forall (A : ObjJ), PshObj), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), PshHom (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap), ",
+            "@ColimitExistsArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap diagram_args"
+        )
+    };
+}
+
+macro_rules! right_adjoint_limit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjJ : Sort a), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (Gobj : forall (X : ObjD), ObjC), ",
+            "forall (Gmap : forall (X : ObjD), forall (Y : ObjD), forall (f : HomD X Y), HomC (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap), ",
+            "forall (hom_forward : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), HomC A (Gobj B)), ",
+            "forall (hom_backward : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj A) B), ",
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), ",
+            "forall (Dobj : forall (A : ObjJ), ObjD), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomD (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args Dobj Dmap), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        right_adjoint_limit_params!(concat!($tail))
+    };
+}
+
+macro_rules! right_adjoint_limit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjJ => fun HomJ => fun idJ => fun compJ => ",
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun shape_args => fun source_args => fun target_args => ",
+            "fun Fobj => fun Fmap => fun F_args => ",
+            "fun Gobj => fun Gmap => fun G_args => ",
+            "fun hom_forward => fun hom_backward => fun adjunction_args => ",
+            "fun Dobj => fun Dmap => fun diagram_args => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        right_adjoint_limit_abs!(concat!($tail))
+    };
+}
+
+macro_rules! left_adjoint_colimit_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "forall (ObjJ : Sort a), ",
+            "forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), ",
+            "forall (idJ : forall (A : ObjJ), HomJ A A), ",
+            "forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), ",
+            "forall (ObjC : Sort u), ",
+            "forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort v), ",
+            "forall (idC : forall (A : ObjC), HomC A A), ",
+            "forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), ",
+            "forall (ObjD : Sort w), ",
+            "forall (HomD : forall (X : ObjD), forall (Y : ObjD), Sort z), ",
+            "forall (idD : forall (X : ObjD), HomD X X), ",
+            "forall (compD : forall (X : ObjD), forall (Y : ObjD), forall (Z : ObjD), forall (g : HomD Y Z), forall (f : HomD X Y), HomD X Z), ",
+            "forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), ",
+            "forall (source_args : @CategoryLawArgs.{u,v} ObjC HomC idC compC), ",
+            "forall (target_args : @CategoryLawArgs.{w,z} ObjD HomD idD compD), ",
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (Gobj : forall (X : ObjD), ObjC), ",
+            "forall (Gmap : forall (X : ObjD), forall (Y : ObjD), forall (f : HomD X Y), HomC (Gobj X) (Gobj Y)), ",
+            "forall (G_args : @FunctorLawArgs.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap), ",
+            "forall (hom_forward : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), HomC A (Gobj B)), ",
+            "forall (hom_backward : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj A) B), ",
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), ",
+            "forall (Dobj : forall (A : ObjJ), ObjC), ",
+            "forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), ",
+            "forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args Dobj Dmap), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        left_adjoint_colimit_params!(concat!($tail))
+    };
+}
+
+macro_rules! left_adjoint_colimit_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        concat!(
+            "fun ObjJ => fun HomJ => fun idJ => fun compJ => ",
+            "fun ObjC => fun HomC => fun idC => fun compC => ",
+            "fun ObjD => fun HomD => fun idD => fun compD => ",
+            "fun shape_args => fun source_args => fun target_args => ",
+            "fun Fobj => fun Fmap => fun F_args => ",
+            "fun Gobj => fun Gmap => fun G_args => ",
+            "fun hom_forward => fun hom_backward => fun adjunction_args => ",
+            "fun Dobj => fun Dmap => fun diagram_args => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        left_adjoint_colimit_abs!(concat!($tail))
     };
 }
 
@@ -8282,6 +12527,4452 @@ const IFF_THEOREMS: &[TheoremArtifact] = &[
             "forall (P : Prop), forall (Q : Prop), forall (F : forall (X : Prop), Prop), forall (h : @Eq.{1} Prop P Q), Iff (F P) (F Q)",
         proof:
             "fun P => fun Q => fun F => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff (F P) (F R)) (iff_refl (F P)) Q h",
+    },
+];
+
+const CLASSICAL_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "CategoryLawArgs",
+        universe_params: &["u", "v"],
+        ty: category_params!("Prop"),
+        value: category_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (comp_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), ",
+            "forall (id_comp_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), ",
+            "forall (comp_assoc_law : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FunctorLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: functor_params!("Prop"),
+        value: functor_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (map_id_law : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))), ",
+            "forall (map_comp_law : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NaturalTransformationLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: natural_transformation_params!("Prop"),
+        value: natural_transformation_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (naturality_law : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), @Eq.{z} (HomD (objF A) (objG B)) (compD (objF A) (objG A) (objG B) (homG A B f) (component A)) (compD (objF A) (objF B) (objG B) (component B) (homF A B f))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "AdjunctionHomNaturalIsoLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: adjunction_params!("Prop"),
+        value: adjunction_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (left_inverse_law : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f), ",
+            "forall (right_inverse_law : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g), ",
+            "forall (source_naturality_law : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)), ",
+            "forall (target_naturality_law : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "AdjunctionUnitCounitTriangleLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: unit_counit_params!("Prop"),
+        value: unit_counit_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (unit_naturality_law : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)), ",
+            "forall (counit_naturality_law : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))), ",
+            "forall (triangle_left_law : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))), ",
+            "forall (triangle_right_law : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LeftAdjointExistsArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: right_adjoint_base_params!("Prop"),
+        value: right_adjoint_base_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (hom_forward : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), HomC A (Gobj B)), ",
+            "forall (hom_backward : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj A) B), ",
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FreydUniversalArrowLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: freyd_universal_arrow_params!("Prop"),
+        value: freyd_universal_arrow_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (factor_law : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g), ",
+            "forall (unique_law : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)), ",
+            "forall (map_factor_law : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "HomFunctorLawArgs",
+        universe_params: &["u", "v"],
+        ty: category_params!("forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), Prop"),
+        value: category_abs!(concat!(
+            "fun category_args => forall (P : Prop), forall (mk : ",
+            "forall (covariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), ",
+            "forall (covariant_comp_law : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), forall (h : Hom X A), @Eq.{v} (Hom X C) (comp X A C (comp A B C g f) h) (comp X B C g (comp X A B f h))), ",
+            "forall (contravariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), ",
+            "forall (contravariant_comp_law : forall (T : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B A), forall (f : Hom C B), forall (h : Hom A T), @Eq.{v} (Hom C T) (comp C A T h (comp C B A g f)) (comp C B T (comp B A T h g) f)), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PresheafLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: presheaf_params!("Prop"),
+        value: presheaf_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (map_id_law : forall (X : Obj), forall (x : F X), @Eq.{w} (F X) (mapF X X (id X) x) x), ",
+            "forall (map_comp_law : forall (X : Obj), forall (Y : Obj), forall (Z : Obj), forall (g : Hom Y Z), forall (f : Hom X Y), forall (x : F Z), @Eq.{w} (F X) (mapF X Z (comp X Y Z g f) x) (mapF X Y f (mapF Y Z g x))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SieveLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: sieve_params!("Prop"),
+        value: sieve_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (precomp_closed_law : ",
+            sieve_precomp_closed_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GrothendieckTopologyLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: grothendieck_topology_params!("Prop"),
+        value: grothendieck_topology_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (maximal_law : ",
+            grothendieck_topology_maximal_law_type!(),
+            "), ",
+            "forall (pullback_membership_law : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            "), ",
+            "forall (pullback_reflects_membership_law : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            "), ",
+            "forall (pullback_stable_law : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            "), ",
+            "forall (transitive_law : ",
+            grothendieck_topology_transitive_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MatchingFamilyLawArgs",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        ty: matching_family_params!("Prop"),
+        value: matching_family_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (compatible_law : ",
+            matching_family_compatible_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SheafConditionLawArgs",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        ty: sheaf_condition_params!("Prop"),
+        value: sheaf_condition_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (amalgamation_exists_law : ",
+            sheaf_amalgamation_exists_law_type!(),
+            "), ",
+            "forall (amalgamation_unique_law : ",
+            sheaf_amalgamation_unique_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "YonedaNaturalFamilyLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: yoneda_params!("Prop"),
+        value: yoneda_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (naturality_law : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "YonedaEmbeddingLawArgs",
+        universe_params: &["u", "v"],
+        ty: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (g : Hom A B), Prop"
+        ),
+        value: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun g => forall (P : Prop), forall (mk : ",
+            "forall (naturality_law : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{v} (Hom X B) (comp X Y B (comp Y A B g h) f) (comp X A B g (comp X Y A h f))), ",
+            "forall (recover_law : @Eq.{v} (Hom A B) (comp A A B g (id A)) g), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LimitLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: limit_params!("Prop"),
+        value: limit_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)), ",
+            "forall (universal_law : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LimitExistsArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: diagram_params!("Prop"),
+        value: diagram_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (L : ObjC), forall (cone : forall (j : ObjJ), HomC L (Dobj j)), ",
+            "forall (limit_args : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ColimitLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: colimit_params!("Prop"),
+        value: colimit_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)), ",
+            "forall (universal_law : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ColimitExistsArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: diagram_params!("Prop"),
+        value: diagram_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (K : ObjC), forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            "forall (colimit_args : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CompleteCategoryLawArgs",
+        universe_params: &["a", "b", "u", "v"],
+        ty: complete_category_params!("Prop"),
+        value: complete_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (limit_exists_law : ",
+            complete_category_limit_exists_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CocompleteCategoryLawArgs",
+        universe_params: &["a", "b", "u", "v"],
+        ty: complete_category_params!("Prop"),
+        value: complete_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (colimit_exists_law : ",
+            complete_category_colimit_exists_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CompleteCocompleteCategoryLawArgs",
+        universe_params: &["a", "b", "u", "v"],
+        ty: complete_category_params!("Prop"),
+        value: complete_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (complete_args : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), ",
+            "forall (cocomplete_args : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PresheafCategoryLawArgs",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        ty: presheaf_category_params!("Prop"),
+        value: presheaf_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (object_presheaf_law : forall (F : PshObj), @PresheafLawArgs.{u,v,zz} Obj Hom id comp category_args (eval F) (reindex F)), ",
+            "forall (hom_naturality_law : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : eval F Y), @Eq.{zz} (eval G X) (component F G alpha X (reindex F X Y f x)) (reindex G X Y f (component F G alpha Y x))), ",
+            "forall (id_component_law : forall (F : PshObj), forall (X : Obj), forall (x : eval F X), @Eq.{zz} (eval F X) (component F F (psh_id F) X x) x), ",
+            "forall (comp_component_law : forall (F : PshObj), forall (G : PshObj), forall (H : PshObj), forall (beta : PshHom G H), forall (alpha : PshHom F G), forall (X : Obj), forall (x : eval F X), @Eq.{zz} (eval H X) (component F H (psh_comp F G H beta alpha) X x) (component G H beta X (component F G alpha X x))), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SheafificationLawArgs",
+        universe_params: &["s", "u", "v", "w", "z", "zz"],
+        ty: sheafification_params!("Prop"),
+        value: sheafification_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (sheafify_is_sheaf_law : ",
+            sheafification_is_sheaf_law_type!(),
+            "), ",
+            "forall (universal_exists_law : ",
+            sheafification_universal_exists_law_type!(),
+            "), ",
+            "forall (universal_unique_law : ",
+            sheafification_universal_unique_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteLimitLawArgs",
+        universe_params: &["u", "v"],
+        ty: finite_limit_params!("Prop"),
+        value: finite_limit_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (terminal_unique_law : ",
+            finite_limit_terminal_unique_law_type!(),
+            "), ",
+            "forall (product_pr1_law : ",
+            finite_limit_product_pr1_law_type!(),
+            "), ",
+            "forall (product_pr2_law : ",
+            finite_limit_product_pr2_law_type!(),
+            "), ",
+            "forall (product_unique_law : ",
+            finite_limit_product_unique_law_type!(),
+            "), ",
+            "forall (equalizer_condition_law : ",
+            finite_limit_equalizer_condition_law_type!(),
+            "), ",
+            "forall (equalizer_lift_law : ",
+            finite_limit_equalizer_lift_law_type!(),
+            "), ",
+            "forall (equalizer_unique_law : ",
+            finite_limit_equalizer_unique_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CartesianClosedLawArgs",
+        universe_params: &["u", "v"],
+        ty: cartesian_closed_params!("Prop"),
+        value: cartesian_closed_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (eval_law : ",
+            cartesian_closed_eval_law_type!(),
+            "), ",
+            "forall (unique_law : ",
+            cartesian_closed_unique_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SubobjectClassifierLawArgs",
+        universe_params: &["u", "v"],
+        ty: subobject_classifier_params!("Prop"),
+        value: subobject_classifier_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (terminal_unique_law : ",
+            subobject_terminal_unique_law_type!(),
+            "), ",
+            "forall (truth_mono_law : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            "), ",
+            "forall (characteristic_exists_law : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            "), ",
+            "forall (characteristic_unique_law : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ElementaryToposLawArgs",
+        universe_params: &["u", "v"],
+        ty: elementary_topos_params!("Prop"),
+        value: elementary_topos_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (finite_limit_args : ",
+            finite_limit_law_args_app!(),
+            "), ",
+            "forall (cartesian_closed_args : ",
+            cartesian_closed_law_args_app!(),
+            "), ",
+            "forall (subobject_classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "KripkeJoyalSemanticsLawArgs",
+        universe_params: &["a", "u", "v", "w"],
+        ty: kripke_joyal_params!("Prop"),
+        value: kripke_joyal_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            kripke_joyal_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GiraudAxiomsLawArgs",
+        universe_params: &["a", "b", "u", "v", "w"],
+        ty: giraud_axioms_params!("Prop"),
+        value: giraud_axioms_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            giraud_axiom_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GrothendieckToposRepresentationLawArgs",
+        universe_params: &["u", "v", "w", "z"],
+        ty: grothendieck_topos_representation_params!("Prop"),
+        value: grothendieck_topos_representation_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            grothendieck_topos_representation_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GiraudRepresentationConstructionArgs",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        ty: giraud_construction_params!("Prop"),
+        value: giraud_construction_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (representation_exists_law : ",
+            giraud_representation_exists_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PresheafPointwiseLimitConstructionArgs",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        ty: presheaf_pointwise_limit_params!("Prop"),
+        value: presheaf_pointwise_limit_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (limit_exists_law : ",
+            presheaf_pointwise_limit_exists_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PresheafPointwiseColimitConstructionArgs",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        ty: presheaf_pointwise_limit_params!("Prop"),
+        value: presheaf_pointwise_limit_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (colimit_exists_law : ",
+            presheaf_pointwise_colimit_exists_law_type!(),
+            "), P), P"
+        )),
+    },
+];
+
+const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SimplexCategoryLawArgs",
+        universe_params: &["u", "v"],
+        ty: simplex_category_params!("Prop"),
+        value: simplex_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (category_arg : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), ",
+            "P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SimplicialSetLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: simplicial_set_params!("Prop"),
+        value: simplicial_set_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (restrict_id_law : ",
+            simplicial_restrict_id_law_type!(),
+            "), ",
+            "forall (restrict_comp_law : ",
+            simplicial_restrict_comp_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "KanComplexLawArgs",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        ty: kan_complex_params!("Prop"),
+        value: kan_complex_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (horn_filler_law : ",
+            kan_horn_filler_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "QuasicategoryLawArgs",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        ty: quasicategory_params!("Prop"),
+        value: quasicategory_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (inner_horn_filler_law : ",
+            quasicategory_inner_horn_filler_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "HomotopyCategoryLawArgs",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        ty: homotopy_category_params!("Prop"),
+        value: homotopy_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (homotopy_category_law : ",
+            homotopy_category_category_law_args_app!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "InfinityYonedaLawArgs",
+        universe_params: &["a", "b", "c", "u", "v", "w", "z", "zz"],
+        ty: infinity_yoneda_params!("Prop"),
+        value: infinity_yoneda_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (infinity_yoneda_law : ",
+            infinity_yoneda_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "InfinityKanExtensionLawArgs",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        ty: infinity_kan_extension_params!("Prop"),
+        value: infinity_kan_extension_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (left_kan_law : ",
+            infinity_left_kan_extension_law_type!(),
+            "), forall (right_kan_law : ",
+            infinity_right_kan_extension_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PresentableInfinityCategoryLawArgs",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        ty: presentable_infinity_category_params!("Prop"),
+        value: presentable_infinity_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (accessible_law : ",
+            presentable_infinity_accessible_law_type!(),
+            "), forall (cocomplete_law : ",
+            presentable_infinity_cocomplete_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "InfinityAdjointFunctorTheoremLawArgs",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        ty: infinity_adjoint_functor_params!("Prop"),
+        value: infinity_adjoint_functor_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (left_adjoint_exists_law : ",
+            infinity_adjoint_functor_left_adjoint_exists_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PresheafInfinityCategoryLawArgs",
+        universe_params: &["a", "b", "c", "d", "e", "f", "s", "u", "v", "w", "z", "zz"],
+        ty: presheaf_infinity_category_params!("Prop"),
+        value: presheaf_infinity_category_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (presentable_law : ",
+            presheaf_infinity_category_presentable_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "AccessibleLocalizationLawArgs",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        ty: accessible_localization_params!("Prop"),
+        value: accessible_localization_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (localized_presentable_law : ",
+            accessible_localization_target_presentable_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LeftExactLocalizationLawArgs",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        ty: left_exact_localization_params!("Prop"),
+        value: left_exact_localization_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (left_exact_law : ",
+            left_exact_localization_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SheavesOfSpacesLawArgs",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "s", "u", "v", "w", "z", "zz",
+        ],
+        ty: sheaves_of_spaces_params!("Prop"),
+        value: sheaves_of_spaces_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (sheaves_of_spaces_law : ",
+            sheaves_of_spaces_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "HypercoverDescentLawArgs",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        ty: hypercover_descent_params!("Prop"),
+        value: hypercover_descent_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (hypercover_descent_law : ",
+            hypercover_descent_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "InfinityToposLawArgs",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        ty: infinity_topos_params!("Prop"),
+        value: infinity_topos_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (infinity_topos_law : ",
+            infinity_topos_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "TruncationConnectivityLawArgs",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        ty: truncation_connectivity_params!("Prop"),
+        value: truncation_connectivity_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (truncation_connectivity_law : ",
+            truncation_connectivity_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "PostnikovTowerLawArgs",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        ty: postnikov_tower_params!("Prop"),
+        value: postnikov_tower_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (postnikov_tower_law : ",
+            postnikov_tower_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CohomologyInInfinityTopoiLawArgs",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        ty: cohomology_in_infinity_topoi_params!("Prop"),
+        value: cohomology_in_infinity_topoi_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (cohomology_in_infinity_topoi_law : ",
+            cohomology_in_infinity_topoi_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MappingSpaceLawArgs",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        ty: mapping_space_params!("Prop"),
+        value: mapping_space_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (mapping_space_kan_law : ",
+            mapping_space_kan_law_type!(),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "JoyalModelStructureLawArgs",
+        universe_params: &["a", "b", "u", "v"],
+        ty: joyal_model_structure_params!("Prop"),
+        value: joyal_model_structure_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            joyal_model_structure_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CartesianFibrationLawArgs",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        ty: cartesian_fibration_params!("Prop"),
+        value: cartesian_fibration_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            cartesian_fibration_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CoCartesianFibrationLawArgs",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        ty: cocartesian_fibration_params!("Prop"),
+        value: cocartesian_fibration_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            cocartesian_fibration_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "StraighteningUnstraighteningLawArgs",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        ty: straightening_unstraightening_params!("Prop"),
+        value: straightening_unstraightening_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            straightening_unstraightening_law_binders!("P"),
+            "), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "NerveConstructionLawArgs",
+        universe_params: &["a", "b", "u", "v", "w"],
+        ty: nerve_construction_params!("Prop"),
+        value: nerve_construction_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (nerve_simplicial_set_law : ",
+            nerve_simplicial_set_law_args_app!(),
+            "), P), P"
+        )),
+    },
+];
+
+const INFINITY_SIMPLICIAL_SET_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "simplex_category_definition_intro",
+        universe_params: &["u", "v"],
+        statement: simplex_category_params!(concat!(simplex_category_law_args_app!())),
+        proof: simplex_category_abs!(concat!(
+            "fun (P : Prop) => fun (mk : ",
+            "forall (category_arg : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), ",
+            "P) => mk delta_category_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplex_category_has_category_laws",
+        universe_params: &["u", "v"],
+        statement: simplex_category_params!(concat!(
+            "forall (simplex_args : ",
+            simplex_category_law_args_app!(),
+            "), @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp"
+        )),
+        proof: simplex_category_abs!(concat!(
+            "fun simplex_args => simplex_args ",
+            "(@CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp) ",
+            "(fun (category_arg : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp) => category_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_set_definition_intro",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_set_params!(concat!(
+            "forall (restrict_id_law : ",
+            simplicial_restrict_id_law_type!(),
+            "), ",
+            "forall (restrict_comp_law : ",
+            simplicial_restrict_comp_law_type!(),
+            "), ",
+            simplicial_set_law_args_app!()
+        )),
+        proof: simplicial_set_abs!(concat!(
+            "fun restrict_id_law => fun restrict_comp_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (restrict_id_arg : ",
+            simplicial_restrict_id_law_type!(),
+            "), ",
+            "forall (restrict_comp_arg : ",
+            simplicial_restrict_comp_law_type!(),
+            "), P) => mk restrict_id_law restrict_comp_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_set_is_presheaf_on_simplex_category",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_set_params!(concat!(
+            "forall (simplicial_set_args : ",
+            simplicial_set_law_args_app!(),
+            "), @PresheafLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args S restrict"
+        )),
+        proof: simplicial_set_abs!(concat!(
+            "fun simplicial_set_args => simplicial_set_args ",
+            "(@PresheafLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args S restrict) ",
+            "(fun (restrict_id_arg : ",
+            simplicial_restrict_id_law_type!(),
+            ") => fun (restrict_comp_arg : ",
+            simplicial_restrict_comp_law_type!(),
+            ") => @presheaf_definition_intro.{u,v,w} DeltaObj DeltaHom delta_id delta_comp ",
+            "delta_category_args S restrict restrict_id_arg restrict_comp_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_set_restrict_identity",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_set_params!(concat!(
+            "forall (simplicial_set_args : ",
+            simplicial_set_law_args_app!(),
+            "), ",
+            simplicial_restrict_id_law_type!()
+        )),
+        proof: simplicial_set_abs!(concat!(
+            "fun simplicial_set_args => simplicial_set_args (",
+            simplicial_restrict_id_law_type!(),
+            ") (fun (restrict_id_arg : ",
+            simplicial_restrict_id_law_type!(),
+            ") => fun (restrict_comp_arg : ",
+            simplicial_restrict_comp_law_type!(),
+            ") => restrict_id_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "simplicial_set_restrict_composition",
+        universe_params: &["u", "v", "w"],
+        statement: simplicial_set_params!(concat!(
+            "forall (simplicial_set_args : ",
+            simplicial_set_law_args_app!(),
+            "), ",
+            simplicial_restrict_comp_law_type!()
+        )),
+        proof: simplicial_set_abs!(concat!(
+            "fun simplicial_set_args => simplicial_set_args (",
+            simplicial_restrict_comp_law_type!(),
+            ") (fun (restrict_id_arg : ",
+            simplicial_restrict_id_law_type!(),
+            ") => fun (restrict_comp_arg : ",
+            simplicial_restrict_comp_law_type!(),
+            ") => restrict_comp_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "kan_complex_definition_intro",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: kan_complex_params!(concat!(
+            "forall (horn_filler_law : ",
+            kan_horn_filler_law_type!(),
+            "), ",
+            kan_complex_law_args_app!()
+        )),
+        proof: kan_complex_abs!(concat!(
+            "fun horn_filler_law => ",
+            "fun (P : Prop) => fun (mk : forall (horn_filler_arg : ",
+            kan_horn_filler_law_type!(),
+            "), P) => mk horn_filler_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "kan_complex_is_simplicial_set",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: kan_complex_params!(concat!(
+            "forall (kan_complex_args : ",
+            kan_complex_law_args_app!(),
+            "), ",
+            simplicial_set_law_args_app!()
+        )),
+        proof: kan_complex_abs!("fun kan_complex_args => simplicial_set_args"),
+    },
+    TheoremArtifact {
+        name: "kan_complex_horn_filler",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: kan_complex_params!(concat!(
+            "forall (kan_complex_args : ",
+            kan_complex_law_args_app!(),
+            "), ",
+            kan_horn_filler_law_type!()
+        )),
+        proof: kan_complex_abs!(concat!(
+            "fun kan_complex_args => kan_complex_args (",
+            kan_horn_filler_law_type!(),
+            ") (fun (horn_filler_arg : ",
+            kan_horn_filler_law_type!(),
+            ") => horn_filler_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "kan_complex",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: kan_complex_params!(concat!(
+            "forall (kan_complex_args : ",
+            kan_complex_law_args_app!(),
+            "), ",
+            kan_horn_filler_law_type!()
+        )),
+        proof: kan_complex_abs!(concat!(
+            "fun kan_complex_args => kan_complex_args (",
+            kan_horn_filler_law_type!(),
+            ") (fun (horn_filler_arg : ",
+            kan_horn_filler_law_type!(),
+            ") => horn_filler_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "quasicategory_definition_intro",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: quasicategory_params!(concat!(
+            "forall (inner_horn_filler_law : ",
+            quasicategory_inner_horn_filler_law_type!(),
+            "), ",
+            quasicategory_law_args_app!()
+        )),
+        proof: quasicategory_abs!(concat!(
+            "fun inner_horn_filler_law => ",
+            "fun (P : Prop) => fun (mk : forall (inner_horn_filler_arg : ",
+            quasicategory_inner_horn_filler_law_type!(),
+            "), P) => mk inner_horn_filler_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "quasicategory_is_simplicial_set",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: quasicategory_params!(concat!(
+            "forall (quasicategory_args : ",
+            quasicategory_law_args_app!(),
+            "), ",
+            simplicial_set_law_args_app!()
+        )),
+        proof: quasicategory_abs!("fun quasicategory_args => simplicial_set_args"),
+    },
+    TheoremArtifact {
+        name: "quasicategory_inner_horn_filler",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: quasicategory_params!(concat!(
+            "forall (quasicategory_args : ",
+            quasicategory_law_args_app!(),
+            "), ",
+            quasicategory_inner_horn_filler_law_type!()
+        )),
+        proof: quasicategory_abs!(concat!(
+            "fun quasicategory_args => quasicategory_args (",
+            quasicategory_inner_horn_filler_law_type!(),
+            ") (fun (inner_horn_filler_arg : ",
+            quasicategory_inner_horn_filler_law_type!(),
+            ") => inner_horn_filler_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "quasicategory",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: quasicategory_params!(concat!(
+            "forall (quasicategory_args : ",
+            quasicategory_law_args_app!(),
+            "), ",
+            quasicategory_inner_horn_filler_law_type!()
+        )),
+        proof: quasicategory_abs!(concat!(
+            "fun quasicategory_args => quasicategory_args (",
+            quasicategory_inner_horn_filler_law_type!(),
+            ") (fun (inner_horn_filler_arg : ",
+            quasicategory_inner_horn_filler_law_type!(),
+            ") => inner_horn_filler_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "homotopy_category_definition_intro",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: homotopy_category_params!(concat!(
+            "forall (homotopy_category_law : ",
+            homotopy_category_category_law_args_app!(),
+            "), ",
+            homotopy_category_law_args_app!()
+        )),
+        proof: homotopy_category_abs!(concat!(
+            "fun homotopy_category_law => ",
+            "fun (P : Prop) => fun (mk : forall (homotopy_category_arg : ",
+            homotopy_category_category_law_args_app!(),
+            "), P) => mk homotopy_category_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "homotopy_category_has_category_laws",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: homotopy_category_params!(concat!(
+            "forall (homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            homotopy_category_category_law_args_app!()
+        )),
+        proof: homotopy_category_abs!(concat!(
+            "fun homotopy_category_args => homotopy_category_args (",
+            homotopy_category_category_law_args_app!(),
+            ") (fun (homotopy_category_arg : ",
+            homotopy_category_category_law_args_app!(),
+            ") => homotopy_category_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "homotopy_category",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: homotopy_category_params!(concat!(
+            "forall (homotopy_category_args : ",
+            homotopy_category_law_args_app!(),
+            "), ",
+            homotopy_category_category_law_args_app!()
+        )),
+        proof: homotopy_category_abs!(concat!(
+            "fun homotopy_category_args => homotopy_category_args (",
+            homotopy_category_category_law_args_app!(),
+            ") (fun (homotopy_category_arg : ",
+            homotopy_category_category_law_args_app!(),
+            ") => homotopy_category_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_yoneda_definition_intro",
+        universe_params: &["a", "b", "c", "u", "v", "w", "z", "zz"],
+        statement: infinity_yoneda_params!(concat!(
+            "forall (infinity_yoneda_law : ",
+            infinity_yoneda_law_type!(),
+            "), ",
+            infinity_yoneda_law_args_app!()
+        )),
+        proof: infinity_yoneda_abs!(concat!(
+            "fun infinity_yoneda_law => ",
+            "fun (P : Prop) => fun (mk : forall (infinity_yoneda_arg : ",
+            infinity_yoneda_law_type!(),
+            "), P) => mk infinity_yoneda_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_yoneda_lemma",
+        universe_params: &["a", "b", "c", "u", "v", "w", "z", "zz"],
+        statement: infinity_yoneda_params!(concat!(
+            "forall (infinity_yoneda_args : ",
+            infinity_yoneda_law_args_app!(),
+            "), ",
+            infinity_yoneda_law_type!()
+        )),
+        proof: infinity_yoneda_abs!(concat!(
+            "fun infinity_yoneda_args => infinity_yoneda_args (",
+            infinity_yoneda_law_type!(),
+            ") (fun (infinity_yoneda_arg : ",
+            infinity_yoneda_law_type!(),
+            ") => infinity_yoneda_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_kan_extension_definition_intro",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: infinity_kan_extension_params!(concat!(
+            "forall (left_kan_law : ",
+            infinity_left_kan_extension_law_type!(),
+            "), forall (right_kan_law : ",
+            infinity_right_kan_extension_law_type!(),
+            "), ",
+            infinity_kan_extension_law_args_app!()
+        )),
+        proof: infinity_kan_extension_abs!(concat!(
+            "fun left_kan_law => fun right_kan_law => ",
+            "fun (P : Prop) => fun (mk : forall (left_kan_arg : ",
+            infinity_left_kan_extension_law_type!(),
+            "), forall (right_kan_arg : ",
+            infinity_right_kan_extension_law_type!(),
+            "), P) => mk left_kan_law right_kan_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_left_kan_extension",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: infinity_kan_extension_params!(concat!(
+            "forall (kan_extension_args : ",
+            infinity_kan_extension_law_args_app!(),
+            "), ",
+            infinity_left_kan_extension_law_type!()
+        )),
+        proof: infinity_kan_extension_abs!(concat!(
+            "fun kan_extension_args => kan_extension_args (",
+            infinity_left_kan_extension_law_type!(),
+            ") (fun (left_kan_arg : ",
+            infinity_left_kan_extension_law_type!(),
+            ") => fun (right_kan_arg : ",
+            infinity_right_kan_extension_law_type!(),
+            ") => left_kan_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_right_kan_extension",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: infinity_kan_extension_params!(concat!(
+            "forall (kan_extension_args : ",
+            infinity_kan_extension_law_args_app!(),
+            "), ",
+            infinity_right_kan_extension_law_type!()
+        )),
+        proof: infinity_kan_extension_abs!(concat!(
+            "fun kan_extension_args => kan_extension_args (",
+            infinity_right_kan_extension_law_type!(),
+            ") (fun (left_kan_arg : ",
+            infinity_left_kan_extension_law_type!(),
+            ") => fun (right_kan_arg : ",
+            infinity_right_kan_extension_law_type!(),
+            ") => right_kan_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_kan_extension",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: infinity_kan_extension_params!(concat!(
+            "forall (kan_extension_args : ",
+            infinity_kan_extension_law_args_app!(),
+            "), ",
+            infinity_kan_extension_law_type!()
+        )),
+        proof: infinity_kan_extension_abs!(concat!(
+            "fun kan_extension_args => fun (P : Prop) => fun (build : forall (left_kan_law : ",
+            infinity_left_kan_extension_law_type!(),
+            "), forall (right_kan_law : ",
+            infinity_right_kan_extension_law_type!(),
+            "), P) => kan_extension_args P build"
+        )),
+    },
+    TheoremArtifact {
+        name: "presentable_infinity_category_definition_intro",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: presentable_infinity_category_params!(concat!(
+            "forall (accessible_law : ",
+            presentable_infinity_accessible_law_type!(),
+            "), forall (cocomplete_law : ",
+            presentable_infinity_cocomplete_law_type!(),
+            "), ",
+            presentable_infinity_category_law_args_app!()
+        )),
+        proof: presentable_infinity_category_abs!(concat!(
+            "fun accessible_law => fun cocomplete_law => ",
+            "fun (P : Prop) => fun (mk : forall (accessible_arg : ",
+            presentable_infinity_accessible_law_type!(),
+            "), forall (cocomplete_arg : ",
+            presentable_infinity_cocomplete_law_type!(),
+            "), P) => mk accessible_law cocomplete_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "presentable_infinity_category_accessible",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: presentable_infinity_category_params!(concat!(
+            "forall (presentable_args : ",
+            presentable_infinity_category_law_args_app!(),
+            "), ",
+            presentable_infinity_accessible_law_type!()
+        )),
+        proof: presentable_infinity_category_abs!(concat!(
+            "fun presentable_args => presentable_args (",
+            presentable_infinity_accessible_law_type!(),
+            ") (fun (accessible_arg : ",
+            presentable_infinity_accessible_law_type!(),
+            ") => fun (cocomplete_arg : ",
+            presentable_infinity_cocomplete_law_type!(),
+            ") => accessible_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presentable_infinity_category_cocomplete",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: presentable_infinity_category_params!(concat!(
+            "forall (presentable_args : ",
+            presentable_infinity_category_law_args_app!(),
+            "), ",
+            presentable_infinity_cocomplete_law_type!()
+        )),
+        proof: presentable_infinity_category_abs!(concat!(
+            "fun presentable_args => presentable_args (",
+            presentable_infinity_cocomplete_law_type!(),
+            ") (fun (accessible_arg : ",
+            presentable_infinity_accessible_law_type!(),
+            ") => fun (cocomplete_arg : ",
+            presentable_infinity_cocomplete_law_type!(),
+            ") => cocomplete_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presentable_infinity_category",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: presentable_infinity_category_params!(concat!(
+            "forall (presentable_args : ",
+            presentable_infinity_category_law_args_app!(),
+            "), ",
+            presentable_infinity_category_law_type!()
+        )),
+        proof: presentable_infinity_category_abs!(concat!(
+            "fun presentable_args => fun (P : Prop) => fun (build : forall (accessible_law : ",
+            presentable_infinity_accessible_law_type!(),
+            "), forall (cocomplete_law : ",
+            presentable_infinity_cocomplete_law_type!(),
+            "), P) => presentable_args P build"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_adjoint_functor_theorem_definition_intro",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: infinity_adjoint_functor_params!(concat!(
+            "forall (left_adjoint_exists_law : ",
+            infinity_adjoint_functor_left_adjoint_exists_law_type!(),
+            "), ",
+            infinity_adjoint_functor_law_args_app!()
+        )),
+        proof: infinity_adjoint_functor_abs!(concat!(
+            "fun left_adjoint_exists_law => ",
+            "fun (P : Prop) => fun (mk : forall (left_adjoint_exists_arg : ",
+            infinity_adjoint_functor_left_adjoint_exists_law_type!(),
+            "), P) => mk left_adjoint_exists_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_adjoint_functor_theorem",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: infinity_adjoint_functor_params!(concat!(
+            "forall (adjoint_functor_args : ",
+            infinity_adjoint_functor_law_args_app!(),
+            "), ",
+            infinity_adjoint_functor_left_adjoint_exists_law_type!()
+        )),
+        proof: infinity_adjoint_functor_abs!(concat!(
+            "fun adjoint_functor_args => adjoint_functor_args (",
+            infinity_adjoint_functor_left_adjoint_exists_law_type!(),
+            ") (fun (left_adjoint_exists_arg : ",
+            infinity_adjoint_functor_left_adjoint_exists_law_type!(),
+            ") => left_adjoint_exists_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_infinity_category_definition_intro",
+        universe_params: &["a", "b", "c", "d", "e", "f", "s", "u", "v", "w", "z", "zz"],
+        statement: presheaf_infinity_category_params!(concat!(
+            "forall (presentable_law : ",
+            presheaf_infinity_category_presentable_law_type!(),
+            "), ",
+            presheaf_infinity_category_law_args_app!()
+        )),
+        proof: presheaf_infinity_category_abs!(concat!(
+            "fun presentable_law => ",
+            "fun (P : Prop) => fun (mk : forall (presentable_arg : ",
+            presheaf_infinity_category_presentable_law_type!(),
+            "), P) => mk presentable_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_infinity_category",
+        universe_params: &["a", "b", "c", "d", "e", "f", "s", "u", "v", "w", "z", "zz"],
+        statement: presheaf_infinity_category_params!(concat!(
+            "forall (presheaf_infinity_args : ",
+            presheaf_infinity_category_law_args_app!(),
+            "), ",
+            presheaf_infinity_category_presentable_law_type!()
+        )),
+        proof: presheaf_infinity_category_abs!(concat!(
+            "fun presheaf_infinity_args => presheaf_infinity_args (",
+            presheaf_infinity_category_presentable_law_type!(),
+            ") (fun (presentable_arg : ",
+            presheaf_infinity_category_presentable_law_type!(),
+            ") => presentable_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "accessible_localization_definition_intro",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: accessible_localization_params!(concat!(
+            "forall (localized_presentable_law : ",
+            accessible_localization_target_presentable_law_type!(),
+            "), ",
+            accessible_localization_law_args_app!()
+        )),
+        proof: accessible_localization_abs!(concat!(
+            "fun localized_presentable_law => ",
+            "fun (P : Prop) => fun (mk : forall (localized_presentable_arg : ",
+            accessible_localization_target_presentable_law_type!(),
+            "), P) => mk localized_presentable_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "accessible_localization",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: accessible_localization_params!(concat!(
+            "forall (localization_args : ",
+            accessible_localization_law_args_app!(),
+            "), ",
+            accessible_localization_target_presentable_law_type!()
+        )),
+        proof: accessible_localization_abs!(concat!(
+            "fun localization_args => localization_args (",
+            accessible_localization_target_presentable_law_type!(),
+            ") (fun (localized_presentable_arg : ",
+            accessible_localization_target_presentable_law_type!(),
+            ") => localized_presentable_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "left_exact_localization_definition_intro",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: left_exact_localization_params!(concat!(
+            "forall (left_exact_law : ",
+            left_exact_localization_law_type!(),
+            "), ",
+            left_exact_localization_law_args_app!()
+        )),
+        proof: left_exact_localization_abs!(concat!(
+            "fun left_exact_law => ",
+            "fun (P : Prop) => fun (mk : forall (left_exact_arg : ",
+            left_exact_localization_law_type!(),
+            "), P) => mk left_exact_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "left_exact_localization",
+        universe_params: &["a", "b", "c", "d", "e", "f", "u", "v", "w", "z", "zz"],
+        statement: left_exact_localization_params!(concat!(
+            "forall (left_exact_localization_args : ",
+            left_exact_localization_law_args_app!(),
+            "), ",
+            left_exact_localization_law_type!()
+        )),
+        proof: left_exact_localization_abs!(concat!(
+            "fun left_exact_localization_args => left_exact_localization_args (",
+            left_exact_localization_law_type!(),
+            ") (fun (left_exact_arg : ",
+            left_exact_localization_law_type!(),
+            ") => left_exact_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheaves_of_spaces_definition_intro",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "s", "u", "v", "w", "z", "zz",
+        ],
+        statement: sheaves_of_spaces_params!(concat!(
+            "forall (sheaves_of_spaces_law : ",
+            sheaves_of_spaces_law_type!(),
+            "), ",
+            sheaves_of_spaces_law_args_app!()
+        )),
+        proof: sheaves_of_spaces_abs!(concat!(
+            "fun sheaves_of_spaces_law => ",
+            "fun (P : Prop) => fun (mk : forall (sheaves_of_spaces_arg : ",
+            sheaves_of_spaces_law_type!(),
+            "), P) => mk sheaves_of_spaces_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheaves_of_spaces",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "s", "u", "v", "w", "z", "zz",
+        ],
+        statement: sheaves_of_spaces_params!(concat!(
+            "forall (sheaves_of_spaces_args : ",
+            sheaves_of_spaces_law_args_app!(),
+            "), ",
+            sheaves_of_spaces_law_type!()
+        )),
+        proof: sheaves_of_spaces_abs!(concat!(
+            "fun sheaves_of_spaces_args => sheaves_of_spaces_args (",
+            sheaves_of_spaces_law_type!(),
+            ") (fun (sheaves_of_spaces_arg : ",
+            sheaves_of_spaces_law_type!(),
+            ") => sheaves_of_spaces_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "hypercover_descent_definition_intro",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        statement: hypercover_descent_params!(concat!(
+            "forall (hypercover_descent_law : ",
+            hypercover_descent_law_type!(),
+            "), ",
+            hypercover_descent_law_args_app!()
+        )),
+        proof: hypercover_descent_abs!(concat!(
+            "fun hypercover_descent_law => ",
+            "fun (P : Prop) => fun (mk : forall (hypercover_descent_arg : ",
+            hypercover_descent_law_type!(),
+            "), P) => mk hypercover_descent_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "hypercover_descent",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        statement: hypercover_descent_params!(concat!(
+            "forall (hypercover_descent_args : ",
+            hypercover_descent_law_args_app!(),
+            "), ",
+            hypercover_descent_law_type!()
+        )),
+        proof: hypercover_descent_abs!(concat!(
+            "fun hypercover_descent_args => hypercover_descent_args (",
+            hypercover_descent_law_type!(),
+            ") (fun (hypercover_descent_arg : ",
+            hypercover_descent_law_type!(),
+            ") => hypercover_descent_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_topos_definition_intro",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        statement: infinity_topos_params!(concat!(
+            "forall (infinity_topos_law : ",
+            infinity_topos_law_type!(),
+            "), ",
+            infinity_topos_law_args_app!()
+        )),
+        proof: infinity_topos_abs!(concat!(
+            "fun infinity_topos_law => ",
+            "fun (P : Prop) => fun (mk : forall (infinity_topos_arg : ",
+            infinity_topos_law_type!(),
+            "), P) => mk infinity_topos_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_topos_definition",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        statement: infinity_topos_params!(concat!(
+            "forall (infinity_topos_args : ",
+            infinity_topos_law_args_app!(),
+            "), ",
+            infinity_topos_law_type!()
+        )),
+        proof: infinity_topos_abs!(concat!(
+            "fun infinity_topos_args => infinity_topos_args (",
+            infinity_topos_law_type!(),
+            ") (fun (infinity_topos_arg : ",
+            infinity_topos_law_type!(),
+            ") => infinity_topos_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "infinity_giraud_theorem",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "s", "u", "v", "w", "z",
+            "zz",
+        ],
+        statement: infinity_topos_params!(concat!(infinity_topos_law_args_app!())),
+        proof: infinity_topos_abs!(concat!(
+            "fun (P : Prop) => fun (mk : forall (infinity_topos_arg : ",
+            infinity_topos_law_type!(),
+            "), P) => mk hypercover_descent_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "truncation_connectivity_definition_intro",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        statement: truncation_connectivity_params!(concat!(
+            "forall (truncation_connectivity_law : ",
+            truncation_connectivity_law_type!(),
+            "), ",
+            truncation_connectivity_law_args_app!()
+        )),
+        proof: truncation_connectivity_abs!(concat!(
+            "fun truncation_connectivity_law => ",
+            "fun (P : Prop) => fun (mk : forall (truncation_connectivity_arg : ",
+            truncation_connectivity_law_type!(),
+            "), P) => mk truncation_connectivity_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "truncation_and_connectivity",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        statement: truncation_connectivity_params!(concat!(
+            "forall (truncation_connectivity_args : ",
+            truncation_connectivity_law_args_app!(),
+            "), ",
+            truncation_connectivity_law_type!()
+        )),
+        proof: truncation_connectivity_abs!(concat!(
+            "fun truncation_connectivity_args => truncation_connectivity_args (",
+            truncation_connectivity_law_type!(),
+            ") (fun (truncation_connectivity_arg : ",
+            truncation_connectivity_law_type!(),
+            ") => truncation_connectivity_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "postnikov_tower_definition_intro",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        statement: postnikov_tower_params!(concat!(
+            "forall (postnikov_tower_law : ",
+            postnikov_tower_law_type!(),
+            "), ",
+            postnikov_tower_law_args_app!()
+        )),
+        proof: postnikov_tower_abs!(concat!(
+            "fun postnikov_tower_law => ",
+            "fun (P : Prop) => fun (mk : forall (postnikov_tower_arg : ",
+            postnikov_tower_law_type!(),
+            "), P) => mk postnikov_tower_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "postnikov_tower",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        statement: postnikov_tower_params!(concat!(
+            "forall (postnikov_tower_args : ",
+            postnikov_tower_law_args_app!(),
+            "), ",
+            postnikov_tower_law_type!()
+        )),
+        proof: postnikov_tower_abs!(concat!(
+            "fun postnikov_tower_args => postnikov_tower_args (",
+            postnikov_tower_law_type!(),
+            ") (fun (postnikov_tower_arg : ",
+            postnikov_tower_law_type!(),
+            ") => postnikov_tower_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cohomology_in_infinity_topoi_definition_intro",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        statement: cohomology_in_infinity_topoi_params!(concat!(
+            "forall (cohomology_in_infinity_topoi_law : ",
+            cohomology_in_infinity_topoi_law_type!(),
+            "), ",
+            cohomology_in_infinity_topoi_law_args_app!()
+        )),
+        proof: cohomology_in_infinity_topoi_abs!(concat!(
+            "fun cohomology_in_infinity_topoi_law => ",
+            "fun (P : Prop) => fun (mk : forall (cohomology_in_infinity_topoi_arg : ",
+            cohomology_in_infinity_topoi_law_type!(),
+            "), P) => mk cohomology_in_infinity_topoi_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "cohomology_in_infinity_topoi",
+        universe_params: &[
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "s", "u", "v", "w",
+            "z", "zz",
+        ],
+        statement: cohomology_in_infinity_topoi_params!(concat!(
+            "forall (cohomology_in_infinity_topoi_args : ",
+            cohomology_in_infinity_topoi_law_args_app!(),
+            "), ",
+            cohomology_in_infinity_topoi_law_type!()
+        )),
+        proof: cohomology_in_infinity_topoi_abs!(concat!(
+            "fun cohomology_in_infinity_topoi_args => cohomology_in_infinity_topoi_args (",
+            cohomology_in_infinity_topoi_law_type!(),
+            ") (fun (cohomology_in_infinity_topoi_arg : ",
+            cohomology_in_infinity_topoi_law_type!(),
+            ") => cohomology_in_infinity_topoi_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "mapping_space_definition_intro",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: mapping_space_params!(concat!(
+            "forall (mapping_space_kan_law : ",
+            mapping_space_kan_law_type!(),
+            "), ",
+            mapping_space_law_args_app!()
+        )),
+        proof: mapping_space_abs!(concat!(
+            "fun mapping_space_kan_law => ",
+            "fun (P : Prop) => fun (mk : forall (mapping_space_kan_arg : ",
+            mapping_space_kan_law_type!(),
+            "), P) => mk mapping_space_kan_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "mapping_space_is_simplicial_set",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: mapping_space_params!(concat!(
+            "forall (mapping_space_args : ",
+            mapping_space_law_args_app!(),
+            "), forall (A : MapObj), forall (B : MapObj), ",
+            mapping_space_simplicial_set_law_args_app!()
+        )),
+        proof: mapping_space_abs!(
+            "fun mapping_space_args => fun A => fun B => mapping_simplicial_set_args A B"
+        ),
+    },
+    TheoremArtifact {
+        name: "mapping_space_is_kan_complex",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: mapping_space_params!(concat!(
+            "forall (mapping_space_args : ",
+            mapping_space_law_args_app!(),
+            "), ",
+            mapping_space_kan_law_type!()
+        )),
+        proof: mapping_space_abs!(concat!(
+            "fun mapping_space_args => mapping_space_args (",
+            mapping_space_kan_law_type!(),
+            ") (fun (mapping_space_kan_arg : ",
+            mapping_space_kan_law_type!(),
+            ") => mapping_space_kan_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "mapping_space",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: mapping_space_params!(concat!(
+            "forall (mapping_space_args : ",
+            mapping_space_law_args_app!(),
+            "), ",
+            mapping_space_kan_law_type!()
+        )),
+        proof: mapping_space_abs!(concat!(
+            "fun mapping_space_args => mapping_space_args (",
+            mapping_space_kan_law_type!(),
+            ") (fun (mapping_space_kan_arg : ",
+            mapping_space_kan_law_type!(),
+            ") => mapping_space_kan_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_definition_intro",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(joyal_model_structure_law_binders!(
+            joyal_model_structure_law_args_app!()
+        ))),
+        proof: joyal_model_structure_abs!(concat!(
+            "fun model_structure_law => fun cofibrations_are_monomorphisms_law => ",
+            "fun monomorphisms_are_cofibrations_law => ",
+            "fun fibrant_objects_are_quasicategories_law => fun quasicategories_are_fibrant_law => ",
+            "fun weak_equivalences_are_categorical_law => fun categorical_equivalences_are_weak_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            joyal_model_structure_law_binders!("P"),
+            ") => mk model_structure_law cofibrations_are_monomorphisms_law ",
+            "monomorphisms_are_cofibrations_law fibrant_objects_are_quasicategories_law ",
+            "quasicategories_are_fibrant_law weak_equivalences_are_categorical_law ",
+            "categorical_equivalences_are_weak_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_has_model_category_laws",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_model_category_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_model_category_law_type!(),
+            "model_structure_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_cofibrations_are_monomorphisms",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_cofibrations_are_monomorphisms_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_cofibrations_are_monomorphisms_law_type!(),
+            "cofibrations_are_monomorphisms_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_monomorphisms_are_cofibrations",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_monomorphisms_are_cofibrations_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_monomorphisms_are_cofibrations_law_type!(),
+            "monomorphisms_are_cofibrations_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_fibrant_objects_are_quasicategories",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_fibrant_objects_are_quasicategories_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_fibrant_objects_are_quasicategories_law_type!(),
+            "fibrant_objects_are_quasicategories_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_quasicategories_are_fibrant",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_quasicategories_are_fibrant_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_quasicategories_are_fibrant_law_type!(),
+            "quasicategories_are_fibrant_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_weak_equivalences_are_categorical",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_weak_equivalences_are_categorical_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_weak_equivalences_are_categorical_law_type!(),
+            "weak_equivalences_are_categorical_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure_categorical_equivalences_are_weak",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_categorical_equivalences_are_weak_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_categorical_equivalences_are_weak_law_type!(),
+            "categorical_equivalences_are_weak_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "joyal_model_structure",
+        universe_params: &["a", "b", "u", "v"],
+        statement: joyal_model_structure_params!(concat!(
+            "forall (joyal_model_structure_args : ",
+            joyal_model_structure_law_args_app!(),
+            "), ",
+            joyal_model_category_law_type!()
+        )),
+        proof: joyal_model_structure_projection_proof!(
+            joyal_model_category_law_type!(),
+            "model_structure_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cartesian_fibration_definition_intro",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cartesian_fibration_params!(concat!(cartesian_fibration_law_binders!(
+            cartesian_fibration_law_args_app!()
+        ))),
+        proof: cartesian_fibration_abs!(concat!(
+            "fun map_law => fun inner_fibration_law => fun cartesian_lift_exists_law => ",
+            "fun cartesian_lift_stable_law => fun (P : Prop) => fun (mk : ",
+            cartesian_fibration_law_binders!("P"),
+            ") => mk map_law inner_fibration_law cartesian_lift_exists_law cartesian_lift_stable_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "cartesian_fibration_is_simplicial_map",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cartesian_fibration_params!(concat!(
+            "forall (cartesian_fibration_args : ",
+            cartesian_fibration_law_args_app!(),
+            "), ",
+            infinity_fibration_map_law_type!()
+        )),
+        proof: cartesian_fibration_projection_proof!(
+            infinity_fibration_map_law_type!(),
+            "map_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cartesian_fibration_is_inner_fibration",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cartesian_fibration_params!(concat!(
+            "forall (cartesian_fibration_args : ",
+            cartesian_fibration_law_args_app!(),
+            "), InnerFibration"
+        )),
+        proof: cartesian_fibration_projection_proof!("InnerFibration", "inner_fibration_arg"),
+    },
+    TheoremArtifact {
+        name: "cartesian_fibration_lift_exists",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cartesian_fibration_params!(concat!(
+            "forall (cartesian_fibration_args : ",
+            cartesian_fibration_law_args_app!(),
+            "), ",
+            cartesian_lift_exists_law_type!()
+        )),
+        proof: cartesian_fibration_projection_proof!(
+            cartesian_lift_exists_law_type!(),
+            "cartesian_lift_exists_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cartesian_fibration_lift_stable",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cartesian_fibration_params!(concat!(
+            "forall (cartesian_fibration_args : ",
+            cartesian_fibration_law_args_app!(),
+            "), ",
+            cartesian_lift_stable_law_type!()
+        )),
+        proof: cartesian_fibration_projection_proof!(
+            cartesian_lift_stable_law_type!(),
+            "cartesian_lift_stable_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cartesian_fibration",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cartesian_fibration_params!(concat!(
+            "forall (cartesian_fibration_args : ",
+            cartesian_fibration_law_args_app!(),
+            "), ",
+            cartesian_lift_exists_law_type!()
+        )),
+        proof: cartesian_fibration_projection_proof!(
+            cartesian_lift_exists_law_type!(),
+            "cartesian_lift_exists_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cocartesian_fibration_definition_intro",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cocartesian_fibration_params!(concat!(cocartesian_fibration_law_binders!(
+            cocartesian_fibration_law_args_app!()
+        ))),
+        proof: cocartesian_fibration_abs!(concat!(
+            "fun map_law => fun inner_fibration_law => fun cocartesian_lift_exists_law => ",
+            "fun cocartesian_lift_stable_law => fun (P : Prop) => fun (mk : ",
+            cocartesian_fibration_law_binders!("P"),
+            ") => mk map_law inner_fibration_law cocartesian_lift_exists_law cocartesian_lift_stable_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "cocartesian_fibration_is_simplicial_map",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cocartesian_fibration_params!(concat!(
+            "forall (cocartesian_fibration_args : ",
+            cocartesian_fibration_law_args_app!(),
+            "), ",
+            infinity_fibration_map_law_type!()
+        )),
+        proof: cocartesian_fibration_projection_proof!(
+            infinity_fibration_map_law_type!(),
+            "map_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cocartesian_fibration_is_inner_fibration",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cocartesian_fibration_params!(concat!(
+            "forall (cocartesian_fibration_args : ",
+            cocartesian_fibration_law_args_app!(),
+            "), InnerFibration"
+        )),
+        proof: cocartesian_fibration_projection_proof!(
+            "InnerFibration",
+            "inner_fibration_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cocartesian_fibration_lift_exists",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cocartesian_fibration_params!(concat!(
+            "forall (cocartesian_fibration_args : ",
+            cocartesian_fibration_law_args_app!(),
+            "), ",
+            cocartesian_lift_exists_law_type!()
+        )),
+        proof: cocartesian_fibration_projection_proof!(
+            cocartesian_lift_exists_law_type!(),
+            "cocartesian_lift_exists_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cocartesian_fibration_lift_stable",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cocartesian_fibration_params!(concat!(
+            "forall (cocartesian_fibration_args : ",
+            cocartesian_fibration_law_args_app!(),
+            "), ",
+            cocartesian_lift_stable_law_type!()
+        )),
+        proof: cocartesian_fibration_projection_proof!(
+            cocartesian_lift_stable_law_type!(),
+            "cocartesian_lift_stable_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "cocartesian_fibration",
+        universe_params: &["c", "d", "e", "f", "u", "v", "w", "z"],
+        statement: cocartesian_fibration_params!(concat!(
+            "forall (cocartesian_fibration_args : ",
+            cocartesian_fibration_law_args_app!(),
+            "), ",
+            cocartesian_lift_exists_law_type!()
+        )),
+        proof: cocartesian_fibration_projection_proof!(
+            cocartesian_lift_exists_law_type!(),
+            "cocartesian_lift_exists_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_unstraightening_definition_intro",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            straightening_unstraightening_law_binders!(
+                straightening_unstraightening_law_args_app!()
+            )
+        )),
+        proof: straightening_unstraightening_abs!(concat!(
+            "fun straightening_cartesian_law => fun unstraightening_cartesian_law => ",
+            "fun cartesian_unit_law => fun cartesian_counit_law => ",
+            "fun straightening_cocartesian_law => fun unstraightening_cocartesian_law => ",
+            "fun cocartesian_unit_law => fun cocartesian_counit_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            straightening_unstraightening_law_binders!("P"),
+            ") => mk straightening_cartesian_law unstraightening_cartesian_law ",
+            "cartesian_unit_law cartesian_counit_law straightening_cocartesian_law ",
+            "unstraightening_cocartesian_law cocartesian_unit_law cocartesian_counit_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "straightening_maps_cartesian_fibrations_to_functors",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_cartesian_preserves_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            straightening_cartesian_preserves_law_type!(),
+            "straightening_cartesian_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "unstraightening_maps_functors_to_cartesian_fibrations",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            unstraightening_cartesian_preserves_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            unstraightening_cartesian_preserves_law_type!(),
+            "unstraightening_cartesian_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_unstraightening_cartesian_unit",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_cartesian_unit_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            straightening_cartesian_unit_law_type!(),
+            "cartesian_unit_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_unstraightening_cartesian_counit",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_cartesian_counit_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            straightening_cartesian_counit_law_type!(),
+            "cartesian_counit_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_maps_cocartesian_fibrations_to_functors",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_cocartesian_preserves_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            straightening_cocartesian_preserves_law_type!(),
+            "straightening_cocartesian_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "unstraightening_maps_functors_to_cocartesian_fibrations",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            unstraightening_cocartesian_preserves_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            unstraightening_cocartesian_preserves_law_type!(),
+            "unstraightening_cocartesian_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_unstraightening_cocartesian_unit",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_cocartesian_unit_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            straightening_cocartesian_unit_law_type!(),
+            "cocartesian_unit_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_unstraightening_cocartesian_counit",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_cocartesian_counit_law_type!()
+        )),
+        proof: straightening_unstraightening_projection_proof!(
+            straightening_cocartesian_counit_law_type!(),
+            "cocartesian_counit_arg"
+        ),
+    },
+    TheoremArtifact {
+        name: "straightening_unstraightening",
+        universe_params: &["a", "b", "c", "d", "u", "v", "w", "z", "zz"],
+        statement: straightening_unstraightening_params!(concat!(
+            "forall (straightening_unstraightening_args : ",
+            straightening_unstraightening_law_args_app!(),
+            "), ",
+            straightening_unstraightening_equivalence_law_type!()
+        )),
+        proof: straightening_unstraightening_abs!(concat!(
+            "fun straightening_unstraightening_args => straightening_unstraightening_args (",
+            straightening_unstraightening_equivalence_law_type!(),
+            ") (fun (straightening_cartesian_arg : ",
+            straightening_cartesian_preserves_law_type!(),
+            ") => fun (unstraightening_cartesian_arg : ",
+            unstraightening_cartesian_preserves_law_type!(),
+            ") => fun (cartesian_unit_arg : ",
+            straightening_cartesian_unit_law_type!(),
+            ") => fun (cartesian_counit_arg : ",
+            straightening_cartesian_counit_law_type!(),
+            ") => fun (straightening_cocartesian_arg : ",
+            straightening_cocartesian_preserves_law_type!(),
+            ") => fun (unstraightening_cocartesian_arg : ",
+            unstraightening_cocartesian_preserves_law_type!(),
+            ") => fun (cocartesian_unit_arg : ",
+            straightening_cocartesian_unit_law_type!(),
+            ") => fun (cocartesian_counit_arg : ",
+            straightening_cocartesian_counit_law_type!(),
+            ") => fun (P : Prop) => fun (mk : forall (cartesian_unit_final : ",
+            straightening_cartesian_unit_law_type!(),
+            "), forall (cartesian_counit_final : ",
+            straightening_cartesian_counit_law_type!(),
+            "), forall (cocartesian_unit_final : ",
+            straightening_cocartesian_unit_law_type!(),
+            "), forall (cocartesian_counit_final : ",
+            straightening_cocartesian_counit_law_type!(),
+            "), P) => mk cartesian_unit_arg cartesian_counit_arg cocartesian_unit_arg cocartesian_counit_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "nerve_construction_definition_intro",
+        universe_params: &["a", "b", "u", "v", "w"],
+        statement: nerve_construction_params!(concat!(
+            "forall (nerve_simplicial_set_law : ",
+            nerve_simplicial_set_law_args_app!(),
+            "), ",
+            nerve_construction_law_args_app!()
+        )),
+        proof: nerve_construction_abs!(concat!(
+            "fun nerve_simplicial_set_law => ",
+            "fun (P : Prop) => fun (mk : forall (nerve_simplicial_set_arg : ",
+            nerve_simplicial_set_law_args_app!(),
+            "), P) => mk nerve_simplicial_set_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "nerve_construction_is_simplicial_set",
+        universe_params: &["a", "b", "u", "v", "w"],
+        statement: nerve_construction_params!(concat!(
+            "forall (nerve_args : ",
+            nerve_construction_law_args_app!(),
+            "), ",
+            nerve_simplicial_set_law_args_app!()
+        )),
+        proof: nerve_construction_abs!(concat!(
+            "fun nerve_args => nerve_args (",
+            nerve_simplicial_set_law_args_app!(),
+            ") (fun (nerve_simplicial_set_arg : ",
+            nerve_simplicial_set_law_args_app!(),
+            ") => nerve_simplicial_set_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "nerve_construction",
+        universe_params: &["a", "b", "u", "v", "w"],
+        statement: nerve_construction_params!(concat!(
+            "forall (nerve_args : ",
+            nerve_construction_law_args_app!(),
+            "), ",
+            nerve_simplicial_set_law_args_app!()
+        )),
+        proof: nerve_construction_abs!(concat!(
+            "fun nerve_args => nerve_args (",
+            nerve_simplicial_set_law_args_app!(),
+            ") (fun (nerve_simplicial_set_arg : ",
+            nerve_simplicial_set_law_args_app!(),
+            ") => nerve_simplicial_set_arg)"
+        )),
+    },
+];
+
+const CLASSICAL_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "category_definition_intro",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (comp_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), forall (id_comp_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), forall (comp_assoc_law : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))), @CategoryLawArgs.{u,v} Obj Hom id comp"
+        ),
+        proof: category_abs!(concat!(
+            "fun comp_id_law => fun id_comp_law => fun comp_assoc_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), ",
+            "forall (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), ",
+            "forall (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))), ",
+            "P) => mk comp_id_law id_comp_law comp_assoc_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "functor_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: functor_params!(
+            "forall (map_id_law : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))), forall (map_comp_law : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))), @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args obj_map hom_map"
+        ),
+        proof: functor_abs!(concat!(
+            "fun map_id_law => fun map_comp_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (map_id_arg : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))), ",
+            "forall (map_comp_arg : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))), ",
+            "P) => mk map_id_law map_comp_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "functor_preserves_id",
+        universe_params: &["u", "v", "w", "z"],
+        statement: functor_params!(
+            "forall (functor_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args obj_map hom_map), forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))"
+        ),
+        proof: functor_abs!(concat!(
+            "fun functor_args => fun A => ",
+            "functor_args (@Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))) ",
+            "(fun (map_id_arg : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))) => ",
+            "fun (map_comp_arg : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))) => ",
+            "map_id_arg A)"
+        )),
+    },
+    TheoremArtifact {
+        name: "functor_preserves_comp",
+        universe_params: &["u", "v", "w", "z"],
+        statement: functor_params!(
+            "forall (functor_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args obj_map hom_map), forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))"
+        ),
+        proof: functor_abs!(concat!(
+            "fun functor_args => fun A => fun B => fun C => fun g => fun f => ",
+            "functor_args (@Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))) ",
+            "(fun (map_id_arg : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))) => ",
+            "fun (map_comp_arg : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))) => ",
+            "map_comp_arg A B C g f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "natural_transformation_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: natural_transformation_params!(
+            "forall (naturality_law : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), @Eq.{z} (HomD (objF A) (objG B)) (compD (objF A) (objG A) (objG B) (homG A B f) (component A)) (compD (objF A) (objF B) (objG B) (component B) (homF A B f))), @NaturalTransformationLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args objF homF functorF_args objG homG functorG_args component"
+        ),
+        proof: natural_transformation_abs!(concat!(
+            "fun naturality_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), @Eq.{z} (HomD (objF A) (objG B)) (compD (objF A) (objG A) (objG B) (homG A B f) (component A)) (compD (objF A) (objF B) (objG B) (component B) (homF A B f))), ",
+            "P) => mk naturality_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "natural_transformation_naturality",
+        universe_params: &["u", "v", "w", "z"],
+        statement: natural_transformation_params!(
+            "forall (natural_transformation_args : @NaturalTransformationLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args objF homF functorF_args objG homG functorG_args component), forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), @Eq.{z} (HomD (objF A) (objG B)) (compD (objF A) (objG A) (objG B) (homG A B f) (component A)) (compD (objF A) (objF B) (objG B) (component B) (homF A B f))"
+        ),
+        proof: natural_transformation_abs!(concat!(
+            "fun natural_transformation_args => fun A => fun B => fun f => ",
+            "natural_transformation_args (@Eq.{z} (HomD (objF A) (objG B)) (compD (objF A) (objG A) (objG B) (homG A B f) (component A)) (compD (objF A) (objF B) (objG B) (component B) (homF A B f))) ",
+            "(fun (naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), @Eq.{z} (HomD (objF A) (objG B)) (compD (objF A) (objG A) (objG B) (homG A B f) (component A)) (compD (objF A) (objF B) (objG B) (component B) (homF A B f))) => ",
+            "naturality_arg A B f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_hom_natural_iso_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: adjunction_params!(concat!(
+            "forall (left_inverse_law : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f), ",
+            "forall (right_inverse_law : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g), ",
+            "forall (source_naturality_law : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)), ",
+            "forall (target_naturality_law : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))), ",
+            "@AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward"
+        )),
+        proof: adjunction_abs!(concat!(
+            "fun left_inverse_law => fun right_inverse_law => fun source_naturality_law => fun target_naturality_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (left_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f), ",
+            "forall (right_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g), ",
+            "forall (source_naturality_arg : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)), ",
+            "forall (target_naturality_arg : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))), ",
+            "P) => mk left_inverse_law right_inverse_law source_naturality_law target_naturality_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_hom_left_inverse",
+        universe_params: &["u", "v", "w", "z"],
+        statement: adjunction_params!(
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f"
+        ),
+        proof: adjunction_abs!(concat!(
+            "fun adjunction_args => fun A => fun B => fun f => ",
+            "adjunction_args (@Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f) ",
+            "(fun (left_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f) => ",
+            "fun (right_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g) => ",
+            "fun (source_naturality_arg : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)) => ",
+            "fun (target_naturality_arg : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))) => ",
+            "left_inverse_arg A B f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_hom_right_inverse",
+        universe_params: &["u", "v", "w", "z"],
+        statement: adjunction_params!(
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g"
+        ),
+        proof: adjunction_abs!(concat!(
+            "fun adjunction_args => fun A => fun B => fun g => ",
+            "adjunction_args (@Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g) ",
+            "(fun (left_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f) => ",
+            "fun (right_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g) => ",
+            "fun (source_naturality_arg : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)) => ",
+            "fun (target_naturality_arg : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))) => ",
+            "right_inverse_arg A B g)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_hom_naturality_source",
+        universe_params: &["u", "v", "w", "z"],
+        statement: adjunction_params!(
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)"
+        ),
+        proof: adjunction_abs!(concat!(
+            "fun adjunction_args => fun A_src => fun A_tgt => fun B => fun a => fun f => ",
+            "adjunction_args (@Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)) ",
+            "(fun (left_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f) => ",
+            "fun (right_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g) => ",
+            "fun (source_naturality_arg : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)) => ",
+            "fun (target_naturality_arg : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))) => ",
+            "source_naturality_arg A_src A_tgt B a f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_hom_naturality_target",
+        universe_params: &["u", "v", "w", "z"],
+        statement: adjunction_params!(
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))"
+        ),
+        proof: adjunction_abs!(concat!(
+            "fun adjunction_args => fun A => fun B_src => fun B_tgt => fun b => fun f => ",
+            "adjunction_args (@Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))) ",
+            "(fun (left_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (hom_forward A B f)) f) => ",
+            "fun (right_inverse_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (hom_forward A B (hom_backward A B g)) g) => ",
+            "fun (source_naturality_arg : forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (hom_forward A_src B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC A_src A_tgt (Gobj B) (hom_forward A_tgt B f) a)) => ",
+            "fun (target_naturality_arg : forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (hom_forward A B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (hom_forward A B_src f))) => ",
+            "target_naturality_arg A B_src B_tgt b f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "category_comp_assoc_law",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun C => fun D => fun h => fun g => fun f => ",
+            "category_args (@Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) ",
+            "(fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => ",
+            "fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => ",
+            "fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => ",
+            "comp_assoc_arg A B C D h g f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "left_adjoint_exists_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: right_adjoint_base_params!(concat!(
+            "forall (Fobj : forall (A : ObjC), ObjD), ",
+            "forall (Fmap : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj A) (Fobj B)), ",
+            "forall (F_args : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap), ",
+            "forall (hom_forward : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), HomC A (Gobj B)), ",
+            "forall (hom_backward : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj A) B), ",
+            "forall (adjunction_args : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward), ",
+            "@LeftAdjointExistsArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args"
+        )),
+        proof: right_adjoint_base_abs!(concat!(
+            "fun Fobj => fun Fmap => fun F_args => fun hom_forward => fun hom_backward => fun adjunction_args => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (Fobj_arg : forall (A : ObjC), ObjD), ",
+            "forall (Fmap_arg : forall (A : ObjC), forall (B : ObjC), forall (f : HomC A B), HomD (Fobj_arg A) (Fobj_arg B)), ",
+            "forall (F_args_arg : @FunctorLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj_arg Fmap_arg), ",
+            "forall (hom_forward_arg : forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj_arg A) B), HomC A (Gobj B)), ",
+            "forall (hom_backward_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), HomD (Fobj_arg A) B), ",
+            "forall (adjunction_args_arg : @AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj_arg Fmap_arg F_args_arg Gobj Gmap G_args hom_forward_arg hom_backward_arg), ",
+            "P) => mk Fobj Fmap F_args hom_forward hom_backward adjunction_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(concat!(
+            "forall (factor_law : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g), ",
+            "forall (unique_law : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)), ",
+            "forall (map_factor_law : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)), ",
+            "@FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward"
+        )),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun factor_law => fun unique_law => fun map_factor_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (factor_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g), ",
+            "forall (unique_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)), ",
+            "forall (map_factor_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)), ",
+            "P) => mk factor_law unique_law map_factor_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_factor",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A => fun B => fun g => ",
+            "freyd_args (@Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g) ",
+            "(fun (factor_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g) => ",
+            "fun (unique_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)) => ",
+            "fun (map_factor_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "factor_arg A B g)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_unique",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A => fun B => fun g => fun m => fun m_law => ",
+            "freyd_args (@Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)) ",
+            "(fun (factor_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g) => ",
+            "fun (unique_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)) => ",
+            "fun (map_factor_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "unique_arg A B g m m_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_map_factor",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A => fun B => fun a => ",
+            "freyd_args (@Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) ",
+            "(fun (factor_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g) => ",
+            "fun (unique_arg : forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), forall (m : HomD (Fobj A) B), forall (m_law : @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B m) (unit A)) g), @Eq.{z} (HomD (Fobj A) B) m (hom_backward A B g)) => ",
+            "fun (map_factor_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "map_factor_arg A B a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_left_inverse",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A : ObjC), forall (B : ObjD), forall (f : HomD (Fobj A) B), @Eq.{z} (HomD (Fobj A) B) (hom_backward A B (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A))) f"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A => fun B => fun f => ",
+            "@eq_symm.{z} (HomD (Fobj A) B) f (hom_backward A B (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A))) ",
+            "(@freyd_universal_arrow_unique.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A B (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A)) f (@Eq.refl.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_right_inverse",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A : ObjC), forall (B : ObjD), forall (g : HomC A (Gobj B)), @Eq.{v} (HomC A (Gobj B)) (compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B (hom_backward A B g)) (unit A)) g"
+        ),
+        proof: freyd_universal_arrow_abs!(
+            "fun freyd_args => fun A => fun B => fun g => @freyd_universal_arrow_factor.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A B g"
+        ),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_source_functorial",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (compC A_src (Gobj (Fobj A_src)) (Gobj B) (Gmap (Fobj A_src) B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (unit A_src)) (compC A_src (Gobj (Fobj A_src)) (Gobj B) (compC (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a))) (unit A_src))"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A_src => fun A_tgt => fun B => fun a => fun f => ",
+            "@eq_congr_arg.{v,v} (HomC (Gobj (Fobj A_src)) (Gobj B)) (HomC A_src (Gobj B)) (fun (t : HomC (Gobj (Fobj A_src)) (Gobj B)) => compC A_src (Gobj (Fobj A_src)) (Gobj B) t (unit A_src)) (Gmap (Fobj A_src) B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (compC (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a))) ",
+            "(@functor_preserves_comp.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap G_args (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_source_assoc_left",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (compC A_src (Gobj (Fobj A_src)) (Gobj B) (compC (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a))) (unit A_src)) (compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a)) (unit A_src)))"
+        ),
+        proof: freyd_universal_arrow_abs!(
+            "fun freyd_args => fun A_src => fun A_tgt => fun B => fun a => fun f => @category_comp_assoc_law.{u,v} ObjC HomC idC compC source_args A_src (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a)) (unit A_src)"
+        ),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_source_map_factor",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a)) (unit A_src))) (compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src A_tgt (Gobj (Fobj A_tgt)) (unit A_tgt) a))"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A_src => fun A_tgt => fun B => fun a => fun f => ",
+            "@eq_congr_arg.{v,v} (HomC A_src (Gobj (Fobj A_tgt))) (HomC A_src (Gobj B)) (fun (t : HomC A_src (Gobj (Fobj A_tgt))) => compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) t) (compC A_src (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a)) (unit A_src)) (compC A_src A_tgt (Gobj (Fobj A_tgt)) (unit A_tgt) a) ",
+            "(@freyd_universal_arrow_map_factor.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_source_assoc_right",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src A_tgt (Gobj (Fobj A_tgt)) (unit A_tgt) a)) (compC A_src A_tgt (Gobj B) (compC A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt)) a)"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A_src => fun A_tgt => fun B => fun a => fun f => ",
+            "@eq_symm.{v} (HomC A_src (Gobj B)) (compC A_src A_tgt (Gobj B) (compC A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt)) a) (compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src A_tgt (Gobj (Fobj A_tgt)) (unit A_tgt) a)) ",
+            "(@category_comp_assoc_law.{u,v} ObjC HomC idC compC source_args A_src A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt) a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_source_assoc_chain",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (compC A_src (Gobj (Fobj A_src)) (Gobj B) (compC (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a))) (unit A_src)) (compC A_src A_tgt (Gobj B) (compC A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt)) a)"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A_src => fun A_tgt => fun B => fun a => fun f => ",
+            "@eq_calc3.{v} (HomC A_src (Gobj B)) ",
+            "(compC A_src (Gobj (Fobj A_src)) (Gobj B) (compC (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a))) (unit A_src)) ",
+            "(compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a)) (unit A_src))) ",
+            "(compC A_src (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (compC A_src A_tgt (Gobj (Fobj A_tgt)) (unit A_tgt) a)) ",
+            "(compC A_src A_tgt (Gobj B) (compC A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt)) a) ",
+            "(@freyd_universal_arrow_hom_naturality_source_assoc_left.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt B a f) ",
+            "(@freyd_universal_arrow_hom_naturality_source_map_factor.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt B a f) ",
+            "(@freyd_universal_arrow_hom_naturality_source_assoc_right.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt B a f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_source",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A_src : ObjC), forall (A_tgt : ObjC), forall (B : ObjD), forall (a : HomC A_src A_tgt), forall (f : HomD (Fobj A_tgt) B), @Eq.{v} (HomC A_src (Gobj B)) (compC A_src (Gobj (Fobj A_src)) (Gobj B) (Gmap (Fobj A_src) B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (unit A_src)) (compC A_src A_tgt (Gobj B) (compC A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt)) a)"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A_src => fun A_tgt => fun B => fun a => fun f => @eq_trans.{v} (HomC A_src (Gobj B)) ",
+            "(compC A_src (Gobj (Fobj A_src)) (Gobj B) (Gmap (Fobj A_src) B (compD (Fobj A_src) (Fobj A_tgt) B f (Fmap A_src A_tgt a))) (unit A_src)) ",
+            "(compC A_src (Gobj (Fobj A_src)) (Gobj B) (compC (Gobj (Fobj A_src)) (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (Gmap (Fobj A_src) (Fobj A_tgt) (Fmap A_src A_tgt a))) (unit A_src)) ",
+            "(compC A_src A_tgt (Gobj B) (compC A_tgt (Gobj (Fobj A_tgt)) (Gobj B) (Gmap (Fobj A_tgt) B f) (unit A_tgt)) a) ",
+            "(@freyd_universal_arrow_hom_naturality_source_functorial.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt B a f) ",
+            "(@freyd_universal_arrow_hom_naturality_source_assoc_chain.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt B a f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_hom_naturality_target",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), forall (A : ObjC), forall (B_src : ObjD), forall (B_tgt : ObjD), forall (b : HomD B_src B_tgt), forall (f : HomD (Fobj A) B_src), @Eq.{v} (HomC A (Gobj B_tgt)) (compC A (Gobj (Fobj A)) (Gobj B_tgt) (Gmap (Fobj A) B_tgt (compD (Fobj A) B_src B_tgt b f)) (unit A)) (compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (compC A (Gobj (Fobj A)) (Gobj B_src) (Gmap (Fobj A) B_src f) (unit A)))"
+        ),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => fun A => fun B_src => fun B_tgt => fun b => fun f => @eq_trans.{v} (HomC A (Gobj B_tgt)) ",
+            "(compC A (Gobj (Fobj A)) (Gobj B_tgt) (Gmap (Fobj A) B_tgt (compD (Fobj A) B_src B_tgt b f)) (unit A)) ",
+            "(compC A (Gobj (Fobj A)) (Gobj B_tgt) (compC (Gobj (Fobj A)) (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (Gmap (Fobj A) B_src f)) (unit A)) ",
+            "(compC A (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (compC A (Gobj (Fobj A)) (Gobj B_src) (Gmap (Fobj A) B_src f) (unit A))) ",
+            "(@eq_congr_arg.{v,v} (HomC (Gobj (Fobj A)) (Gobj B_tgt)) (HomC A (Gobj B_tgt)) (fun (t : HomC (Gobj (Fobj A)) (Gobj B_tgt)) => compC A (Gobj (Fobj A)) (Gobj B_tgt) t (unit A)) (Gmap (Fobj A) B_tgt (compD (Fobj A) B_src B_tgt b f)) (compC (Gobj (Fobj A)) (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (Gmap (Fobj A) B_src f)) (@functor_preserves_comp.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap G_args (Fobj A) B_src B_tgt b f)) ",
+            "(@category_comp_assoc_law.{u,v} ObjC HomC idC compC source_args A (Gobj (Fobj A)) (Gobj B_src) (Gobj B_tgt) (Gmap B_src B_tgt b) (Gmap (Fobj A) B_src f) (unit A))"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_universal_arrow_induces_hom_adjunction",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(concat!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), ",
+            "@AdjunctionHomNaturalIsoLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args (fun (A : ObjC) => fun (B : ObjD) => fun (f : HomD (Fobj A) B) => compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A)) hom_backward"
+        )),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => ",
+            "@adjunction_hom_natural_iso_definition_intro.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args (fun (A : ObjC) => fun (B : ObjD) => fun (f : HomD (Fobj A) B) => compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A)) hom_backward ",
+            "(fun (A : ObjC) => fun (B : ObjD) => fun (f : HomD (Fobj A) B) => @freyd_universal_arrow_hom_left_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A B f) ",
+            "(fun (A : ObjC) => fun (B : ObjD) => fun (g : HomC A (Gobj B)) => @freyd_universal_arrow_hom_right_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A B g) ",
+            "(fun (A_src : ObjC) => fun (A_tgt : ObjC) => fun (B : ObjD) => fun (a : HomC A_src A_tgt) => fun (f : HomD (Fobj A_tgt) B) => @freyd_universal_arrow_hom_naturality_source.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A_src A_tgt B a f) ",
+            "(fun (A : ObjC) => fun (B_src : ObjD) => fun (B_tgt : ObjD) => fun (b : HomD B_src B_tgt) => fun (f : HomD (Fobj A) B_src) => @freyd_universal_arrow_hom_naturality_target.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args A B_src B_tgt b f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "freyd_adjoint_functor_theorem",
+        universe_params: &["u", "v", "w", "z"],
+        statement: freyd_universal_arrow_params!(concat!(
+            "forall (freyd_args : @FreydUniversalArrowLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward), ",
+            "@LeftAdjointExistsArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args"
+        )),
+        proof: freyd_universal_arrow_abs!(concat!(
+            "fun freyd_args => ",
+            "@left_adjoint_exists_intro.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args (fun (A : ObjC) => fun (B : ObjD) => fun (f : HomD (Fobj A) B) => compC A (Gobj (Fobj A)) (Gobj B) (Gmap (Fobj A) B f) (unit A)) hom_backward ",
+            "(@freyd_universal_arrow_induces_hom_adjunction.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Gobj Gmap G_args Fobj Fmap F_args unit hom_backward freyd_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_unit_counit_triangle_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: unit_counit_params!(concat!(
+            "forall (unit_naturality_law : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)), ",
+            "forall (counit_naturality_law : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))), ",
+            "forall (triangle_left_law : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))), ",
+            "forall (triangle_right_law : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))), ",
+            "@AdjunctionUnitCounitTriangleLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args unit counit"
+        )),
+        proof: unit_counit_abs!(concat!(
+            "fun unit_naturality_law => fun counit_naturality_law => fun triangle_left_law => fun triangle_right_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (unit_naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)), ",
+            "forall (counit_naturality_arg : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))), ",
+            "forall (triangle_left_arg : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))), ",
+            "forall (triangle_right_arg : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))), ",
+            "P) => mk unit_naturality_law counit_naturality_law triangle_left_law triangle_right_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_unit_naturality",
+        universe_params: &["u", "v", "w", "z"],
+        statement: unit_counit_params!(
+            "forall (adjunction_args : @AdjunctionUnitCounitTriangleLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args unit counit), forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)"
+        ),
+        proof: unit_counit_abs!(concat!(
+            "fun adjunction_args => fun A => fun B => fun a => ",
+            "adjunction_args (@Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) ",
+            "(fun (unit_naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "fun (counit_naturality_arg : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))) => ",
+            "fun (triangle_left_arg : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))) => ",
+            "fun (triangle_right_arg : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))) => ",
+            "unit_naturality_arg A B a)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_counit_naturality",
+        universe_params: &["u", "v", "w", "z"],
+        statement: unit_counit_params!(
+            "forall (adjunction_args : @AdjunctionUnitCounitTriangleLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args unit counit), forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))"
+        ),
+        proof: unit_counit_abs!(concat!(
+            "fun adjunction_args => fun X => fun Y => fun b => ",
+            "adjunction_args (@Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))) ",
+            "(fun (unit_naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "fun (counit_naturality_arg : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))) => ",
+            "fun (triangle_left_arg : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))) => ",
+            "fun (triangle_right_arg : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))) => ",
+            "counit_naturality_arg X Y b)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_triangle_identity_left",
+        universe_params: &["u", "v", "w", "z"],
+        statement: unit_counit_params!(
+            "forall (adjunction_args : @AdjunctionUnitCounitTriangleLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args unit counit), forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))"
+        ),
+        proof: unit_counit_abs!(concat!(
+            "fun adjunction_args => fun A => ",
+            "adjunction_args (@Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))) ",
+            "(fun (unit_naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "fun (counit_naturality_arg : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))) => ",
+            "fun (triangle_left_arg : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))) => ",
+            "fun (triangle_right_arg : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))) => ",
+            "triangle_left_arg A)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_triangle_identity_right",
+        universe_params: &["u", "v", "w", "z"],
+        statement: unit_counit_params!(
+            "forall (adjunction_args : @AdjunctionUnitCounitTriangleLawArgs.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args unit counit), forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))"
+        ),
+        proof: unit_counit_abs!(concat!(
+            "fun adjunction_args => fun X => ",
+            "adjunction_args (@Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))) ",
+            "(fun (unit_naturality_arg : forall (A : ObjC), forall (B : ObjC), forall (a : HomC A B), @Eq.{v} (HomC A (Gobj (Fobj B))) (compC A (Gobj (Fobj A)) (Gobj (Fobj B)) (Gmap (Fobj A) (Fobj B) (Fmap A B a)) (unit A)) (compC A B (Gobj (Fobj B)) (unit B) a)) => ",
+            "fun (counit_naturality_arg : forall (X : ObjD), forall (Y : ObjD), forall (b : HomD X Y), @Eq.{z} (HomD (Fobj (Gobj X)) Y) (compD (Fobj (Gobj X)) X Y b (counit X)) (compD (Fobj (Gobj X)) (Fobj (Gobj Y)) Y (counit Y) (Fmap (Gobj X) (Gobj Y) (Gmap X Y b)))) => ",
+            "fun (triangle_left_arg : forall (A : ObjC), @Eq.{z} (HomD (Fobj A) (Fobj A)) (compD (Fobj A) (Fobj (Gobj (Fobj A))) (Fobj A) (counit (Fobj A)) (Fmap A (Gobj (Fobj A)) (unit A))) (idD (Fobj A))) => ",
+            "fun (triangle_right_arg : forall (X : ObjD), @Eq.{v} (HomC (Gobj X) (Gobj X)) (compC (Gobj X) (Gobj (Fobj (Gobj X))) (Gobj X) (Gmap (Fobj (Gobj X)) X (counit X)) (unit (Gobj X))) (idC (Gobj X))) => ",
+            "triangle_right_arg X)"
+        )),
+    },
+    TheoremArtifact {
+        name: "category_comp_id",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun f => ",
+            "category_args (@Eq.{v} (Hom A B) (comp A A B f (id A)) f) ",
+            "(fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => ",
+            "fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => ",
+            "fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => ",
+            "comp_id_arg A B f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "category_id_comp",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun f => ",
+            "category_args (@Eq.{v} (Hom A B) (comp A B B (id B) f) f) ",
+            "(fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => ",
+            "fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => ",
+            "fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => ",
+            "id_comp_arg A B f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "category_comp_assoc",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun C => fun D => fun h => fun g => fun f => ",
+            "category_args (@Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) ",
+            "(fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => ",
+            "fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => ",
+            "fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => ",
+            "comp_assoc_arg A B C D h g f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "hom_functor_theorem",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), @HomFunctorLawArgs.{u,v} Obj Hom id comp category_args"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun (P : Prop) => fun (mk : ",
+            "forall (covariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), ",
+            "forall (covariant_comp_law : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), forall (h : Hom X A), @Eq.{v} (Hom X C) (comp X A C (comp A B C g f) h) (comp X B C g (comp X A B f h))), ",
+            "forall (contravariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), ",
+            "forall (contravariant_comp_law : forall (T : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B A), forall (f : Hom C B), forall (h : Hom A T), @Eq.{v} (Hom C T) (comp C A T h (comp C B A g f)) (comp C B T (comp B A T h g) f)), ",
+            "P) => mk ",
+            "(fun (A : Obj) => fun (B : Obj) => fun (f : Hom A B) => @category_id_comp.{u,v} Obj Hom id comp category_args A B f) ",
+            "(fun (X : Obj) => fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (g : Hom B C) => fun (f : Hom A B) => fun (h : Hom X A) => @category_comp_assoc.{u,v} Obj Hom id comp category_args X A B C g f h) ",
+            "(fun (A : Obj) => fun (B : Obj) => fun (f : Hom A B) => @category_comp_id.{u,v} Obj Hom id comp category_args A B f) ",
+            "(fun (T : Obj) => fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (g : Hom B A) => fun (f : Hom C B) => fun (h : Hom A T) => ",
+            "@eq_symm.{v} (Hom C T) ",
+            "(comp C B T (comp B A T h g) f) ",
+            "(comp C A T h (comp C B A g f)) ",
+            "(@category_comp_assoc.{u,v} Obj Hom id comp category_args C B A T h g f))"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_definition_intro",
+        universe_params: &["u", "v", "w"],
+        statement: presheaf_params!(
+            "forall (map_id_law : forall (X : Obj), forall (x : F X), @Eq.{w} (F X) (mapF X X (id X) x) x), forall (map_comp_law : forall (X : Obj), forall (Y : Obj), forall (Z : Obj), forall (g : Hom Y Z), forall (f : Hom X Y), forall (x : F Z), @Eq.{w} (F X) (mapF X Z (comp X Y Z g f) x) (mapF X Y f (mapF Y Z g x))), @PresheafLawArgs.{u,v,w} Obj Hom id comp category_args F mapF"
+        ),
+        proof: presheaf_abs!(concat!(
+            "fun map_id_law => fun map_comp_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (map_id_arg : forall (X : Obj), forall (x : F X), @Eq.{w} (F X) (mapF X X (id X) x) x), ",
+            "forall (map_comp_arg : forall (X : Obj), forall (Y : Obj), forall (Z : Obj), forall (g : Hom Y Z), forall (f : Hom X Y), forall (x : F Z), @Eq.{w} (F X) (mapF X Z (comp X Y Z g f) x) (mapF X Y f (mapF Y Z g x))), ",
+            "P) => mk map_id_law map_comp_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "sieve_definition_intro",
+        universe_params: &["u", "v", "w"],
+        statement: sieve_params!(concat!(
+            "forall (precomp_closed_law : ",
+            sieve_precomp_closed_law_type!(),
+            "), @SieveLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains"
+        )),
+        proof: sieve_abs!(concat!(
+            "fun precomp_closed_law => ",
+            "fun (P : Prop) => fun (mk : forall (precomp_closed_arg : ",
+            sieve_precomp_closed_law_type!(),
+            "), P) => mk precomp_closed_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "sieve_precomp_closed",
+        universe_params: &["u", "v", "w"],
+        statement: sieve_params!(concat!(
+            "forall (sieve_args : @SieveLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains), ",
+            sieve_precomp_closed_law_type!()
+        )),
+        proof: sieve_abs!(concat!(
+            "fun sieve_args => fun X => fun R => fun Y => fun f => fun Z => fun g => fun hf => ",
+            "sieve_args (contains X R Z (comp Z Y X f g)) ",
+            "(fun (precomp_closed_arg : ",
+            sieve_precomp_closed_law_type!(),
+            ") => precomp_closed_arg X R Y f Z g hf)"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topology_definition_intro",
+        universe_params: &["u", "v", "w"],
+        statement: grothendieck_topology_params!(concat!(
+            "forall (maximal_law : ",
+            grothendieck_topology_maximal_law_type!(),
+            "), ",
+            "forall (pullback_membership_law : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            "), ",
+            "forall (pullback_reflects_membership_law : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            "), ",
+            "forall (pullback_stable_law : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            "), ",
+            "forall (transitive_law : ",
+            grothendieck_topology_transitive_law_type!(),
+            "), @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers"
+        )),
+        proof: grothendieck_topology_abs!(concat!(
+            "fun maximal_law => fun pullback_membership_law => fun pullback_reflects_membership_law => fun pullback_stable_law => fun transitive_law => ",
+            "fun (P : Prop) => fun (mk : forall (maximal_arg : ",
+            grothendieck_topology_maximal_law_type!(),
+            "), forall (pullback_membership_arg : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            "), forall (pullback_reflects_membership_arg : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            "), forall (pullback_stable_arg : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            "), forall (transitive_arg : ",
+            grothendieck_topology_transitive_law_type!(),
+            "), P) => mk maximal_law pullback_membership_law pullback_reflects_membership_law pullback_stable_law transitive_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topology_maximal",
+        universe_params: &["u", "v", "w"],
+        statement: grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            grothendieck_topology_maximal_law_type!()
+        )),
+        proof: grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun X => fun R => fun all_arrows => ",
+            "topology_args (covers X R) ",
+            "(fun (maximal_arg : ",
+            grothendieck_topology_maximal_law_type!(),
+            ") => fun (pullback_membership_arg : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            ") => fun (pullback_reflects_membership_arg : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            ") => fun (pullback_stable_arg : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            ") => fun (transitive_arg : ",
+            grothendieck_topology_transitive_law_type!(),
+            ") => maximal_arg X R all_arrows)"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topology_pullback_membership",
+        universe_params: &["u", "v", "w"],
+        statement: grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            grothendieck_topology_pullback_membership_law_type!()
+        )),
+        proof: grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun X => fun Y => fun f => fun R => fun Z => fun g => fun hg => ",
+            "topology_args (contains X R Z (comp Z Y X f g)) ",
+            "(fun (maximal_arg : ",
+            grothendieck_topology_maximal_law_type!(),
+            ") => fun (pullback_membership_arg : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            ") => fun (pullback_reflects_membership_arg : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            ") => fun (pullback_stable_arg : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            ") => fun (transitive_arg : ",
+            grothendieck_topology_transitive_law_type!(),
+            ") => pullback_membership_arg X Y f R Z g hg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topology_pullback_reflects_membership",
+        universe_params: &["u", "v", "w"],
+        statement: grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            grothendieck_topology_pullback_reflects_membership_law_type!()
+        )),
+        proof: grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun X => fun Y => fun f => fun R => fun Z => fun g => fun hfg => ",
+            "topology_args (contains Y (pullback X Y f R) Z g) ",
+            "(fun (maximal_arg : ",
+            grothendieck_topology_maximal_law_type!(),
+            ") => fun (pullback_membership_arg : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            ") => fun (pullback_reflects_membership_arg : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            ") => fun (pullback_stable_arg : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            ") => fun (transitive_arg : ",
+            grothendieck_topology_transitive_law_type!(),
+            ") => pullback_reflects_membership_arg X Y f R Z g hfg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topology_pullback_stable",
+        universe_params: &["u", "v", "w"],
+        statement: grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            grothendieck_topology_pullback_stable_law_type!()
+        )),
+        proof: grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun X => fun R => fun cover_R => fun Y => fun f => ",
+            "topology_args (covers Y (pullback X Y f R)) ",
+            "(fun (maximal_arg : ",
+            grothendieck_topology_maximal_law_type!(),
+            ") => fun (pullback_membership_arg : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            ") => fun (pullback_reflects_membership_arg : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            ") => fun (pullback_stable_arg : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            ") => fun (transitive_arg : ",
+            grothendieck_topology_transitive_law_type!(),
+            ") => pullback_stable_arg X R cover_R Y f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topology_transitive",
+        universe_params: &["u", "v", "w"],
+        statement: grothendieck_topology_params!(concat!(
+            "forall (topology_args : @GrothendieckTopologyLawArgs.{u,v,w} Obj Hom id comp category_args Sieve contains sieve_args pullback covers), ",
+            grothendieck_topology_transitive_law_type!()
+        )),
+        proof: grothendieck_topology_abs!(concat!(
+            "fun topology_args => fun X => fun R => fun S => fun cover_R => fun local_cover => ",
+            "topology_args (covers X S) ",
+            "(fun (maximal_arg : ",
+            grothendieck_topology_maximal_law_type!(),
+            ") => fun (pullback_membership_arg : ",
+            grothendieck_topology_pullback_membership_law_type!(),
+            ") => fun (pullback_reflects_membership_arg : ",
+            grothendieck_topology_pullback_reflects_membership_law_type!(),
+            ") => fun (pullback_stable_arg : ",
+            grothendieck_topology_pullback_stable_law_type!(),
+            ") => fun (transitive_arg : ",
+            grothendieck_topology_transitive_law_type!(),
+            ") => transitive_arg X R S cover_R local_cover)"
+        )),
+    },
+    TheoremArtifact {
+        name: "matching_family_definition_intro",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: matching_family_params!(concat!(
+            "forall (compatible_law : ",
+            matching_family_compatible_law_type!(),
+            "), @MatchingFamilyLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args Sieve contains sieve_args pullback covers topology_args F mapF presheaf_args MatchingFamily family_section"
+        )),
+        proof: matching_family_abs!(concat!(
+            "fun compatible_law => ",
+            "fun (P : Prop) => fun (mk : forall (compatible_arg : ",
+            matching_family_compatible_law_type!(),
+            "), P) => mk compatible_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "matching_family_compatible",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: matching_family_params!(concat!(
+            "forall (matching_args : @MatchingFamilyLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args Sieve contains sieve_args pullback covers topology_args F mapF presheaf_args MatchingFamily family_section), ",
+            matching_family_compatible_law_type!()
+        )),
+        proof: matching_family_abs!(concat!(
+            "fun matching_args => fun X => fun R => fun m => fun Y => fun f => fun hf => fun Z => fun g => fun hfg => ",
+            "matching_args (@Eq.{z} (F Z) (family_section X R m Z (comp Z Y X f g) hfg) (mapF Z Y g (family_section X R m Y f hf))) ",
+            "(fun (compatible_arg : ",
+            matching_family_compatible_law_type!(),
+            ") => compatible_arg X R m Y f hf Z g hfg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheaf_condition_definition_intro",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: sheaf_condition_params!(concat!(
+            "forall (amalgamation_exists_law : ",
+            sheaf_amalgamation_exists_law_type!(),
+            "), forall (amalgamation_unique_law : ",
+            sheaf_amalgamation_unique_law_type!(),
+            "), @SheafConditionLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args Sieve contains sieve_args pullback covers topology_args F mapF presheaf_args MatchingFamily family_section matching_args"
+        )),
+        proof: sheaf_condition_abs!(concat!(
+            "fun amalgamation_exists_law => fun amalgamation_unique_law => ",
+            "fun (P : Prop) => fun (mk : forall (amalgamation_exists_arg : ",
+            sheaf_amalgamation_exists_law_type!(),
+            "), forall (amalgamation_unique_arg : ",
+            sheaf_amalgamation_unique_law_type!(),
+            "), P) => mk amalgamation_exists_law amalgamation_unique_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheaf_condition_amalgamation_exists",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: sheaf_condition_params!(concat!(
+            "forall (sheaf_args : @SheafConditionLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args Sieve contains sieve_args pullback covers topology_args F mapF presheaf_args MatchingFamily family_section matching_args), ",
+            sheaf_amalgamation_exists_law_type!()
+        )),
+        proof: sheaf_condition_abs!(concat!(
+            "fun sheaf_args => fun X => fun R => fun cover_R => fun m => fun P => fun build => ",
+            "sheaf_args P ",
+            "(fun (amalgamation_exists_arg : ",
+            sheaf_amalgamation_exists_law_type!(),
+            ") => fun (amalgamation_unique_arg : ",
+            sheaf_amalgamation_unique_law_type!(),
+            ") => amalgamation_exists_arg X R cover_R m P build)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheaf_condition_amalgamation_unique",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: sheaf_condition_params!(concat!(
+            "forall (sheaf_args : @SheafConditionLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args Sieve contains sieve_args pullback covers topology_args F mapF presheaf_args MatchingFamily family_section matching_args), ",
+            sheaf_amalgamation_unique_law_type!()
+        )),
+        proof: sheaf_condition_abs!(concat!(
+            "fun sheaf_args => fun X => fun R => fun cover_R => fun m => fun s => fun t => fun s_law => fun t_law => ",
+            "sheaf_args (@Eq.{z} (F X) s t) ",
+            "(fun (amalgamation_exists_arg : ",
+            sheaf_amalgamation_exists_law_type!(),
+            ") => fun (amalgamation_unique_arg : ",
+            sheaf_amalgamation_unique_law_type!(),
+            ") => amalgamation_unique_arg X R cover_R m s t s_law t_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheafification_definition_intro",
+        universe_params: &["s", "u", "v", "w", "z", "zz"],
+        statement: sheafification_params!(concat!(
+            "forall (sheafify_is_sheaf_law : ",
+            sheafification_is_sheaf_law_type!(),
+            "), forall (universal_exists_law : ",
+            sheafification_universal_exists_law_type!(),
+            "), forall (universal_unique_law : ",
+            sheafification_universal_unique_law_type!(),
+            "), ",
+            sheafification_law_args_app!()
+        )),
+        proof: sheafification_abs!(concat!(
+            "fun sheafify_is_sheaf_law => fun universal_exists_law => fun universal_unique_law => ",
+            "fun (P : Prop) => fun (mk : forall (sheafify_is_sheaf_arg : ",
+            sheafification_is_sheaf_law_type!(),
+            "), forall (universal_exists_arg : ",
+            sheafification_universal_exists_law_type!(),
+            "), forall (universal_unique_arg : ",
+            sheafification_universal_unique_law_type!(),
+            "), P) => mk sheafify_is_sheaf_law universal_exists_law universal_unique_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheafification_is_sheaf",
+        universe_params: &["s", "u", "v", "w", "z", "zz"],
+        statement: sheafification_params!(concat!(
+            "forall (sheafification_args : ",
+            sheafification_law_args_app!(),
+            "), ",
+            sheafification_is_sheaf_law_type!()
+        )),
+        proof: sheafification_abs!(concat!(
+            "fun sheafification_args => fun F => ",
+            "sheafification_args (Sheaf (sheafify F)) ",
+            "(fun (sheafify_is_sheaf_arg : ",
+            sheafification_is_sheaf_law_type!(),
+            ") => fun (universal_exists_arg : ",
+            sheafification_universal_exists_law_type!(),
+            ") => fun (universal_unique_arg : ",
+            sheafification_universal_unique_law_type!(),
+            ") => sheafify_is_sheaf_arg F)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheafification_universal_exists",
+        universe_params: &["s", "u", "v", "w", "z", "zz"],
+        statement: sheafification_params!(concat!(
+            "forall (sheafification_args : ",
+            sheafification_law_args_app!(),
+            "), ",
+            sheafification_universal_exists_law_type!()
+        )),
+        proof: sheafification_abs!(concat!(
+            "fun sheafification_args => fun F => fun S => fun sheaf_S => fun alpha => fun P => fun choose => ",
+            "sheafification_args P ",
+            "(fun (sheafify_is_sheaf_arg : ",
+            sheafification_is_sheaf_law_type!(),
+            ") => fun (universal_exists_arg : ",
+            sheafification_universal_exists_law_type!(),
+            ") => fun (universal_unique_arg : ",
+            sheafification_universal_unique_law_type!(),
+            ") => universal_exists_arg F S sheaf_S alpha P choose)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheafification_universal_unique",
+        universe_params: &["s", "u", "v", "w", "z", "zz"],
+        statement: sheafification_params!(concat!(
+            "forall (sheafification_args : ",
+            sheafification_law_args_app!(),
+            "), ",
+            sheafification_universal_unique_law_type!()
+        )),
+        proof: sheafification_abs!(concat!(
+            "fun sheafification_args => fun F => fun S => fun sheaf_S => fun alpha => fun beta => fun gamma => fun beta_law => fun gamma_law => ",
+            "sheafification_args (@Eq.{z} (PshHom (sheafify F) S) beta gamma) ",
+            "(fun (sheafify_is_sheaf_arg : ",
+            sheafification_is_sheaf_law_type!(),
+            ") => fun (universal_exists_arg : ",
+            sheafification_universal_exists_law_type!(),
+            ") => fun (universal_unique_arg : ",
+            sheafification_universal_unique_law_type!(),
+            ") => universal_unique_arg F S sheaf_S alpha beta gamma beta_law gamma_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheafification_theorem",
+        universe_params: &["s", "u", "v", "w", "z", "zz"],
+        statement: sheafification_params!(concat!(
+            "forall (sheafification_args : ",
+            sheafification_law_args_app!(),
+            "), ",
+            sheafification_theorem_law_type!()
+        )),
+        proof: sheafification_abs!(concat!(
+            "fun sheafification_args => fun F => fun Q => fun build => ",
+            "sheafification_args Q ",
+            "(fun (sheafify_is_sheaf_arg : ",
+            sheafification_is_sheaf_law_type!(),
+            ") => fun (universal_exists_arg : ",
+            sheafification_universal_exists_law_type!(),
+            ") => fun (universal_unique_arg : ",
+            sheafification_universal_unique_law_type!(),
+            ") => build (sheafify F) (unit F) (sheafify_is_sheaf_arg F) ",
+            "(fun (S : PshObj) => fun (sheaf_S : Sheaf S) => fun (alpha : PshHom F S) => fun (P : Prop) => ",
+            "fun (choose : forall (beta : PshHom (sheafify F) S), forall (factor_law : @Eq.{z} (PshHom F S) (psh_comp F (sheafify F) S beta (unit F)) alpha), P) => ",
+            "universal_exists_arg F S sheaf_S alpha P choose) ",
+            "(fun (S : PshObj) => fun (sheaf_S : Sheaf S) => fun (alpha : PshHom F S) => ",
+            "fun (beta : PshHom (sheafify F) S) => fun (gamma : PshHom (sheafify F) S) => ",
+            "fun (beta_law : @Eq.{z} (PshHom F S) (psh_comp F (sheafify F) S beta (unit F)) alpha) => ",
+            "fun (gamma_law : @Eq.{z} (PshHom F S) (psh_comp F (sheafify F) S gamma (unit F)) alpha) => ",
+            "universal_unique_arg F S sheaf_S alpha beta gamma beta_law gamma_law))"
+        )),
+    },
+    TheoremArtifact {
+        name: "sheafification_is_left_adjoint",
+        universe_params: &["a", "b", "s", "u", "v", "w", "z", "zz"],
+        statement: sheafification_left_adjoint_params!(concat!(
+            "forall (freyd_args : ",
+            sheafification_freyd_args_type!(),
+            "), ",
+            sheafification_left_adjoint_exists_type!()
+        )),
+        proof: sheafification_left_adjoint_abs!(concat!(
+            "fun freyd_args => ",
+            "@freyd_adjoint_functor_theorem.{w,z,a,b} PshObj PshHom psh_id psh_comp ",
+            "ShObj ShHom sh_id sh_comp psh_category_args sh_category_args ",
+            "include include_map include_args reflect reflect_map reflect_args reflect_unit hom_backward freyd_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_definition_intro",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (terminal_unique_law : ",
+            subobject_terminal_unique_law_type!(),
+            "), forall (truth_mono_law : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            "), forall (characteristic_exists_law : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            "), forall (characteristic_unique_law : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            "), ",
+            subobject_classifier_law_args_app!()
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun terminal_unique_law => fun truth_mono_law => fun characteristic_exists_law => fun characteristic_unique_law => ",
+            "fun (P : Prop) => fun (mk : forall (terminal_unique_arg : ",
+            subobject_terminal_unique_law_type!(),
+            "), forall (truth_mono_arg : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            "), forall (characteristic_exists_arg : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            "), forall (characteristic_unique_arg : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            "), P) => mk terminal_unique_law truth_mono_law characteristic_exists_law characteristic_unique_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_terminal_unique",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), ",
+            subobject_terminal_unique_law_type!()
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun classifier_args => fun X => fun f => ",
+            "classifier_args (@Eq.{v} (Hom X Terminal) f (terminal_map X)) ",
+            "(fun (terminal_unique_arg : ",
+            subobject_terminal_unique_law_type!(),
+            ") => fun (truth_mono_arg : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            ") => fun (characteristic_exists_arg : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            ") => fun (characteristic_unique_arg : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            ") => terminal_unique_arg X f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_truth_mono",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth")
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun classifier_args => ",
+            "classifier_args (",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            ") ",
+            "(fun (terminal_unique_arg : ",
+            subobject_terminal_unique_law_type!(),
+            ") => fun (truth_mono_arg : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            ") => fun (characteristic_exists_arg : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            ") => fun (characteristic_unique_arg : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            ") => truth_mono_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_pullback_square",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (M : Obj), forall (A : Obj), forall (m : Hom M A), forall (chi : Hom A Omega), ",
+            "forall (pullback_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "chi"),
+            "), ",
+            subobject_classifier_pullback_square_law_type!("M", "A", "m", "chi")
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun M => fun A => fun m => fun chi => fun pullback_law => ",
+            "pullback_law (",
+            subobject_classifier_pullback_square_law_type!("M", "A", "m", "chi"),
+            ") ",
+            "(fun (square_arg : ",
+            subobject_classifier_pullback_square_law_type!("M", "A", "m", "chi"),
+            ") => fun (universal_arg : ",
+            subobject_classifier_pullback_universal_law_type!("M", "A", "m", "chi"),
+            ") => square_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_pullback_universal",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (M : Obj), forall (A : Obj), forall (m : Hom M A), forall (chi : Hom A Omega), ",
+            "forall (pullback_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "chi"),
+            "), ",
+            subobject_classifier_pullback_universal_law_type!("M", "A", "m", "chi")
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun M => fun A => fun m => fun chi => fun pullback_law => ",
+            "pullback_law (",
+            subobject_classifier_pullback_universal_law_type!("M", "A", "m", "chi"),
+            ") ",
+            "(fun (square_arg : ",
+            subobject_classifier_pullback_square_law_type!("M", "A", "m", "chi"),
+            ") => fun (universal_arg : ",
+            subobject_classifier_pullback_universal_law_type!("M", "A", "m", "chi"),
+            ") => universal_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_characteristic_exists",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), ",
+            subobject_classifier_characteristic_exists_law_type!()
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun classifier_args => fun M => fun A => fun m => fun mono_m => fun P => fun choose => ",
+            "classifier_args P ",
+            "(fun (terminal_unique_arg : ",
+            subobject_terminal_unique_law_type!(),
+            ") => fun (truth_mono_arg : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            ") => fun (characteristic_exists_arg : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            ") => fun (characteristic_unique_arg : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            ") => characteristic_exists_arg M A m mono_m P choose)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier_characteristic_unique",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), ",
+            subobject_classifier_characteristic_unique_law_type!()
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun classifier_args => fun M => fun A => fun m => fun mono_m => fun chosen => fun other => fun chosen_law => fun other_law => ",
+            "classifier_args (@Eq.{v} (Hom A Omega) other chosen) ",
+            "(fun (terminal_unique_arg : ",
+            subobject_terminal_unique_law_type!(),
+            ") => fun (truth_mono_arg : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            ") => fun (characteristic_exists_arg : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            ") => fun (characteristic_unique_arg : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            ") => characteristic_unique_arg M A m mono_m chosen other chosen_law other_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "subobject_classifier",
+        universe_params: &["u", "v"],
+        statement: subobject_classifier_params!(concat!(
+            "forall (classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), forall (M : Obj), forall (A : Obj), forall (m : Hom M A), forall (mono_m : ",
+            subobject_mono_law_type!("M", "A", "m"),
+            "), forall (Q : Prop), forall (build : forall (chi : Hom A Omega), forall (pullback_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "chi"),
+            "), forall (unique_law : forall (psi : Hom A Omega), forall (psi_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "psi"),
+            "), @Eq.{v} (Hom A Omega) psi chi), Q), Q"
+        )),
+        proof: subobject_classifier_abs!(concat!(
+            "fun classifier_args => fun M => fun A => fun m => fun mono_m => fun Q => fun build => ",
+            "classifier_args Q ",
+            "(fun (terminal_unique_arg : ",
+            subobject_terminal_unique_law_type!(),
+            ") => fun (truth_mono_arg : ",
+            subobject_mono_law_type!("Terminal", "Omega", "truth"),
+            ") => fun (characteristic_exists_arg : ",
+            subobject_classifier_characteristic_exists_law_type!(),
+            ") => fun (characteristic_unique_arg : ",
+            subobject_classifier_characteristic_unique_law_type!(),
+            ") => characteristic_exists_arg M A m mono_m Q ",
+            "(fun (chi : Hom A Omega) => fun (pullback_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "chi"),
+            ") => build chi pullback_law ",
+            "(fun (psi : Hom A Omega) => fun (psi_law : ",
+            subobject_classifier_pullback_law_type!("M", "A", "m", "psi"),
+            ") => characteristic_unique_arg M A m mono_m chi psi pullback_law psi_law)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "elementary_topos_definition_intro",
+        universe_params: &["u", "v"],
+        statement: elementary_topos_params!(concat!(
+            "forall (finite_limit_args : ",
+            finite_limit_law_args_app!(),
+            "), forall (cartesian_closed_args : ",
+            cartesian_closed_law_args_app!(),
+            "), forall (subobject_classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), ",
+            elementary_topos_law_args_app!()
+        )),
+        proof: elementary_topos_abs!(concat!(
+            "fun finite_limit_args => fun cartesian_closed_args => fun subobject_classifier_args => ",
+            "fun (P : Prop) => fun (mk : forall (finite_limit_arg : ",
+            finite_limit_law_args_app!(),
+            "), forall (cartesian_closed_arg : ",
+            cartesian_closed_law_args_app!(),
+            "), forall (subobject_classifier_arg : ",
+            subobject_classifier_law_args_app!(),
+            "), P) => mk finite_limit_args cartesian_closed_args subobject_classifier_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "elementary_topos_finite_limits",
+        universe_params: &["u", "v"],
+        statement: elementary_topos_params!(concat!(
+            "forall (topos_args : ",
+            elementary_topos_law_args_app!(),
+            "), ",
+            finite_limit_law_args_app!()
+        )),
+        proof: elementary_topos_abs!(concat!(
+            "fun topos_args => ",
+            "topos_args (",
+            finite_limit_law_args_app!(),
+            ") ",
+            "(fun (finite_limit_arg : ",
+            finite_limit_law_args_app!(),
+            ") => fun (cartesian_closed_arg : ",
+            cartesian_closed_law_args_app!(),
+            ") => fun (subobject_classifier_arg : ",
+            subobject_classifier_law_args_app!(),
+            ") => finite_limit_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "elementary_topos_cartesian_closed",
+        universe_params: &["u", "v"],
+        statement: elementary_topos_params!(concat!(
+            "forall (topos_args : ",
+            elementary_topos_law_args_app!(),
+            "), ",
+            cartesian_closed_law_args_app!()
+        )),
+        proof: elementary_topos_abs!(concat!(
+            "fun topos_args => ",
+            "topos_args (",
+            cartesian_closed_law_args_app!(),
+            ") ",
+            "(fun (finite_limit_arg : ",
+            finite_limit_law_args_app!(),
+            ") => fun (cartesian_closed_arg : ",
+            cartesian_closed_law_args_app!(),
+            ") => fun (subobject_classifier_arg : ",
+            subobject_classifier_law_args_app!(),
+            ") => cartesian_closed_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "elementary_topos_subobject_classifier",
+        universe_params: &["u", "v"],
+        statement: elementary_topos_params!(concat!(
+            "forall (topos_args : ",
+            elementary_topos_law_args_app!(),
+            "), ",
+            subobject_classifier_law_args_app!()
+        )),
+        proof: elementary_topos_abs!(concat!(
+            "fun topos_args => ",
+            "topos_args (",
+            subobject_classifier_law_args_app!(),
+            ") ",
+            "(fun (finite_limit_arg : ",
+            finite_limit_law_args_app!(),
+            ") => fun (cartesian_closed_arg : ",
+            cartesian_closed_law_args_app!(),
+            ") => fun (subobject_classifier_arg : ",
+            subobject_classifier_law_args_app!(),
+            ") => subobject_classifier_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "elementary_topos_definition",
+        universe_params: &["u", "v"],
+        statement: elementary_topos_params!(concat!(
+            "forall (topos_args : ",
+            elementary_topos_law_args_app!(),
+            "), forall (Q : Prop), forall (build : forall (finite_limit_args : ",
+            finite_limit_law_args_app!(),
+            "), forall (cartesian_closed_args : ",
+            cartesian_closed_law_args_app!(),
+            "), forall (subobject_classifier_args : ",
+            subobject_classifier_law_args_app!(),
+            "), Q), Q"
+        )),
+        proof: elementary_topos_abs!(concat!(
+            "fun topos_args => fun Q => fun build => ",
+            "topos_args Q ",
+            "(fun (finite_limit_arg : ",
+            finite_limit_law_args_app!(),
+            ") => fun (cartesian_closed_arg : ",
+            cartesian_closed_law_args_app!(),
+            ") => fun (subobject_classifier_arg : ",
+            subobject_classifier_law_args_app!(),
+            ") => build finite_limit_arg cartesian_closed_arg subobject_classifier_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_semantics_definition_intro",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(kripke_joyal_law_binders!(
+            kripke_joyal_law_args_app!()
+        ))),
+        proof: kripke_joyal_abs!(concat!(
+            "fun stability_law => fun locality_law => fun truth_law => fun false_elim_law => ",
+            "fun conjunction_intro_law => fun conjunction_left_law => fun conjunction_right_law => ",
+            "fun implication_intro_law => fun implication_elim_law => ",
+            "fun disjunction_local_intro_law => fun disjunction_cover_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            kripke_joyal_law_binders!("P"),
+            ") => mk stability_law locality_law truth_law false_elim_law ",
+            "conjunction_intro_law conjunction_left_law conjunction_right_law ",
+            "implication_intro_law implication_elim_law disjunction_local_intro_law disjunction_cover_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_stability",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_stability_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_stability_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("stability_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_locality",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_locality_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_locality_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("locality_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_truth",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_truth_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_truth_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("truth_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_false_elim",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_false_elim_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_false_elim_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("false_elim_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_conjunction_intro",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_conjunction_intro_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_conjunction_intro_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("conjunction_intro_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_conjunction_left",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_conjunction_left_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_conjunction_left_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("conjunction_left_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_conjunction_right",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_conjunction_right_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_conjunction_right_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("conjunction_right_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_implication_intro",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_implication_intro_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_implication_intro_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("implication_intro_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_implication_elim",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_implication_elim_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_implication_elim_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("implication_elim_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_disjunction_local_intro",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_disjunction_local_intro_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_disjunction_local_intro_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("disjunction_local_intro_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_disjunction_cover",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), ",
+            kripke_joyal_disjunction_cover_law_type!()
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => semantics_args (",
+            kripke_joyal_disjunction_cover_law_type!(),
+            ") ",
+            kripke_joyal_law_abs!("disjunction_cover_arg")
+        )),
+    },
+    TheoremArtifact {
+        name: "kripke_joyal_semantics",
+        universe_params: &["a", "u", "v", "w"],
+        statement: kripke_joyal_params!(concat!(
+            "forall (semantics_args : ",
+            kripke_joyal_law_args_app!(),
+            "), forall (Q : Prop), forall (build : ",
+            kripke_joyal_law_binders!("Q"),
+            "), Q"
+        )),
+        proof: kripke_joyal_abs!(concat!(
+            "fun semantics_args => fun Q => fun build => ",
+            "semantics_args Q ",
+            kripke_joyal_law_abs!(concat!(
+                "build stability_arg locality_arg truth_arg false_elim_arg ",
+                "conjunction_intro_arg conjunction_left_arg conjunction_right_arg ",
+                "implication_intro_arg implication_elim_arg disjunction_local_intro_arg disjunction_cover_arg"
+            ))
+        )),
+    },
+    TheoremArtifact {
+        name: "giraud_axioms_definition_intro",
+        universe_params: &["a", "b", "u", "v", "w"],
+        statement: giraud_axioms_params!(concat!(giraud_axiom_binders!(
+            giraud_axioms_law_args_app!()
+        ))),
+        proof: giraud_axioms_abs!(concat!(
+            "fun finite_limit_args => fun cocomplete_arg => fun initial_unique_law => ",
+            "fun coproduct_inl_law => fun coproduct_inr_law => fun coproduct_unique_law => ",
+            "fun coproducts_stable_disjoint_law => fun effective_equivalence_relations_law => fun generators_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            giraud_axiom_binders!("P"),
+            ") => mk finite_limit_args cocomplete_arg initial_unique_law coproduct_inl_law coproduct_inr_law ",
+            "coproduct_unique_law coproducts_stable_disjoint_law effective_equivalence_relations_law generators_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "grothendieck_topos_representation_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: grothendieck_topos_representation_params!(concat!(
+            grothendieck_topos_representation_binders!(
+                grothendieck_topos_representation_law_args_app!()
+            )
+        )),
+        proof: grothendieck_topos_representation_abs!(concat!(
+            "fun site_topology_law => fun sheaf_category_law => ",
+            "fun to_sheaf_functor_law => fun from_sheaf_functor_law => ",
+            "fun unit_equivalence_law => fun counit_equivalence_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            grothendieck_topos_representation_binders!("P"),
+            ") => mk site_topology_law sheaf_category_law to_sheaf_functor_law ",
+            "from_sheaf_functor_law unit_equivalence_law counit_equivalence_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "giraud_representation_construction_intro",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: giraud_construction_params!(concat!(
+            "forall (representation_exists_law : ",
+            giraud_representation_exists_law_type!(),
+            "), ",
+            giraud_construction_law_args_app!()
+        )),
+        proof: giraud_construction_abs!(concat!(
+            "fun representation_exists_law => ",
+            "fun (P : Prop) => fun (mk : forall (representation_exists_arg : ",
+            giraud_representation_exists_law_type!(),
+            "), P) => mk representation_exists_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "giraud_theorem",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: giraud_construction_params!(concat!(
+            "forall (construction_args : ",
+            giraud_construction_law_args_app!(),
+            "), ",
+            giraud_representation_exists_law_type!()
+        )),
+        proof: giraud_construction_abs!(concat!(
+            "fun construction_args => ",
+            "construction_args (",
+            giraud_representation_exists_law_type!(),
+            ") (fun (representation_exists_arg : ",
+            giraud_representation_exists_law_type!(),
+            ") => representation_exists_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "yoneda_natural_family_intro",
+        universe_params: &["u", "v", "w"],
+        statement: yoneda_params!(
+            "forall (naturality_law : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))), @YonedaNaturalFamilyLawArgs.{u,v,w} Obj Hom id comp category_args F mapF presheaf_args A alpha"
+        ),
+        proof: yoneda_abs!(concat!(
+            "fun naturality_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (naturality_arg : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))), ",
+            "P) => mk naturality_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "yoneda_natural_family_naturality",
+        universe_params: &["u", "v", "w"],
+        statement: yoneda_params!(
+            "forall (natural_args : @YonedaNaturalFamilyLawArgs.{u,v,w} Obj Hom id comp category_args F mapF presheaf_args A alpha), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))"
+        ),
+        proof: yoneda_abs!(concat!(
+            "fun natural_args => fun X => fun Y => fun f => fun h => ",
+            "natural_args (@Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))) ",
+            "(fun (naturality_arg : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))) => ",
+            "naturality_arg X Y f h)"
+        )),
+    },
+    TheoremArtifact {
+        name: "yoneda_lemma",
+        universe_params: &["u", "v", "w"],
+        statement: yoneda_params!(
+            "forall (natural_args : @YonedaNaturalFamilyLawArgs.{u,v,w} Obj Hom id comp category_args F mapF presheaf_args A alpha), forall (X : Obj), forall (f : Hom X A), @Eq.{w} (F X) (alpha X f) (mapF X A f (alpha A (id A)))"
+        ),
+        proof: yoneda_abs!(concat!(
+            "fun natural_args => fun X => fun f => ",
+            "@eq_trans.{w} (F X) ",
+            "(alpha X f) ",
+            "(alpha X (comp X A A (id A) f)) ",
+            "(mapF X A f (alpha A (id A))) ",
+            "(@eq_symm.{w} (F X) ",
+            "(alpha X (comp X A A (id A) f)) ",
+            "(alpha X f) ",
+            "(@eq_congr_arg.{v,w} (Hom X A) (F X) (alpha X) ",
+            "(comp X A A (id A) f) ",
+            "f ",
+            "(@category_id_comp.{u,v} Obj Hom id comp category_args X A f))) ",
+            "(natural_args (@Eq.{w} (F X) (alpha X (comp X A A (id A) f)) (mapF X A f (alpha A (id A)))) ",
+            "(fun (naturality_arg : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{w} (F X) (alpha X (comp X Y A h f)) (mapF X Y f (alpha Y h))) => ",
+            "naturality_arg X A f (id A)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "yoneda_embedding",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (g : Hom A B), @YonedaEmbeddingLawArgs.{u,v} Obj Hom id comp category_args A B g"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun g => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (naturality_law : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{v} (Hom X B) (comp X Y B (comp Y A B g h) f) (comp X A B g (comp X Y A h f))), ",
+            "forall (recover_law : @Eq.{v} (Hom A B) (comp A A B g (id A)) g), ",
+            "P) => mk ",
+            "(fun (X : Obj) => fun (Y : Obj) => fun (f : Hom X Y) => fun (h : Hom Y A) => @category_comp_assoc.{u,v} Obj Hom id comp category_args X Y A B g h f) ",
+            "(@category_comp_id.{u,v} Obj Hom id comp category_args A B g)"
+        )),
+    },
+    TheoremArtifact {
+        name: "yoneda_embedding_naturality",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (g : Hom A B), forall (embedding_args : @YonedaEmbeddingLawArgs.{u,v} Obj Hom id comp category_args A B g), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{v} (Hom X B) (comp X Y B (comp Y A B g h) f) (comp X A B g (comp X Y A h f))"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun g => fun embedding_args => fun X => fun Y => fun f => fun h => ",
+            "embedding_args (@Eq.{v} (Hom X B) (comp X Y B (comp Y A B g h) f) (comp X A B g (comp X Y A h f))) ",
+            "(fun (naturality_arg : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{v} (Hom X B) (comp X Y B (comp Y A B g h) f) (comp X A B g (comp X Y A h f))) => ",
+            "fun (recover_arg : @Eq.{v} (Hom A B) (comp A A B g (id A)) g) => ",
+            "naturality_arg X Y f h)"
+        )),
+    },
+    TheoremArtifact {
+        name: "yoneda_embedding_recover",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), forall (A : Obj), forall (B : Obj), forall (g : Hom A B), forall (embedding_args : @YonedaEmbeddingLawArgs.{u,v} Obj Hom id comp category_args A B g), @Eq.{v} (Hom A B) (comp A A B g (id A)) g"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun A => fun B => fun g => fun embedding_args => ",
+            "embedding_args (@Eq.{v} (Hom A B) (comp A A B g (id A)) g) ",
+            "(fun (naturality_arg : forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (h : Hom Y A), @Eq.{v} (Hom X B) (comp X Y B (comp Y A B g h) f) (comp X A B g (comp X Y A h f))) => ",
+            "fun (recover_arg : @Eq.{v} (Hom A B) (comp A A B g (id A)) g) => ",
+            "recover_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "limit_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: limit_params!(concat!(
+            "forall (cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)), ",
+            "forall (universal_law : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q), ",
+            "@LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone"
+        )),
+        proof: limit_abs!(concat!(
+            "fun cone_law => fun universal_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (cone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)), ",
+            "forall (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q), ",
+            "P) => mk cone_law universal_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "limit_cone_naturality",
+        universe_params: &["u", "v", "w", "z"],
+        statement: limit_params!(
+            "forall (limit_args : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)"
+        ),
+        proof: limit_abs!(concat!(
+            "fun limit_args => fun A => fun B => fun f => ",
+            "limit_args (@Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)) ",
+            "(fun (cone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)) => ",
+            "fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q) => ",
+            "cone_arg A B f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "limit_universal_property",
+        universe_params: &["u", "v", "w", "z"],
+        statement: limit_params!(concat!(
+            "forall (limit_args : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), ",
+            "forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), ",
+            "forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), ",
+            "forall (P : Prop), ",
+            "forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), P), ",
+            "P"
+        )),
+        proof: limit_abs!(concat!(
+            "fun limit_args => fun N => fun nu => fun nu_cone_law => fun P => fun build => ",
+            "limit_args P ",
+            "(fun (cone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)) => ",
+            "fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q) => ",
+            "universal_arg N nu nu_cone_law P build)"
+        )),
+    },
+    TheoremArtifact {
+        name: "limit_exists_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: diagram_params!(
+            "forall (L : ObjC), forall (cone : forall (j : ObjJ), HomC L (Dobj j)), forall (limit_args : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), @LimitExistsArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args"
+        ),
+        proof: diagram_abs!(concat!(
+            "fun L => fun cone => fun limit_args => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (L : ObjC), forall (cone : forall (j : ObjJ), HomC L (Dobj j)), ",
+            "forall (limit_arg : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), ",
+            "P) => mk L cone limit_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "colimit_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: colimit_params!(concat!(
+            "forall (cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)), ",
+            "forall (universal_law : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q), ",
+            "@ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone"
+        )),
+        proof: colimit_abs!(concat!(
+            "fun cocone_law => fun universal_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (cocone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)), ",
+            "forall (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q), ",
+            "P) => mk cocone_law universal_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "colimit_cocone_naturality",
+        universe_params: &["u", "v", "w", "z"],
+        statement: colimit_params!(
+            "forall (colimit_args : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)"
+        ),
+        proof: colimit_abs!(concat!(
+            "fun colimit_args => fun A => fun B => fun f => ",
+            "colimit_args (@Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)) ",
+            "(fun (cocone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)) => ",
+            "fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q) => ",
+            "cocone_arg A B f)"
+        )),
+    },
+    TheoremArtifact {
+        name: "colimit_universal_property",
+        universe_params: &["u", "v", "w", "z"],
+        statement: colimit_params!(concat!(
+            "forall (colimit_args : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), ",
+            "forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), ",
+            "forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), ",
+            "forall (P : Prop), ",
+            "forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), P), ",
+            "P"
+        )),
+        proof: colimit_abs!(concat!(
+            "fun colimit_args => fun N => fun nu => fun nu_cocone_law => fun P => fun build => ",
+            "colimit_args P ",
+            "(fun (cocone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)) => ",
+            "fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q) => ",
+            "universal_arg N nu nu_cocone_law P build)"
+        )),
+    },
+    TheoremArtifact {
+        name: "colimit_exists_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: diagram_params!(
+            "forall (K : ObjC), forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), forall (colimit_args : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), @ColimitExistsArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args"
+        ),
+        proof: diagram_abs!(concat!(
+            "fun K => fun cocone => fun colimit_args => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (K : ObjC), forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            "forall (colimit_arg : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), ",
+            "P) => mk K cocone colimit_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "complete_category_definition_intro",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(concat!(
+            "forall (limit_exists_law : ",
+            complete_category_limit_exists_law_type!(),
+            "), @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args"
+        )),
+        proof: complete_category_abs!(concat!(
+            "fun limit_exists_law => ",
+            "fun (P : Prop) => fun (mk : forall (limit_exists_arg : ",
+            complete_category_limit_exists_law_type!(),
+            "), P) => mk limit_exists_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "complete_category_limit_exists",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(concat!(
+            "forall (complete_args : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), ",
+            complete_category_limit_exists_law_type!()
+        )),
+        proof: complete_category_abs!(concat!(
+            "fun complete_args => fun ObjJ => fun HomJ => fun idJ => fun compJ => fun shape_args => fun Dobj => fun Dmap => fun diagram_args => ",
+            "complete_args (@LimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args) ",
+            "(fun (limit_exists_arg : ",
+            complete_category_limit_exists_law_type!(),
+            ") => limit_exists_arg ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cocomplete_category_definition_intro",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(concat!(
+            "forall (colimit_exists_law : ",
+            complete_category_colimit_exists_law_type!(),
+            "), @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args"
+        )),
+        proof: complete_category_abs!(concat!(
+            "fun colimit_exists_law => ",
+            "fun (P : Prop) => fun (mk : forall (colimit_exists_arg : ",
+            complete_category_colimit_exists_law_type!(),
+            "), P) => mk colimit_exists_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "cocomplete_category_colimit_exists",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(concat!(
+            "forall (cocomplete_args : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), ",
+            complete_category_colimit_exists_law_type!()
+        )),
+        proof: complete_category_abs!(concat!(
+            "fun cocomplete_args => fun ObjJ => fun HomJ => fun idJ => fun compJ => fun shape_args => fun Dobj => fun Dmap => fun diagram_args => ",
+            "cocomplete_args (@ColimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args) ",
+            "(fun (colimit_exists_arg : ",
+            complete_category_colimit_exists_law_type!(),
+            ") => colimit_exists_arg ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "complete_cocomplete_category_definition_intro",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(
+            "forall (complete_args : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), forall (cocomplete_args : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), @CompleteCocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args"
+        ),
+        proof: complete_category_abs!(concat!(
+            "fun complete_args => fun cocomplete_args => ",
+            "fun (P : Prop) => fun (mk : forall (complete_arg : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), forall (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), P) => mk complete_args cocomplete_args"
+        )),
+    },
+    TheoremArtifact {
+        name: "complete_cocomplete_category_complete",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(
+            "forall (bicomplete_args : @CompleteCocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args"
+        ),
+        proof: complete_category_abs!(concat!(
+            "fun bicomplete_args => ",
+            "bicomplete_args (@CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) ",
+            "(fun (complete_arg : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => ",
+            "fun (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => complete_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "complete_cocomplete_category_cocomplete",
+        universe_params: &["a", "b", "u", "v"],
+        statement: complete_category_params!(
+            "forall (bicomplete_args : @CompleteCocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args"
+        ),
+        proof: complete_category_abs!(concat!(
+            "fun bicomplete_args => ",
+            "bicomplete_args (@CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) ",
+            "(fun (complete_arg : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => ",
+            "fun (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => cocomplete_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_category_laws_intro",
+        universe_params: &["u", "v", "w", "z", "zz"],
+        statement: presheaf_category_params!(concat!(
+            "forall (object_presheaf_law : forall (F : PshObj), @PresheafLawArgs.{u,v,zz} Obj Hom id comp category_args (eval F) (reindex F)), ",
+            "forall (hom_naturality_law : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : eval F Y), @Eq.{zz} (eval G X) (component F G alpha X (reindex F X Y f x)) (reindex G X Y f (component F G alpha Y x))), ",
+            "forall (id_component_law : forall (F : PshObj), forall (X : Obj), forall (x : eval F X), @Eq.{zz} (eval F X) (component F F (psh_id F) X x) x), ",
+            "forall (comp_component_law : forall (F : PshObj), forall (G : PshObj), forall (H : PshObj), forall (beta : PshHom G H), forall (alpha : PshHom F G), forall (X : Obj), forall (x : eval F X), @Eq.{zz} (eval H X) (component F H (psh_comp F G H beta alpha) X x) (component G H beta X (component F G alpha X x))), ",
+            "@PresheafCategoryLawArgs.{u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component"
+        )),
+        proof: presheaf_category_abs!(concat!(
+            "fun object_presheaf_law => fun hom_naturality_law => fun id_component_law => fun comp_component_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            "forall (object_presheaf_arg : forall (F : PshObj), @PresheafLawArgs.{u,v,zz} Obj Hom id comp category_args (eval F) (reindex F)), ",
+            "forall (hom_naturality_arg : forall (F : PshObj), forall (G : PshObj), forall (alpha : PshHom F G), forall (X : Obj), forall (Y : Obj), forall (f : Hom X Y), forall (x : eval F Y), @Eq.{zz} (eval G X) (component F G alpha X (reindex F X Y f x)) (reindex G X Y f (component F G alpha Y x))), ",
+            "forall (id_component_arg : forall (F : PshObj), forall (X : Obj), forall (x : eval F X), @Eq.{zz} (eval F X) (component F F (psh_id F) X x) x), ",
+            "forall (comp_component_arg : forall (F : PshObj), forall (G : PshObj), forall (H : PshObj), forall (beta : PshHom G H), forall (alpha : PshHom F G), forall (X : Obj), forall (x : eval F X), @Eq.{zz} (eval H X) (component F H (psh_comp F G H beta alpha) X x) (component G H beta X (component F G alpha X x))), ",
+            "P) => mk object_presheaf_law hom_naturality_law id_component_law comp_component_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_pointwise_limit_construction_intro",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(concat!(
+            "forall (limit_exists_law : ",
+            presheaf_pointwise_limit_exists_law_type!(),
+            "), @PresheafPointwiseLimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args"
+        )),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun limit_exists_law => ",
+            "fun (P : Prop) => fun (mk : forall (limit_exists_arg : ",
+            presheaf_pointwise_limit_exists_law_type!(),
+            "), P) => mk limit_exists_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_pointwise_limit_exists",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(concat!(
+            "forall (pointwise_limit_args : @PresheafPointwiseLimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args), ",
+            presheaf_pointwise_limit_exists_law_type!()
+        )),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun pointwise_limit_args => fun ObjJ => fun HomJ => fun idJ => fun compJ => fun shape_args => fun Dobj => fun Dmap => fun diagram_args => ",
+            "pointwise_limit_args (@LimitExistsArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap diagram_args) ",
+            "(fun (limit_exists_arg : ",
+            presheaf_pointwise_limit_exists_law_type!(),
+            ") => limit_exists_arg ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_pointwise_colimit_construction_intro",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(concat!(
+            "forall (colimit_exists_law : ",
+            presheaf_pointwise_colimit_exists_law_type!(),
+            "), @PresheafPointwiseColimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args"
+        )),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun colimit_exists_law => ",
+            "fun (P : Prop) => fun (mk : forall (colimit_exists_arg : ",
+            presheaf_pointwise_colimit_exists_law_type!(),
+            "), P) => mk colimit_exists_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_pointwise_colimit_exists",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(concat!(
+            "forall (pointwise_colimit_args : @PresheafPointwiseColimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args), ",
+            presheaf_pointwise_colimit_exists_law_type!()
+        )),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun pointwise_colimit_args => fun ObjJ => fun HomJ => fun idJ => fun compJ => fun shape_args => fun Dobj => fun Dmap => fun diagram_args => ",
+            "pointwise_colimit_args (@ColimitExistsArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap diagram_args) ",
+            "(fun (colimit_exists_arg : ",
+            presheaf_pointwise_colimit_exists_law_type!(),
+            ") => colimit_exists_arg ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_category_complete_from_pointwise_limits",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(
+            "forall (pointwise_limit_args : @PresheafPointwiseLimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args), @CompleteCategoryLawArgs.{a,b,w,z} PshObj PshHom psh_id psh_comp psh_category_args"
+        ),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun pointwise_limit_args => ",
+            "@complete_category_definition_intro.{a,b,w,z} PshObj PshHom psh_id psh_comp psh_category_args ",
+            "(fun (ObjJ : Sort a) => fun (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b) => fun (idJ : forall (A : ObjJ), HomJ A A) => fun (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C) => fun (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ) => fun (Dobj : forall (A : ObjJ), PshObj) => fun (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), PshHom (Dobj A) (Dobj B)) => fun (diagram_args : @FunctorLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap) => ",
+            "@presheaf_pointwise_limit_exists.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args pointwise_limit_args ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_category_cocomplete_from_pointwise_colimits",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(
+            "forall (pointwise_colimit_args : @PresheafPointwiseColimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args), @CocompleteCategoryLawArgs.{a,b,w,z} PshObj PshHom psh_id psh_comp psh_category_args"
+        ),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun pointwise_colimit_args => ",
+            "@cocomplete_category_definition_intro.{a,b,w,z} PshObj PshHom psh_id psh_comp psh_category_args ",
+            "(fun (ObjJ : Sort a) => fun (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b) => fun (idJ : forall (A : ObjJ), HomJ A A) => fun (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C) => fun (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ) => fun (Dobj : forall (A : ObjJ), PshObj) => fun (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), PshHom (Dobj A) (Dobj B)) => fun (diagram_args : @FunctorLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ PshObj PshHom psh_id psh_comp shape_args psh_category_args Dobj Dmap) => ",
+            "@presheaf_pointwise_colimit_exists.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args pointwise_colimit_args ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "presheaf_category_complete_and_cocomplete",
+        universe_params: &["a", "b", "u", "v", "w", "z", "zz"],
+        statement: presheaf_pointwise_limit_params!(
+            "forall (pointwise_limit_args : @PresheafPointwiseLimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args), forall (pointwise_colimit_args : @PresheafPointwiseColimitConstructionArgs.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args), @CompleteCocompleteCategoryLawArgs.{a,b,w,z} PshObj PshHom psh_id psh_comp psh_category_args"
+        ),
+        proof: presheaf_pointwise_limit_abs!(concat!(
+            "fun pointwise_limit_args => fun pointwise_colimit_args => ",
+            "@complete_cocomplete_category_definition_intro.{a,b,w,z} PshObj PshHom psh_id psh_comp psh_category_args ",
+            "(@presheaf_category_complete_from_pointwise_limits.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args pointwise_limit_args) ",
+            "(@presheaf_category_cocomplete_from_pointwise_colimits.{a,b,u,v,w,z,zz} Obj Hom id comp category_args PshObj PshHom psh_id psh_comp psh_category_args eval reindex component psh_args pointwise_colimit_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_right_adjoint_transposes_cones",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: right_adjoint_limit_params!(concat!(
+            "forall (N : ObjC), ",
+            "forall (nu : forall (j : ObjJ), HomC N (Gobj (Dobj j))), ",
+            "forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{v} (HomC N (Gobj (Dobj B))) (compC N (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (nu A)) (nu B)), ",
+            "forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), ",
+            "@Eq.{z} (HomD (Fobj N) (Dobj B)) (compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))) (hom_backward N (Dobj B) (nu B))"
+        )),
+        proof: right_adjoint_limit_abs!(concat!(
+            "fun N => fun nu => fun nu_cone_law => fun A => fun B => fun f => ",
+            "@eq_trans.{z} (HomD (Fobj N) (Dobj B)) ",
+            "(compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))) ",
+            "(hom_backward N (Dobj B) (hom_forward N (Dobj B) (compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))))) ",
+            "(hom_backward N (Dobj B) (nu B)) ",
+            "(@eq_symm.{z} (HomD (Fobj N) (Dobj B)) ",
+            "(hom_backward N (Dobj B) (hom_forward N (Dobj B) (compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))))) ",
+            "(compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))) ",
+            "(@adjunction_hom_left_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N (Dobj B) (compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))))) ",
+            "(@eq_congr_arg.{v,z} (HomC N (Gobj (Dobj B))) (HomD (Fobj N) (Dobj B)) (hom_backward N (Dobj B)) ",
+            "(hom_forward N (Dobj B) (compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A)))) ",
+            "(nu B) ",
+            "(@eq_trans.{v} (HomC N (Gobj (Dobj B))) ",
+            "(hom_forward N (Dobj B) (compD (Fobj N) (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A)))) ",
+            "(compC N (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (hom_forward N (Dobj A) (hom_backward N (Dobj A) (nu A)))) ",
+            "(nu B) ",
+            "(@adjunction_hom_naturality_target.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N (Dobj A) (Dobj B) (Dmap A B f) (hom_backward N (Dobj A) (nu A))) ",
+            "(@eq_trans.{v} (HomC N (Gobj (Dobj B))) ",
+            "(compC N (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (hom_forward N (Dobj A) (hom_backward N (Dobj A) (nu A)))) ",
+            "(compC N (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (nu A)) ",
+            "(nu B) ",
+            "(@eq_congr_arg.{v,v} (HomC N (Gobj (Dobj A))) (HomC N (Gobj (Dobj B))) (fun (t : HomC N (Gobj (Dobj A))) => compC N (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) t) ",
+            "(hom_forward N (Dobj A) (hom_backward N (Dobj A) (nu A))) ",
+            "(nu A) ",
+            "(@adjunction_hom_right_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N (Dobj A) (nu A))) ",
+            "(nu_cone_law A B f))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_right_adjoint_transposes_limit_factor",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: right_adjoint_limit_params!(concat!(
+            "forall (L : ObjD), ",
+            "forall (cone : forall (j : ObjJ), HomD L (Dobj j)), ",
+            "forall (N : ObjC), ",
+            "forall (nu : forall (j : ObjJ), HomC N (Gobj (Dobj j))), ",
+            "forall (m : HomC N (Gobj L)), ",
+            "forall (m_law : forall (j : ObjJ), @Eq.{v} (HomC N (Gobj (Dobj j))) (compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) m) (nu j)), ",
+            "forall (j : ObjJ), ",
+            "@Eq.{z} (HomD (Fobj N) (Dobj j)) (compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m)) (hom_backward N (Dobj j) (nu j))"
+        )),
+        proof: right_adjoint_limit_abs!(concat!(
+            "fun L => fun cone => fun N => fun nu => fun m => fun m_law => fun j => ",
+            "@eq_trans.{z} (HomD (Fobj N) (Dobj j)) ",
+            "(compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m)) ",
+            "(hom_backward N (Dobj j) (hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m)))) ",
+            "(hom_backward N (Dobj j) (nu j)) ",
+            "(@eq_symm.{z} (HomD (Fobj N) (Dobj j)) ",
+            "(hom_backward N (Dobj j) (hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m)))) ",
+            "(compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m)) ",
+            "(@adjunction_hom_left_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m)))) ",
+            "(@eq_congr_arg.{v,z} (HomC N (Gobj (Dobj j))) (HomD (Fobj N) (Dobj j)) (hom_backward N (Dobj j)) ",
+            "(hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m))) ",
+            "(nu j) ",
+            "(@eq_trans.{v} (HomC N (Gobj (Dobj j))) ",
+            "(hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) (hom_backward N L m))) ",
+            "(compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) (hom_forward N L (hom_backward N L m))) ",
+            "(nu j) ",
+            "(@adjunction_hom_naturality_target.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N L (Dobj j) (cone j) (hom_backward N L m)) ",
+            "(@eq_trans.{v} (HomC N (Gobj (Dobj j))) ",
+            "(compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) (hom_forward N L (hom_backward N L m))) ",
+            "(compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) m) ",
+            "(nu j) ",
+            "(@eq_congr_arg.{v,v} (HomC N (Gobj L)) (HomC N (Gobj (Dobj j))) (fun (t : HomC N (Gobj L)) => compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) t) ",
+            "(hom_forward N L (hom_backward N L m)) ",
+            "m ",
+            "(@adjunction_hom_right_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N L m)) ",
+            "(m_law j))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_right_adjoint_preserved_limit_cone_law",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: right_adjoint_limit_params!(concat!(
+            "forall (L : ObjD), ",
+            "forall (cone : forall (j : ObjJ), HomD L (Dobj j)), ",
+            "forall (limit_args : @LimitLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args Dobj Dmap diagram_args L cone), ",
+            "forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), ",
+            "@Eq.{v} (HomC (Gobj L) (Gobj (Dobj B))) (compC (Gobj L) (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (Gmap L (Dobj A) (cone A))) (Gmap L (Dobj B) (cone B))"
+        )),
+        proof: right_adjoint_limit_abs!(concat!(
+            "fun L => fun cone => fun limit_args => fun A => fun B => fun f => ",
+            "@eq_trans.{v} (HomC (Gobj L) (Gobj (Dobj B))) ",
+            "(compC (Gobj L) (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (Gmap L (Dobj A) (cone A))) ",
+            "(Gmap L (Dobj B) (compD L (Dobj A) (Dobj B) (Dmap A B f) (cone A))) ",
+            "(Gmap L (Dobj B) (cone B)) ",
+            "(@eq_symm.{v} (HomC (Gobj L) (Gobj (Dobj B))) ",
+            "(Gmap L (Dobj B) (compD L (Dobj A) (Dobj B) (Dmap A B f) (cone A))) ",
+            "(compC (Gobj L) (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (Gmap L (Dobj A) (cone A))) ",
+            "(@functor_preserves_comp.{w,z,u,v} ObjD HomD idD compD ObjC HomC idC compC target_args source_args Gobj Gmap G_args L (Dobj A) (Dobj B) (Dmap A B f) (cone A))) ",
+            "(@eq_congr_arg.{z,v} (HomD L (Dobj B)) (HomC (Gobj L) (Gobj (Dobj B))) (Gmap L (Dobj B)) ",
+            "(compD L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) ",
+            "(cone B) ",
+            "(@limit_cone_naturality.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args Dobj Dmap diagram_args L cone limit_args A B f))"
+        )),
+    },
+    TheoremArtifact {
+        name: "right_adjoint_preserves_limits",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: right_adjoint_limit_params!(concat!(
+            "forall (L : ObjD), ",
+            "forall (cone : forall (j : ObjJ), HomD L (Dobj j)), ",
+            "forall (limit_args : @LimitLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args Dobj Dmap diagram_args L cone), ",
+            "forall (preserved_diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args (fun (j : ObjJ) => Gobj (Dobj j)) (fun (A : ObjJ) => fun (B : ObjJ) => fun (f : HomJ A B) => Gmap (Dobj A) (Dobj B) (Dmap A B f))), ",
+            "@LimitLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args (fun (j : ObjJ) => Gobj (Dobj j)) (fun (A : ObjJ) => fun (B : ObjJ) => fun (f : HomJ A B) => Gmap (Dobj A) (Dobj B) (Dmap A B f)) preserved_diagram_args (Gobj L) (fun (j : ObjJ) => Gmap L (Dobj j) (cone j))"
+        )),
+        proof: right_adjoint_limit_abs!(concat!(
+            "fun L => fun cone => fun limit_args => fun preserved_diagram_args => ",
+            "@limit_definition_intro.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args (fun (j : ObjJ) => Gobj (Dobj j)) (fun (A : ObjJ) => fun (B : ObjJ) => fun (f : HomJ A B) => Gmap (Dobj A) (Dobj B) (Dmap A B f)) preserved_diagram_args (Gobj L) (fun (j : ObjJ) => Gmap L (Dobj j) (cone j)) ",
+            "(@adjunction_right_adjoint_preserved_limit_cone_law.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args L cone limit_args) ",
+            "(fun (N : ObjC) => fun (nu : forall (j : ObjJ), HomC N (Gobj (Dobj j))) => fun (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{v} (HomC N (Gobj (Dobj B))) (compC N (Gobj (Dobj A)) (Gobj (Dobj B)) (Gmap (Dobj A) (Dobj B) (Dmap A B f)) (nu A)) (nu B)) => fun (Q : Prop) => fun (build : forall (factor : HomC N (Gobj L)), forall (factor_law : forall (j : ObjJ), @Eq.{v} (HomC N (Gobj (Dobj j))) (compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) factor) (nu j)), forall (unique_law : forall (m : HomC N (Gobj L)), forall (m_law : forall (j : ObjJ), @Eq.{v} (HomC N (Gobj (Dobj j))) (compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) m) (nu j)), @Eq.{v} (HomC N (Gobj L)) m factor), Q) => ",
+            "@limit_universal_property.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args Dobj Dmap diagram_args L cone limit_args (Fobj N) (fun (j : ObjJ) => hom_backward N (Dobj j) (nu j)) ",
+            "(@adjunction_right_adjoint_transposes_cones.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args N nu nu_cone_law) ",
+            "Q ",
+            "(fun (factor : HomD (Fobj N) L) => fun (factor_law : forall (j : ObjJ), @Eq.{z} (HomD (Fobj N) (Dobj j)) (compD (Fobj N) L (Dobj j) (cone j) factor) (hom_backward N (Dobj j) (nu j))) => fun (unique_law : forall (m : HomD (Fobj N) L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomD (Fobj N) (Dobj j)) (compD (Fobj N) L (Dobj j) (cone j) m) (hom_backward N (Dobj j) (nu j))), @Eq.{z} (HomD (Fobj N) L) m factor) => ",
+            "build (hom_forward N L factor) ",
+            "(fun (j : ObjJ) => @eq_trans.{v} (HomC N (Gobj (Dobj j))) (compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) (hom_forward N L factor)) (hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) factor)) (nu j) (@eq_symm.{v} (HomC N (Gobj (Dobj j))) (hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) factor)) (compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) (hom_forward N L factor)) (@adjunction_hom_naturality_target.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N L (Dobj j) (cone j) factor)) (@eq_trans.{v} (HomC N (Gobj (Dobj j))) (hom_forward N (Dobj j) (compD (Fobj N) L (Dobj j) (cone j) factor)) (hom_forward N (Dobj j) (hom_backward N (Dobj j) (nu j))) (nu j) (@eq_congr_arg.{z,v} (HomD (Fobj N) (Dobj j)) (HomC N (Gobj (Dobj j))) (hom_forward N (Dobj j)) (compD (Fobj N) L (Dobj j) (cone j) factor) (hom_backward N (Dobj j) (nu j)) (factor_law j)) (@adjunction_hom_right_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N (Dobj j) (nu j)))) ",
+            "(fun (m : HomC N (Gobj L)) => fun (m_law : forall (j : ObjJ), @Eq.{v} (HomC N (Gobj (Dobj j))) (compC N (Gobj L) (Gobj (Dobj j)) (Gmap L (Dobj j) (cone j)) m) (nu j)) => @eq_trans.{v} (HomC N (Gobj L)) m (hom_forward N L (hom_backward N L m)) (hom_forward N L factor) (@eq_symm.{v} (HomC N (Gobj L)) (hom_forward N L (hom_backward N L m)) m (@adjunction_hom_right_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args N L m)) (@eq_congr_arg.{z,v} (HomD (Fobj N) L) (HomC N (Gobj L)) (hom_forward N L) (hom_backward N L m) factor (unique_law (hom_backward N L m) (fun (j : ObjJ) => @adjunction_right_adjoint_transposes_limit_factor.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args L cone N nu m m_law j))))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_left_adjoint_transposes_cocones",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: left_adjoint_colimit_params!(concat!(
+            "forall (N : ObjD), ",
+            "forall (nu : forall (j : ObjJ), HomD (Fobj (Dobj j)) N), ",
+            "forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomD (Fobj (Dobj A)) N) (compD (Fobj (Dobj A)) (Fobj (Dobj B)) N (nu B) (Fmap (Dobj A) (Dobj B) (Dmap A B f))) (nu A)), ",
+            "forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), ",
+            "@Eq.{v} (HomC (Dobj A) (Gobj N)) (compC (Dobj A) (Dobj B) (Gobj N) (hom_forward (Dobj B) N (nu B)) (Dmap A B f)) (hom_forward (Dobj A) N (nu A))"
+        )),
+        proof: left_adjoint_colimit_abs!(concat!(
+            "fun N => fun nu => fun nu_cocone_law => fun A => fun B => fun f => ",
+            "@eq_trans.{v} (HomC (Dobj A) (Gobj N)) ",
+            "(compC (Dobj A) (Dobj B) (Gobj N) (hom_forward (Dobj B) N (nu B)) (Dmap A B f)) ",
+            "(hom_forward (Dobj A) N (compD (Fobj (Dobj A)) (Fobj (Dobj B)) N (nu B) (Fmap (Dobj A) (Dobj B) (Dmap A B f)))) ",
+            "(hom_forward (Dobj A) N (nu A)) ",
+            "(@eq_symm.{v} (HomC (Dobj A) (Gobj N)) ",
+            "(hom_forward (Dobj A) N (compD (Fobj (Dobj A)) (Fobj (Dobj B)) N (nu B) (Fmap (Dobj A) (Dobj B) (Dmap A B f)))) ",
+            "(compC (Dobj A) (Dobj B) (Gobj N) (hom_forward (Dobj B) N (nu B)) (Dmap A B f)) ",
+            "(@adjunction_hom_naturality_source.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args (Dobj A) (Dobj B) N (Dmap A B f) (nu B))) ",
+            "(@eq_congr_arg.{z,v} (HomD (Fobj (Dobj A)) N) (HomC (Dobj A) (Gobj N)) (hom_forward (Dobj A) N) ",
+            "(compD (Fobj (Dobj A)) (Fobj (Dobj B)) N (nu B) (Fmap (Dobj A) (Dobj B) (Dmap A B f))) ",
+            "(nu A) ",
+            "(nu_cocone_law A B f))"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_left_adjoint_transposes_colimit_factor",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: left_adjoint_colimit_params!(concat!(
+            "forall (K : ObjC), ",
+            "forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            "forall (N : ObjD), ",
+            "forall (nu : forall (j : ObjJ), HomD (Fobj (Dobj j)) N), ",
+            "forall (k : HomC K (Gobj N)), ",
+            "forall (k_law : forall (j : ObjJ), @Eq.{v} (HomC (Dobj j) (Gobj N)) (compC (Dobj j) K (Gobj N) k (cocone j)) (hom_forward (Dobj j) N (nu j))), ",
+            "forall (j : ObjJ), ",
+            "@Eq.{z} (HomD (Fobj (Dobj j)) N) (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))) (nu j)"
+        )),
+        proof: left_adjoint_colimit_abs!(concat!(
+            "fun K => fun cocone => fun N => fun nu => fun k => fun k_law => fun j => ",
+            "@eq_trans.{z} (HomD (Fobj (Dobj j)) N) ",
+            "(compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))) ",
+            "(hom_backward (Dobj j) N (hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))))) ",
+            "(nu j) ",
+            "(@eq_symm.{z} (HomD (Fobj (Dobj j)) N) ",
+            "(hom_backward (Dobj j) N (hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))))) ",
+            "(compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))) ",
+            "(@adjunction_hom_left_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))))) ",
+            "(@eq_trans.{z} (HomD (Fobj (Dobj j)) N) ",
+            "(hom_backward (Dobj j) N (hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j))))) ",
+            "(hom_backward (Dobj j) N (hom_forward (Dobj j) N (nu j))) ",
+            "(nu j) ",
+            "(@eq_congr_arg.{v,z} (HomC (Dobj j) (Gobj N)) (HomD (Fobj (Dobj j)) N) (hom_backward (Dobj j) N) ",
+            "(hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j)))) ",
+            "(hom_forward (Dobj j) N (nu j)) ",
+            "(@eq_trans.{v} (HomC (Dobj j) (Gobj N)) ",
+            "(hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N (hom_backward K N k) (Fmap (Dobj j) K (cocone j)))) ",
+            "(compC (Dobj j) K (Gobj N) (hom_forward K N (hom_backward K N k)) (cocone j)) ",
+            "(hom_forward (Dobj j) N (nu j)) ",
+            "(@adjunction_hom_naturality_source.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args (Dobj j) K N (cocone j) (hom_backward K N k)) ",
+            "(@eq_trans.{v} (HomC (Dobj j) (Gobj N)) ",
+            "(compC (Dobj j) K (Gobj N) (hom_forward K N (hom_backward K N k)) (cocone j)) ",
+            "(compC (Dobj j) K (Gobj N) k (cocone j)) ",
+            "(hom_forward (Dobj j) N (nu j)) ",
+            "(@eq_congr_arg.{v,v} (HomC K (Gobj N)) (HomC (Dobj j) (Gobj N)) (fun (t : HomC K (Gobj N)) => compC (Dobj j) K (Gobj N) t (cocone j)) ",
+            "(hom_forward K N (hom_backward K N k)) ",
+            "k ",
+            "(@adjunction_hom_right_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args K N k)) ",
+            "(k_law j)))) ",
+            "(@adjunction_hom_left_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args (Dobj j) N (nu j)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_left_adjoint_untransposes_colimit_factor",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: left_adjoint_colimit_params!(concat!(
+            "forall (K : ObjC), ",
+            "forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            "forall (N : ObjD), ",
+            "forall (nu : forall (j : ObjJ), HomD (Fobj (Dobj j)) N), ",
+            "forall (m : HomD (Fobj K) N), ",
+            "forall (m_law : forall (j : ObjJ), @Eq.{z} (HomD (Fobj (Dobj j)) N) (compD (Fobj (Dobj j)) (Fobj K) N m (Fmap (Dobj j) K (cocone j))) (nu j)), ",
+            "forall (j : ObjJ), ",
+            "@Eq.{v} (HomC (Dobj j) (Gobj N)) (compC (Dobj j) K (Gobj N) (hom_forward K N m) (cocone j)) (hom_forward (Dobj j) N (nu j))"
+        )),
+        proof: left_adjoint_colimit_abs!(concat!(
+            "fun K => fun cocone => fun N => fun nu => fun m => fun m_law => fun j => ",
+            "@eq_trans.{v} (HomC (Dobj j) (Gobj N)) ",
+            "(compC (Dobj j) K (Gobj N) (hom_forward K N m) (cocone j)) ",
+            "(hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N m (Fmap (Dobj j) K (cocone j)))) ",
+            "(hom_forward (Dobj j) N (nu j)) ",
+            "(@eq_symm.{v} (HomC (Dobj j) (Gobj N)) ",
+            "(hom_forward (Dobj j) N (compD (Fobj (Dobj j)) (Fobj K) N m (Fmap (Dobj j) K (cocone j)))) ",
+            "(compC (Dobj j) K (Gobj N) (hom_forward K N m) (cocone j)) ",
+            "(@adjunction_hom_naturality_source.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args (Dobj j) K N (cocone j) m)) ",
+            "(@eq_congr_arg.{z,v} (HomD (Fobj (Dobj j)) N) (HomC (Dobj j) (Gobj N)) (hom_forward (Dobj j) N) ",
+            "(compD (Fobj (Dobj j)) (Fobj K) N m (Fmap (Dobj j) K (cocone j))) ",
+            "(nu j) ",
+            "(m_law j))"
+        )),
+    },
+    TheoremArtifact {
+        name: "adjunction_left_adjoint_preserved_colimit_cocone_law",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: left_adjoint_colimit_params!(concat!(
+            "forall (K : ObjC), ",
+            "forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            "forall (colimit_args : @ColimitLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args Dobj Dmap diagram_args K cocone), ",
+            "forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), ",
+            "@Eq.{z} (HomD (Fobj (Dobj A)) (Fobj K)) (compD (Fobj (Dobj A)) (Fobj (Dobj B)) (Fobj K) (Fmap (Dobj B) K (cocone B)) (Fmap (Dobj A) (Dobj B) (Dmap A B f))) (Fmap (Dobj A) K (cocone A))"
+        )),
+        proof: left_adjoint_colimit_abs!(concat!(
+            "fun K => fun cocone => fun colimit_args => fun A => fun B => fun f => ",
+            "@eq_trans.{z} (HomD (Fobj (Dobj A)) (Fobj K)) ",
+            "(compD (Fobj (Dobj A)) (Fobj (Dobj B)) (Fobj K) (Fmap (Dobj B) K (cocone B)) (Fmap (Dobj A) (Dobj B) (Dmap A B f))) ",
+            "(Fmap (Dobj A) K (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f))) ",
+            "(Fmap (Dobj A) K (cocone A)) ",
+            "(@eq_symm.{z} (HomD (Fobj (Dobj A)) (Fobj K)) ",
+            "(Fmap (Dobj A) K (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f))) ",
+            "(compD (Fobj (Dobj A)) (Fobj (Dobj B)) (Fobj K) (Fmap (Dobj B) K (cocone B)) (Fmap (Dobj A) (Dobj B) (Dmap A B f))) ",
+            "(@functor_preserves_comp.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args (Dobj A) (Dobj B) K (cocone B) (Dmap A B f))) ",
+            "(@eq_congr_arg.{v,z} (HomC (Dobj A) K) (HomD (Fobj (Dobj A)) (Fobj K)) (Fmap (Dobj A) K) ",
+            "(compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) ",
+            "(cocone A) ",
+            "(@colimit_cocone_naturality.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args Dobj Dmap diagram_args K cocone colimit_args A B f))"
+        )),
+    },
+    TheoremArtifact {
+        name: "left_adjoint_preserves_colimits",
+        universe_params: &["a", "b", "u", "v", "w", "z"],
+        statement: left_adjoint_colimit_params!(concat!(
+            "forall (K : ObjC), ",
+            "forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), ",
+            "forall (colimit_args : @ColimitLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args Dobj Dmap diagram_args K cocone), ",
+            "forall (preserved_diagram_args : @FunctorLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args (fun (j : ObjJ) => Fobj (Dobj j)) (fun (A : ObjJ) => fun (B : ObjJ) => fun (f : HomJ A B) => Fmap (Dobj A) (Dobj B) (Dmap A B f))), ",
+            "@ColimitLawArgs.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args (fun (j : ObjJ) => Fobj (Dobj j)) (fun (A : ObjJ) => fun (B : ObjJ) => fun (f : HomJ A B) => Fmap (Dobj A) (Dobj B) (Dmap A B f)) preserved_diagram_args (Fobj K) (fun (j : ObjJ) => Fmap (Dobj j) K (cocone j))"
+        )),
+        proof: left_adjoint_colimit_abs!(concat!(
+            "fun K => fun cocone => fun colimit_args => fun preserved_diagram_args => ",
+            "@colimit_definition_intro.{a,b,w,z} ObjJ HomJ idJ compJ ObjD HomD idD compD shape_args target_args (fun (j : ObjJ) => Fobj (Dobj j)) (fun (A : ObjJ) => fun (B : ObjJ) => fun (f : HomJ A B) => Fmap (Dobj A) (Dobj B) (Dmap A B f)) preserved_diagram_args (Fobj K) (fun (j : ObjJ) => Fmap (Dobj j) K (cocone j)) ",
+            "(@adjunction_left_adjoint_preserved_colimit_cocone_law.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args K cocone colimit_args) ",
+            "(fun (N : ObjD) => fun (nu : forall (j : ObjJ), HomD (Fobj (Dobj j)) N) => fun (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomD (Fobj (Dobj A)) N) (compD (Fobj (Dobj A)) (Fobj (Dobj B)) N (nu B) (Fmap (Dobj A) (Dobj B) (Dmap A B f))) (nu A)) => fun (Q : Prop) => fun (build : forall (cofactor : HomD (Fobj K) N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomD (Fobj (Dobj j)) N) (compD (Fobj (Dobj j)) (Fobj K) N cofactor (Fmap (Dobj j) K (cocone j))) (nu j)), forall (unique_law : forall (m : HomD (Fobj K) N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomD (Fobj (Dobj j)) N) (compD (Fobj (Dobj j)) (Fobj K) N m (Fmap (Dobj j) K (cocone j))) (nu j)), @Eq.{z} (HomD (Fobj K) N) m cofactor), Q) => ",
+            "@colimit_universal_property.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args source_args Dobj Dmap diagram_args K cocone colimit_args (Gobj N) (fun (j : ObjJ) => hom_forward (Dobj j) N (nu j)) ",
+            "(@adjunction_left_adjoint_transposes_cocones.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args N nu nu_cocone_law) ",
+            "Q ",
+            "(fun (cofactor : HomC K (Gobj N)) => fun (cofactor_law : forall (j : ObjJ), @Eq.{v} (HomC (Dobj j) (Gobj N)) (compC (Dobj j) K (Gobj N) cofactor (cocone j)) (hom_forward (Dobj j) N (nu j))) => fun (unique_law : forall (m : HomC K (Gobj N)), forall (m_law : forall (j : ObjJ), @Eq.{v} (HomC (Dobj j) (Gobj N)) (compC (Dobj j) K (Gobj N) m (cocone j)) (hom_forward (Dobj j) N (nu j))), @Eq.{v} (HomC K (Gobj N)) m cofactor) => ",
+            "build (hom_backward K N cofactor) ",
+            "(fun (j : ObjJ) => @adjunction_left_adjoint_transposes_colimit_factor.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args K cocone N nu cofactor cofactor_law j) ",
+            "(fun (m : HomD (Fobj K) N) => fun (m_law : forall (j : ObjJ), @Eq.{z} (HomD (Fobj (Dobj j)) N) (compD (Fobj (Dobj j)) (Fobj K) N m (Fmap (Dobj j) K (cocone j))) (nu j)) => @eq_trans.{z} (HomD (Fobj K) N) m (hom_backward K N (hom_forward K N m)) (hom_backward K N cofactor) (@eq_symm.{z} (HomD (Fobj K) N) (hom_backward K N (hom_forward K N m)) m (@adjunction_hom_left_inverse.{u,v,w,z} ObjC HomC idC compC ObjD HomD idD compD source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args K N m)) (@eq_congr_arg.{v,z} (HomC K (Gobj N)) (HomD (Fobj K) N) (hom_backward K N) (hom_forward K N m) cofactor (unique_law (hom_forward K N m) (fun (j : ObjJ) => @adjunction_left_adjoint_untransposes_colimit_factor.{a,b,u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC ObjD HomD idD compD shape_args source_args target_args Fobj Fmap F_args Gobj Gmap G_args hom_forward hom_backward adjunction_args Dobj Dmap diagram_args K cocone N nu m m_law j))))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "opposite_category_laws",
+        universe_params: &["u", "v"],
+        statement: category_params!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), @CategoryLawArgs.{u,v} Obj (fun (A : Obj) => fun (B : Obj) => Hom B A) id (fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (g : Hom C B) => fun (f : Hom B A) => comp C B A f g)"
+        ),
+        proof: category_abs!(concat!(
+            "fun category_args => fun (P : Prop) => fun (mk : ",
+            "forall (comp_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom B A), @Eq.{v} (Hom B A) (comp B A A (id A) f) f), ",
+            "forall (id_comp_law : forall (A : Obj), forall (B : Obj), forall (f : Hom B A), @Eq.{v} (Hom B A) (comp B B A f (id B)) f), ",
+            "forall (comp_assoc_law : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom D C), forall (g : Hom C B), forall (f : Hom B A), @Eq.{v} (Hom D A) (comp D B A f (comp D C B g h)) (comp D C A (comp C B A f g) h)), ",
+            "P) => mk ",
+            "(fun (A : Obj) => fun (B : Obj) => fun (f : Hom B A) => @category_id_comp.{u,v} Obj Hom id comp category_args B A f) ",
+            "(fun (A : Obj) => fun (B : Obj) => fun (f : Hom B A) => @category_comp_id.{u,v} Obj Hom id comp category_args B A f) ",
+            "(fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (D : Obj) => fun (h : Hom D C) => fun (g : Hom C B) => fun (f : Hom B A) => ",
+            "@eq_symm.{v} (Hom D A) ",
+            "(comp D C A (comp C B A f g) h) ",
+            "(comp D B A f (comp D C B g h)) ",
+            "(@category_comp_assoc.{u,v} Obj Hom id comp category_args D C B A f g h))"
+        )),
     },
 ];
 
@@ -15207,6 +23898,750 @@ const ABSTRACT_KRULL_THEOREM_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const DERIVED_AFFINE_SCHEMES_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "DerivedAffineSchemeLawArgs",
+    universe_params: &["u", "v"],
+    ty: concat!(
+        "forall (DerivedRing : Sort u), ",
+        "forall (DerivedStack : Sort v), ",
+        "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+        "forall (IsAffineScheme : forall (X : DerivedStack), Prop), Prop"
+    ),
+    value: concat!(
+        "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+        "forall (P : Prop), ",
+        "forall (mk : forall (spec_affine_law : forall (A : DerivedRing), ",
+        "IsAffineScheme (Spec A)), P), P"
+    ),
+}];
+
+const DERIVED_AFFINE_SCHEMES_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "affine_schemes_definition_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)), ",
+            "@DerivedAffineSchemeLawArgs.{u,v} DerivedRing DerivedStack Spec IsAffineScheme"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun spec_affine_law => fun (P : Prop) => ",
+            "fun (mk : forall (spec_affine_law : forall (A : DerivedRing), ",
+            "IsAffineScheme (Spec A)), P) => mk spec_affine_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "affine_schemes",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (A : DerivedRing), IsAffineScheme (Spec A)"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => ",
+            "affine_scheme_args (forall (A : DerivedRing), IsAffineScheme (Spec A)) ",
+            "(fun (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)) => ",
+            "spec_affine_law)"
+        ),
+    },
+];
+
+const QUASI_COHERENT_SHEAVES_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "QuasiCoherentSheafLawArgs",
+    universe_params: &["u", "v", "w", "z"],
+    ty: concat!(
+        "forall (DerivedRing : Sort u), ",
+        "forall (DerivedStack : Sort v), ",
+        "forall (ModuleOver : forall (A : DerivedRing), Sort w), ",
+        "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+        "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+        "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+        "DerivedRing DerivedStack Spec IsAffineScheme), ",
+        "forall (QCoh : forall (X : DerivedStack), Sort z), ",
+        "forall (sheaf_of_module : forall (A : DerivedRing), forall (M : ModuleOver A), ",
+        "QCoh (Spec A)), ",
+        "forall (IsQuasiCoherent : forall (X : DerivedStack), forall (F : QCoh X), Prop), Prop"
+    ),
+    value: concat!(
+        "fun DerivedRing => fun DerivedStack => fun ModuleOver => fun Spec => ",
+        "fun IsAffineScheme => fun affine_scheme_args => fun QCoh => ",
+        "fun sheaf_of_module => fun IsQuasiCoherent => ",
+        "forall (P : Prop), ",
+        "forall (mk : forall (module_sheaf_quasi_coherent_law : ",
+        "forall (A : DerivedRing), forall (M : ModuleOver A), ",
+        "IsQuasiCoherent (Spec A) (sheaf_of_module A M)), P), P"
+    ),
+}];
+
+const QUASI_COHERENT_SHEAVES_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "quasi_coherent_sheaves_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (ModuleOver : forall (A : DerivedRing), Sort w), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (QCoh : forall (X : DerivedStack), Sort z), ",
+            "forall (sheaf_of_module : forall (A : DerivedRing), forall (M : ModuleOver A), ",
+            "QCoh (Spec A)), ",
+            "forall (IsQuasiCoherent : forall (X : DerivedStack), forall (F : QCoh X), Prop), ",
+            "forall (module_sheaf_quasi_coherent_law : forall (A : DerivedRing), ",
+            "forall (M : ModuleOver A), IsQuasiCoherent (Spec A) (sheaf_of_module A M)), ",
+            "@QuasiCoherentSheafLawArgs.{u,v,w,z} DerivedRing DerivedStack ModuleOver ",
+            "Spec IsAffineScheme affine_scheme_args QCoh sheaf_of_module IsQuasiCoherent"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun ModuleOver => fun Spec => ",
+            "fun IsAffineScheme => fun affine_scheme_args => fun QCoh => ",
+            "fun sheaf_of_module => fun IsQuasiCoherent => ",
+            "fun module_sheaf_quasi_coherent_law => fun (P : Prop) => ",
+            "fun (mk : forall (module_sheaf_quasi_coherent_law : ",
+            "forall (A : DerivedRing), forall (M : ModuleOver A), ",
+            "IsQuasiCoherent (Spec A) (sheaf_of_module A M)), P) => ",
+            "mk module_sheaf_quasi_coherent_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "quasi_coherent_sheaves",
+        universe_params: &["u", "v", "w", "z"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (ModuleOver : forall (A : DerivedRing), Sort w), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (QCoh : forall (X : DerivedStack), Sort z), ",
+            "forall (sheaf_of_module : forall (A : DerivedRing), forall (M : ModuleOver A), ",
+            "QCoh (Spec A)), ",
+            "forall (IsQuasiCoherent : forall (X : DerivedStack), forall (F : QCoh X), Prop), ",
+            "forall (quasi_coherent_sheaf_args : @QuasiCoherentSheafLawArgs.{u,v,w,z} ",
+            "DerivedRing DerivedStack ModuleOver Spec IsAffineScheme affine_scheme_args ",
+            "QCoh sheaf_of_module IsQuasiCoherent), ",
+            "forall (A : DerivedRing), forall (M : ModuleOver A), ",
+            "IsQuasiCoherent (Spec A) (sheaf_of_module A M)"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun ModuleOver => fun Spec => ",
+            "fun IsAffineScheme => fun affine_scheme_args => fun QCoh => ",
+            "fun sheaf_of_module => fun IsQuasiCoherent => ",
+            "fun quasi_coherent_sheaf_args => ",
+            "quasi_coherent_sheaf_args ",
+            "(forall (A : DerivedRing), forall (M : ModuleOver A), ",
+            "IsQuasiCoherent (Spec A) (sheaf_of_module A M)) ",
+            "(fun (module_sheaf_quasi_coherent_law : forall (A : DerivedRing), ",
+            "forall (M : ModuleOver A), IsQuasiCoherent (Spec A) (sheaf_of_module A M)) => ",
+            "module_sheaf_quasi_coherent_law)"
+        ),
+    },
+];
+
+const ETALE_SMOOTH_FLAT_TOPOLOGY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "EtaleSmoothFlatTopologyLawArgs",
+    universe_params: &["u", "v", "w"],
+    ty: concat!(
+        "forall (DerivedRing : Sort u), ",
+        "forall (DerivedStack : Sort v), ",
+        "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+        "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+        "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+        "DerivedRing DerivedStack Spec IsAffineScheme), ",
+        "forall (Cover : forall (X : DerivedStack), Sort w), ",
+        "forall (IsEtaleCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+        "forall (IsSmoothCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+        "forall (IsFlatCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+        "forall (IsGrothendieckTopology : forall (CoverPredicate : ",
+        "forall (X : DerivedStack), forall (U : Cover X), Prop), Prop), Prop"
+    ),
+    value: concat!(
+        "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+        "fun affine_scheme_args => fun Cover => fun IsEtaleCover => ",
+        "fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => ",
+        "forall (P : Prop), ",
+        "forall (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), ",
+        "forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), ",
+        "forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P), P"
+    ),
+}];
+
+const ETALE_SMOOTH_FLAT_TOPOLOGY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "etale_smooth_flat_topology_definition_intro",
+        universe_params: &["u", "v", "w"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (Cover : forall (X : DerivedStack), Sort w), ",
+            "forall (IsEtaleCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsSmoothCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsFlatCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsGrothendieckTopology : forall (CoverPredicate : ",
+            "forall (X : DerivedStack), forall (U : Cover X), Prop), Prop), ",
+            "forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), ",
+            "forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), ",
+            "forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), ",
+            "@EtaleSmoothFlatTopologyLawArgs.{u,v,w} DerivedRing DerivedStack Spec ",
+            "IsAffineScheme affine_scheme_args Cover IsEtaleCover IsSmoothCover ",
+            "IsFlatCover IsGrothendieckTopology"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => fun Cover => fun IsEtaleCover => ",
+            "fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => ",
+            "fun etale_topology_law => fun smooth_topology_law => fun flat_topology_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), ",
+            "forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), ",
+            "forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P) => ",
+            "mk etale_topology_law smooth_topology_law flat_topology_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "etale_topology",
+        universe_params: &["u", "v", "w"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (Cover : forall (X : DerivedStack), Sort w), ",
+            "forall (IsEtaleCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsSmoothCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsFlatCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsGrothendieckTopology : forall (CoverPredicate : ",
+            "forall (X : DerivedStack), forall (U : Cover X), Prop), Prop), ",
+            "forall (topology_args : @EtaleSmoothFlatTopologyLawArgs.{u,v,w} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme affine_scheme_args Cover ",
+            "IsEtaleCover IsSmoothCover IsFlatCover IsGrothendieckTopology), ",
+            "IsGrothendieckTopology IsEtaleCover"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => fun Cover => fun IsEtaleCover => ",
+            "fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => ",
+            "fun topology_args => ",
+            "topology_args (IsGrothendieckTopology IsEtaleCover) ",
+            "(fun (etale_topology_law : IsGrothendieckTopology IsEtaleCover) => ",
+            "fun (smooth_topology_law : IsGrothendieckTopology IsSmoothCover) => ",
+            "fun (flat_topology_law : IsGrothendieckTopology IsFlatCover) => ",
+            "etale_topology_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "smooth_topology",
+        universe_params: &["u", "v", "w"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (Cover : forall (X : DerivedStack), Sort w), ",
+            "forall (IsEtaleCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsSmoothCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsFlatCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsGrothendieckTopology : forall (CoverPredicate : ",
+            "forall (X : DerivedStack), forall (U : Cover X), Prop), Prop), ",
+            "forall (topology_args : @EtaleSmoothFlatTopologyLawArgs.{u,v,w} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme affine_scheme_args Cover ",
+            "IsEtaleCover IsSmoothCover IsFlatCover IsGrothendieckTopology), ",
+            "IsGrothendieckTopology IsSmoothCover"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => fun Cover => fun IsEtaleCover => ",
+            "fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => ",
+            "fun topology_args => ",
+            "topology_args (IsGrothendieckTopology IsSmoothCover) ",
+            "(fun (etale_topology_law : IsGrothendieckTopology IsEtaleCover) => ",
+            "fun (smooth_topology_law : IsGrothendieckTopology IsSmoothCover) => ",
+            "fun (flat_topology_law : IsGrothendieckTopology IsFlatCover) => ",
+            "smooth_topology_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "flat_topology",
+        universe_params: &["u", "v", "w"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (Cover : forall (X : DerivedStack), Sort w), ",
+            "forall (IsEtaleCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsSmoothCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsFlatCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsGrothendieckTopology : forall (CoverPredicate : ",
+            "forall (X : DerivedStack), forall (U : Cover X), Prop), Prop), ",
+            "forall (topology_args : @EtaleSmoothFlatTopologyLawArgs.{u,v,w} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme affine_scheme_args Cover ",
+            "IsEtaleCover IsSmoothCover IsFlatCover IsGrothendieckTopology), ",
+            "IsGrothendieckTopology IsFlatCover"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => fun Cover => fun IsEtaleCover => ",
+            "fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => ",
+            "fun topology_args => ",
+            "topology_args (IsGrothendieckTopology IsFlatCover) ",
+            "(fun (etale_topology_law : IsGrothendieckTopology IsEtaleCover) => ",
+            "fun (smooth_topology_law : IsGrothendieckTopology IsSmoothCover) => ",
+            "fun (flat_topology_law : IsGrothendieckTopology IsFlatCover) => ",
+            "flat_topology_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "etale_smooth_flat_topology",
+        universe_params: &["u", "v", "w"],
+        statement: concat!(
+            "forall (DerivedRing : Sort u), ",
+            "forall (DerivedStack : Sort v), ",
+            "forall (Spec : forall (A : DerivedRing), DerivedStack), ",
+            "forall (IsAffineScheme : forall (X : DerivedStack), Prop), ",
+            "forall (affine_scheme_args : @DerivedAffineSchemeLawArgs.{u,v} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme), ",
+            "forall (Cover : forall (X : DerivedStack), Sort w), ",
+            "forall (IsEtaleCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsSmoothCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsFlatCover : forall (X : DerivedStack), forall (U : Cover X), Prop), ",
+            "forall (IsGrothendieckTopology : forall (CoverPredicate : ",
+            "forall (X : DerivedStack), forall (U : Cover X), Prop), Prop), ",
+            "forall (topology_args : @EtaleSmoothFlatTopologyLawArgs.{u,v,w} ",
+            "DerivedRing DerivedStack Spec IsAffineScheme affine_scheme_args Cover ",
+            "IsEtaleCover IsSmoothCover IsFlatCover IsGrothendieckTopology), ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), ",
+            "forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), ",
+            "forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P), P"
+        ),
+        proof: concat!(
+            "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => ",
+            "fun affine_scheme_args => fun Cover => fun IsEtaleCover => ",
+            "fun IsSmoothCover => fun IsFlatCover => fun IsGrothendieckTopology => ",
+            "fun topology_args => fun (P : Prop) => ",
+            "fun (mk : forall (etale_topology_law : IsGrothendieckTopology IsEtaleCover), ",
+            "forall (smooth_topology_law : IsGrothendieckTopology IsSmoothCover), ",
+            "forall (flat_topology_law : IsGrothendieckTopology IsFlatCover), P) => ",
+            "topology_args P mk"
+        ),
+    },
+];
+
+const DERIVED_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "DerivedCategoryLawArgs",
+    universe_params: &["u", "v", "w", "z"],
+    ty: derived_category_params!("Prop"),
+    value: derived_category_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        derived_category_law_binders!("P"),
+        "), P"
+    )),
+}];
+
+const DERIVED_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "derived_category_definition_intro",
+        universe_params: &["u", "v", "w", "z"],
+        statement: derived_category_params!(concat!(derived_category_law_binders!(concat!(
+            derived_category_law_args_app!()
+        )))),
+        proof: derived_category_abs!(concat!(
+            "fun derived_category_law => fun localization_functor_law => ",
+            "fun quasi_isomorphism_inverted_law => fun localization_universal_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            derived_category_law_binders!("P"),
+            ") => mk derived_category_law localization_functor_law ",
+            "quasi_isomorphism_inverted_law localization_universal_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "derived_category_has_category_laws",
+        universe_params: &["u", "v", "w", "z"],
+        statement: derived_category_params!(concat!(
+            "forall (derived_category_args : ",
+            derived_category_law_args_app!(),
+            "), ",
+            derived_category_category_law_type!()
+        )),
+        proof: derived_category_abs!(concat!(
+            "fun derived_category_args => derived_category_args (",
+            derived_category_category_law_type!(),
+            ") (fun (derived_category_law : ",
+            derived_category_category_law_type!(),
+            ") => fun (localization_functor_law : LocalizationFunctorLaw) => ",
+            "fun (quasi_isomorphism_inverted_law : ",
+            derived_category_quasi_iso_inverted_law_type!(),
+            ") => fun (localization_universal_law : LocalizationUniversal) => ",
+            "derived_category_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "derived_category_localization_functor",
+        universe_params: &["u", "v", "w", "z"],
+        statement: derived_category_params!(concat!(
+            "forall (derived_category_args : ",
+            derived_category_law_args_app!(),
+            "), LocalizationFunctorLaw"
+        )),
+        proof: derived_category_abs!(concat!(
+            "fun derived_category_args => derived_category_args LocalizationFunctorLaw ",
+            "(fun (derived_category_law : ",
+            derived_category_category_law_type!(),
+            ") => fun (localization_functor_law : LocalizationFunctorLaw) => ",
+            "fun (quasi_isomorphism_inverted_law : ",
+            derived_category_quasi_iso_inverted_law_type!(),
+            ") => fun (localization_universal_law : LocalizationUniversal) => ",
+            "localization_functor_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "derived_category_inverts_quasi_isomorphisms",
+        universe_params: &["u", "v", "w", "z"],
+        statement: derived_category_params!(concat!(
+            "forall (derived_category_args : ",
+            derived_category_law_args_app!(),
+            "), ",
+            derived_category_quasi_iso_inverted_law_type!()
+        )),
+        proof: derived_category_abs!(concat!(
+            "fun derived_category_args => derived_category_args (",
+            derived_category_quasi_iso_inverted_law_type!(),
+            ") (fun (derived_category_law : ",
+            derived_category_category_law_type!(),
+            ") => fun (localization_functor_law : LocalizationFunctorLaw) => ",
+            "fun (quasi_isomorphism_inverted_law : ",
+            derived_category_quasi_iso_inverted_law_type!(),
+            ") => fun (localization_universal_law : LocalizationUniversal) => ",
+            "quasi_isomorphism_inverted_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "derived_category_universal_property",
+        universe_params: &["u", "v", "w", "z"],
+        statement: derived_category_params!(concat!(
+            "forall (derived_category_args : ",
+            derived_category_law_args_app!(),
+            "), LocalizationUniversal"
+        )),
+        proof: derived_category_abs!(concat!(
+            "fun derived_category_args => derived_category_args LocalizationUniversal ",
+            "(fun (derived_category_law : ",
+            derived_category_category_law_type!(),
+            ") => fun (localization_functor_law : LocalizationFunctorLaw) => ",
+            "fun (quasi_isomorphism_inverted_law : ",
+            derived_category_quasi_iso_inverted_law_type!(),
+            ") => fun (localization_universal_law : LocalizationUniversal) => ",
+            "localization_universal_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "derived_category",
+        universe_params: &["u", "v", "w", "z"],
+        statement: derived_category_params!(concat!(
+            "forall (derived_category_args : ",
+            derived_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            derived_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: derived_category_abs!(concat!(
+            "fun derived_category_args => fun (P : Prop) => fun (mk : ",
+            derived_category_law_binders!("P"),
+            ") => derived_category_args P mk"
+        )),
+    },
+];
+
+const TOR_EXT_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "TorExtLawArgs",
+    universe_params: &["a", "u", "v", "w", "z"],
+    ty: tor_ext_params!("Prop"),
+    value: tor_ext_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        tor_ext_law_binders!("P"),
+        "), P"
+    )),
+}];
+
+const TOR_EXT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "tor_ext_definition_intro",
+        universe_params: &["a", "u", "v", "w", "z"],
+        statement: tor_ext_params!(concat!(tor_ext_law_binders!(concat!(
+            tor_ext_law_args_app!()
+        )))),
+        proof: tor_ext_abs!(concat!(
+            "fun derived_category_law => fun tor_left_derived_tensor_law => ",
+            "fun ext_right_derived_hom_law => fun tor_ext_long_exact_sequence_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            tor_ext_law_binders!("P"),
+            ") => mk derived_category_law tor_left_derived_tensor_law ",
+            "ext_right_derived_hom_law tor_ext_long_exact_sequence_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "tor_ext_derived_category",
+        universe_params: &["a", "u", "v", "w", "z"],
+        statement: tor_ext_params!(concat!(
+            "forall (tor_ext_args : ",
+            tor_ext_law_args_app!(),
+            "), ",
+            derived_category_law_args_app!()
+        )),
+        proof: tor_ext_abs!(concat!(
+            "fun tor_ext_args => tor_ext_args (",
+            derived_category_law_args_app!(),
+            ") (fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => ",
+            "fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => ",
+            "fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => ",
+            "derived_category_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "tor_is_left_derived_tensor",
+        universe_params: &["a", "u", "v", "w", "z"],
+        statement: tor_ext_params!(concat!(
+            "forall (tor_ext_args : ",
+            tor_ext_law_args_app!(),
+            "), TorIsLeftDerivedTensor"
+        )),
+        proof: tor_ext_abs!(concat!(
+            "fun tor_ext_args => tor_ext_args TorIsLeftDerivedTensor ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => ",
+            "fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => ",
+            "fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => ",
+            "tor_left_derived_tensor_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "ext_is_right_derived_hom",
+        universe_params: &["a", "u", "v", "w", "z"],
+        statement: tor_ext_params!(concat!(
+            "forall (tor_ext_args : ",
+            tor_ext_law_args_app!(),
+            "), ExtIsRightDerivedHom"
+        )),
+        proof: tor_ext_abs!(concat!(
+            "fun tor_ext_args => tor_ext_args ExtIsRightDerivedHom ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => ",
+            "fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => ",
+            "fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => ",
+            "ext_right_derived_hom_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "tor_ext_long_exact_sequence",
+        universe_params: &["a", "u", "v", "w", "z"],
+        statement: tor_ext_params!(concat!(
+            "forall (tor_ext_args : ",
+            tor_ext_law_args_app!(),
+            "), TorExtLongExactSequence"
+        )),
+        proof: tor_ext_abs!(concat!(
+            "fun tor_ext_args => tor_ext_args TorExtLongExactSequence ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (tor_left_derived_tensor_law : TorIsLeftDerivedTensor) => ",
+            "fun (ext_right_derived_hom_law : ExtIsRightDerivedHom) => ",
+            "fun (tor_ext_long_exact_sequence_law : TorExtLongExactSequence) => ",
+            "tor_ext_long_exact_sequence_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "tor_ext",
+        universe_params: &["a", "u", "v", "w", "z"],
+        statement: tor_ext_params!(concat!(
+            "forall (tor_ext_args : ",
+            tor_ext_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            tor_ext_law_binders!("P"),
+            "), P"
+        )),
+        proof: tor_ext_abs!(concat!(
+            "fun tor_ext_args => fun (P : Prop) => fun (mk : ",
+            tor_ext_law_binders!("P"),
+            ") => tor_ext_args P mk"
+        )),
+    },
+];
+
+const COTANGENT_COMPLEX_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "CotangentComplexLawArgs",
+    universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+    ty: cotangent_complex_params!("Prop"),
+    value: cotangent_complex_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        cotangent_complex_law_binders!("P"),
+        "), P"
+    )),
+}];
+
+const COTANGENT_COMPLEX_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "cotangent_complex_definition_intro",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(cotangent_complex_law_binders!(concat!(
+            cotangent_complex_law_args_app!()
+        )))),
+        proof: cotangent_complex_abs!(concat!(
+            "fun derived_category_law => fun cotangent_represents_derivations_law => ",
+            "fun cotangent_transitivity_triangle_law => fun cotangent_base_change_law => ",
+            "fun cotangent_smooth_etale_vanishing_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            cotangent_complex_law_binders!("P"),
+            ") => mk derived_category_law cotangent_represents_derivations_law ",
+            "cotangent_transitivity_triangle_law cotangent_base_change_law ",
+            "cotangent_smooth_etale_vanishing_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "cotangent_complex_derived_category",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(
+            "forall (cotangent_complex_args : ",
+            cotangent_complex_law_args_app!(),
+            "), ",
+            derived_category_law_args_app!()
+        )),
+        proof: cotangent_complex_abs!(concat!(
+            "fun cotangent_complex_args => cotangent_complex_args (",
+            derived_category_law_args_app!(),
+            ") (fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (cotangent_represents_derivations_law : CotangentRepresentsDerivations) => ",
+            "fun (cotangent_transitivity_triangle_law : CotangentTransitivityTriangle) => ",
+            "fun (cotangent_base_change_law : CotangentBaseChange) => ",
+            "fun (cotangent_smooth_etale_vanishing_law : CotangentSmoothEtaleVanishing) => ",
+            "derived_category_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cotangent_complex_represents_derivations",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(
+            "forall (cotangent_complex_args : ",
+            cotangent_complex_law_args_app!(),
+            "), CotangentRepresentsDerivations"
+        )),
+        proof: cotangent_complex_abs!(concat!(
+            "fun cotangent_complex_args => cotangent_complex_args ",
+            "CotangentRepresentsDerivations ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (cotangent_represents_derivations_law : CotangentRepresentsDerivations) => ",
+            "fun (cotangent_transitivity_triangle_law : CotangentTransitivityTriangle) => ",
+            "fun (cotangent_base_change_law : CotangentBaseChange) => ",
+            "fun (cotangent_smooth_etale_vanishing_law : CotangentSmoothEtaleVanishing) => ",
+            "cotangent_represents_derivations_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cotangent_complex_transitivity_triangle",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(
+            "forall (cotangent_complex_args : ",
+            cotangent_complex_law_args_app!(),
+            "), CotangentTransitivityTriangle"
+        )),
+        proof: cotangent_complex_abs!(concat!(
+            "fun cotangent_complex_args => cotangent_complex_args ",
+            "CotangentTransitivityTriangle ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (cotangent_represents_derivations_law : CotangentRepresentsDerivations) => ",
+            "fun (cotangent_transitivity_triangle_law : CotangentTransitivityTriangle) => ",
+            "fun (cotangent_base_change_law : CotangentBaseChange) => ",
+            "fun (cotangent_smooth_etale_vanishing_law : CotangentSmoothEtaleVanishing) => ",
+            "cotangent_transitivity_triangle_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cotangent_complex_base_change",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(
+            "forall (cotangent_complex_args : ",
+            cotangent_complex_law_args_app!(),
+            "), CotangentBaseChange"
+        )),
+        proof: cotangent_complex_abs!(concat!(
+            "fun cotangent_complex_args => cotangent_complex_args CotangentBaseChange ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (cotangent_represents_derivations_law : CotangentRepresentsDerivations) => ",
+            "fun (cotangent_transitivity_triangle_law : CotangentTransitivityTriangle) => ",
+            "fun (cotangent_base_change_law : CotangentBaseChange) => ",
+            "fun (cotangent_smooth_etale_vanishing_law : CotangentSmoothEtaleVanishing) => ",
+            "cotangent_base_change_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cotangent_complex_smooth_etale_vanishing",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(
+            "forall (cotangent_complex_args : ",
+            cotangent_complex_law_args_app!(),
+            "), CotangentSmoothEtaleVanishing"
+        )),
+        proof: cotangent_complex_abs!(concat!(
+            "fun cotangent_complex_args => cotangent_complex_args ",
+            "CotangentSmoothEtaleVanishing ",
+            "(fun (derived_category_law : ",
+            derived_category_law_args_app!(),
+            ") => fun (cotangent_represents_derivations_law : CotangentRepresentsDerivations) => ",
+            "fun (cotangent_transitivity_triangle_law : CotangentTransitivityTriangle) => ",
+            "fun (cotangent_base_change_law : CotangentBaseChange) => ",
+            "fun (cotangent_smooth_etale_vanishing_law : CotangentSmoothEtaleVanishing) => ",
+            "cotangent_smooth_etale_vanishing_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "cotangent_complex",
+        universe_params: &["m", "n", "r", "u", "v", "w", "z"],
+        statement: cotangent_complex_params!(concat!(
+            "forall (cotangent_complex_args : ",
+            cotangent_complex_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            cotangent_complex_law_binders!("P"),
+            "), P"
+        )),
+        proof: cotangent_complex_abs!(concat!(
+            "fun cotangent_complex_args => fun (P : Prop) => fun (mk : ",
+            cotangent_complex_law_binders!("P"),
+            ") => cotangent_complex_args P mk"
+        )),
+    },
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "le",
@@ -19753,6 +29188,17 @@ fn run_full() -> Result<(), String> {
         &iff_imports,
         &iff_source_interfaces,
     )?;
+    let classical_category_imports = vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
+    let classical_category_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+    ];
+    let classical_category = build_and_write_module(
+        &proof_root,
+        &CLASSICAL_CATEGORY_MODULE,
+        &classical_category_imports,
+        &classical_category_source_interfaces,
+    )?;
     let abstract_group_imports = vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
     let abstract_group_source_interfaces = vec![
         eq_source_interface.clone(),
@@ -20432,6 +29878,72 @@ fn run_full() -> Result<(), String> {
         &abstract_krull_theorem_imports,
         &abstract_krull_theorem_source_interfaces,
     )?;
+    let derived_affine_schemes =
+        build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
+    let quasi_coherent_sheaves_imports = vec![derived_affine_schemes.verified_module.clone()];
+    let quasi_coherent_sheaves_source_interfaces =
+        vec![derived_affine_schemes.source_interface.clone()];
+    let quasi_coherent_sheaves = build_and_write_module(
+        &proof_root,
+        &QUASI_COHERENT_SHEAVES_MODULE,
+        &quasi_coherent_sheaves_imports,
+        &quasi_coherent_sheaves_source_interfaces,
+    )?;
+    let etale_smooth_flat_topology_imports = vec![derived_affine_schemes.verified_module.clone()];
+    let etale_smooth_flat_topology_source_interfaces =
+        vec![derived_affine_schemes.source_interface.clone()];
+    let etale_smooth_flat_topology = build_and_write_module(
+        &proof_root,
+        &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
+        &etale_smooth_flat_topology_imports,
+        &etale_smooth_flat_topology_source_interfaces,
+    )?;
+    let derived_category_imports = vec![
+        eq_import.clone(),
+        classical_category.verified_module.clone(),
+    ];
+    let derived_category_source_interfaces = vec![
+        eq_source_interface.clone(),
+        classical_category.source_interface.clone(),
+    ];
+    let derived_category = build_and_write_module(
+        &proof_root,
+        &DERIVED_CATEGORY_MODULE,
+        &derived_category_imports,
+        &derived_category_source_interfaces,
+    )?;
+    let tor_ext_imports = vec![
+        eq_import.clone(),
+        classical_category.verified_module.clone(),
+        derived_category.verified_module.clone(),
+    ];
+    let tor_ext_source_interfaces = vec![
+        eq_source_interface.clone(),
+        classical_category.source_interface.clone(),
+        derived_category.source_interface.clone(),
+    ];
+    let tor_ext = build_and_write_module(
+        &proof_root,
+        &TOR_EXT_MODULE,
+        &tor_ext_imports,
+        &tor_ext_source_interfaces,
+    )?;
+    let cotangent_complex_imports = vec![
+        eq_import.clone(),
+        classical_category.verified_module.clone(),
+        derived_category.verified_module.clone(),
+    ];
+    let cotangent_complex_source_interfaces = vec![
+        eq_source_interface.clone(),
+        classical_category.source_interface.clone(),
+        derived_category.source_interface.clone(),
+    ];
+    let cotangent_complex = build_and_write_module(
+        &proof_root,
+        &COTANGENT_COMPLEX_MODULE,
+        &cotangent_complex_imports,
+        &cotangent_complex_source_interfaces,
+    )?;
     let abstract_ordered_field_imports =
         vec![eq_import.clone(), abstract_ring.verified_module.clone()];
     let abstract_ordered_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
@@ -20859,6 +30371,7 @@ fn run_full() -> Result<(), String> {
         right_triangle,
         metric,
         iff,
+        classical_category,
         abstract_group,
         abstract_group_kernel,
         abstract_group_image,
@@ -20891,6 +30404,12 @@ fn run_full() -> Result<(), String> {
         abstract_hilbert_basis_theorem,
         abstract_hilbert_nullstellensatz,
         abstract_krull_theorem,
+        derived_affine_schemes,
+        quasi_coherent_sheaves,
+        etale_smooth_flat_topology,
+        derived_category,
+        tor_ext,
+        cotangent_complex,
         abstract_ordered_field,
         abstract_square_normalize,
         abstract_scalar_derive,

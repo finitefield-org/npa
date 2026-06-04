@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.CotangentComplex",
+  "source": "Proofs/Ai/AlgebraicGeometry/CotangentComplex/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/CotangentComplex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:06ff1feb2baf7172f8b985851f51fecc9d27042cb6e04cd62908955e5108e585",
+  "certificate_file_sha256": "sha256:9df283023bf986204de87ae4151e8349e8f04f81194ca7a9d33269827170192b",
+  "export_hash": "sha256:e825e06683118b4346695b12450be730f6c7924af2fae9925d4b9054cd98eec2",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:da3e14f4fb74146a8377ed79402278cf91766886940305dcd801402618055316",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Category.Classical", "Proofs.Ai.AlgebraicGeometry.DerivedCategory"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CotangentComplexLawArgs", "kind": "def" },
+    { "name": "cotangent_complex_definition_intro", "kind": "theorem" },
+    { "name": "cotangent_complex_derived_category", "kind": "theorem" },
+    { "name": "cotangent_complex_represents_derivations", "kind": "theorem" },
+    { "name": "cotangent_complex_transitivity_triangle", "kind": "theorem" },
+    { "name": "cotangent_complex_base_change", "kind": "theorem" },
+    { "name": "cotangent_complex_smooth_etale_vanishing", "kind": "theorem" },
+    { "name": "cotangent_complex", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

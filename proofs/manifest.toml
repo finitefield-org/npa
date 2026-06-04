@@ -273,6 +273,42 @@ theorems = ["iff_refl", "iff_symm", "iff_trans", "iff_mp", "iff_mpr", "and_intro
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Category.Classical"
+source = "Proofs/Ai/Category/Classical/source.npa"
+certificate = "Proofs/Ai/Category/Classical/certificate.npcert"
+meta = "Proofs/Ai/Category/Classical/meta.json"
+replay = "Proofs/Ai/Category/Classical/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:16e64d903085c99899de963e8c11e79217bbddf628a91476b9f5e9271e1303c6"
+certificate_file_sha256 = "sha256:7a1c522110b34abcda8e300d547dda2f7a6fb1a7283d8eb5d1ad785a226e2073"
+export_hash = "sha256:9e9a1a5b227326ecd544ab0fdd5526fba9b6884f5c1c4e9e28b9ff8d5ae9b423"
+axiom_report_hash = "sha256:aedc35e261c5143c5854f300a5b8d40cfb7681b42a849adb91e1b85b959fcb25"
+certificate_hash = "sha256:dbaaf3f1cd6f4c5f4fd257e07e9e741b620e3b79388e2b4668b0065058c46b20"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning"]
+definitions = ["CategoryLawArgs", "FunctorLawArgs", "NaturalTransformationLawArgs", "AdjunctionHomNaturalIsoLawArgs", "AdjunctionUnitCounitTriangleLawArgs", "LeftAdjointExistsArgs", "FreydUniversalArrowLawArgs", "HomFunctorLawArgs", "PresheafLawArgs", "SieveLawArgs", "GrothendieckTopologyLawArgs", "MatchingFamilyLawArgs", "SheafConditionLawArgs", "YonedaNaturalFamilyLawArgs", "YonedaEmbeddingLawArgs", "LimitLawArgs", "LimitExistsArgs", "ColimitLawArgs", "ColimitExistsArgs", "CompleteCategoryLawArgs", "CocompleteCategoryLawArgs", "CompleteCocompleteCategoryLawArgs", "PresheafCategoryLawArgs", "SheafificationLawArgs", "FiniteLimitLawArgs", "CartesianClosedLawArgs", "SubobjectClassifierLawArgs", "ElementaryToposLawArgs", "KripkeJoyalSemanticsLawArgs", "GiraudAxiomsLawArgs", "GrothendieckToposRepresentationLawArgs", "GiraudRepresentationConstructionArgs", "PresheafPointwiseLimitConstructionArgs", "PresheafPointwiseColimitConstructionArgs"]
+theorems = ["category_definition_intro", "functor_definition_intro", "functor_preserves_id", "functor_preserves_comp", "natural_transformation_definition_intro", "natural_transformation_naturality", "adjunction_hom_natural_iso_definition_intro", "adjunction_hom_left_inverse", "adjunction_hom_right_inverse", "adjunction_hom_naturality_source", "adjunction_hom_naturality_target", "category_comp_assoc_law", "left_adjoint_exists_intro", "freyd_universal_arrow_definition_intro", "freyd_universal_arrow_factor", "freyd_universal_arrow_unique", "freyd_universal_arrow_map_factor", "freyd_universal_arrow_hom_left_inverse", "freyd_universal_arrow_hom_right_inverse", "freyd_universal_arrow_hom_naturality_source_functorial", "freyd_universal_arrow_hom_naturality_source_assoc_left", "freyd_universal_arrow_hom_naturality_source_map_factor", "freyd_universal_arrow_hom_naturality_source_assoc_right", "freyd_universal_arrow_hom_naturality_source_assoc_chain", "freyd_universal_arrow_hom_naturality_source", "freyd_universal_arrow_hom_naturality_target", "freyd_universal_arrow_induces_hom_adjunction", "freyd_adjoint_functor_theorem", "adjunction_unit_counit_triangle_definition_intro", "adjunction_unit_naturality", "adjunction_counit_naturality", "adjunction_triangle_identity_left", "adjunction_triangle_identity_right", "category_comp_id", "category_id_comp", "category_comp_assoc", "hom_functor_theorem", "presheaf_definition_intro", "sieve_definition_intro", "sieve_precomp_closed", "grothendieck_topology_definition_intro", "grothendieck_topology_maximal", "grothendieck_topology_pullback_membership", "grothendieck_topology_pullback_reflects_membership", "grothendieck_topology_pullback_stable", "grothendieck_topology_transitive", "matching_family_definition_intro", "matching_family_compatible", "sheaf_condition_definition_intro", "sheaf_condition_amalgamation_exists", "sheaf_condition_amalgamation_unique", "sheafification_definition_intro", "sheafification_is_sheaf", "sheafification_universal_exists", "sheafification_universal_unique", "sheafification_theorem", "sheafification_is_left_adjoint", "subobject_classifier_definition_intro", "subobject_classifier_terminal_unique", "subobject_classifier_truth_mono", "subobject_classifier_pullback_square", "subobject_classifier_pullback_universal", "subobject_classifier_characteristic_exists", "subobject_classifier_characteristic_unique", "subobject_classifier", "elementary_topos_definition_intro", "elementary_topos_finite_limits", "elementary_topos_cartesian_closed", "elementary_topos_subobject_classifier", "elementary_topos_definition", "kripke_joyal_semantics_definition_intro", "kripke_joyal_stability", "kripke_joyal_locality", "kripke_joyal_truth", "kripke_joyal_false_elim", "kripke_joyal_conjunction_intro", "kripke_joyal_conjunction_left", "kripke_joyal_conjunction_right", "kripke_joyal_implication_intro", "kripke_joyal_implication_elim", "kripke_joyal_disjunction_local_intro", "kripke_joyal_disjunction_cover", "kripke_joyal_semantics", "giraud_axioms_definition_intro", "grothendieck_topos_representation_definition_intro", "giraud_representation_construction_intro", "giraud_theorem", "yoneda_natural_family_intro", "yoneda_natural_family_naturality", "yoneda_lemma", "yoneda_embedding", "yoneda_embedding_naturality", "yoneda_embedding_recover", "limit_definition_intro", "limit_cone_naturality", "limit_universal_property", "limit_exists_intro", "colimit_definition_intro", "colimit_cocone_naturality", "colimit_universal_property", "colimit_exists_intro", "complete_category_definition_intro", "complete_category_limit_exists", "cocomplete_category_definition_intro", "cocomplete_category_colimit_exists", "complete_cocomplete_category_definition_intro", "complete_cocomplete_category_complete", "complete_cocomplete_category_cocomplete", "presheaf_category_laws_intro", "presheaf_pointwise_limit_construction_intro", "presheaf_pointwise_limit_exists", "presheaf_pointwise_colimit_construction_intro", "presheaf_pointwise_colimit_exists", "presheaf_category_complete_from_pointwise_limits", "presheaf_category_cocomplete_from_pointwise_colimits", "presheaf_category_complete_and_cocomplete", "adjunction_right_adjoint_transposes_cones", "adjunction_right_adjoint_transposes_limit_factor", "adjunction_right_adjoint_preserved_limit_cone_law", "right_adjoint_preserves_limits", "adjunction_left_adjoint_transposes_cocones", "adjunction_left_adjoint_transposes_colimit_factor", "adjunction_left_adjoint_untransposes_colimit_factor", "adjunction_left_adjoint_preserved_colimit_cocone_law", "left_adjoint_preserves_colimits", "opposite_category_laws"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Category.Infinity.SimplicialSet"
+source = "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa"
+certificate = "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert"
+meta = "Proofs/Ai/Category/Infinity/SimplicialSet/meta.json"
+replay = "Proofs/Ai/Category/Infinity/SimplicialSet/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:951180a42b93de0d44e29dbfc9d5dae6a942f7bcbaf8730b45c428bd11f72624"
+certificate_file_sha256 = "sha256:5068801608a035729009f62eced96e8bf879e36073a0638c90c906c90f272b94"
+export_hash = "sha256:40fd6e2e40b481c8f6af4b9da643bf19cb2949cd2e86d6819145e8b8ba58eaea"
+axiom_report_hash = "sha256:314de9da5cbe370187b9fd289dbc8291813b3f570e7d1ca4322c359675482d97"
+certificate_hash = "sha256:2d8c116c1d54d6400e59e253e54e06d6626d754439a356c0b132c61738d64825"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
+definitions = ["SimplexCategoryLawArgs", "SimplicialSetLawArgs", "KanComplexLawArgs", "QuasicategoryLawArgs", "HomotopyCategoryLawArgs", "InfinityYonedaLawArgs", "InfinityKanExtensionLawArgs", "PresentableInfinityCategoryLawArgs", "InfinityAdjointFunctorTheoremLawArgs", "PresheafInfinityCategoryLawArgs", "AccessibleLocalizationLawArgs", "LeftExactLocalizationLawArgs", "SheavesOfSpacesLawArgs", "HypercoverDescentLawArgs", "InfinityToposLawArgs", "TruncationConnectivityLawArgs", "PostnikovTowerLawArgs", "CohomologyInInfinityTopoiLawArgs", "MappingSpaceLawArgs", "JoyalModelStructureLawArgs", "CartesianFibrationLawArgs", "CoCartesianFibrationLawArgs", "StraighteningUnstraighteningLawArgs", "NerveConstructionLawArgs"]
+theorems = ["simplex_category_definition_intro", "simplex_category_has_category_laws", "simplicial_set_definition_intro", "simplicial_set_is_presheaf_on_simplex_category", "simplicial_set_restrict_identity", "simplicial_set_restrict_composition", "kan_complex_definition_intro", "kan_complex_is_simplicial_set", "kan_complex_horn_filler", "kan_complex", "quasicategory_definition_intro", "quasicategory_is_simplicial_set", "quasicategory_inner_horn_filler", "quasicategory", "homotopy_category_definition_intro", "homotopy_category_has_category_laws", "homotopy_category", "infinity_yoneda_definition_intro", "infinity_yoneda_lemma", "infinity_kan_extension_definition_intro", "infinity_left_kan_extension", "infinity_right_kan_extension", "infinity_kan_extension", "presentable_infinity_category_definition_intro", "presentable_infinity_category_accessible", "presentable_infinity_category_cocomplete", "presentable_infinity_category", "infinity_adjoint_functor_theorem_definition_intro", "infinity_adjoint_functor_theorem", "presheaf_infinity_category_definition_intro", "presheaf_infinity_category", "accessible_localization_definition_intro", "accessible_localization", "left_exact_localization_definition_intro", "left_exact_localization", "sheaves_of_spaces_definition_intro", "sheaves_of_spaces", "hypercover_descent_definition_intro", "hypercover_descent", "infinity_topos_definition_intro", "infinity_topos_definition", "infinity_giraud_theorem", "truncation_connectivity_definition_intro", "truncation_and_connectivity", "postnikov_tower_definition_intro", "postnikov_tower", "cohomology_in_infinity_topoi_definition_intro", "cohomology_in_infinity_topoi", "mapping_space_definition_intro", "mapping_space_is_simplicial_set", "mapping_space_is_kan_complex", "mapping_space", "joyal_model_structure_definition_intro", "joyal_model_structure_has_model_category_laws", "joyal_model_structure_cofibrations_are_monomorphisms", "joyal_model_structure_monomorphisms_are_cofibrations", "joyal_model_structure_fibrant_objects_are_quasicategories", "joyal_model_structure_quasicategories_are_fibrant", "joyal_model_structure_weak_equivalences_are_categorical", "joyal_model_structure_categorical_equivalences_are_weak", "joyal_model_structure", "cartesian_fibration_definition_intro", "cartesian_fibration_is_simplicial_map", "cartesian_fibration_is_inner_fibration", "cartesian_fibration_lift_exists", "cartesian_fibration_lift_stable", "cartesian_fibration", "cocartesian_fibration_definition_intro", "cocartesian_fibration_is_simplicial_map", "cocartesian_fibration_is_inner_fibration", "cocartesian_fibration_lift_exists", "cocartesian_fibration_lift_stable", "cocartesian_fibration", "straightening_unstraightening_definition_intro", "straightening_maps_cartesian_fibrations_to_functors", "unstraightening_maps_functors_to_cartesian_fibrations", "straightening_unstraightening_cartesian_unit", "straightening_unstraightening_cartesian_counit", "straightening_maps_cocartesian_fibrations_to_functors", "unstraightening_maps_functors_to_cocartesian_fibrations", "straightening_unstraightening_cocartesian_unit", "straightening_unstraightening_cocartesian_counit", "straightening_unstraightening", "nerve_construction_definition_intro", "nerve_construction_is_simplicial_set", "nerve_construction"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractGroup"
 source = "Proofs/Ai/Algebra/AbstractGroup/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert"
@@ -848,6 +884,114 @@ certificate_hash = "sha256:66c51c3b30c7fc81301dc3a90bb2961efb813cfaab3337f11d67a
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem"]
 definitions = ["KrlFalse", "KrlNot", "IdealLe", "ProperIdeal", "MaximalIdeal", "MaximalIdealOver", "KrullConstructionArgs", "KrullTheorem"]
 theorems = ["ideal_le_refl", "ideal_le_trans", "maximal_ideal_intro", "maximal_ideal_laws", "maximal_ideal_proper", "maximal_ideal_of_proper_overideal_le", "maximal_ideal_over_intro", "maximal_ideal_over_contains", "maximal_ideal_over_maximal", "krull_construction_args_intro", "krull_maximal_ideal_exists", "krull_maximal_ideal_contains", "krull_maximal_ideal_is_maximal", "krull_theorem"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"
+source = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d3f39392a3a7b721172d3462469884b5511e73927541ac539d39dbc8f13490e5"
+certificate_file_sha256 = "sha256:d1116e82875455f07d0257d3e3230d864db96f189733f920395e5716a4af16a3"
+export_hash = "sha256:71d36383b4094ce0474de73d54bd5f221bb2af4764a32e7453756cb41fce1fa2"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:fddae1ef941a35bbf46d0b787fc2d40a8adf2c35a02c53b42b9758fa65d1d038"
+imports = []
+definitions = ["DerivedAffineSchemeLawArgs"]
+theorems = ["affine_schemes_definition_intro", "affine_schemes"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.QuasiCoherentSheaves"
+source = "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f9a483b9a4341bb37c0577480eeaba3edcd430f44adc9ecc9894b62e01b4f8bd"
+certificate_file_sha256 = "sha256:7cb5cdfef4b91816837cf90ee0d91b3f1c8ede3afb7c0e18186d225a1ad06710"
+export_hash = "sha256:151d37d1f323c7d6f8b60c6d5120be39dfbc1f900b1b32c8578066cc12e01d8c"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:fa7d05fc37c7a7fb3105f049039471d27477ac2a38f8762a2ea0f88fd6014849"
+imports = ["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"]
+definitions = ["QuasiCoherentSheafLawArgs"]
+theorems = ["quasi_coherent_sheaves_definition_intro", "quasi_coherent_sheaves"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology"
+source = "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:6e82bf7b52763d796389e47cd1cc4df64af8fa407a740341a3728c9a48ef1e5f"
+certificate_file_sha256 = "sha256:13c3e35e5f7560556f2cd4fa40b99861695b9201e74b4d0f77d0faa3f3386a15"
+export_hash = "sha256:d703624de3ede7adf563775b6e2400c2172b690eb53560ccc4ad6df02afa6057"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:4968dc2adf8849376b456aab63770efc503078bb3f2fe534180e350f1dea34a4"
+imports = ["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"]
+definitions = ["EtaleSmoothFlatTopologyLawArgs"]
+theorems = ["etale_smooth_flat_topology_definition_intro", "etale_topology", "smooth_topology", "flat_topology", "etale_smooth_flat_topology"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.DerivedCategory"
+source = "Proofs/Ai/AlgebraicGeometry/DerivedCategory/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/DerivedCategory/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/DerivedCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0dae5ae49d521ae3a26130615065d423b7eaf10d17df80fe67a36275ae45791e"
+certificate_file_sha256 = "sha256:7ab86df66387e5b181bd893f4e5caf4d4db12e511bca1dcac10fc4cf411638cc"
+export_hash = "sha256:ca9e55e0eddcb7a94ba3ddbb87d0033ffd1b7d905e5917901cc52eda12a995ef"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:8e5638693eb4cfd44c28697d43918ced31ab6742f431b3b385bf184fe4792a3d"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
+definitions = ["DerivedCategoryLawArgs"]
+theorems = ["derived_category_definition_intro", "derived_category_has_category_laws", "derived_category_localization_functor", "derived_category_inverts_quasi_isomorphisms", "derived_category_universal_property", "derived_category"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.TorExt"
+source = "Proofs/Ai/AlgebraicGeometry/TorExt/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/TorExt/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/TorExt/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/TorExt/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:18441687f688e25e5d0aac304c29f8f2fb8749ae3e8e9fbf9d8f66117ec77d78"
+certificate_file_sha256 = "sha256:1a7e2933d661ee20a084cc952017c2bbe864492c6aea1c0c64c612cb20528fd2"
+export_hash = "sha256:9eda4600cbc1b14e7ba3221e44d24e91e0ecf3f45acd606c7c2859813e2b4278"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:941a0f7baa8fdc16e71343a12c359882b2bebdaf49a34fb6e65ff9739e4fb795"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical", "Proofs.Ai.AlgebraicGeometry.DerivedCategory"]
+definitions = ["TorExtLawArgs"]
+theorems = ["tor_ext_definition_intro", "tor_ext_derived_category", "tor_is_left_derived_tensor", "ext_is_right_derived_hom", "tor_ext_long_exact_sequence", "tor_ext"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.CotangentComplex"
+source = "Proofs/Ai/AlgebraicGeometry/CotangentComplex/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/CotangentComplex/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/CotangentComplex/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/CotangentComplex/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:06ff1feb2baf7172f8b985851f51fecc9d27042cb6e04cd62908955e5108e585"
+certificate_file_sha256 = "sha256:9df283023bf986204de87ae4151e8349e8f04f81194ca7a9d33269827170192b"
+export_hash = "sha256:e825e06683118b4346695b12450be730f6c7924af2fae9925d4b9054cd98eec2"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:da3e14f4fb74146a8377ed79402278cf91766886940305dcd801402618055316"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical", "Proofs.Ai.AlgebraicGeometry.DerivedCategory"]
+definitions = ["CotangentComplexLawArgs"]
+theorems = ["cotangent_complex_definition_intro", "cotangent_complex_derived_category", "cotangent_complex_represents_derivations", "cotangent_complex_transitivity_triangle", "cotangent_complex_base_change", "cotangent_complex_smooth_etale_vanishing", "cotangent_complex"]
 axioms = []
 
 [[proof_modules]]

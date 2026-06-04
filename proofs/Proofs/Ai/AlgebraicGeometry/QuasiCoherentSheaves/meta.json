@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.QuasiCoherentSheaves",
+  "source": "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f9a483b9a4341bb37c0577480eeaba3edcd430f44adc9ecc9894b62e01b4f8bd",
+  "certificate_file_sha256": "sha256:7cb5cdfef4b91816837cf90ee0d91b3f1c8ede3afb7c0e18186d225a1ad06710",
+  "export_hash": "sha256:151d37d1f323c7d6f8b60c6d5120be39dfbc1f900b1b32c8578066cc12e01d8c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:fa7d05fc37c7a7fb3105f049039471d27477ac2a38f8762a2ea0f88fd6014849",
+  "imports": ["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+  "axioms": [],
+  "declarations": [
+    { "name": "QuasiCoherentSheafLawArgs", "kind": "def" },
+    { "name": "quasi_coherent_sheaves_definition_intro", "kind": "theorem" },
+    { "name": "quasi_coherent_sheaves", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

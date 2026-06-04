@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "DerivedAffineSchemeLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => forall (P : Prop), forall (mk : forall (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)), P), P"
+    },
+    {
+      "declaration": "affine_schemes_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun spec_affine_law => fun (P : Prop) => fun (mk : forall (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)), P) => mk spec_affine_law"
+    },
+    {
+      "declaration": "affine_schemes",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => affine_scheme_args (forall (A : DerivedRing), IsAffineScheme (Spec A)) (fun (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)) => spec_affine_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"
+  }
+}

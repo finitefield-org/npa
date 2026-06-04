@@ -561,7 +561,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
     assert_eq!(string_field(&manifest, "schema"), LEGACY_MANIFEST_SCHEMA);
 
     let modules = array_field(&manifest, "proof_modules");
-    assert_eq!(modules.len(), 68);
+    assert_eq!(modules.len(), 76);
 
     let mut local_modules = BTreeSet::new();
     for module in modules {
@@ -616,8 +616,8 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
         external_imports_by_module.insert(module_name.to_owned(), external_imports);
     }
 
-    assert_eq!(local_import_reference_count, 261);
-    assert_eq!(external_import_reference_count, 68);
+    assert_eq!(local_import_reference_count, 270);
+    assert_eq!(external_import_reference_count, 73);
     assert_eq!(
         discovered_external_imports,
         planned_external_imports
@@ -635,7 +635,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
 
     assert_eq!(
         modules_importing(&external_imports_by_module, "Std.Logic.Eq"),
-        65
+        70
     );
     assert_eq!(
         modules_importing(&external_imports_by_module, "Std.Nat.Basic"),
@@ -643,7 +643,7 @@ fn legacy_manifest_imports_and_axioms_are_package_ready() {
     );
     assert_eq!(
         modules_with_axiom(modules, "Eq.rec"),
-        39,
+        40,
         "the CLR-02 package policy allowlist must remain exactly Eq.rec until intentionally changed"
     );
 
