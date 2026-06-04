@@ -512,8 +512,12 @@ secondary area must import, specialize, or expose a compatibility alias.
   normalization, transpose invariance, multilinear/alternating evidence
   packaging, square matrix multiplication law linkage, and determinant product
   theorem projections from explicit product-derivation evidence are available.
-  Adjugate inverse, determinant-invertibility equivalence, Cramer formula, and
-  advanced determinant identities remain planned.
+  `LAQ-011` complete for `Proofs.Ai.LinearAlgebra.Matrix.Adjugate`: adjugate
+  formula evidence, inverse-by-adjugate evidence, determinant-unit
+  invertibility equivalence, and Cramer solution/coordinate formula projections
+  are available with explicit square finite-index hypotheses. Row-operation
+  determinant effects, triangular/block triangular formulas, Laplace/cofactor
+  expansion, and advanced determinant identities remain planned.
 - Depends on: `LIN-04`, with `LIN-18` optional if determinant is built through
   exterior algebra.
 - Target modules:

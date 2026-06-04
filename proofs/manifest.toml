@@ -1427,6 +1427,24 @@ theorems = ["determinant_identity_normalized_intro", "determinant_identity_norma
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Adjugate"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:71ebb72e46e9223e79a4c9d7d92706a34ad8f07dbe3e6dceb508f3b410986eae"
+certificate_file_sha256 = "sha256:9cf13b797a4b9b5c4f4c8a691b519a0c59277bfbb25850449271cc6610c98253"
+export_hash = "sha256:5a3e0bc1414a24b3266aee700579810ec9924f490dfb0250619075807494031b"
+axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+certificate_hash = "sha256:4c1a55ecf995071f27dda871b8ea15d7b07a459c8ff577c223b7f614b375c9d4"
+imports = ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Elimination"]
+definitions = ["AdjugateFormulaEvidence", "MatrixInverseEvidence", "MatrixInvertible", "AdjugateInverseEvidence", "DeterminantInvertibilityEquivalenceEvidence", "CramerFormulaEvidence"]
+theorems = ["adjugate_formula_evidence_intro", "adjugate_left_formula", "adjugate_right_formula", "adjugate_scaled_identity_one", "matrix_inverse_evidence_intro", "matrix_inverse_left", "matrix_inverse_right", "matrix_invertible_intro", "adjugate_inverse_evidence_intro", "adjugate_inverse_matrix_inverse", "adjugate_inverse", "determinant_invertibility_equiv_intro", "matrix_invertible_to_det_unit", "det_unit_to_matrix_invertible", "determinant_invertibility_equivalence", "cramer_formula_evidence_intro", "cramer_solution", "cramer_coordinate_formula", "cramer_invertible_matrix", "cramer_formula"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"

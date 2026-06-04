@@ -1,0 +1,142 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Adjugate",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "AdjugateFormulaEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => forall (P : Prop), forall (mk : forall (finite_index_evidence : finite_index), forall (left_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (adjugate A) A) (det_scaled_identity (det A))), forall (right_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A (adjugate A)) (det_scaled_identity (det A))), forall (scaled_identity_one : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (det_scaled_identity one) matrix_one), P), P"
+    },
+    {
+      "declaration": "MatrixInverseEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun entries => fun inverse => forall (P : Prop), forall (mk : forall (left_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul inverse entries) matrix_one), forall (right_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul entries inverse) matrix_one), P), P"
+    },
+    {
+      "declaration": "MatrixInvertible",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun entries => forall (P : Prop), forall (mk : forall (inverse : forall (i : Index), forall (j : Index), Scalar), forall (inverse_evidence : @MatrixInverseEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse), P), P"
+    },
+    {
+      "declaration": "AdjugateInverseEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun entries => fun inverse => forall (P : Prop), forall (mk : forall (formula_evidence : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity), forall (det_unit_evidence : det_unit (det entries)), forall (inverse_evidence : @MatrixInverseEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse), P), P"
+    },
+    {
+      "declaration": "DeterminantInvertibilityEquivalenceEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => forall (P : Prop), forall (mk : forall (determinant_product_evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (adjugate_formula : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity), forall (invertible_to_det_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A), det_unit (det A)), forall (det_unit_to_invertible : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : det_unit (det A)), @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A), P), P"
+    },
+    {
+      "declaration": "CramerFormulaEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => forall (P : Prop), forall (mk : forall (invertibility_equivalence : @DeterminantInvertibilityEquivalenceEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law), forall (det_unit_evidence : det_unit (det entries)), forall (system_solution : @MatrixSystemSolutionSet.{u,v,v} Scalar zero one add neg sub mul Index Index matrix_eval entries rhs solution), forall (coordinate_formula : forall (j : Index), @Eq.{u} Scalar (mul (det entries) (solution j)) (det (replace_column entries rhs j))), P), P"
+    },
+    {
+      "declaration": "adjugate_formula_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun finite_index_evidence => fun left_formula => fun right_formula => fun scaled_identity_one => fun (P : Prop) => fun (mk : forall (finite_index_evidence : finite_index), forall (left_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (adjugate A) A) (det_scaled_identity (det A))), forall (right_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A (adjugate A)) (det_scaled_identity (det A))), forall (scaled_identity_one : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (det_scaled_identity one) matrix_one), P) => mk finite_index_evidence left_formula right_formula scaled_identity_one"
+    },
+    {
+      "declaration": "adjugate_left_formula",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun evidence => fun A => evidence (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (adjugate A) A) (det_scaled_identity (det A))) (fun (finite_index_evidence : finite_index) => fun (left_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (adjugate A) A) (det_scaled_identity (det A))) => fun (right_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A (adjugate A)) (det_scaled_identity (det A))) => fun (scaled_identity_one : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (det_scaled_identity one) matrix_one) => left_formula A)"
+    },
+    {
+      "declaration": "adjugate_right_formula",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun evidence => fun A => evidence (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A (adjugate A)) (det_scaled_identity (det A))) (fun (finite_index_evidence : finite_index) => fun (left_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (adjugate A) A) (det_scaled_identity (det A))) => fun (right_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A (adjugate A)) (det_scaled_identity (det A))) => fun (scaled_identity_one : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (det_scaled_identity one) matrix_one) => right_formula A)"
+    },
+    {
+      "declaration": "adjugate_scaled_identity_one",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun evidence => evidence (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (det_scaled_identity one) matrix_one) (fun (finite_index_evidence : finite_index) => fun (left_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul (adjugate A) A) (det_scaled_identity (det A))) => fun (right_formula : forall (A : forall (i : Index), forall (j : Index), Scalar), @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul A (adjugate A)) (det_scaled_identity (det A))) => fun (scaled_identity_one : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (det_scaled_identity one) matrix_one) => scaled_identity_one)"
+    },
+    {
+      "declaration": "matrix_inverse_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun entries => fun inverse => fun left_inverse => fun right_inverse => fun (P : Prop) => fun (mk : forall (left_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul inverse entries) matrix_one), forall (right_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul entries inverse) matrix_one), P) => mk left_inverse right_inverse"
+    },
+    {
+      "declaration": "matrix_inverse_left",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun entries => fun inverse => fun inverse_evidence => inverse_evidence (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul inverse entries) matrix_one) (fun (left_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul inverse entries) matrix_one) => fun (right_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul entries inverse) matrix_one) => left_inverse)"
+    },
+    {
+      "declaration": "matrix_inverse_right",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun entries => fun inverse => fun inverse_evidence => inverse_evidence (@MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul entries inverse) matrix_one) (fun (left_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul inverse entries) matrix_one) => fun (right_inverse : @MatrixEq.{u,v,v} Scalar zero one add neg sub mul Index Index (matrix_mul entries inverse) matrix_one) => right_inverse)"
+    },
+    {
+      "declaration": "matrix_invertible_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun entries => fun inverse => fun inverse_evidence => fun (P : Prop) => fun (mk : forall (inverse : forall (i : Index), forall (j : Index), Scalar), forall (inverse_evidence : @MatrixInverseEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse), P) => mk inverse inverse_evidence"
+    },
+    {
+      "declaration": "adjugate_inverse_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun entries => fun inverse => fun formula_evidence => fun det_unit_evidence => fun inverse_evidence => fun (P : Prop) => fun (mk : forall (formula_evidence : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity), forall (det_unit_evidence : det_unit (det entries)), forall (inverse_evidence : @MatrixInverseEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse), P) => mk formula_evidence det_unit_evidence inverse_evidence"
+    },
+    {
+      "declaration": "adjugate_inverse_matrix_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun entries => fun inverse => fun evidence => evidence (@MatrixInverseEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse) (fun (formula_evidence : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity) => fun (det_unit_evidence : det_unit (det entries)) => fun (inverse_evidence : @MatrixInverseEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse) => inverse_evidence)"
+    },
+    {
+      "declaration": "adjugate_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun entries => fun inverse => fun evidence => @matrix_invertible_intro.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries inverse (@adjugate_inverse_matrix_inverse.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit entries inverse evidence)"
+    },
+    {
+      "declaration": "determinant_invertibility_equiv_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun determinant_product_evidence => fun adjugate_formula => fun invertible_to_det_unit => fun det_unit_to_invertible => fun (P : Prop) => fun (mk : forall (determinant_product_evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law), forall (adjugate_formula : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity), forall (invertible_to_det_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A), det_unit (det A)), forall (det_unit_to_invertible : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : det_unit (det A)), @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A), P) => mk determinant_product_evidence adjugate_formula invertible_to_det_unit det_unit_to_invertible"
+    },
+    {
+      "declaration": "matrix_invertible_to_det_unit",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun evidence => fun A => fun h => evidence (det_unit (det A)) (fun (determinant_product_evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law) => fun (adjugate_formula : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity) => fun (invertible_to_det_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A), det_unit (det A)) => fun (det_unit_to_invertible : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : det_unit (det A)), @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A) => invertible_to_det_unit A h)"
+    },
+    {
+      "declaration": "det_unit_to_matrix_invertible",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun evidence => fun A => fun h => evidence (@MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A) (fun (determinant_product_evidence : @DeterminantProductDerivationEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one multilinear_law alternating_law) => fun (adjugate_formula : @AdjugateFormulaEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity) => fun (invertible_to_det_unit : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A), det_unit (det A)) => fun (det_unit_to_invertible : forall (A : forall (i : Index), forall (j : Index), Scalar), forall (h : det_unit (det A)), @MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity A) => det_unit_to_invertible A h)"
+    },
+    {
+      "declaration": "determinant_invertibility_equivalence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun evidence => evidence"
+    },
+    {
+      "declaration": "cramer_formula_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => fun invertibility_equivalence => fun det_unit_evidence => fun system_solution => fun coordinate_formula => fun (P : Prop) => fun (mk : forall (invertibility_equivalence : @DeterminantInvertibilityEquivalenceEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law), forall (det_unit_evidence : det_unit (det entries)), forall (system_solution : @MatrixSystemSolutionSet.{u,v,v} Scalar zero one add neg sub mul Index Index matrix_eval entries rhs solution), forall (coordinate_formula : forall (j : Index), @Eq.{u} Scalar (mul (det entries) (solution j)) (det (replace_column entries rhs j))), P) => mk invertibility_equivalence det_unit_evidence system_solution coordinate_formula"
+    },
+    {
+      "declaration": "cramer_solution",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => fun evidence => evidence (@MatrixSystemSolutionSet.{u,v,v} Scalar zero one add neg sub mul Index Index matrix_eval entries rhs solution) (fun (invertibility_equivalence : @DeterminantInvertibilityEquivalenceEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law) => fun (det_unit_evidence : det_unit (det entries)) => fun (system_solution : @MatrixSystemSolutionSet.{u,v,v} Scalar zero one add neg sub mul Index Index matrix_eval entries rhs solution) => fun (coordinate_formula : forall (j : Index), @Eq.{u} Scalar (mul (det entries) (solution j)) (det (replace_column entries rhs j))) => system_solution)"
+    },
+    {
+      "declaration": "cramer_coordinate_formula",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => fun evidence => fun j => evidence (@Eq.{u} Scalar (mul (det entries) (solution j)) (det (replace_column entries rhs j))) (fun (invertibility_equivalence : @DeterminantInvertibilityEquivalenceEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law) => fun (det_unit_evidence : det_unit (det entries)) => fun (system_solution : @MatrixSystemSolutionSet.{u,v,v} Scalar zero one add neg sub mul Index Index matrix_eval entries rhs solution) => fun (coordinate_formula : forall (j : Index), @Eq.{u} Scalar (mul (det entries) (solution j)) (det (replace_column entries rhs j))) => coordinate_formula j)"
+    },
+    {
+      "declaration": "cramer_invertible_matrix",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => fun evidence => evidence (@MatrixInvertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity entries) (fun (invertibility_equivalence : @DeterminantInvertibilityEquivalenceEvidence.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law) => fun (det_unit_evidence : det_unit (det entries)) => fun (system_solution : @MatrixSystemSolutionSet.{u,v,v} Scalar zero one add neg sub mul Index Index matrix_eval entries rhs solution) => fun (coordinate_formula : forall (j : Index), @Eq.{u} Scalar (mul (det entries) (solution j)) (det (replace_column entries rhs j))) => @det_unit_to_matrix_invertible.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law invertibility_equivalence entries det_unit_evidence)"
+    },
+    {
+      "declaration": "cramer_formula",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Index => fun det => fun matrix_mul => fun matrix_one => fun finite_index => fun adjugate => fun det_scaled_identity => fun det_unit => fun multilinear_law => fun alternating_law => fun matrix_eval => fun entries => fun rhs => fun solution => fun replace_column => fun evidence => fun j => @cramer_coordinate_formula.{u,v} Scalar zero one add neg sub mul Index det matrix_mul matrix_one finite_index adjugate det_scaled_identity det_unit multilinear_law alternating_law matrix_eval entries rhs solution replace_column evidence j"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/certificate.npcert"
+  }
+}
