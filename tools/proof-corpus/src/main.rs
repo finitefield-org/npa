@@ -2570,6 +2570,17 @@ macro_rules! sequence_converges_to_app {
     };
 }
 
+macro_rules! sequence_converges_to_for_app {
+    ($sequence:literal, $limit:literal) => {
+        concat!(
+            "@SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex ",
+            $sequence,
+            " NearLimit ",
+            $limit
+        )
+    };
+}
+
 macro_rules! sequence_limit_app {
     ($limit:literal) => {
         concat!(
@@ -2633,6 +2644,30 @@ macro_rules! sequence_monotone_completeness_evidence_app {
             $index_le,
             " ",
             $value_set
+        )
+    };
+}
+
+macro_rules! sequence_squeeze_bounds_app {
+    ($lower:literal, $upper:literal) => {
+        concat!(
+            "@SequenceSqueezeBounds.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper
+        )
+    };
+}
+
+macro_rules! sequence_squeeze_convergence_evidence_app {
+    ($lower:literal, $upper:literal, $limit:literal) => {
+        concat!(
+            "@SequenceSqueezeConvergenceEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $limit
         )
     };
 }
@@ -30977,6 +31012,34 @@ const ANALYSIS_SEQUENCE_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "SequenceSqueezeBounds",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => forall (P : Prop), forall (mk : forall (lower_bound : forall (n : SequenceIndex), le_rel (lower n) (seq n)), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) (upper n)), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SequenceSqueezeConvergenceEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => fun limit => forall (P : Prop), forall (mk : forall (lower_converges : ",
+            sequence_converges_to_for_app!("lower", "limit"),
+            "), forall (upper_converges : ",
+            sequence_converges_to_for_app!("upper", "limit"),
+            "), forall (squeeze_bridge : forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
         name: "SequenceLimitUniquenessEvidence",
         universe_params: &["i", "n", "u"],
         ty: analysis_sequence_basic_params!(
@@ -31337,6 +31400,108 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_sequence_basic_abs!(
             "fun IndexLe => fun monotone => fun m => fun n => fun hmn => monotone m n hmn"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_squeeze_bounds_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (lower_bound : forall (n : SequenceIndex), le_rel (lower n) (seq n)), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) (upper n)), ",
+            sequence_squeeze_bounds_app!("lower", "upper")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun lower_bound => fun upper_bound => fun (P : Prop) => fun (mk : forall (lower_bound : forall (n : SequenceIndex), le_rel (lower n) (seq n)), forall (upper_bound : forall (n : SequenceIndex), le_rel (seq n) (upper n)), P) => mk lower_bound upper_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_squeeze_lower_bound",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), forall (index : SequenceIndex), le_rel (lower index) (seq index)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun index => bounds (le_rel (lower index) (seq index)) (fun (lower_bound : forall (n : SequenceIndex), le_rel (lower n) (seq n)) => fun (upper_bound : forall (n : SequenceIndex), le_rel (seq n) (upper n)) => lower_bound index)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_squeeze_upper_bound",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), forall (index : SequenceIndex), le_rel (seq index) (upper index)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun bounds => fun index => bounds (le_rel (seq index) (upper index)) (fun (lower_bound : forall (n : SequenceIndex), le_rel (lower n) (seq n)) => fun (upper_bound : forall (n : SequenceIndex), le_rel (seq n) (upper n)) => upper_bound index)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequence_squeeze_convergence_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (lower_converges : ",
+            sequence_converges_to_for_app!("lower", "limit"),
+            "), forall (upper_converges : ",
+            sequence_converges_to_for_app!("upper", "limit"),
+            "), forall (squeeze_bridge : forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            "), ",
+            sequence_squeeze_convergence_evidence_app!("lower", "upper", "limit")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => fun limit => fun lower_converges => fun upper_converges => fun squeeze_bridge => fun (P : Prop) => fun (mk : forall (lower_converges : ",
+            sequence_converges_to_for_app!("lower", "limit"),
+            "), forall (upper_converges : ",
+            sequence_converges_to_for_app!("upper", "limit"),
+            "), forall (squeeze_bridge : forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            "), P) => mk lower_converges upper_converges squeeze_bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "sequence_squeeze_converges",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), forall (evidence : ",
+            sequence_squeeze_convergence_evidence_app!("lower", "upper", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun lower => fun upper => fun limit => fun bounds => fun evidence => evidence (",
+            sequence_converges_to_app!("limit"),
+            ") (fun (lower_converges : ",
+            sequence_converges_to_for_app!("lower", "limit"),
+            ") => fun (upper_converges : ",
+            sequence_converges_to_for_app!("upper", "limit"),
+            ") => fun (squeeze_bridge : forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), ",
+            sequence_converges_to_app!("limit"),
+            ") => squeeze_bridge bounds)"
+        )),
+    },
+    TheoremArtifact {
+        name: "squeeze_theorem",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (bounds : ",
+            sequence_squeeze_bounds_app!("lower", "upper"),
+            "), forall (evidence : ",
+            sequence_squeeze_convergence_evidence_app!("lower", "upper", "limit"),
+            "), ",
+            sequence_converges_to_app!("limit")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower => fun upper => fun limit => fun bounds => fun evidence => @sequence_squeeze_converges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit lower upper limit bounds evidence"
         ),
     },
     TheoremArtifact {

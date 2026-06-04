@@ -1739,6 +1739,8 @@ Implemented definitions / API declarations:
 | `SequenceBoundedAbove`, `SequenceBoundedBelow` | one-sided boundedness packages for monotone and compactness routes |
 | `SequenceMonotoneIncreasing`, `SequenceMonotoneDecreasing` | monotonicity predicates over an explicit index preorder relation |
 | `SequenceMonotoneCompletenessEvidence` | explicit package connecting a value set, one-sided boundedness, supremum evidence, and sequence convergence |
+| `SequenceSqueezeBounds` | lower/current/upper pointwise bound package for squeeze arguments |
+| `SequenceSqueezeConvergenceEvidence` | explicit package containing side-sequence convergence and the squeeze bridge to the middle sequence |
 | `SequenceLimitUniquenessEvidence` | local evidence package containing two convergence witnesses and their equality conclusion |
 | `FixedPointConvergesToAlias` | bridge alias to `AbstractFixedPoint.ConvergesTo` on the scalar-as-vector instance |
 | `FixedPointCauchySeqAlias` | bridge alias to `AbstractFixedPoint.CauchySeq` on the scalar-as-vector instance |
@@ -1762,6 +1764,9 @@ Theorem targets:
 | `sequence_bounded_above_from_bounds`, `sequence_bounded_below_from_bounds` | derive one-sided boundedness from a two-sided `BoundedSequenceBy` package |
 | `sequence_monotone_increasing_intro`, `sequence_monotone_increasing_apply` | build and apply monotone-increasing sequence evidence |
 | `sequence_monotone_decreasing_intro`, `sequence_monotone_decreasing_apply` | build and apply monotone-decreasing sequence evidence |
+| `sequence_squeeze_bounds_intro`, `sequence_squeeze_lower_bound`, `sequence_squeeze_upper_bound` | build squeeze bounds and project the lower/upper pointwise inequalities |
+| `sequence_squeeze_convergence_evidence_intro` | package side-sequence convergence and the squeeze bridge |
+| `sequence_squeeze_converges`, `squeeze_theorem` | derive convergence of the middle sequence from explicit squeeze evidence |
 | `sequence_limit_uniqueness_intro` | package local uniqueness evidence from two convergence witnesses and an equality proof |
 | `sequence_limit_uniqueness_left`, `sequence_limit_uniqueness_right` | recover the two convergence witnesses from uniqueness evidence |
 | `sequence_limit_unique`, `limit_unique` | derive equality of limits from local uniqueness evidence |
@@ -1788,6 +1793,10 @@ completeness eliminator rather than assuming the final sequence-convergence choi
 The monotone convergence theorem similarly calls `supremum_exists_from_completeness` after
 extracting order completeness from `CompleteOrderedFieldArgs`; the theorem takes a separate
 `ValueSet` and bridge evidence package instead of assuming supremum existence as a theorem input.
+The squeeze theorem is also evidence-driven: `SequenceSqueezeBounds` stores the two pointwise
+inequality families, while `SequenceSqueezeConvergenceEvidence` stores convergence of the lower and
+upper sequences plus the explicit bridge that turns those bounds into convergence of the middle
+sequence.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
