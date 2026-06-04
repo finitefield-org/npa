@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Phi",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "euler_phi_unit_group_cardinality_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun EulerPhi => fun ModularUnitGroupPackage => fun FiniteUnitSetEvidence => fun UnitGroupCardinalityEvidence => fun definition_law => fun modulus => fun unit_group => fun finite_units => definition_law modulus unit_group finite_units"
+    },
+    {
+      "declaration": "euler_phi_reduced_residue_cardinality_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun ResidueClass => fun EulerPhi => fun ReducedResidueClass => fun FiniteReducedResidueSet => fun ReducedResidueCardinalityEvidence => fun cardinality_law => fun modulus => fun finite_residues => cardinality_law modulus finite_residues"
+    },
+    {
+      "declaration": "finite_unit_group_order_theorem_package",
+      "source_kind": "explicit_term",
+      "term": "fun Unit => fun one => fun mul => fun inv => fun FiniteCarrierEvidence => fun UnitGroupOrderPackage => fun package_law => fun laws => fun finite_units => package_law laws finite_units"
+    },
+    {
+      "declaration": "finite_unit_group_lagrange_specialization",
+      "source_kind": "explicit_term",
+      "term": "fun Unit => fun one => fun mul => fun inv => fun Subgroup => fun FiniteGroupOrderEvidence => fun LagrangeTheorem => fun specialization_law => fun laws => fun finite_units => specialization_law laws finite_units"
+    },
+    {
+      "declaration": "euler_phi_formula_from_prime_factorization",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun EulerPhi => fun PrimeFactorizationPackage => fun PrimeFactorizationEvidence => fun FundamentalTheoremArithmetic => fun EulerPhiPrimeFactorFormula => fun formula_law => fun n => fun factorization => fun fta => fun factorization_evidence => formula_law n factorization fta factorization_evidence"
+    },
+    {
+      "declaration": "euler_phi_prime_power_formula_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun EulerPhi => fun PrimePowerFactorizationEvidence => fun EulerPhiPrimePowerFormula => fun prime_power_law => fun prime => fun exponent => fun prime_power => prime_power_law prime exponent prime_power"
+    },
+    {
+      "declaration": "euler_phi_multiplicative_coprime_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun EulerPhi => fun CoprimeInt => fun EulerPhiMultiplicativeFormula => fun multiplicative_law => fun a => fun b => fun coprime_ab => multiplicative_law a b coprime_ab"
+    },
+    {
+      "declaration": "phi_imports_finite_group_and_factorization_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PhiPackage => fun FiniteGroupFactsPackage => fun PrimeFactorizationPackage => fun AnalyticNumberTheoryPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun phi => fun finite_group_facts => fun prime_factorization => fun analytic => boundary_law phi finite_group_facts prime_factorization analytic"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Phi/certificate.npcert"
+  }
+}

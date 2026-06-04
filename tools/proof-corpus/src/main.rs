@@ -170,6 +170,10 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_FACTORIZATION_MODULE,
     &NUMBER_THEORY_PRIME_INFINITUDE_MODULE,
     &NUMBER_THEORY_CONGRUENCE_MODULE,
+    &NUMBER_THEORY_RESIDUE_RING_MODULE,
+    &NUMBER_THEORY_MODULAR_GROUP_MODULE,
+    &NUMBER_THEORY_CHINESE_REMAINDER_MODULE,
+    &NUMBER_THEORY_PHI_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1687,6 +1691,88 @@ const NUMBER_THEORY_CONGRUENCE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CONGRUENCE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_RESIDUE_RING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ResidueRing",
+    source_path: "Proofs/Ai/NumberTheory/ResidueRing/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ResidueRing/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ResidueRing/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ResidueRing/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.NumberTheory.Congruence",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_RESIDUE_RING_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_MODULAR_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ModularGroup",
+    source_path: "Proofs/Ai/NumberTheory/ModularGroup/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ModularGroup/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ModularGroup/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ModularGroup/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.NumberTheory.ResidueRing",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_MODULAR_GROUP_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CHINESE_REMAINDER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ChineseRemainder",
+    source_path: "Proofs/Ai/NumberTheory/ChineseRemainder/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ChineseRemainder/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ChineseRemainder/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ChineseRemainder/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientHom",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.NumberTheory.Congruence",
+        "Proofs.Ai.NumberTheory.ResidueRing",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CHINESE_REMAINDER_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PHI_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Phi",
+    source_path: "Proofs/Ai/NumberTheory/Phi/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Phi/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Phi/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Phi/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.Factorization",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PHI_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10563,6 +10649,329 @@ const NUMBER_THEORY_CONGRUENCE_THEOREMS: &[TheoremArtifact] = &[
             "forall (PowerCongruencePackage : Type), forall (ExponentLawPackage : Type), forall (SimplifierPrimitive : Type), forall (NoSimplifierPrimitiveBoundary : forall (power_congruence : PowerCongruencePackage), forall (exponent_laws : ExponentLawPackage), forall (simplifier : SimplifierPrimitive), Prop), forall (boundary_law : forall (power_congruence : PowerCongruencePackage), forall (exponent_laws : ExponentLawPackage), forall (simplifier : SimplifierPrimitive), NoSimplifierPrimitiveBoundary power_congruence exponent_laws simplifier), forall (power_congruence : PowerCongruencePackage), forall (exponent_laws : ExponentLawPackage), forall (simplifier : SimplifierPrimitive), NoSimplifierPrimitiveBoundary power_congruence exponent_laws simplifier",
         proof:
             "fun PowerCongruencePackage => fun ExponentLawPackage => fun SimplifierPrimitive => fun NoSimplifierPrimitiveBoundary => fun boundary_law => fun power_congruence => fun exponent_laws => fun simplifier => boundary_law power_congruence exponent_laws simplifier",
+    },
+];
+
+const NUMBER_THEORY_RESIDUE_RING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "residue_class_modulo_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Residue : Type), forall (ClassOf : forall (a : Int), Residue), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (SameResidueClass : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (class_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (congruent_ab : CongruentModulo modulus a b), SameResidueClass modulus a b), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (congruent_ab : CongruentModulo modulus a b), SameResidueClass modulus a b",
+        proof:
+            "fun Int => fun Residue => fun ClassOf => fun CongruentModulo => fun SameResidueClass => fun class_law => fun modulus => fun a => fun b => fun congruent_ab => class_law modulus a b congruent_ab",
+    },
+    TheoremArtifact {
+        name: "residue_quotient_core_feature_report_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Residue : Type), forall (QuotientCoreFeature : forall (modulus : Int), Prop), forall (DeterministicQuotientReport : forall (modulus : Int), Prop), forall (report_law : forall (modulus : Int), forall (quotient_feature : QuotientCoreFeature modulus), DeterministicQuotientReport modulus), forall (modulus : Int), forall (quotient_feature : QuotientCoreFeature modulus), DeterministicQuotientReport modulus",
+        proof:
+            "fun Int => fun Residue => fun QuotientCoreFeature => fun DeterministicQuotientReport => fun report_law => fun modulus => fun quotient_feature => report_law modulus quotient_feature",
+    },
+    TheoremArtifact {
+        name: "residue_operations_well_defined_from_congruence",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Add : forall (a : Int), forall (b : Int), Int), forall (Neg : forall (a : Int), Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (OperationCompatibilityEvidence : forall (modulus : Int), Prop), forall (WellDefinedResidueOperations : forall (modulus : Int), Prop), forall (operation_law : forall (modulus : Int), forall (compatibility : OperationCompatibilityEvidence modulus), WellDefinedResidueOperations modulus), forall (modulus : Int), forall (compatibility : OperationCompatibilityEvidence modulus), WellDefinedResidueOperations modulus",
+        proof:
+            "fun Int => fun Add => fun Neg => fun Mul => fun CongruentModulo => fun OperationCompatibilityEvidence => fun WellDefinedResidueOperations => fun operation_law => fun modulus => fun compatibility => operation_law modulus compatibility",
+    },
+    TheoremArtifact {
+        name: "residue_ring_law_package_from_abstract_ring",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Residue : Sort u), forall (zero : Residue), forall (one : Residue), ",
+            "forall (add : forall (a : Residue), forall (b : Residue), Residue), ",
+            "forall (neg : forall (a : Residue), Residue), ",
+            "forall (sub : forall (a : Residue), forall (b : Residue), Residue), ",
+            "forall (mul : forall (a : Residue), forall (b : Residue), Residue), ",
+            "forall (ResidueRingLawPackage : forall (laws : @RingLawArgs.{u} Residue zero one add neg sub mul), Prop), ",
+            "forall (package_law : forall (laws : @RingLawArgs.{u} Residue zero one add neg sub mul), ResidueRingLawPackage laws), ",
+            "forall (laws : @RingLawArgs.{u} Residue zero one add neg sub mul), ResidueRingLawPackage laws"
+        ),
+        proof: concat!(
+            "fun Residue => fun zero => fun one => fun add => fun neg => fun sub => fun mul => ",
+            "fun ResidueRingLawPackage => fun package_law => fun laws => package_law laws"
+        ),
+    },
+    TheoremArtifact {
+        name: "residue_ring_operations_descend_to_classes",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Residue : Type), forall (ClassOf : forall (a : Int), Residue), forall (ResidueAdd : forall (a : Residue), forall (b : Residue), Residue), forall (ResidueNeg : forall (a : Residue), Residue), forall (ResidueMul : forall (a : Residue), forall (b : Residue), Residue), forall (DescentEvidence : forall (modulus : Int), Prop), forall (ResidueOperationDescent : forall (modulus : Int), Prop), forall (descent_law : forall (modulus : Int), forall (descent_evidence : DescentEvidence modulus), ResidueOperationDescent modulus), forall (modulus : Int), forall (descent_evidence : DescentEvidence modulus), ResidueOperationDescent modulus",
+        proof:
+            "fun Int => fun Residue => fun ClassOf => fun ResidueAdd => fun ResidueNeg => fun ResidueMul => fun DescentEvidence => fun ResidueOperationDescent => fun descent_law => fun modulus => fun descent_evidence => descent_law modulus descent_evidence",
+    },
+    TheoremArtifact {
+        name: "residue_ring_crt_reuse_surface",
+        universe_params: &[],
+        statement:
+            "forall (ResidueRingPackage : Type), forall (CrtInputPackage : Type), forall (ResidueRingReusableByCrt : forall (residue_ring : ResidueRingPackage), forall (crt_input : CrtInputPackage), Prop), forall (reuse_law : forall (residue_ring : ResidueRingPackage), forall (crt_input : CrtInputPackage), ResidueRingReusableByCrt residue_ring crt_input), forall (residue_ring : ResidueRingPackage), forall (crt_input : CrtInputPackage), ResidueRingReusableByCrt residue_ring crt_input",
+        proof:
+            "fun ResidueRingPackage => fun CrtInputPackage => fun ResidueRingReusableByCrt => fun reuse_law => fun residue_ring => fun crt_input => reuse_law residue_ring crt_input",
+    },
+    TheoremArtifact {
+        name: "residue_ring_no_hidden_crt_or_euler_boundary",
+        universe_params: &[],
+        statement:
+            "forall (ResidueRingPackage : Type), forall (ChineseRemainderTheorem : Type), forall (EulerTheorem : Type), forall (NoHiddenCrtOrEulerBoundary : forall (residue_ring : ResidueRingPackage), forall (crt : ChineseRemainderTheorem), forall (euler : EulerTheorem), Prop), forall (boundary_law : forall (residue_ring : ResidueRingPackage), forall (crt : ChineseRemainderTheorem), forall (euler : EulerTheorem), NoHiddenCrtOrEulerBoundary residue_ring crt euler), forall (residue_ring : ResidueRingPackage), forall (crt : ChineseRemainderTheorem), forall (euler : EulerTheorem), NoHiddenCrtOrEulerBoundary residue_ring crt euler",
+        proof:
+            "fun ResidueRingPackage => fun ChineseRemainderTheorem => fun EulerTheorem => fun NoHiddenCrtOrEulerBoundary => fun boundary_law => fun residue_ring => fun crt => fun euler => boundary_law residue_ring crt euler",
+    },
+    TheoremArtifact {
+        name: "residue_ring_deterministic_package_report",
+        universe_params: &[],
+        statement:
+            "forall (ResidueRingPackage : Type), forall (PackageReport : forall (residue_ring : ResidueRingPackage), Prop), forall (PackageHash : forall (residue_ring : ResidueRingPackage), Prop), forall (deterministic_law : forall (residue_ring : ResidueRingPackage), forall (report : PackageReport residue_ring), PackageHash residue_ring), forall (residue_ring : ResidueRingPackage), forall (report : PackageReport residue_ring), PackageHash residue_ring",
+        proof:
+            "fun ResidueRingPackage => fun PackageReport => fun PackageHash => fun deterministic_law => fun residue_ring => fun report => deterministic_law residue_ring report",
+    },
+];
+
+const NUMBER_THEORY_MODULAR_GROUP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "unit_modulo_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (OneInt : Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (definition_law : forall (modulus : Int), forall (a : Int), forall (coprime_a_modulus : CoprimeInt a modulus), UnitModulo modulus a), forall (modulus : Int), forall (a : Int), forall (coprime_a_modulus : CoprimeInt a modulus), UnitModulo modulus a",
+        proof:
+            "fun Int => fun OneInt => fun Mul => fun CoprimeInt => fun UnitModulo => fun definition_law => fun modulus => fun a => fun coprime_a_modulus => definition_law modulus a coprime_a_modulus",
+    },
+    TheoremArtifact {
+        name: "reduced_residue_class_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Residue : Type), forall (ClassOf : forall (a : Int), Residue), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (ReducedResidueClass : forall (modulus : Int), forall (residue_class : Residue), Prop), forall (reduced_law : forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), ReducedResidueClass modulus (ClassOf a)), forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), ReducedResidueClass modulus (ClassOf a)",
+        proof:
+            "fun Int => fun Residue => fun ClassOf => fun UnitModulo => fun ReducedResidueClass => fun reduced_law => fun modulus => fun a => fun unit_a => reduced_law modulus a unit_a",
+    },
+    TheoremArtifact {
+        name: "modular_unit_multiplication_closed",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (closure_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (unit_a : UnitModulo modulus a), forall (unit_b : UnitModulo modulus b), UnitModulo modulus (Mul a b)), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (unit_a : UnitModulo modulus a), forall (unit_b : UnitModulo modulus b), UnitModulo modulus (Mul a b)",
+        proof:
+            "fun Int => fun Mul => fun UnitModulo => fun closure_law => fun modulus => fun a => fun b => fun unit_a => fun unit_b => closure_law modulus a b unit_a unit_b",
+    },
+    TheoremArtifact {
+        name: "modular_unit_inverse_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (InverseModulo : forall (modulus : Int), forall (a : Int), Int), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (inverse_law : forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), UnitModulo modulus (InverseModulo modulus a)), forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), UnitModulo modulus (InverseModulo modulus a)",
+        proof:
+            "fun Int => fun InverseModulo => fun UnitModulo => fun inverse_law => fun modulus => fun a => fun unit_a => inverse_law modulus a unit_a",
+    },
+    TheoremArtifact {
+        name: "modular_unit_group_law_package_from_abstract_group",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (ModularUnitGroupPackage : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), ",
+            "forall (package_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), ModularUnitGroupPackage laws), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), ModularUnitGroupPackage laws"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => ",
+            "fun ModularUnitGroupPackage => fun package_law => fun laws => package_law laws"
+        ),
+    },
+    TheoremArtifact {
+        name: "modular_group_residue_ring_dependency_surface",
+        universe_params: &[],
+        statement:
+            "forall (ResidueRingPackage : Type), forall (UnitModuloPackage : Type), forall (ModularUnitGroupPackage : forall (residue_ring : ResidueRingPackage), forall (unit_package : UnitModuloPackage), Prop), forall (dependency_law : forall (residue_ring : ResidueRingPackage), forall (unit_package : UnitModuloPackage), ModularUnitGroupPackage residue_ring unit_package), forall (residue_ring : ResidueRingPackage), forall (unit_package : UnitModuloPackage), ModularUnitGroupPackage residue_ring unit_package",
+        proof:
+            "fun ResidueRingPackage => fun UnitModuloPackage => fun ModularUnitGroupPackage => fun dependency_law => fun residue_ring => fun unit_package => dependency_law residue_ring unit_package",
+    },
+    TheoremArtifact {
+        name: "modular_group_no_euler_theorem_assumption_boundary",
+        universe_params: &[],
+        statement:
+            "forall (ModularUnitGroupPackage : Type), forall (EulerTheorem : Type), forall (FermatTheorem : Type), forall (NoEulerAssumptionBoundary : forall (unit_group : ModularUnitGroupPackage), forall (euler : EulerTheorem), forall (fermat : FermatTheorem), Prop), forall (boundary_law : forall (unit_group : ModularUnitGroupPackage), forall (euler : EulerTheorem), forall (fermat : FermatTheorem), NoEulerAssumptionBoundary unit_group euler fermat), forall (unit_group : ModularUnitGroupPackage), forall (euler : EulerTheorem), forall (fermat : FermatTheorem), NoEulerAssumptionBoundary unit_group euler fermat",
+        proof:
+            "fun ModularUnitGroupPackage => fun EulerTheorem => fun FermatTheorem => fun NoEulerAssumptionBoundary => fun boundary_law => fun unit_group => fun euler => fun fermat => boundary_law unit_group euler fermat",
+    },
+    TheoremArtifact {
+        name: "modular_group_phi_reuse_surface",
+        universe_params: &[],
+        statement:
+            "forall (ModularUnitGroupPackage : Type), forall (EulerPhiPackage : Type), forall (PhiInputSurface : forall (unit_group : ModularUnitGroupPackage), forall (phi : EulerPhiPackage), Prop), forall (reuse_law : forall (unit_group : ModularUnitGroupPackage), forall (phi : EulerPhiPackage), PhiInputSurface unit_group phi), forall (unit_group : ModularUnitGroupPackage), forall (phi : EulerPhiPackage), PhiInputSurface unit_group phi",
+        proof:
+            "fun ModularUnitGroupPackage => fun EulerPhiPackage => fun PhiInputSurface => fun reuse_law => fun unit_group => fun phi => reuse_law unit_group phi",
+    },
+    TheoremArtifact {
+        name: "modular_group_no_crt_dependency_boundary",
+        universe_params: &[],
+        statement:
+            "forall (ModularUnitGroupPackage : Type), forall (ChineseRemainderTheorem : Type), forall (NoCrtDependencyBoundary : forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), NoCrtDependencyBoundary unit_group crt), forall (unit_group : ModularUnitGroupPackage), forall (crt : ChineseRemainderTheorem), NoCrtDependencyBoundary unit_group crt",
+        proof:
+            "fun ModularUnitGroupPackage => fun ChineseRemainderTheorem => fun NoCrtDependencyBoundary => fun boundary_law => fun unit_group => fun crt => boundary_law unit_group crt",
+    },
+];
+
+const NUMBER_THEORY_CHINESE_REMAINDER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "linear_congruence_solution_count_from_gcd_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (LinearCongruenceSolvable : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), Prop), forall (LinearCongruenceSolutionCount : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (count : Nat), Prop), forall (count_law : forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (count : Nat), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), forall (solvable : LinearCongruenceSolvable coefficient constant modulus), forall (solution_count : LinearCongruenceSolutionCount coefficient constant modulus count), LinearCongruenceSolutionCount coefficient constant modulus count), forall (coefficient : Int), forall (constant : Int), forall (modulus : Int), forall (g : Int), forall (count : Nat), forall (gcd_condition : GcdEvidence coefficient modulus g), forall (gcd_divides_constant : DividesInt g constant), forall (solvable : LinearCongruenceSolvable coefficient constant modulus), forall (solution_count : LinearCongruenceSolutionCount coefficient constant modulus count), LinearCongruenceSolutionCount coefficient constant modulus count",
+        proof:
+            "fun Int => fun Nat => fun GcdEvidence => fun DividesInt => fun LinearCongruenceSolvable => fun LinearCongruenceSolutionCount => fun count_law => fun coefficient => fun constant => fun modulus => fun g => fun count => fun gcd_condition => fun gcd_divides_constant => fun solvable => fun solution_count => count_law coefficient constant modulus g count gcd_condition gcd_divides_constant solvable solution_count",
+    },
+    TheoremArtifact {
+        name: "crt_pairwise_coprime_residue_ring_specialization",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ResidueRingPackage : Type), forall (PairwiseCoprimeModuli : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (ResidueSystem : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (ChineseRemainderSpecialization : forall (left_modulus : Int), forall (right_modulus : Int), Prop), forall (specialization_law : forall (left_modulus : Int), forall (right_modulus : Int), forall (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus), forall (residue_ring : ResidueRingPackage), forall (system : ResidueSystem left_modulus right_modulus), ChineseRemainderSpecialization left_modulus right_modulus), forall (left_modulus : Int), forall (right_modulus : Int), forall (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus), forall (residue_ring : ResidueRingPackage), forall (system : ResidueSystem left_modulus right_modulus), ChineseRemainderSpecialization left_modulus right_modulus",
+        proof:
+            "fun Int => fun ResidueRingPackage => fun PairwiseCoprimeModuli => fun ResidueSystem => fun ChineseRemainderSpecialization => fun specialization_law => fun left_modulus => fun right_modulus => fun coprime_moduli => fun residue_ring => fun system => specialization_law left_modulus right_modulus coprime_moduli residue_ring system",
+    },
+    TheoremArtifact {
+        name: "crt_construction_exists_separated_from_uniqueness",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ResidueSystem : forall (modulus_product : Int), Prop), forall (CrtConstruction : forall (modulus_product : Int), Prop), forall (CrtUniqueness : forall (modulus_product : Int), Prop), forall (construction_law : forall (modulus_product : Int), forall (system : ResidueSystem modulus_product), CrtConstruction modulus_product), forall (modulus_product : Int), forall (system : ResidueSystem modulus_product), CrtConstruction modulus_product",
+        proof:
+            "fun Int => fun ResidueSystem => fun CrtConstruction => fun CrtUniqueness => fun construction_law => fun modulus_product => fun system => construction_law modulus_product system",
+    },
+    TheoremArtifact {
+        name: "crt_uniqueness_mod_product_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (CrtSolution : forall (modulus_product : Int), forall (solution : Int), Prop), forall (CrtUniqueness : forall (modulus_product : Int), Prop), forall (uniqueness_law : forall (modulus_product : Int), forall (x : Int), forall (y : Int), forall (solution_x : CrtSolution modulus_product x), forall (solution_y : CrtSolution modulus_product y), forall (same_mod_product : CongruentModulo modulus_product x y), CrtUniqueness modulus_product), forall (modulus_product : Int), forall (x : Int), forall (y : Int), forall (solution_x : CrtSolution modulus_product x), forall (solution_y : CrtSolution modulus_product y), forall (same_mod_product : CongruentModulo modulus_product x y), CrtUniqueness modulus_product",
+        proof:
+            "fun Int => fun CongruentModulo => fun CrtSolution => fun CrtUniqueness => fun uniqueness_law => fun modulus_product => fun x => fun y => fun solution_x => fun solution_y => fun same_mod_product => uniqueness_law modulus_product x y solution_x solution_y same_mod_product",
+    },
+    TheoremArtifact {
+        name: "crt_abstract_ring_chinese_remainder_import_surface",
+        universe_params: &[],
+        statement:
+            "forall (AbstractRingChineseRemainderPackage : Type), forall (ResidueRingPackage : Type), forall (IntegerResidueRingSpecialization : forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), Prop), forall (import_law : forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), IntegerResidueRingSpecialization abstract_crt residue_ring), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (residue_ring : ResidueRingPackage), IntegerResidueRingSpecialization abstract_crt residue_ring",
+        proof:
+            "fun AbstractRingChineseRemainderPackage => fun ResidueRingPackage => fun IntegerResidueRingSpecialization => fun import_law => fun abstract_crt => fun residue_ring => import_law abstract_crt residue_ring",
+    },
+    TheoremArtifact {
+        name: "generalized_crt_compatible_system_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Index : Type), forall (ResidueSystem : forall (i : Index), Prop), forall (CompatibleResidueSystem : forall (system : forall (i : Index), Prop), Prop), forall (GeneralizedChineseRemainder : forall (system : forall (i : Index), Prop), Prop), forall (generalized_law : forall (system : forall (i : Index), Prop), forall (compatibility : CompatibleResidueSystem system), GeneralizedChineseRemainder system), forall (system : forall (i : Index), Prop), forall (compatibility : CompatibleResidueSystem system), GeneralizedChineseRemainder system",
+        proof:
+            "fun Int => fun Index => fun ResidueSystem => fun CompatibleResidueSystem => fun GeneralizedChineseRemainder => fun generalized_law => fun system => fun compatibility => generalized_law system compatibility",
+    },
+    TheoremArtifact {
+        name: "constructive_crt_witness_interface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (ResidueSystem : Prop), forall (CrtWitness : forall (system : ResidueSystem), Int), forall (CrtWitnessCorrect : forall (system : ResidueSystem), forall (witness : Int), Prop), forall (construction_law : forall (system : ResidueSystem), CrtWitnessCorrect system (CrtWitness system)), forall (system : ResidueSystem), CrtWitnessCorrect system (CrtWitness system)",
+        proof:
+            "fun Int => fun ResidueSystem => fun CrtWitness => fun CrtWitnessCorrect => fun construction_law => fun system => construction_law system",
+    },
+    TheoremArtifact {
+        name: "garner_algorithmic_interface_marked_nonexecuted",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (GarnerInput : Type), forall (GarnerOutput : Type), forall (GarnerAlgorithmicInterface : forall (input : GarnerInput), forall (output : GarnerOutput), Prop), forall (NoExecutableGarnerFunctionVerified : forall (input : GarnerInput), Prop), forall (garner_law : forall (input : GarnerInput), forall (output : GarnerOutput), forall (algorithmic_marker : NoExecutableGarnerFunctionVerified input), GarnerAlgorithmicInterface input output), forall (input : GarnerInput), forall (output : GarnerOutput), forall (algorithmic_marker : NoExecutableGarnerFunctionVerified input), GarnerAlgorithmicInterface input output",
+        proof:
+            "fun Int => fun GarnerInput => fun GarnerOutput => fun GarnerAlgorithmicInterface => fun NoExecutableGarnerFunctionVerified => fun garner_law => fun input => fun output => fun algorithmic_marker => garner_law input output algorithmic_marker",
+    },
+    TheoremArtifact {
+        name: "chinese_remainder_no_duplicate_abstract_crt_boundary",
+        universe_params: &[],
+        statement:
+            "forall (ChineseRemainderPackage : Type), forall (AbstractRingChineseRemainderPackage : Type), forall (DuplicatedAbstractCrtImplementation : Type), forall (NoDuplicateAbstractCrtBoundary : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), Prop), forall (boundary_law : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate), forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate",
+        proof:
+            "fun ChineseRemainderPackage => fun AbstractRingChineseRemainderPackage => fun DuplicatedAbstractCrtImplementation => fun NoDuplicateAbstractCrtBoundary => fun boundary_law => fun number_theory_crt => fun abstract_crt => fun duplicate => boundary_law number_theory_crt abstract_crt duplicate",
+    },
+];
+
+const NUMBER_THEORY_PHI_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "euler_phi_unit_group_cardinality_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (ModularUnitGroupPackage : forall (modulus : Int), Type), forall (FiniteUnitSetEvidence : forall (modulus : Int), Prop), forall (UnitGroupCardinalityEvidence : forall (modulus : Int), forall (phi_value : Nat), Prop), forall (definition_law : forall (modulus : Int), forall (unit_group : ModularUnitGroupPackage modulus), forall (finite_units : FiniteUnitSetEvidence modulus), UnitGroupCardinalityEvidence modulus (EulerPhi modulus)), forall (modulus : Int), forall (unit_group : ModularUnitGroupPackage modulus), forall (finite_units : FiniteUnitSetEvidence modulus), UnitGroupCardinalityEvidence modulus (EulerPhi modulus)",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun ModularUnitGroupPackage => fun FiniteUnitSetEvidence => fun UnitGroupCardinalityEvidence => fun definition_law => fun modulus => fun unit_group => fun finite_units => definition_law modulus unit_group finite_units",
+    },
+    TheoremArtifact {
+        name: "euler_phi_reduced_residue_cardinality_evidence",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (ResidueClass : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (ReducedResidueClass : forall (modulus : Int), forall (residue : ResidueClass), Prop), forall (FiniteReducedResidueSet : forall (modulus : Int), Prop), forall (ReducedResidueCardinalityEvidence : forall (modulus : Int), forall (phi_value : Nat), Prop), forall (cardinality_law : forall (modulus : Int), forall (finite_residues : FiniteReducedResidueSet modulus), ReducedResidueCardinalityEvidence modulus (EulerPhi modulus)), forall (modulus : Int), forall (finite_residues : FiniteReducedResidueSet modulus), ReducedResidueCardinalityEvidence modulus (EulerPhi modulus)",
+        proof:
+            "fun Int => fun Nat => fun ResidueClass => fun EulerPhi => fun ReducedResidueClass => fun FiniteReducedResidueSet => fun ReducedResidueCardinalityEvidence => fun cardinality_law => fun modulus => fun finite_residues => cardinality_law modulus finite_residues",
+    },
+    TheoremArtifact {
+        name: "finite_unit_group_order_theorem_package",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (FiniteCarrierEvidence : Prop), ",
+            "forall (UnitGroupOrderPackage : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteCarrierEvidence), Prop), ",
+            "forall (package_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteCarrierEvidence), UnitGroupOrderPackage laws finite_units), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteCarrierEvidence), UnitGroupOrderPackage laws finite_units"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => fun FiniteCarrierEvidence => ",
+            "fun UnitGroupOrderPackage => fun package_law => fun laws => fun finite_units => ",
+            "package_law laws finite_units"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_unit_group_lagrange_specialization",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (Subgroup : forall (x : Unit), Prop), ",
+            "forall (FiniteGroupOrderEvidence : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), ",
+            "forall (LagrangeTheorem : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (subgroup : forall (x : Unit), Prop), Prop), ",
+            "forall (specialization_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteGroupOrderEvidence laws), LagrangeTheorem laws Subgroup), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteGroupOrderEvidence laws), LagrangeTheorem laws Subgroup"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => fun Subgroup => ",
+            "fun FiniteGroupOrderEvidence => fun LagrangeTheorem => fun specialization_law => ",
+            "fun laws => fun finite_units => specialization_law laws finite_units"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_phi_formula_from_prime_factorization",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (PrimeFactorizationPackage : forall (n : Int), Type), forall (PrimeFactorizationEvidence : forall (n : Int), forall (factorization : PrimeFactorizationPackage n), Prop), forall (FundamentalTheoremArithmetic : forall (n : Int), Prop), forall (EulerPhiPrimeFactorFormula : forall (n : Int), forall (phi_value : Nat), Prop), forall (formula_law : forall (n : Int), forall (factorization : PrimeFactorizationPackage n), forall (fta : FundamentalTheoremArithmetic n), forall (factorization_evidence : PrimeFactorizationEvidence n factorization), EulerPhiPrimeFactorFormula n (EulerPhi n)), forall (n : Int), forall (factorization : PrimeFactorizationPackage n), forall (fta : FundamentalTheoremArithmetic n), forall (factorization_evidence : PrimeFactorizationEvidence n factorization), EulerPhiPrimeFactorFormula n (EulerPhi n)",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun PrimeFactorizationPackage => fun PrimeFactorizationEvidence => fun FundamentalTheoremArithmetic => fun EulerPhiPrimeFactorFormula => fun formula_law => fun n => fun factorization => fun fta => fun factorization_evidence => formula_law n factorization fta factorization_evidence",
+    },
+    TheoremArtifact {
+        name: "euler_phi_prime_power_formula_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (PrimePowerFactorizationEvidence : forall (prime : Int), forall (exponent : Nat), Prop), forall (EulerPhiPrimePowerFormula : forall (prime : Int), forall (exponent : Nat), Prop), forall (prime_power_law : forall (prime : Int), forall (exponent : Nat), forall (prime_power : PrimePowerFactorizationEvidence prime exponent), EulerPhiPrimePowerFormula prime exponent), forall (prime : Int), forall (exponent : Nat), forall (prime_power : PrimePowerFactorizationEvidence prime exponent), EulerPhiPrimePowerFormula prime exponent",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun PrimePowerFactorizationEvidence => fun EulerPhiPrimePowerFormula => fun prime_power_law => fun prime => fun exponent => fun prime_power => prime_power_law prime exponent prime_power",
+    },
+    TheoremArtifact {
+        name: "euler_phi_multiplicative_coprime_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (EulerPhiMultiplicativeFormula : forall (a : Int), forall (b : Int), Prop), forall (multiplicative_law : forall (a : Int), forall (b : Int), forall (coprime_ab : CoprimeInt a b), EulerPhiMultiplicativeFormula a b), forall (a : Int), forall (b : Int), forall (coprime_ab : CoprimeInt a b), EulerPhiMultiplicativeFormula a b",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun CoprimeInt => fun EulerPhiMultiplicativeFormula => fun multiplicative_law => fun a => fun b => fun coprime_ab => multiplicative_law a b coprime_ab",
+    },
+    TheoremArtifact {
+        name: "phi_imports_finite_group_and_factorization_boundary",
+        universe_params: &[],
+        statement:
+            "forall (PhiPackage : Type), forall (FiniteGroupFactsPackage : Type), forall (PrimeFactorizationPackage : Type), forall (AnalyticNumberTheoryPackage : Type), forall (NoAnalyticDependencyBoundary : forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), Prop), forall (boundary_law : forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), NoAnalyticDependencyBoundary phi finite_group_facts prime_factorization analytic), forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), NoAnalyticDependencyBoundary phi finite_group_facts prime_factorization analytic",
+        proof:
+            "fun PhiPackage => fun FiniteGroupFactsPackage => fun PrimeFactorizationPackage => fun AnalyticNumberTheoryPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun phi => fun finite_group_facts => fun prime_factorization => fun analytic => boundary_law phi finite_group_facts prime_factorization analytic",
     },
 ];
 
@@ -38661,6 +39070,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
+        || module == NUMBER_THEORY_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
         || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
@@ -39031,6 +39441,10 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_FACTORIZATION_MODULE.module
         || config.module == NUMBER_THEORY_PRIME_INFINITUDE_MODULE.module
         || config.module == NUMBER_THEORY_CONGRUENCE_MODULE.module
+        || config.module == NUMBER_THEORY_RESIDUE_RING_MODULE.module
+        || config.module == NUMBER_THEORY_MODULAR_GROUP_MODULE.module
+        || config.module == NUMBER_THEORY_CHINESE_REMAINDER_MODULE.module
+        || config.module == NUMBER_THEORY_PHI_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

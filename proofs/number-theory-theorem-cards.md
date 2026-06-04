@@ -200,6 +200,54 @@ residue-ring and CRT modules. They do not construct residue rings, quotient
 carriers, or CRT witnesses, and power compatibility is routed through explicit
 ordinary exponent-law evidence rather than simplifier primitives.
 
+## Residue Ring And Modular Unit Group Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.ResidueRing` and
+`Proofs.Ai.NumberTheory.ModularGroup`.
+
+The residue-ring module records checked theorem targets for residue classes
+modulo `n`, explicit quotient/core-feature reports, operation descent from
+congruence compatibility, abstract ring law packaging for the quotient carrier,
+CRT reuse surfaces, deterministic package reports, and boundaries excluding
+hidden CRT or Euler theorem assumptions. The modular-group module records unit
+modulo `n`, reduced residue classes, multiplication closure, inverse surfaces,
+abstract group law packaging, residue-ring dependency surfaces, `phi` reuse
+inputs, and boundaries excluding Euler/Fermat theorem and CRT assumptions.
+
+These modules make quotient and group-law requirements visible before CRT,
+Euler, Fermat, Wilson, Carmichael, and RSA milestones. They do not prove
+Euler's theorem or import a CRT package.
+
+## Chinese Remainder Interface
+
+Concrete entry point: `Proofs.Ai.NumberTheory.ChineseRemainder`.
+
+The Chinese remainder module records checked theorem targets for linear
+congruence solution counts from gcd evidence, pairwise-coprime residue-ring
+specialization, construction and uniqueness as separate surfaces, reuse of the
+imported `Proofs.Ai.Algebra.AbstractRingChineseRemainder` package, generalized
+CRT for compatible residue systems, constructive CRT witnesses, and a
+Garner-style interface explicitly marked as algorithmic when no executable
+function has been verified.
+
+This module imports the abstract ring CRT and residue-ring interfaces rather
+than duplicating their quotient and ring-theoretic construction data.
+
+## Euler Phi And Unit Group Order Interface
+
+Concrete entry point: `Proofs.Ai.NumberTheory.Phi`.
+
+The Euler phi module records checked theorem targets for `EulerPhi` as finite
+unit group cardinality, reduced-residue cardinality evidence, finite unit group
+order packages over `GroupLawArgs`, Lagrange specialization for unit groups,
+prime_factorization-based phi formulas citing FTA evidence, prime-power formula
+surfaces, coprime multiplicativity, and the boundary excluding analytic number
+theory dependencies.
+
+This module imports the modular unit group and factorization layers rather than
+Fermat, Euler theorem, Wilson, Carmichael, RSA, or analytic number theory
+packages.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

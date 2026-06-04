@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Phi",
+  "source": "Proofs/Ai/NumberTheory/Phi/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Phi/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:76b6f7416a50c1d4083a54bc61e19b7f553205656700d3b8bd89e76df28fac88",
+  "certificate_file_sha256": "sha256:0f746c9197606cd0237a09c50093798d7c781adda36e2c5006303896e56a2b64",
+  "export_hash": "sha256:17ed2f74394ccd8870aaa1108ac83914e27b6fddea3a1e8d200769177d4da440",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:57303ce4face8f11ce9f8e55cf568efb41667c5d3fcb10893855f21fb8dab878",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Factorization"],
+  "axioms": [],
+  "declarations": [
+    { "name": "euler_phi_unit_group_cardinality_surface", "kind": "theorem" },
+    { "name": "euler_phi_reduced_residue_cardinality_evidence", "kind": "theorem" },
+    { "name": "finite_unit_group_order_theorem_package", "kind": "theorem" },
+    { "name": "finite_unit_group_lagrange_specialization", "kind": "theorem" },
+    { "name": "euler_phi_formula_from_prime_factorization", "kind": "theorem" },
+    { "name": "euler_phi_prime_power_formula_surface", "kind": "theorem" },
+    { "name": "euler_phi_multiplicative_coprime_surface", "kind": "theorem" },
+    { "name": "phi_imports_finite_group_and_factorization_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

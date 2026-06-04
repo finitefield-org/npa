@@ -124,6 +124,26 @@ Current bundles:
   equivalence-relation laws, addition, multiplication, negation, and power compatibility, plus
   cancellation, division, and linear-congruence solvability surfaces whose `Divides`, `Gcd`, and
   `Coprime` hypotheses remain explicit.
+- `Proofs/Ai/NumberTheory/ResidueRing/`: certificate-backed residue-ring interface downstream of
+  congruence algebra and the abstract ring package, preserving residue classes modulo `n`,
+  quotient/core-feature reports, well-defined operation descent, abstract ring law packaging, CRT
+  reuse surfaces, deterministic package reports, and boundaries excluding hidden CRT or Euler
+  theorem assumptions.
+- `Proofs/Ai/NumberTheory/ModularGroup/`: certificate-backed unit-group interface downstream of
+  residue rings and the abstract group package, preserving unit modulo `n`, reduced residue
+  classes, multiplication closure, inverses, group law packaging, `phi` reuse inputs, and boundaries
+  excluding Euler/Fermat theorem and CRT assumptions.
+- `Proofs/Ai/NumberTheory/ChineseRemainder/`: certificate-backed Chinese remainder interface
+  downstream of congruence, residue rings, and the abstract ring CRT package, preserving linear
+  congruence solution-count surfaces, pairwise-coprime residue-ring specialization, separated
+  construction and uniqueness claims, generalized compatible-system CRT, constructive witnesses,
+  Garner-style algorithmic interfaces, and the boundary excluding a duplicated abstract CRT
+  implementation.
+- `Proofs/Ai/NumberTheory/Phi/`: certificate-backed Euler phi and finite unit group order
+  interface downstream of modular unit groups and prime factorization, preserving `EulerPhi` as
+  finite unit group cardinality, reduced-residue cardinality evidence, Lagrange specialization for
+  finite unit groups, prime_factorization and prime-power formula surfaces, coprime
+  multiplicativity, and the boundary excluding analytic number theory dependencies.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

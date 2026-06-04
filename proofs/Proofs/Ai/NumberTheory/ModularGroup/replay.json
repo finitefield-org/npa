@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ModularGroup",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "unit_modulo_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OneInt => fun Mul => fun CoprimeInt => fun UnitModulo => fun definition_law => fun modulus => fun a => fun coprime_a_modulus => definition_law modulus a coprime_a_modulus"
+    },
+    {
+      "declaration": "reduced_residue_class_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Residue => fun ClassOf => fun UnitModulo => fun ReducedResidueClass => fun reduced_law => fun modulus => fun a => fun unit_a => reduced_law modulus a unit_a"
+    },
+    {
+      "declaration": "modular_unit_multiplication_closed",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Mul => fun UnitModulo => fun closure_law => fun modulus => fun a => fun b => fun unit_a => fun unit_b => closure_law modulus a b unit_a unit_b"
+    },
+    {
+      "declaration": "modular_unit_inverse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun InverseModulo => fun UnitModulo => fun inverse_law => fun modulus => fun a => fun unit_a => inverse_law modulus a unit_a"
+    },
+    {
+      "declaration": "modular_unit_group_law_package_from_abstract_group",
+      "source_kind": "explicit_term",
+      "term": "fun Unit => fun one => fun mul => fun inv => fun ModularUnitGroupPackage => fun package_law => fun laws => package_law laws"
+    },
+    {
+      "declaration": "modular_group_residue_ring_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun ResidueRingPackage => fun UnitModuloPackage => fun ModularUnitGroupPackage => fun dependency_law => fun residue_ring => fun unit_package => dependency_law residue_ring unit_package"
+    },
+    {
+      "declaration": "modular_group_no_euler_theorem_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ModularUnitGroupPackage => fun EulerTheorem => fun FermatTheorem => fun NoEulerAssumptionBoundary => fun boundary_law => fun unit_group => fun euler => fun fermat => boundary_law unit_group euler fermat"
+    },
+    {
+      "declaration": "modular_group_phi_reuse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun ModularUnitGroupPackage => fun EulerPhiPackage => fun PhiInputSurface => fun reuse_law => fun unit_group => fun phi => reuse_law unit_group phi"
+    },
+    {
+      "declaration": "modular_group_no_crt_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ModularUnitGroupPackage => fun ChineseRemainderTheorem => fun NoCrtDependencyBoundary => fun boundary_law => fun unit_group => fun crt => boundary_law unit_group crt"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ModularGroup/certificate.npcert"
+  }
+}

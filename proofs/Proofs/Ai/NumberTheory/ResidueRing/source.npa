@@ -1,0 +1,35 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.NumberTheory.Congruence
+
+theorem residue_class_modulo_definition_surface :
+  forall (Int : Type), forall (Residue : Type), forall (ClassOf : forall (a : Int), Residue), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (SameResidueClass : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (class_law : forall (modulus : Int), forall (a : Int), forall (b : Int), forall (congruent_ab : CongruentModulo modulus a b), SameResidueClass modulus a b), forall (modulus : Int), forall (a : Int), forall (b : Int), forall (congruent_ab : CongruentModulo modulus a b), SameResidueClass modulus a b :=
+  fun Int => fun Residue => fun ClassOf => fun CongruentModulo => fun SameResidueClass => fun class_law => fun modulus => fun a => fun b => fun congruent_ab => class_law modulus a b congruent_ab
+
+theorem residue_quotient_core_feature_report_surface :
+  forall (Int : Type), forall (Residue : Type), forall (QuotientCoreFeature : forall (modulus : Int), Prop), forall (DeterministicQuotientReport : forall (modulus : Int), Prop), forall (report_law : forall (modulus : Int), forall (quotient_feature : QuotientCoreFeature modulus), DeterministicQuotientReport modulus), forall (modulus : Int), forall (quotient_feature : QuotientCoreFeature modulus), DeterministicQuotientReport modulus :=
+  fun Int => fun Residue => fun QuotientCoreFeature => fun DeterministicQuotientReport => fun report_law => fun modulus => fun quotient_feature => report_law modulus quotient_feature
+
+theorem residue_operations_well_defined_from_congruence :
+  forall (Int : Type), forall (Add : forall (a : Int), forall (b : Int), Int), forall (Neg : forall (a : Int), Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (OperationCompatibilityEvidence : forall (modulus : Int), Prop), forall (WellDefinedResidueOperations : forall (modulus : Int), Prop), forall (operation_law : forall (modulus : Int), forall (compatibility : OperationCompatibilityEvidence modulus), WellDefinedResidueOperations modulus), forall (modulus : Int), forall (compatibility : OperationCompatibilityEvidence modulus), WellDefinedResidueOperations modulus :=
+  fun Int => fun Add => fun Neg => fun Mul => fun CongruentModulo => fun OperationCompatibilityEvidence => fun WellDefinedResidueOperations => fun operation_law => fun modulus => fun compatibility => operation_law modulus compatibility
+
+theorem residue_ring_law_package_from_abstract_ring.{u} :
+  forall (Residue : Sort u), forall (zero : Residue), forall (one : Residue), forall (add : forall (a : Residue), forall (b : Residue), Residue), forall (neg : forall (a : Residue), Residue), forall (sub : forall (a : Residue), forall (b : Residue), Residue), forall (mul : forall (a : Residue), forall (b : Residue), Residue), forall (ResidueRingLawPackage : forall (laws : @RingLawArgs.{u} Residue zero one add neg sub mul), Prop), forall (package_law : forall (laws : @RingLawArgs.{u} Residue zero one add neg sub mul), ResidueRingLawPackage laws), forall (laws : @RingLawArgs.{u} Residue zero one add neg sub mul), ResidueRingLawPackage laws :=
+  fun Residue => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun ResidueRingLawPackage => fun package_law => fun laws => package_law laws
+
+theorem residue_ring_operations_descend_to_classes :
+  forall (Int : Type), forall (Residue : Type), forall (ClassOf : forall (a : Int), Residue), forall (ResidueAdd : forall (a : Residue), forall (b : Residue), Residue), forall (ResidueNeg : forall (a : Residue), Residue), forall (ResidueMul : forall (a : Residue), forall (b : Residue), Residue), forall (DescentEvidence : forall (modulus : Int), Prop), forall (ResidueOperationDescent : forall (modulus : Int), Prop), forall (descent_law : forall (modulus : Int), forall (descent_evidence : DescentEvidence modulus), ResidueOperationDescent modulus), forall (modulus : Int), forall (descent_evidence : DescentEvidence modulus), ResidueOperationDescent modulus :=
+  fun Int => fun Residue => fun ClassOf => fun ResidueAdd => fun ResidueNeg => fun ResidueMul => fun DescentEvidence => fun ResidueOperationDescent => fun descent_law => fun modulus => fun descent_evidence => descent_law modulus descent_evidence
+
+theorem residue_ring_crt_reuse_surface :
+  forall (ResidueRingPackage : Type), forall (CrtInputPackage : Type), forall (ResidueRingReusableByCrt : forall (residue_ring : ResidueRingPackage), forall (crt_input : CrtInputPackage), Prop), forall (reuse_law : forall (residue_ring : ResidueRingPackage), forall (crt_input : CrtInputPackage), ResidueRingReusableByCrt residue_ring crt_input), forall (residue_ring : ResidueRingPackage), forall (crt_input : CrtInputPackage), ResidueRingReusableByCrt residue_ring crt_input :=
+  fun ResidueRingPackage => fun CrtInputPackage => fun ResidueRingReusableByCrt => fun reuse_law => fun residue_ring => fun crt_input => reuse_law residue_ring crt_input
+
+theorem residue_ring_no_hidden_crt_or_euler_boundary :
+  forall (ResidueRingPackage : Type), forall (ChineseRemainderTheorem : Type), forall (EulerTheorem : Type), forall (NoHiddenCrtOrEulerBoundary : forall (residue_ring : ResidueRingPackage), forall (crt : ChineseRemainderTheorem), forall (euler : EulerTheorem), Prop), forall (boundary_law : forall (residue_ring : ResidueRingPackage), forall (crt : ChineseRemainderTheorem), forall (euler : EulerTheorem), NoHiddenCrtOrEulerBoundary residue_ring crt euler), forall (residue_ring : ResidueRingPackage), forall (crt : ChineseRemainderTheorem), forall (euler : EulerTheorem), NoHiddenCrtOrEulerBoundary residue_ring crt euler :=
+  fun ResidueRingPackage => fun ChineseRemainderTheorem => fun EulerTheorem => fun NoHiddenCrtOrEulerBoundary => fun boundary_law => fun residue_ring => fun crt => fun euler => boundary_law residue_ring crt euler
+
+theorem residue_ring_deterministic_package_report :
+  forall (ResidueRingPackage : Type), forall (PackageReport : forall (residue_ring : ResidueRingPackage), Prop), forall (PackageHash : forall (residue_ring : ResidueRingPackage), Prop), forall (deterministic_law : forall (residue_ring : ResidueRingPackage), forall (report : PackageReport residue_ring), PackageHash residue_ring), forall (residue_ring : ResidueRingPackage), forall (report : PackageReport residue_ring), PackageHash residue_ring :=
+  fun ResidueRingPackage => fun PackageReport => fun PackageHash => fun deterministic_law => fun residue_ring => fun report => deterministic_law residue_ring report
