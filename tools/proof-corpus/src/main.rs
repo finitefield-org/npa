@@ -124,6 +124,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &MODEL_CATEGORY_MODULE,
     &MONOIDAL_MODEL_CATEGORY_MODULE,
     &INFINITY_SIMPLICIAL_SET_MODULE,
+    &STABLE_INFINITY_CATEGORY_MODULE,
     &ABSTRACT_GROUP_MODULE,
     &ABSTRACT_GROUP_KERNEL_MODULE,
     &ABSTRACT_GROUP_IMAGE_MODULE,
@@ -825,6 +826,19 @@ const INFINITY_SIMPLICIAL_SET_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: INFINITY_SIMPLICIAL_SET_DEFINITIONS,
     theorems: INFINITY_SIMPLICIAL_SET_THEOREMS,
+    expected_axioms: &[],
+};
+
+const STABLE_INFINITY_CATEGORY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Category.Infinity.StableInfinityCategory",
+    source_path: "Proofs/Ai/Category/Infinity/StableInfinityCategory/source.npa",
+    certificate_path: "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert",
+    meta_path: "Proofs/Ai/Category/Infinity/StableInfinityCategory/meta.json",
+    replay_path: "Proofs/Ai/Category/Infinity/StableInfinityCategory/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Category.Classical"],
+    inductives: &[],
+    definitions: STABLE_INFINITY_CATEGORY_DEFINITIONS,
+    theorems: STABLE_INFINITY_CATEGORY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -4068,6 +4082,131 @@ macro_rules! monoidal_model_category_projection_proof {
             monoidal_model_category_unit_replacement_weak_equivalence_law_type!(),
             ") => fun (unit_axiom_law : ",
             monoidal_model_category_unit_axiom_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        ))
+    };
+}
+
+macro_rules! stable_infinity_category_params {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        category_params!(concat!(
+            "forall (category_args : @CategoryLawArgs.{u,v} Obj Hom id comp), ",
+            "forall (ZeroObj : Obj), ",
+            "forall (HasFiniteLimits : Prop), ",
+            "forall (HasFiniteColimits : Prop), ",
+            "forall (IsZeroObject : forall (X : Obj), Prop), ",
+            "forall (Fiber : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), Obj), ",
+            "forall (Cofiber : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), Obj), ",
+            "forall (Suspension : forall (X : Obj), Obj), ",
+            "forall (Loop : forall (X : Obj), Obj), ",
+            "forall (ExactTriangle : forall (A : Obj), forall (B : Obj), forall (C : Obj), Prop), ",
+            "forall (PullbackSquaresArePushout : Prop), ",
+            "forall (PushoutSquaresArePullback : Prop), ",
+            "forall (SuspensionLoopEquivalence : Prop), ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        stable_infinity_category_params!(concat!($tail))
+    };
+}
+
+macro_rules! stable_infinity_category_abs {
+    (concat!($($tail:expr),+ $(,)?)) => {
+        category_abs!(concat!(
+            "fun category_args => fun ZeroObj => fun HasFiniteLimits => ",
+            "fun HasFiniteColimits => fun IsZeroObject => fun Fiber => ",
+            "fun Cofiber => fun Suspension => fun Loop => fun ExactTriangle => ",
+            "fun PullbackSquaresArePushout => fun PushoutSquaresArePullback => ",
+            "fun SuspensionLoopEquivalence => ",
+            $($tail),+
+        ))
+    };
+    ($tail:literal) => {
+        stable_infinity_category_abs!(concat!($tail))
+    };
+}
+
+macro_rules! stable_infinity_category_category_law_type {
+    () => {
+        "@CategoryLawArgs.{u,v} Obj Hom id comp"
+    };
+}
+
+macro_rules! stable_infinity_category_pointed_law_type {
+    () => {
+        "IsZeroObject ZeroObj"
+    };
+}
+
+macro_rules! stable_infinity_category_fiber_cofiber_law_type {
+    () => {
+        "forall (A : Obj), forall (B : Obj), forall (f : Hom A B), ExactTriangle (Fiber A B f) A B"
+    };
+}
+
+macro_rules! stable_infinity_category_exact_triangle_rotation_law_type {
+    () => {
+        "forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (triangle : ExactTriangle A B C), ExactTriangle B C (Suspension A)"
+    };
+}
+
+macro_rules! stable_infinity_category_law_binders {
+    ($tail:expr) => {
+        concat!(
+            "forall (category_law : ",
+            stable_infinity_category_category_law_type!(),
+            "), ",
+            "forall (pointed_law : ",
+            stable_infinity_category_pointed_law_type!(),
+            "), ",
+            "forall (finite_limits_law : HasFiniteLimits), ",
+            "forall (finite_colimits_law : HasFiniteColimits), ",
+            "forall (pullback_pushout_law : PullbackSquaresArePushout), ",
+            "forall (pushout_pullback_law : PushoutSquaresArePullback), ",
+            "forall (suspension_loop_equivalence_law : SuspensionLoopEquivalence), ",
+            "forall (fiber_cofiber_sequence_law : ",
+            stable_infinity_category_fiber_cofiber_law_type!(),
+            "), ",
+            "forall (exact_triangle_rotation_law : ",
+            stable_infinity_category_exact_triangle_rotation_law_type!(),
+            "), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! stable_infinity_category_law_args_app {
+    () => {
+        concat!(
+            "@StableInfinityCategoryLawArgs.{u,v} Obj Hom id comp category_args ",
+            "ZeroObj HasFiniteLimits HasFiniteColimits IsZeroObject Fiber Cofiber ",
+            "Suspension Loop ExactTriangle PullbackSquaresArePushout ",
+            "PushoutSquaresArePullback SuspensionLoopEquivalence"
+        )
+    };
+}
+
+macro_rules! stable_infinity_category_projection_proof {
+    ($target:expr, $selected:literal) => {
+        stable_infinity_category_abs!(concat!(
+            "fun stable_infinity_category_args => stable_infinity_category_args (",
+            $target,
+            ") (fun (category_law : ",
+            stable_infinity_category_category_law_type!(),
+            ") => fun (pointed_law : ",
+            stable_infinity_category_pointed_law_type!(),
+            ") => fun (finite_limits_law : HasFiniteLimits) => ",
+            "fun (finite_colimits_law : HasFiniteColimits) => ",
+            "fun (pullback_pushout_law : PullbackSquaresArePushout) => ",
+            "fun (pushout_pullback_law : PushoutSquaresArePullback) => ",
+            "fun (suspension_loop_equivalence_law : SuspensionLoopEquivalence) => ",
+            "fun (fiber_cofiber_sequence_law : ",
+            stable_infinity_category_fiber_cofiber_law_type!(),
+            ") => fun (exact_triangle_rotation_law : ",
+            stable_infinity_category_exact_triangle_rotation_law_type!(),
             ") => ",
             $selected,
             ")"
@@ -14604,6 +14743,17 @@ const MONOIDAL_MODEL_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionA
     )),
 }];
 
+const STABLE_INFINITY_CATEGORY_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "StableInfinityCategoryLawArgs",
+    universe_params: &["u", "v"],
+    ty: stable_infinity_category_params!("Prop"),
+    value: stable_infinity_category_abs!(concat!(
+        "forall (P : Prop), forall (mk : ",
+        stable_infinity_category_law_binders!("P"),
+        "), P"
+    )),
+}];
+
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "SimplexCategoryLawArgs",
@@ -19057,6 +19207,180 @@ const MONOIDAL_MODEL_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
             "fun monoidal_model_category_args => fun (P : Prop) => fun (mk : ",
             monoidal_model_category_law_binders!("P"),
             ") => monoidal_model_category_args P mk"
+        )),
+    },
+];
+
+const STABLE_INFINITY_CATEGORY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "stable_infinity_category_definition_intro",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            stable_infinity_category_law_binders!(concat!(
+                stable_infinity_category_law_args_app!()
+            ))
+        )),
+        proof: stable_infinity_category_abs!(concat!(
+            "fun category_law => fun pointed_law => fun finite_limits_law => ",
+            "fun finite_colimits_law => fun pullback_pushout_law => ",
+            "fun pushout_pullback_law => fun suspension_loop_equivalence_law => ",
+            "fun fiber_cofiber_sequence_law => fun exact_triangle_rotation_law => ",
+            "fun (P : Prop) => fun (mk : ",
+            stable_infinity_category_law_binders!("P"),
+            ") => mk category_law pointed_law finite_limits_law ",
+            "finite_colimits_law pullback_pushout_law pushout_pullback_law ",
+            "suspension_loop_equivalence_law fiber_cofiber_sequence_law ",
+            "exact_triangle_rotation_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_has_category_laws",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), ",
+            stable_infinity_category_category_law_type!()
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            stable_infinity_category_category_law_type!(),
+            "category_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_pointed",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), ",
+            stable_infinity_category_pointed_law_type!()
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            stable_infinity_category_pointed_law_type!(),
+            "pointed_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_has_finite_limits",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), HasFiniteLimits"
+        )),
+        proof: stable_infinity_category_projection_proof!("HasFiniteLimits", "finite_limits_law"),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_has_finite_colimits",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), HasFiniteColimits"
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            "HasFiniteColimits",
+            "finite_colimits_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_pullback_squares_are_pushout",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), PullbackSquaresArePushout"
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            "PullbackSquaresArePushout",
+            "pullback_pushout_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_pushout_squares_are_pullback",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), PushoutSquaresArePullback"
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            "PushoutSquaresArePullback",
+            "pushout_pullback_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_suspension_loop_equivalence",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), SuspensionLoopEquivalence"
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            "SuspensionLoopEquivalence",
+            "suspension_loop_equivalence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_fiber_cofiber_sequence",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), ",
+            stable_infinity_category_fiber_cofiber_law_type!()
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            stable_infinity_category_fiber_cofiber_law_type!(),
+            "fiber_cofiber_sequence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category_exact_triangles",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), ",
+            stable_infinity_category_exact_triangle_rotation_law_type!()
+        )),
+        proof: stable_infinity_category_projection_proof!(
+            stable_infinity_category_exact_triangle_rotation_law_type!(),
+            "exact_triangle_rotation_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_category",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            stable_infinity_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: stable_infinity_category_abs!(concat!(
+            "fun stable_infinity_category_args => fun (P : Prop) => fun (mk : ",
+            stable_infinity_category_law_binders!("P"),
+            ") => stable_infinity_category_args P mk"
+        )),
+    },
+    TheoremArtifact {
+        name: "stable_infinity_categories",
+        universe_params: &["u", "v"],
+        statement: stable_infinity_category_params!(concat!(
+            "forall (stable_infinity_category_args : ",
+            stable_infinity_category_law_args_app!(),
+            "), forall (P : Prop), forall (mk : ",
+            stable_infinity_category_law_binders!("P"),
+            "), P"
+        )),
+        proof: stable_infinity_category_abs!(concat!(
+            "fun stable_infinity_category_args => fun (P : Prop) => fun (mk : ",
+            stable_infinity_category_law_binders!("P"),
+            ") => stable_infinity_category_args P mk"
         )),
     },
 ];
@@ -33085,6 +33409,20 @@ fn run_full() -> Result<(), String> {
         &monoidal_model_category_imports,
         &monoidal_model_category_source_interfaces,
     )?;
+    let stable_infinity_category_imports = vec![
+        eq_import.clone(),
+        classical_category.verified_module.clone(),
+    ];
+    let stable_infinity_category_source_interfaces = vec![
+        eq_source_interface.clone(),
+        classical_category.source_interface.clone(),
+    ];
+    let stable_infinity_category = build_and_write_module(
+        &proof_root,
+        &STABLE_INFINITY_CATEGORY_MODULE,
+        &stable_infinity_category_imports,
+        &stable_infinity_category_source_interfaces,
+    )?;
     let abstract_group_imports = vec![eq_import.clone(), eq_reasoning.verified_module.clone()];
     let abstract_group_source_interfaces = vec![
         eq_source_interface.clone(),
@@ -34426,6 +34764,7 @@ fn run_full() -> Result<(), String> {
         classical_category,
         model_category,
         monoidal_model_category,
+        stable_infinity_category,
         abstract_group,
         abstract_group_kernel,
         abstract_group_image,

@@ -717,6 +717,23 @@ const MONOIDAL_MODEL_CATEGORY_THEOREMS: &[&str] = &[
     "monoidal_model_categories",
 ];
 
+const STABLE_INFINITY_CATEGORY_DEFINITIONS: &[&str] = &["StableInfinityCategoryLawArgs"];
+
+const STABLE_INFINITY_CATEGORY_THEOREMS: &[&str] = &[
+    "stable_infinity_category_definition_intro",
+    "stable_infinity_category_has_category_laws",
+    "stable_infinity_category_pointed",
+    "stable_infinity_category_has_finite_limits",
+    "stable_infinity_category_has_finite_colimits",
+    "stable_infinity_category_pullback_squares_are_pushout",
+    "stable_infinity_category_pushout_squares_are_pullback",
+    "stable_infinity_category_suspension_loop_equivalence",
+    "stable_infinity_category_fiber_cofiber_sequence",
+    "stable_infinity_category_exact_triangles",
+    "stable_infinity_category",
+    "stable_infinity_categories",
+];
+
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[&str] = &[
     "SimplexCategoryLawArgs",
     "SimplicialSetLawArgs",
@@ -2337,6 +2354,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: INFINITY_SIMPLICIAL_SET_DEFINITIONS,
         theorems: INFINITY_SIMPLICIAL_SET_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Infinity.StableInfinityCategory",
+        source: "Proofs/Ai/Category/Infinity/StableInfinityCategory/source.npa",
+        certificate: "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert",
+        meta: "Proofs/Ai/Category/Infinity/StableInfinityCategory/meta.json",
+        replay: "Proofs/Ai/Category/Infinity/StableInfinityCategory/replay.json",
+        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: STABLE_INFINITY_CATEGORY_DEFINITIONS,
+        theorems: STABLE_INFINITY_CATEGORY_THEOREMS,
         axioms: &[],
     },
     ExpectedModule {

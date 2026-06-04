@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Category.Infinity.StableInfinityCategory",
+  "source": "Proofs/Ai/Category/Infinity/StableInfinityCategory/source.npa",
+  "certificate": "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:32a6a11609dd884f3e247eb43462452965ce50edd8c85a4b40e7a7e542faeb32",
+  "certificate_file_sha256": "sha256:529267fd93a934e0b64f9c59ad3aeb07925487f3a3e5c688187c3302c7a829c6",
+  "export_hash": "sha256:1067a63d8a26eceff0598c2f5a96c5f5c77da3e9939f8218cf6521f0bfc99ab3",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:c5492d7bad9e71d53dd654b568e2512d974e73d4f783baac0428f0374126cb30",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"],
+  "axioms": [],
+  "declarations": [
+    { "name": "StableInfinityCategoryLawArgs", "kind": "def" },
+    { "name": "stable_infinity_category_definition_intro", "kind": "theorem" },
+    { "name": "stable_infinity_category_has_category_laws", "kind": "theorem" },
+    { "name": "stable_infinity_category_pointed", "kind": "theorem" },
+    { "name": "stable_infinity_category_has_finite_limits", "kind": "theorem" },
+    { "name": "stable_infinity_category_has_finite_colimits", "kind": "theorem" },
+    { "name": "stable_infinity_category_pullback_squares_are_pushout", "kind": "theorem" },
+    { "name": "stable_infinity_category_pushout_squares_are_pullback", "kind": "theorem" },
+    { "name": "stable_infinity_category_suspension_loop_equivalence", "kind": "theorem" },
+    { "name": "stable_infinity_category_fiber_cofiber_sequence", "kind": "theorem" },
+    { "name": "stable_infinity_category_exact_triangles", "kind": "theorem" },
+    { "name": "stable_infinity_category", "kind": "theorem" },
+    { "name": "stable_infinity_categories", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

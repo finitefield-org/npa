@@ -371,6 +371,23 @@ theorems = ["simplex_category_definition_intro", "simplex_category_has_category_
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Category.Infinity.StableInfinityCategory"
+source = "Proofs/Ai/Category/Infinity/StableInfinityCategory/source.npa"
+certificate = "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert"
+meta = "Proofs/Ai/Category/Infinity/StableInfinityCategory/meta.json"
+replay = "Proofs/Ai/Category/Infinity/StableInfinityCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:32a6a11609dd884f3e247eb43462452965ce50edd8c85a4b40e7a7e542faeb32"
+expected_certificate_file_hash = "sha256:529267fd93a934e0b64f9c59ad3aeb07925487f3a3e5c688187c3302c7a829c6"
+expected_export_hash = "sha256:1067a63d8a26eceff0598c2f5a96c5f5c77da3e9939f8218cf6521f0bfc99ab3"
+expected_axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+expected_certificate_hash = "sha256:c5492d7bad9e71d53dd654b568e2512d974e73d4f783baac0428f0374126cb30"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
+definitions = ["StableInfinityCategoryLawArgs"]
+theorems = ["stable_infinity_category_definition_intro", "stable_infinity_category_has_category_laws", "stable_infinity_category_pointed", "stable_infinity_category_has_finite_limits", "stable_infinity_category_has_finite_colimits", "stable_infinity_category_pullback_squares_are_pushout", "stable_infinity_category_pushout_squares_are_pullback", "stable_infinity_category_suspension_loop_equivalence", "stable_infinity_category_fiber_cofiber_sequence", "stable_infinity_category_exact_triangles", "stable_infinity_category", "stable_infinity_categories"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractGroup"
 source = "Proofs/Ai/Algebra/AbstractGroup/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractGroup/certificate.npcert"
