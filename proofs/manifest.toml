@@ -1247,6 +1247,24 @@ theorems = ["linear_congruence_solution_count_from_gcd_surface", "crt_pairwise_c
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Phi"
+source = "Proofs/Ai/NumberTheory/Phi/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Phi/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Phi/meta.json"
+replay = "Proofs/Ai/NumberTheory/Phi/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:76b6f7416a50c1d4083a54bc61e19b7f553205656700d3b8bd89e76df28fac88"
+certificate_file_sha256 = "sha256:0f746c9197606cd0237a09c50093798d7c781adda36e2c5006303896e56a2b64"
+export_hash = "sha256:17ed2f74394ccd8870aaa1108ac83914e27b6fddea3a1e8d200769177d4da440"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:57303ce4face8f11ce9f8e55cf568efb41667c5d3fcb10893855f21fb8dab878"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Factorization"]
+definitions = []
+theorems = ["euler_phi_unit_group_cardinality_surface", "euler_phi_reduced_residue_cardinality_evidence", "finite_unit_group_order_theorem_package", "finite_unit_group_lagrange_specialization", "euler_phi_formula_from_prime_factorization", "euler_phi_prime_power_formula_surface", "euler_phi_multiplicative_coprime_surface", "phi_imports_finite_group_and_factorization_boundary"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
 source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"

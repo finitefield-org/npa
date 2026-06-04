@@ -173,6 +173,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_RESIDUE_RING_MODULE,
     &NUMBER_THEORY_MODULAR_GROUP_MODULE,
     &NUMBER_THEORY_CHINESE_REMAINDER_MODULE,
+    &NUMBER_THEORY_PHI_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1754,6 +1755,24 @@ const NUMBER_THEORY_CHINESE_REMAINDER_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CHINESE_REMAINDER_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PHI_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Phi",
+    source_path: "Proofs/Ai/NumberTheory/Phi/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Phi/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Phi/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Phi/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.Factorization",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PHI_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10865,6 +10884,94 @@ const NUMBER_THEORY_CHINESE_REMAINDER_THEOREMS: &[TheoremArtifact] = &[
             "forall (ChineseRemainderPackage : Type), forall (AbstractRingChineseRemainderPackage : Type), forall (DuplicatedAbstractCrtImplementation : Type), forall (NoDuplicateAbstractCrtBoundary : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), Prop), forall (boundary_law : forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate), forall (number_theory_crt : ChineseRemainderPackage), forall (abstract_crt : AbstractRingChineseRemainderPackage), forall (duplicate : DuplicatedAbstractCrtImplementation), NoDuplicateAbstractCrtBoundary number_theory_crt abstract_crt duplicate",
         proof:
             "fun ChineseRemainderPackage => fun AbstractRingChineseRemainderPackage => fun DuplicatedAbstractCrtImplementation => fun NoDuplicateAbstractCrtBoundary => fun boundary_law => fun number_theory_crt => fun abstract_crt => fun duplicate => boundary_law number_theory_crt abstract_crt duplicate",
+    },
+];
+
+const NUMBER_THEORY_PHI_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "euler_phi_unit_group_cardinality_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (ModularUnitGroupPackage : forall (modulus : Int), Type), forall (FiniteUnitSetEvidence : forall (modulus : Int), Prop), forall (UnitGroupCardinalityEvidence : forall (modulus : Int), forall (phi_value : Nat), Prop), forall (definition_law : forall (modulus : Int), forall (unit_group : ModularUnitGroupPackage modulus), forall (finite_units : FiniteUnitSetEvidence modulus), UnitGroupCardinalityEvidence modulus (EulerPhi modulus)), forall (modulus : Int), forall (unit_group : ModularUnitGroupPackage modulus), forall (finite_units : FiniteUnitSetEvidence modulus), UnitGroupCardinalityEvidence modulus (EulerPhi modulus)",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun ModularUnitGroupPackage => fun FiniteUnitSetEvidence => fun UnitGroupCardinalityEvidence => fun definition_law => fun modulus => fun unit_group => fun finite_units => definition_law modulus unit_group finite_units",
+    },
+    TheoremArtifact {
+        name: "euler_phi_reduced_residue_cardinality_evidence",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (ResidueClass : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (ReducedResidueClass : forall (modulus : Int), forall (residue : ResidueClass), Prop), forall (FiniteReducedResidueSet : forall (modulus : Int), Prop), forall (ReducedResidueCardinalityEvidence : forall (modulus : Int), forall (phi_value : Nat), Prop), forall (cardinality_law : forall (modulus : Int), forall (finite_residues : FiniteReducedResidueSet modulus), ReducedResidueCardinalityEvidence modulus (EulerPhi modulus)), forall (modulus : Int), forall (finite_residues : FiniteReducedResidueSet modulus), ReducedResidueCardinalityEvidence modulus (EulerPhi modulus)",
+        proof:
+            "fun Int => fun Nat => fun ResidueClass => fun EulerPhi => fun ReducedResidueClass => fun FiniteReducedResidueSet => fun ReducedResidueCardinalityEvidence => fun cardinality_law => fun modulus => fun finite_residues => cardinality_law modulus finite_residues",
+    },
+    TheoremArtifact {
+        name: "finite_unit_group_order_theorem_package",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (FiniteCarrierEvidence : Prop), ",
+            "forall (UnitGroupOrderPackage : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteCarrierEvidence), Prop), ",
+            "forall (package_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteCarrierEvidence), UnitGroupOrderPackage laws finite_units), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteCarrierEvidence), UnitGroupOrderPackage laws finite_units"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => fun FiniteCarrierEvidence => ",
+            "fun UnitGroupOrderPackage => fun package_law => fun laws => fun finite_units => ",
+            "package_law laws finite_units"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_unit_group_lagrange_specialization",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (Subgroup : forall (x : Unit), Prop), ",
+            "forall (FiniteGroupOrderEvidence : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), ",
+            "forall (LagrangeTheorem : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (subgroup : forall (x : Unit), Prop), Prop), ",
+            "forall (specialization_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteGroupOrderEvidence laws), LagrangeTheorem laws Subgroup), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), forall (finite_units : FiniteGroupOrderEvidence laws), LagrangeTheorem laws Subgroup"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => fun Subgroup => ",
+            "fun FiniteGroupOrderEvidence => fun LagrangeTheorem => fun specialization_law => ",
+            "fun laws => fun finite_units => specialization_law laws finite_units"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_phi_formula_from_prime_factorization",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (PrimeFactorizationPackage : forall (n : Int), Type), forall (PrimeFactorizationEvidence : forall (n : Int), forall (factorization : PrimeFactorizationPackage n), Prop), forall (FundamentalTheoremArithmetic : forall (n : Int), Prop), forall (EulerPhiPrimeFactorFormula : forall (n : Int), forall (phi_value : Nat), Prop), forall (formula_law : forall (n : Int), forall (factorization : PrimeFactorizationPackage n), forall (fta : FundamentalTheoremArithmetic n), forall (factorization_evidence : PrimeFactorizationEvidence n factorization), EulerPhiPrimeFactorFormula n (EulerPhi n)), forall (n : Int), forall (factorization : PrimeFactorizationPackage n), forall (fta : FundamentalTheoremArithmetic n), forall (factorization_evidence : PrimeFactorizationEvidence n factorization), EulerPhiPrimeFactorFormula n (EulerPhi n)",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun PrimeFactorizationPackage => fun PrimeFactorizationEvidence => fun FundamentalTheoremArithmetic => fun EulerPhiPrimeFactorFormula => fun formula_law => fun n => fun factorization => fun fta => fun factorization_evidence => formula_law n factorization fta factorization_evidence",
+    },
+    TheoremArtifact {
+        name: "euler_phi_prime_power_formula_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (PrimePowerFactorizationEvidence : forall (prime : Int), forall (exponent : Nat), Prop), forall (EulerPhiPrimePowerFormula : forall (prime : Int), forall (exponent : Nat), Prop), forall (prime_power_law : forall (prime : Int), forall (exponent : Nat), forall (prime_power : PrimePowerFactorizationEvidence prime exponent), EulerPhiPrimePowerFormula prime exponent), forall (prime : Int), forall (exponent : Nat), forall (prime_power : PrimePowerFactorizationEvidence prime exponent), EulerPhiPrimePowerFormula prime exponent",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun PrimePowerFactorizationEvidence => fun EulerPhiPrimePowerFormula => fun prime_power_law => fun prime => fun exponent => fun prime_power => prime_power_law prime exponent prime_power",
+    },
+    TheoremArtifact {
+        name: "euler_phi_multiplicative_coprime_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nat : Type), forall (EulerPhi : forall (modulus : Int), Nat), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (EulerPhiMultiplicativeFormula : forall (a : Int), forall (b : Int), Prop), forall (multiplicative_law : forall (a : Int), forall (b : Int), forall (coprime_ab : CoprimeInt a b), EulerPhiMultiplicativeFormula a b), forall (a : Int), forall (b : Int), forall (coprime_ab : CoprimeInt a b), EulerPhiMultiplicativeFormula a b",
+        proof:
+            "fun Int => fun Nat => fun EulerPhi => fun CoprimeInt => fun EulerPhiMultiplicativeFormula => fun multiplicative_law => fun a => fun b => fun coprime_ab => multiplicative_law a b coprime_ab",
+    },
+    TheoremArtifact {
+        name: "phi_imports_finite_group_and_factorization_boundary",
+        universe_params: &[],
+        statement:
+            "forall (PhiPackage : Type), forall (FiniteGroupFactsPackage : Type), forall (PrimeFactorizationPackage : Type), forall (AnalyticNumberTheoryPackage : Type), forall (NoAnalyticDependencyBoundary : forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), Prop), forall (boundary_law : forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), NoAnalyticDependencyBoundary phi finite_group_facts prime_factorization analytic), forall (phi : PhiPackage), forall (finite_group_facts : FiniteGroupFactsPackage), forall (prime_factorization : PrimeFactorizationPackage), forall (analytic : AnalyticNumberTheoryPackage), NoAnalyticDependencyBoundary phi finite_group_facts prime_factorization analytic",
+        proof:
+            "fun PhiPackage => fun FiniteGroupFactsPackage => fun PrimeFactorizationPackage => fun AnalyticNumberTheoryPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun phi => fun finite_group_facts => fun prime_factorization => fun analytic => boundary_law phi finite_group_facts prime_factorization analytic",
     },
 ];
 
@@ -39337,6 +39444,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_RESIDUE_RING_MODULE.module
         || config.module == NUMBER_THEORY_MODULAR_GROUP_MODULE.module
         || config.module == NUMBER_THEORY_CHINESE_REMAINDER_MODULE.module
+        || config.module == NUMBER_THEORY_PHI_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

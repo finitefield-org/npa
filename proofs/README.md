@@ -139,6 +139,11 @@ Current bundles:
   construction and uniqueness claims, generalized compatible-system CRT, constructive witnesses,
   Garner-style algorithmic interfaces, and the boundary excluding a duplicated abstract CRT
   implementation.
+- `Proofs/Ai/NumberTheory/Phi/`: certificate-backed Euler phi and finite unit group order
+  interface downstream of modular unit groups and prime factorization, preserving `EulerPhi` as
+  finite unit group cardinality, reduced-residue cardinality evidence, Lagrange specialization for
+  finite unit groups, prime_factorization and prime-power formula surfaces, coprime
+  multiplicativity, and the boundary excluding analytic number theory dependencies.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

@@ -542,7 +542,7 @@ later in the file.
 
 ### NT-T13 Add Euler Phi And Finite Unit Group Order
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T11`, `NT-T09`, finite group order interfaces
 - Areas: `Proofs/Ai/NumberTheory/Phi/`, `Proofs/Ai/NumberTheory/ModularGroup/`
 - Tasks:
@@ -559,7 +559,11 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Phi`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Phi`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "EulerPhi|unit group|Lagrange|prime_factorization" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T14 Prove Fermat, Euler, Wilson, And Carmichael Theorems
 

@@ -233,6 +233,21 @@ function has been verified.
 This module imports the abstract ring CRT and residue-ring interfaces rather
 than duplicating their quotient and ring-theoretic construction data.
 
+## Euler Phi And Unit Group Order Interface
+
+Concrete entry point: `Proofs.Ai.NumberTheory.Phi`.
+
+The Euler phi module records checked theorem targets for `EulerPhi` as finite
+unit group cardinality, reduced-residue cardinality evidence, finite unit group
+order packages over `GroupLawArgs`, Lagrange specialization for unit groups,
+prime_factorization-based phi formulas citing FTA evidence, prime-power formula
+surfaces, coprime multiplicativity, and the boundary excluding analytic number
+theory dependencies.
+
+This module imports the modular unit group and factorization layers rather than
+Fermat, Euler theorem, Wilson, Carmichael, RSA, or analytic number theory
+packages.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |
