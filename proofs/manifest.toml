@@ -1013,6 +1013,24 @@ theorems = ["field_ideal_zero_or_top", "field_simple_ring_evidence", "quotient_b
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient"
+source = "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:bf55aca2589e8fb9d104657003e1fa7c8cdf04bc0da4ccb5d2e749a2711cf184"
+certificate_file_sha256 = "sha256:d12e8c8b0d5ac3992a3f3e9a63cacd990c48794e0304b4885dd4fb9a1ede4ac2"
+export_hash = "sha256:8e75c77c6377d5a96e76a1d11f54364deeaa00e800ee609b87843c41eed00f83"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:7c2b753936a598c7ebc604071afc180f6fec2c0ce36761cc51b3b322fc8b3831"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldIdeal"]
+definitions = ["IrreduciblePolynomial", "PrincipalIdealGeneratedBy", "PolynomialFieldQuotientArgs", "SimpleAlgebraicExtensionQuotientArgs"]
+theorems = ["irreducible_polynomial_generates_maximal_ideal", "quotient_by_irreducible_polynomial_is_field", "polynomial_eval_kernel_contains_minimal_polynomial", "simple_algebraic_extension_as_polynomial_quotient"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"
 source = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa"
 certificate = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"

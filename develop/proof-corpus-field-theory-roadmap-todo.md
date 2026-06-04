@@ -536,7 +536,7 @@ Implication:
 
 ### FT-09 Add Polynomial Quotient Over Field Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-05, FT-08
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -574,6 +574,13 @@ Implication:
 - Notes:
   - If the import closure is too large, split a narrow `AbstractMaximalIdealQuotientField` adapter
     before adding the polynomial-facing theorem names.
+  - Completed with `Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`, which adds
+    `IrreduciblePolynomial`, `PrincipalIdealGeneratedBy`, `PolynomialFieldQuotientArgs`, and
+    `SimpleAlgebraicExtensionQuotientArgs`.
+  - The bridge keeps irreducibility, principal ideal generation, quotient ring laws, quotient hom
+    evidence, evaluation-kernel exactness, and simple-extension comparison explicit. It imports the
+    current `AbstractFieldIdeal` route for staging, so promotion should audit this closure before
+    making the polynomial quotient layer public.
 
 ### FT-10 Add Field Extension Law Package
 

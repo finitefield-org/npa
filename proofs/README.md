@@ -1624,6 +1624,34 @@ equality and quotient/isomorphism route. The theorem statement for
 `quotient_by_maximal_ideal_is_field` intentionally exposes all quotient and maximality witnesses so
 the Krull and Nullstellensatz trusted boundaries remain unchanged.
 
+#### `Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
+
+This bridge is the polynomial-facing quotient layer over the abstract field/ideal stack. It keeps
+polynomial syntax, irreducibility, principal ideal generation, quotient construction, evaluation
+kernel exactness, and simple-extension comparison as explicit evidence packages.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `IrreduciblePolynomial` | packages abstract nonzero, nonunit, and factor-law evidence for a polynomial |
+| `PrincipalIdealGeneratedBy` | packages ideal laws plus generator membership and principal intro/elimination evidence |
+| `PolynomialFieldQuotientArgs` | packages irreducible-to-maximal and quotient-field laws for an abstract polynomial quotient |
+| `SimpleAlgebraicExtensionQuotientArgs` | packages minimal-polynomial kernel evidence and a quotient/extension field isomorphism |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `irreducible_polynomial_generates_maximal_ideal` | projects maximal-ideal evidence from an irreducible polynomial and its principal ideal package |
+| `quotient_by_irreducible_polynomial_is_field` | projects quotient field laws from irreducibility, principal generation, quotient ring laws, quotient hom evidence, and kernel exactness |
+| `polynomial_eval_kernel_contains_minimal_polynomial` | projects that the explicit evaluation-kernel predicate contains the minimal polynomial |
+| `simple_algebraic_extension_as_polynomial_quotient` | projects a field isomorphism from the polynomial quotient to the simple algebraic extension |
+
+The module imports the current `AbstractFieldIdeal` route for corpus staging, so promotion should
+audit the closure before making this public. The checked FT-09 certificate itself has no local
+axioms; source, replay, metadata, and AI theorem index entries remain non-trusted sidecars.
+
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
 Implemented definitions / API declarations, not proof targets:

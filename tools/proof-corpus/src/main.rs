@@ -160,6 +160,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
     &ABSTRACT_KRULL_THEOREM_MODULE,
     &ABSTRACT_FIELD_IDEAL_MODULE,
+    &ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -1535,6 +1536,39 @@ const ABSTRACT_FIELD_IDEAL_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+    source_path: "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_DEFINITIONS,
+    theorems: ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_THEOREMS,
+    expected_axioms: &[],
+};
+
 const DERIVED_AFFINE_SCHEMES_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
     source_path: "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa",
@@ -2008,6 +2042,142 @@ macro_rules! abstract_field_quotient_abs {
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
             $tail
         )
+    };
+}
+
+macro_rules! polynomial_field_quotient_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (K : Sort u), ",
+            "forall (zeroK : K), ",
+            "forall (oneK : K), ",
+            "forall (addK : forall (a : K), forall (b : K), K), ",
+            "forall (negK : forall (a : K), K), ",
+            "forall (subK : forall (a : K), forall (b : K), K), ",
+            "forall (mulK : forall (a : K), forall (b : K), K), ",
+            "forall (invK : forall (a : K), K), ",
+            "forall (Poly : Sort succ p), ",
+            "forall (zeroP : Poly), ",
+            "forall (oneP : Poly), ",
+            "forall (addP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (negP : forall (a : Poly), Poly), ",
+            "forall (subP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (mulP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (const : forall (a : K), Poly), ",
+            "forall (variable : Poly), ",
+            "forall (Quot : Sort succ q), ",
+            "forall (zeroQ : Quot), ",
+            "forall (oneQ : Quot), ",
+            "forall (addQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (negQ : forall (a : Quot), Quot), ",
+            "forall (subQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (mulQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (invQ : forall (a : Quot), Quot), ",
+            "forall (quotient_map : forall (f : Poly), Quot), ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (K : Sort u), ",
+            "forall (zeroK : K), ",
+            "forall (oneK : K), ",
+            "forall (addK : forall (a : K), forall (b : K), K), ",
+            "forall (negK : forall (a : K), K), ",
+            "forall (subK : forall (a : K), forall (b : K), K), ",
+            "forall (mulK : forall (a : K), forall (b : K), K), ",
+            "forall (invK : forall (a : K), K), ",
+            "forall (Poly : Sort succ p), ",
+            "forall (zeroP : Poly), ",
+            "forall (oneP : Poly), ",
+            "forall (addP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (negP : forall (a : Poly), Poly), ",
+            "forall (subP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (mulP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (const : forall (a : K), Poly), ",
+            "forall (variable : Poly), ",
+            "forall (Quot : Sort succ q), ",
+            "forall (zeroQ : Quot), ",
+            "forall (oneQ : Quot), ",
+            "forall (addQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (negQ : forall (a : Quot), Quot), ",
+            "forall (subQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (mulQ : forall (a : Quot), forall (b : Quot), Quot), ",
+            "forall (invQ : forall (a : Quot), Quot), ",
+            "forall (quotient_map : forall (f : Poly), Quot), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! polynomial_field_quotient_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun K => fun zeroK => fun oneK => fun addK => fun negK => fun subK => fun mulK => fun invK => ",
+            "fun Poly => fun zeroP => fun oneP => fun addP => fun negP => fun subP => fun mulP => fun const => fun variable => ",
+            "fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
+            $($tail)+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun K => fun zeroK => fun oneK => fun addK => fun negK => fun subK => fun mulK => fun invK => ",
+            "fun Poly => fun zeroP => fun oneP => fun addP => fun negP => fun subP => fun mulP => fun const => fun variable => ",
+            "fun Quot => fun zeroQ => fun oneQ => fun addQ => fun negQ => fun subQ => fun mulQ => fun invQ => fun quotient_map => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! simple_algebraic_extension_params {
+    (concat!($($tail:tt)+)) => {
+        polynomial_field_quotient_params!(concat!(
+            "forall (Ext : Sort e), ",
+            "forall (zeroE : Ext), ",
+            "forall (oneE : Ext), ",
+            "forall (addE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (negE : forall (a : Ext), Ext), ",
+            "forall (subE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (mulE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (invE : forall (a : Ext), Ext), ",
+            "forall (eval_at : forall (f : Poly), Ext), ",
+            "forall (quotient_to_ext : forall (x : Quot), Ext), ",
+            "forall (ext_to_quot : forall (x : Ext), Quot), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        polynomial_field_quotient_params!(concat!(
+            "forall (Ext : Sort e), ",
+            "forall (zeroE : Ext), ",
+            "forall (oneE : Ext), ",
+            "forall (addE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (negE : forall (a : Ext), Ext), ",
+            "forall (subE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (mulE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (invE : forall (a : Ext), Ext), ",
+            "forall (eval_at : forall (f : Poly), Ext), ",
+            "forall (quotient_to_ext : forall (x : Quot), Ext), ",
+            "forall (ext_to_quot : forall (x : Ext), Quot), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! simple_algebraic_extension_abs {
+    (concat!($($tail:tt)+)) => {
+        polynomial_field_quotient_abs!(concat!(
+            "fun Ext => fun zeroE => fun oneE => fun addE => fun negE => fun subE => fun mulE => fun invE => ",
+            "fun eval_at => fun quotient_to_ext => fun ext_to_quot => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        polynomial_field_quotient_abs!(concat!(
+            "fun Ext => fun zeroE => fun oneE => fun addE => fun negE => fun subE => fun mulE => fun invE => ",
+            "fun eval_at => fun quotient_to_ext => fun ext_to_quot => ",
+            $tail
+        ))
     };
 }
 
@@ -24961,6 +25131,158 @@ const ABSTRACT_FIELD_IDEAL_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "IrreduciblePolynomial",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (zeroP : Poly), ",
+            "forall (oneP : Poly), ",
+            "forall (mulP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (poly : Poly), Prop"
+        ),
+        value: concat!(
+            "fun Poly => fun zeroP => fun oneP => fun mulP => fun poly => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (nonzero : HbtNot (@Eq.{succ p} Poly poly zeroP)), ",
+            "forall (nonunit : HbtNot (@Eq.{succ p} Poly poly oneP)), ",
+            "forall (factor_law : forall (a : Poly), forall (b : Poly), ",
+            "forall (hfactor : @Eq.{succ p} Poly poly (mulP a b)), ",
+            "forall (R : Prop), ",
+            "forall (on_left_unit : forall (left_unit : @Eq.{succ p} Poly a oneP), R), ",
+            "forall (on_right_unit : forall (right_unit : @Eq.{succ p} Poly b oneP), R), R), Q), Q"
+        ),
+    },
+    DefinitionArtifact {
+        name: "PrincipalIdealGeneratedBy",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (zeroP : Poly), ",
+            "forall (addP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (negP : forall (a : Poly), Poly), ",
+            "forall (mulP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (generator : Poly), ",
+            "forall (I : forall (x : Poly), Prop), Prop"
+        ),
+        value: concat!(
+            "fun Poly => fun zeroP => fun addP => fun negP => fun mulP => fun generator => fun I => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (ideal_laws : @IdealLawArgs.{succ p} Poly zeroP addP negP mulP I), ",
+            "forall (generator_mem : I generator), ",
+            "forall (principal_intro : forall (coeff : Poly), I (mulP coeff generator)), ",
+            "forall (principal_elim : forall (x : Poly), forall (hI : I x), ",
+            "forall (R : Prop), forall (mk_principal : forall (coeff : Poly), ",
+            "forall (hrep : @Eq.{succ p} Poly x (mulP coeff generator)), R), R), Q), Q"
+        ),
+    },
+    DefinitionArtifact {
+        name: "PolynomialFieldQuotientArgs",
+        universe_params: &["p", "q", "u"],
+        ty: polynomial_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), Prop"
+        ),
+        value: polynomial_field_quotient_abs!(concat!(
+            "fun field_args => fun extension_laws => forall (Q : Prop), forall (mk : ",
+            "forall (irreducible_generates_maximal_law : forall (poly : Poly), forall (I : forall (x : Poly), Prop), ",
+            "forall (irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly), ",
+            "forall (principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly I), ",
+            "@MaximalIdeal.{succ p} Poly zeroP oneP addP negP mulP I), ",
+            "forall (quotient_field_law : forall (poly : Poly), forall (I : forall (x : Poly), Prop), ",
+            "forall (irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly), ",
+            "forall (principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly I), ",
+            "forall (quotient_ring_laws : @RingLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ), ",
+            "forall (quotient_map_hom : @RingHomLawArgs.{succ p,succ q} Poly zeroP oneP addP negP subP mulP Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), ",
+            "forall (kernel_exact : forall (f : Poly), forall (R : Prop), ",
+            "forall (mk_kernel : forall (to_kernel : forall (hI : I f), @Eq.{succ q} Quot (quotient_map f) zeroQ), ",
+            "forall (from_kernel : forall (hker : @Eq.{succ q} Quot (quotient_map f) zeroQ), I f), R), R), ",
+            "@FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SimpleAlgebraicExtensionQuotientArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), forall (minimal_poly : Poly), forall (I : forall (x : Poly), Prop), Prop"
+        ),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly), ",
+            "forall (minimal_principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP minimal_poly I), ",
+            "forall (eval_kernel_contains_minimal : I minimal_poly), ",
+            "forall (eval_kernel_exact : forall (f : Poly), forall (R : Prop), ",
+            "forall (mk_kernel : forall (to_kernel : forall (hI : I f), @Eq.{e} Ext (eval_at f) zeroE), ",
+            "forall (from_kernel : forall (hzero : @Eq.{e} Ext (eval_at f) zeroE), I f), R), R), ",
+            "forall (quotient_iso_extension : @FieldIsoLawArgs.{succ q,e} Quot zeroQ oneQ addQ negQ subQ mulQ invQ Ext zeroE oneE addE negE subE mulE invE quotient_to_ext ext_to_quot), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "irreducible_polynomial_generates_maximal_ideal",
+        universe_params: &["p", "q", "u"],
+        statement: polynomial_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), forall (quotient_args : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), forall (poly : Poly), forall (I : forall (x : Poly), Prop), forall (irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly), forall (principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly I), @MaximalIdeal.{succ p} Poly zeroP oneP addP negP mulP I"
+        ),
+        proof: polynomial_field_quotient_abs!(concat!(
+            "fun field_args => fun extension_laws => fun quotient_args => fun poly => fun I => fun irreducible => fun principal => ",
+            "quotient_args (@MaximalIdeal.{succ p} Poly zeroP oneP addP negP mulP I) ",
+            "(fun (irreducible_generates_maximal_law : forall (poly_arg : Poly), forall (I_arg : forall (x : Poly), Prop), forall (irreducible_arg : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly_arg), forall (principal_arg : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly_arg I_arg), @MaximalIdeal.{succ p} Poly zeroP oneP addP negP mulP I_arg) => ",
+            "fun (quotient_field_law : forall (poly_arg : Poly), forall (I_arg : forall (x : Poly), Prop), forall (irreducible_arg : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly_arg), forall (principal_arg : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly_arg I_arg), forall (quotient_ring_laws_arg : @RingLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom_arg : @RingHomLawArgs.{succ p,succ q} Poly zeroP oneP addP negP subP mulP Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact_arg : forall (f : Poly), forall (R : Prop), forall (mk_kernel : forall (to_kernel : forall (hI : I_arg f), @Eq.{succ q} Quot (quotient_map f) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ q} Quot (quotient_map f) zeroQ), I_arg f), R), R), @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) => ",
+            "irreducible_generates_maximal_law poly I irreducible principal)"
+        )),
+    },
+    TheoremArtifact {
+        name: "quotient_by_irreducible_polynomial_is_field",
+        universe_params: &["p", "q", "u"],
+        statement: polynomial_field_quotient_params!(
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), forall (quotient_args : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), forall (poly : Poly), forall (I : forall (x : Poly), Prop), forall (irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly), forall (principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly I), forall (quotient_ring_laws : @RingLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom : @RingHomLawArgs.{succ p,succ q} Poly zeroP oneP addP negP subP mulP Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact : forall (f : Poly), forall (R : Prop), forall (mk_kernel : forall (to_kernel : forall (hI : I f), @Eq.{succ q} Quot (quotient_map f) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ q} Quot (quotient_map f) zeroQ), I f), R), R), @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ"
+        ),
+        proof: polynomial_field_quotient_abs!(concat!(
+            "fun field_args => fun extension_laws => fun quotient_args => fun poly => fun I => fun irreducible => fun principal => fun quotient_ring_laws => fun quotient_map_hom => fun kernel_exact => ",
+            "quotient_args (@FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) ",
+            "(fun (irreducible_generates_maximal_law : forall (poly_arg : Poly), forall (I_arg : forall (x : Poly), Prop), forall (irreducible_arg : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly_arg), forall (principal_arg : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly_arg I_arg), @MaximalIdeal.{succ p} Poly zeroP oneP addP negP mulP I_arg) => ",
+            "fun (quotient_field_law : forall (poly_arg : Poly), forall (I_arg : forall (x : Poly), Prop), forall (irreducible_arg : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP poly_arg), forall (principal_arg : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP poly_arg I_arg), forall (quotient_ring_laws_arg : @RingLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ), forall (quotient_map_hom_arg : @RingHomLawArgs.{succ p,succ q} Poly zeroP oneP addP negP subP mulP Quot zeroQ oneQ addQ negQ subQ mulQ quotient_map), forall (kernel_exact_arg : forall (f : Poly), forall (R : Prop), forall (mk_kernel : forall (to_kernel : forall (hI : I_arg f), @Eq.{succ q} Quot (quotient_map f) zeroQ), forall (from_kernel : forall (hker : @Eq.{succ q} Quot (quotient_map f) zeroQ), I_arg f), R), R), @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ) => ",
+            "quotient_field_law poly I irreducible principal quotient_ring_laws quotient_map_hom kernel_exact)"
+        )),
+    },
+    TheoremArtifact {
+        name: "polynomial_eval_kernel_contains_minimal_polynomial",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), forall (minimal_poly : Poly), forall (I : forall (x : Poly), Prop), forall (simple_args : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), I minimal_poly"
+        ),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => fun simple_args => ",
+            "simple_args (I minimal_poly) ",
+            "(fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (minimal_principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP minimal_poly I) => ",
+            "fun (eval_kernel_contains_minimal : I minimal_poly) => ",
+            "fun (eval_kernel_exact : forall (f : Poly), forall (R : Prop), forall (mk_kernel : forall (to_kernel : forall (hI : I f), @Eq.{e} Ext (eval_at f) zeroE), forall (from_kernel : forall (hzero : @Eq.{e} Ext (eval_at f) zeroE), I f), R), R) => ",
+            "fun (quotient_iso_extension : @FieldIsoLawArgs.{succ q,e} Quot zeroQ oneQ addQ negQ subQ mulQ invQ Ext zeroE oneE addE negE subE mulE invE quotient_to_ext ext_to_quot) => eval_kernel_contains_minimal)"
+        )),
+    },
+    TheoremArtifact {
+        name: "simple_algebraic_extension_as_polynomial_quotient",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), forall (minimal_poly : Poly), forall (I : forall (x : Poly), Prop), forall (simple_args : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), @FieldIsoLawArgs.{succ q,e} Quot zeroQ oneQ addQ negQ subQ mulQ invQ Ext zeroE oneE addE negE subE mulE invE quotient_to_ext ext_to_quot"
+        ),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => fun simple_args => ",
+            "simple_args (@FieldIsoLawArgs.{succ q,e} Quot zeroQ oneQ addQ negQ subQ mulQ invQ Ext zeroE oneE addE negE subE mulE invE quotient_to_ext ext_to_quot) ",
+            "(fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (minimal_principal : @PrincipalIdealGeneratedBy.{p} Poly zeroP addP negP mulP minimal_poly I) => ",
+            "fun (eval_kernel_contains_minimal : I minimal_poly) => ",
+            "fun (eval_kernel_exact : forall (f : Poly), forall (R : Prop), forall (mk_kernel : forall (to_kernel : forall (hI : I f), @Eq.{e} Ext (eval_at f) zeroE), forall (from_kernel : forall (hzero : @Eq.{e} Ext (eval_at f) zeroE), I f), R), R) => ",
+            "fun (quotient_iso_extension : @FieldIsoLawArgs.{succ q,e} Quot zeroQ oneQ addQ negQ subQ mulQ invQ Ext zeroE oneE addE negE subE mulE invE quotient_to_ext ext_to_quot) => quotient_iso_extension)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -32263,6 +32585,54 @@ fn run_full() -> Result<(), String> {
         &abstract_field_ideal_imports,
         &abstract_field_ideal_source_interfaces,
     )?;
+    let abstract_polynomial_field_quotient_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+    ];
+    let abstract_polynomial_field_quotient_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+    ];
+    let abstract_polynomial_field_quotient = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE,
+        &abstract_polynomial_field_quotient_imports,
+        &abstract_polynomial_field_quotient_source_interfaces,
+    )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
     let quasi_coherent_sheaves_imports = vec![derived_affine_schemes.verified_module.clone()];
@@ -32813,6 +33183,7 @@ fn run_full() -> Result<(), String> {
         abstract_hilbert_nullstellensatz,
         abstract_krull_theorem,
         abstract_field_ideal,
+        abstract_polynomial_field_quotient,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -35061,6 +35432,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
+        || module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -35405,6 +35777,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
+        || config.module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
         || config.module == FLT_BRIDGE_MODULE.module
