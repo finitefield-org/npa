@@ -88,6 +88,12 @@ normed-space, linear-map, derivative, fixed-point, inverse-function, and
 implicit-function closures. New topology work should build on those closures
 instead of widening the trusted kernel.
 
+The measure-theory roadmap in `proofs/measure-theory-theorem-proof-roadmap.md`
+now refines analysis `ANA-08` into `MEA-*` tasks. Topology milestones that
+mention measure recurrence, Lebesgue-style integration, Borel/Radon measures,
+or weak convergence should import that detailed measure route rather than
+treating `ANA-T24` through `ANA-T26` as the only dependency plan.
+
 ## Proof Levels
 
 Each theorem should be labeled with one of these proof levels while it moves
@@ -1089,15 +1095,16 @@ must have one primary home, with other modules importing or aliasing it:
   - Topological dynamics theorem interfaces.
 - Acceptance criteria:
   - Measure recurrence does not land before measure/probability foundations.
-  - Poincare recurrence aliases wait for measure foundations `ANA-T24` through
-    `ANA-T26` or probability/process routes from the statistics roadmap.
+  - Poincare recurrence aliases wait for the measure roadmap's ergodic route
+    `MEA-T51`, which refines analysis `ANA-T24` through `ANA-T26`, or
+    probability/process routes `STAT-T55` through `STAT-T57`.
   - Stable manifold and Hartman-Grobman routes import differential/ODE
     prerequisites.
   - Symbolic dynamics defines shift spaces using product topology from
     `TOP-11`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dynamics.Basic`
-  - `rg -n "Poincare recurrence|Hartman|Morse-Smale|Dynamics" proofs/topology-theorem-proof-roadmap.md proofs/analysis-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
+  - `rg -n "Poincare recurrence|Hartman|Morse-Smale|Dynamics|MEA-T51" proofs/topology-theorem-proof-roadmap.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
   - `git diff --check`
 
 ## TOP-27 Geometric Topology And Characteristic Classes
@@ -1130,7 +1137,8 @@ must have one primary home, with other modules importing or aliasing it:
     and manifold orientation foundations.
   - Stokes and de Rham routes wait for Riemann/Lebesgue/differential-form
     infrastructure from analysis milestones `ANA-T16` through `ANA-T18` and
-    `ANA-T24` through `ANA-T26`.
+    the measure roadmap's integration route `MEA-T19` through `MEA-T25`,
+    which refines `ANA-T24` through `ANA-T26`.
   - Characteristic classes state bundle, coefficient, naturality, and
     obstruction-theory assumptions.
   - Index and Riemann-Roch theorems remain `L1` until analytic and K-theory
@@ -1138,6 +1146,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.DeRham`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.CharacteristicClass`
+  - `rg -n "Stokes|de Rham|MEA-T19|MEA-T25" proofs/topology-theorem-proof-roadmap.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ## TOP-28 K-Theory, Spectral Sequences, And Stable Homotopy

@@ -90,10 +90,15 @@ promotion into a high-trust closure.
 - Open mapping, closed graph, and uniform boundedness stay primary in analysis
   `ANA-T27`; topology `TOP-T18` and `TOP-T19` only provide the completion and
   Baire inputs those functional-analysis theorems import.
-- Measure recurrence, Stokes, de Rham, and characteristic-class routes must
-  wait for analysis measure/integration foundations `ANA-T24` through
-  `ANA-T26` and statistics process routes `STAT-T55` through `STAT-T57` when
-  those statements require them.
+- The measure-theory roadmap in
+  `proofs/measure-theory-theorem-proof-roadmap.md` refines analysis `ANA-08`
+  into `MEA-*` tasks. Measure recurrence should use the ergodic route
+  `MEA-T51`; Stokes, de Rham, and characteristic-class routes that need
+  Lebesgue-style integration should use `MEA-T19` through `MEA-T25` instead of
+  treating `ANA-T24` through `ANA-T26` as the only dependency plan.
+- Probability/process aliases still coordinate with statistics `STAT-T55`
+  through `STAT-T57` where the statement is probabilistic rather than purely
+  measure-theoretic.
 
 ## Roadmap Coverage Map
 
@@ -1319,7 +1324,7 @@ guessing. The split must preserve the dependency order in this document.
 ### TOP-T52 Add Symbolic, Measure, And Stability Dynamics Interfaces
 
 - Status: Pending
-- Depends on: `TOP-T20`, `TOP-T43`, `TOP-T51`, `ANA-T24`, `ANA-T26`, `STAT-T55` through `STAT-T57`
+- Depends on: `TOP-T20`, `TOP-T43`, `TOP-T51`, `MEA-T51`, `STAT-T55` through `STAT-T57`
 - Areas: `Proofs.Ai.Topology.Dynamics.Symbolic`, `Proofs.Ai.Topology.Dynamics.Stability`
 - Tasks:
   - Add symbolic dynamics and shift-space properties using product topology.
@@ -1330,19 +1335,20 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Symbolic and stability dynamics interface modules.
 - Acceptance criteria:
-  - Poincare recurrence aliases wait for `ANA-T24` through `ANA-T26` or
-    probability/process routes from the statistics roadmap.
+  - Poincare recurrence aliases wait for `MEA-T51`, which refines `ANA-T24`
+    through `ANA-T26`, or probability/process routes `STAT-T55` through
+    `STAT-T57`.
   - Stable manifold and Hartman-Grobman routes import differential and ODE
     prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dynamics.Symbolic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dynamics.Stability`
-  - `rg -n "Poincare recurrence|Hartman|Morse-Smale|Dynamics" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
+  - `rg -n "Poincare recurrence|MEA-T51|Hartman|Morse-Smale|Dynamics" proofs/topology-theorem-proof-roadmap*.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
 
 ### TOP-T53 Add Stokes And De Rham Interfaces
 
 - Status: Pending
-- Depends on: `TOP-T37`, `TOP-T41`, `TOP-T43`, `ANA-T16`, `ANA-T18`, `ANA-T24`, `ANA-T26`
+- Depends on: `TOP-T37`, `TOP-T41`, `TOP-T43`, `ANA-T16`, `ANA-T18`, `MEA-T19` through `MEA-T25`
 - Areas: `Proofs.Ai.Topology.DifferentialForms.Stokes`, `Proofs.Ai.Topology.DeRham`
 - Tasks:
   - Add Stokes theorem and de Rham theorem interfaces.
@@ -1355,10 +1361,12 @@ guessing. The split must preserve the dependency order in this document.
   - Differential-form integration is not assumed before analysis integration
     and manifold orientation foundations.
   - Stokes and de Rham routes wait for analysis milestones `ANA-T16` through
-    `ANA-T18` and `ANA-T24` through `ANA-T26`.
+    `ANA-T18` and the measure roadmap's integration route `MEA-T19` through
+    `MEA-T25`, which refines `ANA-T24` through `ANA-T26`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.DifferentialForms.Stokes`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.DeRham`
+  - `rg -n "Stokes|de Rham|MEA-T19|MEA-T25" proofs/topology-theorem-proof-roadmap*.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### TOP-T54 Add Characteristic Classes And Index-Theory Interfaces
@@ -1470,6 +1478,9 @@ guessing. The split must preserve the dependency order in this document.
   machinery keep those prerequisites explicit.
 - Analysis aliases remain aligned with `ANA-T22`, `ANA-T23`, and `ANA-T27`,
   while topology owns general-topology theorem cards.
+- Measure-dependent topology aliases remain aligned with `MEA-T19` through
+  `MEA-T25` and `MEA-T51`, while `ANA-T24` through `ANA-T26` stay coarse
+  analysis milestones.
 - Late low-dimensional, geometric, K-theory, spectral sequence, and stable
   homotopy statements remain interfaces until their prerequisite clusters are
   certified.
