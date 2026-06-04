@@ -230,7 +230,7 @@ must have one primary home, with other modules importing or aliasing it:
 
 ## LIN-00 Inventory And Statement Policy
 
-- Status: planned.
+- Status: complete for `LAQ-001`.
 - Depends on: none.
 - Deliverables:
   - Convert the theorem inventory into theorem cards.
@@ -246,6 +246,80 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - Documentation diff review.
   - `git diff --check`.
+
+### LAQ-001 Theorem Card Register
+
+The cards below are the canonical L0 inventory for this roadmap. The detailed
+theorem-order bullets under each milestone inherit the milestone card's
+primary home, dependency boundary, target module family, and acceptance gate
+unless an individual theorem is later split into a more specific card. Alias
+modules must import or restate by compatibility alias instead of reproving the
+primary theorem.
+
+| Card ID | Stable English identifier | Japanese display name | First target | Primary home and target modules | Acceptance gate |
+| --- | --- | --- | --- | --- | --- |
+| `LIN-00-CARD` | `linear_algebra_inventory_statement_policy` | 線形代数定理目録と文ポリシー | `L0 Statement` | `LIN-00`; this roadmap sidecar | documentation diff review; `git diff --check` |
+| `LIN-01-CARD` | `vector_space_subspace_foundations` | ベクトル空間と部分空間の基礎 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-01`; `Proofs.Ai.LinearAlgebra.VectorSpace.Basic`, `Proofs.Ai.LinearAlgebra.Subspace.Basic` | `LIN-01` module build, module verify, changed-only |
+| `LIN-02-CARD` | `basis_dimension_quotient_direct_sum` | 基底・次元・商空間・直和 | `L2 Derived certificate` | `LIN-02`; `Proofs.Ai.LinearAlgebra.Basis.Dimension`, `Proofs.Ai.LinearAlgebra.Quotient.Basic` | `LIN-02` module build, module verify, changed-only |
+| `LIN-03-CARD` | `linear_maps_kernels_images_isomorphism` | 線形写像・核・像・同型定理 | `L2 Derived certificate` | `LIN-03`; `Proofs.Ai.LinearAlgebra.LinearMap.Basic`, `Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism` | `LIN-03` module build, module verify, changed-only |
+| `LIN-04-CARD` | `matrix_representation_basis_change` | 行列表現と基底変換 | `L2 Derived certificate` | `LIN-04`; `Proofs.Ai.LinearAlgebra.Matrix.Basic`, `Proofs.Ai.LinearAlgebra.Matrix.Representation` | `LIN-04` module build, module verify, changed-only |
+| `LIN-05-CARD` | `linear_systems_row_reduction` | 線形方程式系と行簡約 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-05`; `Proofs.Ai.LinearAlgebra.Matrix.Elimination`, `Proofs.Ai.LinearAlgebra.Systems.Basic` | `LIN-05` module build, module verify, changed-only |
+| `LIN-06-CARD` | `determinants_adjugates_cramer` | 行列式・余因子行列・クラメル公式 | `L2 Derived certificate` | `LIN-06`; `Proofs.Ai.LinearAlgebra.Matrix.Determinant`, `Proofs.Ai.LinearAlgebra.Matrix.Adjugate` | `LIN-06` module build, module verify, changed-only |
+| `LIN-07-CARD` | `rank_theory_rank_factorization` | 階数理論と階数分解 | `L2 Derived certificate` | `LIN-07`; `Proofs.Ai.LinearAlgebra.Matrix.Rank`, `Proofs.Ai.LinearAlgebra.Matrix.RankFactorization` | `LIN-07` module build, module verify, changed-only |
+| `LIN-08-CARD` | `eigenvalues_polynomial_invariants` | 固有値と多項式不変量 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-08`; `Proofs.Ai.LinearAlgebra.Eigen.Basic`, `Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`, `Proofs.Ai.LinearAlgebra.Polynomial.Minimal` | `LIN-08` module build, module verify, changed-only |
+| `LIN-09-CARD` | `diagonalization_cayley_hamilton` | 対角化とケイリー・ハミルトン | `L2 Derived certificate` | `LIN-09`; `Proofs.Ai.LinearAlgebra.Eigen.Diagonalization`, `Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton` | `LIN-09` module build, module verify, changed-only |
+| `LIN-10-CARD` | `canonical_forms` | 標準形 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-10`; `Proofs.Ai.LinearAlgebra.Canonical.Jordan`, `Proofs.Ai.LinearAlgebra.Canonical.Rational`, `Proofs.Ai.LinearAlgebra.Canonical.Smith` | `LIN-10` module build, module verify, changed-only |
+| `LIN-11-CARD` | `inner_product_norm_foundations` | 内積とノルムの基礎 | `L2 Derived certificate` | `LIN-11`; `Proofs.Ai.LinearAlgebra.InnerProduct.Basic`, `Proofs.Ai.LinearAlgebra.InnerProduct.Gram` | `LIN-11` module build, module verify, changed-only |
+| `LIN-12-CARD` | `orthonormal_bases_projections` | 正規直交基底と射影 | `L2 Derived certificate` | `LIN-12`; `Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal`, `Proofs.Ai.LinearAlgebra.Projection.Orthogonal` | `LIN-12` module build, module verify, changed-only |
+| `LIN-13-CARD` | `self_adjoint_positive_definite_spectral` | 自己随伴・正定値スペクトル理論 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-13`; `Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`, `Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite` | `LIN-13` module build, module verify, changed-only |
+| `LIN-14-CARD` | `normal_unitary_orthogonal_polar` | 正規・ユニタリ・直交・極分解 | `L2 Derived certificate` | `LIN-14`; `Proofs.Ai.LinearAlgebra.Spectral.Normal`, `Proofs.Ai.LinearAlgebra.Matrix.Unitary`, `Proofs.Ai.LinearAlgebra.Matrix.Polar` | `LIN-14` module build, module verify, changed-only |
+| `LIN-15-CARD` | `matrix_decompositions` | 行列分解 | `L2 Derived certificate` | `LIN-15`; `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.LU`, `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`, `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky`, `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Schur` | `LIN-15` module build, module verify, changed-only |
+| `LIN-16-CARD` | `svd_low_rank_approximation` | 特異値分解と低階数近似 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-16`; `Proofs.Ai.LinearAlgebra.Matrix.SVD`, `Proofs.Ai.LinearAlgebra.Matrix.LowRank`, `Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose` | `LIN-16` module build, module verify, changed-only |
+| `LIN-17-CARD` | `bilinear_quadratic_forms` | 双線形形式と二次形式 | `L2 Derived certificate` | `LIN-17`; `Proofs.Ai.LinearAlgebra.Forms.Bilinear`, `Proofs.Ai.LinearAlgebra.Forms.Quadratic`, `Proofs.Ai.LinearAlgebra.Forms.Inertia` | `LIN-17` module build, module verify, changed-only |
+| `LIN-18-CARD` | `tensor_exterior_algebra` | テンソル代数と外積代数 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-18`; `Proofs.Ai.LinearAlgebra.Tensor.Basic`, `Proofs.Ai.LinearAlgebra.Tensor.Exterior`, `Proofs.Ai.LinearAlgebra.Tensor.Kronecker` | `LIN-18` module build, module verify, changed-only |
+| `LIN-19-CARD` | `dual_spaces_linear_functionals` | 双対空間と線形汎関数 | `L2 Derived certificate` | `LIN-19`; `Proofs.Ai.LinearAlgebra.Dual.Basic`, `Proofs.Ai.LinearAlgebra.Dual.Annihilator`, `Proofs.Ai.LinearAlgebra.Dual.RieszFinite` | `LIN-19` module build, module verify, changed-only |
+| `LIN-20-CARD` | `projections_least_squares` | 射影と最小二乗法 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-20`; `Proofs.Ai.LinearAlgebra.LeastSquares.Basic`, `Proofs.Ai.LinearAlgebra.LeastSquares.Regularized`, `Proofs.Ai.LinearAlgebra.LeastSquares.Procrustes` | `LIN-20` module build, module verify, changed-only |
+| `LIN-21-CARD` | `nonnegative_matrices_perron_frobenius` | 非負行列とペロン・フロベニウス | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-21`; `Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius`, `Proofs.Ai.LinearAlgebra.Nonnegative.Markov` | `LIN-21` module build, module verify, changed-only |
+| `LIN-22-CARD` | `matrix_norms_perturbation` | 行列ノルムと摂動理論 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-22`; `Proofs.Ai.LinearAlgebra.Matrix.Norm`, `Proofs.Ai.LinearAlgebra.Matrix.Perturbation` | `LIN-22` module build, module verify, changed-only |
+| `LIN-23-CARD` | `matrix_functions_equations` | 行列関数と行列方程式 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-23`; `Proofs.Ai.LinearAlgebra.Matrix.Function`, `Proofs.Ai.LinearAlgebra.Matrix.Equation` | `LIN-23` module build, module verify, changed-only |
+| `LIN-24-CARD` | `matrix_groups_lie_representation` | 行列群・リー代数・表現論 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-24`; `Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`, `Proofs.Ai.LinearAlgebra.Lie.MatrixLie`, `Proofs.Ai.LinearAlgebra.Representation.Basic` | `LIN-24` module build, module verify, changed-only |
+| `LIN-25-CARD` | `numerical_linear_algebra` | 数値線形代数 | `L1 Evidence package` | `LIN-25`; `Proofs.Ai.LinearAlgebra.Numerical.Iteration`, `Proofs.Ai.LinearAlgebra.Numerical.Krylov`, `Proofs.Ai.LinearAlgebra.Numerical.Stability`, `Proofs.Ai.LinearAlgebra.Numerical.Randomized` | `LIN-25` module build, module verify, changed-only |
+| `LIN-26-CARD` | `graph_linear_algebra` | グラフ線形代数 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-26`; `Proofs.Ai.LinearAlgebra.Graph.Laplacian`, `Proofs.Ai.LinearAlgebra.Graph.Spectral`, `Proofs.Ai.LinearAlgebra.Graph.Resistance` | `LIN-26` module build, module verify, changed-only |
+| `LIN-27-CARD` | `convex_optimization_linear_algebra` | 凸最適化の線形代数 | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-27`; `Proofs.Ai.LinearAlgebra.Optimization.Cones`, `Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`, `Proofs.Ai.LinearAlgebra.Optimization.Semidefinite` | `LIN-27` module build, module verify, changed-only |
+| `LIN-28-CARD` | `linear_algebra_packaging_promotion` | パッケージ化と公開クロージャ | `L3 Public closure` | `LIN-28`; `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `npa-mathlib` closure audit docs | authoring gate; package gate; full gate before promotion |
+
+### LAQ-001 Duplicate Alias Register
+
+This register makes the duplicate policy executable for future theorem
+authoring: the primary card owns the theorem statement, and every listed
+secondary area must import, specialize, or expose a compatibility alias.
+
+| Duplicate family | Primary card | Secondary alias areas |
+| --- | --- | --- |
+| vector-space laws, subspace criteria, direct sums, quotient spaces | `LIN-01-CARD` and `LIN-02-CARD` | matrix, affine, functional-analysis, and optimization modules |
+| rank-nullity and linear-map isomorphism theorems | `LIN-03-CARD` | matrix-rank aliases in `LIN-07`; systems aliases in `LIN-05` |
+| matrix representation, basis change, transposes, and dual maps | `LIN-04-CARD` | dual-space aliases in `LIN-19`; representation aliases in `LIN-24` |
+| Gaussian elimination, RREF, and solution-set structure | `LIN-05-CARD` | rank aliases in `LIN-07`; determinant aliases in `LIN-06` |
+| determinant product, adjugate, Cramer, and Schur-complement determinant formulas | `LIN-06-CARD` | exterior-algebra bridge in `LIN-18`; matrix-group aliases in `LIN-24` |
+| row rank, column rank, rank normal form, and rank factorization | `LIN-07-CARD` | SVD rank aliases in `LIN-16`; graph and statistics aliases |
+| characteristic/minimal polynomial, diagonalization, and Cayley-Hamilton routes | `LIN-08-CARD` and `LIN-09-CARD` | canonical-form aliases in `LIN-10`; matrix-function aliases in `LIN-23` |
+| Jordan, rational, Smith, Hermite, Kronecker, and Weierstrass forms | `LIN-10-CARD` | matrix-function and control aliases in `LIN-23` |
+| Cauchy-Schwarz, parallelogram, polarization, Pythagoras, and norm identities | `LIN-11-CARD` | geometry aliases in `Proofs.Ai.Geometry.Pythagorean`; least-squares aliases in `LIN-20` |
+| Gram-Schmidt, QR, projection, and best approximation | `LIN-12-CARD` | decomposition aliases in `LIN-15`; least-squares aliases in `LIN-20` |
+| finite-dimensional spectral theorem, self-adjoint, Hermitian, and normal variants | `LIN-13-CARD` and `LIN-14-CARD` | perturbation aliases in `LIN-22`; graph aliases in `LIN-26` |
+| LU, QR, Cholesky, Schur, polar, and block diagonalization | `LIN-15-CARD` | numerical aliases in `LIN-25`; polar primary remains `LIN-14-CARD` |
+| SVD, Moore-Penrose, low-rank approximation, and singular-subspace perturbation | `LIN-16-CARD` | least-squares aliases in `LIN-20`; perturbation aliases in `LIN-22`; graph resistance aliases in `LIN-26` |
+| Sylvester inertia, positive-definite criteria, quadratic forms, and Hessian tests | `LIN-17-CARD` | positive-definite matrix aliases in `LIN-13`; optimization aliases in `LIN-27` |
+| tensor, exterior, Kronecker, Hadamard, and Schur product facts | `LIN-18-CARD` | determinant aliases in `LIN-06`; decomposition aliases in `LIN-15` |
+| finite-dimensional duality, annihilators, Riesz, trace duality, and separation aliases | `LIN-19-CARD` | analysis Hahn-Banach aliases; optimization duality aliases in `LIN-27` |
+| Gauss-Markov, ridge, Tikhonov, Procrustes, and normal equations | `LIN-20-CARD` | statistics aliases; SVD aliases from `LIN-16` |
+| Perron-Frobenius, PageRank, Markov chains, and nonnegative spectra | `LIN-21-CARD` | graph aliases in `LIN-26`; numerical convergence aliases in `LIN-25` |
+| Gershgorin, Bauer-Fike, Weyl, Davis-Kahan, Wedin, condition numbers, and backward error | `LIN-22-CARD` | SVD aliases in `LIN-16`; spectral aliases in `LIN-13`; numerical aliases in `LIN-25` |
+| matrix exponential, logarithm, functional calculus, Sylvester, Lyapunov, and Riccati equations | `LIN-23-CARD` | ODE/control aliases from analysis; numerical aliases in `LIN-25` |
+| matrix groups, Lie algebras, Schur lemma, Maschke, and representation interfaces | `LIN-24-CARD` | algebra and representation-theory roadmap aliases |
+| numerical stability, Krylov methods, randomized SVD, and matrix concentration | `LIN-25-CARD` | probability/statistics concentration aliases; deterministic theorem imports from earlier cards |
+| graph Laplacians, matrix-tree, Cheeger, spectral clustering, and effective resistance | `LIN-26-CARD` | Perron-Frobenius aliases from `LIN-21`; SVD/Moore-Penrose aliases from `LIN-16` |
+| Farkas, LP duality, KKT, cones, SDP, and Fenchel-Rockafellar duality | `LIN-27-CARD` | analysis optimization aliases from `ANA-14` and `ANA-T37` |
 
 ## LIN-01 Vector-Space And Subspace Foundations
 
