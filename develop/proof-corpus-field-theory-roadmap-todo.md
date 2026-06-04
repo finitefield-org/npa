@@ -21,6 +21,14 @@ Source: `develop/proof-corpus-field-theory-roadmap.md`
 - field から integral domain への bridge
 - field ideal / quotient bridge
 - `AbstractOrderedField` との互換 bridge theorem
+- field hom kernel / image / embedding layer
+- polynomial quotient over field bridge
+- field extension law package
+- algebraic element / minimal polynomial layer
+- finite extension layer
+- finite field / Frobenius layer
+- splitting field / algebraic closure evidence layers
+- Galois theory starter
 - proof corpus package metadata / AI theorem index / README などの非信頼 sidecar 更新
 ```
 
@@ -65,6 +73,10 @@ Proofs.Ai.Algebra.AbstractUfdPrimeFactorization
 Proofs.Ai.Algebra.AbstractOrderedField
   OrderedFieldLawArgs, le / lt / sqrt / Nonneg / Positive, square and sqrt order projections
 
+existing abstract polynomial / Hilbert / Nullstellensatz style modules
+  use explicit polynomial-extension and algebraically-closed-field evidence packages, but do not
+  replace the reusable field-extension, minimal-polynomial, or algebraic-closure layers planned here
+
 tools/proof-corpus
   currently owns source / certificate / meta / replay generation for proof-corpus modules
 
@@ -78,6 +90,9 @@ Implication:
   field-level API deliberately, then later bridges can connect it to UFD / integral-domain APIs.
 - `AbstractOrderedField` should not be destructively rewritten in the first milestones. Add bridge
   theorems only after the standalone field layer is certificate-backed.
+- Advanced field-theory milestones may reuse existing abstract polynomial and algebraically-closed
+  evidence styles, but should not claim concrete polynomial syntax, evaluator, or algebraic closure
+  construction is trusted infrastructure unless a later design document adds it explicitly.
 
 ---
 
@@ -472,6 +487,329 @@ Implication:
   - Public `npa-mathlib` materialization is explicitly deferred to a separate closure audit. That
     audit should re-check import closure size, axiom policy, statement stability, and compatibility
     alias requirements before any promotion.
+
+### FT-08 Add Field Hom Kernel / Image / Embedding Layer
+
+- Status: Pending
+- Depends on: FT-03
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractField`
+  - `Proofs.Ai.Algebra.AbstractFieldHom`
+  - `Proofs.Ai.Algebra.AbstractRingFirstIsoBase`
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractFieldHomKernelImage/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add an explicit field hom kernel / image / embedding evidence layer.
+  - Add theorem targets:
+    - `field_hom_kernel_zero_of_nonzero`
+    - `field_hom_injective_of_nonzero`
+    - `field_hom_image_field_laws`
+    - `field_embedding_as_field_hom`
+    - `field_embedding_comp`
+    - `field_iso_symm`
+    - `field_iso_trans`
+  - Reuse `FieldHomLawArgs` and `RingHomLawArgs` instead of duplicating homomorphism laws.
+- Deliverables:
+  - A source-free verified `AbstractFieldHomKernelImage` module.
+  - README notes explaining how this layer strengthens the promotion case for `AbstractFieldHom`.
+- Acceptance criteria:
+  - Kernel / image / injectivity statements keep all construction evidence explicit.
+  - The module does not introduce concrete quotient construction machinery beyond existing imported
+    ring hom APIs.
+  - `AbstractFieldHom` gains at least one direct downstream module in package metadata.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "field_hom_injective_of_nonzero|field_hom_image_field_laws|field_embedding_comp" proofs tools`
+- Notes:
+  - This is the preferred next implementation milestone because it is small and creates immediate
+    downstream evidence for the existing field hom layer.
+
+### FT-09 Add Polynomial Quotient Over Field Bridge
+
+- Status: Pending
+- Depends on: FT-05, FT-08
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractField`
+  - `Proofs.Ai.Algebra.AbstractFieldIdeal`
+  - existing abstract polynomial / Hilbert / Nullstellensatz style modules
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractPolynomialFieldQuotient/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add evidence packages such as `PolynomialFieldQuotientArgs`, `IrreduciblePolynomial`, and
+    `PrincipalIdealGeneratedBy` if not already available in reusable form.
+  - Add theorem targets:
+    - `irreducible_polynomial_generates_maximal_ideal`
+    - `quotient_by_irreducible_polynomial_is_field`
+    - `polynomial_eval_kernel_contains_minimal_polynomial`
+    - `simple_algebraic_extension_as_polynomial_quotient`
+  - Keep concrete polynomial syntax and evaluation machinery outside the trusted base.
+- Deliverables:
+  - A verified bridge showing that quotient by an irreducible polynomial can be treated as a field
+    from explicit evidence.
+  - Documentation of which polynomial and quotient facts are assumed as evidence packages.
+- Acceptance criteria:
+  - The module does not force all of `AbstractFieldIdeal` into a future public closure unless the
+    promotion audit explicitly accepts that import closure.
+  - Irreducibility, principal ideal generation, quotient ring laws, and kernel exactness are explicit
+    hypotheses.
+  - The theorem names line up with later field extension / minimal polynomial milestones.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "quotient_by_irreducible_polynomial_is_field|PolynomialFieldQuotientArgs" proofs tools`
+- Notes:
+  - If the import closure is too large, split a narrow `AbstractMaximalIdealQuotientField` adapter
+    before adding the polynomial-facing theorem names.
+
+### FT-10 Add Field Extension Law Package
+
+- Status: Pending
+- Depends on: FT-08
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractField`
+  - `Proofs.Ai.Algebra.AbstractFieldHom`
+  - `Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractFieldExtension/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add `FieldExtensionLawArgs` for base field `K`, extension field `L`, and an embedding `K -> L`.
+  - Add theorem targets:
+    - `field_extension_base_embedding`
+    - `field_extension_as_field`
+    - `field_extension_restrict_scalars`
+    - `field_extension_tower`
+    - `field_embedding_compose`
+  - Keep tower composition and scalar restriction as explicit projection theorems.
+- Deliverables:
+  - A verified field extension law package suitable for algebraic, finite, and splitting field layers.
+  - README section documenting the explicit evidence model.
+- Acceptance criteria:
+  - `FieldExtensionLawArgs` reuses field hom / embedding evidence instead of restating all field laws.
+  - The module does not depend on polynomial quotient, finite-dimensional vector spaces, or Galois
+    machinery.
+  - Downstream algebraic / finite extension milestones can import this module without circularity.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldExtension`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldExtension`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "FieldExtensionLawArgs|field_extension_tower|field_embedding_compose" proofs tools`
+- Notes:
+  - Module and theorem names are likely to become public later, so keep statements conservative.
+
+### FT-11 Add Algebraic Element And Minimal Polynomial Layer
+
+- Status: Pending
+- Depends on: FT-09, FT-10
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractFieldExtension`
+  - `Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractAlgebraicExtension/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add evidence packages:
+    - `AlgebraicElement`
+    - `MinimalPolynomial`
+  - Add theorem targets:
+    - `minimal_polynomial_divides_annihilating_polynomial`
+    - `minimal_polynomial_irreducible`
+    - `degree_one_algebraic_element_in_base`
+    - `field_adjoin_algebraic_element_is_finite_extension`
+  - Connect minimal-polynomial evidence with polynomial quotient evidence.
+- Deliverables:
+  - A verified algebraic-extension bridge with explicit minimal polynomial evidence.
+  - Documentation of monic / irreducible / uniqueness assumptions.
+- Acceptance criteria:
+  - Minimal polynomial uniqueness and monicity are explicit evidence fields or explicit theorem
+    hypotheses.
+  - No global algebraic-closure existence axiom is introduced.
+  - The module remains usable by finite extension and splitting field milestones.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "AlgebraicElement|MinimalPolynomial|minimal_polynomial_irreducible" proofs tools`
+- Notes:
+  - If statement stability is weak, keep this layer in corpus staging and do not promote until at
+    least one finite-extension consumer exists.
+
+### FT-12 Add Finite Extension Layer
+
+- Status: Pending
+- Depends on: FT-10, FT-11
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractFieldExtension`
+  - `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+  - existing vector / linear algebra law packages when needed
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractFiniteFieldExtension/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add `FiniteExtensionLawArgs`.
+  - Add theorem targets:
+    - `finite_extension_is_algebraic`
+    - `extension_degree_tower`
+    - `finite_dimensional_vector_space_bridge`
+    - `finite_extension_embedding_preserves_degree`
+  - Decide whether degree is represented by Nat data or by Prop-level degree evidence for this
+    corpus layer.
+- Deliverables:
+  - A verified finite-extension module that can feed finite fields and Galois theory.
+  - Documentation of degree evidence and vector-space dependency choices.
+- Acceptance criteria:
+  - The finite extension layer depends on field extension / algebraic extension, not conversely.
+  - If vector-space imports make the closure large, degree facts are kept as explicit evidence.
+  - Tower law statement is stable enough to be reused by later modules.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "FiniteExtensionLawArgs|extension_degree_tower|finite_extension_is_algebraic" proofs tools`
+- Notes:
+  - This layer should not be promoted until the dependency cost of vector-space bridge imports is
+    measured.
+
+### FT-13 Add Finite Field And Frobenius Layer
+
+- Status: Pending
+- Depends on: FT-10, FT-12
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractField`
+  - `Proofs.Ai.Algebra.AbstractFieldHom`
+  - `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractFiniteField/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add `FiniteFieldLawArgs`.
+  - Add theorem targets:
+    - `field_characteristic_prime_or_zero`
+    - `finite_field_characteristic_prime`
+    - `frobenius_is_field_hom`
+    - `finite_field_pow_card_eq_self`
+    - `finite_field_roots_x_pow_q_minus_x`
+  - Start with Frobenius and characteristic facts before adding root-counting facts if imports get
+    too large.
+- Deliverables:
+  - A verified finite-field staging module.
+  - README notes separating cardinality / power / polynomial-root evidence from trusted proof
+    certificates.
+- Acceptance criteria:
+  - Characteristic, cardinality, power, and root APIs are explicit and do not require hidden runtime
+    computation.
+  - Frobenius uses the existing field hom route where possible.
+  - Heavy root-counting results may be split into a later module if needed.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFiniteField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteField`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "FiniteFieldLawArgs|frobenius_is_field_hom|finite_field_pow_card_eq_self" proofs tools`
+- Notes:
+  - This is a high-value future `npa-mathlib` candidate, but only after cardinality and polynomial
+    APIs stabilize.
+
+### FT-14 Add Splitting Field And Algebraic Closure Evidence Layers
+
+- Status: Pending
+- Depends on: FT-11, FT-12
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+  - `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+  - polynomial quotient / root evidence packages
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractSplittingField/`
+  - `proofs/Proofs/Ai/Algebra/AbstractAlgebraicClosure/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add evidence packages:
+    - `SplittingFieldLawArgs`
+    - `AlgebraicClosureLawArgs`
+  - Add theorem targets:
+    - `splitting_field_contains_all_roots`
+    - `splitting_field_generated_by_roots`
+    - `splitting_field_unique_up_to_field_iso`
+    - `algebraic_closure_is_algebraic`
+    - `algebraic_closure_polynomial_has_root`
+  - Keep existence as explicit evidence, not as a hidden axiom.
+- Deliverables:
+  - Verified staging modules for splitting fields and algebraic closure evidence.
+  - Documentation of which existence claims are assumed as construction evidence.
+- Acceptance criteria:
+  - No algebraic-closure existence theorem is stated without explicit construction evidence.
+  - Uniqueness is up to field isomorphism and reuses the field iso API.
+  - Galois starter can import splitting field evidence without circular dependencies.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractSplittingField`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractAlgebraicClosure`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractSplittingField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractAlgebraicClosure`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "SplittingFieldLawArgs|AlgebraicClosureLawArgs|splitting_field_unique" proofs tools`
+- Notes:
+  - Split the two modules if algebraic closure statements remain unstable.
+
+### FT-15 Add Galois Theory Starter
+
+- Status: Pending
+- Depends on: FT-10, FT-12, FT-14
+- Inputs:
+  - `Proofs.Ai.Algebra.AbstractFieldExtension`
+  - `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+  - `Proofs.Ai.Algebra.AbstractSplittingField`
+  - existing group correspondence modules
+- Code or documentation areas:
+  - `tools/proof-corpus/src/main.rs`
+  - `proofs/Proofs/Ai/Algebra/AbstractGaloisStarter/`
+  - `proofs/README.md`
+  - package / manifest / generated proof-corpus metadata
+- Tasks:
+  - Add evidence packages:
+    - `FieldAutomorphismGroupArgs`
+    - `GaloisExtensionArgs`
+  - Add theorem targets:
+    - `automorphism_group_laws`
+    - `fixed_field_laws`
+    - `fixed_field_is_field`
+    - `galois_correspondence_order_bridge`
+  - Reuse existing group correspondence theorem targets rather than restating group theory.
+- Deliverables:
+  - A verified Galois starter module that connects field extensions to automorphism groups and
+    fixed fields.
+  - Documentation of import closure and why this layer remains corpus staging.
+- Acceptance criteria:
+  - The module does not pull Galois correspondence into public `npa-mathlib` without a separate
+    closure audit.
+  - Fixed-field and automorphism-group construction evidence remains explicit.
+  - The dependency graph is acyclic and does not force earlier field-extension modules to import
+    group correspondence.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractGaloisStarter`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractGaloisStarter`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `rg -n "FieldAutomorphismGroupArgs|fixed_field_is_field|galois_correspondence_order_bridge" proofs tools`
+- Notes:
+  - This is the heaviest planned field-theory layer. Start only after extension and splitting-field
+    evidence packages are stable.
 
 ---
 
