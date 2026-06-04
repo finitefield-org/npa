@@ -2469,6 +2469,98 @@ macro_rules! linear_algebra_linear_map_abs {
     };
 }
 
+macro_rules! linear_algebra_rank_nullity_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            "forall (DomainIndex : Sort x), ",
+            "forall (domain_basis_vec : forall (i : DomainIndex), Domain), ",
+            "forall (domain_lincomb : forall (coeffs : forall (i : DomainIndex), Scalar), Domain), ",
+            "forall (KernelIndex : Sort y), ",
+            "forall (kernel_basis_vec : forall (i : KernelIndex), Domain), ",
+            "forall (kernel_lincomb : forall (coeffs : forall (i : KernelIndex), Scalar), Domain), ",
+            "forall (ImageIndex : Sort z), ",
+            "forall (image_basis_vec : forall (i : ImageIndex), Codomain), ",
+            "forall (image_lincomb : forall (coeffs : forall (i : ImageIndex), Scalar), Codomain), ",
+            "forall (Dimension : Sort d), ",
+            "forall (dim_add : forall (a : Dimension), forall (b : Dimension), Dimension), ",
+            "forall (domain_dim : Dimension), ",
+            "forall (nullity_dim : Dimension), ",
+            "forall (rank_dim : Dimension), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Domain : Sort v), ",
+            "forall (dzero : Domain), ",
+            "forall (dadd : forall (x : Domain), forall (y : Domain), Domain), ",
+            "forall (dneg : forall (x : Domain), Domain), ",
+            "forall (dsmul : forall (a : Scalar), forall (x : Domain), Domain), ",
+            "forall (Codomain : Sort w), ",
+            "forall (czero : Codomain), ",
+            "forall (cadd : forall (x : Codomain), forall (y : Codomain), Codomain), ",
+            "forall (cneg : forall (x : Codomain), Codomain), ",
+            "forall (csmul : forall (a : Scalar), forall (x : Codomain), Codomain), ",
+            "forall (f : forall (x : Domain), Codomain), ",
+            "forall (DomainIndex : Sort x), ",
+            "forall (domain_basis_vec : forall (i : DomainIndex), Domain), ",
+            "forall (domain_lincomb : forall (coeffs : forall (i : DomainIndex), Scalar), Domain), ",
+            "forall (KernelIndex : Sort y), ",
+            "forall (kernel_basis_vec : forall (i : KernelIndex), Domain), ",
+            "forall (kernel_lincomb : forall (coeffs : forall (i : KernelIndex), Scalar), Domain), ",
+            "forall (ImageIndex : Sort z), ",
+            "forall (image_basis_vec : forall (i : ImageIndex), Codomain), ",
+            "forall (image_lincomb : forall (coeffs : forall (i : ImageIndex), Scalar), Codomain), ",
+            "forall (Dimension : Sort d), ",
+            "forall (dim_add : forall (a : Dimension), forall (b : Dimension), Dimension), ",
+            "forall (domain_dim : Dimension), ",
+            "forall (nullity_dim : Dimension), ",
+            "forall (rank_dim : Dimension), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_rank_nullity_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun DomainIndex => fun domain_basis_vec => fun domain_lincomb => fun KernelIndex => fun kernel_basis_vec => fun kernel_lincomb => fun ImageIndex => fun image_basis_vec => fun image_lincomb => fun Dimension => fun dim_add => fun domain_dim => fun nullity_dim => fun rank_dim => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Domain => fun dzero => fun dadd => fun dneg => fun dsmul => fun Codomain => fun czero => fun cadd => fun cneg => fun csmul => fun f => fun DomainIndex => fun domain_basis_vec => fun domain_lincomb => fun KernelIndex => fun kernel_basis_vec => fun kernel_lincomb => fun ImageIndex => fun image_basis_vec => fun image_lincomb => fun Dimension => fun dim_add => fun domain_dim => fun nullity_dim => fun rank_dim => ",
+            $tail
+        )
+    };
+}
+
 macro_rules! abstract_normed_space_params {
     (concat!($($tail:tt)+)) => {
         concat!(
@@ -30511,6 +30603,71 @@ const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), P), P"
         )),
     },
+    DefinitionArtifact {
+        name: "LinearMapNullityCertificate",
+        universe_params: &["d", "u", "v", "w", "y"],
+        ty: linear_algebra_linear_map_params!(concat!(
+            "forall (KernelIndex : Sort y), ",
+            "forall (kernel_basis_vec : forall (i : KernelIndex), Domain), ",
+            "forall (kernel_lincomb : forall (coeffs : forall (i : KernelIndex), Scalar), Domain), ",
+            "forall (Dimension : Sort d), ",
+            "forall (nullity_dim : Dimension), Prop"
+        )),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "fun KernelIndex => fun kernel_basis_vec => fun kernel_lincomb => fun Dimension => fun nullity_dim => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (kernel_basis_mem : forall (i : KernelIndex), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (kernel_basis_vec i)), ",
+            "forall (kernel_linear_independent : @LinearIndependent.{u,v,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul KernelIndex kernel_basis_vec kernel_lincomb), ",
+            "forall (kernel_spanning : forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (Q : Prop), forall (build : forall (coeffs : forall (i : KernelIndex), Scalar), forall (rep : @CoordinateRepresentation.{u,v,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul KernelIndex kernel_basis_vec kernel_lincomb x coeffs), Q), Q), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapRankCertificate",
+        universe_params: &["d", "u", "v", "w", "z"],
+        ty: linear_algebra_linear_map_params!(concat!(
+            "forall (ImageIndex : Sort z), ",
+            "forall (image_basis_vec : forall (i : ImageIndex), Codomain), ",
+            "forall (image_lincomb : forall (coeffs : forall (i : ImageIndex), Scalar), Codomain), ",
+            "forall (Dimension : Sort d), ",
+            "forall (rank_dim : Dimension), Prop"
+        )),
+        value: linear_algebra_linear_map_abs!(concat!(
+            "fun ImageIndex => fun image_basis_vec => fun image_lincomb => fun Dimension => fun rank_dim => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (image_basis_mem : forall (i : ImageIndex), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (image_basis_vec i)), ",
+            "forall (image_linear_independent : @LinearIndependent.{u,w,z} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul ImageIndex image_basis_vec image_lincomb), ",
+            "forall (image_spanning : forall (target : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f target), forall (Q : Prop), forall (build : forall (coeffs : forall (i : ImageIndex), Scalar), forall (rep : @CoordinateRepresentation.{u,w,z} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul ImageIndex image_basis_vec image_lincomb target coeffs), Q), Q), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "LinearMapRankNullityFormula",
+        universe_params: &["d", "u", "v", "w"],
+        ty: linear_algebra_linear_map_params!(concat!(
+            "forall (Dimension : Sort d), ",
+            "forall (dim_add : forall (a : Dimension), forall (b : Dimension), Dimension), ",
+            "forall (domain_dim : Dimension), ",
+            "forall (nullity_dim : Dimension), ",
+            "forall (rank_dim : Dimension), Prop"
+        )),
+        value: linear_algebra_linear_map_abs!(
+            "fun Dimension => fun dim_add => fun domain_dim => fun nullity_dim => fun rank_dim => @Eq.{d} Dimension domain_dim (dim_add nullity_dim rank_dim)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "LinearMapRankNullityEvidence",
+        universe_params: &["d", "u", "v", "w", "x", "y", "z"],
+        ty: linear_algebra_rank_nullity_params!("Prop"),
+        value: linear_algebra_rank_nullity_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), ",
+            "forall (image_subspace : @Subspace.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul (@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), ",
+            "forall (domain_dimension : @FiniteDimensionCertificate.{d,u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb Dimension domain_dim), ",
+            "forall (nullity_certificate : @LinearMapNullityCertificate.{d,u,v,w,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f KernelIndex kernel_basis_vec kernel_lincomb Dimension nullity_dim), ",
+            "forall (rank_certificate : @LinearMapRankCertificate.{d,u,v,w,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f ImageIndex image_basis_vec image_lincomb Dimension rank_dim), ",
+            "forall (rank_nullity_eq : @LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim), P), P"
+        )),
+    },
 ];
 
 const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_THEOREMS: &[TheoremArtifact] = &[
@@ -30709,6 +30866,108 @@ const LINEAR_ALGEBRA_LINEAR_MAP_BASIC_THEOREMS: &[TheoremArtifact] = &[
         proof: linear_algebra_linear_map_abs!(
             "fun criterion => fun injective => criterion (@LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) (fun (kernel_zero_to_injective : forall (kernel_zero : @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => fun (injective_to_kernel_zero : forall (injective : @LinearMapInjective.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), @LinearMapKernelZero.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => injective_to_kernel_zero injective)"
         ),
+    },
+    TheoremArtifact {
+        name: "linear_map_nullity_certificate_intro",
+        universe_params: &["d", "u", "v", "w", "y"],
+        statement: linear_algebra_linear_map_params!(concat!(
+            "forall (KernelIndex : Sort y), ",
+            "forall (kernel_basis_vec : forall (i : KernelIndex), Domain), ",
+            "forall (kernel_lincomb : forall (coeffs : forall (i : KernelIndex), Scalar), Domain), ",
+            "forall (Dimension : Sort d), ",
+            "forall (nullity_dim : Dimension), ",
+            "forall (kernel_basis_mem : forall (i : KernelIndex), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (kernel_basis_vec i)), ",
+            "forall (kernel_linear_independent : @LinearIndependent.{u,v,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul KernelIndex kernel_basis_vec kernel_lincomb), ",
+            "forall (kernel_spanning : forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (Q : Prop), forall (build : forall (coeffs : forall (i : KernelIndex), Scalar), forall (rep : @CoordinateRepresentation.{u,v,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul KernelIndex kernel_basis_vec kernel_lincomb x coeffs), Q), Q), ",
+            "@LinearMapNullityCertificate.{d,u,v,w,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f KernelIndex kernel_basis_vec kernel_lincomb Dimension nullity_dim"
+        )),
+        proof: linear_algebra_linear_map_abs!(concat!(
+            "fun KernelIndex => fun kernel_basis_vec => fun kernel_lincomb => fun Dimension => fun nullity_dim => ",
+            "fun kernel_basis_mem => fun kernel_linear_independent => fun kernel_spanning => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (kernel_basis_mem : forall (i : KernelIndex), @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (kernel_basis_vec i)), ",
+            "forall (kernel_linear_independent : @LinearIndependent.{u,v,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul KernelIndex kernel_basis_vec kernel_lincomb), ",
+            "forall (kernel_spanning : forall (x : Domain), forall (hx : @LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f x), forall (Q : Prop), forall (build : forall (coeffs : forall (i : KernelIndex), Scalar), forall (rep : @CoordinateRepresentation.{u,v,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul KernelIndex kernel_basis_vec kernel_lincomb x coeffs), Q), Q), P) => ",
+            "mk kernel_basis_mem kernel_linear_independent kernel_spanning"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_rank_certificate_intro",
+        universe_params: &["d", "u", "v", "w", "z"],
+        statement: linear_algebra_linear_map_params!(concat!(
+            "forall (ImageIndex : Sort z), ",
+            "forall (image_basis_vec : forall (i : ImageIndex), Codomain), ",
+            "forall (image_lincomb : forall (coeffs : forall (i : ImageIndex), Scalar), Codomain), ",
+            "forall (Dimension : Sort d), ",
+            "forall (rank_dim : Dimension), ",
+            "forall (image_basis_mem : forall (i : ImageIndex), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (image_basis_vec i)), ",
+            "forall (image_linear_independent : @LinearIndependent.{u,w,z} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul ImageIndex image_basis_vec image_lincomb), ",
+            "forall (image_spanning : forall (target : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f target), forall (Q : Prop), forall (build : forall (coeffs : forall (i : ImageIndex), Scalar), forall (rep : @CoordinateRepresentation.{u,w,z} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul ImageIndex image_basis_vec image_lincomb target coeffs), Q), Q), ",
+            "@LinearMapRankCertificate.{d,u,v,w,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f ImageIndex image_basis_vec image_lincomb Dimension rank_dim"
+        )),
+        proof: linear_algebra_linear_map_abs!(concat!(
+            "fun ImageIndex => fun image_basis_vec => fun image_lincomb => fun Dimension => fun rank_dim => ",
+            "fun image_basis_mem => fun image_linear_independent => fun image_spanning => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (image_basis_mem : forall (i : ImageIndex), @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f (image_basis_vec i)), ",
+            "forall (image_linear_independent : @LinearIndependent.{u,w,z} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul ImageIndex image_basis_vec image_lincomb), ",
+            "forall (image_spanning : forall (target : Codomain), forall (hy : @LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f target), forall (Q : Prop), forall (build : forall (coeffs : forall (i : ImageIndex), Scalar), forall (rep : @CoordinateRepresentation.{u,w,z} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul ImageIndex image_basis_vec image_lincomb target coeffs), Q), Q), P) => ",
+            "mk image_basis_mem image_linear_independent image_spanning"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_rank_nullity_formula_intro",
+        universe_params: &["d", "u", "v", "w"],
+        statement: linear_algebra_linear_map_params!(
+            "forall (Dimension : Sort d), forall (dim_add : forall (a : Dimension), forall (b : Dimension), Dimension), forall (domain_dim : Dimension), forall (nullity_dim : Dimension), forall (rank_dim : Dimension), forall (h : @Eq.{d} Dimension domain_dim (dim_add nullity_dim rank_dim)), @LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim"
+        ),
+        proof: linear_algebra_linear_map_abs!(
+            "fun Dimension => fun dim_add => fun domain_dim => fun nullity_dim => fun rank_dim => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_map_rank_nullity_evidence_intro",
+        universe_params: &["d", "u", "v", "w", "x", "y", "z"],
+        statement: linear_algebra_rank_nullity_params!(concat!(
+            "forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), ",
+            "forall (image_subspace : @Subspace.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul (@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), ",
+            "forall (domain_dimension : @FiniteDimensionCertificate.{d,u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb Dimension domain_dim), ",
+            "forall (nullity_certificate : @LinearMapNullityCertificate.{d,u,v,w,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f KernelIndex kernel_basis_vec kernel_lincomb Dimension nullity_dim), ",
+            "forall (rank_certificate : @LinearMapRankCertificate.{d,u,v,w,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f ImageIndex image_basis_vec image_lincomb Dimension rank_dim), ",
+            "forall (rank_nullity_eq : @LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim), ",
+            "@LinearMapRankNullityEvidence.{d,u,v,w,x,y,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f DomainIndex domain_basis_vec domain_lincomb KernelIndex kernel_basis_vec kernel_lincomb ImageIndex image_basis_vec image_lincomb Dimension dim_add domain_dim nullity_dim rank_dim"
+        )),
+        proof: linear_algebra_rank_nullity_abs!(concat!(
+            "fun linear_map => fun kernel_subspace => fun image_subspace => fun domain_dimension => fun nullity_certificate => fun rank_certificate => fun rank_nullity_eq => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f), ",
+            "forall (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), ",
+            "forall (image_subspace : @Subspace.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul (@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)), ",
+            "forall (domain_dimension : @FiniteDimensionCertificate.{d,u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb Dimension domain_dim), ",
+            "forall (nullity_certificate : @LinearMapNullityCertificate.{d,u,v,w,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f KernelIndex kernel_basis_vec kernel_lincomb Dimension nullity_dim), ",
+            "forall (rank_certificate : @LinearMapRankCertificate.{d,u,v,w,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f ImageIndex image_basis_vec image_lincomb Dimension rank_dim), ",
+            "forall (rank_nullity_eq : @LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim), P) => ",
+            "mk linear_map kernel_subspace image_subspace domain_dimension nullity_certificate rank_certificate rank_nullity_eq"
+        )),
+    },
+    TheoremArtifact {
+        name: "linear_map_rank_nullity",
+        universe_params: &["d", "u", "v", "w", "x", "y", "z"],
+        statement: linear_algebra_rank_nullity_params!(
+            "forall (evidence : @LinearMapRankNullityEvidence.{d,u,v,w,x,y,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f DomainIndex domain_basis_vec domain_lincomb KernelIndex kernel_basis_vec kernel_lincomb ImageIndex image_basis_vec image_lincomb Dimension dim_add domain_dim nullity_dim rank_dim), @LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim"
+        ),
+        proof: linear_algebra_rank_nullity_abs!(concat!(
+            "fun evidence => ",
+            "evidence (@LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim) ",
+            "(fun (linear_map : @LinearMap.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f) => ",
+            "fun (kernel_subspace : @Subspace.{u,v} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul (@LinearMapKernel.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)) => ",
+            "fun (image_subspace : @Subspace.{u,w} Scalar zero one add neg sub mul Codomain czero cadd cneg csmul (@LinearMapImage.{u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f)) => ",
+            "fun (domain_dimension : @FiniteDimensionCertificate.{d,u,v,x} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul DomainIndex domain_basis_vec domain_lincomb Dimension domain_dim) => ",
+            "fun (nullity_certificate : @LinearMapNullityCertificate.{d,u,v,w,y} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f KernelIndex kernel_basis_vec kernel_lincomb Dimension nullity_dim) => ",
+            "fun (rank_certificate : @LinearMapRankCertificate.{d,u,v,w,z} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f ImageIndex image_basis_vec image_lincomb Dimension rank_dim) => ",
+            "fun (rank_nullity_eq : @LinearMapRankNullityFormula.{d,u,v,w} Scalar zero one add neg sub mul Domain dzero dadd dneg dsmul Codomain czero cadd cneg csmul f Dimension dim_add domain_dim nullity_dim rank_dim) => rank_nullity_eq)"
+        )),
     },
 ];
 

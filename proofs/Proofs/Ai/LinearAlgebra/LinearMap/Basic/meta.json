@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/LinearAlgebra/LinearMap/Basic/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:94b349ad53aeb389b6670d6f8154d193061bda1b86f1612ebdc4a910d914c436",
-  "certificate_file_sha256": "sha256:a97ed3b7d013cf14bfbeb02ae80c836ff458d5949c59ba30b4e25a196dad0b5b",
-  "export_hash": "sha256:f126c92669e1a4de1048338bed90020f7be5835581207015265389274aea5773",
-  "axiom_report_hash": "sha256:5a647e1a13f8841bee80d6388958fdef9595df77cc0d39b9e181b95dc5e6daac",
-  "certificate_hash": "sha256:fbec4a7b483c8e63801b0443432ee529f487fc3a5177ec5258a3946eedd89578",
+  "source_sha256": "sha256:4cbc70c1dbe5779ee214ff0a83150d3c9be71ef1c9178f424a8651d7ba74169e",
+  "certificate_file_sha256": "sha256:195f05adc7847fc13df7e38546b5ef2d825096ac7c560a644960c3ef6d05ec28",
+  "export_hash": "sha256:142d8203656074c825452d65793f6f69860669b7b7bfa80d379c745d4b83f404",
+  "axiom_report_hash": "sha256:deef51821adbcd05393977f7b1a88217773a502a98cbd7b526e681be546ce7ad",
+  "certificate_hash": "sha256:5a98d58d63d433f28f51dcc3df14ad757b9b58952a474af84bdcc7cf86503bdb",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -20,6 +20,10 @@
     { "name": "LinearMapInjective", "kind": "def" },
     { "name": "LinearMapSubspaceEvidence", "kind": "def" },
     { "name": "LinearMapInjectiveKernelCriterion", "kind": "def" },
+    { "name": "LinearMapNullityCertificate", "kind": "def" },
+    { "name": "LinearMapRankCertificate", "kind": "def" },
+    { "name": "LinearMapRankNullityFormula", "kind": "def" },
+    { "name": "LinearMapRankNullityEvidence", "kind": "def" },
     { "name": "linear_map_intro", "kind": "theorem" },
     { "name": "linear_map_zero", "kind": "theorem" },
     { "name": "linear_map_add", "kind": "theorem" },
@@ -37,7 +41,12 @@
     { "name": "linear_map_injective_kernel_criterion_intro", "kind": "theorem" },
     { "name": "linear_map_injective_of_kernel_zero", "kind": "theorem" },
     { "name": "linear_map_kernel_zero_of_injective", "kind": "theorem" },
-    { "name": "linear_map_kernel_zero_of_injective_criterion", "kind": "theorem" }
+    { "name": "linear_map_kernel_zero_of_injective_criterion", "kind": "theorem" },
+    { "name": "linear_map_nullity_certificate_intro", "kind": "theorem" },
+    { "name": "linear_map_rank_certificate_intro", "kind": "theorem" },
+    { "name": "linear_map_rank_nullity_formula_intro", "kind": "theorem" },
+    { "name": "linear_map_rank_nullity_evidence_intro", "kind": "theorem" },
+    { "name": "linear_map_rank_nullity", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

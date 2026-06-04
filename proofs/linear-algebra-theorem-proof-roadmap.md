@@ -386,12 +386,16 @@ secondary area must import, specialize, or expose a compatibility alias.
 
 ## LIN-03 Linear Maps, Kernels, Images, And Isomorphism Theorems
 
-- Status: `LAQ-005` complete for `Proofs.Ai.LinearAlgebra.LinearMap.Basic`:
+- Status: `LAQ-006` complete for `Proofs.Ai.LinearAlgebra.LinearMap.Basic`:
   linear-map law packaging, kernel/image predicates, kernel and image
   subspace certificates from explicit closure evidence, and the injective
   implies zero-kernel direction. The zero-kernel implies injective direction is
   exposed through an explicit criterion package until the subtraction/equality
-  bridge is derived in this layer. Surjectivity/image-target, rank-nullity,
+  bridge is derived in this layer. Rank-nullity is now exposed through
+  `LinearMapNullityCertificate`, `LinearMapRankCertificate`,
+  `LinearMapRankNullityEvidence`, and `linear_map_rank_nullity`, which projects
+  `domain_dim = nullity_dim + rank_dim` from explicit finite-domain,
+  kernel-basis, image-basis, and equality evidence. Surjectivity/image-target,
   linear-map extension from basis data, Hom-space dimension, and isomorphism
   theorem routes remain planned.
 - Depends on: `LIN-01` and `LIN-02`.
