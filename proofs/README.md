@@ -1671,6 +1671,39 @@ The module imports the current `AbstractFieldIdeal` route for corpus staging, so
 audit the closure before making this public. The checked FT-09 certificate itself has no local
 axioms; source, replay, metadata, and AI theorem index entries remain non-trusted sidecars.
 
+#### `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+
+This module bridges field-extension evidence to the polynomial-quotient staging layer. It keeps
+algebraicity, minimal-polynomial data, degree-one base membership, and finite-extension output as
+explicit evidence packages.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `PolynomialDivides` | Church-encoded divisibility relation for abstract polynomials |
+| `MonicPolynomial` | named wrapper around an explicit monicity predicate |
+| `DegreeOnePolynomial` | named wrapper around an explicit degree-one predicate |
+| `BaseElementWitness` | packages a base element whose embedded image is the algebraic element |
+| `FiniteFieldExtensionEvidence` | package target for later finite-extension layers |
+| `AlgebraicElement` | packages a nonzero annihilating polynomial and evaluation-zero evidence |
+| `MinimalPolynomial` | packages monicity, annihilation, irreducibility, divisibility of all annihilators, degree-one base membership, and uniqueness evidence |
+| `FieldAdjoinAlgebraicElementArgs` | connects minimal-polynomial evidence to `SimpleAlgebraicExtensionQuotientArgs` and finite-extension evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `minimal_polynomial_divides_annihilating_polynomial` | projects that the minimal polynomial divides every annihilating polynomial |
+| `minimal_polynomial_irreducible` | projects irreducibility as `IrreduciblePolynomial` evidence |
+| `degree_one_algebraic_element_in_base` | projects base-element membership from explicit degree-one evidence |
+| `field_adjoin_algebraic_element_is_finite_extension` | projects finite-extension evidence from the adjoin/minimal-polynomial/quotient package |
+
+The module does not introduce an algebraic-closure existence axiom. Monicity, irreducibility,
+minimal-polynomial uniqueness, and finite-extension output remain explicit inputs or packaged
+evidence, so later finite-extension and splitting-field milestones can refine the statements
+without changing the trusted boundary.
+
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
 Implemented definitions / API declarations, not proof targets:

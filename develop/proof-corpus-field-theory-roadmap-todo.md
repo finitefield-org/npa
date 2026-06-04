@@ -631,7 +631,7 @@ Implication:
 
 ### FT-11 Add Algebraic Element And Minimal Polynomial Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-09, FT-10
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractFieldExtension`
@@ -667,6 +667,12 @@ Implication:
 - Notes:
   - If statement stability is weak, keep this layer in corpus staging and do not promote until at
     least one finite-extension consumer exists.
+  - Completed with `Proofs.Ai.Algebra.AbstractAlgebraicExtension`, adding explicit
+    `AlgebraicElement`, `MinimalPolynomial`, and `FieldAdjoinAlgebraicElementArgs` packages.
+  - Monicity, irreducibility, minimal-polynomial uniqueness, degree-one base membership, and
+    finite-extension output remain explicit evidence fields or theorem hypotheses.
+  - The bridge connects `MinimalPolynomial` to `SimpleAlgebraicExtensionQuotientArgs` without
+    adding any algebraic-closure existence axiom.
 
 ### FT-12 Add Finite Extension Layer
 

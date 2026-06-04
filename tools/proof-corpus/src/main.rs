@@ -161,6 +161,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_KRULL_THEOREM_MODULE,
     &ABSTRACT_FIELD_IDEAL_MODULE,
     &ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE,
+    &ABSTRACT_ALGEBRAIC_EXTENSION_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -1575,6 +1576,41 @@ const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE: ModuleArtifact = ModuleArtifact
     inductives: &[],
     definitions: ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_DEFINITIONS,
     theorems: ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_ALGEBRAIC_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+    source_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_ALGEBRAIC_EXTENSION_DEFINITIONS,
+    theorems: ABSTRACT_ALGEBRAIC_EXTENSION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -25420,6 +25456,249 @@ const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_ALGEBRAIC_EXTENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "PolynomialDivides",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (mulP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (divisor : Poly), forall (target : Poly), Prop"
+        ),
+        value: concat!(
+            "fun Poly => fun mulP => fun divisor => fun target => ",
+            "forall (Q : Prop), forall (mk : forall (coeff : Poly), ",
+            "forall (hfactor : @Eq.{succ p} Poly target (mulP divisor coeff)), Q), Q"
+        ),
+    },
+    DefinitionArtifact {
+        name: "MonicPolynomial",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (poly : Poly), Prop"
+        ),
+        value: "fun Poly => fun IsMonic => fun poly => IsMonic poly",
+    },
+    DefinitionArtifact {
+        name: "DegreeOnePolynomial",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (poly : Poly), Prop"
+        ),
+        value: "fun Poly => fun IsDegreeOne => fun poly => IsDegreeOne poly",
+    },
+    DefinitionArtifact {
+        name: "BaseElementWitness",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), Prop"
+        ),
+        value: concat!(
+            "fun K => fun Ext => fun base_embed => fun alpha => ",
+            "forall (Q : Prop), forall (mk : forall (a : K), ",
+            "forall (hbase : @Eq.{e} Ext (base_embed a) alpha), Q), Q"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteFieldExtensionEvidence",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (FiniteOverBase : Prop), Prop"
+        ),
+        value: "fun K => fun Ext => fun base_embed => fun FiniteOverBase => FiniteOverBase",
+    },
+    DefinitionArtifact {
+        name: "AlgebraicElement",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (annihilating_poly : Poly), ",
+            "forall (annihilating_nonzero : HbtNot (@Eq.{succ p} Poly annihilating_poly zeroP)), ",
+            "forall (annihilating_eval_zero : @Eq.{e} Ext (eval_at annihilating_poly) zeroE), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MinimalPolynomial",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly), ",
+            "forall (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE), ",
+            "forall (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly), ",
+            "forall (divides_annihilating_law : forall (poly : Poly), forall (hzero : @Eq.{e} Ext (eval_at poly) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly), ",
+            "forall (degree_one_base_law : forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha), ",
+            "forall (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldAdjoinAlgebraicElementArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (FiniteOverBase : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (I : forall (x : Poly), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (quotient_args : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), ",
+            "forall (simple_args : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun FiniteOverBase => fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => fun extension_args => fun algebraic_args => fun minimal_args => fun quotient_args => fun simple_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (minimal_quotient_law : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), ",
+            "forall (polynomial_quotient_law : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), ",
+            "forall (finite_extension_law : @FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "minimal_polynomial_divides_annihilating_polynomial",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (poly : Poly), ",
+            "forall (hzero : @Eq.{e} Ext (eval_at poly) zeroE), ",
+            "@PolynomialDivides.{p} Poly mulP minimal_poly poly"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => fun minimal_args => fun poly => fun hzero => ",
+            "minimal_args (@PolynomialDivides.{p} Poly mulP minimal_poly poly) ",
+            "(fun (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly) => ",
+            "fun (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE) => ",
+            "fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (divides_annihilating_law : forall (poly_arg : Poly), forall (hzero_arg : @Eq.{e} Ext (eval_at poly_arg) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly_arg) => ",
+            "fun (degree_one_base_law : forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha) => ",
+            "fun (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly) => divides_annihilating_law poly hzero)"
+        )),
+    },
+    TheoremArtifact {
+        name: "minimal_polynomial_irreducible",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "@IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => fun minimal_args => ",
+            "minimal_args (@IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) ",
+            "(fun (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly) => ",
+            "fun (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE) => ",
+            "fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (divides_annihilating_law : forall (poly_arg : Poly), forall (hzero_arg : @Eq.{e} Ext (eval_at poly_arg) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly_arg) => ",
+            "fun (degree_one_base_law : forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha) => ",
+            "fun (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly) => minimal_irreducible)"
+        )),
+    },
+    TheoremArtifact {
+        name: "degree_one_algebraic_element_in_base",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), ",
+            "@BaseElementWitness.{e,u} K Ext base_embed alpha"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => fun minimal_args => fun degree_one => ",
+            "minimal_args (@BaseElementWitness.{e,u} K Ext base_embed alpha) ",
+            "(fun (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly) => ",
+            "fun (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE) => ",
+            "fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (divides_annihilating_law : forall (poly_arg : Poly), forall (hzero_arg : @Eq.{e} Ext (eval_at poly_arg) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly_arg) => ",
+            "fun (degree_one_base_law : forall (degree_one_arg : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha) => ",
+            "fun (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly) => degree_one_base_law degree_one)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_adjoin_algebraic_element_is_finite_extension",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (FiniteOverBase : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (I : forall (x : Poly), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (quotient_args : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), ",
+            "forall (simple_args : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), ",
+            "forall (adjoin_args : @FieldAdjoinAlgebraicElementArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne FiniteOverBase field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I extension_args algebraic_args minimal_args quotient_args simple_args), ",
+            "@FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun FiniteOverBase => fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => fun extension_args => fun algebraic_args => fun minimal_args => fun quotient_args => fun simple_args => fun adjoin_args => ",
+            "adjoin_args (@FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase) ",
+            "(fun (minimal_quotient_law : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I) => ",
+            "fun (polynomial_quotient_law : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws) => ",
+            "fun (finite_extension_law : @FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase) => finite_extension_law)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -32737,6 +33016,58 @@ fn run_full() -> Result<(), String> {
         &abstract_polynomial_field_quotient_imports,
         &abstract_polynomial_field_quotient_source_interfaces,
     )?;
+    let abstract_algebraic_extension_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+    ];
+    let abstract_algebraic_extension_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+    ];
+    let abstract_algebraic_extension = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ALGEBRAIC_EXTENSION_MODULE,
+        &abstract_algebraic_extension_imports,
+        &abstract_algebraic_extension_source_interfaces,
+    )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
     let quasi_coherent_sheaves_imports = vec![derived_affine_schemes.verified_module.clone()];
@@ -33288,6 +33619,7 @@ fn run_full() -> Result<(), String> {
         abstract_krull_theorem,
         abstract_field_ideal,
         abstract_polynomial_field_quotient,
+        abstract_algebraic_extension,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -35538,6 +35870,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
+        || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -35877,6 +36210,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
+        || config.module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {

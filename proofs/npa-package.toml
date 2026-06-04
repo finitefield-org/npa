@@ -1002,6 +1002,23 @@ theorems = ["irreducible_polynomial_generates_maximal_ideal", "quotient_by_irred
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Algebra.AbstractAlgebraicExtension"
+source = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:5a201dd1a17670dd591650237df8b89a5f741da8542a7e35c1c1d6245bd3f50f"
+expected_certificate_file_hash = "sha256:0c5f4ce04bc8bce9dba96b13680d61e7b6ea7c8c2d388c9118270fd42b27ca3a"
+expected_export_hash = "sha256:b42c919718cef92a07f71c5162e21be5243ac857a104949c93e878c53ca0055b"
+expected_axiom_report_hash = "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07"
+expected_certificate_hash = "sha256:20c9ff67c2b43b15eab1338f884978827834297be0f093994dae0aa2fbe4d0a1"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient"]
+definitions = ["PolynomialDivides", "MonicPolynomial", "DegreeOnePolynomial", "BaseElementWitness", "FiniteFieldExtensionEvidence", "AlgebraicElement", "MinimalPolynomial", "FieldAdjoinAlgebraicElementArgs"]
+theorems = ["minimal_polynomial_divides_annihilating_polynomial", "minimal_polynomial_irreducible", "degree_one_algebraic_element_in_base", "field_adjoin_algebraic_element_is_finite_extension"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"
 source = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa"
 certificate = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"
