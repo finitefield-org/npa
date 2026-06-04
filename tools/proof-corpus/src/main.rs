@@ -111,6 +111,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_INVENTORY_MODULE,
     &NUMBER_THEORY_ELEMENTARY_MODULE,
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
+    &NUMBER_THEORY_EUCLIDEAN_DIVISION_MODULE,
+    &NUMBER_THEORY_DESCENT_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
     &ABSTRACT_METRIC_TOPOLOGY_MODULE,
@@ -499,6 +501,32 @@ const NUMBER_THEORY_DIVISIBILITY_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DIVISIBILITY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_EUCLIDEAN_DIVISION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.EuclideanDivision",
+    source_path: "Proofs/Ai/NumberTheory/EuclideanDivision/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/EuclideanDivision/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/EuclideanDivision/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/EuclideanDivision/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Divisibility"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_EUCLIDEAN_DIVISION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DESCENT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Descent",
+    source_path: "Proofs/Ai/NumberTheory/Descent/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Descent/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Descent/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Descent/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.EuclideanDivision"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DESCENT_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9317,6 +9345,140 @@ const NUMBER_THEORY_DIVISIBILITY_THEOREMS: &[TheoremArtifact] = &[
             "forall (DivisibilitySimplification : Type), forall (OrdinaryTheoremTarget : forall (target : DivisibilitySimplification), Prop), forall (target : DivisibilitySimplification), forall (evidence : OrdinaryTheoremTarget target), OrdinaryTheoremTarget target",
         proof:
             "fun DivisibilitySimplification => fun OrdinaryTheoremTarget => fun target => fun evidence => evidence",
+    },
+];
+
+const NUMBER_THEORY_EUCLIDEAN_DIVISION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "quotient_remainder_existence_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Quotient : forall (dividend : Int), forall (divisor : Int), Int), forall (Remainder : forall (dividend : Int), forall (divisor : Int), Int), forall (Nonzero : forall (x : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (existence_law : forall (dividend : Int), forall (divisor : Int), forall (nonzero_divisor : Nonzero divisor), QuotientRemainder dividend divisor (Quotient dividend divisor) (Remainder dividend divisor)), forall (dividend : Int), forall (divisor : Int), forall (nonzero_divisor : Nonzero divisor), QuotientRemainder dividend divisor (Quotient dividend divisor) (Remainder dividend divisor)",
+        proof:
+            "fun Int => fun Quotient => fun Remainder => fun Nonzero => fun QuotientRemainder => fun existence_law => fun dividend => fun divisor => fun nonzero_divisor => existence_law dividend divisor nonzero_divisor",
+    },
+    TheoremArtifact {
+        name: "quotient_remainder_identity_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Add : forall (a : Int), forall (b : Int), Int), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (identity_law : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (qr : QuotientRemainder dividend divisor quotient remainder), EqualInt dividend (Add (Mul quotient divisor) remainder)), forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (qr : QuotientRemainder dividend divisor quotient remainder), EqualInt dividend (Add (Mul quotient divisor) remainder)",
+        proof:
+            "fun Int => fun Add => fun Mul => fun EqualInt => fun QuotientRemainder => fun identity_law => fun dividend => fun divisor => fun quotient => fun remainder => fun qr => identity_law dividend divisor quotient remainder qr",
+    },
+    TheoremArtifact {
+        name: "remainder_sign_hypothesis_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (RemainderSign : forall (divisor : Int), forall (remainder : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (sign_law : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (nonzero_divisor : Nonzero divisor), forall (qr : QuotientRemainder dividend divisor quotient remainder), RemainderSign divisor remainder), forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (nonzero_divisor : Nonzero divisor), forall (qr : QuotientRemainder dividend divisor quotient remainder), RemainderSign divisor remainder",
+        proof:
+            "fun Int => fun Nonzero => fun RemainderSign => fun QuotientRemainder => fun sign_law => fun dividend => fun divisor => fun quotient => fun remainder => fun nonzero_divisor => fun qr => sign_law dividend divisor quotient remainder nonzero_divisor qr",
+    },
+    TheoremArtifact {
+        name: "remainder_bound_hypothesis_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (RemainderBound : forall (divisor : Int), forall (remainder : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (bound_law : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (nonzero_divisor : Nonzero divisor), forall (qr : QuotientRemainder dividend divisor quotient remainder), RemainderBound divisor remainder), forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (nonzero_divisor : Nonzero divisor), forall (qr : QuotientRemainder dividend divisor quotient remainder), RemainderBound divisor remainder",
+        proof:
+            "fun Int => fun Nonzero => fun RemainderBound => fun QuotientRemainder => fun bound_law => fun dividend => fun divisor => fun quotient => fun remainder => fun nonzero_divisor => fun qr => bound_law dividend divisor quotient remainder nonzero_divisor qr",
+    },
+    TheoremArtifact {
+        name: "quotient_uniqueness_with_bounds_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (RemainderSignBound : forall (divisor : Int), forall (remainder : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (uniqueness_law : forall (dividend : Int), forall (divisor : Int), forall (q1 : Int), forall (r1 : Int), forall (q2 : Int), forall (r2 : Int), forall (nonzero_divisor : Nonzero divisor), forall (bound1 : RemainderSignBound divisor r1), forall (bound2 : RemainderSignBound divisor r2), forall (qr1 : QuotientRemainder dividend divisor q1 r1), forall (qr2 : QuotientRemainder dividend divisor q2 r2), EqualInt q1 q2), forall (dividend : Int), forall (divisor : Int), forall (q1 : Int), forall (r1 : Int), forall (q2 : Int), forall (r2 : Int), forall (nonzero_divisor : Nonzero divisor), forall (bound1 : RemainderSignBound divisor r1), forall (bound2 : RemainderSignBound divisor r2), forall (qr1 : QuotientRemainder dividend divisor q1 r1), forall (qr2 : QuotientRemainder dividend divisor q2 r2), EqualInt q1 q2",
+        proof:
+            "fun Int => fun Nonzero => fun EqualInt => fun RemainderSignBound => fun QuotientRemainder => fun uniqueness_law => fun dividend => fun divisor => fun q1 => fun r1 => fun q2 => fun r2 => fun nonzero_divisor => fun bound1 => fun bound2 => fun qr1 => fun qr2 => uniqueness_law dividend divisor q1 r1 q2 r2 nonzero_divisor bound1 bound2 qr1 qr2",
+    },
+    TheoremArtifact {
+        name: "remainder_uniqueness_with_bounds_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (EqualInt : forall (a : Int), forall (b : Int), Prop), forall (RemainderSignBound : forall (divisor : Int), forall (remainder : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (uniqueness_law : forall (dividend : Int), forall (divisor : Int), forall (q1 : Int), forall (r1 : Int), forall (q2 : Int), forall (r2 : Int), forall (nonzero_divisor : Nonzero divisor), forall (bound1 : RemainderSignBound divisor r1), forall (bound2 : RemainderSignBound divisor r2), forall (qr1 : QuotientRemainder dividend divisor q1 r1), forall (qr2 : QuotientRemainder dividend divisor q2 r2), EqualInt r1 r2), forall (dividend : Int), forall (divisor : Int), forall (q1 : Int), forall (r1 : Int), forall (q2 : Int), forall (r2 : Int), forall (nonzero_divisor : Nonzero divisor), forall (bound1 : RemainderSignBound divisor r1), forall (bound2 : RemainderSignBound divisor r2), forall (qr1 : QuotientRemainder dividend divisor q1 r1), forall (qr2 : QuotientRemainder dividend divisor q2 r2), EqualInt r1 r2",
+        proof:
+            "fun Int => fun Nonzero => fun EqualInt => fun RemainderSignBound => fun QuotientRemainder => fun uniqueness_law => fun dividend => fun divisor => fun q1 => fun r1 => fun q2 => fun r2 => fun nonzero_divisor => fun bound1 => fun bound2 => fun qr1 => fun qr2 => uniqueness_law dividend divisor q1 r1 q2 r2 nonzero_divisor bound1 bound2 qr1 qr2",
+    },
+    TheoremArtifact {
+        name: "normalized_euclidean_division_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (NormalizedDivisor : forall (x : Int), Prop), forall (QuotientRemainder : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (EuclideanDivision : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (normalization_law : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (nonzero_divisor : Nonzero divisor), forall (normalized_divisor : NormalizedDivisor divisor), forall (qr : QuotientRemainder dividend divisor quotient remainder), EuclideanDivision dividend divisor quotient remainder), forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), forall (nonzero_divisor : Nonzero divisor), forall (normalized_divisor : NormalizedDivisor divisor), forall (qr : QuotientRemainder dividend divisor quotient remainder), EuclideanDivision dividend divisor quotient remainder",
+        proof:
+            "fun Int => fun Nonzero => fun NormalizedDivisor => fun QuotientRemainder => fun EuclideanDivision => fun normalization_law => fun dividend => fun divisor => fun quotient => fun remainder => fun nonzero_divisor => fun normalized_divisor => fun qr => normalization_law dividend divisor quotient remainder nonzero_divisor normalized_divisor qr",
+    },
+    TheoremArtifact {
+        name: "nat_int_euclidean_division_translation_packaged",
+        universe_params: &[],
+        statement:
+            "forall (NatCarrier : Type), forall (Int : Type), forall (toInt : forall (n : NatCarrier), Int), forall (PositiveNat : forall (n : NatCarrier), Prop), forall (NatEuclideanDivision : forall (dividend : NatCarrier), forall (divisor : NatCarrier), forall (quotient : NatCarrier), forall (remainder : NatCarrier), Prop), forall (IntEuclideanDivision : forall (dividend : Int), forall (divisor : Int), forall (quotient : Int), forall (remainder : Int), Prop), forall (translation_law : forall (dividend : NatCarrier), forall (divisor : NatCarrier), forall (quotient : NatCarrier), forall (remainder : NatCarrier), forall (positive_divisor : PositiveNat divisor), forall (nat_ediv : NatEuclideanDivision dividend divisor quotient remainder), IntEuclideanDivision (toInt dividend) (toInt divisor) (toInt quotient) (toInt remainder)), forall (dividend : NatCarrier), forall (divisor : NatCarrier), forall (quotient : NatCarrier), forall (remainder : NatCarrier), forall (positive_divisor : PositiveNat divisor), forall (nat_ediv : NatEuclideanDivision dividend divisor quotient remainder), IntEuclideanDivision (toInt dividend) (toInt divisor) (toInt quotient) (toInt remainder)",
+        proof:
+            "fun NatCarrier => fun Int => fun toInt => fun PositiveNat => fun NatEuclideanDivision => fun IntEuclideanDivision => fun translation_law => fun dividend => fun divisor => fun quotient => fun remainder => fun positive_divisor => fun nat_ediv => translation_law dividend divisor quotient remainder positive_divisor nat_ediv",
+    },
+    TheoremArtifact {
+        name: "euclidean_division_algorithm_boundary_packaged",
+        universe_params: &[],
+        statement:
+            "forall (MathematicalExistence : Type), forall (AlgorithmExtraction : Type), forall (ExtractionBoundary : forall (existence : MathematicalExistence), forall (algorithm : AlgorithmExtraction), Prop), forall (boundary_law : forall (existence : MathematicalExistence), forall (algorithm : AlgorithmExtraction), ExtractionBoundary existence algorithm), forall (existence : MathematicalExistence), forall (algorithm : AlgorithmExtraction), ExtractionBoundary existence algorithm",
+        proof:
+            "fun MathematicalExistence => fun AlgorithmExtraction => fun ExtractionBoundary => fun boundary_law => fun existence => fun algorithm => boundary_law existence algorithm",
+    },
+];
+
+const NUMBER_THEORY_DESCENT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_descent_step_packaged",
+        universe_params: &[],
+        statement:
+            "forall (State : Type), forall (NatCarrier : Type), forall (Measure : forall (state : State), NatCarrier), forall (Next : forall (state : State), State), forall (Smaller : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (Bad : forall (state : State), Prop), forall (descent_step_law : forall (state : State), forall (bad_state : Bad state), Smaller (Measure (Next state)) (Measure state)), forall (state : State), forall (bad_state : Bad state), Smaller (Measure (Next state)) (Measure state)",
+        proof:
+            "fun State => fun NatCarrier => fun Measure => fun Next => fun Smaller => fun Bad => fun descent_step_law => fun state => fun bad_state => descent_step_law state bad_state",
+    },
+    TheoremArtifact {
+        name: "well_founded_minimization_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Candidate : Type), forall (NatCarrier : Type), forall (Measure : forall (candidate : Candidate), NatCarrier), forall (WellFoundedMeasure : Prop), forall (Admissible : forall (candidate : Candidate), Prop), forall (Minimal : forall (candidate : Candidate), Prop), forall (minimization_law : forall (candidate : Candidate), forall (well_founded : WellFoundedMeasure), forall (admissible : Admissible candidate), Minimal candidate), forall (candidate : Candidate), forall (well_founded : WellFoundedMeasure), forall (admissible : Admissible candidate), Minimal candidate",
+        proof:
+            "fun Candidate => fun NatCarrier => fun Measure => fun WellFoundedMeasure => fun Admissible => fun Minimal => fun minimization_law => fun candidate => fun well_founded => fun admissible => minimization_law candidate well_founded admissible",
+    },
+    TheoremArtifact {
+        name: "no_infinite_descent_contradiction_packaged",
+        universe_params: &[],
+        statement:
+            "forall (State : Type), forall (NoInfiniteDescent : Prop), forall (Contradiction : Prop), forall (Bad : forall (state : State), Prop), forall (contradiction_law : forall (initial : State), forall (no_infinite_descent : NoInfiniteDescent), forall (bad_initial : Bad initial), Contradiction), forall (initial : State), forall (no_infinite_descent : NoInfiniteDescent), forall (bad_initial : Bad initial), Contradiction",
+        proof:
+            "fun State => fun NoInfiniteDescent => fun Contradiction => fun Bad => fun contradiction_law => fun initial => fun no_infinite_descent => fun bad_initial => contradiction_law initial no_infinite_descent bad_initial",
+    },
+    TheoremArtifact {
+        name: "gcd_descent_measure_surface_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (NatCarrier : Type), forall (Measure : forall (a : Int), forall (b : Int), NatCarrier), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (GcdDescentState : forall (a : Int), forall (b : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (divides_ba : Divides b a), GcdDescentState a b), forall (a : Int), forall (b : Int), forall (divides_ba : Divides b a), GcdDescentState a b",
+        proof:
+            "fun Int => fun NatCarrier => fun Measure => fun Divides => fun GcdDescentState => fun surface_law => fun a => fun b => fun divides_ba => surface_law a b divides_ba",
+    },
+    TheoremArtifact {
+        name: "continued_fraction_descent_surface_packaged",
+        universe_params: &[],
+        statement:
+            "forall (State : Type), forall (NatCarrier : Type), forall (Height : forall (state : State), NatCarrier), forall (NextConvergent : forall (state : State), State), forall (Smaller : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (ContinuedFractionState : forall (state : State), Prop), forall (surface_law : forall (state : State), forall (cf_state : ContinuedFractionState state), Smaller (Height (NextConvergent state)) (Height state)), forall (state : State), forall (cf_state : ContinuedFractionState state), Smaller (Height (NextConvergent state)) (Height state)",
+        proof:
+            "fun State => fun NatCarrier => fun Height => fun NextConvergent => fun Smaller => fun ContinuedFractionState => fun surface_law => fun state => fun cf_state => surface_law state cf_state",
+    },
+    TheoremArtifact {
+        name: "diophantine_descent_surface_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Solution : Type), forall (NatCarrier : Type), forall (Height : forall (solution : Solution), NatCarrier), forall (NextSolution : forall (solution : Solution), Solution), forall (Smaller : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (EquationSolution : forall (solution : Solution), Prop), forall (surface_law : forall (solution : Solution), forall (equation_solution : EquationSolution solution), Smaller (Height (NextSolution solution)) (Height solution)), forall (solution : Solution), forall (equation_solution : EquationSolution solution), Smaller (Height (NextSolution solution)) (Height solution)",
+        proof:
+            "fun Solution => fun NatCarrier => fun Height => fun NextSolution => fun Smaller => fun EquationSolution => fun surface_law => fun solution => fun equation_solution => surface_law solution equation_solution",
+    },
+    TheoremArtifact {
+        name: "descent_algorithm_boundary_packaged",
+        universe_params: &[],
+        statement:
+            "forall (MathematicalDescent : Type), forall (AlgorithmExtraction : Type), forall (ExtractionBoundary : forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), Prop), forall (boundary_law : forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), ExtractionBoundary descent algorithm), forall (descent : MathematicalDescent), forall (algorithm : AlgorithmExtraction), ExtractionBoundary descent algorithm",
+        proof:
+            "fun MathematicalDescent => fun AlgorithmExtraction => fun ExtractionBoundary => fun boundary_law => fun descent => fun algorithm => boundary_law descent algorithm",
     },
 ];
 
@@ -37772,6 +37934,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_INVENTORY_MODULE.module
         || config.module == NUMBER_THEORY_ELEMENTARY_MODULE.module
         || config.module == NUMBER_THEORY_DIVISIBILITY_MODULE.module
+        || config.module == NUMBER_THEORY_EUCLIDEAN_DIVISION_MODULE.module
+        || config.module == NUMBER_THEORY_DESCENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

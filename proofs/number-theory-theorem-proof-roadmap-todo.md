@@ -262,7 +262,7 @@ later in the file.
 
 ### NT-T03 Add Euclidean Division And Descent Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T02`
 - Areas: `Proofs/Ai/NumberTheory/EuclideanDivision/`, `Proofs/Ai/NumberTheory/Descent/`
 - Tasks:
@@ -280,8 +280,14 @@ later in the file.
   - Algorithm extraction is separated from mathematical existence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanDivision`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Descent`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanDivision`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Descent`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "EuclideanDivision|quotient|remainder|Descent" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T04 Add Gcd And Lcm Normal Forms
 

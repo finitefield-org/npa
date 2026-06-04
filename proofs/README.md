@@ -69,6 +69,13 @@ Current bundles:
   explicit `Divides`, sign-normalized divisibility, divisor, multiple, sign-rule, closure, and
   `Nat`/`Int` translation law packages. It imports only the number-theory elementary interface
   closure and does not import prime factorization, elliptic-curve, or modularity modules.
+- `Proofs/Ai/NumberTheory/EuclideanDivision/`: certificate-backed quotient/remainder interface
+  preserving explicit nonzero divisor hypotheses, remainder sign and bound law packages,
+  quotient and remainder uniqueness under those bounds, normalized Euclidean division, `Nat`/`Int`
+  translation, and the boundary between mathematical existence and algorithm extraction.
+- `Proofs/Ai/NumberTheory/Descent/`: certificate-backed finite-descent and minimization
+  interface for later gcd, continued-fraction, and Diophantine modules, with well-founded
+  measures and algorithm extraction kept as explicit law-package evidence.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

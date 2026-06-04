@@ -76,6 +76,24 @@ These modules remain `L1 Evidence package` interfaces. They do not add
 arithmetic automation to the trusted core and do not import prime
 factorization, elliptic-curve, or modularity modules.
 
+## Euclidean Division And Descent Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.EuclideanDivision` and
+`Proofs.Ai.NumberTheory.Descent`.
+
+The Euclidean-division module records checked theorem targets for
+quotient/remainder existence, the identity
+`dividend = quotient * divisor + remainder`, explicit nonzero divisor
+hypotheses, remainder sign and bound hypotheses, quotient and remainder
+uniqueness under those bounds, normalized Euclidean division, `Nat`/`Int`
+translation, and the separation between mathematical existence and algorithm
+extraction. The descent module records finite-descent, well-founded
+minimization, no-infinite-descent contradiction, gcd-measure, continued
+fraction, Diophantine, and extraction-boundary surfaces.
+
+These declarations are still `L1 Evidence package` interfaces. They do not
+assume gcd, prime factorization, elliptic curves, or modularity.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

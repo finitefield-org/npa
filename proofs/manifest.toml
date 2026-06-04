@@ -127,6 +127,42 @@ theorems = ["divides_reflexivity_packaged", "divides_transitivity_packaged", "si
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.EuclideanDivision"
+source = "Proofs/Ai/NumberTheory/EuclideanDivision/source.npa"
+certificate = "Proofs/Ai/NumberTheory/EuclideanDivision/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/EuclideanDivision/meta.json"
+replay = "Proofs/Ai/NumberTheory/EuclideanDivision/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d67fb005a8457a31f5aaedcea184f6b3023647af3759ae38dc02ba0aed423ade"
+certificate_file_sha256 = "sha256:bca9e745c24e81c0784bca6e5bbe32b83de5c756b10422a728e051151afb706e"
+export_hash = "sha256:5b239452653cb21a22548aa0a3e41b32f6c6e7eec9da55e22d818067e72635cb"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:82266891f195f429c3adbd4ffe1799ceb40aaa11d64e174774c892878a0a881e"
+imports = ["Proofs.Ai.NumberTheory.Divisibility"]
+definitions = []
+theorems = ["quotient_remainder_existence_packaged", "quotient_remainder_identity_packaged", "remainder_sign_hypothesis_packaged", "remainder_bound_hypothesis_packaged", "quotient_uniqueness_with_bounds_packaged", "remainder_uniqueness_with_bounds_packaged", "normalized_euclidean_division_packaged", "nat_int_euclidean_division_translation_packaged", "euclidean_division_algorithm_boundary_packaged"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Descent"
+source = "Proofs/Ai/NumberTheory/Descent/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Descent/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Descent/meta.json"
+replay = "Proofs/Ai/NumberTheory/Descent/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:91f70f6e7ec3bf284335745632baa900db1f3e0843017dfdfb343a0868379941"
+certificate_file_sha256 = "sha256:f275f32eeb8eba75922032e6b5260ce278b9a83fa793d34f579aafcba218a325"
+export_hash = "sha256:ca2319aefff23f3d63e06a49a86dc68c3b393d575e0658cd3d30f1e0b033d199"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:7f91e6c2311b41c44ee10596d85a5598b3396bb2a726532dec3f46962bdf1efc"
+imports = ["Proofs.Ai.NumberTheory.EuclideanDivision"]
+definitions = []
+theorems = ["finite_descent_step_packaged", "well_founded_minimization_packaged", "no_infinite_descent_contradiction_packaged", "gcd_descent_measure_surface_packaged", "continued_fraction_descent_surface_packaged", "diophantine_descent_surface_packaged", "descent_algorithm_boundary_packaged"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"
