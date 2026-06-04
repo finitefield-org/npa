@@ -1049,6 +1049,24 @@ theorems = ["minimal_polynomial_divides_annihilating_polynomial", "minimal_polyn
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"
+source = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:76ceb1823f178c6ff8034f44d75cca7e5c155ec855c694ee71ac77c18be154ed"
+certificate_file_sha256 = "sha256:bf74b629f2124617aae5cc8658e6b478bee7bb52cbd26286158d98a6e8a6a901"
+export_hash = "sha256:8847cc06e42c655bc2b3847b7bf6142d12d3f8ced9dd235cc36a74faca46b4f3"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:07ee4a63997d8ab431dbe68cf2186b4bb09b8583819fb4396e5b1a0a7da72f10"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension"]
+definitions = ["ExtensionDegreeEvidence", "FiniteDimensionalVectorSpaceBridge", "FiniteExtensionAlgebraicElement", "FiniteExtensionLawArgs", "FiniteExtensionTowerDegreeArgs", "FiniteExtensionEmbeddingDegreeArgs"]
+theorems = ["finite_extension_is_algebraic", "extension_degree_tower", "finite_dimensional_vector_space_bridge", "finite_extension_embedding_preserves_degree"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"
 source = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/source.npa"
 certificate = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/certificate.npcert"

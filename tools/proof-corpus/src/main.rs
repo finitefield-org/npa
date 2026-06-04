@@ -162,6 +162,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_FIELD_IDEAL_MODULE,
     &ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE,
     &ABSTRACT_ALGEBRAIC_EXTENSION_MODULE,
+    &ABSTRACT_FINITE_FIELD_EXTENSION_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -1611,6 +1612,42 @@ const ABSTRACT_ALGEBRAIC_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_ALGEBRAIC_EXTENSION_DEFINITIONS,
     theorems: ABSTRACT_ALGEBRAIC_EXTENSION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_FINITE_FIELD_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    source_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FINITE_FIELD_EXTENSION_DEFINITIONS,
+    theorems: ABSTRACT_FINITE_FIELD_EXTENSION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -25699,6 +25736,207 @@ const ABSTRACT_ALGEBRAIC_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FINITE_FIELD_EXTENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "ExtensionDegreeEvidence",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("forall (DegreeEvidence : Prop), Prop"),
+        value: abstract_field_hom_abs!("fun DegreeEvidence => DegreeEvidence"),
+    },
+    DefinitionArtifact {
+        name: "FiniteDimensionalVectorSpaceBridge",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("forall (VectorSpaceBridge : Prop), Prop"),
+        value: abstract_field_hom_abs!("fun VectorSpaceBridge => VectorSpaceBridge"),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionAlgebraicElement",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (alpha : S), Prop"
+        )),
+        value: abstract_field_hom_abs!("fun IsAlgebraic => fun alpha => IsAlgebraic alpha"),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase), ",
+            "forall (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence), ",
+            "forall (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge), ",
+            "forall (algebraic_law : forall (alpha : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionTowerDegreeArgs",
+        universe_params: &["u", "v", "w"],
+        ty: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteST : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeST : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (TowerDegreeLaw : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_st : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), Prop"
+        )),
+        value: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteST => fun FiniteRT => fun DegreeRS => fun DegreeST => fun DegreeRT => ",
+            "fun TowerDegreeLaw => fun extension_rs => fun extension_st => fun extension_rt => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (field_tower_law : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (finite_rs_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS), ",
+            "forall (finite_st_law : @FiniteFieldExtensionEvidence.{w,v} S T g FiniteST), ",
+            "forall (finite_rt_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT), ",
+            "forall (degree_rs_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS), ",
+            "forall (degree_st_law : @ExtensionDegreeEvidence.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g DegreeST), ",
+            "forall (degree_rt_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT), ",
+            "forall (degree_tower_law : TowerDegreeLaw), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionEmbeddingDegreeArgs",
+        universe_params: &["u", "v", "w"],
+        ty: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (DegreePreserved : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), Prop"
+        )),
+        value: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteRT => fun DegreeRS => fun DegreeRT => fun DegreePreserved => ",
+            "fun extension_rs => fun extension_rt => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (embedding_law : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (source_finite_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS), ",
+            "forall (target_finite_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT), ",
+            "forall (source_degree_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS), ",
+            "forall (target_degree_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT), ",
+            "forall (degree_preserved_law : DegreePreserved), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_FINITE_FIELD_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_extension_is_algebraic",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_args : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "forall (alpha : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => fun finite_args => fun alpha => ",
+            "finite_args (@FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha) ",
+            "(fun (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase) => ",
+            "fun (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence) => ",
+            "fun (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) => ",
+            "fun (algebraic_law : forall (alpha_arg : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha_arg) => algebraic_law alpha)"
+        )),
+    },
+    TheoremArtifact {
+        name: "extension_degree_tower",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteST : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeST : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (TowerDegreeLaw : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_st : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "forall (tower_args : @FiniteExtensionTowerDegreeArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g FiniteRS FiniteST FiniteRT DegreeRS DegreeST DegreeRT TowerDegreeLaw extension_rs extension_st extension_rt), ",
+            "TowerDegreeLaw"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteST => fun FiniteRT => fun DegreeRS => fun DegreeST => fun DegreeRT => ",
+            "fun TowerDegreeLaw => fun extension_rs => fun extension_st => fun extension_rt => fun tower_args => ",
+            "tower_args TowerDegreeLaw ",
+            "(fun (field_tower_law : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g) => ",
+            "fun (finite_rs_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS) => ",
+            "fun (finite_st_law : @FiniteFieldExtensionEvidence.{w,v} S T g FiniteST) => ",
+            "fun (finite_rt_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT) => ",
+            "fun (degree_rs_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS) => ",
+            "fun (degree_st_law : @ExtensionDegreeEvidence.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g DegreeST) => ",
+            "fun (degree_rt_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT) => ",
+            "fun (degree_tower_law : TowerDegreeLaw) => degree_tower_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_dimensional_vector_space_bridge",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_args : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "@FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => fun finite_args => ",
+            "finite_args (@FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) ",
+            "(fun (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase) => ",
+            "fun (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence) => ",
+            "fun (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) => ",
+            "fun (algebraic_law : forall (alpha_arg : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha_arg) => vector_space_bridge)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_extension_embedding_preserves_degree",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (DegreePreserved : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "forall (embedding_args : @FiniteExtensionEmbeddingDegreeArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g FiniteRS FiniteRT DegreeRS DegreeRT DegreePreserved extension_rs extension_rt), ",
+            "DegreePreserved"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteRT => fun DegreeRS => fun DegreeRT => fun DegreePreserved => ",
+            "fun extension_rs => fun extension_rt => fun embedding_args => ",
+            "embedding_args DegreePreserved ",
+            "(fun (embedding_law : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g) => ",
+            "fun (source_finite_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS) => ",
+            "fun (target_finite_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT) => ",
+            "fun (source_degree_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS) => ",
+            "fun (target_degree_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT) => ",
+            "fun (degree_preserved_law : DegreePreserved) => degree_preserved_law)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -33068,6 +33306,60 @@ fn run_full() -> Result<(), String> {
         &abstract_algebraic_extension_imports,
         &abstract_algebraic_extension_source_interfaces,
     )?;
+    let abstract_finite_field_extension_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+    ];
+    let abstract_finite_field_extension_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+    ];
+    let abstract_finite_field_extension = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FINITE_FIELD_EXTENSION_MODULE,
+        &abstract_finite_field_extension_imports,
+        &abstract_finite_field_extension_source_interfaces,
+    )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
     let quasi_coherent_sheaves_imports = vec![derived_affine_schemes.verified_module.clone()];
@@ -33620,6 +33912,7 @@ fn run_full() -> Result<(), String> {
         abstract_field_ideal,
         abstract_polynomial_field_quotient,
         abstract_algebraic_extension,
+        abstract_finite_field_extension,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -35871,6 +36164,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
         || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
+        || module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -36211,6 +36505,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
         || config.module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
+        || config.module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {

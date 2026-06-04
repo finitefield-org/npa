@@ -676,7 +676,7 @@ Implication:
 
 ### FT-12 Add Finite Extension Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-10, FT-11
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractFieldExtension`
@@ -711,6 +711,17 @@ Implication:
 - Notes:
   - This layer should not be promoted until the dependency cost of vector-space bridge imports is
     measured.
+  - Completed with `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`, adding
+    `FiniteExtensionLawArgs`, `FiniteExtensionTowerDegreeArgs`, and
+    `FiniteExtensionEmbeddingDegreeArgs`.
+  - Degree is represented by Prop-level `ExtensionDegreeEvidence` in this corpus layer rather than
+    concrete Nat data.
+  - Finite-dimensional vector-space structure is kept behind
+    `FiniteDimensionalVectorSpaceBridge` to avoid importing a large vector-space basis API before
+    downstream finite-field and Galois-theory statements stabilize.
+  - The finite-implies-algebraic, tower-degree, vector-space bridge, and embedding-degree theorem
+    targets are projection theorems over explicit evidence packages; no algebraic-closure or
+    basis-existence axiom is introduced.
 
 ### FT-13 Add Finite Field And Frobenius Layer
 

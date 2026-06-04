@@ -1704,6 +1704,37 @@ minimal-polynomial uniqueness, and finite-extension output remain explicit input
 evidence, so later finite-extension and splitting-field milestones can refine the statements
 without changing the trusted boundary.
 
+#### `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+
+This module packages finite field extensions on top of `FieldExtensionLawArgs` and the
+algebraic-extension staging layer. Extension degree is intentionally represented by Prop-level
+evidence in this corpus layer, not by concrete Nat computation, so the module avoids importing a
+large vector-space basis API before those statements stabilize.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `ExtensionDegreeEvidence` | named wrapper for explicit degree evidence |
+| `FiniteDimensionalVectorSpaceBridge` | named wrapper for the finite-dimensional vector-space bridge evidence |
+| `FiniteExtensionAlgebraicElement` | named wrapper for the predicate that an extension element is algebraic over the base |
+| `FiniteExtensionLawArgs` | packages field-extension evidence, finite-over-base evidence, degree evidence, vector-space bridge evidence, and the finite-implies-algebraic law |
+| `FiniteExtensionTowerDegreeArgs` | packages finite tower evidence and the supplied degree multiplication law |
+| `FiniteExtensionEmbeddingDegreeArgs` | packages finite extension embedding evidence and the supplied degree-preservation law |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `finite_extension_is_algebraic` | projects the per-element algebraicity law from a finite-extension package |
+| `extension_degree_tower` | projects the supplied degree law for a finite tower |
+| `finite_dimensional_vector_space_bridge` | projects the finite-dimensional vector-space bridge evidence |
+| `finite_extension_embedding_preserves_degree` | projects the supplied degree-preservation law for an embedding of finite extensions |
+
+The module keeps basis objects, concrete degree arithmetic, and finite-dimensional vector-space
+construction evidence outside the trusted core. Later finite-field and Galois-theory modules can
+replace the Prop-level evidence with more structured APIs once the import closure is measured.
+
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
 Implemented definitions / API declarations, not proof targets:

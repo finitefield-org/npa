@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ExtensionDegreeEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun DegreeEvidence => DegreeEvidence"
+    },
+    {
+      "declaration": "FiniteDimensionalVectorSpaceBridge",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun VectorSpaceBridge => VectorSpaceBridge"
+    },
+    {
+      "declaration": "FiniteExtensionAlgebraicElement",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun IsAlgebraic => fun alpha => IsAlgebraic alpha"
+    },
+    {
+      "declaration": "FiniteExtensionLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => forall (Q : Prop), forall (mk : forall (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), forall (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase), forall (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence), forall (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge), forall (algebraic_law : forall (alpha : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha), Q), Q"
+    },
+    {
+      "declaration": "FiniteExtensionTowerDegreeArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => fun FiniteRS => fun FiniteST => fun FiniteRT => fun DegreeRS => fun DegreeST => fun DegreeRT => fun TowerDegreeLaw => fun extension_rs => fun extension_st => fun extension_rt => forall (Q : Prop), forall (mk : forall (field_tower_law : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g), forall (finite_rs_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS), forall (finite_st_law : @FiniteFieldExtensionEvidence.{w,v} S T g FiniteST), forall (finite_rt_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT), forall (degree_rs_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS), forall (degree_st_law : @ExtensionDegreeEvidence.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g DegreeST), forall (degree_rt_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT), forall (degree_tower_law : TowerDegreeLaw), Q), Q"
+    },
+    {
+      "declaration": "FiniteExtensionEmbeddingDegreeArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => fun FiniteRS => fun FiniteRT => fun DegreeRS => fun DegreeRT => fun DegreePreserved => fun extension_rs => fun extension_rt => forall (Q : Prop), forall (mk : forall (embedding_law : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), forall (source_finite_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS), forall (target_finite_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT), forall (source_degree_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS), forall (target_degree_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT), forall (degree_preserved_law : DegreePreserved), Q), Q"
+    },
+    {
+      "declaration": "finite_extension_is_algebraic",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => fun finite_args => fun alpha => finite_args (@FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha) (fun (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => fun (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase) => fun (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence) => fun (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) => fun (algebraic_law : forall (alpha_arg : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha_arg) => algebraic_law alpha)"
+    },
+    {
+      "declaration": "extension_degree_tower",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => fun FiniteRS => fun FiniteST => fun FiniteRT => fun DegreeRS => fun DegreeST => fun DegreeRT => fun TowerDegreeLaw => fun extension_rs => fun extension_st => fun extension_rt => fun tower_args => tower_args TowerDegreeLaw (fun (field_tower_law : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g) => fun (finite_rs_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS) => fun (finite_st_law : @FiniteFieldExtensionEvidence.{w,v} S T g FiniteST) => fun (finite_rt_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT) => fun (degree_rs_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS) => fun (degree_st_law : @ExtensionDegreeEvidence.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g DegreeST) => fun (degree_rt_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT) => fun (degree_tower_law : TowerDegreeLaw) => degree_tower_law)"
+    },
+    {
+      "declaration": "finite_dimensional_vector_space_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => fun finite_args => finite_args (@FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) (fun (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => fun (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase) => fun (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence) => fun (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) => fun (algebraic_law : forall (alpha_arg : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha_arg) => vector_space_bridge)"
+    },
+    {
+      "declaration": "finite_extension_embedding_preserves_degree",
+      "source_kind": "explicit_term",
+      "term": "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => fun FiniteRS => fun FiniteRT => fun DegreeRS => fun DegreeRT => fun DegreePreserved => fun extension_rs => fun extension_rt => fun embedding_args => embedding_args DegreePreserved (fun (embedding_law : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g) => fun (source_finite_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS) => fun (target_finite_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT) => fun (source_degree_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS) => fun (target_degree_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT) => fun (degree_preserved_law : DegreePreserved) => degree_preserved_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/certificate.npcert"
+  }
+}
