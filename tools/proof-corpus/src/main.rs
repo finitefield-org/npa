@@ -150,6 +150,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_RING_FIRST_ISO_BASE_MODULE,
     &ABSTRACT_FIELD_HOM_MODULE,
     &ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE,
+    &ABSTRACT_FIELD_EXTENSION_MODULE,
     &ABSTRACT_RING_FIRST_ISO_MODULE,
     &ABSTRACT_RING_CHINESE_REMAINDER_MODULE,
     &ABSTRACT_UFD_PRIME_FACTORIZATION_MODULE,
@@ -159,6 +160,12 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_KRULL_THEOREM_MODULE,
     &ABSTRACT_FIELD_IDEAL_MODULE,
     &ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE,
+    &ABSTRACT_ALGEBRAIC_EXTENSION_MODULE,
+    &ABSTRACT_FINITE_FIELD_EXTENSION_MODULE,
+    &ABSTRACT_FINITE_FIELD_MODULE,
+    &ABSTRACT_SPLITTING_FIELD_MODULE,
+    &ABSTRACT_ALGEBRAIC_CLOSURE_MODULE,
+    &ABSTRACT_GALOIS_STARTER_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -1346,6 +1353,32 @@ const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_FIELD_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFieldExtension",
+    source_path: "Proofs/Ai/Algebra/AbstractFieldExtension/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFieldExtension/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFieldExtension/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFieldExtension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FIELD_EXTENSION_DEFINITIONS,
+    theorems: ABSTRACT_FIELD_EXTENSION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_RING_FIRST_ISO_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Algebra.AbstractRingFirstIso",
     source_path: "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa",
@@ -1535,6 +1568,235 @@ const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE: ModuleArtifact = ModuleArtifact
     definitions: ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_DEFINITIONS,
     theorems: ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_THEOREMS,
     expected_axioms: &[],
+};
+
+const ABSTRACT_ALGEBRAIC_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+    source_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractAlgebraicExtension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_ALGEBRAIC_EXTENSION_DEFINITIONS,
+    theorems: ABSTRACT_ALGEBRAIC_EXTENSION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_FINITE_FIELD_EXTENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    source_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FINITE_FIELD_EXTENSION_DEFINITIONS,
+    theorems: ABSTRACT_FINITE_FIELD_EXTENSION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_FINITE_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractFiniteField",
+    source_path: "Proofs/Ai/Algebra/AbstractFiniteField/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractFiniteField/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractFiniteField/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractFiniteField/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_FINITE_FIELD_DEFINITIONS,
+    theorems: ABSTRACT_FINITE_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_SPLITTING_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractSplittingField",
+    source_path: "Proofs/Ai/Algebra/AbstractSplittingField/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractSplittingField/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractSplittingField/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractSplittingField/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_SPLITTING_FIELD_DEFINITIONS,
+    theorems: ABSTRACT_SPLITTING_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_ALGEBRAIC_CLOSURE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractAlgebraicClosure",
+    source_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_ALGEBRAIC_CLOSURE_DEFINITIONS,
+    theorems: ABSTRACT_ALGEBRAIC_CLOSURE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_GALOIS_STARTER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractGaloisStarter",
+    source_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractGaloisStarter/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroup",
+        "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondence",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal",
+        "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+        "Proofs.Ai.Algebra.AbstractSplittingField",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_GALOIS_STARTER_DEFINITIONS,
+    theorems: ABSTRACT_GALOIS_STARTER_THEOREMS,
+    expected_axioms: &["Eq.rec"],
 };
 
 const DERIVED_AFFINE_SCHEMES_MODULE: ModuleArtifact = ModuleArtifact {
@@ -1943,6 +2205,19 @@ macro_rules! abstract_ring_abs {
 }
 
 macro_rules! abstract_field_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (inv : forall (a : Scalar), Scalar), ",
+            $($tail)+
+        )
+    };
     ($tail:literal) => {
         concat!(
             "forall (Scalar : Sort u), ",
@@ -2208,6 +2483,52 @@ macro_rules! abstract_field_hom_abs {
             "fun R => fun zeroR => fun oneR => fun addR => fun negR => fun subR => fun mulR => fun invR => fun S => fun zeroS => fun oneS => fun addS => fun negS => fun subS => fun mulS => fun invS => fun f => ",
             $tail
         )
+    };
+}
+
+macro_rules! field_extension_tower_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_params!(concat!(
+            "forall (T : Sort w), ",
+            "forall (zeroT : T), ",
+            "forall (oneT : T), ",
+            "forall (addT : forall (a : T), forall (b : T), T), ",
+            "forall (negT : forall (a : T), T), ",
+            "forall (subT : forall (a : T), forall (b : T), T), ",
+            "forall (mulT : forall (a : T), forall (b : T), T), ",
+            "forall (invT : forall (a : T), T), ",
+            "forall (g : forall (b : S), T), ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_field_hom_params!(concat!(
+            "forall (T : Sort w), ",
+            "forall (zeroT : T), ",
+            "forall (oneT : T), ",
+            "forall (addT : forall (a : T), forall (b : T), T), ",
+            "forall (negT : forall (a : T), T), ",
+            "forall (subT : forall (a : T), forall (b : T), T), ",
+            "forall (mulT : forall (a : T), forall (b : T), T), ",
+            "forall (invT : forall (a : T), T), ",
+            "forall (g : forall (b : S), T), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! field_extension_tower_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_abs!(concat!(
+            "fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => ",
+            $($tail)+
+        ))
+    };
+    ($tail:literal) => {
+        abstract_field_hom_abs!(concat!(
+            "fun T => fun zeroT => fun oneT => fun addT => fun negT => fun subT => fun mulT => fun invT => fun g => ",
+            $tail
+        ))
     };
 }
 
@@ -24193,6 +24514,123 @@ const ABSTRACT_FIELD_HOM_KERNEL_IMAGE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_FIELD_EXTENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldExtensionLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("Prop"),
+        value: abstract_field_hom_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (base_field_law : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_law : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (base_embedding_law : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldExtensionRestrictScalarsArgs",
+        universe_params: &["u", "v", "w"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (Space : Sort w), ",
+            "forall (scaleS : forall (a : S), forall (x : Space), Space), ",
+            "forall (scaleR : forall (a : R), forall (x : Space), Space), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun extension_args => fun Space => fun scaleS => fun scaleR => ",
+            "forall (P : Prop), forall (mk : ",
+            "forall (restrict_scalars_law : forall (a : R), forall (x : Space), @Eq.{w} Space (scaleR a x) (scaleS (f a) x)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldExtensionTowerArgs",
+        universe_params: &["u", "v", "w"],
+        ty: field_extension_tower_params!("Prop"),
+        value: field_extension_tower_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_st : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_FIELD_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_extension_base_embedding",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun extension_args => ",
+            "extension_args (@FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) ",
+            "(fun (base_field_arg : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR) => ",
+            "fun (extension_field_arg : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS) => ",
+            "fun (base_embedding_arg : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => base_embedding_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_extension_as_field",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS"
+        ),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun extension_args => ",
+            "extension_args (@FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS) ",
+            "(fun (base_field_arg : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR) => ",
+            "fun (extension_field_arg : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS) => ",
+            "fun (base_embedding_arg : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => extension_field_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_extension_restrict_scalars",
+        universe_params: &["u", "v", "w"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (Space : Sort w), ",
+            "forall (scaleS : forall (a : S), forall (x : Space), Space), ",
+            "forall (scaleR : forall (a : R), forall (x : Space), Space), ",
+            "forall (restrict_args : @FieldExtensionRestrictScalarsArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f extension_args Space scaleS scaleR), ",
+            "forall (a : R), forall (x : Space), @Eq.{w} Space (scaleR a x) (scaleS (f a) x)"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun extension_args => fun Space => fun scaleS => fun scaleR => fun restrict_args => fun a => fun x => ",
+            "restrict_args (@Eq.{w} Space (scaleR a x) (scaleS (f a) x)) ",
+            "(fun (restrict_scalars_arg : forall (r : R), forall (y : Space), @Eq.{w} Space (scaleR r y) (scaleS (f r) y)) => restrict_scalars_arg a x)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_extension_tower",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (tower_args : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g), ",
+            "@FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun tower_args => ",
+            "tower_args (@FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))) ",
+            "(fun (extension_rs_arg : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (extension_st_arg : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g) => ",
+            "fun (extension_rt_arg : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))) => extension_rt_arg)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_embedding_compose",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (embedding_f : @FieldEmbeddingLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (embedding_g : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (composite_embedding : @FieldEmbeddingLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "@FieldEmbeddingLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun embedding_f => fun embedding_g => fun composite_embedding => ",
+            "@field_embedding_comp.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g embedding_f embedding_g composite_embedding"
+        )),
+    },
+];
+
 const ABSTRACT_RING_FIRST_ISO_BASE_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "RingHomLawArgs",
@@ -25026,6 +25464,1310 @@ const ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_THEOREMS: &[TheoremArtifact] = &[
             "fun (eval_kernel_contains_minimal : I minimal_poly) => ",
             "fun (eval_kernel_exact : forall (f : Poly), forall (R : Prop), forall (mk_kernel : forall (to_kernel : forall (hI : I f), @Eq.{e} Ext (eval_at f) zeroE), forall (from_kernel : forall (hzero : @Eq.{e} Ext (eval_at f) zeroE), I f), R), R) => ",
             "fun (quotient_iso_extension : @FieldIsoLawArgs.{succ q,e} Quot zeroQ oneQ addQ negQ subQ mulQ invQ Ext zeroE oneE addE negE subE mulE invE quotient_to_ext ext_to_quot) => quotient_iso_extension)"
+        )),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_EXTENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "PolynomialDivides",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (mulP : forall (a : Poly), forall (b : Poly), Poly), ",
+            "forall (divisor : Poly), forall (target : Poly), Prop"
+        ),
+        value: concat!(
+            "fun Poly => fun mulP => fun divisor => fun target => ",
+            "forall (Q : Prop), forall (mk : forall (coeff : Poly), ",
+            "forall (hfactor : @Eq.{succ p} Poly target (mulP divisor coeff)), Q), Q"
+        ),
+    },
+    DefinitionArtifact {
+        name: "MonicPolynomial",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (poly : Poly), Prop"
+        ),
+        value: "fun Poly => fun IsMonic => fun poly => IsMonic poly",
+    },
+    DefinitionArtifact {
+        name: "DegreeOnePolynomial",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (Poly : Sort succ p), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (poly : Poly), Prop"
+        ),
+        value: "fun Poly => fun IsDegreeOne => fun poly => IsDegreeOne poly",
+    },
+    DefinitionArtifact {
+        name: "BaseElementWitness",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), Prop"
+        ),
+        value: concat!(
+            "fun K => fun Ext => fun base_embed => fun alpha => ",
+            "forall (Q : Prop), forall (mk : forall (a : K), ",
+            "forall (hbase : @Eq.{e} Ext (base_embed a) alpha), Q), Q"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteFieldExtensionEvidence",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (FiniteOverBase : Prop), Prop"
+        ),
+        value: "fun K => fun Ext => fun base_embed => fun FiniteOverBase => FiniteOverBase",
+    },
+    DefinitionArtifact {
+        name: "AlgebraicElement",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (annihilating_poly : Poly), ",
+            "forall (annihilating_nonzero : HbtNot (@Eq.{succ p} Poly annihilating_poly zeroP)), ",
+            "forall (annihilating_eval_zero : @Eq.{e} Ext (eval_at annihilating_poly) zeroE), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "MinimalPolynomial",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly), ",
+            "forall (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE), ",
+            "forall (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly), ",
+            "forall (divides_annihilating_law : forall (poly : Poly), forall (hzero : @Eq.{e} Ext (eval_at poly) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly), ",
+            "forall (degree_one_base_law : forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha), ",
+            "forall (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FieldAdjoinAlgebraicElementArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (FiniteOverBase : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (I : forall (x : Poly), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (quotient_args : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), ",
+            "forall (simple_args : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun FiniteOverBase => fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => fun extension_args => fun algebraic_args => fun minimal_args => fun quotient_args => fun simple_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (minimal_quotient_law : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), ",
+            "forall (polynomial_quotient_law : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), ",
+            "forall (finite_extension_law : @FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "minimal_polynomial_divides_annihilating_polynomial",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (poly : Poly), ",
+            "forall (hzero : @Eq.{e} Ext (eval_at poly) zeroE), ",
+            "@PolynomialDivides.{p} Poly mulP minimal_poly poly"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => fun minimal_args => fun poly => fun hzero => ",
+            "minimal_args (@PolynomialDivides.{p} Poly mulP minimal_poly poly) ",
+            "(fun (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly) => ",
+            "fun (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE) => ",
+            "fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (divides_annihilating_law : forall (poly_arg : Poly), forall (hzero_arg : @Eq.{e} Ext (eval_at poly_arg) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly_arg) => ",
+            "fun (degree_one_base_law : forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha) => ",
+            "fun (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly) => divides_annihilating_law poly hzero)"
+        )),
+    },
+    TheoremArtifact {
+        name: "minimal_polynomial_irreducible",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "@IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => fun minimal_args => ",
+            "minimal_args (@IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) ",
+            "(fun (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly) => ",
+            "fun (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE) => ",
+            "fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (divides_annihilating_law : forall (poly_arg : Poly), forall (hzero_arg : @Eq.{e} Ext (eval_at poly_arg) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly_arg) => ",
+            "fun (degree_one_base_law : forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha) => ",
+            "fun (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly) => minimal_irreducible)"
+        )),
+    },
+    TheoremArtifact {
+        name: "degree_one_algebraic_element_in_base",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (degree_one : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), ",
+            "@BaseElementWitness.{e,u} K Ext base_embed alpha"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun minimal_poly => fun extension_args => fun algebraic_args => fun minimal_args => fun degree_one => ",
+            "minimal_args (@BaseElementWitness.{e,u} K Ext base_embed alpha) ",
+            "(fun (minimal_monic : @MonicPolynomial.{p} Poly IsMonic minimal_poly) => ",
+            "fun (minimal_annihilates : @Eq.{e} Ext (eval_at minimal_poly) zeroE) => ",
+            "fun (minimal_irreducible : @IrreduciblePolynomial.{p} Poly zeroP oneP mulP minimal_poly) => ",
+            "fun (divides_annihilating_law : forall (poly_arg : Poly), forall (hzero_arg : @Eq.{e} Ext (eval_at poly_arg) zeroE), @PolynomialDivides.{p} Poly mulP minimal_poly poly_arg) => ",
+            "fun (degree_one_base_law : forall (degree_one_arg : @DegreeOnePolynomial.{p} Poly IsDegreeOne minimal_poly), @BaseElementWitness.{e,u} K Ext base_embed alpha) => ",
+            "fun (uniqueness_law : forall (candidate : Poly), forall (candidate_monic : @MonicPolynomial.{p} Poly IsMonic candidate), forall (candidate_annihilates : @Eq.{e} Ext (eval_at candidate) zeroE), forall (candidate_divides_minimal : @PolynomialDivides.{p} Poly mulP candidate minimal_poly), @Eq.{succ p} Poly candidate minimal_poly) => degree_one_base_law degree_one)"
+        )),
+    },
+    TheoremArtifact {
+        name: "field_adjoin_algebraic_element_is_finite_extension",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (alpha : Ext), ",
+            "forall (IsMonic : forall (f : Poly), Prop), ",
+            "forall (IsDegreeOne : forall (f : Poly), Prop), ",
+            "forall (FiniteOverBase : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (quotient_field_laws : @FieldLawArgs.{succ q} Quot zeroQ oneQ addQ negQ subQ mulQ invQ), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (minimal_poly : Poly), ",
+            "forall (I : forall (x : Poly), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (algebraic_args : @AlgebraicElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha extension_args), ",
+            "forall (minimal_args : @MinimalPolynomial.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne minimal_poly extension_args algebraic_args), ",
+            "forall (quotient_args : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws), ",
+            "forall (simple_args : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I), ",
+            "forall (adjoin_args : @FieldAdjoinAlgebraicElementArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed alpha IsMonic IsDegreeOne FiniteOverBase field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I extension_args algebraic_args minimal_args quotient_args simple_args), ",
+            "@FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun alpha => fun IsMonic => fun IsDegreeOne => fun FiniteOverBase => fun field_args => fun extension_laws => fun quotient_field_laws => fun extension_field_laws => fun minimal_poly => fun I => fun extension_args => fun algebraic_args => fun minimal_args => fun quotient_args => fun simple_args => fun adjoin_args => ",
+            "adjoin_args (@FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase) ",
+            "(fun (minimal_quotient_law : @SimpleAlgebraicExtensionQuotientArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot field_args extension_laws quotient_field_laws extension_field_laws minimal_poly I) => ",
+            "fun (polynomial_quotient_law : @PolynomialFieldQuotientArgs.{p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map field_args extension_laws) => ",
+            "fun (finite_extension_law : @FiniteFieldExtensionEvidence.{e,u} K Ext base_embed FiniteOverBase) => finite_extension_law)"
+        )),
+    },
+];
+
+const ABSTRACT_FINITE_FIELD_EXTENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "ExtensionDegreeEvidence",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("forall (DegreeEvidence : Prop), Prop"),
+        value: abstract_field_hom_abs!("fun DegreeEvidence => DegreeEvidence"),
+    },
+    DefinitionArtifact {
+        name: "FiniteDimensionalVectorSpaceBridge",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!("forall (VectorSpaceBridge : Prop), Prop"),
+        value: abstract_field_hom_abs!("fun VectorSpaceBridge => VectorSpaceBridge"),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionAlgebraicElement",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (alpha : S), Prop"
+        )),
+        value: abstract_field_hom_abs!("fun IsAlgebraic => fun alpha => IsAlgebraic alpha"),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase), ",
+            "forall (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence), ",
+            "forall (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge), ",
+            "forall (algebraic_law : forall (alpha : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionTowerDegreeArgs",
+        universe_params: &["u", "v", "w"],
+        ty: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteST : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeST : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (TowerDegreeLaw : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_st : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), Prop"
+        )),
+        value: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteST => fun FiniteRT => fun DegreeRS => fun DegreeST => fun DegreeRT => ",
+            "fun TowerDegreeLaw => fun extension_rs => fun extension_st => fun extension_rt => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (field_tower_law : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (finite_rs_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS), ",
+            "forall (finite_st_law : @FiniteFieldExtensionEvidence.{w,v} S T g FiniteST), ",
+            "forall (finite_rt_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT), ",
+            "forall (degree_rs_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS), ",
+            "forall (degree_st_law : @ExtensionDegreeEvidence.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g DegreeST), ",
+            "forall (degree_rt_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT), ",
+            "forall (degree_tower_law : TowerDegreeLaw), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FiniteExtensionEmbeddingDegreeArgs",
+        universe_params: &["u", "v", "w"],
+        ty: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (DegreePreserved : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), Prop"
+        )),
+        value: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteRT => fun DegreeRS => fun DegreeRT => fun DegreePreserved => ",
+            "fun extension_rs => fun extension_rt => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (embedding_law : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (source_finite_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS), ",
+            "forall (target_finite_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT), ",
+            "forall (source_degree_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS), ",
+            "forall (target_degree_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT), ",
+            "forall (degree_preserved_law : DegreePreserved), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_FINITE_FIELD_EXTENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_extension_is_algebraic",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_args : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "forall (alpha : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => fun finite_args => fun alpha => ",
+            "finite_args (@FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha) ",
+            "(fun (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase) => ",
+            "fun (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence) => ",
+            "fun (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) => ",
+            "fun (algebraic_law : forall (alpha_arg : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha_arg) => algebraic_law alpha)"
+        )),
+    },
+    TheoremArtifact {
+        name: "extension_degree_tower",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteST : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeST : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (TowerDegreeLaw : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_st : @FieldExtensionLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "forall (tower_args : @FiniteExtensionTowerDegreeArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g FiniteRS FiniteST FiniteRT DegreeRS DegreeST DegreeRT TowerDegreeLaw extension_rs extension_st extension_rt), ",
+            "TowerDegreeLaw"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteST => fun FiniteRT => fun DegreeRS => fun DegreeST => fun DegreeRT => ",
+            "fun TowerDegreeLaw => fun extension_rs => fun extension_st => fun extension_rt => fun tower_args => ",
+            "tower_args TowerDegreeLaw ",
+            "(fun (field_tower_law : @FieldExtensionTowerArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g) => ",
+            "fun (finite_rs_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS) => ",
+            "fun (finite_st_law : @FiniteFieldExtensionEvidence.{w,v} S T g FiniteST) => ",
+            "fun (finite_rt_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT) => ",
+            "fun (degree_rs_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS) => ",
+            "fun (degree_st_law : @ExtensionDegreeEvidence.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g DegreeST) => ",
+            "fun (degree_rt_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT) => ",
+            "fun (degree_tower_law : TowerDegreeLaw) => degree_tower_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_dimensional_vector_space_bridge",
+        universe_params: &["u", "v"],
+        statement: abstract_field_hom_params!(concat!(
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_args : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "@FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge"
+        )),
+        proof: abstract_field_hom_abs!(concat!(
+            "fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun extension_args => fun finite_args => ",
+            "finite_args (@FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) ",
+            "(fun (extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f) => ",
+            "fun (finite_evidence : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteOverBase) => ",
+            "fun (degree_evidence : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeEvidence) => ",
+            "fun (vector_space_bridge : @FiniteDimensionalVectorSpaceBridge.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f VectorSpaceBridge) => ",
+            "fun (algebraic_law : forall (alpha_arg : S), @FiniteExtensionAlgebraicElement.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f IsAlgebraic alpha_arg) => vector_space_bridge)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_extension_embedding_preserves_degree",
+        universe_params: &["u", "v", "w"],
+        statement: field_extension_tower_params!(concat!(
+            "forall (FiniteRS : Prop), ",
+            "forall (FiniteRT : Prop), ",
+            "forall (DegreeRS : Prop), ",
+            "forall (DegreeRT : Prop), ",
+            "forall (DegreePreserved : Prop), ",
+            "forall (extension_rs : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (extension_rt : @FieldExtensionLawArgs.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a))), ",
+            "forall (embedding_args : @FiniteExtensionEmbeddingDegreeArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f T zeroT oneT addT negT subT mulT invT g FiniteRS FiniteRT DegreeRS DegreeRT DegreePreserved extension_rs extension_rt), ",
+            "DegreePreserved"
+        )),
+        proof: field_extension_tower_abs!(concat!(
+            "fun FiniteRS => fun FiniteRT => fun DegreeRS => fun DegreeRT => fun DegreePreserved => ",
+            "fun extension_rs => fun extension_rt => fun embedding_args => ",
+            "embedding_args DegreePreserved ",
+            "(fun (embedding_law : @FieldEmbeddingLawArgs.{v,w} S zeroS oneS addS negS subS mulS invS T zeroT oneT addT negT subT mulT invT g) => ",
+            "fun (source_finite_law : @FiniteFieldExtensionEvidence.{v,u} R S f FiniteRS) => ",
+            "fun (target_finite_law : @FiniteFieldExtensionEvidence.{w,u} R T (fun (a : R) => g (f a)) FiniteRT) => ",
+            "fun (source_degree_law : @ExtensionDegreeEvidence.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f DegreeRS) => ",
+            "fun (target_degree_law : @ExtensionDegreeEvidence.{u,w} R zeroR oneR addR negR subR mulR invR T zeroT oneT addT negT subT mulT invT (fun (a : R) => g (f a)) DegreeRT) => ",
+            "fun (degree_preserved_law : DegreePreserved) => degree_preserved_law)"
+        )),
+    },
+];
+
+const ABSTRACT_FINITE_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FiniteFieldCardinalityEvidence",
+        universe_params: &["u"],
+        ty: abstract_field_params!("forall (CardinalityEvidence : Prop), Prop"),
+        value: abstract_field_abs!("fun CardinalityEvidence => CardinalityEvidence"),
+    },
+    DefinitionArtifact {
+        name: "FieldCharacteristicPrimeOrZeroEvidence",
+        universe_params: &["u"],
+        ty: abstract_field_params!("forall (CharacteristicPrimeOrZero : Prop), Prop"),
+        value: abstract_field_abs!("fun CharacteristicPrimeOrZero => CharacteristicPrimeOrZero"),
+    },
+    DefinitionArtifact {
+        name: "FiniteFieldCharacteristicPrimeEvidence",
+        universe_params: &["u"],
+        ty: abstract_field_params!("forall (CharacteristicPrime : Prop), Prop"),
+        value: abstract_field_abs!("fun CharacteristicPrime => CharacteristicPrime"),
+    },
+    DefinitionArtifact {
+        name: "FiniteFieldRootOfCardPolynomial",
+        universe_params: &["u"],
+        ty: abstract_field_params!(concat!(
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (x : Scalar), Prop"
+        )),
+        value: abstract_field_abs!("fun RootOfCardPolynomial => fun x => RootOfCardPolynomial x"),
+    },
+    DefinitionArtifact {
+        name: "FiniteFieldLawArgs",
+        universe_params: &["u"],
+        ty: abstract_field_params!(concat!(
+            "forall (CardinalityEvidence : Prop), ",
+            "forall (CharacteristicPrimeOrZero : Prop), ",
+            "forall (CharacteristicPrime : Prop), ",
+            "forall (Frobenius : forall (a : Scalar), Scalar), ",
+            "forall (pow_card : forall (a : Scalar), Scalar), ",
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (FiniteOverPrimeField : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : Scalar), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (self_extension : @FieldExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a)), Prop"
+        )),
+        value: abstract_field_abs!(concat!(
+            "fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => ",
+            "fun Frobenius => fun pow_card => fun RootOfCardPolynomial => ",
+            "fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => ",
+            "fun field_args => fun self_extension => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence), ",
+            "forall (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension), ",
+            "forall (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero), ",
+            "forall (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime), ",
+            "forall (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius), ",
+            "forall (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x), ",
+            "forall (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_FINITE_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "field_characteristic_prime_or_zero",
+        universe_params: &["u"],
+        statement: abstract_field_params!(concat!(
+            "forall (CardinalityEvidence : Prop), ",
+            "forall (CharacteristicPrimeOrZero : Prop), ",
+            "forall (CharacteristicPrime : Prop), ",
+            "forall (Frobenius : forall (a : Scalar), Scalar), ",
+            "forall (pow_card : forall (a : Scalar), Scalar), ",
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (FiniteOverPrimeField : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : Scalar), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (self_extension : @FieldExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a)), ",
+            "forall (finite_field_args : @FiniteFieldLawArgs.{u} Scalar zero one add neg sub mul inv CardinalityEvidence CharacteristicPrimeOrZero CharacteristicPrime Frobenius pow_card RootOfCardPolynomial FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic field_args self_extension), ",
+            "@FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero"
+        )),
+        proof: abstract_field_abs!(concat!(
+            "fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => ",
+            "fun Frobenius => fun pow_card => fun RootOfCardPolynomial => ",
+            "fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => ",
+            "fun field_args => fun self_extension => fun finite_field_args => ",
+            "finite_field_args (@FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) ",
+            "(fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => ",
+            "fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => ",
+            "fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => ",
+            "fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => ",
+            "fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => ",
+            "fun (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x) => ",
+            "fun (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) => characteristic_prime_or_zero_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_field_characteristic_prime",
+        universe_params: &["u"],
+        statement: abstract_field_params!(concat!(
+            "forall (CardinalityEvidence : Prop), ",
+            "forall (CharacteristicPrimeOrZero : Prop), ",
+            "forall (CharacteristicPrime : Prop), ",
+            "forall (Frobenius : forall (a : Scalar), Scalar), ",
+            "forall (pow_card : forall (a : Scalar), Scalar), ",
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (FiniteOverPrimeField : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : Scalar), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (self_extension : @FieldExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a)), ",
+            "forall (finite_field_args : @FiniteFieldLawArgs.{u} Scalar zero one add neg sub mul inv CardinalityEvidence CharacteristicPrimeOrZero CharacteristicPrime Frobenius pow_card RootOfCardPolynomial FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic field_args self_extension), ",
+            "@FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime"
+        )),
+        proof: abstract_field_abs!(concat!(
+            "fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => ",
+            "fun Frobenius => fun pow_card => fun RootOfCardPolynomial => ",
+            "fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => ",
+            "fun field_args => fun self_extension => fun finite_field_args => ",
+            "finite_field_args (@FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) ",
+            "(fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => ",
+            "fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => ",
+            "fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => ",
+            "fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => ",
+            "fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => ",
+            "fun (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x) => ",
+            "fun (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) => finite_characteristic_prime_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "frobenius_is_field_hom",
+        universe_params: &["u"],
+        statement: abstract_field_params!(concat!(
+            "forall (CardinalityEvidence : Prop), ",
+            "forall (CharacteristicPrimeOrZero : Prop), ",
+            "forall (CharacteristicPrime : Prop), ",
+            "forall (Frobenius : forall (a : Scalar), Scalar), ",
+            "forall (pow_card : forall (a : Scalar), Scalar), ",
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (FiniteOverPrimeField : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : Scalar), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (self_extension : @FieldExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a)), ",
+            "forall (finite_field_args : @FiniteFieldLawArgs.{u} Scalar zero one add neg sub mul inv CardinalityEvidence CharacteristicPrimeOrZero CharacteristicPrime Frobenius pow_card RootOfCardPolynomial FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic field_args self_extension), ",
+            "@FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius"
+        )),
+        proof: abstract_field_abs!(concat!(
+            "fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => ",
+            "fun Frobenius => fun pow_card => fun RootOfCardPolynomial => ",
+            "fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => ",
+            "fun field_args => fun self_extension => fun finite_field_args => ",
+            "finite_field_args (@FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) ",
+            "(fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => ",
+            "fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => ",
+            "fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => ",
+            "fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => ",
+            "fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => ",
+            "fun (pow_card_eq_self_law : forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x) => ",
+            "fun (roots_card_poly_law : forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) => frobenius_hom_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_field_pow_card_eq_self",
+        universe_params: &["u"],
+        statement: abstract_field_params!(concat!(
+            "forall (CardinalityEvidence : Prop), ",
+            "forall (CharacteristicPrimeOrZero : Prop), ",
+            "forall (CharacteristicPrime : Prop), ",
+            "forall (Frobenius : forall (a : Scalar), Scalar), ",
+            "forall (pow_card : forall (a : Scalar), Scalar), ",
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (FiniteOverPrimeField : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : Scalar), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (self_extension : @FieldExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a)), ",
+            "forall (finite_field_args : @FiniteFieldLawArgs.{u} Scalar zero one add neg sub mul inv CardinalityEvidence CharacteristicPrimeOrZero CharacteristicPrime Frobenius pow_card RootOfCardPolynomial FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic field_args self_extension), ",
+            "forall (x : Scalar), @Eq.{u} Scalar (pow_card x) x"
+        )),
+        proof: abstract_field_abs!(concat!(
+            "fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => ",
+            "fun Frobenius => fun pow_card => fun RootOfCardPolynomial => ",
+            "fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => ",
+            "fun field_args => fun self_extension => fun finite_field_args => fun x => ",
+            "finite_field_args (@Eq.{u} Scalar (pow_card x) x) ",
+            "(fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => ",
+            "fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => ",
+            "fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => ",
+            "fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => ",
+            "fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => ",
+            "fun (pow_card_eq_self_law : forall (x_arg : Scalar), @Eq.{u} Scalar (pow_card x_arg) x_arg) => ",
+            "fun (roots_card_poly_law : forall (x_arg : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x_arg) => pow_card_eq_self_law x)"
+        )),
+    },
+    TheoremArtifact {
+        name: "finite_field_roots_x_pow_q_minus_x",
+        universe_params: &["u"],
+        statement: abstract_field_params!(concat!(
+            "forall (CardinalityEvidence : Prop), ",
+            "forall (CharacteristicPrimeOrZero : Prop), ",
+            "forall (CharacteristicPrime : Prop), ",
+            "forall (Frobenius : forall (a : Scalar), Scalar), ",
+            "forall (pow_card : forall (a : Scalar), Scalar), ",
+            "forall (RootOfCardPolynomial : forall (x : Scalar), Prop), ",
+            "forall (FiniteOverPrimeField : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : Scalar), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), ",
+            "forall (self_extension : @FieldExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a)), ",
+            "forall (finite_field_args : @FiniteFieldLawArgs.{u} Scalar zero one add neg sub mul inv CardinalityEvidence CharacteristicPrimeOrZero CharacteristicPrime Frobenius pow_card RootOfCardPolynomial FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic field_args self_extension), ",
+            "forall (x : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x"
+        )),
+        proof: abstract_field_abs!(concat!(
+            "fun CardinalityEvidence => fun CharacteristicPrimeOrZero => fun CharacteristicPrime => ",
+            "fun Frobenius => fun pow_card => fun RootOfCardPolynomial => ",
+            "fun FiniteOverPrimeField => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => ",
+            "fun field_args => fun self_extension => fun finite_field_args => fun x => ",
+            "finite_field_args (@FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x) ",
+            "(fun (field_law : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => ",
+            "fun (cardinality_law : @FiniteFieldCardinalityEvidence.{u} Scalar zero one add neg sub mul inv CardinalityEvidence) => ",
+            "fun (finite_extension_law : @FiniteExtensionLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv (fun (a : Scalar) => a) FiniteOverPrimeField DegreeEvidence VectorSpaceBridge IsAlgebraic self_extension) => ",
+            "fun (characteristic_prime_or_zero_law : @FieldCharacteristicPrimeOrZeroEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrimeOrZero) => ",
+            "fun (finite_characteristic_prime_law : @FiniteFieldCharacteristicPrimeEvidence.{u} Scalar zero one add neg sub mul inv CharacteristicPrime) => ",
+            "fun (frobenius_hom_law : @FieldHomLawArgs.{u,u} Scalar zero one add neg sub mul inv Scalar zero one add neg sub mul inv Frobenius) => ",
+            "fun (pow_card_eq_self_law : forall (x_arg : Scalar), @Eq.{u} Scalar (pow_card x_arg) x_arg) => ",
+            "fun (roots_card_poly_law : forall (x_arg : Scalar), @FiniteFieldRootOfCardPolynomial.{u} Scalar zero one add neg sub mul inv RootOfCardPolynomial x_arg) => roots_card_poly_law x)"
+        )),
+    },
+];
+
+const ABSTRACT_SPLITTING_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SplittingFieldConstructionEvidence",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (ConstructionEvidence : Prop), Prop"
+        ),
+        value: "fun K => fun Ext => fun base_embed => fun ConstructionEvidence => ConstructionEvidence",
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldRootEvidence",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (alpha : Ext), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun PolynomialOfInterest => fun IsRoot => fun alpha => IsRoot alpha"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldRootContained",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (alpha : Ext), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun PolynomialOfInterest => fun RootContained => fun alpha => RootContained alpha"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldGeneratedByRootsEvidence",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (GeneratedByRoots : Prop), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun PolynomialOfInterest => fun GeneratedByRoots => GeneratedByRoots"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldLawArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (GeneratedByRoots : Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun PolynomialOfInterest => fun IsRoot => fun RootContained => ",
+            "fun GeneratedByRoots => fun ConstructionEvidence => fun field_args => ",
+            "fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (construction_law : @SplittingFieldConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence), ",
+            "forall (contains_all_roots_law : forall (alpha : Ext), forall (root_law : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha), @SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha), ",
+            "forall (generated_by_roots_law : @SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldUniquenessArgs",
+        universe_params: &["e", "w"],
+        ty: concat!(
+            "forall (Ext : Sort e), ",
+            "forall (zeroE : Ext), ",
+            "forall (oneE : Ext), ",
+            "forall (addE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (negE : forall (a : Ext), Ext), ",
+            "forall (subE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (mulE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (invE : forall (a : Ext), Ext), ",
+            "forall (Other : Sort w), ",
+            "forall (zeroO : Other), ",
+            "forall (oneO : Other), ",
+            "forall (addO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (negO : forall (a : Other), Other), ",
+            "forall (subO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (mulO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (invO : forall (a : Other), Other), ",
+            "forall (forward : forall (x : Ext), Other), ",
+            "forall (backward : forall (y : Other), Ext), Prop"
+        ),
+        value: concat!(
+            "fun Ext => fun zeroE => fun oneE => fun addE => fun negE => fun subE => fun mulE => fun invE => ",
+            "fun Other => fun zeroO => fun oneO => fun addO => fun negO => fun subO => fun mulO => fun invO => ",
+            "fun forward => fun backward => forall (Q : Prop), forall (mk : ",
+            "forall (iso_law : @FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward), Q), Q"
+        ),
+    },
+];
+
+const ABSTRACT_SPLITTING_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "splitting_field_contains_all_roots",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (GeneratedByRoots : Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (splitting_args : @SplittingFieldLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed PolynomialOfInterest IsRoot RootContained GeneratedByRoots ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "forall (alpha : Ext), ",
+            "forall (root_law : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha), ",
+            "@SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun PolynomialOfInterest => fun IsRoot => fun RootContained => ",
+            "fun GeneratedByRoots => fun ConstructionEvidence => fun field_args => ",
+            "fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun splitting_args => fun alpha => fun root_law => ",
+            "splitting_args (@SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @SplittingFieldConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (contains_all_roots_law : forall (alpha_arg : Ext), forall (root_arg : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha_arg), @SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha_arg) => ",
+            "fun (generated_by_roots_law : @SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots) => contains_all_roots_law alpha root_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "splitting_field_generated_by_roots",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (GeneratedByRoots : Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (splitting_args : @SplittingFieldLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed PolynomialOfInterest IsRoot RootContained GeneratedByRoots ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "@SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun PolynomialOfInterest => fun IsRoot => fun RootContained => ",
+            "fun GeneratedByRoots => fun ConstructionEvidence => fun field_args => ",
+            "fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun splitting_args => ",
+            "splitting_args (@SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @SplittingFieldConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (contains_all_roots_law : forall (alpha_arg : Ext), forall (root_arg : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha_arg), @SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha_arg) => ",
+            "fun (generated_by_roots_law : @SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots) => generated_by_roots_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "splitting_field_unique_up_to_field_iso",
+        universe_params: &["e", "w"],
+        statement: concat!(
+            "forall (Ext : Sort e), ",
+            "forall (zeroE : Ext), ",
+            "forall (oneE : Ext), ",
+            "forall (addE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (negE : forall (a : Ext), Ext), ",
+            "forall (subE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (mulE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (invE : forall (a : Ext), Ext), ",
+            "forall (Other : Sort w), ",
+            "forall (zeroO : Other), ",
+            "forall (oneO : Other), ",
+            "forall (addO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (negO : forall (a : Other), Other), ",
+            "forall (subO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (mulO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (invO : forall (a : Other), Other), ",
+            "forall (forward : forall (x : Ext), Other), ",
+            "forall (backward : forall (y : Other), Ext), ",
+            "forall (unique_args : @SplittingFieldUniquenessArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward), ",
+            "@FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward"
+        ),
+        proof: concat!(
+            "fun Ext => fun zeroE => fun oneE => fun addE => fun negE => fun subE => fun mulE => fun invE => ",
+            "fun Other => fun zeroO => fun oneO => fun addO => fun negO => fun subO => fun mulO => fun invO => ",
+            "fun forward => fun backward => fun unique_args => ",
+            "unique_args (@FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward) ",
+            "(fun (iso_law : @FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward) => iso_law)"
+        ),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_CLOSURE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "AlgebraicClosureConstructionEvidence",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (ConstructionEvidence : Prop), Prop"
+        ),
+        value: "fun K => fun Ext => fun base_embed => fun ConstructionEvidence => ConstructionEvidence",
+    },
+    DefinitionArtifact {
+        name: "AlgebraicClosureElement",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (alpha : Ext), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun base_embed => fun IsAlgebraic => fun alpha => IsAlgebraic alpha"
+        ),
+    },
+    DefinitionArtifact {
+        name: "AlgebraicClosurePolynomialHasRoot",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (poly : Poly), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun base_embed => fun HasRoot => fun poly => HasRoot poly"
+        ),
+    },
+    DefinitionArtifact {
+        name: "AlgebraicClosureLawArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun IsAlgebraic => fun HasRoot => fun ConstructionEvidence => ",
+            "fun field_args => fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (construction_law : @AlgebraicClosureConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence), ",
+            "forall (algebraic_law : forall (alpha : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha), ",
+            "forall (polynomial_has_root_law : forall (poly : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_CLOSURE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "algebraic_closure_is_algebraic",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (closure_args : @AlgebraicClosureLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic HasRoot ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "forall (alpha : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun IsAlgebraic => fun HasRoot => fun ConstructionEvidence => ",
+            "fun field_args => fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun closure_args => fun alpha => ",
+            "closure_args (@AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @AlgebraicClosureConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (algebraic_law : forall (alpha_arg : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha_arg) => ",
+            "fun (polynomial_has_root_law : forall (poly_arg : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly_arg) => algebraic_law alpha)"
+        )),
+    },
+    TheoremArtifact {
+        name: "algebraic_closure_polynomial_has_root",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (closure_args : @AlgebraicClosureLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic HasRoot ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "forall (poly : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun IsAlgebraic => fun HasRoot => fun ConstructionEvidence => ",
+            "fun field_args => fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun closure_args => fun poly => ",
+            "closure_args (@AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @AlgebraicClosureConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (algebraic_law : forall (alpha_arg : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha_arg) => ",
+            "fun (polynomial_has_root_law : forall (poly_arg : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly_arg) => polynomial_has_root_law poly)"
+        )),
+    },
+];
+
+macro_rules! field_automorphism_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_params!(concat!(
+            "forall (Aut : Sort a), ",
+            "forall (aut_one : Aut), ",
+            "forall (aut_mul : forall (sigma : Aut), forall (tau : Aut), Aut), ",
+            "forall (aut_inv : forall (sigma : Aut), Aut), ",
+            "forall (aut_apply : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (aut_apply_inv : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (field_args : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_laws : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! field_automorphism_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_abs!(concat!(
+            "fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => ",
+            "fun field_args => fun extension_field_laws => fun extension_args => ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! field_automorphism_args_app {
+    () => {
+        concat!(
+            "@FieldAutomorphismGroupArgs.{a,u,v} R zeroR oneR addR negR subR mulR invR ",
+            "S zeroS oneS addS negS subS mulS invS f Aut aut_one aut_mul aut_inv aut_apply aut_apply_inv ",
+            "field_args extension_field_laws extension_args"
+        )
+    };
+}
+
+macro_rules! fixed_field_params {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_params!(concat!(
+            "forall (Fixed : Sort w), ",
+            "forall (fixed_zero : Fixed), ",
+            "forall (fixed_one : Fixed), ",
+            "forall (fixed_add : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_neg : forall (a : Fixed), Fixed), ",
+            "forall (fixed_sub : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_mul : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_inv : forall (a : Fixed), Fixed), ",
+            "forall (fixed_embed : forall (x : Fixed), S), ",
+            "forall (fixed_pred : forall (x : S), Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_laws : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! fixed_field_abs {
+    (concat!($($tail:tt)+)) => {
+        abstract_field_hom_abs!(concat!(
+            "fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => ",
+            "fun fixed_embed => fun fixed_pred => fun field_args => fun extension_field_laws => fun extension_args => ",
+            $($tail)+
+        ))
+    };
+}
+
+macro_rules! fixed_field_args_app {
+    () => {
+        concat!(
+            "@FixedFieldLawArgs.{u,v,w} R zeroR oneR addR negR subR mulR invR ",
+            "S zeroS oneS addS negS subS mulS invS f Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv ",
+            "fixed_embed fixed_pred field_args extension_field_laws extension_args"
+        )
+    };
+}
+
+macro_rules! galois_correspondence_params {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "forall (G : Sort succ g), ",
+            "forall (oneG : G), ",
+            "forall (mulG : forall (a : G), forall (b : G), G), ",
+            "forall (invG : forall (a : G), G), ",
+            "forall (N : forall (x : G), Prop), ",
+            "forall (Hpred : forall (x : G), Prop), ",
+            "forall (Hpred2 : forall (x : G), Prop), ",
+            "forall (group_args : @GroupLawArgs.{succ g} G oneG mulG invG), ",
+            "forall (n_normal : @NormalSubgroupLawArgs.{succ g} G oneG mulG invG N), ",
+            "forall (h_args : @SubgroupLawArgs.{succ g} G oneG mulG invG Hpred), ",
+            "forall (n_le_h : forall (x : G), forall (hn : N x), Hpred x), ",
+            "forall (K : forall (q : @NormalQuot.{g} G oneG mulG invG N group_args n_normal), Prop), ",
+            "forall (K2 : forall (q : @NormalQuot.{g} G oneG mulG invG N group_args n_normal), Prop), ",
+            "forall (k_args : @SubgroupLawArgs.{succ g} (@NormalQuot.{g} G oneG mulG invG N group_args n_normal) (@NormalQuotOne.{g} G oneG mulG invG N group_args n_normal) (@NormalQuotMul.{g} G oneG mulG invG N group_args n_normal) (@NormalQuotInv.{g} G oneG mulG invG N group_args n_normal) K), ",
+            "forall (h_le : @SubgroupLe.{succ g} G Hpred Hpred2), ",
+            "forall (k_le : @SubgroupLe.{succ g} (@NormalQuot.{g} G oneG mulG invG N group_args n_normal) K K2), ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! galois_correspondence_abs {
+    (concat!($($tail:tt)+)) => {
+        concat!(
+            "fun G => fun oneG => fun mulG => fun invG => fun N => fun Hpred => fun Hpred2 => ",
+            "fun group_args => fun n_normal => fun h_args => fun n_le_h => fun K => fun K2 => fun k_args => fun h_le => fun k_le => ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! correspondence_order_evidence_app {
+    () => {
+        concat!(
+            "@CorrespondenceOrderEvidence.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h ",
+            "K K2 k_args h_le k_le"
+        )
+    };
+}
+
+macro_rules! galois_correspondence_bridge_args_app {
+    () => {
+        concat!(
+            "@GaloisCorrespondenceBridgeArgs.{g} G oneG mulG invG N Hpred Hpred2 group_args n_normal h_args n_le_h ",
+            "K K2 k_args h_le k_le"
+        )
+    };
+}
+
+const ABSTRACT_GALOIS_STARTER_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FieldAutomorphismGroupArgs",
+        universe_params: &["a", "u", "v"],
+        ty: field_automorphism_params!(concat!("Prop")),
+        value: field_automorphism_abs!(concat!(
+            "forall (Q : Prop), forall (mk : ",
+            "forall (automorphism_group_law : @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv), ",
+            "forall (automorphism_field_iso_law : forall (sigma : Aut), @FieldIsoLawArgs.{v,v} S zeroS oneS addS negS subS mulS invS S zeroS oneS addS negS subS mulS invS (aut_apply sigma) (aut_apply_inv sigma)), ",
+            "forall (automorphism_fixes_base_law : forall (sigma : Aut), forall (x : R), @Eq.{v} S (aut_apply sigma (f x)) (f x)), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "FixedFieldLawArgs",
+        universe_params: &["u", "v", "w"],
+        ty: fixed_field_params!(concat!("Prop")),
+        value: fixed_field_abs!(concat!(
+            "forall (Q : Prop), forall (mk : ",
+            "forall (fixed_field_law : @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv), ",
+            "forall (fixed_embedding_law : @FieldEmbeddingLawArgs.{w,v} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv S zeroS oneS addS negS subS mulS invS fixed_embed), ",
+            "forall (fixed_predicate_law : forall (x : Fixed), fixed_pred (fixed_embed x)), ",
+            "forall (base_lands_in_fixed_law : forall (x : R), fixed_pred (f x)), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GaloisExtensionArgs",
+        universe_params: &["a", "u", "v", "w"],
+        ty: abstract_field_hom_params!(concat!(
+            "forall (Aut : Sort a), ",
+            "forall (aut_one : Aut), ",
+            "forall (aut_mul : forall (sigma : Aut), forall (tau : Aut), Aut), ",
+            "forall (aut_inv : forall (sigma : Aut), Aut), ",
+            "forall (aut_apply : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (aut_apply_inv : forall (sigma : Aut), forall (x : S), S), ",
+            "forall (Fixed : Sort w), ",
+            "forall (fixed_zero : Fixed), ",
+            "forall (fixed_one : Fixed), ",
+            "forall (fixed_add : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_neg : forall (a : Fixed), Fixed), ",
+            "forall (fixed_sub : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_mul : forall (a : Fixed), forall (b : Fixed), Fixed), ",
+            "forall (fixed_inv : forall (a : Fixed), Fixed), ",
+            "forall (fixed_embed : forall (x : Fixed), S), ",
+            "forall (fixed_pred : forall (x : S), Prop), ",
+            "forall (FiniteOverBase : Prop), ",
+            "forall (DegreeEvidence : Prop), ",
+            "forall (VectorSpaceBridge : Prop), ",
+            "forall (IsAlgebraic : forall (alpha : S), Prop), ",
+            "forall (SplittingConstruction : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} R zeroR oneR addR negR subR mulR invR), ",
+            "forall (extension_field_laws : @FieldLawArgs.{v} S zeroS oneS addS negS subS mulS invS), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_args : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "forall (splitting_construction : @SplittingFieldConstructionEvidence.{v,u} R S f SplittingConstruction), ",
+            "forall (automorphism_args : ",
+            field_automorphism_args_app!(),
+            "), ",
+            "forall (fixed_args : ",
+            fixed_field_args_app!(),
+            "), Prop"
+        )),
+        value: abstract_field_hom_abs!(concat!(
+            "fun Aut => fun aut_one => fun aut_mul => fun aut_inv => fun aut_apply => fun aut_apply_inv => ",
+            "fun Fixed => fun fixed_zero => fun fixed_one => fun fixed_add => fun fixed_neg => fun fixed_sub => fun fixed_mul => fun fixed_inv => ",
+            "fun fixed_embed => fun fixed_pred => fun FiniteOverBase => fun DegreeEvidence => fun VectorSpaceBridge => fun IsAlgebraic => fun SplittingConstruction => ",
+            "fun field_args => fun extension_field_laws => fun extension_args => fun finite_args => fun splitting_construction => fun automorphism_args => fun fixed_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (field_extension_law : @FieldExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f), ",
+            "forall (finite_extension_law : @FiniteExtensionLawArgs.{u,v} R zeroR oneR addR negR subR mulR invR S zeroS oneS addS negS subS mulS invS f FiniteOverBase DegreeEvidence VectorSpaceBridge IsAlgebraic extension_args), ",
+            "forall (splitting_construction_law : @SplittingFieldConstructionEvidence.{v,u} R S f SplittingConstruction), ",
+            "forall (automorphism_law : ",
+            field_automorphism_args_app!(),
+            "), ",
+            "forall (fixed_field_law : ",
+            fixed_field_args_app!(),
+            "), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "GaloisCorrespondenceBridgeArgs",
+        universe_params: &["g"],
+        ty: galois_correspondence_params!(concat!("Prop")),
+        value: galois_correspondence_abs!(concat!(
+            "forall (Q : Prop), forall (mk : forall (correspondence_order_law : ",
+            correspondence_order_evidence_app!(),
+            "), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_GALOIS_STARTER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "automorphism_group_laws",
+        universe_params: &["a", "u", "v"],
+        statement: field_automorphism_params!(concat!(
+            "forall (automorphism_args : ",
+            field_automorphism_args_app!(),
+            "), @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv"
+        )),
+        proof: field_automorphism_abs!(concat!(
+            "fun automorphism_args => ",
+            "automorphism_args (@GroupLawArgs.{a} Aut aut_one aut_mul aut_inv) ",
+            "(fun (automorphism_group_law : @GroupLawArgs.{a} Aut aut_one aut_mul aut_inv) => ",
+            "fun (automorphism_field_iso_law : forall (sigma : Aut), @FieldIsoLawArgs.{v,v} S zeroS oneS addS negS subS mulS invS S zeroS oneS addS negS subS mulS invS (aut_apply sigma) (aut_apply_inv sigma)) => ",
+            "fun (automorphism_fixes_base_law : forall (sigma : Aut), forall (x : R), @Eq.{v} S (aut_apply sigma (f x)) (f x)) => automorphism_group_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "fixed_field_laws",
+        universe_params: &["u", "v", "w"],
+        statement: fixed_field_params!(concat!(
+            "forall (fixed_args : ",
+            fixed_field_args_app!(),
+            "), ",
+            fixed_field_args_app!()
+        )),
+        proof: fixed_field_abs!(concat!("fun fixed_args => fixed_args")),
+    },
+    TheoremArtifact {
+        name: "fixed_field_is_field",
+        universe_params: &["u", "v", "w"],
+        statement: fixed_field_params!(concat!(
+            "forall (fixed_args : ",
+            fixed_field_args_app!(),
+            "), @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv"
+        )),
+        proof: fixed_field_abs!(concat!(
+            "fun fixed_args => ",
+            "fixed_args (@FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv) ",
+            "(fun (fixed_field_law : @FieldLawArgs.{w} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv) => ",
+            "fun (fixed_embedding_law : @FieldEmbeddingLawArgs.{w,v} Fixed fixed_zero fixed_one fixed_add fixed_neg fixed_sub fixed_mul fixed_inv S zeroS oneS addS negS subS mulS invS fixed_embed) => ",
+            "fun (fixed_predicate_law : forall (x : Fixed), fixed_pred (fixed_embed x)) => ",
+            "fun (base_lands_in_fixed_law : forall (x : R), fixed_pred (f x)) => fixed_field_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "galois_correspondence_order_bridge",
+        universe_params: &["g"],
+        statement: galois_correspondence_params!(concat!(
+            "forall (correspondence_args : ",
+            galois_correspondence_bridge_args_app!(),
+            "), ",
+            correspondence_order_evidence_app!()
+        )),
+        proof: galois_correspondence_abs!(concat!(
+            "fun correspondence_args => correspondence_args (",
+            correspondence_order_evidence_app!(),
+            ") (fun (correspondence_order_law : ",
+            correspondence_order_evidence_app!(),
+            ") => correspondence_order_law)"
         )),
     },
 ];
@@ -32079,6 +33821,40 @@ fn run_full() -> Result<(), String> {
         &abstract_field_hom_kernel_image_imports,
         &abstract_field_hom_kernel_image_source_interfaces,
     )?;
+    let abstract_field_extension_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+    ];
+    let abstract_field_extension_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+    ];
+    let abstract_field_extension = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FIELD_EXTENSION_MODULE,
+        &abstract_field_extension_imports,
+        &abstract_field_extension_source_interfaces,
+    )?;
     let abstract_ring_first_iso_imports = vec![
         eq_import.clone(),
         eq_reasoning.verified_module.clone(),
@@ -32306,6 +34082,315 @@ fn run_full() -> Result<(), String> {
         &ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE,
         &abstract_polynomial_field_quotient_imports,
         &abstract_polynomial_field_quotient_source_interfaces,
+    )?;
+    let abstract_algebraic_extension_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+    ];
+    let abstract_algebraic_extension_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+    ];
+    let abstract_algebraic_extension = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ALGEBRAIC_EXTENSION_MODULE,
+        &abstract_algebraic_extension_imports,
+        &abstract_algebraic_extension_source_interfaces,
+    )?;
+    let abstract_finite_field_extension_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+    ];
+    let abstract_finite_field_extension_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+    ];
+    let abstract_finite_field_extension = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FINITE_FIELD_EXTENSION_MODULE,
+        &abstract_finite_field_extension_imports,
+        &abstract_finite_field_extension_source_interfaces,
+    )?;
+    let abstract_finite_field_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+        abstract_finite_field_extension.verified_module.clone(),
+    ];
+    let abstract_finite_field_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+        abstract_finite_field_extension.source_interface.clone(),
+    ];
+    let abstract_finite_field = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_FINITE_FIELD_MODULE,
+        &abstract_finite_field_imports,
+        &abstract_finite_field_source_interfaces,
+    )?;
+    let abstract_splitting_field_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+        abstract_finite_field_extension.verified_module.clone(),
+    ];
+    let abstract_splitting_field_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+        abstract_finite_field_extension.source_interface.clone(),
+    ];
+    let abstract_splitting_field = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_SPLITTING_FIELD_MODULE,
+        &abstract_splitting_field_imports,
+        &abstract_splitting_field_source_interfaces,
+    )?;
+    let abstract_algebraic_closure_imports = abstract_splitting_field_imports.clone();
+    let abstract_algebraic_closure_source_interfaces =
+        abstract_splitting_field_source_interfaces.clone();
+    let abstract_algebraic_closure = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ALGEBRAIC_CLOSURE_MODULE,
+        &abstract_algebraic_closure_imports,
+        &abstract_algebraic_closure_source_interfaces,
+    )?;
+    let abstract_galois_starter_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_subgroup.verified_module.clone(),
+        abstract_group_subgroup_order.verified_module.clone(),
+        abstract_group_normal_quotient.verified_module.clone(),
+        abstract_group_normal_quotient_mul.verified_module.clone(),
+        abstract_group_normal_quotient_group.verified_module.clone(),
+        abstract_group_correspondence.verified_module.clone(),
+        abstract_group_correspondence_order.verified_module.clone(),
+        abstract_group_correspondence_final.verified_module.clone(),
+        abstract_group_correspondence_order_final
+            .verified_module
+            .clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+        abstract_finite_field_extension.verified_module.clone(),
+        abstract_splitting_field.verified_module.clone(),
+    ];
+    let abstract_galois_starter_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_subgroup.source_interface.clone(),
+        abstract_group_subgroup_order.source_interface.clone(),
+        abstract_group_normal_quotient.source_interface.clone(),
+        abstract_group_normal_quotient_mul.source_interface.clone(),
+        abstract_group_normal_quotient_group
+            .source_interface
+            .clone(),
+        abstract_group_correspondence.source_interface.clone(),
+        abstract_group_correspondence_order.source_interface.clone(),
+        abstract_group_correspondence_final.source_interface.clone(),
+        abstract_group_correspondence_order_final
+            .source_interface
+            .clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+        abstract_finite_field_extension.source_interface.clone(),
+        abstract_splitting_field.source_interface.clone(),
+    ];
+    let abstract_galois_starter = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_GALOIS_STARTER_MODULE,
+        &abstract_galois_starter_imports,
+        &abstract_galois_starter_source_interfaces,
     )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
@@ -32847,6 +34932,7 @@ fn run_full() -> Result<(), String> {
         abstract_ring_first_iso_base,
         abstract_field_hom,
         abstract_field_hom_kernel_image,
+        abstract_field_extension,
         abstract_ring_first_iso,
         abstract_ring_chinese_remainder,
         abstract_ufd_prime_factorization,
@@ -32856,6 +34942,12 @@ fn run_full() -> Result<(), String> {
         abstract_krull_theorem,
         abstract_field_ideal,
         abstract_polynomial_field_quotient,
+        abstract_algebraic_extension,
+        abstract_finite_field_extension,
+        abstract_finite_field,
+        abstract_splitting_field,
+        abstract_algebraic_closure,
+        abstract_galois_starter,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -35101,10 +37193,17 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_RING_FIRST_ISO_BASE_MODULE.module
         || module == ABSTRACT_FIELD_HOM_MODULE.module
         || module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
+        || module == ABSTRACT_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_RING_FIRST_ISO_MODULE.module
         || module == ABSTRACT_RING_CHINESE_REMAINDER_MODULE.module
         || module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
+        || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
+        || module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
+        || module == ABSTRACT_FINITE_FIELD_MODULE.module
+        || module == ABSTRACT_SPLITTING_FIELD_MODULE.module
+        || module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
+        || module == ABSTRACT_GALOIS_STARTER_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -35440,9 +37539,16 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_GROUP_CORRESPONDENCE_ORDER_FINAL_MODULE.module
         || config.module == ABSTRACT_FIELD_HOM_MODULE.module
         || config.module == ABSTRACT_FIELD_HOM_KERNEL_IMAGE_MODULE.module
+        || config.module == ABSTRACT_FIELD_EXTENSION_MODULE.module
         || config.module == ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE.module
         || config.module == ABSTRACT_FIELD_IDEAL_MODULE.module
         || config.module == ABSTRACT_POLYNOMIAL_FIELD_QUOTIENT_MODULE.module
+        || config.module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
+        || config.module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
+        || config.module == ABSTRACT_FINITE_FIELD_MODULE.module
+        || config.module == ABSTRACT_SPLITTING_FIELD_MODULE.module
+        || config.module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
+        || config.module == ABSTRACT_GALOIS_STARTER_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);

@@ -584,7 +584,7 @@ Implication:
 
 ### FT-10 Add Field Extension Law Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-08
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -619,10 +619,19 @@ Implication:
   - `rg -n "FieldExtensionLawArgs|field_extension_tower|field_embedding_compose" proofs tools`
 - Notes:
   - Module and theorem names are likely to become public later, so keep statements conservative.
+  - Completed with `Proofs.Ai.Algebra.AbstractFieldExtension`, adding
+    `FieldExtensionLawArgs`, `FieldExtensionRestrictScalarsArgs`, and
+    `FieldExtensionTowerArgs`.
+  - The theorem targets remain projection-style evidence theorems:
+    `field_extension_base_embedding`, `field_extension_as_field`,
+    `field_extension_restrict_scalars`, `field_extension_tower`, and
+    `field_embedding_compose`.
+  - The module reuses `FieldEmbeddingLawArgs` from `AbstractFieldHomKernelImage` and does not
+    import polynomial quotient, finite-dimensional vector-space, or Galois machinery.
 
 ### FT-11 Add Algebraic Element And Minimal Polynomial Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-09, FT-10
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractFieldExtension`
@@ -658,10 +667,16 @@ Implication:
 - Notes:
   - If statement stability is weak, keep this layer in corpus staging and do not promote until at
     least one finite-extension consumer exists.
+  - Completed with `Proofs.Ai.Algebra.AbstractAlgebraicExtension`, adding explicit
+    `AlgebraicElement`, `MinimalPolynomial`, and `FieldAdjoinAlgebraicElementArgs` packages.
+  - Monicity, irreducibility, minimal-polynomial uniqueness, degree-one base membership, and
+    finite-extension output remain explicit evidence fields or theorem hypotheses.
+  - The bridge connects `MinimalPolynomial` to `SimpleAlgebraicExtensionQuotientArgs` without
+    adding any algebraic-closure existence axiom.
 
 ### FT-12 Add Finite Extension Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-10, FT-11
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractFieldExtension`
@@ -696,10 +711,21 @@ Implication:
 - Notes:
   - This layer should not be promoted until the dependency cost of vector-space bridge imports is
     measured.
+  - Completed with `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`, adding
+    `FiniteExtensionLawArgs`, `FiniteExtensionTowerDegreeArgs`, and
+    `FiniteExtensionEmbeddingDegreeArgs`.
+  - Degree is represented by Prop-level `ExtensionDegreeEvidence` in this corpus layer rather than
+    concrete Nat data.
+  - Finite-dimensional vector-space structure is kept behind
+    `FiniteDimensionalVectorSpaceBridge` to avoid importing a large vector-space basis API before
+    downstream finite-field and Galois-theory statements stabilize.
+  - The finite-implies-algebraic, tower-degree, vector-space bridge, and embedding-degree theorem
+    targets are projection theorems over explicit evidence packages; no algebraic-closure or
+    basis-existence axiom is introduced.
 
 ### FT-13 Add Finite Field And Frobenius Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-10, FT-12
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractField`
@@ -737,10 +763,18 @@ Implication:
 - Notes:
   - This is a high-value future `npa-mathlib` candidate, but only after cardinality and polynomial
     APIs stabilize.
+  - Completed with `Proofs.Ai.Algebra.AbstractFiniteField`, adding `FiniteFieldLawArgs` and
+    characteristic, Frobenius, power-cardinality, and root-predicate projection theorem targets.
+  - Frobenius is represented through the existing `FieldHomLawArgs` route.
+  - Cardinality, power, and roots of `x^q - x` remain explicit evidence fields; no hidden finite
+    enumeration, cardinality computation, or root-counting axiom is introduced.
+  - The module imports `AbstractFiniteFieldExtension` so later finite fields can connect back to
+    finite-extension degree evidence, but keeps concrete polynomial-root APIs staged until those
+    statements stabilize.
 
 ### FT-14 Add Splitting Field And Algebraic Closure Evidence Layers
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-11, FT-12
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
@@ -779,10 +813,18 @@ Implication:
   - `rg -n "SplittingFieldLawArgs|AlgebraicClosureLawArgs|splitting_field_unique" proofs tools`
 - Notes:
   - Split the two modules if algebraic closure statements remain unstable.
+  - Completed with `Proofs.Ai.Algebra.AbstractSplittingField` and
+    `Proofs.Ai.Algebra.AbstractAlgebraicClosure`.
+  - Splitting-field construction, all-roots containment, generation by roots, and uniqueness up to
+    field isomorphism are explicit evidence fields or `FieldIsoLawArgs` witnesses.
+  - Algebraic-closure construction, element algebraicity, and polynomial root existence are explicit
+    evidence fields; no algebraic-closure existence axiom or hidden root-finding procedure is added.
+  - The algebraic-closure `HasRoot` predicate remains abstract so downstream modules can encode
+    nonconstant or positive-degree side conditions before the polynomial API stabilizes.
 
 ### FT-15 Add Galois Theory Starter
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-10, FT-12, FT-14
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractFieldExtension`
@@ -820,8 +862,13 @@ Implication:
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "FieldAutomorphismGroupArgs|fixed_field_is_field|galois_correspondence_order_bridge" proofs tools`
 - Notes:
-  - This is the heaviest planned field-theory layer. Start only after extension and splitting-field
-    evidence packages are stable.
+  - Added `Proofs.Ai.Algebra.AbstractGaloisStarter` as a corpus staging layer above field
+    extensions, finite extensions, splitting fields, and the existing group-correspondence modules.
+  - The module keeps automorphism-group and fixed-field construction evidence explicit, and the
+    correspondence theorem target is a bridge to existing group correspondence order evidence.
+  - Expected axiom policy is `Eq.rec`, inherited from the existing group-correspondence closure.
+  - This is not promoted to `npa-mathlib`; promotion still requires a separate closure audit,
+    package hash/index/axiom report verification, and an alias decision.
 
 ---
 

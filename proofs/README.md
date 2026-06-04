@@ -1436,6 +1436,34 @@ Theorem targets:
 | `field_iso_symm` | swaps forward and backward embedding evidence for a field isomorphism |
 | `field_iso_trans` | records transitivity as explicit composite isomorphism evidence |
 
+#### `Proofs.Ai.Algebra.AbstractFieldExtension`
+
+This module packages a field extension as explicit base-field laws, extension-field laws, and a
+base embedding. It reuses `FieldEmbeddingLawArgs` from `AbstractFieldHomKernelImage` instead of
+restating field homomorphism or injectivity laws.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldExtensionLawArgs` | packages `FieldLawArgs` for the base and extension fields plus the embedding evidence `K -> L` |
+| `FieldExtensionRestrictScalarsArgs` | packages explicit scalar-restriction compatibility `scaleK a x = scaleL (i a) x` |
+| `FieldExtensionTowerArgs` | packages explicit `K -> L`, `L -> M`, and composite `K -> M` extension evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_extension_base_embedding` | projects the base embedding as `FieldEmbeddingLawArgs` |
+| `field_extension_as_field` | projects the extension field's `FieldLawArgs` |
+| `field_extension_restrict_scalars` | projects scalar restriction compatibility from explicit evidence |
+| `field_extension_tower` | projects the supplied composite extension evidence for a tower |
+| `field_embedding_compose` | exposes embedding composition through the existing `field_embedding_comp` theorem |
+
+The module deliberately avoids polynomial quotient, finite-dimensional vector-space, and Galois
+machinery. Tower composition and scalar restriction remain explicit evidence, so later algebraic
+and finite-extension modules can import this layer without creating circular dependencies.
+
 #### `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
 
 This bridge imports `AbstractField` and the existing UFD-style integral-domain API. It does not
@@ -1590,6 +1618,179 @@ Theorem targets:
 The module imports the current `AbstractFieldIdeal` route for corpus staging, so promotion should
 audit the closure before making this public. The checked FT-09 certificate itself has no local
 axioms; source, replay, metadata, and AI theorem index entries remain non-trusted sidecars.
+
+#### `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+
+This module bridges field-extension evidence to the polynomial-quotient staging layer. It keeps
+algebraicity, minimal-polynomial data, degree-one base membership, and finite-extension output as
+explicit evidence packages.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `PolynomialDivides` | Church-encoded divisibility relation for abstract polynomials |
+| `MonicPolynomial` | named wrapper around an explicit monicity predicate |
+| `DegreeOnePolynomial` | named wrapper around an explicit degree-one predicate |
+| `BaseElementWitness` | packages a base element whose embedded image is the algebraic element |
+| `FiniteFieldExtensionEvidence` | package target for later finite-extension layers |
+| `AlgebraicElement` | packages a nonzero annihilating polynomial and evaluation-zero evidence |
+| `MinimalPolynomial` | packages monicity, annihilation, irreducibility, divisibility of all annihilators, degree-one base membership, and uniqueness evidence |
+| `FieldAdjoinAlgebraicElementArgs` | connects minimal-polynomial evidence to `SimpleAlgebraicExtensionQuotientArgs` and finite-extension evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `minimal_polynomial_divides_annihilating_polynomial` | projects that the minimal polynomial divides every annihilating polynomial |
+| `minimal_polynomial_irreducible` | projects irreducibility as `IrreduciblePolynomial` evidence |
+| `degree_one_algebraic_element_in_base` | projects base-element membership from explicit degree-one evidence |
+| `field_adjoin_algebraic_element_is_finite_extension` | projects finite-extension evidence from the adjoin/minimal-polynomial/quotient package |
+
+The module does not introduce an algebraic-closure existence axiom. Monicity, irreducibility,
+minimal-polynomial uniqueness, and finite-extension output remain explicit inputs or packaged
+evidence, so later finite-extension and splitting-field milestones can refine the statements
+without changing the trusted boundary.
+
+#### `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+
+This module packages finite field extensions on top of `FieldExtensionLawArgs` and the
+algebraic-extension staging layer. Extension degree is intentionally represented by Prop-level
+evidence in this corpus layer, not by concrete Nat computation, so the module avoids importing a
+large vector-space basis API before those statements stabilize.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `ExtensionDegreeEvidence` | named wrapper for explicit degree evidence |
+| `FiniteDimensionalVectorSpaceBridge` | named wrapper for the finite-dimensional vector-space bridge evidence |
+| `FiniteExtensionAlgebraicElement` | named wrapper for the predicate that an extension element is algebraic over the base |
+| `FiniteExtensionLawArgs` | packages field-extension evidence, finite-over-base evidence, degree evidence, vector-space bridge evidence, and the finite-implies-algebraic law |
+| `FiniteExtensionTowerDegreeArgs` | packages finite tower evidence and the supplied degree multiplication law |
+| `FiniteExtensionEmbeddingDegreeArgs` | packages finite extension embedding evidence and the supplied degree-preservation law |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `finite_extension_is_algebraic` | projects the per-element algebraicity law from a finite-extension package |
+| `extension_degree_tower` | projects the supplied degree law for a finite tower |
+| `finite_dimensional_vector_space_bridge` | projects the finite-dimensional vector-space bridge evidence |
+| `finite_extension_embedding_preserves_degree` | projects the supplied degree-preservation law for an embedding of finite extensions |
+
+The module keeps basis objects, concrete degree arithmetic, and finite-dimensional vector-space
+construction evidence outside the trusted core. Later finite-field and Galois-theory modules can
+replace the Prop-level evidence with more structured APIs once the import closure is measured.
+
+#### `Proofs.Ai.Algebra.AbstractFiniteField`
+
+This module adds a finite-field staging package on top of the existing field hom and finite
+extension layers. Characteristic, cardinality, Frobenius, power, and root-counting APIs are all
+explicit evidence fields; the module does not perform hidden runtime cardinality computation or
+polynomial root enumeration.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FiniteFieldCardinalityEvidence` | named wrapper for explicit field cardinality evidence |
+| `FieldCharacteristicPrimeOrZeroEvidence` | named wrapper for the general field characteristic alternative |
+| `FiniteFieldCharacteristicPrimeEvidence` | named wrapper for finite-field prime characteristic evidence |
+| `FiniteFieldRootOfCardPolynomial` | named wrapper for roots of the supplied `x^q - x` predicate |
+| `FiniteFieldLawArgs` | packages field laws, finite-extension evidence, characteristic evidence, Frobenius hom evidence, power law, and root predicate evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_characteristic_prime_or_zero` | projects the characteristic-prime-or-zero evidence |
+| `finite_field_characteristic_prime` | projects prime characteristic evidence for finite fields |
+| `frobenius_is_field_hom` | projects the Frobenius `FieldHomLawArgs` |
+| `finite_field_pow_card_eq_self` | projects the supplied `x^q = x` law |
+| `finite_field_roots_x_pow_q_minus_x` | projects the supplied root predicate evidence for every field element |
+
+Frobenius uses the existing `FieldHomLawArgs` route. Cardinality, power, and root facts are
+statement-level evidence in the checked certificate, while `source.npa`, replay, metadata, and the
+AI theorem index remain non-trusted sidecars.
+
+#### `Proofs.Ai.Algebra.AbstractSplittingField`
+
+This module adds a splitting-field staging package over the existing polynomial quotient,
+algebraic-extension, finite-extension, and field-isomorphism APIs. It does not construct a
+splitting field internally. Construction, root containment, generation by roots, and uniqueness up
+to field isomorphism are all explicit evidence supplied to the package and then projected by
+certificate-checked theorem targets.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SplittingFieldConstructionEvidence` | named wrapper for explicit construction evidence |
+| `SplittingFieldRootEvidence` | named wrapper for the supplied root predicate of the staged polynomial |
+| `SplittingFieldRootContained` | named wrapper for root-containment evidence in the staged splitting field |
+| `SplittingFieldGeneratedByRootsEvidence` | named wrapper for generated-by-roots evidence |
+| `SplittingFieldLawArgs` | packages base field, polynomial extension, extension field, construction, root containment, and generation evidence |
+| `SplittingFieldUniquenessArgs` | packages the supplied `FieldIsoLawArgs` used for uniqueness up to field isomorphism |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `splitting_field_contains_all_roots` | projects the supplied all-roots containment law |
+| `splitting_field_generated_by_roots` | projects the generated-by-roots evidence |
+| `splitting_field_unique_up_to_field_iso` | projects the supplied `FieldIsoLawArgs` uniqueness witness |
+
+#### `Proofs.Ai.Algebra.AbstractAlgebraicClosure`
+
+This module adds an algebraic-closure staging package. It keeps closure construction,
+element algebraicity, and polynomial root existence as explicit evidence fields; no algebraic
+closure existence axiom or hidden root-finding procedure is added.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `AlgebraicClosureConstructionEvidence` | named wrapper for explicit algebraic-closure construction evidence |
+| `AlgebraicClosureElement` | named wrapper for the supplied algebraic-over-base predicate |
+| `AlgebraicClosurePolynomialHasRoot` | named wrapper for the supplied polynomial root-existence predicate |
+| `AlgebraicClosureLawArgs` | packages base field, polynomial extension, closure field, field extension, construction, algebraicity, and root-existence evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `algebraic_closure_is_algebraic` | projects the supplied per-element algebraicity evidence |
+| `algebraic_closure_polynomial_has_root` | projects the supplied polynomial root-existence evidence |
+
+The `HasRoot` predicate is intentionally abstract, so downstream modules can encode nonconstant or
+positive-degree side conditions there without changing the trusted certificate boundary.
+
+#### `Proofs.Ai.Algebra.AbstractGaloisStarter`
+
+Implemented definitions / API declarations, not construction-heavy proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldAutomorphismGroupArgs` | packages an explicit automorphism group law, per-automorphism field isomorphism law, and base-fixing law |
+| `FixedFieldLawArgs` | packages an explicit fixed-field carrier, field law, embedding law, fixed predicate, and base-in-fixed evidence |
+| `GaloisExtensionArgs` | packages finite-extension, splitting-construction, automorphism-group, and fixed-field evidence for a staged Galois extension API |
+| `GaloisCorrespondenceBridgeArgs` | bridges to the existing group-correspondence order evidence without restating subgroup correspondence theory |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `automorphism_group_laws` | projects the automorphism group law from `FieldAutomorphismGroupArgs` |
+| `fixed_field_laws` | keeps the fixed-field evidence package available as an explicit theorem target |
+| `fixed_field_is_field` | projects the field law for the fixed-field carrier |
+| `galois_correspondence_order_bridge` | projects existing `CorrespondenceOrderEvidence` through the Galois bridge package |
+
+This module is corpus staging, not a promotion to public `npa-mathlib`. Its import closure brings
+field-extension, finite-extension, splitting-field, and group-correspondence modules together only at
+this layer, so earlier field-extension modules do not import group correspondence. Promotion requires
+a separate closure audit and an explicit decision about aliases, axiom policy, and package reports.
+The expected axiom report includes `Eq.rec`, matching the existing group-correspondence closure.
 
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 

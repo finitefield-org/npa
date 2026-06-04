@@ -815,6 +815,23 @@ theorems = ["field_hom_kernel_zero_of_nonzero", "field_hom_injective_of_nonzero"
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Algebra.AbstractFieldExtension"
+source = "Proofs/Ai/Algebra/AbstractFieldExtension/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFieldExtension/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFieldExtension/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFieldExtension/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:8b5c6173707051ff654059eac5a89633f4c57d1093ac9802f7253552c456b4ab"
+expected_certificate_file_hash = "sha256:78594038cae75fb18b0e4bbfceaa6e0f7a21412fbe53b982449821370719e52e"
+expected_export_hash = "sha256:a1a56b9f9bf60410b5a76aca95cfaa90dbad4ac4e42650fe8ebb1622de58657c"
+expected_axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+expected_certificate_hash = "sha256:290d33b85f5e990938268b10238735a9d2ebcd01a16f31fcdc2d299dea09f41c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage"]
+definitions = ["FieldExtensionLawArgs", "FieldExtensionRestrictScalarsArgs", "FieldExtensionTowerArgs"]
+theorems = ["field_extension_base_embedding", "field_extension_as_field", "field_extension_restrict_scalars", "field_extension_tower", "field_embedding_compose"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Algebra.AbstractRingFirstIso"
 source = "Proofs/Ai/Algebra/AbstractRingFirstIso/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractRingFirstIso/certificate.npcert"
@@ -966,6 +983,108 @@ imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractG
 definitions = ["IrreduciblePolynomial", "PrincipalIdealGeneratedBy", "PolynomialFieldQuotientArgs", "SimpleAlgebraicExtensionQuotientArgs"]
 theorems = ["irreducible_polynomial_generates_maximal_ideal", "quotient_by_irreducible_polynomial_is_field", "polynomial_eval_kernel_contains_minimal_polynomial", "simple_algebraic_extension_as_polynomial_quotient"]
 axioms = []
+
+[[modules]]
+module = "Proofs.Ai.Algebra.AbstractAlgebraicExtension"
+source = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractAlgebraicExtension/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:5a201dd1a17670dd591650237df8b89a5f741da8542a7e35c1c1d6245bd3f50f"
+expected_certificate_file_hash = "sha256:0c5f4ce04bc8bce9dba96b13680d61e7b6ea7c8c2d388c9118270fd42b27ca3a"
+expected_export_hash = "sha256:b42c919718cef92a07f71c5162e21be5243ac857a104949c93e878c53ca0055b"
+expected_axiom_report_hash = "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07"
+expected_certificate_hash = "sha256:20c9ff67c2b43b15eab1338f884978827834297be0f093994dae0aa2fbe4d0a1"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient"]
+definitions = ["PolynomialDivides", "MonicPolynomial", "DegreeOnePolynomial", "BaseElementWitness", "FiniteFieldExtensionEvidence", "AlgebraicElement", "MinimalPolynomial", "FieldAdjoinAlgebraicElementArgs"]
+theorems = ["minimal_polynomial_divides_annihilating_polynomial", "minimal_polynomial_irreducible", "degree_one_algebraic_element_in_base", "field_adjoin_algebraic_element_is_finite_extension"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"
+source = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFiniteFieldExtension/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:76ceb1823f178c6ff8034f44d75cca7e5c155ec855c694ee71ac77c18be154ed"
+expected_certificate_file_hash = "sha256:bf74b629f2124617aae5cc8658e6b478bee7bb52cbd26286158d98a6e8a6a901"
+expected_export_hash = "sha256:8847cc06e42c655bc2b3847b7bf6142d12d3f8ced9dd235cc36a74faca46b4f3"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:07ee4a63997d8ab431dbe68cf2186b4bb09b8583819fb4396e5b1a0a7da72f10"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension"]
+definitions = ["ExtensionDegreeEvidence", "FiniteDimensionalVectorSpaceBridge", "FiniteExtensionAlgebraicElement", "FiniteExtensionLawArgs", "FiniteExtensionTowerDegreeArgs", "FiniteExtensionEmbeddingDegreeArgs"]
+theorems = ["finite_extension_is_algebraic", "extension_degree_tower", "finite_dimensional_vector_space_bridge", "finite_extension_embedding_preserves_degree"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.Algebra.AbstractFiniteField"
+source = "Proofs/Ai/Algebra/AbstractFiniteField/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractFiniteField/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractFiniteField/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractFiniteField/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:050226f5be8bceadfe20729299b66ade49cbb60369b7bb7419f60817bafdf8f5"
+expected_certificate_file_hash = "sha256:4633a932d3faca2543e3a2fb5439d7e3dda43ef3b853b5dd0c84e495c7de0a5c"
+expected_export_hash = "sha256:6dc5afcafc8bbb25c0875245cb185367d13dd858a84545a52bdbf899a8f7c53f"
+expected_axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+expected_certificate_hash = "sha256:b05f814b04e85a8901d0096f8daa72ff599c381abe75dab8f9f3b0b6227758fd"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"]
+definitions = ["FiniteFieldCardinalityEvidence", "FieldCharacteristicPrimeOrZeroEvidence", "FiniteFieldCharacteristicPrimeEvidence", "FiniteFieldRootOfCardPolynomial", "FiniteFieldLawArgs"]
+theorems = ["field_characteristic_prime_or_zero", "finite_field_characteristic_prime", "frobenius_is_field_hom", "finite_field_pow_card_eq_self", "finite_field_roots_x_pow_q_minus_x"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.Algebra.AbstractSplittingField"
+source = "Proofs/Ai/Algebra/AbstractSplittingField/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractSplittingField/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractSplittingField/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractSplittingField/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:5c4845f7fbe04890ac93578a63feda2b7b47e988b33acceb5dc8df57a30aa15e"
+expected_certificate_file_hash = "sha256:fef5a8ef84954d662f1874207d59dc5b73c7ea2afa2ed0843a77ccc05a0d7d53"
+expected_export_hash = "sha256:8c729d447bd52911c411dcb314165168c449d0ef5598c7a2b1fc8f1491b01a10"
+expected_axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+expected_certificate_hash = "sha256:914e62a7d563bcfde72820cd133e5b72d5bdcafc3e9fa983098d01c4b89ec8d5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"]
+definitions = ["SplittingFieldConstructionEvidence", "SplittingFieldRootEvidence", "SplittingFieldRootContained", "SplittingFieldGeneratedByRootsEvidence", "SplittingFieldLawArgs", "SplittingFieldUniquenessArgs"]
+theorems = ["splitting_field_contains_all_roots", "splitting_field_generated_by_roots", "splitting_field_unique_up_to_field_iso"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.Algebra.AbstractAlgebraicClosure"
+source = "Proofs/Ai/Algebra/AbstractAlgebraicClosure/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractAlgebraicClosure/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractAlgebraicClosure/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractAlgebraicClosure/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:df497ca8c61fb1db8452b176447b235d1daa2d642ccc75768b95fbb6b69d3a5f"
+expected_certificate_file_hash = "sha256:6bae595a9be6b166a86ee34cf8504ffac94e31909c016f9c6232814ec55f0fc0"
+expected_export_hash = "sha256:ca0fd2fc8cdf87f6645a41690a1f1c3a6dc8a63f21ba24eeed7323e62f72ddfd"
+expected_axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+expected_certificate_hash = "sha256:54f86050fd8892d0abade85877c96346f484cdff638e5cfa2d3a64686ed8b92c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"]
+definitions = ["AlgebraicClosureConstructionEvidence", "AlgebraicClosureElement", "AlgebraicClosurePolynomialHasRoot", "AlgebraicClosureLawArgs"]
+theorems = ["algebraic_closure_is_algebraic", "algebraic_closure_polynomial_has_root"]
+axioms = []
+
+[[modules]]
+module = "Proofs.Ai.Algebra.AbstractGaloisStarter"
+source = "Proofs/Ai/Algebra/AbstractGaloisStarter/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractGaloisStarter/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractGaloisStarter/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractGaloisStarter/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:800276c049b983c43fd16445e968e347371aa6122d56991360baee48fedf2386"
+expected_certificate_file_hash = "sha256:09376fc83ec5a7d95bd8965ab39f6bd7821007f2703d51996eeaa79faee501f0"
+expected_export_hash = "sha256:18c6423c75fd5b68830f51c42db8bd1f9da272484ee6c23675760ee53ab38e98"
+expected_axiom_report_hash = "sha256:174ce481559e21fb2793d69b152bc1923209c1290981ab40ece27d948162926f"
+expected_certificate_hash = "sha256:c0622cab8a5a8d9a98e7074bfc2feeaaccd8aa08c4efcad380781e37b637bf23"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupSubgroup", "Proofs.Ai.Algebra.AbstractGroupSubgroupOrder", "Proofs.Ai.Algebra.AbstractGroupNormalQuotient", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientMul", "Proofs.Ai.Algebra.AbstractGroupNormalQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupCorrespondence", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrder", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceFinal", "Proofs.Ai.Algebra.AbstractGroupCorrespondenceOrderFinal", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractSplittingField"]
+definitions = ["FieldAutomorphismGroupArgs", "FixedFieldLawArgs", "GaloisExtensionArgs", "GaloisCorrespondenceBridgeArgs"]
+theorems = ["automorphism_group_laws", "fixed_field_laws", "fixed_field_is_field", "galois_correspondence_order_bridge"]
+axioms = ["Eq.rec"]
 
 [[modules]]
 module = "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"
