@@ -13,7 +13,8 @@ compatibility の確認は明示的な gate に寄せます。
 
 この計画の対象:
 
-- 複数 module を batch build して、manifest / package metadata / index 更新を最後にまとめる。
+- 複数 module を batch build して、authoring index 更新を最後にまとめる。公開用 package
+  metadata は promote / release handoff で明示的に生成する。
 - corpus authoring が読む `npa-mathlib` / external package の verified certificate cache を
   process 間で再利用する。
 - corpus authoring 用の gate から package-wide CLI examples を外し、daily / PR gate 側へ寄せる。
@@ -43,9 +44,10 @@ package artifact checks を cache なし、または cache を証明根拠にし
 
 ### 3.1 背景
 
-現在の `--build-module MODULE` は指定 module と import closure を rebuild し、そのたびに
-`manifest.toml`、`npa-package.toml`、`generated/package-lock.json`、AI theorem index を更新します。
-複数 module を連続で追加する場合、metadata 更新が重複し、下流依存の rebuild 順も手作業になります。
+`--build-module MODULE` は指定 module と import closure を rebuild します。通常 authoring では
+公開用 `manifest.toml`、`npa-package.toml`、`generated/package-lock.json` は更新せず、
+module artifacts と AI theorem index だけを更新します。複数 module を連続で追加する場合、
+下流依存の rebuild 順が手作業になりやすいため、batch build を使います。
 
 ### 3.2 CLI 仕様
 
@@ -65,9 +67,12 @@ cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-bat
 --build-modules-file <PATH>
   1 行 1 module の batch spec を読む。空行と # comment は無視する。
 
---metadata-once
-  batch build の既定動作。module artifacts をすべて生成した後で、manifest / package /
+--package-metadata
+  promote / release handoff 用。module artifacts をすべて生成した後で、manifest / package /
   package lock / AI index を 1 回だけ更新する。
+
+--metadata-once
+  `--package-metadata` の互換 alias。
 
 --failures-out <PATH>
   失敗 module / declaration / diagnostic を JSON sidecar として出す。
@@ -82,12 +87,13 @@ cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-bat
 3. closure を topological order に並べる。
 4. すでに hash が一致する module は build を skip できる。
 5. dirty / changed / explicitly requested module を build する。
-6. すべて成功した場合だけ、manifest / package metadata / lock / AI index をまとめて更新する。
-7. 一部失敗した場合は、成功 module の certificate は残してよいが、package-wide metadata は更新しない。
+6. すべて成功した場合だけ、AI index を更新する。
+7. `--package-metadata` が指定された場合だけ、manifest / package metadata / lock をまとめて更新する。
+8. 一部失敗した場合は、成功 module の certificate は残してよいが、metadata は更新しない。
 
 ### 3.4 完了条件
 
-- `--build-modules A B` が `--build-module A` と `--build-module B` の連続実行より metadata 更新回数を減らす。
+- `--build-modules A B` が `--build-module A` と `--build-module B` の連続実行より rebuild 手順を減らす。
 - batch 内の共有 import closure は 1 回だけ build / verify される。
 - 失敗時に stale package metadata を書かない。
 - `--build-module` の既存挙動が壊れない。

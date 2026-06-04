@@ -168,7 +168,10 @@ For proof-corpus theorem repair, use the targeted local loop first:
 `--build-module` or `--build-modules`, selected `--module`, and
 `--changed-only`, preferably with `--verified-cache authoring` for repeated
 local checks. Finish a coherent theorem batch with
-`./scripts/check-corpus-authoring.sh`.
+`./scripts/check-corpus-authoring.sh`. The authoring build commands update
+module artifacts and the untrusted AI theorem index by default; public package
+metadata is generated only when explicitly requested for promotion or release
+handoff.
 
 Reserve the package/full corpus gates for package verifier changes, canonical
 certificate/checker compatibility, `npa-mathlib` promotion readiness, release

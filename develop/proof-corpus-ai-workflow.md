@@ -51,18 +51,21 @@ cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Basic::id proofs/gener
 ```
 
 `--build-module MODULE` は authoring 用の高速補助です。指定 module とその import closure だけを
-Human Surface source から compile し、`source.npa`、`certificate.npcert`、`meta.json`、`replay.json`、
-`manifest.toml`、`npa-package.toml`、`generated/package-lock.json`、AI theorem index を更新します。
+Human Surface source から compile し、`source.npa`、`certificate.npcert`、`meta.json`、
+`replay.json`、未信頼 AI theorem index を更新します。通常 authoring では公開用の
+`manifest.toml`、`npa-package.toml`、`generated/package-lock.json` は更新しません。
 下流 module は再生成しないため、基礎 module の export hash が変わった場合は、必要な下流 module も
 順に `--build-module` するか、promote / package gate 前に検出します。
 
-複数 module をまとめる場合は、batch build で import closure と package-wide metadata 更新を
-一度に処理します。
+複数 module をまとめる場合は、batch build で import closure を一度に処理します。
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.X Proofs.Ai.Y
 cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-batch.txt
 ```
+
+promote / release handoff のために公開用 package metadata まで更新する場合だけ、
+明示的に `--package-metadata` を付けます。旧 `--metadata-once` は互換 alias です。
 
 `--module` と `--changed-only` は checked-in certificate を source-free に検査します。依存 module は
 再帰的に読み込まれ、同一プロセス内で verified module / decoded certificate が cache されます。
@@ -166,7 +169,7 @@ axiom-report、theorem-index、publish-plan は含めません。既存の `./sc
 互換 wrapper として同じ軽量 authoring gate を実行します。
 
 certificate / kernel / checker / package verification の互換性に関わる変更、package metadata /
-package CLI examples / axiom-report / index / publish-plan の回帰確認、または `npa-mathlib`
+package CLI examples / axiom-report / index / publish-plan の公開境界確認、または `npa-mathlib`
 への promote 直前では、`./scripts/check-corpus-package.sh` を実行します。release /
 high-trust 手前、または authoring と package の両方をまとめて確認する場合は
 `./scripts/check-corpus-full.sh` を明示的に実行します。

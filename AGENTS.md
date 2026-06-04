@@ -82,6 +82,11 @@ cargo test --workspace --exclude npa-proof-corpus -- \
 proof corpus は作業用 staging space であり、公開用 package ではありません。
 `proofs/**` に定理を追加・修正する通常 authoring では、package-wide な検査を hot path に
 入れず、局所 build / source-free verify と軽量 authoring gate を使います。
+通常の `--build-module` / `--build-modules` は公開用 package metadata を生成せず、
+source / certificate / meta / replay と未信頼 AI theorem index だけを更新します。
+`manifest.toml`、`npa-package.toml`、`generated/package-lock.json`、axiom-report、
+theorem-index、publish-plan は `npa-mathlib` への promote / release handoff など
+公開境界で明示的に確認・生成します。
 
 proof corpus authoring の通常確認:
 
@@ -99,9 +104,9 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 重い proof corpus package gate は、次のいずれかに該当する場合だけ実行します。
 
 - `npa-mathlib` への promote 直前、または promote materialize / closure audit の完了確認。
-- `tools/proof-corpus/**` の package metadata、promotion、package lock、artifact 生成に関わる変更。
-- `proofs/npa-package.toml`、`proofs/generated/package-lock.json`、axiom-report、theorem-index、
-  publish-plan など package generated artifacts に関わる変更。
+- `tools/proof-corpus/**` の promotion、package lock、artifact 生成に関わる変更。
+- promote / release handoff のために `proofs/npa-package.toml`、`proofs/generated/package-lock.json`、
+  axiom-report、theorem-index、publish-plan など package generated artifacts を意図的に更新する場合。
 - certificate の canonical encode / decode / hash / import / axiom report に関わる変更。
 - kernel の core semantics、typecheck、reduction、universe、inductive に関わる変更。
 - independent checker、package verifier、package lock、artifact validation に関わる変更。
@@ -130,6 +135,8 @@ cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.X::theorem_name proofs
 ```
 
 `--build-module` は指定 module と import closure だけを source から再生成する authoring 用補助です。
+公開用 package metadata も併せて更新する必要がある promote 準備では、明示的に
+`--package-metadata` を付けます。
 `--module` / `--changed-only` は checked-in certificate を source-free に検査する補助であり、
 source 変更を certificate に反映する用途には `--build-module` を先に使います。
 

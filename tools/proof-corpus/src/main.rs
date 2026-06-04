@@ -231,6 +231,7 @@ struct VerifyOptions {
 struct BuildOptions {
     requested_modules: Vec<String>,
     failures_out: Option<PathBuf>,
+    package_metadata: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -33941,9 +33942,9 @@ fn usage() -> String {
 usage:
   npa-proof-corpus
   npa-proof-corpus --package-lock-only
-  npa-proof-corpus --build-module MODULE [--metadata-once] [--failures-out PATH]
-  npa-proof-corpus --build-modules MODULE ... [--metadata-once] [--failures-out PATH]
-  npa-proof-corpus --build-modules-file PATH [--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-module MODULE [--package-metadata|--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-modules MODULE ... [--package-metadata|--metadata-once] [--failures-out PATH]
+  npa-proof-corpus --build-modules-file PATH [--package-metadata|--metadata-once] [--failures-out PATH]
   npa-proof-corpus --promote-plan CORPUS_MODULE --mathlib-root PATH --to-module Mathlib.* --out PATH
   npa-proof-corpus --promote-materialize PLAN --mathlib-root PATH [--dry-run|--apply] [--compat-alias none]
   npa-proof-corpus --verify [--module MODULE ...] [--changed-only] [--shard INDEX/TOTAL] [--failures-out PATH] [--verified-cache off|authoring|read-through]
@@ -33954,6 +33955,7 @@ usage:
 
 INDEX/TOTAL is zero-based, for example --shard 0/4.
 --verified-cache defaults to off. authoring and read-through are only for --module or --changed-only.
+--build-module and --build-modules default to authoring metadata only. --package-metadata also writes the package manifest and lock. --metadata-once is a compatibility alias.
 "
     .to_owned()
 }
@@ -34221,7 +34223,8 @@ fn parse_build_modules_args(args: &[String]) -> Result<BuildOptions, String> {
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
-            "--metadata-once" => {
+            "--package-metadata" | "--metadata-once" => {
+                options.package_metadata = true;
                 index += 1;
             }
             "--failures-out" => {
@@ -34260,7 +34263,8 @@ fn parse_build_metadata_options(args: &[String]) -> Result<BuildOptions, String>
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
-            "--metadata-once" => {
+            "--package-metadata" | "--metadata-once" => {
+                options.package_metadata = true;
                 index += 1;
             }
             "--failures-out" => {
@@ -34546,8 +34550,6 @@ fn run_build_modules_inner(
         )
     })?;
 
-    let existing_metas = package_manifest_module_metas(proof_root)
-        .map_err(|error| record_build_failure(failures, "", error))?;
     let external_imports = generated_external_std_imports()
         .map_err(|error| record_build_failure(failures, "", error))?;
     write_external_import_artifacts(proof_root, &external_imports)
@@ -34564,8 +34566,15 @@ fn run_build_modules_inner(
         }
     }
 
-    write_batch_metadata_once(proof_root, existing_metas, &cache)
-        .map_err(|error| record_build_failure(failures, "", error))?;
+    if options.package_metadata {
+        let existing_metas = package_manifest_module_metas(proof_root)
+            .map_err(|error| record_build_failure(failures, "", error))?;
+        write_package_metadata_once(proof_root, existing_metas, &cache)
+            .map_err(|error| record_build_failure(failures, "", error))?;
+    } else {
+        write_authoring_metadata(proof_root)
+            .map_err(|error| record_build_failure(failures, "", error))?;
+    }
 
     if options.requested_modules.len() == 1 {
         println!(
@@ -34602,7 +34611,11 @@ fn first_unknown_requested_module(requested_modules: &[String]) -> Option<String
         .cloned()
 }
 
-fn write_batch_metadata_once(
+fn write_authoring_metadata(proof_root: &Path) -> Result<(), String> {
+    write_ai_theorem_index(proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))
+}
+
+fn write_package_metadata_once(
     proof_root: &Path,
     existing_metas: BTreeMap<String, ModuleMeta>,
     cache: &BuiltCorpusCache<'_>,
@@ -40391,6 +40404,7 @@ mod tests {
             vec!["Proofs.Ai.Basic", "Proofs.Ai.Eq"]
         );
         assert!(parsed.failures_out.is_none());
+        assert!(!parsed.package_metadata);
         assert!(parse_build_modules_args(&[]).is_err());
     }
 
@@ -40408,6 +40422,18 @@ mod tests {
             parsed.failures_out,
             Some(PathBuf::from("proofs/generated/build-failures.json"))
         );
+        assert!(parsed.package_metadata);
+    }
+
+    #[test]
+    fn build_modules_args_parser_accepts_package_metadata() {
+        let parsed = parse_build_modules_args(&[
+            "Proofs.Ai.Basic".to_owned(),
+            "--package-metadata".to_owned(),
+        ])
+        .expect("build options should parse");
+        assert_eq!(parsed.requested_modules, vec!["Proofs.Ai.Basic"]);
+        assert!(parsed.package_metadata);
     }
 
     #[test]
