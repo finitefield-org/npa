@@ -149,18 +149,19 @@ the theorem statement or imported law package.
 | `SEQ-017` | `SET-T19`, `SET-T20` |
 | `SEQ-018` | `SET-T21`, `SET-T22` |
 | `SEQ-019` | `SET-T23`, `SET-T24` |
-| `SEQ-020` | `SET-T29`, `SET-T30` |
+| `SEQ-020` | `SET-T29` |
 
 After `SEQ-020`, choose the next branch by project need:
 
-- topology reuse: `SET-T43`, `SET-T44`, then selected `SET-T39` and
-  `SET-T40`;
-- CH/forcing: `SET-T31`, `SET-T32`, `SET-T33`, `SET-T34`, then
-  `SET-T27` and `SET-T28`;
+- topology reuse: finish selected `SET-T39` and `SET-T40` interfaces plus
+  topology prerequisites, then `SET-T43`; run `SET-T44` only after `SET-T30`
+  and `SET-T34` are available;
+- CH/forcing: `SET-T31`, `SET-T32`, `SET-T25`, `SET-T26`, `SET-T30`,
+  `SET-T33`, `SET-T34`, then `SET-T27` and `SET-T28`;
 - descriptive set theory: topology and measure prerequisites, then
   `SET-T39` and `SET-T40`;
 - large cardinals and determinacy: `SET-T31`, `SET-T32`, `SET-T37`,
-  `SET-T38`, then `SET-T41` and `SET-T42`;
+  `SET-T38`, `SET-T39`, `SET-T40`, then `SET-T41` and `SET-T42`;
 - packaging and promotion: only after the selected closure passes source-free
   and package checks in `SET-T47` and `SET-T48`.
 
@@ -757,7 +758,7 @@ for higher-numbered support tasks.
 ### SET-T30 Add Boolean Prime Ideal, Stone Representation, And Forcing Boolean Bridge
 
 - Status: Pending
-- Depends on: `SET-T29`, topology roadmap
+- Depends on: `SET-T29`
 - Areas: `Proofs.Ai.SetTheory.BooleanAlgebra.Stone`
 - Tasks:
   - Connect ultrafilter lemma and Boolean prime ideal theorem equivalence from `SET-T16`.
@@ -940,7 +941,7 @@ for higher-numbered support tasks.
 ### SET-T40 Add Analytic, Coanalytic, Projective, And Regularity Interfaces
 
 - Status: Pending
-- Depends on: `SET-T39`, `SET-T42`
+- Depends on: `SET-T39`
 - Areas: `Proofs.Ai.SetTheory.Descriptive.Analytic`
 - Tasks:
   - Define analytic and coanalytic sets via continuous images or projections.
@@ -950,7 +951,7 @@ for higher-numbered support tasks.
   - Analytic/projective DST theorem-card batch.
 - Acceptance criteria:
   - Suslin and Lusin claims remain theorem cards until topology, coding, and measure prerequisites exist.
-  - Regularity statements identify determinacy or large-cardinal assumptions when used.
+  - Regularity statement forms identify where determinacy or large-cardinal consequences from later milestones may attach, but do not import those consequences as prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Descriptive.Analytic`
   - `rg -n "Suslin|Lusin|analytic|coanalytic|projective|perfect set" proofs/set-theory-theorem-proof-roadmap*.md proofs`
@@ -976,7 +977,7 @@ for higher-numbered support tasks.
 ### SET-T42 Add Determinacy Regularity And Large-Cardinal Links
 
 - Status: Pending
-- Depends on: `SET-T41`, `SET-T38`
+- Depends on: `SET-T41`, `SET-T38`, `SET-T40`
 - Areas: `Proofs.Ai.SetTheory.Determinacy.Regularity`
 - Tasks:
   - Add AD-implies-regularity theorem cards for Lebesgue measurability, property of Baire, and perfect set property.
