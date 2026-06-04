@@ -1766,6 +1766,58 @@ Frobenius uses the existing `FieldHomLawArgs` route. Cardinality, power, and roo
 statement-level evidence in the checked certificate, while `source.npa`, replay, metadata, and the
 AI theorem index remain non-trusted sidecars.
 
+#### `Proofs.Ai.Algebra.AbstractSplittingField`
+
+This module adds a splitting-field staging package over the existing polynomial quotient,
+algebraic-extension, finite-extension, and field-isomorphism APIs. It does not construct a
+splitting field internally. Construction, root containment, generation by roots, and uniqueness up
+to field isomorphism are all explicit evidence supplied to the package and then projected by
+certificate-checked theorem targets.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SplittingFieldConstructionEvidence` | named wrapper for explicit construction evidence |
+| `SplittingFieldRootEvidence` | named wrapper for the supplied root predicate of the staged polynomial |
+| `SplittingFieldRootContained` | named wrapper for root-containment evidence in the staged splitting field |
+| `SplittingFieldGeneratedByRootsEvidence` | named wrapper for generated-by-roots evidence |
+| `SplittingFieldLawArgs` | packages base field, polynomial extension, extension field, construction, root containment, and generation evidence |
+| `SplittingFieldUniquenessArgs` | packages the supplied `FieldIsoLawArgs` used for uniqueness up to field isomorphism |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `splitting_field_contains_all_roots` | projects the supplied all-roots containment law |
+| `splitting_field_generated_by_roots` | projects the generated-by-roots evidence |
+| `splitting_field_unique_up_to_field_iso` | projects the supplied `FieldIsoLawArgs` uniqueness witness |
+
+#### `Proofs.Ai.Algebra.AbstractAlgebraicClosure`
+
+This module adds an algebraic-closure staging package. It keeps closure construction,
+element algebraicity, and polynomial root existence as explicit evidence fields; no algebraic
+closure existence axiom or hidden root-finding procedure is added.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `AlgebraicClosureConstructionEvidence` | named wrapper for explicit algebraic-closure construction evidence |
+| `AlgebraicClosureElement` | named wrapper for the supplied algebraic-over-base predicate |
+| `AlgebraicClosurePolynomialHasRoot` | named wrapper for the supplied polynomial root-existence predicate |
+| `AlgebraicClosureLawArgs` | packages base field, polynomial extension, closure field, field extension, construction, algebraicity, and root-existence evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `algebraic_closure_is_algebraic` | projects the supplied per-element algebraicity evidence |
+| `algebraic_closure_polynomial_has_root` | projects the supplied polynomial root-existence evidence |
+
+The `HasRoot` predicate is intentionally abstract, so downstream modules can encode nonconstant or
+positive-degree side conditions there without changing the trusted certificate boundary.
+
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
 Implemented definitions / API declarations, not proof targets:

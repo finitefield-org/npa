@@ -774,7 +774,7 @@ Implication:
 
 ### FT-14 Add Splitting Field And Algebraic Closure Evidence Layers
 
-- Status: Pending
+- Status: Completed
 - Depends on: FT-11, FT-12
 - Inputs:
   - `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
@@ -813,6 +813,14 @@ Implication:
   - `rg -n "SplittingFieldLawArgs|AlgebraicClosureLawArgs|splitting_field_unique" proofs tools`
 - Notes:
   - Split the two modules if algebraic closure statements remain unstable.
+  - Completed with `Proofs.Ai.Algebra.AbstractSplittingField` and
+    `Proofs.Ai.Algebra.AbstractAlgebraicClosure`.
+  - Splitting-field construction, all-roots containment, generation by roots, and uniqueness up to
+    field isomorphism are explicit evidence fields or `FieldIsoLawArgs` witnesses.
+  - Algebraic-closure construction, element algebraicity, and polynomial root existence are explicit
+    evidence fields; no algebraic-closure existence axiom or hidden root-finding procedure is added.
+  - The algebraic-closure `HasRoot` predicate remains abstract so downstream modules can encode
+    nonconstant or positive-degree side conditions before the polynomial API stabilizes.
 
 ### FT-15 Add Galois Theory Starter
 

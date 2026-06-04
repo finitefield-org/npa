@@ -164,6 +164,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_ALGEBRAIC_EXTENSION_MODULE,
     &ABSTRACT_FINITE_FIELD_EXTENSION_MODULE,
     &ABSTRACT_FINITE_FIELD_MODULE,
+    &ABSTRACT_SPLITTING_FIELD_MODULE,
+    &ABSTRACT_ALGEBRAIC_CLOSURE_MODULE,
     &DERIVED_AFFINE_SCHEMES_MODULE,
     &QUASI_COHERENT_SHEAVES_MODULE,
     &ETALE_SMOOTH_FLAT_TOPOLOGY_MODULE,
@@ -1686,6 +1688,80 @@ const ABSTRACT_FINITE_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_FINITE_FIELD_DEFINITIONS,
     theorems: ABSTRACT_FINITE_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_SPLITTING_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractSplittingField",
+    source_path: "Proofs/Ai/Algebra/AbstractSplittingField/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractSplittingField/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractSplittingField/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractSplittingField/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_SPLITTING_FIELD_DEFINITIONS,
+    theorems: ABSTRACT_SPLITTING_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ABSTRACT_ALGEBRAIC_CLOSURE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractAlgebraicClosure",
+    source_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractAlgebraicClosure/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_ALGEBRAIC_CLOSURE_DEFINITIONS,
+    theorems: ABSTRACT_ALGEBRAIC_CLOSURE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -26229,6 +26305,341 @@ const ABSTRACT_FINITE_FIELD_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_SPLITTING_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SplittingFieldConstructionEvidence",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (ConstructionEvidence : Prop), Prop"
+        ),
+        value: "fun K => fun Ext => fun base_embed => fun ConstructionEvidence => ConstructionEvidence",
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldRootEvidence",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (alpha : Ext), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun PolynomialOfInterest => fun IsRoot => fun alpha => IsRoot alpha"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldRootContained",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (alpha : Ext), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun PolynomialOfInterest => fun RootContained => fun alpha => RootContained alpha"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldGeneratedByRootsEvidence",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (GeneratedByRoots : Prop), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun PolynomialOfInterest => fun GeneratedByRoots => GeneratedByRoots"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldLawArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (GeneratedByRoots : Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun PolynomialOfInterest => fun IsRoot => fun RootContained => ",
+            "fun GeneratedByRoots => fun ConstructionEvidence => fun field_args => ",
+            "fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (construction_law : @SplittingFieldConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence), ",
+            "forall (contains_all_roots_law : forall (alpha : Ext), forall (root_law : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha), @SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha), ",
+            "forall (generated_by_roots_law : @SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots), Q), Q"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SplittingFieldUniquenessArgs",
+        universe_params: &["e", "w"],
+        ty: concat!(
+            "forall (Ext : Sort e), ",
+            "forall (zeroE : Ext), ",
+            "forall (oneE : Ext), ",
+            "forall (addE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (negE : forall (a : Ext), Ext), ",
+            "forall (subE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (mulE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (invE : forall (a : Ext), Ext), ",
+            "forall (Other : Sort w), ",
+            "forall (zeroO : Other), ",
+            "forall (oneO : Other), ",
+            "forall (addO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (negO : forall (a : Other), Other), ",
+            "forall (subO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (mulO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (invO : forall (a : Other), Other), ",
+            "forall (forward : forall (x : Ext), Other), ",
+            "forall (backward : forall (y : Other), Ext), Prop"
+        ),
+        value: concat!(
+            "fun Ext => fun zeroE => fun oneE => fun addE => fun negE => fun subE => fun mulE => fun invE => ",
+            "fun Other => fun zeroO => fun oneO => fun addO => fun negO => fun subO => fun mulO => fun invO => ",
+            "fun forward => fun backward => forall (Q : Prop), forall (mk : ",
+            "forall (iso_law : @FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward), Q), Q"
+        ),
+    },
+];
+
+const ABSTRACT_SPLITTING_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "splitting_field_contains_all_roots",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (GeneratedByRoots : Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (splitting_args : @SplittingFieldLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed PolynomialOfInterest IsRoot RootContained GeneratedByRoots ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "forall (alpha : Ext), ",
+            "forall (root_law : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha), ",
+            "@SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun PolynomialOfInterest => fun IsRoot => fun RootContained => ",
+            "fun GeneratedByRoots => fun ConstructionEvidence => fun field_args => ",
+            "fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun splitting_args => fun alpha => fun root_law => ",
+            "splitting_args (@SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @SplittingFieldConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (contains_all_roots_law : forall (alpha_arg : Ext), forall (root_arg : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha_arg), @SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha_arg) => ",
+            "fun (generated_by_roots_law : @SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots) => contains_all_roots_law alpha root_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "splitting_field_generated_by_roots",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (PolynomialOfInterest : Poly), ",
+            "forall (IsRoot : forall (alpha : Ext), Prop), ",
+            "forall (RootContained : forall (alpha : Ext), Prop), ",
+            "forall (GeneratedByRoots : Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (splitting_args : @SplittingFieldLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed PolynomialOfInterest IsRoot RootContained GeneratedByRoots ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "@SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun PolynomialOfInterest => fun IsRoot => fun RootContained => ",
+            "fun GeneratedByRoots => fun ConstructionEvidence => fun field_args => ",
+            "fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun splitting_args => ",
+            "splitting_args (@SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @SplittingFieldConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (contains_all_roots_law : forall (alpha_arg : Ext), forall (root_arg : @SplittingFieldRootEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest IsRoot alpha_arg), @SplittingFieldRootContained.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest RootContained alpha_arg) => ",
+            "fun (generated_by_roots_law : @SplittingFieldGeneratedByRootsEvidence.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot PolynomialOfInterest GeneratedByRoots) => generated_by_roots_law)"
+        )),
+    },
+    TheoremArtifact {
+        name: "splitting_field_unique_up_to_field_iso",
+        universe_params: &["e", "w"],
+        statement: concat!(
+            "forall (Ext : Sort e), ",
+            "forall (zeroE : Ext), ",
+            "forall (oneE : Ext), ",
+            "forall (addE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (negE : forall (a : Ext), Ext), ",
+            "forall (subE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (mulE : forall (a : Ext), forall (b : Ext), Ext), ",
+            "forall (invE : forall (a : Ext), Ext), ",
+            "forall (Other : Sort w), ",
+            "forall (zeroO : Other), ",
+            "forall (oneO : Other), ",
+            "forall (addO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (negO : forall (a : Other), Other), ",
+            "forall (subO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (mulO : forall (a : Other), forall (b : Other), Other), ",
+            "forall (invO : forall (a : Other), Other), ",
+            "forall (forward : forall (x : Ext), Other), ",
+            "forall (backward : forall (y : Other), Ext), ",
+            "forall (unique_args : @SplittingFieldUniquenessArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward), ",
+            "@FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward"
+        ),
+        proof: concat!(
+            "fun Ext => fun zeroE => fun oneE => fun addE => fun negE => fun subE => fun mulE => fun invE => ",
+            "fun Other => fun zeroO => fun oneO => fun addO => fun negO => fun subO => fun mulO => fun invO => ",
+            "fun forward => fun backward => fun unique_args => ",
+            "unique_args (@FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward) ",
+            "(fun (iso_law : @FieldIsoLawArgs.{e,w} Ext zeroE oneE addE negE subE mulE invE Other zeroO oneO addO negO subO mulO invO forward backward) => iso_law)"
+        ),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_CLOSURE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "AlgebraicClosureConstructionEvidence",
+        universe_params: &["e", "u"],
+        ty: concat!(
+            "forall (K : Sort u), ",
+            "forall (Ext : Sort e), ",
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (ConstructionEvidence : Prop), Prop"
+        ),
+        value: "fun K => fun Ext => fun base_embed => fun ConstructionEvidence => ConstructionEvidence",
+    },
+    DefinitionArtifact {
+        name: "AlgebraicClosureElement",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (alpha : Ext), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun base_embed => fun IsAlgebraic => fun alpha => IsAlgebraic alpha"
+        ),
+    },
+    DefinitionArtifact {
+        name: "AlgebraicClosurePolynomialHasRoot",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (poly : Poly), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(
+            "fun base_embed => fun HasRoot => fun poly => HasRoot poly"
+        ),
+    },
+    DefinitionArtifact {
+        name: "AlgebraicClosureLawArgs",
+        universe_params: &["e", "p", "q", "u"],
+        ty: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), Prop"
+        )),
+        value: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun IsAlgebraic => fun HasRoot => fun ConstructionEvidence => ",
+            "fun field_args => fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "forall (Q : Prop), forall (mk : ",
+            "forall (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (construction_law : @AlgebraicClosureConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence), ",
+            "forall (algebraic_law : forall (alpha : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha), ",
+            "forall (polynomial_has_root_law : forall (poly : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly), Q), Q"
+        )),
+    },
+];
+
+const ABSTRACT_ALGEBRAIC_CLOSURE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "algebraic_closure_is_algebraic",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (closure_args : @AlgebraicClosureLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic HasRoot ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "forall (alpha : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun IsAlgebraic => fun HasRoot => fun ConstructionEvidence => ",
+            "fun field_args => fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun closure_args => fun alpha => ",
+            "closure_args (@AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @AlgebraicClosureConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (algebraic_law : forall (alpha_arg : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha_arg) => ",
+            "fun (polynomial_has_root_law : forall (poly_arg : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly_arg) => algebraic_law alpha)"
+        )),
+    },
+    TheoremArtifact {
+        name: "algebraic_closure_polynomial_has_root",
+        universe_params: &["e", "p", "q", "u"],
+        statement: simple_algebraic_extension_params!(concat!(
+            "forall (base_embed : forall (a : K), Ext), ",
+            "forall (IsAlgebraic : forall (alpha : Ext), Prop), ",
+            "forall (HasRoot : forall (poly : Poly), Prop), ",
+            "forall (ConstructionEvidence : Prop), ",
+            "forall (field_args : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK), ",
+            "forall (extension_laws : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable), ",
+            "forall (extension_field_laws : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE), ",
+            "forall (extension_args : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed), ",
+            "forall (closure_args : @AlgebraicClosureLawArgs.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic HasRoot ConstructionEvidence field_args extension_laws extension_field_laws extension_args), ",
+            "forall (poly : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly"
+        )),
+        proof: simple_algebraic_extension_abs!(concat!(
+            "fun base_embed => fun IsAlgebraic => fun HasRoot => fun ConstructionEvidence => ",
+            "fun field_args => fun extension_laws => fun extension_field_laws => fun extension_args => ",
+            "fun closure_args => fun poly => ",
+            "closure_args (@AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly) ",
+            "(fun (base_field_law : @FieldLawArgs.{u} K zeroK oneK addK negK subK mulK invK) => ",
+            "fun (polynomial_extension_law : @PolynomialExtensionLawArgs.{succ p,u} K zeroK oneK addK negK subK mulK Poly zeroP oneP addP negP subP mulP const variable) => ",
+            "fun (extension_field_law : @FieldLawArgs.{e} Ext zeroE oneE addE negE subE mulE invE) => ",
+            "fun (field_extension_law : @FieldExtensionLawArgs.{u,e} K zeroK oneK addK negK subK mulK invK Ext zeroE oneE addE negE subE mulE invE base_embed) => ",
+            "fun (construction_law : @AlgebraicClosureConstructionEvidence.{e,u} K Ext base_embed ConstructionEvidence) => ",
+            "fun (algebraic_law : forall (alpha_arg : Ext), @AlgebraicClosureElement.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed IsAlgebraic alpha_arg) => ",
+            "fun (polynomial_has_root_law : forall (poly_arg : Poly), @AlgebraicClosurePolynomialHasRoot.{e,p,q,u} K zeroK oneK addK negK subK mulK invK Poly zeroP oneP addP negP subP mulP const variable Quot zeroQ oneQ addQ negQ subQ mulQ invQ quotient_map Ext zeroE oneE addE negE subE mulE invE eval_at quotient_to_ext ext_to_quot base_embed HasRoot poly_arg) => polynomial_has_root_law poly)"
+        )),
+    },
+];
+
 const ABSTRACT_HILBERT_BASIS_THEOREM_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "HbtFalse",
@@ -33708,6 +34119,71 @@ fn run_full() -> Result<(), String> {
         &abstract_finite_field_imports,
         &abstract_finite_field_source_interfaces,
     )?;
+    let abstract_splitting_field_imports = vec![
+        eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_group.verified_module.clone(),
+        abstract_group_image.verified_module.clone(),
+        abstract_group_quotient.verified_module.clone(),
+        abstract_group_quotient_mul.verified_module.clone(),
+        abstract_group_quotient_group.verified_module.clone(),
+        abstract_group_first_iso_full.verified_module.clone(),
+        abstract_ring_first_iso_base.verified_module.clone(),
+        abstract_field_hom.verified_module.clone(),
+        abstract_field_hom_kernel_image.verified_module.clone(),
+        abstract_field_extension.verified_module.clone(),
+        abstract_ring_first_iso.verified_module.clone(),
+        abstract_ring_chinese_remainder.verified_module.clone(),
+        abstract_hilbert_basis_theorem.verified_module.clone(),
+        abstract_hilbert_nullstellensatz.verified_module.clone(),
+        abstract_krull_theorem.verified_module.clone(),
+        abstract_field_ideal.verified_module.clone(),
+        abstract_polynomial_field_quotient.verified_module.clone(),
+        abstract_algebraic_extension.verified_module.clone(),
+        abstract_finite_field_extension.verified_module.clone(),
+    ];
+    let abstract_splitting_field_source_interfaces = vec![
+        eq_source_interface.clone(),
+        eq_reasoning.source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_group.source_interface.clone(),
+        abstract_group_image.source_interface.clone(),
+        abstract_group_quotient.source_interface.clone(),
+        abstract_group_quotient_mul.source_interface.clone(),
+        abstract_group_quotient_group.source_interface.clone(),
+        abstract_group_first_iso_full.source_interface.clone(),
+        abstract_ring_first_iso_base.source_interface.clone(),
+        abstract_field_hom.source_interface.clone(),
+        abstract_field_hom_kernel_image.source_interface.clone(),
+        abstract_field_extension.source_interface.clone(),
+        abstract_ring_first_iso.source_interface.clone(),
+        abstract_ring_chinese_remainder.source_interface.clone(),
+        abstract_hilbert_basis_theorem.source_interface.clone(),
+        abstract_hilbert_nullstellensatz.source_interface.clone(),
+        abstract_krull_theorem.source_interface.clone(),
+        abstract_field_ideal.source_interface.clone(),
+        abstract_polynomial_field_quotient.source_interface.clone(),
+        abstract_algebraic_extension.source_interface.clone(),
+        abstract_finite_field_extension.source_interface.clone(),
+    ];
+    let abstract_splitting_field = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_SPLITTING_FIELD_MODULE,
+        &abstract_splitting_field_imports,
+        &abstract_splitting_field_source_interfaces,
+    )?;
+    let abstract_algebraic_closure_imports = abstract_splitting_field_imports.clone();
+    let abstract_algebraic_closure_source_interfaces =
+        abstract_splitting_field_source_interfaces.clone();
+    let abstract_algebraic_closure = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ALGEBRAIC_CLOSURE_MODULE,
+        &abstract_algebraic_closure_imports,
+        &abstract_algebraic_closure_source_interfaces,
+    )?;
     let derived_affine_schemes =
         build_and_write_module(&proof_root, &DERIVED_AFFINE_SCHEMES_MODULE, &[], &[])?;
     let quasi_coherent_sheaves_imports = vec![derived_affine_schemes.verified_module.clone()];
@@ -34262,6 +34738,8 @@ fn run_full() -> Result<(), String> {
         abstract_algebraic_extension,
         abstract_finite_field_extension,
         abstract_finite_field,
+        abstract_splitting_field,
+        abstract_algebraic_closure,
         derived_affine_schemes,
         quasi_coherent_sheaves,
         etale_smooth_flat_topology,
@@ -36515,6 +36993,8 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
         || module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_FINITE_FIELD_MODULE.module
+        || module == ABSTRACT_SPLITTING_FIELD_MODULE.module
+        || module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,
@@ -36857,6 +37337,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
         || config.module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
         || config.module == ABSTRACT_FINITE_FIELD_MODULE.module
+        || config.module == ABSTRACT_SPLITTING_FIELD_MODULE.module
+        || config.module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
