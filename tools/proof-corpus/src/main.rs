@@ -176,6 +176,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_VECTOR_SPACE_MODULE,
     &LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE,
     &LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE,
+    &LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE,
     &ABSTRACT_NORMED_SPACE_MODULE,
     &ABSTRACT_LINEAR_MAP_MODULE,
     &ABSTRACT_DERIVATIVE_MODULE,
@@ -1784,6 +1785,24 @@ const LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+    source_path: "Proofs/Ai/LinearAlgebra/Basis/Dimension/source.npa",
+    certificate_path: "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert",
+    meta_path: "Proofs/Ai/LinearAlgebra/Basis/Dimension/meta.json",
+    replay_path: "Proofs/Ai/LinearAlgebra/Basis/Dimension/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.LinearAlgebra.VectorSpace.Basic",
+        "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+    ],
+    inductives: &[],
+    definitions: LINEAR_ALGEBRA_BASIS_DIMENSION_DEFINITIONS,
+    theorems: LINEAR_ALGEBRA_BASIS_DIMENSION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Vector.AbstractInnerProduct",
     source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
@@ -2302,6 +2321,64 @@ macro_rules! linear_algebra_subspace_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_basis_params {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (Index : Sort w), ",
+            "forall (basis_vec : forall (i : Index), Vector), ",
+            "forall (lincomb : forall (coeffs : forall (i : Index), Scalar), Vector), ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (Index : Sort w), ",
+            "forall (basis_vec : forall (i : Index), Vector), ",
+            "forall (lincomb : forall (coeffs : forall (i : Index), Scalar), Vector), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! linear_algebra_basis_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => ",
             $tail
         )
     };
@@ -29862,6 +29939,209 @@ const LINEAR_ALGEBRA_SUBSPACE_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const LINEAR_ALGEBRA_BASIS_DIMENSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "CoordinateRepresentation",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_basis_params!(
+            "forall (x : Vector), forall (coeffs : forall (i : Index), Scalar), Prop"
+        ),
+        value: linear_algebra_basis_abs!(
+            "fun x => fun coeffs => @Eq.{v} Vector (lincomb coeffs) x"
+        ),
+    },
+    DefinitionArtifact {
+        name: "LinearIndependent",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_basis_params!("Prop"),
+        value: linear_algebra_basis_abs!(
+            "forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero"
+        ),
+    },
+    DefinitionArtifact {
+        name: "Spanning",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_basis_params!("Prop"),
+        value: linear_algebra_basis_abs!(concat!(
+            "forall (x : Vector), forall (P : Prop), forall (mk : ",
+            "forall (coeffs : forall (i : Index), Scalar), ",
+            "forall (rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CoordinateUnique",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_basis_params!("Prop"),
+        value: linear_algebra_basis_abs!(concat!(
+            "forall (x : Vector), ",
+            "forall (left : forall (i : Index), Scalar), ",
+            "forall (right : forall (i : Index), Scalar), ",
+            "forall (left_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x left), ",
+            "forall (right_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x right), ",
+            "forall (i : Index), @Eq.{u} Scalar (left i) (right i)"
+        )),
+    },
+    DefinitionArtifact {
+        name: "Basis",
+        universe_params: &["u", "v", "w"],
+        ty: linear_algebra_basis_params!("Prop"),
+        value: linear_algebra_basis_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P), P"
+        )),
+    },
+];
+
+const LINEAR_ALGEBRA_BASIS_DIMENSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "coordinate_representation_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (x : Vector), forall (coeffs : forall (i : Index), Scalar), forall (h : @Eq.{v} Vector (lincomb coeffs) x), @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs"
+        ),
+        proof: linear_algebra_basis_abs!("fun x => fun coeffs => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "coordinate_representation_eq",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (x : Vector), forall (coeffs : forall (i : Index), Scalar), forall (rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs), @Eq.{v} Vector (lincomb coeffs) x"
+        ),
+        proof: linear_algebra_basis_abs!("fun x => fun coeffs => fun rep => rep"),
+    },
+    TheoremArtifact {
+        name: "linear_independent_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (independent_rule : forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!("fun independent_rule => independent_rule"),
+    },
+    TheoremArtifact {
+        name: "linear_independent_coeff_zero",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun linear_independent => fun coeffs => fun hzero => fun i => linear_independent coeffs hzero i"
+        ),
+    },
+    TheoremArtifact {
+        name: "spanning_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (spanning_rule : forall (x : Vector), forall (P : Prop), forall (mk : forall (coeffs : forall (i : Index), Scalar), forall (rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs), P), P), @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!("fun spanning_rule => spanning_rule"),
+    },
+    TheoremArtifact {
+        name: "spanning_has_coordinates",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (x : Vector), forall (P : Prop), forall (mk : forall (coeffs : forall (i : Index), Scalar), forall (rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs), P), P"
+        ),
+        proof: linear_algebra_basis_abs!("fun spanning => fun x => fun P => fun mk => spanning x P mk"),
+    },
+    TheoremArtifact {
+        name: "coordinate_unique_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (unique_rule : forall (x : Vector), forall (left : forall (i : Index), Scalar), forall (right : forall (i : Index), Scalar), forall (left_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x left), forall (right_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x right), forall (i : Index), @Eq.{u} Scalar (left i) (right i)), @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!("fun unique_rule => unique_rule"),
+    },
+    TheoremArtifact {
+        name: "coordinate_unique_coeff_eq",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (x : Vector), forall (left : forall (i : Index), Scalar), forall (right : forall (i : Index), Scalar), forall (left_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x left), forall (right_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x right), forall (i : Index), @Eq.{u} Scalar (left i) (right i)"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun coordinate_unique => fun x => fun left => fun right => fun left_rep => fun right_rep => fun i => coordinate_unique x left right left_rep right_rep i"
+        ),
+    },
+    TheoremArtifact {
+        name: "basis_intro",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (vector_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun vector_args => fun linear_independent => fun spanning => fun coordinate_unique => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), ",
+            "forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P) => ",
+            "mk linear_independent spanning coordinate_unique"
+        )),
+    },
+    TheoremArtifact {
+        name: "basis_linear_independent",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun basis => ",
+            "basis (@LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) ",
+            "(fun (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => linear_independent)"
+        )),
+    },
+    TheoremArtifact {
+        name: "basis_spanning",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun basis => ",
+            "basis (@Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) ",
+            "(fun (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => spanning)"
+        )),
+    },
+    TheoremArtifact {
+        name: "basis_coordinate_unique",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb"
+        ),
+        proof: linear_algebra_basis_abs!(concat!(
+            "fun basis => ",
+            "basis (@CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) ",
+            "(fun (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => ",
+            "fun (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => coordinate_unique)"
+        )),
+    },
+    TheoremArtifact {
+        name: "basis_coordinates_exist",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (x : Vector), forall (P : Prop), forall (mk : forall (coeffs : forall (i : Index), Scalar), forall (rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs), P), P"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun basis => fun x => fun P => fun mk => (@basis_spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb basis) x P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "basis_coordinate_eq",
+        universe_params: &["u", "v", "w"],
+        statement: linear_algebra_basis_params!(
+            "forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (x : Vector), forall (left : forall (i : Index), Scalar), forall (right : forall (i : Index), Scalar), forall (left_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x left), forall (right_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x right), forall (i : Index), @Eq.{u} Scalar (left i) (right i)"
+        ),
+        proof: linear_algebra_basis_abs!(
+            "fun basis => fun x => fun left => fun right => fun left_rep => fun right_rep => fun i => (@basis_coordinate_unique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb basis) x left right left_rep right_rep i"
+        ),
+    },
+];
+
 const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dot",
@@ -37761,6 +38041,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
+        || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module
         || config.module == FLT_STATEMENT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);

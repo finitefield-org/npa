@@ -1,0 +1,107 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Basis.Dimension",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CoordinateRepresentation",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun x => fun coeffs => @Eq.{v} Vector (lincomb coeffs) x"
+    },
+    {
+      "declaration": "LinearIndependent",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero"
+    },
+    {
+      "declaration": "Spanning",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => forall (x : Vector), forall (P : Prop), forall (mk : forall (coeffs : forall (i : Index), Scalar), forall (rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x coeffs), P), P"
+    },
+    {
+      "declaration": "CoordinateUnique",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => forall (x : Vector), forall (left : forall (i : Index), Scalar), forall (right : forall (i : Index), Scalar), forall (left_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x left), forall (right_rep : @CoordinateRepresentation.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb x right), forall (i : Index), @Eq.{u} Scalar (left i) (right i)"
+    },
+    {
+      "declaration": "Basis",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => forall (P : Prop), forall (mk : forall (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P), P"
+    },
+    {
+      "declaration": "coordinate_representation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun x => fun coeffs => fun h => h"
+    },
+    {
+      "declaration": "coordinate_representation_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun x => fun coeffs => fun rep => rep"
+    },
+    {
+      "declaration": "linear_independent_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun independent_rule => independent_rule"
+    },
+    {
+      "declaration": "linear_independent_coeff_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun linear_independent => fun coeffs => fun hzero => fun i => linear_independent coeffs hzero i"
+    },
+    {
+      "declaration": "spanning_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun spanning_rule => spanning_rule"
+    },
+    {
+      "declaration": "spanning_has_coordinates",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun spanning => fun x => fun P => fun mk => spanning x P mk"
+    },
+    {
+      "declaration": "coordinate_unique_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun unique_rule => unique_rule"
+    },
+    {
+      "declaration": "coordinate_unique_coeff_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun coordinate_unique => fun x => fun left => fun right => fun left_rep => fun right_rep => fun i => coordinate_unique x left right left_rep right_rep i"
+    },
+    {
+      "declaration": "basis_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun vector_args => fun linear_independent => fun spanning => fun coordinate_unique => fun (P : Prop) => fun (mk : forall (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), P) => mk linear_independent spanning coordinate_unique"
+    },
+    {
+      "declaration": "basis_linear_independent",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun basis => basis (@LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) (fun (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => fun (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => fun (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => linear_independent)"
+    },
+    {
+      "declaration": "basis_spanning",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun basis => basis (@Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) (fun (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => fun (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => fun (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => spanning)"
+    },
+    {
+      "declaration": "basis_coordinate_unique",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun basis => basis (@CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) (fun (linear_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => fun (spanning : @Spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => fun (coordinate_unique : @CoordinateUnique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => coordinate_unique)"
+    },
+    {
+      "declaration": "basis_coordinates_exist",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun basis => fun x => fun P => fun mk => (@basis_spanning.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb basis) x P mk"
+    },
+    {
+      "declaration": "basis_coordinate_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun basis => fun x => fun left => fun right => fun left_rep => fun right_rep => fun i => (@basis_coordinate_unique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb basis) x left right left_rep right_rep i"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert"
+  }
+}

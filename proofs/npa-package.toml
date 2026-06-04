@@ -1257,6 +1257,23 @@ theorems = ["subspace_criterion", "subspace_zero_mem", "subspace_add_mem", "subs
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.LinearAlgebra.Basis.Dimension"
+source = "Proofs/Ai/LinearAlgebra/Basis/Dimension/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Basis/Dimension/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Basis/Dimension/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:557de0b06d6491a1b4c2804e3912698d9773ed4aa37175cf504f9287e441a027"
+expected_certificate_file_hash = "sha256:d0a919bf2d2620a36496f293f2b566edbedee45e1a24bab424da6916f5a68e00"
+expected_export_hash = "sha256:014bde9aa7378ab13a7e794aefcdf636de5d5f36d9bf083a8c74cdad58bfe9a1"
+expected_axiom_report_hash = "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3"
+expected_certificate_hash = "sha256:47709c2daa18e055032bce68b861f08cecf1b8feb67b5e8b01459055f2d1c150"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"]
+definitions = ["CoordinateRepresentation", "LinearIndependent", "Spanning", "CoordinateUnique", "Basis"]
+theorems = ["coordinate_representation_intro", "coordinate_representation_eq", "linear_independent_intro", "linear_independent_coeff_zero", "spanning_intro", "spanning_has_coordinates", "coordinate_unique_intro", "coordinate_unique_coeff_eq", "basis_intro", "basis_linear_independent", "basis_spanning", "basis_coordinate_unique", "basis_coordinates_exist", "basis_coordinate_eq"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.AbstractNormedSpace"
 source = "Proofs/Ai/Analysis/AbstractNormedSpace/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractNormedSpace/certificate.npcert"
