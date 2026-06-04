@@ -117,6 +117,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_LCM_MODULE,
     &NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE,
     &NUMBER_THEORY_BEZOUT_MODULE,
+    &NUMBER_THEORY_PRIME_MODULE,
+    &NUMBER_THEORY_COMPOSITE_MODULE,
     &REDUCTION_MODULE,
     &EQ_REASONING_MODULE,
     &ABSTRACT_METRIC_TOPOLOGY_MODULE,
@@ -583,6 +585,32 @@ const NUMBER_THEORY_BEZOUT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_BEZOUT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PRIME_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Prime",
+    source_path: "Proofs/Ai/NumberTheory/Prime/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Prime/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Prime/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Prime/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Divisibility"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PRIME_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_COMPOSITE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Composite",
+    source_path: "Proofs/Ai/NumberTheory/Composite/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Composite/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Composite/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Composite/replay.json",
+    imports: &["Proofs.Ai.NumberTheory.Prime"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_COMPOSITE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9803,6 +9831,156 @@ const NUMBER_THEORY_BEZOUT_THEOREMS: &[TheoremArtifact] = &[
             "forall (BezoutPackage : Type), forall (PrimeFactorization : Type), forall (ChineseRemainderTheorem : Type), forall (NoImportBoundary : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt), forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt",
         proof:
             "fun BezoutPackage => fun PrimeFactorization => fun ChineseRemainderTheorem => fun NoImportBoundary => fun boundary_law => fun bezout => fun prime_factorization => fun crt => boundary_law bezout prime_factorization crt",
+    },
+];
+
+const NUMBER_THEORY_PRIME_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "prime_nat_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), forall (PrimeNatDefinition : forall (n : Nat), Prop), forall (PrimeNat : forall (n : Nat), Prop), forall (definition_law : forall (n : Nat), forall (definition : PrimeNatDefinition n), PrimeNat n), forall (n : Nat), forall (definition : PrimeNatDefinition n), PrimeNat n",
+        proof:
+            "fun Nat => fun DividesNat => fun PrimeNatDefinition => fun PrimeNat => fun definition_law => fun n => fun definition => definition_law n definition",
+    },
+    TheoremArtifact {
+        name: "prime_int_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (UnitInt : forall (u : Int), Prop), forall (AssociatedInt : forall (a : Int), forall (b : Int), Prop), forall (PrimeIntDefinition : forall (p : Int), Prop), forall (PrimeInt : forall (p : Int), Prop), forall (definition_law : forall (p : Int), forall (definition : PrimeIntDefinition p), PrimeInt p), forall (p : Int), forall (definition : PrimeIntDefinition p), PrimeInt p",
+        proof:
+            "fun Int => fun DividesInt => fun UnitInt => fun AssociatedInt => fun PrimeIntDefinition => fun PrimeInt => fun definition_law => fun p => fun definition => definition_law p definition",
+    },
+    TheoremArtifact {
+        name: "unit_and_associated_int_predicates_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (UnitInt : forall (u : Int), Prop), forall (AssociatedInt : forall (a : Int), forall (b : Int), Prop), forall (UnitAssociatedInterface : forall (a : Int), forall (b : Int), Prop), forall (surface_law : forall (a : Int), forall (b : Int), forall (unit_a : UnitInt a), forall (associated_ab : AssociatedInt a b), UnitAssociatedInterface a b), forall (a : Int), forall (b : Int), forall (unit_a : UnitInt a), forall (associated_ab : AssociatedInt a b), UnitAssociatedInterface a b",
+        proof:
+            "fun Int => fun UnitInt => fun AssociatedInt => fun UnitAssociatedInterface => fun surface_law => fun a => fun b => fun unit_a => fun associated_ab => surface_law a b unit_a associated_ab",
+    },
+    TheoremArtifact {
+        name: "sign_normalized_prime_predicate_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (PrimeInt : forall (p : Int), Prop), forall (Nonnegative : forall (p : Int), Prop), forall (SignNormalizedPrimeInt : forall (p : Int), Prop), forall (normalization_law : forall (p : Int), forall (prime_p : PrimeInt p), forall (nonnegative_p : Nonnegative p), SignNormalizedPrimeInt p), forall (p : Int), forall (prime_p : PrimeInt p), forall (nonnegative_p : Nonnegative p), SignNormalizedPrimeInt p",
+        proof:
+            "fun Int => fun PrimeInt => fun Nonnegative => fun SignNormalizedPrimeInt => fun normalization_law => fun p => fun prime_p => fun nonnegative_p => normalization_law p prime_p nonnegative_p",
+    },
+    TheoremArtifact {
+        name: "one_is_not_prime_nat_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (PrimeNat : forall (n : Nat), Prop), forall (NotPrimeNat : forall (n : Nat), Prop), forall (one_not_prime_law : forall (one : Nat), NotPrimeNat one), forall (one : Nat), NotPrimeNat one",
+        proof:
+            "fun Nat => fun PrimeNat => fun NotPrimeNat => fun one_not_prime_law => fun one => one_not_prime_law one",
+    },
+    TheoremArtifact {
+        name: "one_is_not_prime_int_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (PrimeInt : forall (n : Int), Prop), forall (NotPrimeInt : forall (n : Int), Prop), forall (one_not_prime_law : forall (one : Int), NotPrimeInt one), forall (one : Int), NotPrimeInt one",
+        proof:
+            "fun Int => fun PrimeInt => fun NotPrimeInt => fun one_not_prime_law => fun one => one_not_prime_law one",
+    },
+    TheoremArtifact {
+        name: "prime_nat_trivial_divisors_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), forall (PrimeNat : forall (p : Nat), Prop), forall (TrivialNatDivisor : forall (d : Nat), forall (p : Nat), Prop), forall (trivial_divisor_law : forall (p : Nat), forall (d : Nat), forall (prime_p : PrimeNat p), forall (divides_dp : DividesNat d p), TrivialNatDivisor d p), forall (p : Nat), forall (d : Nat), forall (prime_p : PrimeNat p), forall (divides_dp : DividesNat d p), TrivialNatDivisor d p",
+        proof:
+            "fun Nat => fun DividesNat => fun PrimeNat => fun TrivialNatDivisor => fun trivial_divisor_law => fun p => fun d => fun prime_p => fun divides_dp => trivial_divisor_law p d prime_p divides_dp",
+    },
+    TheoremArtifact {
+        name: "prime_int_trivial_divisors_up_to_unit_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (DividesInt : forall (d : Int), forall (n : Int), Prop), forall (PrimeInt : forall (p : Int), Prop), forall (UnitInt : forall (u : Int), Prop), forall (AssociatedInt : forall (a : Int), forall (b : Int), Prop), forall (TrivialIntDivisorUpToUnit : forall (d : Int), forall (p : Int), Prop), forall (trivial_divisor_law : forall (p : Int), forall (d : Int), forall (prime_p : PrimeInt p), forall (divides_dp : DividesInt d p), TrivialIntDivisorUpToUnit d p), forall (p : Int), forall (d : Int), forall (prime_p : PrimeInt p), forall (divides_dp : DividesInt d p), TrivialIntDivisorUpToUnit d p",
+        proof:
+            "fun Int => fun DividesInt => fun PrimeInt => fun UnitInt => fun AssociatedInt => fun TrivialIntDivisorUpToUnit => fun trivial_divisor_law => fun p => fun d => fun prime_p => fun divides_dp => trivial_divisor_law p d prime_p divides_dp",
+    },
+    TheoremArtifact {
+        name: "prime_nat_int_translation_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (Int : Type), forall (ToInt : forall (n : Nat), Int), forall (PrimeNat : forall (n : Nat), Prop), forall (PrimeInt : forall (p : Int), Prop), forall (TranslationEvidence : forall (n : Nat), Prop), forall (translation_law : forall (n : Nat), forall (translation : TranslationEvidence n), forall (prime_n : PrimeNat n), PrimeInt (ToInt n)), forall (n : Nat), forall (translation : TranslationEvidence n), forall (prime_n : PrimeNat n), PrimeInt (ToInt n)",
+        proof:
+            "fun Nat => fun Int => fun ToInt => fun PrimeNat => fun PrimeInt => fun TranslationEvidence => fun translation_law => fun n => fun translation => fun prime_n => translation_law n translation prime_n",
+    },
+    TheoremArtifact {
+        name: "prime_predicates_do_not_conflict_with_ufd_prime_element",
+        universe_params: &[],
+        statement:
+            "forall (PrimeNatPackage : Type), forall (PrimeIntPackage : Type), forall (PrimeElement : Type), forall (TerminologyBoundary : forall (prime_nat : PrimeNatPackage), forall (prime_int : PrimeIntPackage), forall (prime_element : PrimeElement), Prop), forall (boundary_law : forall (prime_nat : PrimeNatPackage), forall (prime_int : PrimeIntPackage), forall (prime_element : PrimeElement), TerminologyBoundary prime_nat prime_int prime_element), forall (prime_nat : PrimeNatPackage), forall (prime_int : PrimeIntPackage), forall (prime_element : PrimeElement), TerminologyBoundary prime_nat prime_int prime_element",
+        proof:
+            "fun PrimeNatPackage => fun PrimeIntPackage => fun PrimeElement => fun TerminologyBoundary => fun boundary_law => fun prime_nat => fun prime_int => fun prime_element => boundary_law prime_nat prime_int prime_element",
+    },
+];
+
+const NUMBER_THEORY_COMPOSITE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "composite_nat_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CompositeNatDefinition : forall (n : Nat), Prop), forall (CompositeNat : forall (n : Nat), Prop), forall (definition_law : forall (n : Nat), forall (definition : CompositeNatDefinition n), CompositeNat n), forall (n : Nat), forall (definition : CompositeNatDefinition n), CompositeNat n",
+        proof:
+            "fun Nat => fun CompositeNatDefinition => fun CompositeNat => fun definition_law => fun n => fun definition => definition_law n definition",
+    },
+    TheoremArtifact {
+        name: "composite_int_definition_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CompositeIntDefinition : forall (n : Int), Prop), forall (CompositeInt : forall (n : Int), Prop), forall (definition_law : forall (n : Int), forall (definition : CompositeIntDefinition n), CompositeInt n), forall (n : Int), forall (definition : CompositeIntDefinition n), CompositeInt n",
+        proof:
+            "fun Int => fun CompositeIntDefinition => fun CompositeInt => fun definition_law => fun n => fun definition => definition_law n definition",
+    },
+    TheoremArtifact {
+        name: "composite_nat_has_nontrivial_divisors_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (NontrivialNatDivisors : forall (n : Nat), Prop), forall (divisor_law : forall (n : Nat), forall (composite_n : CompositeNat n), NontrivialNatDivisors n), forall (n : Nat), forall (composite_n : CompositeNat n), NontrivialNatDivisors n",
+        proof:
+            "fun Nat => fun CompositeNat => fun NontrivialNatDivisors => fun divisor_law => fun n => fun composite_n => divisor_law n composite_n",
+    },
+    TheoremArtifact {
+        name: "composite_int_has_nontrivial_divisors_packaged",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CompositeInt : forall (n : Int), Prop), forall (NontrivialIntDivisors : forall (n : Int), Prop), forall (divisor_law : forall (n : Int), forall (composite_n : CompositeInt n), NontrivialIntDivisors n), forall (n : Int), forall (composite_n : CompositeInt n), NontrivialIntDivisors n",
+        proof:
+            "fun Int => fun CompositeInt => fun NontrivialIntDivisors => fun divisor_law => fun n => fun composite_n => divisor_law n composite_n",
+    },
+    TheoremArtifact {
+        name: "composite_sign_normal_form_surface",
+        universe_params: &[],
+        statement:
+            "forall (Int : Type), forall (CompositeInt : forall (n : Int), Prop), forall (SignNormalizedCompositeInt : forall (n : Int), Prop), forall (CompositeSignEvidence : forall (n : Int), Prop), forall (normalization_law : forall (n : Int), forall (composite_n : CompositeInt n), forall (sign_evidence : CompositeSignEvidence n), SignNormalizedCompositeInt n), forall (n : Int), forall (composite_n : CompositeInt n), forall (sign_evidence : CompositeSignEvidence n), SignNormalizedCompositeInt n",
+        proof:
+            "fun Int => fun CompositeInt => fun SignNormalizedCompositeInt => fun CompositeSignEvidence => fun normalization_law => fun n => fun composite_n => fun sign_evidence => normalization_law n composite_n sign_evidence",
+    },
+    TheoremArtifact {
+        name: "composite_nat_int_translation_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (Int : Type), forall (ToInt : forall (n : Nat), Int), forall (CompositeNat : forall (n : Nat), Prop), forall (CompositeInt : forall (n : Int), Prop), forall (TranslationEvidence : forall (n : Nat), Prop), forall (translation_law : forall (n : Nat), forall (translation : TranslationEvidence n), forall (composite_n : CompositeNat n), CompositeInt (ToInt n)), forall (n : Nat), forall (translation : TranslationEvidence n), forall (composite_n : CompositeNat n), CompositeInt (ToInt n)",
+        proof:
+            "fun Nat => fun Int => fun ToInt => fun CompositeNat => fun CompositeInt => fun TranslationEvidence => fun translation_law => fun n => fun translation => fun composite_n => translation_law n translation composite_n",
+    },
+    TheoremArtifact {
+        name: "composite_factor_extraction_input_surface",
+        universe_params: &[],
+        statement:
+            "forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (PrimeNat : forall (n : Nat), Prop), forall (FactorExtractionInput : forall (n : Nat), Prop), forall (input_law : forall (n : Nat), forall (composite_n : CompositeNat n), FactorExtractionInput n), forall (n : Nat), forall (composite_n : CompositeNat n), FactorExtractionInput n",
+        proof:
+            "fun Nat => fun CompositeNat => fun PrimeNat => fun FactorExtractionInput => fun input_law => fun n => fun composite_n => input_law n composite_n",
+    },
+    TheoremArtifact {
+        name: "composite_no_prime_factorization_assumption_boundary",
+        universe_params: &[],
+        statement:
+            "forall (CompositePackage : Type), forall (PrimeFactorization : Type), forall (FactorizationBoundary : forall (composite : CompositePackage), forall (factorization : PrimeFactorization), Prop), forall (boundary_law : forall (composite : CompositePackage), forall (factorization : PrimeFactorization), FactorizationBoundary composite factorization), forall (composite : CompositePackage), forall (factorization : PrimeFactorization), FactorizationBoundary composite factorization",
+        proof:
+            "fun CompositePackage => fun PrimeFactorization => fun FactorizationBoundary => fun boundary_law => fun composite => fun factorization => boundary_law composite factorization",
     },
 ];
 
@@ -38264,6 +38442,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_LCM_MODULE.module
         || config.module == NUMBER_THEORY_EUCLIDEAN_ALGORITHM_MODULE.module
         || config.module == NUMBER_THEORY_BEZOUT_MODULE.module
+        || config.module == NUMBER_THEORY_PRIME_MODULE.module
+        || config.module == NUMBER_THEORY_COMPOSITE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Prime",
+  "source": "Proofs/Ai/NumberTheory/Prime/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Prime/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:90e89e53c7741b0d16bc7322c099b0f4acc4a2addc83c2771e2ad1eca170f812",
+  "certificate_file_sha256": "sha256:0327f40944878af5a93fe5f626db4ff811d68edf880740268895649905f28232",
+  "export_hash": "sha256:0172086fd71393f3f4f0024ec371185915cda99c006eb83e05167b9bdad85f21",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:9281c39d9ec413269c22744d0ada567364b4cb573cd55b4a0b56359182b70fb7",
+  "imports": ["Proofs.Ai.NumberTheory.Divisibility"],
+  "axioms": [],
+  "declarations": [
+    { "name": "prime_nat_definition_surface", "kind": "theorem" },
+    { "name": "prime_int_definition_surface", "kind": "theorem" },
+    { "name": "unit_and_associated_int_predicates_surface", "kind": "theorem" },
+    { "name": "sign_normalized_prime_predicate_surface", "kind": "theorem" },
+    { "name": "one_is_not_prime_nat_packaged", "kind": "theorem" },
+    { "name": "one_is_not_prime_int_packaged", "kind": "theorem" },
+    { "name": "prime_nat_trivial_divisors_packaged", "kind": "theorem" },
+    { "name": "prime_int_trivial_divisors_up_to_unit_packaged", "kind": "theorem" },
+    { "name": "prime_nat_int_translation_surface", "kind": "theorem" },
+    { "name": "prime_predicates_do_not_conflict_with_ufd_prime_element", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

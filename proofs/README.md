@@ -92,6 +92,14 @@ Current bundles:
   Euclidean algorithm package, preserving Bezout identities, gcd linear-combination
   characterization, explicit integer and natural coprimality variants, `Nat`/`Int` translation,
   and the boundary excluding prime-factorization and CRT imports.
+- `Proofs/Ai/NumberTheory/Prime/`: certificate-backed prime predicate interface over divisibility,
+  preserving natural-number and integer prime predicates, unit and associated predicates,
+  sign-normalized integer primes, `1`-is-not-prime targets, trivial-divisor characterizations,
+  `Nat`/`Int` translation, and the terminology boundary with UFD-local `PrimeElement`.
+- `Proofs/Ai/NumberTheory/Composite/`: certificate-backed composite predicate interface over the
+  prime package, preserving natural-number and integer composite predicates, nontrivial-divisor
+  projections, sign-normalized composite surfaces, `Nat`/`Int` translation, factor-extraction
+  input surfaces, and the boundary excluding unique factorization assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

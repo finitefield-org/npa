@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Composite",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "composite_nat_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CompositeNatDefinition => fun CompositeNat => fun definition_law => fun n => fun definition => definition_law n definition"
+    },
+    {
+      "declaration": "composite_int_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeIntDefinition => fun CompositeInt => fun definition_law => fun n => fun definition => definition_law n definition"
+    },
+    {
+      "declaration": "composite_nat_has_nontrivial_divisors_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CompositeNat => fun NontrivialNatDivisors => fun divisor_law => fun n => fun composite_n => divisor_law n composite_n"
+    },
+    {
+      "declaration": "composite_int_has_nontrivial_divisors_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeInt => fun NontrivialIntDivisors => fun divisor_law => fun n => fun composite_n => divisor_law n composite_n"
+    },
+    {
+      "declaration": "composite_sign_normal_form_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeInt => fun SignNormalizedCompositeInt => fun CompositeSignEvidence => fun normalization_law => fun n => fun composite_n => fun sign_evidence => normalization_law n composite_n sign_evidence"
+    },
+    {
+      "declaration": "composite_nat_int_translation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Int => fun ToInt => fun CompositeNat => fun CompositeInt => fun TranslationEvidence => fun translation_law => fun n => fun translation => fun composite_n => translation_law n translation composite_n"
+    },
+    {
+      "declaration": "composite_factor_extraction_input_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CompositeNat => fun PrimeNat => fun FactorExtractionInput => fun input_law => fun n => fun composite_n => input_law n composite_n"
+    },
+    {
+      "declaration": "composite_no_prime_factorization_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun CompositePackage => fun PrimeFactorization => fun FactorizationBoundary => fun boundary_law => fun composite => fun factorization => boundary_law composite factorization"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Composite/certificate.npcert"
+  }
+}

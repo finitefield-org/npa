@@ -235,6 +235,42 @@ theorems = ["bezout_identity_from_extended_euclid_packaged", "bezout_coefficient
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Prime"
+source = "Proofs/Ai/NumberTheory/Prime/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Prime/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Prime/meta.json"
+replay = "Proofs/Ai/NumberTheory/Prime/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:90e89e53c7741b0d16bc7322c099b0f4acc4a2addc83c2771e2ad1eca170f812"
+certificate_file_sha256 = "sha256:0327f40944878af5a93fe5f626db4ff811d68edf880740268895649905f28232"
+export_hash = "sha256:0172086fd71393f3f4f0024ec371185915cda99c006eb83e05167b9bdad85f21"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:9281c39d9ec413269c22744d0ada567364b4cb573cd55b4a0b56359182b70fb7"
+imports = ["Proofs.Ai.NumberTheory.Divisibility"]
+definitions = []
+theorems = ["prime_nat_definition_surface", "prime_int_definition_surface", "unit_and_associated_int_predicates_surface", "sign_normalized_prime_predicate_surface", "one_is_not_prime_nat_packaged", "one_is_not_prime_int_packaged", "prime_nat_trivial_divisors_packaged", "prime_int_trivial_divisors_up_to_unit_packaged", "prime_nat_int_translation_surface", "prime_predicates_do_not_conflict_with_ufd_prime_element"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Composite"
+source = "Proofs/Ai/NumberTheory/Composite/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Composite/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Composite/meta.json"
+replay = "Proofs/Ai/NumberTheory/Composite/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:7c28e588c119beb41786ae0850ce29e1acc6056f1648daac37298b04f11329c1"
+certificate_file_sha256 = "sha256:17fad976c3d8787e5ad1d6534060c392838a1ef04b595b713bfe9d83f80d93c2"
+export_hash = "sha256:82ec7b2a7a55b4d59e2223038e0532433ccf95542a769721caf8134d265706cf"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:75e95e466d4e1e35e1b59fcb9398dd459ed936a988933b2933c2426eaa4ed0e8"
+imports = ["Proofs.Ai.NumberTheory.Prime"]
+definitions = []
+theorems = ["composite_nat_definition_surface", "composite_int_definition_surface", "composite_nat_has_nontrivial_divisors_packaged", "composite_int_has_nontrivial_divisors_packaged", "composite_sign_normal_form_surface", "composite_nat_int_translation_surface", "composite_factor_extraction_input_surface", "composite_no_prime_factorization_assumption_boundary"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Reduction"
 source = "Proofs/Ai/Reduction/source.npa"
 certificate = "Proofs/Ai/Reduction/certificate.npcert"

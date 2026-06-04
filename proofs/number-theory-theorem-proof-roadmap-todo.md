@@ -347,7 +347,7 @@ later in the file.
 
 ### NT-T06 Add Linear Diophantine Equation Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T05`
 - Areas: `Proofs/Ai/NumberTheory/LinearDiophantine/`
 - Tasks:
@@ -378,6 +378,7 @@ later in the file.
   - Align terminology with `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.Prime`.
+  - `Proofs.Ai.NumberTheory.Composite`.
   - Prime/composite README notes.
 - Acceptance criteria:
   - Prime predicates do not conflict with UFD-local `PrimeElement`.
@@ -385,8 +386,14 @@ later in the file.
   - No unique factorization theorem is assumed yet.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Prime`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Composite`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Prime`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Composite`
+  - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "PrimeNat|Composite|PrimeElement|unit|associated" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+  - `git diff --check`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T08 Bridge Prime Divisibility And Factor Extraction
 

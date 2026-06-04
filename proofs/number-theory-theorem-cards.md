@@ -129,6 +129,23 @@ These modules import the gcd/Euclidean-algorithm closure only. They do not
 import prime factorization, CRT, Euclid's lemma, Gauss's lemma, elliptic curves,
 or modularity.
 
+## Prime And Composite Predicate Interface
+
+Concrete entry points: `Proofs.Ai.NumberTheory.Prime` and
+`Proofs.Ai.NumberTheory.Composite`.
+
+The prime module records checked theorem targets for natural-number and integer
+prime predicate surfaces, integer unit and associated predicates, sign-
+normalized primes, `1`-is-not-prime surfaces, trivial-divisor characterizations,
+`Nat`/`Int` prime translation, and the terminology boundary with UFD-local
+`PrimeElement`. The composite module records natural-number and integer
+composite predicate surfaces, nontrivial-divisor projections, sign-normalized
+composite forms, `Nat`/`Int` composite translation, and factor-extraction input
+surfaces for later `UfdBridge` and `Factorization` modules.
+
+These modules do not assume unique factorization, Euclid's lemma, prime
+factorization, CRT, elliptic curves, analytic prime distribution, or modularity.
+
 ## Theorem Cards
 
 | Card | Stable id | Level | Primary home | Labels | Gate |

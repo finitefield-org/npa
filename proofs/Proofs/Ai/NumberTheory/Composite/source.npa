@@ -1,0 +1,33 @@
+import Proofs.Ai.NumberTheory.Prime
+
+theorem composite_nat_definition_surface :
+  forall (Nat : Type), forall (CompositeNatDefinition : forall (n : Nat), Prop), forall (CompositeNat : forall (n : Nat), Prop), forall (definition_law : forall (n : Nat), forall (definition : CompositeNatDefinition n), CompositeNat n), forall (n : Nat), forall (definition : CompositeNatDefinition n), CompositeNat n :=
+  fun Nat => fun CompositeNatDefinition => fun CompositeNat => fun definition_law => fun n => fun definition => definition_law n definition
+
+theorem composite_int_definition_surface :
+  forall (Int : Type), forall (CompositeIntDefinition : forall (n : Int), Prop), forall (CompositeInt : forall (n : Int), Prop), forall (definition_law : forall (n : Int), forall (definition : CompositeIntDefinition n), CompositeInt n), forall (n : Int), forall (definition : CompositeIntDefinition n), CompositeInt n :=
+  fun Int => fun CompositeIntDefinition => fun CompositeInt => fun definition_law => fun n => fun definition => definition_law n definition
+
+theorem composite_nat_has_nontrivial_divisors_packaged :
+  forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (NontrivialNatDivisors : forall (n : Nat), Prop), forall (divisor_law : forall (n : Nat), forall (composite_n : CompositeNat n), NontrivialNatDivisors n), forall (n : Nat), forall (composite_n : CompositeNat n), NontrivialNatDivisors n :=
+  fun Nat => fun CompositeNat => fun NontrivialNatDivisors => fun divisor_law => fun n => fun composite_n => divisor_law n composite_n
+
+theorem composite_int_has_nontrivial_divisors_packaged :
+  forall (Int : Type), forall (CompositeInt : forall (n : Int), Prop), forall (NontrivialIntDivisors : forall (n : Int), Prop), forall (divisor_law : forall (n : Int), forall (composite_n : CompositeInt n), NontrivialIntDivisors n), forall (n : Int), forall (composite_n : CompositeInt n), NontrivialIntDivisors n :=
+  fun Int => fun CompositeInt => fun NontrivialIntDivisors => fun divisor_law => fun n => fun composite_n => divisor_law n composite_n
+
+theorem composite_sign_normal_form_surface :
+  forall (Int : Type), forall (CompositeInt : forall (n : Int), Prop), forall (SignNormalizedCompositeInt : forall (n : Int), Prop), forall (CompositeSignEvidence : forall (n : Int), Prop), forall (normalization_law : forall (n : Int), forall (composite_n : CompositeInt n), forall (sign_evidence : CompositeSignEvidence n), SignNormalizedCompositeInt n), forall (n : Int), forall (composite_n : CompositeInt n), forall (sign_evidence : CompositeSignEvidence n), SignNormalizedCompositeInt n :=
+  fun Int => fun CompositeInt => fun SignNormalizedCompositeInt => fun CompositeSignEvidence => fun normalization_law => fun n => fun composite_n => fun sign_evidence => normalization_law n composite_n sign_evidence
+
+theorem composite_nat_int_translation_surface :
+  forall (Nat : Type), forall (Int : Type), forall (ToInt : forall (n : Nat), Int), forall (CompositeNat : forall (n : Nat), Prop), forall (CompositeInt : forall (n : Int), Prop), forall (TranslationEvidence : forall (n : Nat), Prop), forall (translation_law : forall (n : Nat), forall (translation : TranslationEvidence n), forall (composite_n : CompositeNat n), CompositeInt (ToInt n)), forall (n : Nat), forall (translation : TranslationEvidence n), forall (composite_n : CompositeNat n), CompositeInt (ToInt n) :=
+  fun Nat => fun Int => fun ToInt => fun CompositeNat => fun CompositeInt => fun TranslationEvidence => fun translation_law => fun n => fun translation => fun composite_n => translation_law n translation composite_n
+
+theorem composite_factor_extraction_input_surface :
+  forall (Nat : Type), forall (CompositeNat : forall (n : Nat), Prop), forall (PrimeNat : forall (n : Nat), Prop), forall (FactorExtractionInput : forall (n : Nat), Prop), forall (input_law : forall (n : Nat), forall (composite_n : CompositeNat n), FactorExtractionInput n), forall (n : Nat), forall (composite_n : CompositeNat n), FactorExtractionInput n :=
+  fun Nat => fun CompositeNat => fun PrimeNat => fun FactorExtractionInput => fun input_law => fun n => fun composite_n => input_law n composite_n
+
+theorem composite_no_prime_factorization_assumption_boundary :
+  forall (CompositePackage : Type), forall (PrimeFactorization : Type), forall (FactorizationBoundary : forall (composite : CompositePackage), forall (factorization : PrimeFactorization), Prop), forall (boundary_law : forall (composite : CompositePackage), forall (factorization : PrimeFactorization), FactorizationBoundary composite factorization), forall (composite : CompositePackage), forall (factorization : PrimeFactorization), FactorizationBoundary composite factorization :=
+  fun CompositePackage => fun PrimeFactorization => fun FactorizationBoundary => fun boundary_law => fun composite => fun factorization => boundary_law composite factorization
