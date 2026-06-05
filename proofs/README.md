@@ -70,6 +70,10 @@ Current bundles:
   disjoint-union, product, sum-rule, product-rule, and finite-fiber counting packages. Finite,
   nonempty, decidable-equality, disjointness, product-carrier, fiber, collision, and overfull-fiber
   hypotheses are named evidence slots rather than hidden assumptions.
+- `Proofs/Ai/Combinatorics/Permutation/`: certificate-backed factorial, falling-factorial,
+  finite-family permutation, and permutation-counting interfaces. Permutations are ordinary
+  structure carriers with explicit index-bijection evidence, and factorial arithmetic requirements
+  are named evidence slots rather than hidden numeric normalization.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

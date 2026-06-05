@@ -272,7 +272,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T05 Add Factorial And Permutation Counting
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T04`
 - Areas: `Proofs.Ai.Combinatorics.Permutation`
 - Tasks:
@@ -281,13 +281,15 @@ guessing. The split must preserve the dependency order in this document.
   - Prove permutation-counting theorem targets or mark blocked arithmetic
     prerequisites.
 - Deliverables:
-  - Permutation counting layer.
+  - `Proofs.Ai.Combinatorics.Permutation` permutation counting layer.
 - Acceptance criteria:
   - Permutations are ordinary structures, not trusted list syntax.
   - Factorial arithmetic assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Permutation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Permutation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Permutation --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T06 Add Binomial, Combination, And Multinomial Route
 

@@ -111,6 +111,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &COMBINATORICS_FINITE_MODULE,
     &COMBINATORICS_CARDINALITY_MODULE,
     &COMBINATORICS_COUNTING_BASIC_MODULE,
+    &COMBINATORICS_PERMUTATION_MODULE,
     &NUMBER_THEORY_INVENTORY_MODULE,
     &NUMBER_THEORY_ELEMENTARY_MODULE,
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
@@ -528,6 +529,23 @@ const COMBINATORICS_COUNTING_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: COMBINATORICS_COUNTING_BASIC_DEFINITIONS,
     theorems: COMBINATORICS_COUNTING_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const COMBINATORICS_PERMUTATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Combinatorics.Permutation",
+    source_path: "Proofs/Ai/Combinatorics/Permutation/source.npa",
+    certificate_path: "Proofs/Ai/Combinatorics/Permutation/certificate.npcert",
+    meta_path: "Proofs/Ai/Combinatorics/Permutation/meta.json",
+    replay_path: "Proofs/Ai/Combinatorics/Permutation/replay.json",
+    imports: &[
+        "Proofs.Ai.Combinatorics.Finite",
+        "Proofs.Ai.Combinatorics.Cardinality",
+        "Proofs.Ai.Combinatorics.Counting.Basic",
+    ],
+    inductives: &[],
+    definitions: COMBINATORICS_PERMUTATION_DEFINITIONS,
+    theorems: COMBINATORICS_PERMUTATION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -11603,6 +11621,631 @@ const COMBINATORICS_COUNTING_BASIC_THEOREMS: &[TheoremArtifact] = &[
             "fun (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target) => ",
             "fun (fiber_partition_law : FiberPartitionEvidence) => ",
             "fun (total_fiber_sum_law : TotalFiberSumEvidence) => fiber_cardinality_law)"
+        ),
+    },
+];
+
+const COMBINATORICS_PERMUTATION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FactorialCountingPredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (NatCarrier : Type), forall (size : NatCarrier), ",
+            "forall (factorialValue : NatCarrier), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (FactorialCountingEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun NatCarrier => fun size => fun factorialValue => ",
+            "fun FactorialArithmeticEvidence => fun FactorialCountingEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (factorial_arithmetic_law : FactorialArithmeticEvidence), ",
+            "forall (factorial_counting_law : FactorialCountingEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FallingFactorialCountingPredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (FallingFactorialCountingEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun NatCarrier => fun totalSize => fun selectionSize => fun fallingValue => ",
+            "fun BoundsEvidence => fun FallingFactorialArithmeticEvidence => ",
+            "fun FallingFactorialCountingEvidence => forall (P : Prop), ",
+            "forall (mk : forall (bounds_law : BoundsEvidence), ",
+            "forall (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence), ",
+            "forall (falling_factorial_counting_law : FallingFactorialCountingEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteFamilyPermutationPredicate",
+        universe_params: &["i", "u"],
+        ty: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (permuteIndex : forall (idx : Index), Index), ",
+            "forall (IndexMember : forall (idx : Index), Prop), ",
+            "forall (IndexEquivalent : forall (x : Index), forall (y : Index), Prop), ",
+            "forall (IndexHasPreimage : forall (idx : Index), Prop), ",
+            "forall (bijection_args : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage), Prop"
+        ),
+        value: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun permuteIndex => fun IndexMember => ",
+            "fun IndexEquivalent => fun IndexHasPreimage => fun bijection_args => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (index_bijection_law : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "PermutationCountingPredicate",
+        universe_params: &["i", "u"],
+        ty: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (PermutationSpace : Type), ",
+            "forall (PermutationStructure : forall (perm : PermutationSpace), Prop), ",
+            "forall (PermutationSpaceFinite : Prop), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (PermutationCountingEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun PermutationSpace => fun PermutationStructure => ",
+            "fun PermutationSpaceFinite => fun FactorialArithmeticEvidence => ",
+            "fun PermutationCountingEvidence => forall (P : Prop), ",
+            "forall (mk : forall (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (permutation_structure_law : forall (perm : PermutationSpace), PermutationStructure perm), ",
+            "forall (permutation_space_finite_law : PermutationSpaceFinite), ",
+            "forall (factorial_arithmetic_law : FactorialArithmeticEvidence), ",
+            "forall (permutation_counting_law : PermutationCountingEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "PartialPermutationCountingPredicate",
+        universe_params: &["i", "u"],
+        ty: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (NatCarrier : Type), ",
+            "forall (totalSize : NatCarrier), forall (selectionSize : NatCarrier), ",
+            "forall (fallingValue : NatCarrier), ",
+            "forall (PartialPermutationSpace : Type), ",
+            "forall (PartialPermutationStructure : forall (perm : PartialPermutationSpace), Prop), ",
+            "forall (PartialPermutationSpaceFinite : Prop), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (PartialPermutationCountingEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun NatCarrier => fun totalSize => fun selectionSize => ",
+            "fun fallingValue => fun PartialPermutationSpace => fun PartialPermutationStructure => ",
+            "fun PartialPermutationSpaceFinite => fun BoundsEvidence => ",
+            "fun FallingFactorialArithmeticEvidence => fun PartialPermutationCountingEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (partial_permutation_structure_law : forall (perm : PartialPermutationSpace), PartialPermutationStructure perm), ",
+            "forall (partial_permutation_space_finite_law : PartialPermutationSpaceFinite), ",
+            "forall (bounds_law : BoundsEvidence), ",
+            "forall (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence), ",
+            "forall (partial_permutation_counting_law : PartialPermutationCountingEvidence), P), P"
+        ),
+    },
+];
+
+const COMBINATORICS_PERMUTATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "factorial_counting_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (size : NatCarrier), ",
+            "forall (factorialValue : NatCarrier), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (FactorialCountingEvidence : Prop), ",
+            "forall (factorial_arithmetic_law : FactorialArithmeticEvidence), ",
+            "forall (factorial_counting_law : FactorialCountingEvidence), ",
+            "FactorialCountingPredicate NatCarrier size factorialValue FactorialArithmeticEvidence FactorialCountingEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun size => fun factorialValue => ",
+            "fun FactorialArithmeticEvidence => fun FactorialCountingEvidence => ",
+            "fun factorial_arithmetic_law => fun factorial_counting_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (factorial_arithmetic_law : FactorialArithmeticEvidence), ",
+            "forall (factorial_counting_law : FactorialCountingEvidence), P) => ",
+            "mk factorial_arithmetic_law factorial_counting_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "factorial_counting_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (size : NatCarrier), ",
+            "forall (factorialValue : NatCarrier), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (FactorialCountingEvidence : Prop), ",
+            "forall (factorial_args : FactorialCountingPredicate NatCarrier size factorialValue FactorialArithmeticEvidence FactorialCountingEvidence), ",
+            "FactorialCountingEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun size => fun factorialValue => ",
+            "fun FactorialArithmeticEvidence => fun FactorialCountingEvidence => ",
+            "fun factorial_args => factorial_args FactorialCountingEvidence ",
+            "(fun (factorial_arithmetic_law : FactorialArithmeticEvidence) => ",
+            "fun (factorial_counting_law : FactorialCountingEvidence) => factorial_counting_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "factorial_arithmetic_prerequisite_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (size : NatCarrier), ",
+            "forall (factorialValue : NatCarrier), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (FactorialCountingEvidence : Prop), ",
+            "forall (factorial_args : FactorialCountingPredicate NatCarrier size factorialValue FactorialArithmeticEvidence FactorialCountingEvidence), ",
+            "FactorialArithmeticEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun size => fun factorialValue => ",
+            "fun FactorialArithmeticEvidence => fun FactorialCountingEvidence => ",
+            "fun factorial_args => factorial_args FactorialArithmeticEvidence ",
+            "(fun (factorial_arithmetic_law : FactorialArithmeticEvidence) => ",
+            "fun (factorial_counting_law : FactorialCountingEvidence) => factorial_arithmetic_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "falling_factorial_counting_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (FallingFactorialCountingEvidence : Prop), ",
+            "forall (bounds_law : BoundsEvidence), ",
+            "forall (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence), ",
+            "forall (falling_factorial_counting_law : FallingFactorialCountingEvidence), ",
+            "FallingFactorialCountingPredicate NatCarrier totalSize selectionSize fallingValue BoundsEvidence FallingFactorialArithmeticEvidence FallingFactorialCountingEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun totalSize => fun selectionSize => fun fallingValue => ",
+            "fun BoundsEvidence => fun FallingFactorialArithmeticEvidence => ",
+            "fun FallingFactorialCountingEvidence => fun bounds_law => ",
+            "fun falling_factorial_arithmetic_law => fun falling_factorial_counting_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (bounds_law : BoundsEvidence), ",
+            "forall (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence), ",
+            "forall (falling_factorial_counting_law : FallingFactorialCountingEvidence), P) => ",
+            "mk bounds_law falling_factorial_arithmetic_law falling_factorial_counting_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "falling_factorial_counting_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (FallingFactorialCountingEvidence : Prop), ",
+            "forall (falling_args : FallingFactorialCountingPredicate NatCarrier totalSize selectionSize fallingValue BoundsEvidence FallingFactorialArithmeticEvidence FallingFactorialCountingEvidence), ",
+            "FallingFactorialCountingEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun totalSize => fun selectionSize => fun fallingValue => ",
+            "fun BoundsEvidence => fun FallingFactorialArithmeticEvidence => ",
+            "fun FallingFactorialCountingEvidence => fun falling_args => ",
+            "falling_args FallingFactorialCountingEvidence ",
+            "(fun (bounds_law : BoundsEvidence) => ",
+            "fun (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence) => ",
+            "fun (falling_factorial_counting_law : FallingFactorialCountingEvidence) => ",
+            "falling_factorial_counting_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "falling_factorial_bounds_prerequisite_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (FallingFactorialCountingEvidence : Prop), ",
+            "forall (falling_args : FallingFactorialCountingPredicate NatCarrier totalSize selectionSize fallingValue BoundsEvidence FallingFactorialArithmeticEvidence FallingFactorialCountingEvidence), ",
+            "BoundsEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun totalSize => fun selectionSize => fun fallingValue => ",
+            "fun BoundsEvidence => fun FallingFactorialArithmeticEvidence => ",
+            "fun FallingFactorialCountingEvidence => fun falling_args => ",
+            "falling_args BoundsEvidence ",
+            "(fun (bounds_law : BoundsEvidence) => ",
+            "fun (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence) => ",
+            "fun (falling_factorial_counting_law : FallingFactorialCountingEvidence) => bounds_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "falling_factorial_arithmetic_prerequisite_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (FallingFactorialCountingEvidence : Prop), ",
+            "forall (falling_args : FallingFactorialCountingPredicate NatCarrier totalSize selectionSize fallingValue BoundsEvidence FallingFactorialArithmeticEvidence FallingFactorialCountingEvidence), ",
+            "FallingFactorialArithmeticEvidence"
+        ),
+        proof: concat!(
+            "fun NatCarrier => fun totalSize => fun selectionSize => fun fallingValue => ",
+            "fun BoundsEvidence => fun FallingFactorialArithmeticEvidence => ",
+            "fun FallingFactorialCountingEvidence => fun falling_args => ",
+            "falling_args FallingFactorialArithmeticEvidence ",
+            "(fun (bounds_law : BoundsEvidence) => ",
+            "fun (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence) => ",
+            "fun (falling_factorial_counting_law : FallingFactorialCountingEvidence) => ",
+            "falling_factorial_arithmetic_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_family_permutation_predicate_intro",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (permuteIndex : forall (idx : Index), Index), ",
+            "forall (IndexMember : forall (idx : Index), Prop), ",
+            "forall (IndexEquivalent : forall (x : Index), forall (y : Index), Prop), ",
+            "forall (IndexHasPreimage : forall (idx : Index), Prop), ",
+            "forall (bijection_args : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage), ",
+            "@FiniteFamilyPermutationPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args permuteIndex IndexMember IndexEquivalent IndexHasPreimage bijection_args"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun permuteIndex => fun IndexMember => ",
+            "fun IndexEquivalent => fun IndexHasPreimage => fun bijection_args => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (index_bijection_law : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage), P) => ",
+            "mk family_args bijection_args"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_family_permutation_finite_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (permuteIndex : forall (idx : Index), Index), ",
+            "forall (IndexMember : forall (idx : Index), Prop), ",
+            "forall (IndexEquivalent : forall (x : Index), forall (y : Index), Prop), ",
+            "forall (IndexHasPreimage : forall (idx : Index), Prop), ",
+            "forall (bijection_args : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage), ",
+            "forall (permutation_args : @FiniteFamilyPermutationPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args permuteIndex IndexMember IndexEquivalent IndexHasPreimage bijection_args), ",
+            "@FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun permuteIndex => fun IndexMember => ",
+            "fun IndexEquivalent => fun IndexHasPreimage => fun bijection_args => fun permutation_args => ",
+            "permutation_args (@FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (index_bijection_law : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage) => finite_family_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_family_permutation_bijection_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (permuteIndex : forall (idx : Index), Index), ",
+            "forall (IndexMember : forall (idx : Index), Prop), ",
+            "forall (IndexEquivalent : forall (x : Index), forall (y : Index), Prop), ",
+            "forall (IndexHasPreimage : forall (idx : Index), Prop), ",
+            "forall (bijection_args : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage), ",
+            "forall (permutation_args : @FiniteFamilyPermutationPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args permuteIndex IndexMember IndexEquivalent IndexHasPreimage bijection_args), ",
+            "@BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun permuteIndex => fun IndexMember => ",
+            "fun IndexEquivalent => fun IndexHasPreimage => fun bijection_args => fun permutation_args => ",
+            "permutation_args (@BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage) ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (index_bijection_law : @BijectionPredicate.{i,i} Index Index permuteIndex IndexEquivalent IndexEquivalent IndexMember IndexHasPreimage) => index_bijection_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "permutation_counting_predicate_intro",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (PermutationSpace : Type), ",
+            "forall (PermutationStructure : forall (perm : PermutationSpace), Prop), ",
+            "forall (PermutationSpaceFinite : Prop), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (PermutationCountingEvidence : Prop), ",
+            "forall (permutation_structure_law : forall (perm : PermutationSpace), PermutationStructure perm), ",
+            "forall (permutation_space_finite_law : PermutationSpaceFinite), ",
+            "forall (factorial_arithmetic_law : FactorialArithmeticEvidence), ",
+            "forall (permutation_counting_law : PermutationCountingEvidence), ",
+            "@PermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args PermutationSpace PermutationStructure PermutationSpaceFinite FactorialArithmeticEvidence PermutationCountingEvidence"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun PermutationSpace => fun PermutationStructure => ",
+            "fun PermutationSpaceFinite => fun FactorialArithmeticEvidence => ",
+            "fun PermutationCountingEvidence => fun permutation_structure_law => ",
+            "fun permutation_space_finite_law => fun factorial_arithmetic_law => ",
+            "fun permutation_counting_law => fun (P : Prop) => ",
+            "fun (mk : forall (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (permutation_structure_law : forall (perm : PermutationSpace), PermutationStructure perm), ",
+            "forall (permutation_space_finite_law : PermutationSpaceFinite), ",
+            "forall (factorial_arithmetic_law : FactorialArithmeticEvidence), ",
+            "forall (permutation_counting_law : PermutationCountingEvidence), P) => ",
+            "mk family_args permutation_structure_law permutation_space_finite_law factorial_arithmetic_law permutation_counting_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "permutation_counting_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (PermutationSpace : Type), ",
+            "forall (PermutationStructure : forall (perm : PermutationSpace), Prop), ",
+            "forall (PermutationSpaceFinite : Prop), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (PermutationCountingEvidence : Prop), ",
+            "forall (counting_args : @PermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args PermutationSpace PermutationStructure PermutationSpaceFinite FactorialArithmeticEvidence PermutationCountingEvidence), ",
+            "PermutationCountingEvidence"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun PermutationSpace => fun PermutationStructure => ",
+            "fun PermutationSpaceFinite => fun FactorialArithmeticEvidence => ",
+            "fun PermutationCountingEvidence => fun counting_args => ",
+            "counting_args PermutationCountingEvidence ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (permutation_structure_law : forall (perm : PermutationSpace), PermutationStructure perm) => ",
+            "fun (permutation_space_finite_law : PermutationSpaceFinite) => ",
+            "fun (factorial_arithmetic_law : FactorialArithmeticEvidence) => ",
+            "fun (permutation_counting_law : PermutationCountingEvidence) => permutation_counting_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "permutation_counting_factorial_arithmetic_prerequisite_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (PermutationSpace : Type), ",
+            "forall (PermutationStructure : forall (perm : PermutationSpace), Prop), ",
+            "forall (PermutationSpaceFinite : Prop), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (PermutationCountingEvidence : Prop), ",
+            "forall (counting_args : @PermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args PermutationSpace PermutationStructure PermutationSpaceFinite FactorialArithmeticEvidence PermutationCountingEvidence), ",
+            "FactorialArithmeticEvidence"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun PermutationSpace => fun PermutationStructure => ",
+            "fun PermutationSpaceFinite => fun FactorialArithmeticEvidence => ",
+            "fun PermutationCountingEvidence => fun counting_args => ",
+            "counting_args FactorialArithmeticEvidence ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (permutation_structure_law : forall (perm : PermutationSpace), PermutationStructure perm) => ",
+            "fun (permutation_space_finite_law : PermutationSpaceFinite) => ",
+            "fun (factorial_arithmetic_law : FactorialArithmeticEvidence) => ",
+            "fun (permutation_counting_law : PermutationCountingEvidence) => factorial_arithmetic_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "permutation_objects_are_ordinary_structure_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (PermutationSpace : Type), ",
+            "forall (PermutationStructure : forall (perm : PermutationSpace), Prop), ",
+            "forall (PermutationSpaceFinite : Prop), ",
+            "forall (FactorialArithmeticEvidence : Prop), ",
+            "forall (PermutationCountingEvidence : Prop), ",
+            "forall (counting_args : @PermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args PermutationSpace PermutationStructure PermutationSpaceFinite FactorialArithmeticEvidence PermutationCountingEvidence), ",
+            "forall (perm : PermutationSpace), PermutationStructure perm"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun PermutationSpace => fun PermutationStructure => ",
+            "fun PermutationSpaceFinite => fun FactorialArithmeticEvidence => ",
+            "fun PermutationCountingEvidence => fun counting_args => ",
+            "counting_args (forall (perm : PermutationSpace), PermutationStructure perm) ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (permutation_structure_law : forall (perm : PermutationSpace), PermutationStructure perm) => ",
+            "fun (permutation_space_finite_law : PermutationSpaceFinite) => ",
+            "fun (factorial_arithmetic_law : FactorialArithmeticEvidence) => ",
+            "fun (permutation_counting_law : PermutationCountingEvidence) => permutation_structure_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_permutation_counting_predicate_intro",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (PartialPermutationSpace : Type), ",
+            "forall (PartialPermutationStructure : forall (perm : PartialPermutationSpace), Prop), ",
+            "forall (PartialPermutationSpaceFinite : Prop), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (PartialPermutationCountingEvidence : Prop), ",
+            "forall (partial_permutation_structure_law : forall (perm : PartialPermutationSpace), PartialPermutationStructure perm), ",
+            "forall (partial_permutation_space_finite_law : PartialPermutationSpaceFinite), ",
+            "forall (bounds_law : BoundsEvidence), ",
+            "forall (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence), ",
+            "forall (partial_permutation_counting_law : PartialPermutationCountingEvidence), ",
+            "@PartialPermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args NatCarrier totalSize selectionSize fallingValue PartialPermutationSpace PartialPermutationStructure PartialPermutationSpaceFinite BoundsEvidence FallingFactorialArithmeticEvidence PartialPermutationCountingEvidence"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun NatCarrier => fun totalSize => fun selectionSize => ",
+            "fun fallingValue => fun PartialPermutationSpace => fun PartialPermutationStructure => ",
+            "fun PartialPermutationSpaceFinite => fun BoundsEvidence => ",
+            "fun FallingFactorialArithmeticEvidence => fun PartialPermutationCountingEvidence => ",
+            "fun partial_permutation_structure_law => fun partial_permutation_space_finite_law => ",
+            "fun bounds_law => fun falling_factorial_arithmetic_law => ",
+            "fun partial_permutation_counting_law => fun (P : Prop) => ",
+            "fun (mk : forall (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (partial_permutation_structure_law : forall (perm : PartialPermutationSpace), PartialPermutationStructure perm), ",
+            "forall (partial_permutation_space_finite_law : PartialPermutationSpaceFinite), ",
+            "forall (bounds_law : BoundsEvidence), ",
+            "forall (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence), ",
+            "forall (partial_permutation_counting_law : PartialPermutationCountingEvidence), P) => ",
+            "mk family_args partial_permutation_structure_law partial_permutation_space_finite_law bounds_law falling_factorial_arithmetic_law partial_permutation_counting_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_permutation_counting_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (PartialPermutationSpace : Type), ",
+            "forall (PartialPermutationStructure : forall (perm : PartialPermutationSpace), Prop), ",
+            "forall (PartialPermutationSpaceFinite : Prop), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (PartialPermutationCountingEvidence : Prop), ",
+            "forall (counting_args : @PartialPermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args NatCarrier totalSize selectionSize fallingValue PartialPermutationSpace PartialPermutationStructure PartialPermutationSpaceFinite BoundsEvidence FallingFactorialArithmeticEvidence PartialPermutationCountingEvidence), ",
+            "PartialPermutationCountingEvidence"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun NatCarrier => fun totalSize => fun selectionSize => ",
+            "fun fallingValue => fun PartialPermutationSpace => fun PartialPermutationStructure => ",
+            "fun PartialPermutationSpaceFinite => fun BoundsEvidence => ",
+            "fun FallingFactorialArithmeticEvidence => fun PartialPermutationCountingEvidence => ",
+            "fun counting_args => counting_args PartialPermutationCountingEvidence ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (partial_permutation_structure_law : forall (perm : PartialPermutationSpace), PartialPermutationStructure perm) => ",
+            "fun (partial_permutation_space_finite_law : PartialPermutationSpaceFinite) => ",
+            "fun (bounds_law : BoundsEvidence) => ",
+            "fun (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence) => ",
+            "fun (partial_permutation_counting_law : PartialPermutationCountingEvidence) => partial_permutation_counting_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "partial_permutation_falling_factorial_arithmetic_prerequisite_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (item : Item), Prop), ",
+            "forall (NoDuplicate : Prop), forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (family_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "forall (NatCarrier : Type), forall (totalSize : NatCarrier), ",
+            "forall (selectionSize : NatCarrier), forall (fallingValue : NatCarrier), ",
+            "forall (PartialPermutationSpace : Type), ",
+            "forall (PartialPermutationStructure : forall (perm : PartialPermutationSpace), Prop), ",
+            "forall (PartialPermutationSpaceFinite : Prop), ",
+            "forall (BoundsEvidence : Prop), ",
+            "forall (FallingFactorialArithmeticEvidence : Prop), ",
+            "forall (PartialPermutationCountingEvidence : Prop), ",
+            "forall (counting_args : @PartialPermutationCountingPredicate.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound family_args NatCarrier totalSize selectionSize fallingValue PartialPermutationSpace PartialPermutationStructure PartialPermutationSpaceFinite BoundsEvidence FallingFactorialArithmeticEvidence PartialPermutationCountingEvidence), ",
+            "FallingFactorialArithmeticEvidence"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun family_args => fun NatCarrier => fun totalSize => fun selectionSize => ",
+            "fun fallingValue => fun PartialPermutationSpace => fun PartialPermutationStructure => ",
+            "fun PartialPermutationSpaceFinite => fun BoundsEvidence => ",
+            "fun FallingFactorialArithmeticEvidence => fun PartialPermutationCountingEvidence => ",
+            "fun counting_args => counting_args FallingFactorialArithmeticEvidence ",
+            "(fun (finite_family_law : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound) => ",
+            "fun (partial_permutation_structure_law : forall (perm : PartialPermutationSpace), PartialPermutationStructure perm) => ",
+            "fun (partial_permutation_space_finite_law : PartialPermutationSpaceFinite) => ",
+            "fun (bounds_law : BoundsEvidence) => ",
+            "fun (falling_factorial_arithmetic_law : FallingFactorialArithmeticEvidence) => ",
+            "fun (partial_permutation_counting_law : PartialPermutationCountingEvidence) => falling_factorial_arithmetic_law)"
         ),
     },
 ];
@@ -42522,6 +43165,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == COMBINATORICS_FINITE_MODULE.module
         || config.module == COMBINATORICS_CARDINALITY_MODULE.module
         || config.module == COMBINATORICS_COUNTING_BASIC_MODULE.module
+        || config.module == COMBINATORICS_PERMUTATION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
