@@ -263,6 +263,10 @@ Current bundles:
   ring-of-integers Dedekind-domain surfaces, explicit field-extension, basis, and
   finite-dimensional vector-space dependencies, and a boundary excluding ideal
   factorization as a definition.
+- `Proofs/Ai/NumberTheory/ClassGroup/`: certificate-backed ClassGroup interface
+  preserving ideal factorization, uniqueness, fractional ideal group, class number,
+  Dirichlet unit, and Minkowski surfaces, with explicit quotient construction,
+  geometry-of-numbers dependencies, and an L1 analytic class-number formula boundary.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

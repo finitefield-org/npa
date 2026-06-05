@@ -2478,7 +2478,15 @@ const NUMBER_THEORY_CLASS_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/ClassGroup/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/ClassGroup/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.NumberTheory.DiophantineApproximation",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CLASS_GROUP_THEOREMS,
@@ -21512,6 +21520,19 @@ const NUMBER_THEORY_CLASS_GROUP_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "class_group_quotient_requirement_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FractionalIdealGroup : Type), forall (PrincipalIdealSubgroup : FractionalIdealGroup -> Prop), ",
+            "forall (ClassGroup : Type), forall (QuotientConstruction : FractionalIdealGroup -> (FractionalIdealGroup -> Prop) -> ClassGroup -> Prop), ",
+            "forall (quotient_law : forall (G : FractionalIdealGroup), forall (P : FractionalIdealGroup -> Prop), forall (C : ClassGroup), QuotientConstruction G P C), ",
+            "forall (G : FractionalIdealGroup), forall (P : FractionalIdealGroup -> Prop), forall (C : ClassGroup), QuotientConstruction G P C"
+        ),
+        proof: concat!(
+            "fun FractionalIdealGroup => fun PrincipalIdealSubgroup => fun ClassGroup => fun QuotientConstruction => fun quotient_law => fun G => fun P => fun C => quotient_law G P C"
+        ),
+    },
+    TheoremArtifact {
         name: "class_number_finiteness_interface",
         universe_params: &[],
         statement: concat!(
@@ -21534,6 +21555,20 @@ const NUMBER_THEORY_CLASS_GROUP_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "minkowski_geometry_of_numbers_dependency_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NumberField : Type), forall (Lattice : Type), forall (ConvexBody : Type), forall (VolumeMeasure : Type), ",
+            "forall (GeometryOfNumbersPrerequisite : Type), ",
+            "forall (MinkowskiBound : NumberField -> Lattice -> ConvexBody -> VolumeMeasure -> Prop), ",
+            "forall (dependency_law : forall (K : NumberField), forall (lattice : Lattice), forall (body : ConvexBody), forall (volume : VolumeMeasure), forall (geometry_prereq : GeometryOfNumbersPrerequisite), MinkowskiBound K lattice body volume), ",
+            "forall (K : NumberField), forall (lattice : Lattice), forall (body : ConvexBody), forall (volume : VolumeMeasure), forall (geometry_prereq : GeometryOfNumbersPrerequisite), MinkowskiBound K lattice body volume"
+        ),
+        proof: concat!(
+            "fun NumberField => fun Lattice => fun ConvexBody => fun VolumeMeasure => fun GeometryOfNumbersPrerequisite => fun MinkowskiBound => fun dependency_law => fun K => fun lattice => fun body => fun volume => fun geometry_prereq => dependency_law K lattice body volume geometry_prereq"
+        ),
+    },
+    TheoremArtifact {
         name: "dirichlet_unit_theorem_interface",
         universe_params: &[],
         statement: concat!(
@@ -21553,6 +21588,19 @@ const NUMBER_THEORY_CLASS_GROUP_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun K => fun ClassNumberFormula => fun formula_law => fun F => formula_law F"
+        ),
+    },
+    TheoremArtifact {
+        name: "analytic_class_number_formula_l1_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NumberField : Type), forall (AnalyticPrerequisite : Type), forall (ClassNumberFormula : NumberField -> Prop), ",
+            "forall (L1ClassNumberFormulaBoundary : NumberField -> (NumberField -> Prop) -> AnalyticPrerequisite -> Prop), ",
+            "forall (boundary_law : forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), L1ClassNumberFormulaBoundary K ClassNumberFormula analytic_prereq), ",
+            "forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), L1ClassNumberFormulaBoundary K ClassNumberFormula analytic_prereq"
+        ),
+        proof: concat!(
+            "fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun L1ClassNumberFormulaBoundary => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq"
         ),
     },
 ];
@@ -50287,6 +50335,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_SPLITTING_FIELD_MODULE.module
         || module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
         || module == ABSTRACT_GALOIS_STARTER_MODULE.module
+        || module == NUMBER_THEORY_CLASS_GROUP_MODULE.module
     {
         vec![
             npa_cert::CoreFeature::QuotientV1,

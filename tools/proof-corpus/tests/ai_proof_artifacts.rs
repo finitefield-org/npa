@@ -5106,6 +5106,7 @@ fn supported_core_features(module: &str) -> Vec<CoreFeature> {
             | "Proofs.Ai.Algebra.AbstractRingFirstIsoBase"
             | "Proofs.Ai.Algebra.AbstractRingFirstIso"
             | "Proofs.Ai.Algebra.AbstractRingChineseRemainder"
+            | "Proofs.Ai.NumberTheory.ClassGroup"
     ) {
         vec![
             CoreFeature::QuotientV1,

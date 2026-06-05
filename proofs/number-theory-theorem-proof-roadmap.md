@@ -663,7 +663,8 @@ semantics.
   - `NT-T39` added certificate-backed `Proofs.Ai.NumberTheory.ClassGroup`
     defining L1 interfaces for ideal factorization, uniqueness, fractional ideals,
     class group, class number finiteness, Minkowski bound, Dirichlet unit theorem,
-    and class number formula.
+    and class number formula, with explicit quotient construction, geometry-of-numbers
+    dependency, and analytic class-number formula L1 boundary surfaces.
 - Depends on: existing `Proofs.Ai.Algebra.*` modules,
   `develop/proof-corpus-field-theory-roadmap.md`, `NT-03`, ideals, modules,
   field extensions, and finite-dimensional vector spaces from
@@ -692,6 +693,7 @@ semantics.
   - Dedekind-domain ideal factorization is not assumed as a ring-of-integers
     definition.
   - Class group quotient dependencies are visible in core-feature reports.
+  - Analytic class-number formula remains L1 until analytic prerequisites are certified.
 
 ## NT-14 Local Fields And p-adic Analysis
 

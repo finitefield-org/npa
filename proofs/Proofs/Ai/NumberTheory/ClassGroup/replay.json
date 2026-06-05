@@ -25,6 +25,11 @@
       "term": "fun ClassGroup => fun IsAbelianGroup => fun group_law => fun G => group_law G"
     },
     {
+      "declaration": "class_group_quotient_requirement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FractionalIdealGroup => fun PrincipalIdealSubgroup => fun ClassGroup => fun QuotientConstruction => fun quotient_law => fun G => fun P => fun C => quotient_law G P C"
+    },
+    {
       "declaration": "class_number_finiteness_interface",
       "source_kind": "explicit_term",
       "term": "fun ClassGroup => fun IsFinite => fun finite_law => fun G => finite_law G"
@@ -35,6 +40,11 @@
       "term": "fun K => fun MinkowskiBound => fun bound_law => fun F => bound_law F"
     },
     {
+      "declaration": "minkowski_geometry_of_numbers_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun NumberField => fun Lattice => fun ConvexBody => fun VolumeMeasure => fun GeometryOfNumbersPrerequisite => fun MinkowskiBound => fun dependency_law => fun K => fun lattice => fun body => fun volume => fun geometry_prereq => dependency_law K lattice body volume geometry_prereq"
+    },
+    {
       "declaration": "dirichlet_unit_theorem_interface",
       "source_kind": "explicit_term",
       "term": "fun K => fun UnitGroup => fun IsFinitelyGeneratedAbelianGroup => fun unit_law => fun U => unit_law U"
@@ -43,6 +53,11 @@
       "declaration": "class_number_formula_interface",
       "source_kind": "explicit_term",
       "term": "fun K => fun ClassNumberFormula => fun formula_law => fun F => formula_law F"
+    },
+    {
+      "declaration": "analytic_class_number_formula_l1_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun L1ClassNumberFormulaBoundary => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq"
     }
   ],
   "acceptance": {
