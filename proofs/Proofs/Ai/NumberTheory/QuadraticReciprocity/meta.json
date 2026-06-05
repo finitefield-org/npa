@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.QuadraticReciprocity",
+  "source": "Proofs/Ai/NumberTheory/QuadraticReciprocity/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/QuadraticReciprocity/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:490fd304ce549f4d006b34604e6ac27e417b09bdd99497f53e3ae03c54688c1c",
+  "certificate_file_sha256": "sha256:63fb574dda38959d29758af544bba94438296dd2592c5f5c38c6fa7deca048ef",
+  "export_hash": "sha256:b1938a6a38107dff18a493fa81cc9a68dc5c50a949f60cea7e7b54df0918c3fa",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:65acaefa14557b18a3c7a5be3cca32c1e1f1a6890adbb31ef4fb4bb8310d383e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.QuadraticResidue", "Proofs.Ai.NumberTheory.Legendre"],
+  "axioms": [],
+  "declarations": [
+    { "name": "gauss_lemma_statement_surface", "kind": "theorem" },
+    { "name": "supplementary_law_minus_one_surface", "kind": "theorem" },
+    { "name": "supplementary_law_two_surface", "kind": "theorem" },
+    { "name": "quadratic_reciprocity_distinct_odd_primes_surface", "kind": "theorem" },
+    { "name": "quadratic_reciprocity_first_route_recorded_boundary", "kind": "theorem" },
+    { "name": "quadratic_reciprocity_no_backward_primitive_character_dependency_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

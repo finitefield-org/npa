@@ -699,7 +699,7 @@ later in the file.
 
 ### NT-T20 Prove Gauss Lemma And Quadratic Reciprocity
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T19`
 - Areas: `Proofs/Ai/NumberTheory/QuadraticReciprocity/`
 - Tasks:

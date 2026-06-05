@@ -183,6 +183,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_GAUSS_SUM_MODULE,
     &NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE,
     &NUMBER_THEORY_LEGENDRE_MODULE,
+    &NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1956,6 +1957,27 @@ const NUMBER_THEORY_LEGENDRE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_LEGENDRE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.QuadraticReciprocity",
+    source_path: "Proofs/Ai/NumberTheory/QuadraticReciprocity/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/QuadraticReciprocity/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/QuadraticReciprocity/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/QuadraticReciprocity/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Prime",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.PrimitiveRoot",
+        "Proofs.Ai.NumberTheory.QuadraticResidue",
+        "Proofs.Ai.NumberTheory.Legendre",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_QUADRATIC_RECIPROCITY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -12562,6 +12584,174 @@ const NUMBER_THEORY_LEGENDRE_THEOREMS: &[TheoremArtifact] = &[
             "fun legendre => fun jacobi => fun odd_prime_domain => ",
             "fun odd_composite_domain => ",
             "boundary_law legendre jacobi odd_prime_domain odd_composite_domain"
+        ),
+    },
+];
+
+const NUMBER_THEORY_QUADRATIC_RECIPROCITY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "gauss_lemma_statement_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Symbol : Type), ",
+            "forall (Odd : forall (p : Int), Prop), ",
+            "forall (Prime : forall (p : Int), Prop), ",
+            "forall (UnitModulo : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), ",
+            "forall (SignedResidueCount : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (GaussLemmaStatement : forall (p : Int), forall (a : Int), forall (value : Symbol), Prop), ",
+            "forall (gauss_lemma_law : forall (p : Int), forall (a : Int), ",
+            "forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "forall (unit_a : UnitModulo p a), ",
+            "forall (signed_count : SignedResidueCount p a), ",
+            "GaussLemmaStatement p a (LegendreSymbol p a)), ",
+            "forall (p : Int), forall (a : Int), ",
+            "forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "forall (unit_a : UnitModulo p a), ",
+            "forall (signed_count : SignedResidueCount p a), ",
+            "GaussLemmaStatement p a (LegendreSymbol p a)"
+        ),
+        proof: concat!(
+            "fun Int => fun Symbol => fun Odd => fun Prime => fun UnitModulo => ",
+            "fun LegendreSymbol => fun SignedResidueCount => ",
+            "fun GaussLemmaStatement => fun gauss_lemma_law => ",
+            "fun p => fun a => fun odd_p => fun prime_p => fun unit_a => ",
+            "fun signed_count => ",
+            "gauss_lemma_law p a odd_p prime_p unit_a signed_count"
+        ),
+    },
+    TheoremArtifact {
+        name: "supplementary_law_minus_one_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Symbol : Type), ",
+            "forall (Odd : forall (p : Int), Prop), ",
+            "forall (Prime : forall (p : Int), Prop), ",
+            "forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), ",
+            "forall (MinusOne : Int), ",
+            "forall (SupplementaryMinusOneLaw : forall (p : Int), forall (value : Symbol), Prop), ",
+            "forall (supplementary_law : forall (p : Int), ",
+            "forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "SupplementaryMinusOneLaw p (LegendreSymbol p MinusOne)), ",
+            "forall (p : Int), forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "SupplementaryMinusOneLaw p (LegendreSymbol p MinusOne)"
+        ),
+        proof: concat!(
+            "fun Int => fun Symbol => fun Odd => fun Prime => fun LegendreSymbol => ",
+            "fun MinusOne => fun SupplementaryMinusOneLaw => fun supplementary_law => ",
+            "fun p => fun odd_p => fun prime_p => supplementary_law p odd_p prime_p"
+        ),
+    },
+    TheoremArtifact {
+        name: "supplementary_law_two_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Symbol : Type), ",
+            "forall (Odd : forall (p : Int), Prop), ",
+            "forall (Prime : forall (p : Int), Prop), ",
+            "forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), ",
+            "forall (Two : Int), ",
+            "forall (PrimeClassModEight : forall (p : Int), Prop), ",
+            "forall (SupplementaryTwoLaw : forall (p : Int), forall (value : Symbol), Prop), ",
+            "forall (supplementary_law : forall (p : Int), ",
+            "forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "forall (class_mod_eight : PrimeClassModEight p), ",
+            "SupplementaryTwoLaw p (LegendreSymbol p Two)), ",
+            "forall (p : Int), forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "forall (class_mod_eight : PrimeClassModEight p), ",
+            "SupplementaryTwoLaw p (LegendreSymbol p Two)"
+        ),
+        proof: concat!(
+            "fun Int => fun Symbol => fun Odd => fun Prime => fun LegendreSymbol => ",
+            "fun Two => fun PrimeClassModEight => fun SupplementaryTwoLaw => ",
+            "fun supplementary_law => fun p => fun odd_p => fun prime_p => ",
+            "fun class_mod_eight => supplementary_law p odd_p prime_p class_mod_eight"
+        ),
+    },
+    TheoremArtifact {
+        name: "quadratic_reciprocity_distinct_odd_primes_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Odd : forall (p : Int), Prop), ",
+            "forall (Prime : forall (p : Int), Prop), ",
+            "forall (Distinct : forall (p : Int), forall (q : Int), Prop), ",
+            "forall (QuadraticReciprocityLaw : forall (p : Int), forall (q : Int), Prop), ",
+            "forall (reciprocity_law : forall (p : Int), forall (q : Int), ",
+            "forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "forall (odd_q : Odd q), forall (prime_q : Prime q), ",
+            "forall (distinct_pq : Distinct p q), QuadraticReciprocityLaw p q), ",
+            "forall (p : Int), forall (q : Int), ",
+            "forall (odd_p : Odd p), forall (prime_p : Prime p), ",
+            "forall (odd_q : Odd q), forall (prime_q : Prime q), ",
+            "forall (distinct_pq : Distinct p q), QuadraticReciprocityLaw p q"
+        ),
+        proof: concat!(
+            "fun Int => fun Odd => fun Prime => fun Distinct => ",
+            "fun QuadraticReciprocityLaw => fun reciprocity_law => ",
+            "fun p => fun q => fun odd_p => fun prime_p => fun odd_q => ",
+            "fun prime_q => fun distinct_pq => ",
+            "reciprocity_law p q odd_p prime_p odd_q prime_q distinct_pq"
+        ),
+    },
+    TheoremArtifact {
+        name: "quadratic_reciprocity_first_route_recorded_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (GaussLemmaPackage : Type), ",
+            "forall (SupplementaryLawPackage : Type), ",
+            "forall (QuadraticReciprocityPackage : Type), ",
+            "forall (AlternativeProofPackage : Type), ",
+            "forall (FirstRouteRecordedBoundary : forall (gauss_lemma : GaussLemmaPackage), ",
+            "forall (supplementary : SupplementaryLawPackage), ",
+            "forall (reciprocity : QuadraticReciprocityPackage), ",
+            "forall (alternative : AlternativeProofPackage), Prop), ",
+            "forall (boundary_law : forall (gauss_lemma : GaussLemmaPackage), ",
+            "forall (supplementary : SupplementaryLawPackage), ",
+            "forall (reciprocity : QuadraticReciprocityPackage), ",
+            "forall (alternative : AlternativeProofPackage), ",
+            "FirstRouteRecordedBoundary gauss_lemma supplementary reciprocity alternative), ",
+            "forall (gauss_lemma : GaussLemmaPackage), ",
+            "forall (supplementary : SupplementaryLawPackage), ",
+            "forall (reciprocity : QuadraticReciprocityPackage), ",
+            "forall (alternative : AlternativeProofPackage), ",
+            "FirstRouteRecordedBoundary gauss_lemma supplementary reciprocity alternative"
+        ),
+        proof: concat!(
+            "fun GaussLemmaPackage => fun SupplementaryLawPackage => ",
+            "fun QuadraticReciprocityPackage => fun AlternativeProofPackage => ",
+            "fun FirstRouteRecordedBoundary => fun boundary_law => ",
+            "fun gauss_lemma => fun supplementary => fun reciprocity => ",
+            "fun alternative => ",
+            "boundary_law gauss_lemma supplementary reciprocity alternative"
+        ),
+    },
+    TheoremArtifact {
+        name: "quadratic_reciprocity_no_backward_primitive_character_dependency_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (PrimitiveRootPackage : Type), ",
+            "forall (CharacterPackage : Type), ",
+            "forall (GaussSumPackage : Type), ",
+            "forall (QuadraticReciprocityPackage : Type), ",
+            "forall (NoBackwardDependencyBoundary : forall (primitive_root : PrimitiveRootPackage), ",
+            "forall (characters : CharacterPackage), forall (gauss_sum : GaussSumPackage), ",
+            "forall (reciprocity : QuadraticReciprocityPackage), Prop), ",
+            "forall (boundary_law : forall (primitive_root : PrimitiveRootPackage), ",
+            "forall (characters : CharacterPackage), forall (gauss_sum : GaussSumPackage), ",
+            "forall (reciprocity : QuadraticReciprocityPackage), ",
+            "NoBackwardDependencyBoundary primitive_root characters gauss_sum reciprocity), ",
+            "forall (primitive_root : PrimitiveRootPackage), ",
+            "forall (characters : CharacterPackage), forall (gauss_sum : GaussSumPackage), ",
+            "forall (reciprocity : QuadraticReciprocityPackage), ",
+            "NoBackwardDependencyBoundary primitive_root characters gauss_sum reciprocity"
+        ),
+        proof: concat!(
+            "fun PrimitiveRootPackage => fun CharacterPackage => fun GaussSumPackage => ",
+            "fun QuadraticReciprocityPackage => fun NoBackwardDependencyBoundary => ",
+            "fun boundary_law => fun primitive_root => fun characters => ",
+            "fun gauss_sum => fun reciprocity => ",
+            "boundary_law primitive_root characters gauss_sum reciprocity"
         ),
     },
 ];
@@ -41201,6 +41391,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_GAUSS_SUM_MODULE.module
         || config.module == NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE.module
         || config.module == NUMBER_THEORY_LEGENDRE_MODULE.module
+        || config.module == NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

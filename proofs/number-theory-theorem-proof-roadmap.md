@@ -390,7 +390,10 @@ semantics.
   `Proofs.Ai.NumberTheory.Legendre` surfaces for quadratic residue and
   nonresidue definitions, Legendre symbol multiplicativity, Euler criterion
   interfaces from finite cyclic group facts, and odd-prime residue-count
-  statements.
+  statements. `NT-T20` added certificate-backed
+  `Proofs.Ai.NumberTheory.QuadraticReciprocity` surfaces for Gauss lemma,
+  supplementary laws for minus one and two, the first recorded proof route, and
+  quadratic reciprocity over distinct odd primes.
 - Target modules:
   - `Proofs.Ai.NumberTheory.QuadraticResidue`
   - `Proofs.Ai.NumberTheory.Legendre`

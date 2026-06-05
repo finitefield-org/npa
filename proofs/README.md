@@ -185,6 +185,10 @@ Current bundles:
   of `QuadraticResidue` and primitive-root cyclic-unit facts, preserving multiplicativity,
   Euler criterion statement surfaces, count compatibility, and a boundary separating the
   Legendre API from the later Jacobi symbol API.
+- `Proofs/Ai/NumberTheory/QuadraticReciprocity/`: certificate-backed quadratic reciprocity
+  route downstream of `Legendre`, preserving Gauss lemma surfaces, supplementary laws for
+  minus one and two, `quadratic_reciprocity` statements for distinct odd primes, and a boundary
+  preventing primitive-root, character, or Gauss-sum milestones from assuming reciprocity.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
