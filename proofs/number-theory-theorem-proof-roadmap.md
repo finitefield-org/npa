@@ -571,6 +571,10 @@ semantics.
     defining L1 interfaces for Chebyshev estimates, Prime Number Theorem asymptotic
     equivalence, de la Vallee Poussin zero-free region and error bound, Bertrand's
     postulate (independent elementary fact), and Ikehara Tauberian theorem dependency.
+  - `NT-T34` added certificate-backed `Proofs.Ai.NumberTheory.DirichletL`
+    defining L1 interfaces for Dirichlet L-functions, Euler products, analytic continuation,
+    functional equations, $L(1, \chi) \neq 0$, Dirichlet's theorem on primes in arithmetic
+    progressions, AP PNT, and GRH conditional consequence.
 - Target modules:
   - `Proofs.Ai.NumberTheory.DirichletSeries`
   - `Proofs.Ai.NumberTheory.Zeta`

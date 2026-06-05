@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DirichletL",
+  "source": "Proofs/Ai/NumberTheory/DirichletL/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/DirichletL/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1407f1a8831aca2447522afd4545384469633953b16015d6805b1d21b94e5ef6",
+  "certificate_file_sha256": "sha256:d0e8d994563f01599e107757cdd48383dceaece03faccd2aba8fe89fbd0781c3",
+  "export_hash": "sha256:f29793f350f08900b95b25f4e75b528dc868d1333ca505995b292c6c3e76d581",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:276ae222d82fc3a9c04856a7628dea00e87b461e927596b063c9b57dab1f1908",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.Zeta"],
+  "axioms": [],
+  "declarations": [
+    { "name": "dirichlet_l_function_definition_interface", "kind": "theorem" },
+    { "name": "dirichlet_l_euler_product_interface", "kind": "theorem" },
+    { "name": "dirichlet_l_analytic_continuation_interface", "kind": "theorem" },
+    { "name": "dirichlet_l_functional_equation_interface", "kind": "theorem" },
+    { "name": "dirichlet_l_nonvanishing_at_one_interface", "kind": "theorem" },
+    { "name": "dirichlet_theorem_arithmetic_progression_interface", "kind": "theorem" },
+    { "name": "arithmetic_progression_pnt_interface", "kind": "theorem" },
+    { "name": "generalized_riemann_hypothesis_conditional_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

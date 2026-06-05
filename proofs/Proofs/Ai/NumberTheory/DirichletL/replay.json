@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DirichletL",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dirichlet_l_function_definition_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Int => fun DirichletCharacter => fun IsDirichletLFunction => fun LFunction => fun dirichlet_l_function_law => fun modulus => fun chi => fun char_evidence => fun s => dirichlet_l_function_law modulus chi char_evidence s"
+    },
+    {
+      "declaration": "dirichlet_l_euler_product_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Complex => fun Coeff => fun Int => fun Re => fun Lt => fun One => fun DirichletCharacter => fun IsLEulerProduct => fun LFunction => fun l_euler_product_law => fun modulus => fun chi => fun char_evidence => fun s => fun h => l_euler_product_law modulus chi char_evidence s h"
+    },
+    {
+      "declaration": "dirichlet_l_analytic_continuation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Int => fun Domain => fun DirichletCharacter => fun LAnalyticContinuation => fun continuation_l_law => fun D => fun F => continuation_l_law D F"
+    },
+    {
+      "declaration": "dirichlet_l_functional_equation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Int => fun Sub => fun One => fun DirichletCharacter => fun IsPrimitiveCharacter => fun XiLFunction => fun xi_l_functional_equation_law => fun modulus => fun chi => fun char_evidence => fun primitive_evidence => fun s => xi_l_functional_equation_law modulus chi char_evidence primitive_evidence s"
+    },
+    {
+      "declaration": "dirichlet_l_nonvanishing_at_one_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Int => fun One => fun Zero => fun DirichletCharacter => fun IsPrincipalCharacter => fun Not => fun LFunction => fun nonvanishing_law => fun modulus => fun chi => fun char_evidence => fun non_principal => nonvanishing_law modulus chi char_evidence non_principal"
+    },
+    {
+      "declaration": "dirichlet_theorem_arithmetic_progression_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Prime => fun Coprime => fun InfinitePrimesInProgression => fun dirichlet_ap_law => fun a => fun d => fun h => dirichlet_ap_law a d h"
+    },
+    {
+      "declaration": "arithmetic_progression_pnt_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun PrimeCountAP => fun AsymptoticEquivalent => fun XOverPhiQLogX => fun Coprime => fun ap_pnt_law => fun a => fun q => fun h => ap_pnt_law a q h"
+    },
+    {
+      "declaration": "generalized_riemann_hypothesis_conditional_interface",
+      "source_kind": "explicit_term",
+      "term": "fun GeneralizedRiemannHypothesis => fun ConsequenceProp => fun grh_conditional_law => fun h => grh_conditional_law h"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/DirichletL/certificate.npcert"
+  }
+}

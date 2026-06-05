@@ -1,0 +1,37 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.NumberTheory.Character
+import Proofs.Ai.NumberTheory.Zeta
+
+theorem dirichlet_l_function_definition_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (IsDirichletLFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff -> Prop), forall (LFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), forall (dirichlet_l_function_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), IsDirichletLFunction chi s (LFunction chi s)), forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), IsDirichletLFunction chi s (LFunction chi s) :=
+  fun Complex => fun Coeff => fun Int => fun DirichletCharacter => fun IsDirichletLFunction => fun LFunction => fun dirichlet_l_function_law => fun modulus => fun chi => fun char_evidence => fun s => dirichlet_l_function_law modulus chi char_evidence s
+
+theorem dirichlet_l_euler_product_interface :
+  forall (Real : Type), forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (Re : Complex -> Real), forall (Lt : Real -> Real -> Prop), forall (One : Real), forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (IsLEulerProduct : forall (chi : forall (a : Int), Coeff), Complex -> Coeff -> Prop), forall (LFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), forall (l_euler_product_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), forall (h : Lt One (Re s)), IsLEulerProduct chi s (LFunction chi s)), forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), forall (h : Lt One (Re s)), IsLEulerProduct chi s (LFunction chi s) :=
+  fun Real => fun Complex => fun Coeff => fun Int => fun Re => fun Lt => fun One => fun DirichletCharacter => fun IsLEulerProduct => fun LFunction => fun l_euler_product_law => fun modulus => fun chi => fun char_evidence => fun s => fun h => l_euler_product_law modulus chi char_evidence s h
+
+theorem dirichlet_l_analytic_continuation_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (Domain : Type), forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (LAnalyticContinuation : Domain -> (Complex -> Coeff) -> Prop), forall (continuation_l_law : forall (D : Domain), forall (F : Complex -> Coeff), LAnalyticContinuation D F), forall (D : Domain), forall (F : Complex -> Coeff), LAnalyticContinuation D F :=
+  fun Complex => fun Coeff => fun Int => fun Domain => fun DirichletCharacter => fun LAnalyticContinuation => fun continuation_l_law => fun D => fun F => continuation_l_law D F
+
+theorem dirichlet_l_functional_equation_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (Sub : Complex -> Complex -> Complex), forall (One : Complex), forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (IsPrimitiveCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (XiLFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), forall (xi_l_functional_equation_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (primitive_evidence : IsPrimitiveCharacter modulus chi), forall (s : Complex), @Eq.{1} Coeff (XiLFunction chi s) (XiLFunction chi (Sub One s))), forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (primitive_evidence : IsPrimitiveCharacter modulus chi), forall (s : Complex), @Eq.{1} Coeff (XiLFunction chi s) (XiLFunction chi (Sub One s)) :=
+  fun Complex => fun Coeff => fun Int => fun Sub => fun One => fun DirichletCharacter => fun IsPrimitiveCharacter => fun XiLFunction => fun xi_l_functional_equation_law => fun modulus => fun chi => fun char_evidence => fun primitive_evidence => fun s => xi_l_functional_equation_law modulus chi char_evidence primitive_evidence s
+
+theorem dirichlet_l_nonvanishing_at_one_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (One : Complex), forall (Zero : Coeff), forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (IsPrincipalCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), forall (Not : Prop -> Prop), forall (LFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), forall (nonvanishing_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (non_principal : Not (IsPrincipalCharacter modulus chi)), Not (@Eq.{1} Coeff (LFunction chi One) Zero)), forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (non_principal : Not (IsPrincipalCharacter modulus chi)), Not (@Eq.{1} Coeff (LFunction chi One) Zero) :=
+  fun Complex => fun Coeff => fun Int => fun One => fun Zero => fun DirichletCharacter => fun IsPrincipalCharacter => fun Not => fun LFunction => fun nonvanishing_law => fun modulus => fun chi => fun char_evidence => fun non_principal => nonvanishing_law modulus chi char_evidence non_principal
+
+theorem dirichlet_theorem_arithmetic_progression_interface :
+  forall (Int : Type), forall (Prime : Int -> Prop), forall (Coprime : Int -> Int -> Prop), forall (InfinitePrimesInProgression : Int -> Int -> Prop), forall (dirichlet_ap_law : forall (a : Int), forall (d : Int), forall (h : Coprime a d), InfinitePrimesInProgression a d), forall (a : Int), forall (d : Int), forall (h : Coprime a d), InfinitePrimesInProgression a d :=
+  fun Int => fun Prime => fun Coprime => fun InfinitePrimesInProgression => fun dirichlet_ap_law => fun a => fun d => fun h => dirichlet_ap_law a d h
+
+theorem arithmetic_progression_pnt_interface :
+  forall (Real : Type), forall (Int : Type), forall (PrimeCountAP : Int -> Int -> Real -> Real), forall (AsymptoticEquivalent : (Real -> Real) -> (Real -> Real) -> Prop), forall (XOverPhiQLogX : Int -> Real -> Real), forall (Coprime : Int -> Int -> Prop), forall (ap_pnt_law : forall (a : Int), forall (q : Int), forall (h : Coprime a q), AsymptoticEquivalent (PrimeCountAP a q) (XOverPhiQLogX q)), forall (a : Int), forall (q : Int), forall (h : Coprime a q), AsymptoticEquivalent (PrimeCountAP a q) (XOverPhiQLogX q) :=
+  fun Real => fun Int => fun PrimeCountAP => fun AsymptoticEquivalent => fun XOverPhiQLogX => fun Coprime => fun ap_pnt_law => fun a => fun q => fun h => ap_pnt_law a q h
+
+theorem generalized_riemann_hypothesis_conditional_interface :
+  forall (GeneralizedRiemannHypothesis : Prop), forall (ConsequenceProp : Prop), forall (grh_conditional_law : forall (h : GeneralizedRiemannHypothesis), ConsequenceProp), forall (h : GeneralizedRiemannHypothesis), ConsequenceProp :=
+  fun GeneralizedRiemannHypothesis => fun ConsequenceProp => fun grh_conditional_law => fun h => grh_conditional_law h
+

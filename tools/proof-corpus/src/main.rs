@@ -204,6 +204,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_DIRICHLET_SERIES_MODULE,
     &NUMBER_THEORY_ZETA_MODULE,
     &NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE,
+    &NUMBER_THEORY_DIRICHLET_L_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2328,6 +2329,24 @@ const NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE: ModuleArtifact = ModuleArtifact
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PRIME_NUMBER_THEOREM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DIRICHLET_L_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.DirichletL",
+    source_path: "Proofs/Ai/NumberTheory/DirichletL/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/DirichletL/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/DirichletL/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/DirichletL/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Character",
+        "Proofs.Ai.NumberTheory.Zeta",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DIRICHLET_L_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19771,6 +19790,121 @@ const NUMBER_THEORY_PRIME_NUMBER_THEOREM_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun IkeharaTauberianTheorem => fun PrimeNumberTheoremAsymptotic => ",
             "fun pnt_from_ikehara_law => fun h => pnt_from_ikehara_law h"
+        ),
+    },
+];
+
+const NUMBER_THEORY_DIRICHLET_L_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dirichlet_l_function_definition_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (IsDirichletLFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff -> Prop), ",
+            "forall (LFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), ",
+            "forall (dirichlet_l_function_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), IsDirichletLFunction chi s (LFunction chi s)), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), IsDirichletLFunction chi s (LFunction chi s)"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Int => fun DirichletCharacter => fun IsDirichletLFunction => fun LFunction => fun dirichlet_l_function_law => fun modulus => fun chi => fun char_evidence => fun s => dirichlet_l_function_law modulus chi char_evidence s"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_l_euler_product_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), ",
+            "forall (Re : Complex -> Real), forall (Lt : Real -> Real -> Prop), forall (One : Real), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (IsLEulerProduct : forall (chi : forall (a : Int), Coeff), Complex -> Coeff -> Prop), ",
+            "forall (LFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), ",
+            "forall (l_euler_product_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), forall (h : Lt One (Re s)), IsLEulerProduct chi s (LFunction chi s)), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (s : Complex), forall (h : Lt One (Re s)), IsLEulerProduct chi s (LFunction chi s)"
+        ),
+        proof: concat!(
+            "fun Real => fun Complex => fun Coeff => fun Int => fun Re => fun Lt => fun One => fun DirichletCharacter => fun IsLEulerProduct => fun LFunction => fun l_euler_product_law => fun modulus => fun chi => fun char_evidence => fun s => fun h => l_euler_product_law modulus chi char_evidence s h"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_l_analytic_continuation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (Domain : Type), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (LAnalyticContinuation : Domain -> (Complex -> Coeff) -> Prop), ",
+            "forall (continuation_l_law : forall (D : Domain), forall (F : Complex -> Coeff), LAnalyticContinuation D F), ",
+            "forall (D : Domain), forall (F : Complex -> Coeff), LAnalyticContinuation D F"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Int => fun Domain => fun DirichletCharacter => fun LAnalyticContinuation => ",
+            "fun continuation_l_law => fun D => fun F => continuation_l_law D F"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_l_functional_equation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (Sub : Complex -> Complex -> Complex), forall (One : Complex), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (IsPrimitiveCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (XiLFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), ",
+            "forall (xi_l_functional_equation_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (primitive_evidence : IsPrimitiveCharacter modulus chi), forall (s : Complex), @Eq.{1} Coeff (XiLFunction chi s) (XiLFunction chi (Sub One s))), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (primitive_evidence : IsPrimitiveCharacter modulus chi), forall (s : Complex), @Eq.{1} Coeff (XiLFunction chi s) (XiLFunction chi (Sub One s))"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Int => fun Sub => fun One => fun DirichletCharacter => fun IsPrimitiveCharacter => fun XiLFunction => fun xi_l_functional_equation_law => fun modulus => fun chi => fun char_evidence => fun primitive_evidence => fun s => xi_l_functional_equation_law modulus chi char_evidence primitive_evidence s"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_l_nonvanishing_at_one_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Int : Type), forall (One : Complex), forall (Zero : Coeff), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (IsPrincipalCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (Not : Prop -> Prop), forall (LFunction : forall (chi : forall (a : Int), Coeff), Complex -> Coeff), ",
+            "forall (nonvanishing_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (non_principal : Not (IsPrincipalCharacter modulus chi)), Not (@Eq.{1} Coeff (LFunction chi One) Zero)), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (char_evidence : DirichletCharacter modulus chi), forall (non_principal : Not (IsPrincipalCharacter modulus chi)), Not (@Eq.{1} Coeff (LFunction chi One) Zero)"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Int => fun One => fun Zero => fun DirichletCharacter => fun IsPrincipalCharacter => fun Not => fun LFunction => fun nonvanishing_law => fun modulus => fun chi => fun char_evidence => fun non_principal => nonvanishing_law modulus chi char_evidence non_principal"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_theorem_arithmetic_progression_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Prime : Int -> Prop), forall (Coprime : Int -> Int -> Prop), forall (InfinitePrimesInProgression : Int -> Int -> Prop), ",
+            "forall (dirichlet_ap_law : forall (a : Int), forall (d : Int), forall (h : Coprime a d), InfinitePrimesInProgression a d), ",
+            "forall (a : Int), forall (d : Int), forall (h : Coprime a d), InfinitePrimesInProgression a d"
+        ),
+        proof: concat!(
+            "fun Int => fun Prime => fun Coprime => fun InfinitePrimesInProgression => fun dirichlet_ap_law => fun a => fun d => fun h => dirichlet_ap_law a d h"
+        ),
+    },
+    TheoremArtifact {
+        name: "arithmetic_progression_pnt_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (PrimeCountAP : Int -> Int -> Real -> Real), forall (AsymptoticEquivalent : (Real -> Real) -> (Real -> Real) -> Prop), forall (XOverPhiQLogX : Int -> Real -> Real), forall (Coprime : Int -> Int -> Prop), ",
+            "forall (ap_pnt_law : forall (a : Int), forall (q : Int), forall (h : Coprime a q), AsymptoticEquivalent (PrimeCountAP a q) (XOverPhiQLogX q)), ",
+            "forall (a : Int), forall (q : Int), forall (h : Coprime a q), AsymptoticEquivalent (PrimeCountAP a q) (XOverPhiQLogX q)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun PrimeCountAP => fun AsymptoticEquivalent => fun XOverPhiQLogX => fun Coprime => fun ap_pnt_law => fun a => fun q => fun h => ap_pnt_law a q h"
+        ),
+    },
+    TheoremArtifact {
+        name: "generalized_riemann_hypothesis_conditional_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (GeneralizedRiemannHypothesis : Prop), forall (ConsequenceProp : Prop), ",
+            "forall (grh_conditional_law : forall (h : GeneralizedRiemannHypothesis), ConsequenceProp), ",
+            "forall (h : GeneralizedRiemannHypothesis), ConsequenceProp"
+        ),
+        proof: concat!(
+            "fun GeneralizedRiemannHypothesis => fun ConsequenceProp => fun grh_conditional_law => fun h => grh_conditional_law h"
         ),
     },
 ];
