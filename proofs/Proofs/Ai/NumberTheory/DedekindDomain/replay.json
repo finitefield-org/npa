@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DedekindDomain",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "norm_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun x => fun Norm => fun norm_law => norm_law x"
+    },
+    {
+      "declaration": "trace_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun x => fun Trace => fun trace_law => trace_law x"
+    },
+    {
+      "declaration": "discriminant_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Basis => fun Discriminant => fun b => fun disc_law => disc_law b"
+    },
+    {
+      "declaration": "integral_basis_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ext => fun IntegralBasis => fun B => fun basis_law => basis_law"
+    },
+    {
+      "declaration": "dedekind_domain_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ring => fun IsDedekindDomain => fun R => fun dedekind_law => dedekind_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/DedekindDomain/certificate.npcert"
+  }
+}

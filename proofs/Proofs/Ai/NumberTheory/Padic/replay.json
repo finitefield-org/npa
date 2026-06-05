@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Padic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "padic_completion_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun CompK => fun CompletionOf => fun comp_law => fun x => comp_law x"
+    },
+    {
+      "declaration": "padic_field_construction_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Q => fun Qp => fun IsPadicField => fun qp_law => qp_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Padic/certificate.npcert"
+  }
+}

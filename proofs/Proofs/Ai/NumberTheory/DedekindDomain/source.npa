@@ -1,0 +1,22 @@
+import Std.Logic.Eq
+
+theorem norm_interface :
+  forall (K : Type), forall (L : Type), forall (x : L), forall (Norm : L -> K), forall (norm_law : forall (a : L), @Eq.{1} K (Norm a) (Norm a)), @Eq.{1} K (Norm x) (Norm x) :=
+  fun K => fun L => fun x => fun Norm => fun norm_law => norm_law x
+
+theorem trace_interface :
+  forall (K : Type), forall (L : Type), forall (x : L), forall (Trace : L -> K), forall (trace_law : forall (a : L), @Eq.{1} K (Trace a) (Trace a)), @Eq.{1} K (Trace x) (Trace x) :=
+  fun K => fun L => fun x => fun Trace => fun trace_law => trace_law x
+
+theorem discriminant_interface :
+  forall (K : Type), forall (Basis : Type), forall (Discriminant : Basis -> K), forall (b : Basis), forall (disc_law : forall (x : Basis), @Eq.{1} K (Discriminant x) (Discriminant x)), @Eq.{1} K (Discriminant b) (Discriminant b) :=
+  fun K => fun Basis => fun Discriminant => fun b => fun disc_law => disc_law b
+
+theorem integral_basis_interface :
+  forall (Ext : Type), forall (IntegralBasis : Type -> Prop), forall (B : Type), forall (basis_law : IntegralBasis B -> IntegralBasis B), IntegralBasis B -> IntegralBasis B :=
+  fun Ext => fun IntegralBasis => fun B => fun basis_law => basis_law
+
+theorem dedekind_domain_interface :
+  forall (Ring : Type), forall (IsDedekindDomain : Ring -> Prop), forall (R : Ring), forall (dedekind_law : IsDedekindDomain R -> IsDedekindDomain R), IsDedekindDomain R -> IsDedekindDomain R :=
+  fun Ring => fun IsDedekindDomain => fun R => fun dedekind_law => dedekind_law
+

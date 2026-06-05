@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Valuation",
+  "source": "Proofs/Ai/NumberTheory/Valuation/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Valuation/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d3a773770dbb54a22bb7be7f0d6e2b1d8ed49b91ddbb04c1d4c6560c536aae3f",
+  "certificate_file_sha256": "sha256:d6bfeecb94c04e73db8a1162c406fb8e73e71cabda6a9940089bdd879e830d0c",
+  "export_hash": "sha256:8e8a72c00779ffbe2d19e9129df0d7dea4bb82725410eb33c33aabe921a141e5",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:d2758d6c01803e2711f89ed61a1c634e5d6a29b175f7467ead0ec86a1596e6a0",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "padic_valuation_interface", "kind": "theorem" },
+    { "name": "padic_absolute_value_interface", "kind": "theorem" },
+    { "name": "non_archimedean_metric_law_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

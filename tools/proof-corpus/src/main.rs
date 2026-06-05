@@ -211,6 +211,10 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_ADDITIVE_PRIME_MODULE,
     &NUMBER_THEORY_ALGEBRAIC_INTEGER_MODULE,
     &NUMBER_THEORY_NUMBER_FIELD_MODULE,
+    &NUMBER_THEORY_DEDEKIND_DOMAIN_MODULE,
+    &NUMBER_THEORY_CLASS_GROUP_MODULE,
+    &NUMBER_THEORY_VALUATION_MODULE,
+    &NUMBER_THEORY_PADIC_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2437,6 +2441,58 @@ const NUMBER_THEORY_NUMBER_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_NUMBER_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DEDEKIND_DOMAIN_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.DedekindDomain",
+    source_path: "Proofs/Ai/NumberTheory/DedekindDomain/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/DedekindDomain/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/DedekindDomain/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/DedekindDomain/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DEDEKIND_DOMAIN_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CLASS_GROUP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ClassGroup",
+    source_path: "Proofs/Ai/NumberTheory/ClassGroup/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ClassGroup/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ClassGroup/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CLASS_GROUP_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_VALUATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Valuation",
+    source_path: "Proofs/Ai/NumberTheory/Valuation/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Valuation/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Valuation/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Valuation/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_VALUATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PADIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Padic",
+    source_path: "Proofs/Ai/NumberTheory/Padic/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Padic/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Padic/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Padic/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PADIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -20968,6 +21024,216 @@ const NUMBER_THEORY_NUMBER_FIELD_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Rat => fun Ext => fun IsAlgebraicOver => fun IsAlgebraicNumber => fun algebraic_number_law => fun x => fun halg => algebraic_number_law x halg"
+        ),
+    },
+];
+
+const NUMBER_THEORY_DEDEKIND_DOMAIN_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "norm_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (x : L), forall (Norm : L -> K), ",
+            "forall (norm_law : forall (a : L), @Eq.{1} K (Norm a) (Norm a)), @Eq.{1} K (Norm x) (Norm x)"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun x => fun Norm => fun norm_law => norm_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "trace_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (x : L), forall (Trace : L -> K), ",
+            "forall (trace_law : forall (a : L), @Eq.{1} K (Trace a) (Trace a)), @Eq.{1} K (Trace x) (Trace x)"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun x => fun Trace => fun trace_law => trace_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "discriminant_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Basis : Type), forall (Discriminant : Basis -> K), forall (b : Basis), ",
+            "forall (disc_law : forall (x : Basis), @Eq.{1} K (Discriminant x) (Discriminant x)), @Eq.{1} K (Discriminant b) (Discriminant b)"
+        ),
+        proof: concat!(
+            "fun K => fun Basis => fun Discriminant => fun b => fun disc_law => disc_law b"
+        ),
+    },
+    TheoremArtifact {
+        name: "integral_basis_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ext : Type), forall (IntegralBasis : Type -> Prop), forall (B : Type), ",
+            "forall (basis_law : IntegralBasis B -> IntegralBasis B), IntegralBasis B -> IntegralBasis B"
+        ),
+        proof: concat!(
+            "fun Ext => fun IntegralBasis => fun B => fun basis_law => basis_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "dedekind_domain_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ring : Type), forall (IsDedekindDomain : Ring -> Prop), forall (R : Ring), ",
+            "forall (dedekind_law : IsDedekindDomain R -> IsDedekindDomain R), IsDedekindDomain R -> IsDedekindDomain R"
+        ),
+        proof: concat!(
+            "fun Ring => fun IsDedekindDomain => fun R => fun dedekind_law => dedekind_law"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CLASS_GROUP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ideal_factorization_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ideal : Type), forall (IsPrimeIdeal : Ideal -> Prop), forall (Factorization : Ideal -> Prop), ",
+            "forall (factor_law : forall (I : Ideal), Factorization I), forall (I : Ideal), Factorization I"
+        ),
+        proof: concat!(
+            "fun Ideal => fun IsPrimeIdeal => fun Factorization => fun factor_law => fun I => factor_law I"
+        ),
+    },
+    TheoremArtifact {
+        name: "ideal_factorization_uniqueness_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ideal : Type), forall (UniqueFactorization : Ideal -> Prop), ",
+            "forall (uniq_law : forall (I : Ideal), UniqueFactorization I), forall (I : Ideal), UniqueFactorization I"
+        ),
+        proof: concat!(
+            "fun Ideal => fun UniqueFactorization => fun uniq_law => fun I => uniq_law I"
+        ),
+    },
+    TheoremArtifact {
+        name: "fractional_ideal_group_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FractionalIdeal : Type), forall (IsGroup : FractionalIdeal -> Prop), ",
+            "forall (group_law : forall (G : FractionalIdeal), IsGroup G), forall (G : FractionalIdeal), IsGroup G"
+        ),
+        proof: concat!(
+            "fun FractionalIdeal => fun IsGroup => fun group_law => fun G => group_law G"
+        ),
+    },
+    TheoremArtifact {
+        name: "class_group_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (ClassGroup : Type), forall (IsAbelianGroup : ClassGroup -> Prop), ",
+            "forall (group_law : forall (G : ClassGroup), IsAbelianGroup G), forall (G : ClassGroup), IsAbelianGroup G"
+        ),
+        proof: concat!(
+            "fun ClassGroup => fun IsAbelianGroup => fun group_law => fun G => group_law G"
+        ),
+    },
+    TheoremArtifact {
+        name: "class_number_finiteness_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (ClassGroup : Type), forall (IsFinite : ClassGroup -> Prop), ",
+            "forall (finite_law : forall (G : ClassGroup), IsFinite G), forall (G : ClassGroup), IsFinite G"
+        ),
+        proof: concat!(
+            "fun ClassGroup => fun IsFinite => fun finite_law => fun G => finite_law G"
+        ),
+    },
+    TheoremArtifact {
+        name: "minkowski_bound_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (MinkowskiBound : K -> Prop), ",
+            "forall (bound_law : forall (F : K), MinkowskiBound F), forall (F : K), MinkowskiBound F"
+        ),
+        proof: concat!(
+            "fun K => fun MinkowskiBound => fun bound_law => fun F => bound_law F"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_unit_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (UnitGroup : Type), forall (IsFinitelyGeneratedAbelianGroup : UnitGroup -> Prop), ",
+            "forall (unit_law : forall (U : UnitGroup), IsFinitelyGeneratedAbelianGroup U), forall (U : UnitGroup), IsFinitelyGeneratedAbelianGroup U"
+        ),
+        proof: concat!(
+            "fun K => fun UnitGroup => fun IsFinitelyGeneratedAbelianGroup => fun unit_law => fun U => unit_law U"
+        ),
+    },
+    TheoremArtifact {
+        name: "class_number_formula_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (ClassNumberFormula : K -> Prop), ",
+            "forall (formula_law : forall (F : K), ClassNumberFormula F), forall (F : K), ClassNumberFormula F"
+        ),
+        proof: concat!(
+            "fun K => fun ClassNumberFormula => fun formula_law => fun F => formula_law F"
+        ),
+    },
+];
+
+const NUMBER_THEORY_VALUATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "padic_valuation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Valuation : Type), forall (v_p : Valuation -> Valuation), forall (val_law : forall (x : Valuation), @Eq.{1} Valuation (v_p x) (v_p x)), ",
+            "forall (x : Valuation), @Eq.{1} Valuation (v_p x) (v_p x)"
+        ),
+        proof: concat!(
+            "fun Valuation => fun v_p => fun val_law => fun x => val_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_absolute_value_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Real : Type), forall (AbsVal : K -> Real), forall (abs_law : forall (x : K), @Eq.{1} Real (AbsVal x) (AbsVal x)), ",
+            "forall (x : K), @Eq.{1} Real (AbsVal x) (AbsVal x)"
+        ),
+        proof: concat!(
+            "fun K => fun Real => fun AbsVal => fun abs_law => fun x => abs_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "non_archimedean_metric_law_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Real : Type), forall (AbsVal : K -> Real), forall (NonArchimedean : forall (x : K), forall (y : K), @Eq.{1} Real (AbsVal x) (AbsVal x)), ",
+            "forall (x : K), forall (y : K), @Eq.{1} Real (AbsVal x) (AbsVal x)"
+        ),
+        proof: concat!(
+            "fun K => fun Real => fun AbsVal => fun NonArchimedean => fun x => fun y => NonArchimedean x y"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PADIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "padic_completion_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (CompK : Type), forall (CompletionOf : K -> CompK), forall (comp_law : forall (x : K), @Eq.{1} CompK (CompletionOf x) (CompletionOf x)), ",
+            "forall (x : K), @Eq.{1} CompK (CompletionOf x) (CompletionOf x)"
+        ),
+        proof: concat!(
+            "fun K => fun CompK => fun CompletionOf => fun comp_law => fun x => comp_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_field_construction_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Q : Type), forall (Qp : Type), forall (IsPadicField : Prop), ",
+            "forall (qp_law : IsPadicField -> IsPadicField), IsPadicField -> IsPadicField"
+        ),
+        proof: concat!(
+            "fun Q => fun Qp => fun IsPadicField => fun qp_law => qp_law"
         ),
     },
 ];

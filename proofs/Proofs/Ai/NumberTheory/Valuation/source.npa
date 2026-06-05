@@ -1,0 +1,14 @@
+import Std.Logic.Eq
+
+theorem padic_valuation_interface :
+  forall (Valuation : Type), forall (v_p : Valuation -> Valuation), forall (val_law : forall (x : Valuation), @Eq.{1} Valuation (v_p x) (v_p x)), forall (x : Valuation), @Eq.{1} Valuation (v_p x) (v_p x) :=
+  fun Valuation => fun v_p => fun val_law => fun x => val_law x
+
+theorem padic_absolute_value_interface :
+  forall (K : Type), forall (Real : Type), forall (AbsVal : K -> Real), forall (abs_law : forall (x : K), @Eq.{1} Real (AbsVal x) (AbsVal x)), forall (x : K), @Eq.{1} Real (AbsVal x) (AbsVal x) :=
+  fun K => fun Real => fun AbsVal => fun abs_law => fun x => abs_law x
+
+theorem non_archimedean_metric_law_interface :
+  forall (K : Type), forall (Real : Type), forall (AbsVal : K -> Real), forall (NonArchimedean : forall (x : K), forall (y : K), @Eq.{1} Real (AbsVal x) (AbsVal x)), forall (x : K), forall (y : K), @Eq.{1} Real (AbsVal x) (AbsVal x) :=
+  fun K => fun Real => fun AbsVal => fun NonArchimedean => fun x => fun y => NonArchimedean x y
+

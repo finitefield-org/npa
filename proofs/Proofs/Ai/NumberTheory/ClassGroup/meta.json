@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassGroup",
+  "source": "Proofs/Ai/NumberTheory/ClassGroup/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5cc5a79dc35521011f7b323c4d78ba2476f7f0f1951b1c2f86cb6c9db447138e",
+  "certificate_file_sha256": "sha256:b0de56eff773aa6613221d56d0f95b38d1b9f58c9f75c4ac2a955dc55629735e",
+  "export_hash": "sha256:2d660d6c94796f106faf58ef8f10f56948bb58af2047cf54e4b86a6171def3e9",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:ff48ea4d70a0762dbeb61107ca473f4fb3ed493afea032931d32cc5d08442f03",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ideal_factorization_interface", "kind": "theorem" },
+    { "name": "ideal_factorization_uniqueness_interface", "kind": "theorem" },
+    { "name": "fractional_ideal_group_interface", "kind": "theorem" },
+    { "name": "class_group_interface", "kind": "theorem" },
+    { "name": "class_number_finiteness_interface", "kind": "theorem" },
+    { "name": "minkowski_bound_interface", "kind": "theorem" },
+    { "name": "dirichlet_unit_theorem_interface", "kind": "theorem" },
+    { "name": "class_number_formula_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

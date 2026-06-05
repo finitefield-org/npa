@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Valuation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "padic_valuation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Valuation => fun v_p => fun val_law => fun x => val_law x"
+    },
+    {
+      "declaration": "padic_absolute_value_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Real => fun AbsVal => fun abs_law => fun x => abs_law x"
+    },
+    {
+      "declaration": "non_archimedean_metric_law_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Real => fun AbsVal => fun NonArchimedean => fun x => fun y => NonArchimedean x y"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Valuation/certificate.npcert"
+  }
+}

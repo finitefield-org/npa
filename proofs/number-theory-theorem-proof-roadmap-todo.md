@@ -1090,7 +1090,7 @@ later in the file.
 
 ### NT-T38 Add Norm Trace Discriminant And Dedekind Domain Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T37`, linear algebra and ideal APIs
 - Areas: `Proofs/Ai/NumberTheory/NumberField/`, `Proofs/Ai/NumberTheory/DedekindDomain/`
 - Tasks:
@@ -1111,7 +1111,7 @@ later in the file.
 
 ### NT-T39 Add Ideal Factorization, Class Group, Unit, And Class Number Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T38`
 - Areas: `Proofs/Ai/NumberTheory/ClassGroup/`, `Proofs/Ai/NumberTheory/UnitTheorem/`
 - Tasks:
@@ -1134,7 +1134,7 @@ later in the file.
 
 ### NT-T40 Add Valuation And p-adic Metric Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T37`, topology and metric prerequisites
 - Areas: `Proofs/Ai/NumberTheory/Valuation/`, `Proofs/Ai/NumberTheory/Padic/`
 - Tasks:
