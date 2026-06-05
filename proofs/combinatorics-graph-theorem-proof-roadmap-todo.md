@@ -154,7 +154,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T00 Build Combinatorics And Graph Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Areas: `proofs/README.md`, proof-corpus theorem-card sidecars, AI index
   sidecars
@@ -167,7 +167,8 @@ guessing. The split must preserve the dependency order in this document.
     facts, random graphs, infinite Ramsey theory, graph minors, algorithms, and
     optimization aliases.
 - Deliverables:
-  - Combinatorics/graph theorem-card inventory and duplicate map.
+  - `proofs/combinatorics-graph-theorem-cards.md` combinatorics/graph
+    theorem-card inventory and duplicate map.
 - Acceptance criteria:
   - Every roadmap theorem family has exactly one primary home milestone.
   - Infinite set-theoretic statements and finite combinatorial statements are
@@ -175,8 +176,10 @@ guessing. The split must preserve the dependency order in this document.
   - No theorem card treats source, replay, theorem indexes, or this todo as
     proof evidence.
 - Verification:
-  - `rg -n "CG-00|CG-23|Ramsey|Hall|Turan|sidecar" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `rg -n "CG-00|CG-23|Ramsey|Hall|Turan|sidecar" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/combinatorics-graph-theorem-cards.md`
   - `git diff --check`
+  - Completed with documentation-only validation; no certificate was generated
+    because `CG-T00` is an `L0` theorem-card inventory task.
 
 ### CG-T01 Add Finite Family And Enumeration Law Package
 
