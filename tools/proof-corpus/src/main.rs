@@ -21272,6 +21272,19 @@ const NUMBER_THEORY_ALGEBRAIC_INTEGER_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "algebraic_integer_ring_not_kernel_primitive_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AlgebraicIntegerPackage : Type), forall (RingStructurePackage : Type), forall (KernelPrimitiveRingStructure : Type), ",
+            "forall (NoKernelPrimitiveBoundary : AlgebraicIntegerPackage -> RingStructurePackage -> KernelPrimitiveRingStructure -> Prop), ",
+            "forall (boundary_law : forall (algebraic_integer : AlgebraicIntegerPackage), forall (ring_structure : RingStructurePackage), forall (kernel_primitive : KernelPrimitiveRingStructure), NoKernelPrimitiveBoundary algebraic_integer ring_structure kernel_primitive), ",
+            "forall (algebraic_integer : AlgebraicIntegerPackage), forall (ring_structure : RingStructurePackage), forall (kernel_primitive : KernelPrimitiveRingStructure), NoKernelPrimitiveBoundary algebraic_integer ring_structure kernel_primitive"
+        ),
+        proof: concat!(
+            "fun AlgebraicIntegerPackage => fun RingStructurePackage => fun KernelPrimitiveRingStructure => fun NoKernelPrimitiveBoundary => fun boundary_law => fun algebraic_integer => fun ring_structure => fun kernel_primitive => boundary_law algebraic_integer ring_structure kernel_primitive"
+        ),
+    },
+    TheoremArtifact {
         name: "rational_algebraic_integer_implies_integer_interface",
         universe_params: &[],
         statement: concat!(
@@ -21281,6 +21294,20 @@ const NUMBER_THEORY_ALGEBRAIC_INTEGER_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Int => fun Rat => fun IsInteger => fun IsAlgebraicInteger => fun rational_integer_law => fun q => fun halg => rational_integer_law q halg"
+        ),
+    },
+    TheoremArtifact {
+        name: "rational_algebraic_integer_embedding_coercion_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Rat : Type), forall (Ext : Type), forall (IntToRat : Int -> Rat), forall (RatToExt : Rat -> Ext), ",
+            "forall (IsInteger : Rat -> Prop), forall (IsAlgebraicIntegerExt : Ext -> Prop), ",
+            "forall (EmbeddingCoercionEvidence : Rat -> Ext -> Prop), forall (CoercionCompatible : Int -> Rat -> Ext -> Prop), ",
+            "forall (rational_integer_law : forall (q : Rat), forall (x : Ext), forall (embed_q : EmbeddingCoercionEvidence q x), forall (halg : IsAlgebraicIntegerExt x), IsInteger q), ",
+            "forall (q : Rat), forall (x : Ext), forall (embed_q : EmbeddingCoercionEvidence q x), forall (halg : IsAlgebraicIntegerExt x), IsInteger q"
+        ),
+        proof: concat!(
+            "fun Int => fun Rat => fun Ext => fun IntToRat => fun RatToExt => fun IsInteger => fun IsAlgebraicIntegerExt => fun EmbeddingCoercionEvidence => fun CoercionCompatible => fun rational_integer_law => fun q => fun x => fun embed_q => fun halg => rational_integer_law q x embed_q halg"
         ),
     },
 ];
@@ -21296,6 +21323,19 @@ const NUMBER_THEORY_NUMBER_FIELD_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Rat => fun Ext => fun FieldExtension => fun IsFiniteExtension => fun IsNumberField => fun number_field_law => fun K => fun ext => fun fin => number_field_law K ext fin"
+        ),
+    },
+    TheoremArtifact {
+        name: "number_field_field_theory_roadmap_dependency_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NumberFieldPackage : Type), forall (FieldTheoryRoadmapPackage : Type), forall (FieldExtensionPackage : Type), forall (FiniteExtensionPackage : Type), ",
+            "forall (FieldTheoryRoadmapDependency : NumberFieldPackage -> FieldTheoryRoadmapPackage -> FieldExtensionPackage -> FiniteExtensionPackage -> Prop), ",
+            "forall (dependency_law : forall (number_field : NumberFieldPackage), forall (field_theory_roadmap : FieldTheoryRoadmapPackage), forall (field_extension : FieldExtensionPackage), forall (finite_extension : FiniteExtensionPackage), FieldTheoryRoadmapDependency number_field field_theory_roadmap field_extension finite_extension), ",
+            "forall (number_field : NumberFieldPackage), forall (field_theory_roadmap : FieldTheoryRoadmapPackage), forall (field_extension : FieldExtensionPackage), forall (finite_extension : FiniteExtensionPackage), FieldTheoryRoadmapDependency number_field field_theory_roadmap field_extension finite_extension"
+        ),
+        proof: concat!(
+            "fun NumberFieldPackage => fun FieldTheoryRoadmapPackage => fun FieldExtensionPackage => fun FiniteExtensionPackage => fun FieldTheoryRoadmapDependency => fun dependency_law => fun number_field => fun field_theory_roadmap => fun field_extension => fun finite_extension => dependency_law number_field field_theory_roadmap field_extension finite_extension"
         ),
     },
     TheoremArtifact {

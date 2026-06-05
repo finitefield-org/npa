@@ -649,7 +649,11 @@ semantics.
   - `NT-T37` added certificate-backed `Proofs.Ai.NumberTheory.AlgebraicInteger`
     and `Proofs.Ai.NumberTheory.NumberField` defining L1 interfaces for
     algebraic numbers, algebraic integers, their ring structure, rational
-    algebraic integer implies integer, number fields, and the ring of integers.
+    algebraic integer implies integer, explicit rational-to-extension
+    embedding/coercion assumptions, number fields, the ring of integers,
+    field-extension roadmap dependencies via
+    `develop/proof-corpus-field-theory-roadmap.md`, and a boundary preventing
+    algebraic-integer ring structure from becoming a kernel primitive.
   - `NT-T38` added certificate-backed `Proofs.Ai.NumberTheory.DedekindDomain`
     defining L1 interfaces for norm, trace, discriminant, integral basis, and
     Dedekind domain.

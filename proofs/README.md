@@ -251,6 +251,13 @@ Current bundles:
   preserving Vinogradov three-primes and weak Goldbach theorem surfaces, explicit CircleMethod,
   major arc, minor arc, and exponential-sum dependencies, and a boundary preventing elementary
   additive theorem surfaces from depending on weak Goldbach.
+- `Proofs/Ai/NumberTheory/AlgebraicInteger/`: certificate-backed algebraic-integer interface
+  preserving algebraic integer definitions, algebraic integers as an explicitly packaged ring
+  structure rather than a kernel primitive, rational algebraic integer implies integer surfaces,
+  and explicit rational-to-extension embedding and coercion assumptions.
+- `Proofs/Ai/NumberTheory/NumberField/`: certificate-backed NumberField interface preserving
+  algebraic number, number field, and ring_of_integers surfaces, with field-extension
+  dependencies routed through `develop/proof-corpus-field-theory-roadmap.md`.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite
