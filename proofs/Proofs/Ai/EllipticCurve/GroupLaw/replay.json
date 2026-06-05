@@ -1,0 +1,17 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.GroupLaw",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "group_law_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun F => fun Point => fun IsGroup => fun group_law => group_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/GroupLaw/certificate.npcert"
+  }
+}

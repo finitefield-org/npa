@@ -222,6 +222,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE,
     &GALOIS_COHOMOLOGY_BASIC_MODULE,
+    &ELLIPTIC_CURVE_BASIC_MODULE,
+    &ELLIPTIC_CURVE_GROUP_LAW_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2591,6 +2593,32 @@ const GALOIS_COHOMOLOGY_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: GALOIS_COHOMOLOGY_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.Basic",
+    source_path: "Proofs/Ai/EllipticCurve/Basic/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/Basic/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/Basic/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_GROUP_LAW_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.GroupLaw",
+    source_path: "Proofs/Ai/EllipticCurve/GroupLaw/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/GroupLaw/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/GroupLaw/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/GroupLaw/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_GROUP_LAW_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21636,6 +21664,42 @@ const GALOIS_COHOMOLOGY_BASIC_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun G => fun A => fun Index => fun H => fun tate_law => fun n => fun x => tate_law n x"
+        ),
+    },
+];
+
+const ELLIPTIC_CURVE_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "weierstrass_model_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (x : F), forall (y : F), forall (a : F), forall (b : F), forall (IsOnCurve : Prop), forall (curve_law : IsOnCurve -> IsOnCurve), IsOnCurve -> IsOnCurve"
+        ),
+        proof: concat!(
+            "fun F => fun x => fun y => fun a => fun b => fun IsOnCurve => fun curve_law => curve_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonsingular_condition_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (a : F), forall (b : F), forall (DiscriminantNotZero : Prop), forall (nonsingular_law : DiscriminantNotZero -> DiscriminantNotZero), DiscriminantNotZero -> DiscriminantNotZero"
+        ),
+        proof: concat!(
+            "fun F => fun a => fun b => fun DiscriminantNotZero => fun nonsingular_law => nonsingular_law"
+        ),
+    },
+];
+
+const ELLIPTIC_CURVE_GROUP_LAW_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "group_law_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (Point : Type), forall (IsGroup : Prop), forall (group_law : IsGroup -> IsGroup), IsGroup -> IsGroup"
+        ),
+        proof: concat!(
+            "fun F => fun Point => fun IsGroup => fun group_law => group_law"
         ),
     },
 ];

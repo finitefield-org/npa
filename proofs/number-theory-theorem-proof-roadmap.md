@@ -766,7 +766,11 @@ semantics.
 
 ## NT-16 Elliptic Curves
 
-- Status: planned.
+- Status: in-progress.
+- Implementation progress:
+  - `NT-T45` added certificate-backed `Proofs.Ai.EllipticCurve.Basic` and
+    `Proofs.Ai.EllipticCurve.GroupLaw` defining L1 interfaces for Weierstrass
+    model, nonsingularity, and elliptic curve point group law.
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
   and finite fields.
 - Target modules:

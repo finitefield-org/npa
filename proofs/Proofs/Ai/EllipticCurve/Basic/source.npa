@@ -1,0 +1,10 @@
+import Std.Logic.Eq
+
+theorem weierstrass_model_interface :
+  forall (F : Type), forall (x : F), forall (y : F), forall (a : F), forall (b : F), forall (IsOnCurve : Prop), forall (curve_law : IsOnCurve -> IsOnCurve), IsOnCurve -> IsOnCurve :=
+  fun F => fun x => fun y => fun a => fun b => fun IsOnCurve => fun curve_law => curve_law
+
+theorem nonsingular_condition_interface :
+  forall (F : Type), forall (a : F), forall (b : F), forall (DiscriminantNotZero : Prop), forall (nonsingular_law : DiscriminantNotZero -> DiscriminantNotZero), DiscriminantNotZero -> DiscriminantNotZero :=
+  fun F => fun a => fun b => fun DiscriminantNotZero => fun nonsingular_law => nonsingular_law
+

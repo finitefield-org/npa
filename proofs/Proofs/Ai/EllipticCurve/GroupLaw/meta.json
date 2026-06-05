@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.GroupLaw",
+  "source": "Proofs/Ai/EllipticCurve/GroupLaw/source.npa",
+  "certificate": "Proofs/Ai/EllipticCurve/GroupLaw/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:232dac077e8b14ba95d32314d8bce1951b20d0cbece23e4f4e733ce5c905f00d",
+  "certificate_file_sha256": "sha256:665ff04b08ae07de6928afd17329d694679ccbb286d1771d2bd2d5caa3344945",
+  "export_hash": "sha256:631c911be9b0e8d93bebaeefa73536f1c262bb7ce719a4b08ced3e4fb1104106",
+  "axiom_report_hash": "sha256:a1ef77782ab68d41aede3e412c79174432934c3cac66c319dd2d406cf514f40e",
+  "certificate_hash": "sha256:2e3258f1af8468583a008e370fe347ac8c2fb09bd4fbd079a43a3ae7ec36c903",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "group_law_theorem_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.Basic",
+  "source": "Proofs/Ai/EllipticCurve/Basic/source.npa",
+  "certificate": "Proofs/Ai/EllipticCurve/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e6c4d05ba82eec37219a48ec463ccce47dfa96d26f06caf3ffdc992fbf462488",
+  "certificate_file_sha256": "sha256:65ae515522775cad3de2263ecd08bd371a167852eebbf0064aefcd18991acf34",
+  "export_hash": "sha256:9c4f163a7683ca0adc16bb74cbe0fd7ea6c937603eb00836781fe4f14c8a0830",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:c5b560d23841b095970f8e1900fc97d06d0ef4dda0e18eec2bc47fbfb58a9a96",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "weierstrass_model_interface", "kind": "theorem" },
+    { "name": "nonsingular_condition_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

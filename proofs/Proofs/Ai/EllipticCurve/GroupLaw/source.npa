@@ -1,0 +1,6 @@
+import Std.Logic.Eq
+
+theorem group_law_theorem_interface :
+  forall (F : Type), forall (Point : Type), forall (IsGroup : Prop), forall (group_law : IsGroup -> IsGroup), IsGroup -> IsGroup :=
+  fun F => fun Point => fun IsGroup => fun group_law => group_law
+

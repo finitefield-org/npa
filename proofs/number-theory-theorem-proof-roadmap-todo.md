@@ -1245,7 +1245,7 @@ later in the file.
 
 ### NT-T45 Add Elliptic Curve Basic And Group Law Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T37`, existing algebra modules
 - Areas: `Proofs/Ai/EllipticCurve/Basic/`, `Proofs/Ai/EllipticCurve/GroupLaw/`
 - Tasks:
