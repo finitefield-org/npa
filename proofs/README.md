@@ -1814,6 +1814,51 @@ the length sequence and its convergence to zero, and `nested_interval_point_from
 chooses a supremum of the lower-endpoint set through `supremum_exists_from_completeness` before
 applying the explicit supremum-to-intersection bridge.
 
+#### `Proofs.Ai.Analysis.Continuity.Basic`
+
+This module is the first function-limit and continuity layer over
+`Proofs.Ai.Analysis.Sequence.Basic`, `Proofs.Ai.Analysis.AbstractMetricTopology`, and
+`Proofs.Ai.Analysis.Real.Basic`. It keeps limit semantics abstract through explicit
+`ApproachesAt`, neighborhood, local-equality, restriction, composition, uniform-continuity, and
+sequential bridge packages. It does not import derivative, integration, or interval-continuity
+modules.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FunctionPointwiseLimit` | pointwise function-limit predicate supplied by an explicit `ApproachesAt` relation |
+| `ContinuousAt` | continuity at a point as a pointwise limit to the function value |
+| `ContinuousOn` | continuity over a set via `AbstractMetricTopology.LocalPred` |
+| `UniformContinuous` | set-indexed uniform-continuity statement shape over an explicit relation |
+| `NeighborhoodLimitBridge` | bridge from local neighborhood evidence and local image containment to pointwise limit evidence |
+| `LocalEqualityContinuityEvidence` | law package transporting continuity across `AbstractMetricTopology.LocalEq` on a neighborhood |
+| `ContinuityRestrictionEvidence` | law package restricting continuity from a larger local predicate to a smaller one |
+| `ContinuousCompositionEvidence`, `ContinuousOnCompositionEvidence` | pointwise and setwise continuity-composition bridge packages |
+| `UniformContinuityRestrictionEvidence` | law package restricting uniform continuity to a smaller local predicate |
+| `SequentialPointwiseLimitBridge` | bridge from sequence convergence of inputs and images to scalar pointwise limit evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `function_pointwise_limit_intro`, `function_pointwise_limit_apply` | introduce and project pointwise function-limit evidence |
+| `continuous_at_intro`, `continuous_at_limit` | build and project continuity-at-a-point evidence |
+| `continuous_on_intro`, `continuous_on_apply` | package and apply setwise continuity through `LocalPred` |
+| `uniform_continuous_intro`, `uniform_continuous_apply` | introduce and project the fixed uniform-continuity statement shape |
+| `neighborhood_limit_bridge_intro`, `neighborhood_limit_bridge_apply`, `pointwise_limit_from_neighborhood_bridge` | package and apply neighborhood-limit bridges |
+| `local_equality_continuity_evidence_intro`, `local_equality_continuity_evidence_apply`, `continuous_at_of_local_eq` | transport continuity across local equality |
+| `continuity_restriction_evidence_intro`, `continuity_restriction_evidence_apply`, `continuous_on_restrict`, `continuous_at_restrict` | restrict continuity to smaller local predicates |
+| `continuous_composition_evidence_intro`, `continuous_composition_evidence_apply`, `continuous_at_comp`, `continuous_comp` | prove pointwise continuity composition from explicit bridge evidence |
+| `continuous_on_composition_evidence_intro`, `continuous_on_composition_evidence_apply`, `continuous_on_comp` | prove setwise continuity composition from explicit bridge evidence |
+| `uniform_continuity_restriction_evidence_intro`, `uniform_continuity_restriction_evidence_apply`, `uniform_continuous_on_restrict` | restrict uniform continuity |
+| `sequential_pointwise_limit_bridge_intro`, `sequential_pointwise_limit_bridge_apply`, `pointwise_limit_of_sequential_bridge` | connect sequence convergence evidence to scalar pointwise limits |
+
+The module has an empty axiom report. All metric, neighborhood, and continuity semantics remain
+explicit caller-supplied relations or bridge packages, so later interval-continuity and
+one-variable calculus modules can refine the concrete predicates without changing this checked
+foundation.
+
 #### `Proofs.Ai.Analysis.Sequence.Compactness`
 
 This module is the bounded-sequence compactness layer over

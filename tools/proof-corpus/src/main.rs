@@ -191,6 +191,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_DERIVATIVE_MODULE,
     &ABSTRACT_FIXED_POINT_MODULE,
     &ANALYSIS_SEQUENCE_BASIC_MODULE,
+    &ANALYSIS_CONTINUITY_BASIC_MODULE,
     &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
     &ANALYSIS_SERIES_BASIC_MODULE,
     &ANALYSIS_SERIES_CRITERIA_MODULE,
@@ -644,6 +645,31 @@ const ANALYSIS_SEQUENCE_COMPACTNESS_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ANALYSIS_SEQUENCE_COMPACTNESS_DEFINITIONS,
     theorems: ANALYSIS_SEQUENCE_COMPACTNESS_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_CONTINUITY_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Continuity.Basic",
+    source_path: "Proofs/Ai/Analysis/Continuity/Basic/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Continuity/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Continuity/Basic/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Continuity/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+        "Proofs.Ai.Analysis.Sequence.Basic",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_CONTINUITY_BASIC_DEFINITIONS,
+    theorems: ANALYSIS_CONTINUITY_BASIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -2606,6 +2632,319 @@ macro_rules! analysis_sequence_basic_abs {
             "fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => ",
             $tail
         ))
+    };
+}
+
+macro_rules! analysis_continuity_basic_params {
+    (concat!($($tail:tt)+)) => {
+        analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Codomain : Sort c), ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Codomain : Sort c), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! analysis_continuity_basic_abs {
+    (concat!($($tail:tt)+)) => {
+        analysis_real_basic_abs!(concat!(
+            "fun Domain => fun Codomain => ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        analysis_real_basic_abs!(concat!("fun Domain => fun Codomain => ", $tail))
+    };
+}
+
+macro_rules! function_pointwise_limit_app {
+    ($function:literal, $point:literal, $limit:literal, $approaches_at:literal) => {
+        concat!(
+            "@FunctionPointwiseLimit.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $limit,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! function_pointwise_limit_on_app {
+    (
+        $domain_universe:literal,
+        $codomain_universe:literal,
+        $domain:literal,
+        $codomain:literal,
+        $function:literal,
+        $point:literal,
+        $limit:literal,
+        $approaches_at:literal
+    ) => {
+        concat!(
+            "@FunctionPointwiseLimit.{",
+            $codomain_universe,
+            ",",
+            $domain_universe,
+            ",u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $limit,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! continuous_at_app {
+    ($function:literal, $point:literal, $approaches_at:literal) => {
+        concat!(
+            "@ContinuousAt.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! continuous_at_on_app {
+    (
+        $domain_universe:literal,
+        $codomain_universe:literal,
+        $domain:literal,
+        $codomain:literal,
+        $function:literal,
+        $point:literal,
+        $approaches_at:literal
+    ) => {
+        concat!(
+            "@ContinuousAt.{",
+            $codomain_universe,
+            ",",
+            $domain_universe,
+            ",u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! continuous_on_app {
+    ($set:literal, $function:literal, $approaches_at:literal) => {
+        concat!(
+            "@ContinuousOn.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $set,
+            " ",
+            $function,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! continuous_on_on_app {
+    (
+        $domain_universe:literal,
+        $codomain_universe:literal,
+        $domain:literal,
+        $codomain:literal,
+        $set:literal,
+        $function:literal,
+        $approaches_at:literal
+    ) => {
+        concat!(
+            "@ContinuousOn.{",
+            $codomain_universe,
+            ",",
+            $domain_universe,
+            ",u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $domain,
+            " ",
+            $codomain,
+            " ",
+            $set,
+            " ",
+            $function,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! uniform_continuous_app {
+    ($set:literal, $function:literal, $uniform_rel:literal) => {
+        concat!(
+            "@UniformContinuous.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $set,
+            " ",
+            $function,
+            " ",
+            $uniform_rel
+        )
+    };
+}
+
+macro_rules! neighborhood_limit_bridge_app {
+    ($function:literal, $point:literal, $limit:literal, $source:literal, $target:literal, $approaches_at:literal) => {
+        concat!(
+            "@NeighborhoodLimitBridge.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $limit,
+            " ",
+            $source,
+            " ",
+            $target,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! local_equality_continuity_evidence_app {
+    (
+        $left:literal,
+        $right:literal,
+        $point:literal,
+        $neighborhood:literal,
+        $left_approaches:literal,
+        $right_approaches:literal
+    ) => {
+        concat!(
+            "@LocalEqualityContinuityEvidence.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $left,
+            " ",
+            $right,
+            " ",
+            $point,
+            " ",
+            $neighborhood,
+            " ",
+            $left_approaches,
+            " ",
+            $right_approaches
+        )
+    };
+}
+
+macro_rules! continuity_restriction_evidence_app {
+    ($larger:literal, $smaller:literal, $function:literal, $larger_approaches:literal, $smaller_approaches:literal) => {
+        concat!(
+            "@ContinuityRestrictionEvidence.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $larger,
+            " ",
+            $smaller,
+            " ",
+            $function,
+            " ",
+            $larger_approaches,
+            " ",
+            $smaller_approaches
+        )
+    };
+}
+
+macro_rules! continuous_composition_evidence_app {
+    ($function:literal, $outer:literal, $point:literal, $approaches_inner:literal, $approaches_outer:literal, $approaches_comp:literal) => {
+        concat!(
+            "@ContinuousCompositionEvidence.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain ",
+            $function,
+            " ",
+            $outer,
+            " ",
+            $point,
+            " ",
+            $approaches_inner,
+            " ",
+            $approaches_outer,
+            " ",
+            $approaches_comp
+        )
+    };
+}
+
+macro_rules! continuous_on_composition_evidence_app {
+    (
+        $source_set:literal,
+        $image_set:literal,
+        $function:literal,
+        $outer:literal,
+        $approaches_inner:literal,
+        $approaches_outer:literal,
+        $approaches_comp:literal
+    ) => {
+        concat!(
+            "@ContinuousOnCompositionEvidence.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain ",
+            $source_set,
+            " ",
+            $image_set,
+            " ",
+            $function,
+            " ",
+            $outer,
+            " ",
+            $approaches_inner,
+            " ",
+            $approaches_outer,
+            " ",
+            $approaches_comp
+        )
+    };
+}
+
+macro_rules! uniform_restriction_evidence_app {
+    ($larger:literal, $smaller:literal, $function:literal, $larger_uniform:literal, $smaller_uniform:literal) => {
+        concat!(
+            "@UniformContinuityRestrictionEvidence.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain ",
+            $larger,
+            " ",
+            $smaller,
+            " ",
+            $function,
+            " ",
+            $larger_uniform,
+            " ",
+            $smaller_uniform
+        )
+    };
+}
+
+macro_rules! sequential_pointwise_limit_bridge_app {
+    ($function:literal, $point:literal, $limit:literal, $approaches_at:literal) => {
+        concat!(
+            "@SequentialPointwiseLimitBridge.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $limit,
+            " ",
+            $approaches_at
+        )
     };
 }
 
@@ -32868,6 +33207,607 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_CONTINUITY_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FunctionPointwiseLimit",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun limit => fun ApproachesAt => ApproachesAt f point limit"
+        ),
+    },
+    DefinitionArtifact {
+        name: "ContinuousAt",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(concat!(
+            "fun f => fun point => fun ApproachesAt => ",
+            function_pointwise_limit_app!("f", "point", "(f point)", "ApproachesAt")
+        )),
+    },
+    DefinitionArtifact {
+        name: "ContinuousOn",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (set : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(concat!(
+            "fun set => fun f => fun ApproachesAt => @LocalPred.{d} Domain set (fun (x : Domain) => ",
+            continuous_at_app!("f", "x", "ApproachesAt"),
+            ")"
+        )),
+    },
+    DefinitionArtifact {
+        name: "UniformContinuous",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (set : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (UniformRel : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(
+            "fun set => fun f => fun UniformRel => UniformRel set f"
+        ),
+    },
+    DefinitionArtifact {
+        name: "NeighborhoodLimitBridge",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (source_domain : forall (x : Domain), Prop), forall (target_domain : forall (y : Codomain), Prop), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(concat!(
+            "fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => forall (source_neighborhood : @Neighborhood.{d} Domain point source_domain), forall (target_neighborhood : @Neighborhood.{c} Codomain limit target_domain), forall (maps_source_to_target : @LocalPred.{d} Domain source_domain (fun (x : Domain) => target_domain (f x))), ",
+            function_pointwise_limit_app!("f", "point", "limit", "ApproachesAt")
+        )),
+    },
+    DefinitionArtifact {
+        name: "LocalEqualityContinuityEvidence",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (f : forall (x : Domain), Codomain), forall (g : forall (x : Domain), Codomain), forall (point : Domain), forall (neighborhood : forall (x : Domain), Prop), forall (ApproachesF : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (ApproachesG : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(concat!(
+            "fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => forall (local_eq : @LocalEq.{d,c} Domain Codomain neighborhood f g), forall (point_neighborhood : @Neighborhood.{d} Domain point neighborhood), forall (left_continuous : ",
+            continuous_at_app!("f", "point", "ApproachesF"),
+            "), ",
+            continuous_at_app!("g", "point", "ApproachesG")
+        )),
+    },
+    DefinitionArtifact {
+        name: "ContinuityRestrictionEvidence",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (SmallerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(concat!(
+            "fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => forall (subset : @LocalPred.{d} Domain smaller larger), forall (continuous_large : ",
+            continuous_on_app!("larger", "f", "LargerApproaches"),
+            "), ",
+            continuous_on_app!("smaller", "f", "SmallerApproaches")
+        )),
+    },
+    DefinitionArtifact {
+        name: "ContinuousCompositionEvidence",
+        universe_params: &["c", "d", "m", "u"],
+        ty: analysis_real_basic_params!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (point : Domain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => forall (f_continuous : ",
+            continuous_at_on_app!("d", "m", "Domain", "Mid", "f", "point", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_at_on_app!("m", "c", "Mid", "Codomain", "g", "(f point)", "ApproachesG"),
+            "), ",
+            continuous_at_on_app!("d", "c", "Domain", "Codomain", "(fun (x : Domain) => g (f x))", "point", "ApproachesComp")
+        )),
+    },
+    DefinitionArtifact {
+        name: "ContinuousOnCompositionEvidence",
+        universe_params: &["c", "d", "m", "u"],
+        ty: analysis_real_basic_params!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (source_set : forall (x : Domain), Prop), forall (image_set : forall (y : Mid), Prop), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => forall (local_image : @LocalPred.{d} Domain source_set (fun (x : Domain) => image_set (f x))), forall (f_continuous : ",
+            continuous_on_on_app!("d", "m", "Domain", "Mid", "source_set", "f", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_on_on_app!("m", "c", "Mid", "Codomain", "image_set", "g", "ApproachesG"),
+            "), ",
+            continuous_on_on_app!("d", "c", "Domain", "Codomain", "source_set", "(fun (x : Domain) => g (f x))", "ApproachesComp")
+        )),
+    },
+    DefinitionArtifact {
+        name: "UniformContinuityRestrictionEvidence",
+        universe_params: &["c", "d", "u"],
+        ty: analysis_continuity_basic_params!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (SmallerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), Prop"
+        ),
+        value: analysis_continuity_basic_abs!(concat!(
+            "fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => forall (subset : @LocalPred.{d} Domain smaller larger), forall (uniform_large : ",
+            uniform_continuous_app!("larger", "f", "LargerUniform"),
+            "), ",
+            uniform_continuous_app!("smaller", "f", "SmallerUniform")
+        )),
+    },
+    DefinitionArtifact {
+        name: "SequentialPointwiseLimitBridge",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun f => fun point => fun limit => fun ApproachesAt => forall (domain_converges : ",
+            sequence_converges_to_app!("point"),
+            "), forall (image_converges : ",
+            sequence_converges_to_for_app!("(fun (k : SequenceIndex) => f (seq k))", "limit"),
+            "), ",
+            function_pointwise_limit_on_app!("u", "u", "Scalar", "Scalar", "f", "point", "limit", "ApproachesAt")
+        )),
+    },
+];
+
+const ANALYSIS_CONTINUITY_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "function_pointwise_limit_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (h : ApproachesAt f point limit), ",
+            function_pointwise_limit_app!("f", "point", "limit", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun limit => fun ApproachesAt => fun h => h"
+        ),
+    },
+    TheoremArtifact {
+        name: "function_pointwise_limit_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (limit_evidence : ",
+            function_pointwise_limit_app!("f", "point", "limit", "ApproachesAt"),
+            "), ApproachesAt f point limit"
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun limit => fun ApproachesAt => fun limit_evidence => limit_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_at_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (limit_evidence : ",
+            function_pointwise_limit_app!("f", "point", "(f point)", "ApproachesAt"),
+            "), ",
+            continuous_at_app!("f", "point", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun ApproachesAt => fun limit_evidence => limit_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_at_limit",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (continuous : ",
+            continuous_at_app!("f", "point", "ApproachesAt"),
+            "), ",
+            function_pointwise_limit_app!("f", "point", "(f point)", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun ApproachesAt => fun continuous => continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_on_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (set : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (continuous_points : forall (x : Domain), forall (hx : set x), ",
+            continuous_at_app!("f", "x", "ApproachesAt"),
+            "), ",
+            continuous_on_app!("set", "f", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun set => fun f => fun ApproachesAt => fun continuous_points => continuous_points"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_on_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (set : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (continuous : ",
+            continuous_on_app!("set", "f", "ApproachesAt"),
+            "), forall (x : Domain), forall (hx : set x), ",
+            continuous_at_app!("f", "x", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun set => fun f => fun ApproachesAt => fun continuous => fun x => fun hx => continuous x hx"
+        ),
+    },
+    TheoremArtifact {
+        name: "uniform_continuous_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (set : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (UniformRel : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (uniform : UniformRel set f), ",
+            uniform_continuous_app!("set", "f", "UniformRel")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun set => fun f => fun UniformRel => fun uniform => uniform"
+        ),
+    },
+    TheoremArtifact {
+        name: "uniform_continuous_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (set : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (UniformRel : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (uniform : ",
+            uniform_continuous_app!("set", "f", "UniformRel"),
+            "), UniformRel set f"
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun set => fun f => fun UniformRel => fun uniform => uniform"
+        ),
+    },
+    TheoremArtifact {
+        name: "neighborhood_limit_bridge_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (source_domain : forall (x : Domain), Prop), forall (target_domain : forall (y : Codomain), Prop), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : forall (source_neighborhood : @Neighborhood.{d} Domain point source_domain), forall (target_neighborhood : @Neighborhood.{c} Codomain limit target_domain), forall (maps_source_to_target : @LocalPred.{d} Domain source_domain (fun (x : Domain) => target_domain (f x))), ",
+            function_pointwise_limit_app!("f", "point", "limit", "ApproachesAt"),
+            "), ",
+            neighborhood_limit_bridge_app!("f", "point", "limit", "source_domain", "target_domain", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "neighborhood_limit_bridge_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (source_domain : forall (x : Domain), Prop), forall (target_domain : forall (y : Codomain), Prop), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : ",
+            neighborhood_limit_bridge_app!("f", "point", "limit", "source_domain", "target_domain", "ApproachesAt"),
+            "), forall (source_neighborhood : @Neighborhood.{d} Domain point source_domain), forall (target_neighborhood : @Neighborhood.{c} Codomain limit target_domain), forall (maps_source_to_target : @LocalPred.{d} Domain source_domain (fun (x : Domain) => target_domain (f x))), ",
+            function_pointwise_limit_app!("f", "point", "limit", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => fun bridge => fun source_neighborhood => fun target_neighborhood => fun maps_source_to_target => bridge source_neighborhood target_neighborhood maps_source_to_target"
+        ),
+    },
+    TheoremArtifact {
+        name: "pointwise_limit_from_neighborhood_bridge",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), forall (source_domain : forall (x : Domain), Prop), forall (target_domain : forall (y : Codomain), Prop), forall (ApproachesAt : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : ",
+            neighborhood_limit_bridge_app!("f", "point", "limit", "source_domain", "target_domain", "ApproachesAt"),
+            "), forall (source_neighborhood : @Neighborhood.{d} Domain point source_domain), forall (target_neighborhood : @Neighborhood.{c} Codomain limit target_domain), forall (maps_source_to_target : @LocalPred.{d} Domain source_domain (fun (x : Domain) => target_domain (f x))), ",
+            function_pointwise_limit_app!("f", "point", "limit", "ApproachesAt")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => fun bridge => fun source_neighborhood => fun target_neighborhood => fun maps_source_to_target => @neighborhood_limit_bridge_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f point limit source_domain target_domain ApproachesAt bridge source_neighborhood target_neighborhood maps_source_to_target"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_equality_continuity_evidence_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (g : forall (x : Domain), Codomain), forall (point : Domain), forall (neighborhood : forall (x : Domain), Prop), forall (ApproachesF : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (ApproachesG : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : forall (local_eq : @LocalEq.{d,c} Domain Codomain neighborhood f g), forall (point_neighborhood : @Neighborhood.{d} Domain point neighborhood), forall (left_continuous : ",
+            continuous_at_app!("f", "point", "ApproachesF"),
+            "), ",
+            continuous_at_app!("g", "point", "ApproachesG"),
+            "), ",
+            local_equality_continuity_evidence_app!("f", "g", "point", "neighborhood", "ApproachesF", "ApproachesG")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_equality_continuity_evidence_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (g : forall (x : Domain), Codomain), forall (point : Domain), forall (neighborhood : forall (x : Domain), Prop), forall (ApproachesF : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (ApproachesG : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            local_equality_continuity_evidence_app!("f", "g", "point", "neighborhood", "ApproachesF", "ApproachesG"),
+            "), forall (local_eq : @LocalEq.{d,c} Domain Codomain neighborhood f g), forall (point_neighborhood : @Neighborhood.{d} Domain point neighborhood), forall (left_continuous : ",
+            continuous_at_app!("f", "point", "ApproachesF"),
+            "), ",
+            continuous_at_app!("g", "point", "ApproachesG")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => fun evidence => fun local_eq => fun point_neighborhood => fun left_continuous => evidence local_eq point_neighborhood left_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_at_of_local_eq",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (f : forall (x : Domain), Codomain), forall (g : forall (x : Domain), Codomain), forall (point : Domain), forall (neighborhood : forall (x : Domain), Prop), forall (ApproachesF : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (ApproachesG : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            local_equality_continuity_evidence_app!("f", "g", "point", "neighborhood", "ApproachesF", "ApproachesG"),
+            "), forall (local_eq : @LocalEq.{d,c} Domain Codomain neighborhood f g), forall (point_neighborhood : @Neighborhood.{d} Domain point neighborhood), forall (left_continuous : ",
+            continuous_at_app!("f", "point", "ApproachesF"),
+            "), ",
+            continuous_at_app!("g", "point", "ApproachesG")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => fun evidence => fun local_eq => fun point_neighborhood => fun left_continuous => @local_equality_continuity_evidence_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f g point neighborhood ApproachesF ApproachesG evidence local_eq point_neighborhood left_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuity_restriction_evidence_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (SmallerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : forall (subset : @LocalPred.{d} Domain smaller larger), forall (continuous_large : ",
+            continuous_on_app!("larger", "f", "LargerApproaches"),
+            "), ",
+            continuous_on_app!("smaller", "f", "SmallerApproaches"),
+            "), ",
+            continuity_restriction_evidence_app!("larger", "smaller", "f", "LargerApproaches", "SmallerApproaches")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuity_restriction_evidence_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (SmallerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuity_restriction_evidence_app!("larger", "smaller", "f", "LargerApproaches", "SmallerApproaches"),
+            "), forall (subset : @LocalPred.{d} Domain smaller larger), forall (continuous_large : ",
+            continuous_on_app!("larger", "f", "LargerApproaches"),
+            "), ",
+            continuous_on_app!("smaller", "f", "SmallerApproaches")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun evidence => fun subset => fun continuous_large => evidence subset continuous_large"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_on_restrict",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (SmallerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuity_restriction_evidence_app!("larger", "smaller", "f", "LargerApproaches", "SmallerApproaches"),
+            "), forall (subset : @LocalPred.{d} Domain smaller larger), forall (continuous_large : ",
+            continuous_on_app!("larger", "f", "LargerApproaches"),
+            "), ",
+            continuous_on_app!("smaller", "f", "SmallerApproaches")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun evidence => fun subset => fun continuous_large => @continuity_restriction_evidence_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger smaller f LargerApproaches SmallerApproaches evidence subset continuous_large"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_at_restrict",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (SmallerApproaches : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuity_restriction_evidence_app!("larger", "smaller", "f", "LargerApproaches", "SmallerApproaches"),
+            "), forall (subset : @LocalPred.{d} Domain smaller larger), forall (continuous_large : ",
+            continuous_on_app!("larger", "f", "LargerApproaches"),
+            "), forall (point : Domain), forall (hpoint : smaller point), ",
+            continuous_at_app!("f", "point", "SmallerApproaches")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun evidence => fun subset => fun continuous_large => fun point => fun hpoint => @continuous_on_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain smaller f SmallerApproaches (@continuous_on_restrict.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger smaller f LargerApproaches SmallerApproaches evidence subset continuous_large) point hpoint"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_composition_evidence_intro",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (point : Domain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : forall (f_continuous : ",
+            continuous_at_on_app!("d", "m", "Domain", "Mid", "f", "point", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_at_on_app!("m", "c", "Mid", "Codomain", "g", "(f point)", "ApproachesG"),
+            "), ",
+            continuous_at_on_app!("d", "c", "Domain", "Codomain", "(fun (x : Domain) => g (f x))", "point", "ApproachesComp"),
+            "), ",
+            continuous_composition_evidence_app!("f", "g", "point", "ApproachesF", "ApproachesG", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_composition_evidence_apply",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (point : Domain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuous_composition_evidence_app!("f", "g", "point", "ApproachesF", "ApproachesG", "ApproachesComp"),
+            "), forall (f_continuous : ",
+            continuous_at_on_app!("d", "m", "Domain", "Mid", "f", "point", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_at_on_app!("m", "c", "Mid", "Codomain", "g", "(f point)", "ApproachesG"),
+            "), ",
+            continuous_at_on_app!("d", "c", "Domain", "Codomain", "(fun (x : Domain) => g (f x))", "point", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun f_continuous => fun g_continuous => evidence f_continuous g_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_at_comp",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (point : Domain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuous_composition_evidence_app!("f", "g", "point", "ApproachesF", "ApproachesG", "ApproachesComp"),
+            "), forall (f_continuous : ",
+            continuous_at_on_app!("d", "m", "Domain", "Mid", "f", "point", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_at_on_app!("m", "c", "Mid", "Codomain", "g", "(f point)", "ApproachesG"),
+            "), ",
+            continuous_at_on_app!("d", "c", "Domain", "Codomain", "(fun (x : Domain) => g (f x))", "point", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun f_continuous => fun g_continuous => @continuous_composition_evidence_apply.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain f g point ApproachesF ApproachesG ApproachesComp evidence f_continuous g_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_comp",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (point : Domain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuous_composition_evidence_app!("f", "g", "point", "ApproachesF", "ApproachesG", "ApproachesComp"),
+            "), forall (f_continuous : ",
+            continuous_at_on_app!("d", "m", "Domain", "Mid", "f", "point", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_at_on_app!("m", "c", "Mid", "Codomain", "g", "(f point)", "ApproachesG"),
+            "), ",
+            continuous_at_on_app!("d", "c", "Domain", "Codomain", "(fun (x : Domain) => g (f x))", "point", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun f_continuous => fun g_continuous => @continuous_at_comp.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain f g point ApproachesF ApproachesG ApproachesComp evidence f_continuous g_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_on_composition_evidence_intro",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (source_set : forall (x : Domain), Prop), forall (image_set : forall (y : Mid), Prop), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (bridge : forall (local_image : @LocalPred.{d} Domain source_set (fun (x : Domain) => image_set (f x))), forall (f_continuous : ",
+            continuous_on_on_app!("d", "m", "Domain", "Mid", "source_set", "f", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_on_on_app!("m", "c", "Mid", "Codomain", "image_set", "g", "ApproachesG"),
+            "), ",
+            continuous_on_on_app!("d", "c", "Domain", "Codomain", "source_set", "(fun (x : Domain) => g (f x))", "ApproachesComp"),
+            "), ",
+            continuous_on_composition_evidence_app!("source_set", "image_set", "f", "g", "ApproachesF", "ApproachesG", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_on_composition_evidence_apply",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (source_set : forall (x : Domain), Prop), forall (image_set : forall (y : Mid), Prop), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuous_on_composition_evidence_app!("source_set", "image_set", "f", "g", "ApproachesF", "ApproachesG", "ApproachesComp"),
+            "), forall (local_image : @LocalPred.{d} Domain source_set (fun (x : Domain) => image_set (f x))), forall (f_continuous : ",
+            continuous_on_on_app!("d", "m", "Domain", "Mid", "source_set", "f", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_on_on_app!("m", "c", "Mid", "Codomain", "image_set", "g", "ApproachesG"),
+            "), ",
+            continuous_on_on_app!("d", "c", "Domain", "Codomain", "source_set", "(fun (x : Domain) => g (f x))", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun local_image => fun f_continuous => fun g_continuous => evidence local_image f_continuous g_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "continuous_on_comp",
+        universe_params: &["c", "d", "m", "u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (Domain : Sort d), forall (Mid : Sort m), forall (Codomain : Sort c), forall (source_set : forall (x : Domain), Prop), forall (image_set : forall (y : Mid), Prop), forall (f : forall (x : Domain), Mid), forall (g : forall (y : Mid), Codomain), forall (ApproachesF : forall (candidate : forall (x : Domain), Mid), forall (point : Domain), forall (limit : Mid), Prop), forall (ApproachesG : forall (candidate : forall (y : Mid), Codomain), forall (point : Mid), forall (limit : Codomain), Prop), forall (ApproachesComp : forall (candidate : forall (x : Domain), Codomain), forall (point : Domain), forall (limit : Codomain), Prop), forall (evidence : ",
+            continuous_on_composition_evidence_app!("source_set", "image_set", "f", "g", "ApproachesF", "ApproachesG", "ApproachesComp"),
+            "), forall (local_image : @LocalPred.{d} Domain source_set (fun (x : Domain) => image_set (f x))), forall (f_continuous : ",
+            continuous_on_on_app!("d", "m", "Domain", "Mid", "source_set", "f", "ApproachesF"),
+            "), forall (g_continuous : ",
+            continuous_on_on_app!("m", "c", "Mid", "Codomain", "image_set", "g", "ApproachesG"),
+            "), ",
+            continuous_on_on_app!("d", "c", "Domain", "Codomain", "source_set", "(fun (x : Domain) => g (f x))", "ApproachesComp")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun local_image => fun f_continuous => fun g_continuous => @continuous_on_composition_evidence_apply.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain source_set image_set f g ApproachesF ApproachesG ApproachesComp evidence local_image f_continuous g_continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "uniform_continuity_restriction_evidence_intro",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (SmallerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (bridge : forall (subset : @LocalPred.{d} Domain smaller larger), forall (uniform_large : ",
+            uniform_continuous_app!("larger", "f", "LargerUniform"),
+            "), ",
+            uniform_continuous_app!("smaller", "f", "SmallerUniform"),
+            "), ",
+            uniform_restriction_evidence_app!("larger", "smaller", "f", "LargerUniform", "SmallerUniform")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "uniform_continuity_restriction_evidence_apply",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (SmallerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (evidence : ",
+            uniform_restriction_evidence_app!("larger", "smaller", "f", "LargerUniform", "SmallerUniform"),
+            "), forall (subset : @LocalPred.{d} Domain smaller larger), forall (uniform_large : ",
+            uniform_continuous_app!("larger", "f", "LargerUniform"),
+            "), ",
+            uniform_continuous_app!("smaller", "f", "SmallerUniform")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => fun evidence => fun subset => fun uniform_large => evidence subset uniform_large"
+        ),
+    },
+    TheoremArtifact {
+        name: "uniform_continuous_on_restrict",
+        universe_params: &["c", "d", "u"],
+        statement: analysis_continuity_basic_params!(concat!(
+            "forall (larger : forall (x : Domain), Prop), forall (smaller : forall (x : Domain), Prop), forall (f : forall (x : Domain), Codomain), forall (LargerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (SmallerUniform : forall (set : forall (x : Domain), Prop), forall (candidate : forall (x : Domain), Codomain), Prop), forall (evidence : ",
+            uniform_restriction_evidence_app!("larger", "smaller", "f", "LargerUniform", "SmallerUniform"),
+            "), forall (subset : @LocalPred.{d} Domain smaller larger), forall (uniform_large : ",
+            uniform_continuous_app!("larger", "f", "LargerUniform"),
+            "), ",
+            uniform_continuous_app!("smaller", "f", "SmallerUniform")
+        )),
+        proof: analysis_continuity_basic_abs!(
+            "fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => fun evidence => fun subset => fun uniform_large => @uniform_continuity_restriction_evidence_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger smaller f LargerUniform SmallerUniform evidence subset uniform_large"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequential_pointwise_limit_bridge_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (bridge : forall (domain_converges : ",
+            sequence_converges_to_app!("point"),
+            "), forall (image_converges : ",
+            sequence_converges_to_for_app!("(fun (k : SequenceIndex) => f (seq k))", "limit"),
+            "), ",
+            function_pointwise_limit_on_app!("u", "u", "Scalar", "Scalar", "f", "point", "limit", "ApproachesAt"),
+            "), ",
+            sequential_pointwise_limit_bridge_app!("f", "point", "limit", "ApproachesAt")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun f => fun point => fun limit => fun ApproachesAt => fun bridge => bridge"
+        ),
+    },
+    TheoremArtifact {
+        name: "sequential_pointwise_limit_bridge_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (bridge : ",
+            sequential_pointwise_limit_bridge_app!("f", "point", "limit", "ApproachesAt"),
+            "), forall (domain_converges : ",
+            sequence_converges_to_app!("point"),
+            "), forall (image_converges : ",
+            sequence_converges_to_for_app!("(fun (k : SequenceIndex) => f (seq k))", "limit"),
+            "), ",
+            function_pointwise_limit_on_app!("u", "u", "Scalar", "Scalar", "f", "point", "limit", "ApproachesAt")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun f => fun point => fun limit => fun ApproachesAt => fun bridge => fun domain_converges => fun image_converges => bridge domain_converges image_converges"
+        ),
+    },
+    TheoremArtifact {
+        name: "pointwise_limit_of_sequential_bridge",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (bridge : ",
+            sequential_pointwise_limit_bridge_app!("f", "point", "limit", "ApproachesAt"),
+            "), forall (domain_converges : ",
+            sequence_converges_to_app!("point"),
+            "), forall (image_converges : ",
+            sequence_converges_to_for_app!("(fun (k : SequenceIndex) => f (seq k))", "limit"),
+            "), ",
+            function_pointwise_limit_on_app!("u", "u", "Scalar", "Scalar", "f", "point", "limit", "ApproachesAt")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun f => fun point => fun limit => fun ApproachesAt => fun bridge => fun domain_converges => fun image_converges => @sequential_pointwise_limit_bridge_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit f point limit ApproachesAt bridge domain_converges image_converges"
+        ),
+    },
+];
+
 const ANALYSIS_SEQUENCE_COMPACTNESS_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "SubsequenceExtractionEvidence",
@@ -43507,6 +44447,38 @@ fn run_full() -> Result<(), String> {
         &analysis_sequence_basic_imports,
         &analysis_sequence_basic_source_interfaces,
     )?;
+    let analysis_continuity_basic_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+        analysis_sequence_basic.verified_module.clone(),
+    ];
+    let analysis_continuity_basic_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+        analysis_sequence_basic.source_interface.clone(),
+    ];
+    let _analysis_continuity_basic = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_CONTINUITY_BASIC_MODULE,
+        &analysis_continuity_basic_imports,
+        &analysis_continuity_basic_source_interfaces,
+    )?;
     let analysis_sequence_compactness_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -46531,6 +47503,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == ANALYSIS_REAL_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_BASIC_MODULE.module
+        || config.module == ANALYSIS_CONTINUITY_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_COMPACTNESS_MODULE.module
         || config.module == ANALYSIS_SERIES_BASIC_MODULE.module
         || config.module == ANALYSIS_SERIES_CRITERIA_MODULE.module

@@ -1512,6 +1512,23 @@ theorems = ["sequence_value_intro", "sequence_value_elim", "eventually_intro", "
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Continuity.Basic"
+source = "Proofs/Ai/Analysis/Continuity/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Continuity/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Continuity/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Continuity/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:d9d0e01b16113dfb5d9cbb0a6a5b81dea6d6469f499fb6e747ec7f6286ba05ce"
+expected_certificate_file_hash = "sha256:934f86bf18864146f96ea155a67b2bbd52b8177e7caee2d11c53edd94760a480"
+expected_export_hash = "sha256:b8b6daec2ac2e2159cadc3122d124903c710849e974c8752ee5bdd772adb2d27"
+expected_axiom_report_hash = "sha256:3abd9e97baa525d711d168a8c590d47ada282e4ac4f2ad6e88a7407f927f8bcf"
+expected_certificate_hash = "sha256:4e02539325b6e0f4eeb6244e677182178cf3d2a0a35f88ce4fc61b96703623c2"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"]
+definitions = ["FunctionPointwiseLimit", "ContinuousAt", "ContinuousOn", "UniformContinuous", "NeighborhoodLimitBridge", "LocalEqualityContinuityEvidence", "ContinuityRestrictionEvidence", "ContinuousCompositionEvidence", "ContinuousOnCompositionEvidence", "UniformContinuityRestrictionEvidence", "SequentialPointwiseLimitBridge"]
+theorems = ["function_pointwise_limit_intro", "function_pointwise_limit_apply", "continuous_at_intro", "continuous_at_limit", "continuous_on_intro", "continuous_on_apply", "uniform_continuous_intro", "uniform_continuous_apply", "neighborhood_limit_bridge_intro", "neighborhood_limit_bridge_apply", "pointwise_limit_from_neighborhood_bridge", "local_equality_continuity_evidence_intro", "local_equality_continuity_evidence_apply", "continuous_at_of_local_eq", "continuity_restriction_evidence_intro", "continuity_restriction_evidence_apply", "continuous_on_restrict", "continuous_at_restrict", "continuous_composition_evidence_intro", "continuous_composition_evidence_apply", "continuous_at_comp", "continuous_comp", "continuous_on_composition_evidence_intro", "continuous_on_composition_evidence_apply", "continuous_on_comp", "uniform_continuity_restriction_evidence_intro", "uniform_continuity_restriction_evidence_apply", "uniform_continuous_on_restrict", "sequential_pointwise_limit_bridge_intro", "sequential_pointwise_limit_bridge_apply", "pointwise_limit_of_sequential_bridge"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.Sequence.Compactness"
 source = "Proofs/Ai/Analysis/Sequence/Compactness/source.npa"
 certificate = "Proofs/Ai/Analysis/Sequence/Compactness/certificate.npcert"

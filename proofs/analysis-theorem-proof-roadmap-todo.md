@@ -569,7 +569,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T10 Add Function Limits And Continuity Core
 
-- Status: Pending
+- Status: Complete (ANQ-012)
 - Depends on: ANA-T05
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -596,6 +596,13 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Continuity.Basic` with certificate-backed pointwise limits,
+    continuity-at, continuity-on, uniform-continuity, neighborhood bridge, local-equality bridge,
+    restriction, composition, setwise composition, and sequential bridge theorem targets.
+  - The module imports `Sequence.Basic`, `AbstractMetricTopology`, and `Real.Basic`, and does not
+    import derivative or integration modules.
+  - The generated axiom report is empty.
 
 ### ANA-T11 Add Bolzano And Intermediate Value Theorems
 
