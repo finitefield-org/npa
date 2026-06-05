@@ -591,7 +591,7 @@ later in the file.
 
 ### NT-T15 Add RSA And Primality-Test Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T14`
 - Areas: `Proofs/Ai/NumberTheory/Rsa/`, `Proofs/Ai/NumberTheory/PrimalityTest/`
 - Tasks:
@@ -602,13 +602,15 @@ later in the file.
     claims.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.Rsa`.
-  - Early primality-test theorem surface.
+  - `Proofs.Ai.NumberTheory.PrimalityTest`.
 - Acceptance criteria:
   - RSA correctness states modulus factorization and coprimality hypotheses.
   - Security assumptions are not marked as derived certificates.
   - Primality tests do not call external randomness or runtime solvers from
     trusted code.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimalityTest`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimalityTest`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Rsa`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Rsa`
   - `rg -n "RSA|Korselt|Miller|pseudoprime|security assumption" proofs/Proofs/Ai proofs/README.md`

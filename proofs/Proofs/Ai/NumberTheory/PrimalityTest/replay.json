@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimalityTest",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "fermat_pseudoprime_surface_from_fermat_congruence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeModulus => fun CoprimeInt => fun FermatLittleCongruence => fun PseudoprimeToBase => fun pseudoprime_law => fun n => fun a => fun composite_n => fun coprime_an => fun fermat_congruence => pseudoprime_law n a composite_n coprime_an fermat_congruence"
+    },
+    {
+      "declaration": "carmichael_number_korselt_criterion_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeModulus => fun SquareFree => fun PrimeDivisor => fun DividesPred => fun CarmichaelNumber => fun KorseltCriterion => fun korselt_law => fun n => fun composite_n => fun square_free_n => fun criterion => korselt_law n composite_n square_free_n criterion"
+    },
+    {
+      "declaration": "fermat_primality_test_accepts_prime_moduli",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun PrimeModulus => fun CoprimeInt => fun FermatLittleCongruence => fun FermatTestAccepts => fun soundness_law => fun p => fun a => fun prime_p => fun coprime_ap => fun fermat_step => soundness_law p a prime_p coprime_ap fermat_step"
+    },
+    {
+      "declaration": "miller_rabin_witness_rejects_composite_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddComposite => fun MillerRabinWitness => fun MillerRabinRejects => fun witness_law => fun n => fun a => fun odd_composite_n => fun witness => witness_law n a odd_composite_n witness"
+    },
+    {
+      "declaration": "primality_tests_no_runtime_randomness_trusted_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimalityTestPackage => fun MathematicalSoundnessPackage => fun RuntimeRandomnessSource => fun ProbabilisticSecurityClaim => fun TrustedBoundary => fun boundary_law => fun tests => fun soundness => fun randomness => fun security => boundary_law tests soundness randomness security"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PrimalityTest/certificate.npcert"
+  }
+}

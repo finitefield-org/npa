@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Rsa",
+  "source": "Proofs/Ai/NumberTheory/Rsa/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Rsa/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1b45c2cb3edaeaecd1386dc7347e7bec0d19d1b636ce3003403d0673d7b473ec",
+  "certificate_file_sha256": "sha256:17431d4e504050e3a26b18934ec0a25ac5beebeb2230d568670fd8eb168fa977",
+  "export_hash": "sha256:da5a2c2c6049b93fa7b7e2aa1e870916a44cfa12b88b2a1858f33002e891086d",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:7abd15958224f0598684fa1ce6807c794e06a328423480320f9a7849d410e80d",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Carmichael", "Proofs.Ai.NumberTheory.PrimalityTest"],
+  "axioms": [],
+  "declarations": [
+    { "name": "rsa_modulus_factorization_and_coprimality_hypotheses", "kind": "theorem" },
+    { "name": "rsa_correctness_from_carmichael_key_congruence", "kind": "theorem" },
+    { "name": "rsa_key_congruence_uses_carmichael_lambda", "kind": "theorem" },
+    { "name": "rsa_correctness_no_security_claim_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -315,12 +315,14 @@ semantics.
 - Depends on: `NT-04`, finite group order and unit-group interfaces.
 - Implementation progress: NT-T14 added certificate-backed
   `Proofs.Ai.NumberTheory.FermatEulerWilson` and `Proofs.Ai.NumberTheory.Carmichael`
-  surfaces for theorem steps 3 through 7. RSA correctness and primality-test interfaces remain
-  in NT-T15.
+  surfaces for theorem steps 3 through 7. NT-T15 added certificate-backed
+  `Proofs.Ai.NumberTheory.PrimalityTest` and `Proofs.Ai.NumberTheory.Rsa` surfaces for
+  RSA correctness and early primality-test interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ModularGroup`
   - `Proofs.Ai.NumberTheory.FermatEulerWilson`
   - `Proofs.Ai.NumberTheory.Carmichael`
+  - `Proofs.Ai.NumberTheory.PrimalityTest`
   - `Proofs.Ai.NumberTheory.Rsa`
 - Theorem order:
   1. unit group of `Z/nZ` and Euler `phi` as its order;

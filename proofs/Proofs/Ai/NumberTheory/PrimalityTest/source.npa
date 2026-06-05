@@ -1,0 +1,26 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.NumberTheory.Prime
+import Proofs.Ai.NumberTheory.Composite
+import Proofs.Ai.NumberTheory.FermatEulerWilson
+import Proofs.Ai.NumberTheory.Carmichael
+
+theorem fermat_pseudoprime_surface_from_fermat_congruence :
+  forall (Int : Type), forall (CompositeModulus : forall (n : Int), Prop), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (FermatLittleCongruence : forall (n : Int), forall (a : Int), Prop), forall (PseudoprimeToBase : forall (n : Int), forall (a : Int), Prop), forall (pseudoprime_law : forall (n : Int), forall (a : Int), forall (composite_n : CompositeModulus n), forall (coprime_an : CoprimeInt a n), forall (fermat_congruence : FermatLittleCongruence n a), PseudoprimeToBase n a), forall (n : Int), forall (a : Int), forall (composite_n : CompositeModulus n), forall (coprime_an : CoprimeInt a n), forall (fermat_congruence : FermatLittleCongruence n a), PseudoprimeToBase n a :=
+  fun Int => fun CompositeModulus => fun CoprimeInt => fun FermatLittleCongruence => fun PseudoprimeToBase => fun pseudoprime_law => fun n => fun a => fun composite_n => fun coprime_an => fun fermat_congruence => pseudoprime_law n a composite_n coprime_an fermat_congruence
+
+theorem carmichael_number_korselt_criterion_surface :
+  forall (Int : Type), forall (CompositeModulus : forall (n : Int), Prop), forall (SquareFree : forall (n : Int), Prop), forall (PrimeDivisor : forall (p : Int), forall (n : Int), Prop), forall (DividesPred : forall (p : Int), forall (n : Int), Prop), forall (CarmichaelNumber : forall (n : Int), Prop), forall (KorseltCriterion : forall (n : Int), Prop), forall (korselt_law : forall (n : Int), forall (composite_n : CompositeModulus n), forall (square_free_n : SquareFree n), forall (criterion : KorseltCriterion n), CarmichaelNumber n), forall (n : Int), forall (composite_n : CompositeModulus n), forall (square_free_n : SquareFree n), forall (criterion : KorseltCriterion n), CarmichaelNumber n :=
+  fun Int => fun CompositeModulus => fun SquareFree => fun PrimeDivisor => fun DividesPred => fun CarmichaelNumber => fun KorseltCriterion => fun korselt_law => fun n => fun composite_n => fun square_free_n => fun criterion => korselt_law n composite_n square_free_n criterion
+
+theorem fermat_primality_test_accepts_prime_moduli :
+  forall (Int : Type), forall (PrimeModulus : forall (p : Int), Prop), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (FermatLittleCongruence : forall (p : Int), forall (a : Int), Prop), forall (FermatTestAccepts : forall (p : Int), forall (a : Int), Prop), forall (soundness_law : forall (p : Int), forall (a : Int), forall (prime_p : PrimeModulus p), forall (coprime_ap : CoprimeInt a p), forall (fermat_step : FermatLittleCongruence p a), FermatTestAccepts p a), forall (p : Int), forall (a : Int), forall (prime_p : PrimeModulus p), forall (coprime_ap : CoprimeInt a p), forall (fermat_step : FermatLittleCongruence p a), FermatTestAccepts p a :=
+  fun Int => fun PrimeModulus => fun CoprimeInt => fun FermatLittleCongruence => fun FermatTestAccepts => fun soundness_law => fun p => fun a => fun prime_p => fun coprime_ap => fun fermat_step => soundness_law p a prime_p coprime_ap fermat_step
+
+theorem miller_rabin_witness_rejects_composite_surface :
+  forall (Int : Type), forall (OddComposite : forall (n : Int), Prop), forall (MillerRabinWitness : forall (n : Int), forall (a : Int), Prop), forall (MillerRabinRejects : forall (n : Int), forall (a : Int), Prop), forall (witness_law : forall (n : Int), forall (a : Int), forall (odd_composite_n : OddComposite n), forall (witness : MillerRabinWitness n a), MillerRabinRejects n a), forall (n : Int), forall (a : Int), forall (odd_composite_n : OddComposite n), forall (witness : MillerRabinWitness n a), MillerRabinRejects n a :=
+  fun Int => fun OddComposite => fun MillerRabinWitness => fun MillerRabinRejects => fun witness_law => fun n => fun a => fun odd_composite_n => fun witness => witness_law n a odd_composite_n witness
+
+theorem primality_tests_no_runtime_randomness_trusted_boundary :
+  forall (PrimalityTestPackage : Type), forall (MathematicalSoundnessPackage : Type), forall (RuntimeRandomnessSource : Type), forall (ProbabilisticSecurityClaim : Type), forall (TrustedBoundary : forall (tests : PrimalityTestPackage), forall (soundness : MathematicalSoundnessPackage), forall (randomness : RuntimeRandomnessSource), forall (security : ProbabilisticSecurityClaim), Prop), forall (boundary_law : forall (tests : PrimalityTestPackage), forall (soundness : MathematicalSoundnessPackage), forall (randomness : RuntimeRandomnessSource), forall (security : ProbabilisticSecurityClaim), TrustedBoundary tests soundness randomness security), forall (tests : PrimalityTestPackage), forall (soundness : MathematicalSoundnessPackage), forall (randomness : RuntimeRandomnessSource), forall (security : ProbabilisticSecurityClaim), TrustedBoundary tests soundness randomness security :=
+  fun PrimalityTestPackage => fun MathematicalSoundnessPackage => fun RuntimeRandomnessSource => fun ProbabilisticSecurityClaim => fun TrustedBoundary => fun boundary_law => fun tests => fun soundness => fun randomness => fun security => boundary_law tests soundness randomness security

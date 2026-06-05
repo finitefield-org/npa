@@ -153,6 +153,15 @@ Current bundles:
   downstream of `phi` and the Fermat/Euler/Wilson surface, preserving a separate
   `CarmichaelLambda` definition, unit-group exponent theorem, divisibility into `EulerPhi`, and
   boundaries excluding duplicated `phi` and RSA security claims.
+- `Proofs/Ai/NumberTheory/PrimalityTest/`: certificate-backed early primality-test interface
+  downstream of prime/composite predicates, Fermat/Euler/Wilson, and Carmichael surfaces,
+  preserving pseudoprime, Carmichael-number, Korselt criterion, Fermat-test, and Miller-Rabin
+  witness theorem surfaces while keeping runtime randomness and probabilistic-security claims
+  outside trusted code.
+- `Proofs/Ai/NumberTheory/Rsa/`: certificate-backed RSA correctness interface downstream of
+  Carmichael and primality-test surfaces, preserving modulus factorization, coprimality, and
+  key-congruence hypotheses, plus a boundary separating mathematical round-trip correctness from
+  runtime solvers, randomness, or security assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
@@ -464,6 +473,12 @@ Planning documents:
   theorem route.
 - `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
   implicit-function theorem route.
+- `combinatorics-graph-theorem-proof-roadmap.md`: CG-00 through CG-23 plan for
+  combinatorics and graph-theory theorem families, from finite counting through
+  graph foundations, Ramsey theory, spectral graph theory, algorithms, and
+  promotion.
+- `combinatorics-graph-theorem-proof-roadmap-todo.md`: CG-T00 through CG-T46
+  implementation task breakdown for the combinatorics/graph roadmap.
 - `number-theory-theorem-proof-roadmap.md`: NT-00 through NT-24 plan for number-theory theorem
   families, from elementary arithmetic through promotion.
 - `number-theory-theorem-proof-roadmap-todo.md`: NT-T00 through NT-T70 implementation task

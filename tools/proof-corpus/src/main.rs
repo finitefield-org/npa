@@ -176,6 +176,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PHI_MODULE,
     &NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE,
     &NUMBER_THEORY_CARMICHAEL_MODULE,
+    &NUMBER_THEORY_PRIMALITY_TEST_MODULE,
+    &NUMBER_THEORY_RSA_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1813,6 +1815,44 @@ const NUMBER_THEORY_CARMICHAEL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CARMICHAEL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PRIMALITY_TEST_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.PrimalityTest",
+    source_path: "Proofs/Ai/NumberTheory/PrimalityTest/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/PrimalityTest/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/PrimalityTest/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/PrimalityTest/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Prime",
+        "Proofs.Ai.NumberTheory.Composite",
+        "Proofs.Ai.NumberTheory.FermatEulerWilson",
+        "Proofs.Ai.NumberTheory.Carmichael",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PRIMALITY_TEST_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_RSA_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Rsa",
+    source_path: "Proofs/Ai/NumberTheory/Rsa/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Rsa/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Rsa/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Rsa/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Carmichael",
+        "Proofs.Ai.NumberTheory.PrimalityTest",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_RSA_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -11306,6 +11346,266 @@ const NUMBER_THEORY_CARMICHAEL_THEOREMS: &[TheoremArtifact] = &[
             "fun RsaSecurityClaimPackage => fun NoDuplicationOrSecurityBoundary => ",
             "fun boundary_law => fun carmichael => fun phi => fun rsa_correctness => ",
             "fun rsa_security => boundary_law carmichael phi rsa_correctness rsa_security"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PRIMALITY_TEST_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "fermat_pseudoprime_surface_from_fermat_congruence",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (CompositeModulus : forall (n : Int), Prop), ",
+            "forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (FermatLittleCongruence : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (PseudoprimeToBase : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (pseudoprime_law : forall (n : Int), forall (a : Int), ",
+            "forall (composite_n : CompositeModulus n), ",
+            "forall (coprime_an : CoprimeInt a n), ",
+            "forall (fermat_congruence : FermatLittleCongruence n a), ",
+            "PseudoprimeToBase n a), ",
+            "forall (n : Int), forall (a : Int), ",
+            "forall (composite_n : CompositeModulus n), ",
+            "forall (coprime_an : CoprimeInt a n), ",
+            "forall (fermat_congruence : FermatLittleCongruence n a), ",
+            "PseudoprimeToBase n a"
+        ),
+        proof: concat!(
+            "fun Int => fun CompositeModulus => fun CoprimeInt => ",
+            "fun FermatLittleCongruence => fun PseudoprimeToBase => ",
+            "fun pseudoprime_law => fun n => fun a => fun composite_n => ",
+            "fun coprime_an => fun fermat_congruence => ",
+            "pseudoprime_law n a composite_n coprime_an fermat_congruence"
+        ),
+    },
+    TheoremArtifact {
+        name: "carmichael_number_korselt_criterion_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (CompositeModulus : forall (n : Int), Prop), ",
+            "forall (SquareFree : forall (n : Int), Prop), ",
+            "forall (PrimeDivisor : forall (p : Int), forall (n : Int), Prop), ",
+            "forall (DividesPred : forall (p : Int), forall (n : Int), Prop), ",
+            "forall (CarmichaelNumber : forall (n : Int), Prop), ",
+            "forall (KorseltCriterion : forall (n : Int), Prop), ",
+            "forall (korselt_law : forall (n : Int), ",
+            "forall (composite_n : CompositeModulus n), ",
+            "forall (square_free_n : SquareFree n), ",
+            "forall (criterion : KorseltCriterion n), ",
+            "CarmichaelNumber n), ",
+            "forall (n : Int), forall (composite_n : CompositeModulus n), ",
+            "forall (square_free_n : SquareFree n), forall (criterion : KorseltCriterion n), ",
+            "CarmichaelNumber n"
+        ),
+        proof: concat!(
+            "fun Int => fun CompositeModulus => fun SquareFree => ",
+            "fun PrimeDivisor => fun DividesPred => fun CarmichaelNumber => ",
+            "fun KorseltCriterion => fun korselt_law => fun n => ",
+            "fun composite_n => fun square_free_n => fun criterion => ",
+            "korselt_law n composite_n square_free_n criterion"
+        ),
+    },
+    TheoremArtifact {
+        name: "fermat_primality_test_accepts_prime_moduli",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (PrimeModulus : forall (p : Int), Prop), ",
+            "forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (FermatLittleCongruence : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (FermatTestAccepts : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (soundness_law : forall (p : Int), forall (a : Int), ",
+            "forall (prime_p : PrimeModulus p), forall (coprime_ap : CoprimeInt a p), ",
+            "forall (fermat_step : FermatLittleCongruence p a), ",
+            "FermatTestAccepts p a), ",
+            "forall (p : Int), forall (a : Int), forall (prime_p : PrimeModulus p), ",
+            "forall (coprime_ap : CoprimeInt a p), ",
+            "forall (fermat_step : FermatLittleCongruence p a), FermatTestAccepts p a"
+        ),
+        proof: concat!(
+            "fun Int => fun PrimeModulus => fun CoprimeInt => ",
+            "fun FermatLittleCongruence => fun FermatTestAccepts => ",
+            "fun soundness_law => fun p => fun a => fun prime_p => ",
+            "fun coprime_ap => fun fermat_step => ",
+            "soundness_law p a prime_p coprime_ap fermat_step"
+        ),
+    },
+    TheoremArtifact {
+        name: "miller_rabin_witness_rejects_composite_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddComposite : forall (n : Int), Prop), ",
+            "forall (MillerRabinWitness : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (MillerRabinRejects : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (witness_law : forall (n : Int), forall (a : Int), ",
+            "forall (odd_composite_n : OddComposite n), ",
+            "forall (witness : MillerRabinWitness n a), MillerRabinRejects n a), ",
+            "forall (n : Int), forall (a : Int), ",
+            "forall (odd_composite_n : OddComposite n), ",
+            "forall (witness : MillerRabinWitness n a), MillerRabinRejects n a"
+        ),
+        proof: concat!(
+            "fun Int => fun OddComposite => fun MillerRabinWitness => ",
+            "fun MillerRabinRejects => fun witness_law => fun n => fun a => ",
+            "fun odd_composite_n => fun witness => witness_law n a odd_composite_n witness"
+        ),
+    },
+    TheoremArtifact {
+        name: "primality_tests_no_runtime_randomness_trusted_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (PrimalityTestPackage : Type), ",
+            "forall (MathematicalSoundnessPackage : Type), ",
+            "forall (RuntimeRandomnessSource : Type), ",
+            "forall (ProbabilisticSecurityClaim : Type), ",
+            "forall (TrustedBoundary : forall (tests : PrimalityTestPackage), ",
+            "forall (soundness : MathematicalSoundnessPackage), ",
+            "forall (randomness : RuntimeRandomnessSource), ",
+            "forall (security : ProbabilisticSecurityClaim), Prop), ",
+            "forall (boundary_law : forall (tests : PrimalityTestPackage), ",
+            "forall (soundness : MathematicalSoundnessPackage), ",
+            "forall (randomness : RuntimeRandomnessSource), ",
+            "forall (security : ProbabilisticSecurityClaim), ",
+            "TrustedBoundary tests soundness randomness security), ",
+            "forall (tests : PrimalityTestPackage), ",
+            "forall (soundness : MathematicalSoundnessPackage), ",
+            "forall (randomness : RuntimeRandomnessSource), ",
+            "forall (security : ProbabilisticSecurityClaim), ",
+            "TrustedBoundary tests soundness randomness security"
+        ),
+        proof: concat!(
+            "fun PrimalityTestPackage => fun MathematicalSoundnessPackage => ",
+            "fun RuntimeRandomnessSource => fun ProbabilisticSecurityClaim => ",
+            "fun TrustedBoundary => fun boundary_law => fun tests => ",
+            "fun soundness => fun randomness => fun security => ",
+            "boundary_law tests soundness randomness security"
+        ),
+    },
+];
+
+const NUMBER_THEORY_RSA_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "rsa_modulus_factorization_and_coprimality_hypotheses",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (RsaModulus : forall (n : Int), Prop), ",
+            "forall (PrimeFactor : forall (p : Int), Prop), ",
+            "forall (ProductEquation : forall (p : Int), forall (q : Int), forall (n : Int), Prop), ",
+            "forall (DistinctFactors : forall (p : Int), forall (q : Int), Prop), ",
+            "forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (RsaModulusHypotheses : forall (p : Int), forall (q : Int), forall (n : Int), Prop), ",
+            "forall (hypotheses_law : forall (p : Int), forall (q : Int), forall (n : Int), ",
+            "forall (prime_p : PrimeFactor p), forall (prime_q : PrimeFactor q), ",
+            "forall (product_n : ProductEquation p q n), ",
+            "forall (distinct_pq : DistinctFactors p q), ",
+            "forall (coprime_pq : CoprimeInt p q), ",
+            "RsaModulusHypotheses p q n), ",
+            "forall (p : Int), forall (q : Int), forall (n : Int), ",
+            "forall (prime_p : PrimeFactor p), forall (prime_q : PrimeFactor q), ",
+            "forall (product_n : ProductEquation p q n), ",
+            "forall (distinct_pq : DistinctFactors p q), ",
+            "forall (coprime_pq : CoprimeInt p q), ",
+            "RsaModulusHypotheses p q n"
+        ),
+        proof: concat!(
+            "fun Int => fun RsaModulus => fun PrimeFactor => fun ProductEquation => ",
+            "fun DistinctFactors => fun CoprimeInt => fun RsaModulusHypotheses => ",
+            "fun hypotheses_law => fun p => fun q => fun n => fun prime_p => ",
+            "fun prime_q => fun product_n => fun distinct_pq => fun coprime_pq => ",
+            "hypotheses_law p q n prime_p prime_q product_n distinct_pq coprime_pq"
+        ),
+    },
+    TheoremArtifact {
+        name: "rsa_correctness_from_carmichael_key_congruence",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (CarmichaelLambda : forall (modulus : Int), Nat), ",
+            "forall (RsaModulusHypotheses : forall (p : Int), forall (q : Int), forall (n : Int), Prop), ",
+            "forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (KeyCongruenceModuloLambda : forall (e : Int), forall (d : Int), forall (lambda_value : Nat), Prop), ",
+            "forall (CarmichaelExponentTheorem : forall (modulus : Int), forall (message : Int), Prop), ",
+            "forall (RsaRoundTripCorrectness : forall (n : Int), forall (e : Int), forall (d : Int), forall (message : Int), Prop), ",
+            "forall (correctness_law : forall (p : Int), forall (q : Int), forall (n : Int), ",
+            "forall (e : Int), forall (d : Int), forall (message : Int), ",
+            "forall (modulus_hypotheses : RsaModulusHypotheses p q n), ",
+            "forall (message_coprime : CoprimeInt message n), ",
+            "forall (key_congruence : KeyCongruenceModuloLambda e d (CarmichaelLambda n)), ",
+            "forall (carmichael_step : CarmichaelExponentTheorem n message), ",
+            "RsaRoundTripCorrectness n e d message), ",
+            "forall (p : Int), forall (q : Int), forall (n : Int), ",
+            "forall (e : Int), forall (d : Int), forall (message : Int), ",
+            "forall (modulus_hypotheses : RsaModulusHypotheses p q n), ",
+            "forall (message_coprime : CoprimeInt message n), ",
+            "forall (key_congruence : KeyCongruenceModuloLambda e d (CarmichaelLambda n)), ",
+            "forall (carmichael_step : CarmichaelExponentTheorem n message), ",
+            "RsaRoundTripCorrectness n e d message"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun CarmichaelLambda => ",
+            "fun RsaModulusHypotheses => fun CoprimeInt => ",
+            "fun KeyCongruenceModuloLambda => fun CarmichaelExponentTheorem => ",
+            "fun RsaRoundTripCorrectness => fun correctness_law => fun p => fun q => ",
+            "fun n => fun e => fun d => fun message => fun modulus_hypotheses => ",
+            "fun message_coprime => fun key_congruence => fun carmichael_step => ",
+            "correctness_law p q n e d message modulus_hypotheses message_coprime key_congruence carmichael_step"
+        ),
+    },
+    TheoremArtifact {
+        name: "rsa_key_congruence_uses_carmichael_lambda",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (CarmichaelLambda : forall (modulus : Int), Nat), ",
+            "forall (KeyCongruenceModuloLambda : forall (e : Int), forall (d : Int), forall (lambda_value : Nat), Prop), ",
+            "forall (RsaPrivateKeyValid : forall (n : Int), forall (e : Int), forall (d : Int), Prop), ",
+            "forall (key_law : forall (n : Int), forall (e : Int), forall (d : Int), ",
+            "forall (key_congruence : KeyCongruenceModuloLambda e d (CarmichaelLambda n)), ",
+            "RsaPrivateKeyValid n e d), ",
+            "forall (n : Int), forall (e : Int), forall (d : Int), ",
+            "forall (key_congruence : KeyCongruenceModuloLambda e d (CarmichaelLambda n)), ",
+            "RsaPrivateKeyValid n e d"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun CarmichaelLambda => ",
+            "fun KeyCongruenceModuloLambda => fun RsaPrivateKeyValid => ",
+            "fun key_law => fun n => fun e => fun d => fun key_congruence => ",
+            "key_law n e d key_congruence"
+        ),
+    },
+    TheoremArtifact {
+        name: "rsa_correctness_no_security_claim_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (RsaCorrectnessPackage : Type), ",
+            "forall (RsaSecurityAssumptionPackage : Type), ",
+            "forall (RuntimeSolverPackage : Type), ",
+            "forall (RandomOracleOrRandomnessPackage : Type), ",
+            "forall (NoSecurityBoundary : forall (correctness : RsaCorrectnessPackage), ",
+            "forall (security : RsaSecurityAssumptionPackage), ",
+            "forall (runtime_solver : RuntimeSolverPackage), ",
+            "forall (randomness : RandomOracleOrRandomnessPackage), Prop), ",
+            "forall (boundary_law : forall (correctness : RsaCorrectnessPackage), ",
+            "forall (security : RsaSecurityAssumptionPackage), ",
+            "forall (runtime_solver : RuntimeSolverPackage), ",
+            "forall (randomness : RandomOracleOrRandomnessPackage), ",
+            "NoSecurityBoundary correctness security runtime_solver randomness), ",
+            "forall (correctness : RsaCorrectnessPackage), ",
+            "forall (security : RsaSecurityAssumptionPackage), ",
+            "forall (runtime_solver : RuntimeSolverPackage), ",
+            "forall (randomness : RandomOracleOrRandomnessPackage), ",
+            "NoSecurityBoundary correctness security runtime_solver randomness"
+        ),
+        proof: concat!(
+            "fun RsaCorrectnessPackage => fun RsaSecurityAssumptionPackage => ",
+            "fun RuntimeSolverPackage => fun RandomOracleOrRandomnessPackage => ",
+            "fun NoSecurityBoundary => fun boundary_law => fun correctness => ",
+            "fun security => fun runtime_solver => fun randomness => ",
+            "boundary_law correctness security runtime_solver randomness"
         ),
     },
 ];
@@ -34567,7 +34867,7 @@ fn run_build_modules_inner(
     }
 
     if options.package_metadata {
-        let existing_metas = package_manifest_module_metas(proof_root)
+        let existing_metas = existing_module_metas(proof_root)
             .map_err(|error| record_build_failure(failures, "", error))?;
         write_package_metadata_once(proof_root, existing_metas, &cache)
             .map_err(|error| record_build_failure(failures, "", error))?;
@@ -34636,6 +34936,86 @@ fn write_package_metadata_once(
     write_package_lock_fixture(proof_root)?;
     write_ai_theorem_index(proof_root, &proof_root.join(AI_THEOREM_INDEX_PATH))?;
     Ok(())
+}
+
+fn existing_module_metas(proof_root: &Path) -> Result<BTreeMap<String, ModuleMeta>, String> {
+    let mut metas = package_manifest_module_metas(proof_root)?;
+    for config in MODULES {
+        if metas.contains_key(config.module) {
+            continue;
+        }
+        if let Some(meta) = checked_in_module_meta(proof_root, config)? {
+            metas.insert(config.module.to_owned(), meta);
+        }
+    }
+    Ok(metas)
+}
+
+fn checked_in_module_meta(
+    proof_root: &Path,
+    config: &'static ModuleArtifact,
+) -> Result<Option<ModuleMeta>, String> {
+    let path = proof_root.join(config.meta_path);
+    let source = match fs::read_to_string(&path) {
+        Ok(source) => source,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(format!("failed to read {}: {err}", config.meta_path)),
+    };
+    module_meta_from_meta_json(config, &source).map(Some)
+}
+
+fn module_meta_from_meta_json(
+    config: &'static ModuleArtifact,
+    source: &str,
+) -> Result<ModuleMeta, String> {
+    let module = top_level_json_string_field(source, "module")
+        .ok_or_else(|| format!("{} missing module field", config.meta_path))?;
+    if module != config.module {
+        return Err(format!(
+            "{} has module {module:?}, expected {:?}",
+            config.meta_path, config.module
+        ));
+    }
+    let source_path = top_level_json_string_field(source, "source")
+        .ok_or_else(|| format!("{} missing source field", config.meta_path))?;
+    if source_path != config.source_path {
+        return Err(format!(
+            "{} has source {source_path:?}, expected {:?}",
+            config.meta_path, config.source_path
+        ));
+    }
+    let certificate_path = top_level_json_string_field(source, "certificate")
+        .ok_or_else(|| format!("{} missing certificate field", config.meta_path))?;
+    if certificate_path != config.certificate_path {
+        return Err(format!(
+            "{} has certificate {certificate_path:?}, expected {:?}",
+            config.meta_path, config.certificate_path
+        ));
+    }
+
+    Ok(ModuleMeta {
+        config,
+        source_sha256: required_json_string_field(source, config.meta_path, "source_sha256")?,
+        certificate_file_sha256: required_json_string_field(
+            source,
+            config.meta_path,
+            "certificate_file_sha256",
+        )?,
+        export_hash: required_json_string_field(source, config.meta_path, "export_hash")?,
+        axiom_report_hash: required_json_string_field(
+            source,
+            config.meta_path,
+            "axiom_report_hash",
+        )?,
+        certificate_hash: required_json_string_field(source, config.meta_path, "certificate_hash")?,
+        axioms: top_level_json_string_array_field(source, "axioms")
+            .ok_or_else(|| format!("{} missing axioms field", config.meta_path))?,
+    })
+}
+
+fn required_json_string_field(source: &str, path: &str, field: &str) -> Result<String, String> {
+    top_level_json_string_field(source, field)
+        .ok_or_else(|| format!("{path} missing {field} field"))
 }
 
 fn batch_module_metas(
@@ -39228,24 +39608,88 @@ fn top_level_json_string_field(source: &str, field: &str) -> Option<String> {
     None
 }
 
+fn top_level_json_string_array_field(source: &str, field: &str) -> Option<Vec<String>> {
+    let needle = format!("\"{}\"", json_escape(field));
+    let mut depth = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for (index, ch) in source.char_indices() {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' => {
+                if depth == 1 && source[index..].starts_with(&needle) {
+                    return parse_json_string_array_after_colon(&source[index + needle.len()..]);
+                }
+                in_string = true;
+            }
+            '{' | '[' => depth += 1,
+            '}' | ']' => {
+                depth = depth.checked_sub(1)?;
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 fn parse_json_string_after_colon(source: &str) -> Option<String> {
     let rest = source.trim_start();
     let rest = rest.strip_prefix(':')?.trim_start();
-    let rest = rest.strip_prefix('"')?;
+    let (value, _) = parse_json_string_value(rest)?;
+    Some(value)
+}
+
+fn parse_json_string_array_after_colon(source: &str) -> Option<Vec<String>> {
+    let rest = source.trim_start();
+    let mut rest = rest.strip_prefix(':')?.trim_start().strip_prefix('[')?;
+    let mut items = Vec::new();
+    loop {
+        rest = rest.trim_start();
+        if let Some(_after) = rest.strip_prefix(']') {
+            return Some(items);
+        }
+        let (item, after_string) = parse_json_string_value(rest)?;
+        items.push(item);
+        rest = after_string.trim_start();
+        if let Some(after_comma) = rest.strip_prefix(',') {
+            rest = after_comma;
+        } else if rest.starts_with(']') {
+            continue;
+        } else {
+            return None;
+        }
+    }
+}
+
+fn parse_json_string_value(source: &str) -> Option<(String, &str)> {
+    let rest = source.strip_prefix('"')?;
     let mut value = String::new();
-    let mut chars = rest.chars();
-    while let Some(ch) = chars.next() {
+    let mut chars = rest.char_indices();
+    while let Some((index, ch)) = chars.next() {
         match ch {
-            '"' => return Some(value),
-            '\\' => match chars.next()? {
-                '"' => value.push('"'),
-                '\\' => value.push('\\'),
-                '/' => value.push('/'),
-                'n' => value.push('\n'),
-                'r' => value.push('\r'),
-                't' => value.push('\t'),
-                _ => return None,
-            },
+            '"' => return Some((value, &rest[index + ch.len_utf8()..])),
+            '\\' => {
+                let (_, escaped) = chars.next()?;
+                match escaped {
+                    '"' => value.push('"'),
+                    '\\' => value.push('\\'),
+                    '/' => value.push('/'),
+                    'n' => value.push('\n'),
+                    'r' => value.push('\r'),
+                    't' => value.push('\t'),
+                    _ => return None,
+                }
+            }
             ch => value.push(ch),
         }
     }
@@ -39794,6 +40238,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PHI_MODULE.module
         || config.module == NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE.module
         || config.module == NUMBER_THEORY_CARMICHAEL_MODULE.module
+        || config.module == NUMBER_THEORY_PRIMALITY_TEST_MODULE.module
+        || config.module == NUMBER_THEORY_RSA_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
@@ -41142,8 +41588,7 @@ Proofs.Ai.Eq # inline comments are ignored
     #[test]
     fn batch_module_metas_are_deterministic_for_single_module_compatibility() {
         let repo = repo_root().expect("repo root should resolve");
-        let existing =
-            package_manifest_module_metas(&repo.join("proofs")).expect("manifest should parse");
+        let existing = existing_module_metas(&repo.join("proofs")).expect("metadata should parse");
         let basic_meta = existing
             .get(BASIC_MODULE.module)
             .expect("basic metadata should exist")
