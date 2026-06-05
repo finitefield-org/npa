@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassField.Cohomology",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "class_field_cohomology_dependency_explicit_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ClassFieldPackage => fun GaloisCohomologyPackage => fun DependencyDeclared => fun dependency_law => fun class_field => fun cohomology => dependency_law class_field cohomology"
+    },
+    {
+      "declaration": "class_field_reciprocity_cohomology_route_surface",
+      "source_kind": "explicit_term",
+      "term": "fun ReciprocityRoute => fun CohomologyTerm => fun RouteLinksTerm => fun route_law => fun route => fun term => route_law route term"
+    },
+    {
+      "declaration": "norm_residue_reciprocity_local_global_context_route_surface",
+      "source_kind": "explicit_term",
+      "term": "fun LocalContext => fun GlobalContext => fun ReciprocityRoute => fun NormResidueSymbol => fun symbol_law => fun local_context => fun global_context => fun route => symbol_law local_context global_context route"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ClassField/Cohomology/certificate.npcert"
+  }
+}

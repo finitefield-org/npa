@@ -222,6 +222,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE,
     &GALOIS_COHOMOLOGY_BASIC_MODULE,
+    &NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE,
     &ELLIPTIC_CURVE_BASIC_MODULE,
     &ELLIPTIC_CURVE_GROUP_LAW_MODULE,
     &ELLIPTIC_CURVE_REDUCTION_MODULE,
@@ -2633,6 +2634,23 @@ const GALOIS_COHOMOLOGY_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: GALOIS_COHOMOLOGY_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ClassField.Cohomology",
+    source_path: "Proofs/Ai/NumberTheory/ClassField/Cohomology/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ClassField/Cohomology/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ClassField/Cohomology/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ClassField/Cohomology/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.ClassField.Global",
+        "Proofs.Ai.GaloisCohomology.Basic",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -22119,6 +22137,57 @@ const GALOIS_COHOMOLOGY_BASIC_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun G => fun A => fun Index => fun H => fun tate_law => fun n => fun x => tate_law n x"
         ),
+    },
+    TheoremArtifact {
+        name: "hilbert_90_degree_one_cocycle_coboundary_surface",
+        universe_params: &[],
+        statement: "forall (GaloisGroup : Type), forall (Module : Type), forall (OneCocycle : Type), forall (Coboundary : Type), forall (Hilbert90 : OneCocycle -> Coboundary -> Prop), forall (h90_law : forall (cocycle : OneCocycle), forall (coboundary : Coboundary), Hilbert90 cocycle coboundary), forall (cocycle : OneCocycle), forall (coboundary : Coboundary), Hilbert90 cocycle coboundary",
+        proof: "fun GaloisGroup => fun Module => fun OneCocycle => fun Coboundary => fun Hilbert90 => fun h90_law => fun cocycle => fun coboundary => h90_law cocycle coboundary",
+    },
+    TheoremArtifact {
+        name: "norm_residue_symbol_local_global_context_surface",
+        universe_params: &[],
+        statement: "forall (LocalContext : Type), forall (GlobalContext : Type), forall (SymbolInput : Type), forall (NormResidueNotation : LocalContext -> GlobalContext -> SymbolInput -> Prop), forall (context_law : forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (input : SymbolInput), NormResidueNotation local_context global_context input), forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (input : SymbolInput), NormResidueNotation local_context global_context input",
+        proof: "fun LocalContext => fun GlobalContext => fun SymbolInput => fun NormResidueNotation => fun context_law => fun local_context => fun global_context => fun input => context_law local_context global_context input",
+    },
+    TheoremArtifact {
+        name: "brauer_group_degree_two_cohomology_surface",
+        universe_params: &[],
+        statement: "forall (FieldContext : Type), forall (GaloisGroup : Type), forall (MultiplicativeModule : Type), forall (DegreeTwoCohomology : FieldContext -> Type), forall (BrauerGroup : FieldContext -> Type), forall (BrauerDegreeTwoComparison : forall (field : FieldContext), DegreeTwoCohomology field -> BrauerGroup field -> Prop), forall (comparison_law : forall (field : FieldContext), forall (h2_class : DegreeTwoCohomology field), forall (brauer_class : BrauerGroup field), BrauerDegreeTwoComparison field h2_class brauer_class), forall (field : FieldContext), forall (h2_class : DegreeTwoCohomology field), forall (brauer_class : BrauerGroup field), BrauerDegreeTwoComparison field h2_class brauer_class",
+        proof: "fun FieldContext => fun GaloisGroup => fun MultiplicativeModule => fun DegreeTwoCohomology => fun BrauerGroup => fun BrauerDegreeTwoComparison => fun comparison_law => fun field => fun h2_class => fun brauer_class => comparison_law field h2_class brauer_class",
+    },
+    TheoremArtifact {
+        name: "tate_cohomology_degree_index_functoriality_surface",
+        universe_params: &[],
+        statement: "forall (GaloisGroup : Type), forall (Module : Type), forall (Degree : Type), forall (TateCohomology : Degree -> Type), forall (Functoriality : Prop), forall (tate_law : forall (functoriality : Functoriality), forall (degree : Degree), forall (tate_class : TateCohomology degree), @Eq.{1} (TateCohomology degree) tate_class tate_class), forall (functoriality : Functoriality), forall (degree : Degree), forall (tate_class : TateCohomology degree), @Eq.{1} (TateCohomology degree) tate_class tate_class",
+        proof: "fun GaloisGroup => fun Module => fun Degree => fun TateCohomology => fun Functoriality => fun tate_law => fun functoriality => fun degree => fun tate_class => tate_law functoriality degree tate_class",
+    },
+    TheoremArtifact {
+        name: "galois_cohomology_interface_level_until_foundations_boundary",
+        universe_params: &[],
+        statement: "forall (InterfaceTheorem : Type), forall (FoundationPackage : Type), forall (InterfaceOnlyUntilFoundation : InterfaceTheorem -> FoundationPackage -> Prop), forall (boundary_law : forall (theorem_surface : InterfaceTheorem), forall (foundation : FoundationPackage), InterfaceOnlyUntilFoundation theorem_surface foundation), forall (theorem_surface : InterfaceTheorem), forall (foundation : FoundationPackage), InterfaceOnlyUntilFoundation theorem_surface foundation",
+        proof: "fun InterfaceTheorem => fun FoundationPackage => fun InterfaceOnlyUntilFoundation => fun boundary_law => fun theorem_surface => fun foundation => boundary_law theorem_surface foundation",
+    },
+];
+
+const NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "class_field_cohomology_dependency_explicit_boundary",
+        universe_params: &[],
+        statement: "forall (ClassFieldPackage : Type), forall (GaloisCohomologyPackage : Type), forall (DependencyDeclared : ClassFieldPackage -> GaloisCohomologyPackage -> Prop), forall (dependency_law : forall (class_field : ClassFieldPackage), forall (cohomology : GaloisCohomologyPackage), DependencyDeclared class_field cohomology), forall (class_field : ClassFieldPackage), forall (cohomology : GaloisCohomologyPackage), DependencyDeclared class_field cohomology",
+        proof: "fun ClassFieldPackage => fun GaloisCohomologyPackage => fun DependencyDeclared => fun dependency_law => fun class_field => fun cohomology => dependency_law class_field cohomology",
+    },
+    TheoremArtifact {
+        name: "class_field_reciprocity_cohomology_route_surface",
+        universe_params: &[],
+        statement: "forall (ReciprocityRoute : Type), forall (CohomologyTerm : Type), forall (RouteLinksTerm : ReciprocityRoute -> CohomologyTerm -> Prop), forall (route_law : forall (route : ReciprocityRoute), forall (term : CohomologyTerm), RouteLinksTerm route term), forall (route : ReciprocityRoute), forall (term : CohomologyTerm), RouteLinksTerm route term",
+        proof: "fun ReciprocityRoute => fun CohomologyTerm => fun RouteLinksTerm => fun route_law => fun route => fun term => route_law route term",
+    },
+    TheoremArtifact {
+        name: "norm_residue_reciprocity_local_global_context_route_surface",
+        universe_params: &[],
+        statement: "forall (LocalContext : Type), forall (GlobalContext : Type), forall (ReciprocityRoute : Type), forall (NormResidueSymbol : LocalContext -> GlobalContext -> ReciprocityRoute -> Prop), forall (symbol_law : forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (route : ReciprocityRoute), NormResidueSymbol local_context global_context route), forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (route : ReciprocityRoute), NormResidueSymbol local_context global_context route",
+        proof: "fun LocalContext => fun GlobalContext => fun ReciprocityRoute => fun NormResidueSymbol => fun symbol_law => fun local_context => fun global_context => fun route => symbol_law local_context global_context route",
     },
 ];
 
@@ -50879,6 +50948,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module
+        || config.module == NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassField.Cohomology",
+  "source": "Proofs/Ai/NumberTheory/ClassField/Cohomology/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ClassField/Cohomology/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7fcc4f0be8c9313a7ece407548dd44b9fe609ce273fa0e2c7db5b6e30db22d5a",
+  "certificate_file_sha256": "sha256:9004c7a4418f83c763edd44ea6412fde0391feb22ccd5580dbd563afcb4603b4",
+  "export_hash": "sha256:96ee3657893674b566009eb0d86b993033b51e4161d33b66a9250b3d741b96f1",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3abae1fd849a4dcb94fb4437bc126726d07191fb2c97295cc7e3db7e14356961",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.GaloisCohomology.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "class_field_cohomology_dependency_explicit_boundary", "kind": "theorem" },
+    { "name": "class_field_reciprocity_cohomology_route_surface", "kind": "theorem" },
+    { "name": "norm_residue_reciprocity_local_global_context_route_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -760,7 +760,12 @@ semantics.
     separated local/global reciprocity routes.
   - `NT-T44` added certificate-backed `Proofs.Ai.GaloisCohomology.Basic` defining
     L1 interfaces for Hilbert theorem 90, norm-residue symbol, Hasse norm theorem,
-    Grunwald-Wang theorem, Brauer group, and Tate cohomology.
+    Grunwald-Wang theorem, Brauer group, and Tate cohomology, plus explicit
+    Hilbert-90 degree-one cocycle/coboundary, Norm residue local/global context,
+    Brauer degree-two cohomology, Tate degree/functoriality, and
+    interface-level-until-foundations boundaries.  It also added
+    `Proofs.Ai.NumberTheory.ClassField.Cohomology` as the explicit bridge from
+    class-field reciprocity routes to Galois cohomology dependencies.
 - Depends on: `NT-13`, `NT-14`, group cohomology, ideles, and Galois
   extensions.
 - Target modules:
@@ -768,6 +773,7 @@ semantics.
   - `Proofs.Ai.NumberTheory.ClassField.Global`
   - `Proofs.Ai.NumberTheory.ArtinReciprocity`
   - `Proofs.Ai.GaloisCohomology.Basic`
+  - `Proofs.Ai.NumberTheory.ClassField.Cohomology`
 - Theorem order:
   1. Artin map statement surface;
   2. local reciprocity interface;

@@ -297,6 +297,13 @@ Current bundles:
   interface preserving idele class group, global reciprocity, Takagi existence,
   Hilbert class field, no-generic-algebra-import boundary, bridge rejection at
   final promotion, and separated local/global reciprocity routes.
+- `Proofs/Ai/GaloisCohomology/Basic/`: certificate-backed Galois cohomology
+  interface preserving Hilbert 90, Norm residue local/global context, Hasse norm,
+  Grunwald-Wang, Brauer group degree-two cohomology, Tate cohomology degree
+  functoriality, and interface-level boundaries until foundations exist.
+- `Proofs/Ai/NumberTheory/ClassField/Cohomology/`: certificate-backed class-field
+  cohomology bridge preserving explicit Galois-cohomology dependencies,
+  reciprocity-route links, and Norm residue local/global context routing.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

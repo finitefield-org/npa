@@ -33,6 +33,31 @@
       "declaration": "tate_cohomology_interface",
       "source_kind": "explicit_term",
       "term": "fun G => fun A => fun Index => fun H => fun tate_law => fun n => fun x => tate_law n x"
+    },
+    {
+      "declaration": "hilbert_90_degree_one_cocycle_coboundary_surface",
+      "source_kind": "explicit_term",
+      "term": "fun GaloisGroup => fun Module => fun OneCocycle => fun Coboundary => fun Hilbert90 => fun h90_law => fun cocycle => fun coboundary => h90_law cocycle coboundary"
+    },
+    {
+      "declaration": "norm_residue_symbol_local_global_context_surface",
+      "source_kind": "explicit_term",
+      "term": "fun LocalContext => fun GlobalContext => fun SymbolInput => fun NormResidueNotation => fun context_law => fun local_context => fun global_context => fun input => context_law local_context global_context input"
+    },
+    {
+      "declaration": "brauer_group_degree_two_cohomology_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldContext => fun GaloisGroup => fun MultiplicativeModule => fun DegreeTwoCohomology => fun BrauerGroup => fun BrauerDegreeTwoComparison => fun comparison_law => fun field => fun h2_class => fun brauer_class => comparison_law field h2_class brauer_class"
+    },
+    {
+      "declaration": "tate_cohomology_degree_index_functoriality_surface",
+      "source_kind": "explicit_term",
+      "term": "fun GaloisGroup => fun Module => fun Degree => fun TateCohomology => fun Functoriality => fun tate_law => fun functoriality => fun degree => fun tate_class => tate_law functoriality degree tate_class"
+    },
+    {
+      "declaration": "galois_cohomology_interface_level_until_foundations_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun InterfaceTheorem => fun FoundationPackage => fun InterfaceOnlyUntilFoundation => fun boundary_law => fun theorem_surface => fun foundation => boundary_law theorem_surface foundation"
     }
   ],
   "acceptance": {
