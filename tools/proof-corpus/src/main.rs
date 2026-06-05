@@ -181,6 +181,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PRIMITIVE_ROOT_MODULE,
     &NUMBER_THEORY_CHARACTER_MODULE,
     &NUMBER_THEORY_GAUSS_SUM_MODULE,
+    &NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE,
+    &NUMBER_THEORY_LEGENDRE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1914,6 +1916,46 @@ const NUMBER_THEORY_GAUSS_SUM_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_GAUSS_SUM_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.QuadraticResidue",
+    source_path: "Proofs/Ai/NumberTheory/QuadraticResidue/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/QuadraticResidue/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/QuadraticResidue/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/QuadraticResidue/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Prime",
+        "Proofs.Ai.NumberTheory.Congruence",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.PrimitiveRoot",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_QUADRATIC_RESIDUE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_LEGENDRE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Legendre",
+    source_path: "Proofs/Ai/NumberTheory/Legendre/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Legendre/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Legendre/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Legendre/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Prime",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.PrimitiveRoot",
+        "Proofs.Ai.NumberTheory.QuadraticResidue",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_LEGENDRE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -12311,6 +12353,215 @@ const NUMBER_THEORY_GAUSS_SUM_THEOREMS: &[TheoremArtifact] = &[
             "fun NoAnalyticDependencyBoundary => fun boundary_law => ",
             "fun gauss_sum => fun characters => fun additive => fun l_function => ",
             "boundary_law gauss_sum characters additive l_function"
+        ),
+    },
+];
+
+const NUMBER_THEORY_QUADRATIC_RESIDUE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "quadratic_residue_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (SquareModulo : forall (modulus : Int), forall (a : Int), forall (x : Int), Prop), ",
+            "forall (QuadraticResidue : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (definition_law : forall (modulus : Int), forall (a : Int), forall (x : Int), ",
+            "forall (square_witness : SquareModulo modulus a x), QuadraticResidue modulus a), ",
+            "forall (modulus : Int), forall (a : Int), forall (x : Int), ",
+            "forall (square_witness : SquareModulo modulus a x), QuadraticResidue modulus a"
+        ),
+        proof: concat!(
+            "fun Int => fun SquareModulo => fun QuadraticResidue => fun definition_law => ",
+            "fun modulus => fun a => fun x => fun square_witness => ",
+            "definition_law modulus a x square_witness"
+        ),
+    },
+    TheoremArtifact {
+        name: "quadratic_nonresidue_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (QuadraticResidue : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (QuadraticNonresidue : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (NonResidueEvidence : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (definition_law : forall (p : Int), forall (a : Int), ",
+            "forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), ",
+            "forall (not_residue : NonResidueEvidence p a), QuadraticNonresidue p a), ",
+            "forall (p : Int), forall (a : Int), ",
+            "forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), ",
+            "forall (not_residue : NonResidueEvidence p a), QuadraticNonresidue p a"
+        ),
+        proof: concat!(
+            "fun Int => fun OddPrime => fun UnitModulo => fun QuadraticResidue => ",
+            "fun QuadraticNonresidue => fun NonResidueEvidence => fun definition_law => ",
+            "fun p => fun a => fun odd_prime => fun unit_a => fun not_residue => ",
+            "definition_law p a odd_prime unit_a not_residue"
+        ),
+    },
+    TheoremArtifact {
+        name: "quadratic_residue_count_odd_prime_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (QuadraticResidueCount : forall (p : Int), Nat), ",
+            "forall (NonzeroResidueCountFormula : forall (p : Int), forall (count : Nat), Prop), ",
+            "forall (count_law : forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "NonzeroResidueCountFormula p (QuadraticResidueCount p)), ",
+            "forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "NonzeroResidueCountFormula p (QuadraticResidueCount p)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun OddPrime => fun QuadraticResidueCount => ",
+            "fun NonzeroResidueCountFormula => fun count_law => fun p => ",
+            "fun odd_prime => count_law p odd_prime"
+        ),
+    },
+    TheoremArtifact {
+        name: "quadratic_residue_cyclic_square_class_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (PrimitiveRootModulo : forall (p : Int), forall (g : Int), Prop), ",
+            "forall (FiniteCyclicUnitGroupFact : forall (p : Int), Prop), ",
+            "forall (SquareClassEvidence : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (cyclic_square_law : forall (p : Int), forall (a : Int), forall (g : Int), ",
+            "forall (odd_prime : OddPrime p), forall (primitive_root : PrimitiveRootModulo p g), ",
+            "forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), SquareClassEvidence p a), ",
+            "forall (p : Int), forall (a : Int), forall (g : Int), ",
+            "forall (odd_prime : OddPrime p), forall (primitive_root : PrimitiveRootModulo p g), ",
+            "forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), SquareClassEvidence p a"
+        ),
+        proof: concat!(
+            "fun Int => fun OddPrime => fun PrimitiveRootModulo => ",
+            "fun FiniteCyclicUnitGroupFact => fun SquareClassEvidence => ",
+            "fun cyclic_square_law => fun p => fun a => fun g => ",
+            "fun odd_prime => fun primitive_root => fun finite_cyclic_units => ",
+            "cyclic_square_law p a g odd_prime primitive_root finite_cyclic_units"
+        ),
+    },
+];
+
+const NUMBER_THEORY_LEGENDRE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "legendre_symbol_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Symbol : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (QuadraticResidue : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (QuadraticNonresidue : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), ",
+            "forall (LegendreSymbolDefinition : forall (p : Int), forall (a : Int), forall (value : Symbol), Prop), ",
+            "forall (definition_law : forall (p : Int), forall (a : Int), ",
+            "forall (odd_prime : OddPrime p), LegendreSymbolDefinition p a (LegendreSymbol p a)), ",
+            "forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), ",
+            "LegendreSymbolDefinition p a (LegendreSymbol p a)"
+        ),
+        proof: concat!(
+            "fun Int => fun Symbol => fun OddPrime => fun QuadraticResidue => ",
+            "fun QuadraticNonresidue => fun LegendreSymbol => ",
+            "fun LegendreSymbolDefinition => fun definition_law => ",
+            "fun p => fun a => fun odd_prime => definition_law p a odd_prime"
+        ),
+    },
+    TheoremArtifact {
+        name: "legendre_symbol_multiplicativity_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (LegendreSymbolMultiplicative : forall (p : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (multiplicativity_law : forall (p : Int), forall (a : Int), forall (b : Int), ",
+            "forall (odd_prime : OddPrime p), LegendreSymbolMultiplicative p a b), ",
+            "forall (p : Int), forall (a : Int), forall (b : Int), ",
+            "forall (odd_prime : OddPrime p), LegendreSymbolMultiplicative p a b"
+        ),
+        proof: concat!(
+            "fun Int => fun OddPrime => fun LegendreSymbolMultiplicative => ",
+            "fun multiplicativity_law => fun p => fun a => fun b => ",
+            "fun odd_prime => multiplicativity_law p a b odd_prime"
+        ),
+    },
+    TheoremArtifact {
+        name: "legendre_euler_criterion_finite_cyclic_group_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Symbol : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (UnitModulo : forall (p : Int), forall (a : Int), Prop), ",
+            "forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), ",
+            "forall (FiniteCyclicUnitGroupFact : forall (p : Int), Prop), ",
+            "forall (EulerCriterionStatement : forall (p : Int), forall (a : Int), forall (value : Symbol), Prop), ",
+            "forall (euler_law : forall (p : Int), forall (a : Int), ",
+            "forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), ",
+            "forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), ",
+            "EulerCriterionStatement p a (LegendreSymbol p a)), ",
+            "forall (p : Int), forall (a : Int), ",
+            "forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), ",
+            "forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), ",
+            "EulerCriterionStatement p a (LegendreSymbol p a)"
+        ),
+        proof: concat!(
+            "fun Int => fun Symbol => fun OddPrime => fun UnitModulo => ",
+            "fun LegendreSymbol => fun FiniteCyclicUnitGroupFact => ",
+            "fun EulerCriterionStatement => fun euler_law => fun p => fun a => ",
+            "fun odd_prime => fun unit_a => fun finite_cyclic_units => ",
+            "euler_law p a odd_prime unit_a finite_cyclic_units"
+        ),
+    },
+    TheoremArtifact {
+        name: "legendre_quadratic_residue_count_odd_prime_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (QuadraticResidueCount : forall (p : Int), Nat), ",
+            "forall (LegendrePositiveClassCount : forall (p : Int), Nat), ",
+            "forall (CountCompatibility : forall (p : Int), Prop), ",
+            "forall (count_law : forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "CountCompatibility p), ",
+            "forall (p : Int), forall (odd_prime : OddPrime p), CountCompatibility p"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun OddPrime => fun QuadraticResidueCount => ",
+            "fun LegendrePositiveClassCount => fun CountCompatibility => ",
+            "fun count_law => fun p => fun odd_prime => count_law p odd_prime"
+        ),
+    },
+    TheoremArtifact {
+        name: "legendre_jacobi_api_separation_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (LegendreSymbolPackage : Type), ",
+            "forall (JacobiSymbolPackage : Type), ",
+            "forall (OddPrimeDomainPackage : Type), ",
+            "forall (OddCompositeDomainPackage : Type), ",
+            "forall (NoApiConflationBoundary : forall (legendre : LegendreSymbolPackage), ",
+            "forall (jacobi : JacobiSymbolPackage), ",
+            "forall (odd_prime_domain : OddPrimeDomainPackage), ",
+            "forall (odd_composite_domain : OddCompositeDomainPackage), Prop), ",
+            "forall (boundary_law : forall (legendre : LegendreSymbolPackage), ",
+            "forall (jacobi : JacobiSymbolPackage), ",
+            "forall (odd_prime_domain : OddPrimeDomainPackage), ",
+            "forall (odd_composite_domain : OddCompositeDomainPackage), ",
+            "NoApiConflationBoundary legendre jacobi odd_prime_domain odd_composite_domain), ",
+            "forall (legendre : LegendreSymbolPackage), ",
+            "forall (jacobi : JacobiSymbolPackage), ",
+            "forall (odd_prime_domain : OddPrimeDomainPackage), ",
+            "forall (odd_composite_domain : OddCompositeDomainPackage), ",
+            "NoApiConflationBoundary legendre jacobi odd_prime_domain odd_composite_domain"
+        ),
+        proof: concat!(
+            "fun LegendreSymbolPackage => fun JacobiSymbolPackage => ",
+            "fun OddPrimeDomainPackage => fun OddCompositeDomainPackage => ",
+            "fun NoApiConflationBoundary => fun boundary_law => ",
+            "fun legendre => fun jacobi => fun odd_prime_domain => ",
+            "fun odd_composite_domain => ",
+            "boundary_law legendre jacobi odd_prime_domain odd_composite_domain"
         ),
     },
 ];
@@ -40948,6 +41199,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
         || config.module == NUMBER_THEORY_CHARACTER_MODULE.module
         || config.module == NUMBER_THEORY_GAUSS_SUM_MODULE.module
+        || config.module == NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE.module
+        || config.module == NUMBER_THEORY_LEGENDRE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

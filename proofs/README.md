@@ -178,6 +178,13 @@ Current bundles:
   `Character`, preserving `GaussSum` definitions over an explicit coefficient ring,
   multiplicative Dirichlet character data, additive character data, basic identities,
   orthogonality bridges, and boundaries excluding analytic `L`-function assumptions.
+- `Proofs/Ai/NumberTheory/QuadraticResidue/`: certificate-backed quadratic residue and
+  nonresidue interface downstream of prime, congruence, modular unit-group, and primitive-root
+  surfaces, preserving explicit odd prime hypotheses and nonzero residue count statements.
+- `Proofs/Ai/NumberTheory/Legendre/`: certificate-backed Legendre symbol interface downstream
+  of `QuadraticResidue` and primitive-root cyclic-unit facts, preserving multiplicativity,
+  Euler criterion statement surfaces, count compatibility, and a boundary separating the
+  Legendre API from the later Jacobi symbol API.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

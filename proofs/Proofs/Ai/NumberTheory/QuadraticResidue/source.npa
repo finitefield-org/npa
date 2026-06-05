@@ -1,0 +1,22 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.NumberTheory.Prime
+import Proofs.Ai.NumberTheory.Congruence
+import Proofs.Ai.NumberTheory.ModularGroup
+import Proofs.Ai.NumberTheory.PrimitiveRoot
+
+theorem quadratic_residue_definition_surface :
+  forall (Int : Type), forall (SquareModulo : forall (modulus : Int), forall (a : Int), forall (x : Int), Prop), forall (QuadraticResidue : forall (modulus : Int), forall (a : Int), Prop), forall (definition_law : forall (modulus : Int), forall (a : Int), forall (x : Int), forall (square_witness : SquareModulo modulus a x), QuadraticResidue modulus a), forall (modulus : Int), forall (a : Int), forall (x : Int), forall (square_witness : SquareModulo modulus a x), QuadraticResidue modulus a :=
+  fun Int => fun SquareModulo => fun QuadraticResidue => fun definition_law => fun modulus => fun a => fun x => fun square_witness => definition_law modulus a x square_witness
+
+theorem quadratic_nonresidue_definition_surface :
+  forall (Int : Type), forall (OddPrime : forall (p : Int), Prop), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (QuadraticResidue : forall (modulus : Int), forall (a : Int), Prop), forall (QuadraticNonresidue : forall (modulus : Int), forall (a : Int), Prop), forall (NonResidueEvidence : forall (modulus : Int), forall (a : Int), Prop), forall (definition_law : forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), forall (not_residue : NonResidueEvidence p a), QuadraticNonresidue p a), forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), forall (not_residue : NonResidueEvidence p a), QuadraticNonresidue p a :=
+  fun Int => fun OddPrime => fun UnitModulo => fun QuadraticResidue => fun QuadraticNonresidue => fun NonResidueEvidence => fun definition_law => fun p => fun a => fun odd_prime => fun unit_a => fun not_residue => definition_law p a odd_prime unit_a not_residue
+
+theorem quadratic_residue_count_odd_prime_surface :
+  forall (Int : Type), forall (Nat : Type), forall (OddPrime : forall (p : Int), Prop), forall (QuadraticResidueCount : forall (p : Int), Nat), forall (NonzeroResidueCountFormula : forall (p : Int), forall (count : Nat), Prop), forall (count_law : forall (p : Int), forall (odd_prime : OddPrime p), NonzeroResidueCountFormula p (QuadraticResidueCount p)), forall (p : Int), forall (odd_prime : OddPrime p), NonzeroResidueCountFormula p (QuadraticResidueCount p) :=
+  fun Int => fun Nat => fun OddPrime => fun QuadraticResidueCount => fun NonzeroResidueCountFormula => fun count_law => fun p => fun odd_prime => count_law p odd_prime
+
+theorem quadratic_residue_cyclic_square_class_surface :
+  forall (Int : Type), forall (OddPrime : forall (p : Int), Prop), forall (PrimitiveRootModulo : forall (p : Int), forall (g : Int), Prop), forall (FiniteCyclicUnitGroupFact : forall (p : Int), Prop), forall (SquareClassEvidence : forall (p : Int), forall (a : Int), Prop), forall (cyclic_square_law : forall (p : Int), forall (a : Int), forall (g : Int), forall (odd_prime : OddPrime p), forall (primitive_root : PrimitiveRootModulo p g), forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), SquareClassEvidence p a), forall (p : Int), forall (a : Int), forall (g : Int), forall (odd_prime : OddPrime p), forall (primitive_root : PrimitiveRootModulo p g), forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), SquareClassEvidence p a :=
+  fun Int => fun OddPrime => fun PrimitiveRootModulo => fun FiniteCyclicUnitGroupFact => fun SquareClassEvidence => fun cyclic_square_law => fun p => fun a => fun g => fun odd_prime => fun primitive_root => fun finite_cyclic_units => cyclic_square_law p a g odd_prime primitive_root finite_cyclic_units

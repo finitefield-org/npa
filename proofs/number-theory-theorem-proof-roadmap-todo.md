@@ -678,7 +678,7 @@ later in the file.
 
 ### NT-T19 Add Quadratic Residue And Legendre Symbol Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T16`
 - Areas: `Proofs/Ai/NumberTheory/QuadraticResidue/`, `Proofs/Ai/NumberTheory/Legendre/`
 - Tasks:

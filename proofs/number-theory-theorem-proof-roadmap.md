@@ -385,6 +385,12 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-06`.
+- Implementation progress: `NT-T19` added certificate-backed
+  `Proofs.Ai.NumberTheory.QuadraticResidue` and
+  `Proofs.Ai.NumberTheory.Legendre` surfaces for quadratic residue and
+  nonresidue definitions, Legendre symbol multiplicativity, Euler criterion
+  interfaces from finite cyclic group facts, and odd-prime residue-count
+  statements.
 - Target modules:
   - `Proofs.Ai.NumberTheory.QuadraticResidue`
   - `Proofs.Ai.NumberTheory.Legendre`
