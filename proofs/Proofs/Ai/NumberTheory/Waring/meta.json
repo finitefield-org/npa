@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Waring",
+  "source": "Proofs/Ai/NumberTheory/Waring/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Waring/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b1121bc581d32f68f4fbb29ab8594efc1b133f4cdf8c7fe2b6350d313427227b",
+  "certificate_file_sha256": "sha256:407d12e0506827cca792ded0822bb9b1039f2c30ab5ce9ca0691524912cc0a2b",
+  "export_hash": "sha256:0e2a9069332a3dae59f3462e9e433fc2fc7f352031e9633df5aa02ce264b2730",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3503abe8948988c3334c60f14543d4faf04c01e1bcfc1d557c687d1bd3dd84d3",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.SumsOfSquares"],
+  "axioms": [],
+  "declarations": [
+    { "name": "waring_problem_existence_interface", "kind": "theorem" },
+    { "name": "hilbert_waring_theorem_interface", "kind": "theorem" },
+    { "name": "frobenius_coin_problem_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

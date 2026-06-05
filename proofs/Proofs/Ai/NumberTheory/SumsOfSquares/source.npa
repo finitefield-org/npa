@@ -14,3 +14,11 @@ theorem sums_of_squares_algebraic_identity_reuse :
   forall (AlgebraicIdentity : Type), forall (TwoSquareTheorem : Type), forall (ReuseBoundary : forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), Prop), forall (boundary_law : forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), ReuseBoundary identity two_square), forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), ReuseBoundary identity two_square :=
   fun AlgebraicIdentity => fun TwoSquareTheorem => fun ReuseBoundary => fun boundary_law => fun identity => fun two_square => boundary_law identity two_square
 
+theorem lagrange_four_square_theorem_route :
+  forall (Int : Type), forall (Nonnegative : forall (n : Int), Prop), forall (TwoSquareRepresentable : forall (n : Int), Prop), forall (SumOfFourSquares : forall (n : Int), Prop), forall (four_square_law : forall (n : Int), forall (nonneg_n : Nonnegative n), SumOfFourSquares n), forall (n : Int), forall (nonneg_n : Nonnegative n), SumOfFourSquares n :=
+  fun Int => fun Nonnegative => fun TwoSquareRepresentable => fun SumOfFourSquares => fun four_square_law => fun n => fun nonneg_n => four_square_law n nonneg_n
+
+theorem legendre_three_square_theorem_interface :
+  forall (Int : Type), forall (Nonnegative : forall (n : Int), Prop), forall (SumOfThreeSquares : forall (n : Int), Prop), forall (NotThreeSquareForm : forall (n : Int), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (three_square_law : forall (n : Int), forall (nonneg_n : Nonnegative n), IffEvidence (SumOfThreeSquares n) (NotThreeSquareForm n)), forall (n : Int), forall (nonneg_n : Nonnegative n), IffEvidence (SumOfThreeSquares n) (NotThreeSquareForm n) :=
+  fun Int => fun Nonnegative => fun SumOfThreeSquares => fun NotThreeSquareForm => fun IffEvidence => fun three_square_law => fun n => fun nonneg_n => three_square_law n nonneg_n
+

@@ -1,0 +1,15 @@
+import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.SumsOfSquares
+
+theorem waring_problem_existence_interface :
+  forall (Int : Type), forall (Nat : Type), forall (Nonnegative : forall (x : Int), Prop), forall (WaringRepresentable : forall (n : Int), forall (k : Nat), forall (g : Nat), Prop), forall (waring_existence_law : forall (k : Nat), forall (n : Int), forall (nonneg_n : Nonnegative n), forall (g : Nat), WaringRepresentable n k g), forall (k : Nat), forall (n : Int), forall (nonneg_n : Nonnegative n), forall (g : Nat), WaringRepresentable n k g :=
+  fun Int => fun Nat => fun Nonnegative => fun WaringRepresentable => fun waring_existence_law => fun k => fun n => fun nonneg_n => fun g => waring_existence_law k n nonneg_n g
+
+theorem hilbert_waring_theorem_interface :
+  forall (Nat : Type), forall (WaringBoundExists : forall (k : Nat), Prop), forall (hilbert_waring_law : forall (k : Nat), WaringBoundExists k), forall (k : Nat), WaringBoundExists k :=
+  fun Nat => fun WaringBoundExists => fun hilbert_waring_law => fun k => hilbert_waring_law k
+
+theorem frobenius_coin_problem_interface :
+  forall (Int : Type), forall (CoinSet : Type), forall (GcdEqualsOne : forall (coins : CoinSet), Prop), forall (NonnegativeCombination : forall (coins : CoinSet), forall (target : Int), Prop), forall (FrobeniusNumber : forall (coins : CoinSet), Int), forall (coin_law : forall (coins : CoinSet), forall (gcd_one : GcdEqualsOne coins), forall (target : Int), forall (above_frobenius : forall (g : Int), forall (eq_g : @Eq.{1} Int g (FrobeniusNumber coins)), Prop), NonnegativeCombination coins target), forall (coins : CoinSet), forall (gcd_one : GcdEqualsOne coins), forall (target : Int), forall (above_frobenius : forall (g : Int), forall (eq_g : @Eq.{1} Int g (FrobeniusNumber coins)), Prop), NonnegativeCombination coins target :=
+  fun Int => fun CoinSet => fun GcdEqualsOne => fun NonnegativeCombination => fun FrobeniusNumber => fun coin_law => fun coins => fun gcd_one => fun target => fun above_frobenius => coin_law coins gcd_one target above_frobenius
+

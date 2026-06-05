@@ -892,7 +892,7 @@ later in the file.
 
 ### NT-T29 Add Three-Square, Four-Square, Waring, And Coin Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T28`
 - Areas: `Proofs/Ai/NumberTheory/SumsOfSquares/`, `Proofs/Ai/NumberTheory/Waring/`
 - Tasks:

@@ -521,9 +521,14 @@ semantics.
   `Proofs.Ai.NumberTheory.SumsOfSquares` surfaces for Pythagorean triple
   classification, primitive triple formula, Fermat two-square theorem
   statement route, quadratic residue dependencies, and algebraic identity reuse.
+  `NT-T29` appended Lagrange four-square theorem route, Legendre three-square
+  theorem interface to `Proofs.Ai.NumberTheory.SumsOfSquares`, and added
+  `Proofs.Ai.NumberTheory.Waring` containing Waring's problem existence,
+  Hilbert-Waring theorem, and Frobenius coin problem interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Diophantine`
   - `Proofs.Ai.NumberTheory.SumsOfSquares`
+  - `Proofs.Ai.NumberTheory.Waring`
   - `Proofs.Ai.NumberTheory.Additive`
 - Theorem order:
   1. linear Diophantine equation theorem reuse from `NT-02`;

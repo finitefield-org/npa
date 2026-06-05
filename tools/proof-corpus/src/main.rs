@@ -199,6 +199,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE,
     &NUMBER_THEORY_DIOPHANTINE_MODULE,
     &NUMBER_THEORY_SUMS_OF_SQUARES_MODULE,
+    &NUMBER_THEORY_WARING_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2258,6 +2259,19 @@ const NUMBER_THEORY_SUMS_OF_SQUARES_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_SUMS_OF_SQUARES_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_WARING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Waring",
+    source_path: "Proofs/Ai/NumberTheory/Waring/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Waring/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Waring/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Waring/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.SumsOfSquares"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_WARING_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19167,6 +19181,100 @@ const NUMBER_THEORY_SUMS_OF_SQUARES_THEOREMS: &[TheoremArtifact] = &[
             "fun AlgebraicIdentity => fun TwoSquareTheorem => fun ReuseBoundary => ",
             "fun boundary_law => fun identity => fun two_square => ",
             "boundary_law identity two_square"
+        ),
+    },
+    TheoremArtifact {
+        name: "lagrange_four_square_theorem_route",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Nonnegative : forall (n : Int), Prop), ",
+            "forall (TwoSquareRepresentable : forall (n : Int), Prop), ",
+            "forall (SumOfFourSquares : forall (n : Int), Prop), ",
+            "forall (four_square_law : forall (n : Int), forall (nonneg_n : Nonnegative n), ",
+            "SumOfFourSquares n), ",
+            "forall (n : Int), forall (nonneg_n : Nonnegative n), ",
+            "SumOfFourSquares n"
+        ),
+        proof: concat!(
+            "fun Int => fun Nonnegative => fun TwoSquareRepresentable => fun SumOfFourSquares => ",
+            "fun four_square_law => fun n => fun nonneg_n => ",
+            "four_square_law n nonneg_n"
+        ),
+    },
+    TheoremArtifact {
+        name: "legendre_three_square_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Nonnegative : forall (n : Int), Prop), ",
+            "forall (SumOfThreeSquares : forall (n : Int), Prop), ",
+            "forall (NotThreeSquareForm : forall (n : Int), Prop), ",
+            "forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), ",
+            "forall (three_square_law : forall (n : Int), forall (nonneg_n : Nonnegative n), ",
+            "IffEvidence (SumOfThreeSquares n) (NotThreeSquareForm n)), ",
+            "forall (n : Int), forall (nonneg_n : Nonnegative n), ",
+            "IffEvidence (SumOfThreeSquares n) (NotThreeSquareForm n)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nonnegative => fun SumOfThreeSquares => fun NotThreeSquareForm => ",
+            "fun IffEvidence => fun three_square_law => fun n => fun nonneg_n => ",
+            "three_square_law n nonneg_n"
+        ),
+    },
+];
+
+const NUMBER_THEORY_WARING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "waring_problem_existence_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (Nonnegative : forall (x : Int), Prop), ",
+            "forall (WaringRepresentable : forall (n : Int), forall (k : Nat), forall (g : Nat), Prop), ",
+            "forall (waring_existence_law : forall (k : Nat), forall (n : Int), ",
+            "forall (nonneg_n : Nonnegative n), forall (g : Nat), WaringRepresentable n k g), ",
+            "forall (k : Nat), forall (n : Int), forall (nonneg_n : Nonnegative n), ",
+            "forall (g : Nat), WaringRepresentable n k g"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun Nonnegative => fun WaringRepresentable => ",
+            "fun waring_existence_law => fun k => fun n => fun nonneg_n => ",
+            "fun g => waring_existence_law k n nonneg_n g"
+        ),
+    },
+    TheoremArtifact {
+        name: "hilbert_waring_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (WaringBoundExists : forall (k : Nat), Prop), ",
+            "forall (hilbert_waring_law : forall (k : Nat), WaringBoundExists k), ",
+            "forall (k : Nat), WaringBoundExists k"
+        ),
+        proof: concat!(
+            "fun Nat => fun WaringBoundExists => fun hilbert_waring_law => ",
+            "fun k => hilbert_waring_law k"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_coin_problem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (CoinSet : Type), ",
+            "forall (GcdEqualsOne : forall (coins : CoinSet), Prop), ",
+            "forall (NonnegativeCombination : forall (coins : CoinSet), forall (target : Int), Prop), ",
+            "forall (FrobeniusNumber : forall (coins : CoinSet), Int), ",
+            "forall (coin_law : forall (coins : CoinSet), forall (gcd_one : GcdEqualsOne coins), ",
+            "forall (target : Int), forall (above_frobenius : forall (g : Int), forall (eq_g : @Eq.{1} Int g (FrobeniusNumber coins)), Prop), ",
+            "NonnegativeCombination coins target), ",
+            "forall (coins : CoinSet), forall (gcd_one : GcdEqualsOne coins), ",
+            "forall (target : Int), forall (above_frobenius : forall (g : Int), forall (eq_g : @Eq.{1} Int g (FrobeniusNumber coins)), Prop), ",
+            "NonnegativeCombination coins target"
+        ),
+        proof: concat!(
+            "fun Int => fun CoinSet => fun GcdEqualsOne => fun NonnegativeCombination => ",
+            "fun FrobeniusNumber => fun coin_law => fun coins => fun gcd_one => ",
+            "fun target => fun above_frobenius => coin_law coins gcd_one target above_frobenius"
         ),
     },
 ];

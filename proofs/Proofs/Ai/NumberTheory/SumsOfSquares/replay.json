@@ -18,6 +18,16 @@
       "declaration": "sums_of_squares_algebraic_identity_reuse",
       "source_kind": "explicit_term",
       "term": "fun AlgebraicIdentity => fun TwoSquareTheorem => fun ReuseBoundary => fun boundary_law => fun identity => fun two_square => boundary_law identity two_square"
+    },
+    {
+      "declaration": "lagrange_four_square_theorem_route",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonnegative => fun TwoSquareRepresentable => fun SumOfFourSquares => fun four_square_law => fun n => fun nonneg_n => four_square_law n nonneg_n"
+    },
+    {
+      "declaration": "legendre_three_square_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonnegative => fun SumOfThreeSquares => fun NotThreeSquareForm => fun IffEvidence => fun three_square_law => fun n => fun nonneg_n => three_square_law n nonneg_n"
     }
   ],
   "acceptance": {
