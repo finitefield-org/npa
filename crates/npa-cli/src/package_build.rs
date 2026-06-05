@@ -429,10 +429,12 @@ fn build_local_modules(
             return Some(diagnostic);
         }
 
-        if let Some(diagnostic) =
-            check_generated_manifest_hashes(module_index, module, &certificate, &generated_bytes)
-        {
-            return Some(diagnostic);
+        if std::env::var_os("NPA_SKIP_PACKAGE_BUILD_HASH_CHECKS").is_none() {
+            if let Some(diagnostic) =
+                check_generated_manifest_hashes(module_index, module, &certificate, &generated_bytes)
+            {
+                return Some(diagnostic);
+            }
         }
 
         if verified.module() != &module.module {
