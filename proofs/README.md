@@ -61,6 +61,10 @@ Current bundles:
   law package preserving membership, no-duplicate, enumeration-complete, and enumeration-sound
   evidence as ordinary proof-corpus structures, with graph vertex/edge finite-set reuse and a
   named bridge point for future set-theory finite-cardinality modules.
+- `Proofs/Ai/Combinatorics/Cardinality/`: certificate-backed injection, surjection, bijection,
+  finite-equivalence, finite-image, and finite-subset cardinality transport interfaces built from
+  explicit finite-enumeration evidence. It does not add finite cardinality as a kernel primitive,
+  and it does not assume choice or quotient extensionality.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

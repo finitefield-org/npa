@@ -207,7 +207,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T02 Add Injection, Surjection, Bijection, And Cardinality Transport
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T01`
 - Areas: `Proofs.Ai.Combinatorics.Cardinality`
 - Tasks:
@@ -215,7 +215,8 @@ guessing. The split must preserve the dependency order in this document.
   - Prove cardinality invariance under explicit bijection evidence.
   - Add finite image and finite subset cardinality theorem targets.
 - Deliverables:
-  - Cardinality transport layer for counting and graph-isomorphism tasks.
+  - `Proofs.Ai.Combinatorics.Cardinality` cardinality transport layer for
+    counting and graph-isomorphism tasks.
 - Acceptance criteria:
   - Bijection transport does not assume quotient extensionality or choice
     silently.
@@ -223,7 +224,9 @@ guessing. The split must preserve the dependency order in this document.
     counting modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Cardinality`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Cardinality`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T03 Add Finite Comparison And Pigeonhole Interfaces
 

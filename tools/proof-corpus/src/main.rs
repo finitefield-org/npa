@@ -109,6 +109,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NAT_MODULE,
     &PROP_MODULE,
     &COMBINATORICS_FINITE_MODULE,
+    &COMBINATORICS_CARDINALITY_MODULE,
     &NUMBER_THEORY_INVENTORY_MODULE,
     &NUMBER_THEORY_ELEMENTARY_MODULE,
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
@@ -497,6 +498,19 @@ const COMBINATORICS_FINITE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: COMBINATORICS_FINITE_DEFINITIONS,
     theorems: COMBINATORICS_FINITE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const COMBINATORICS_CARDINALITY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Combinatorics.Cardinality",
+    source_path: "Proofs/Ai/Combinatorics/Cardinality/source.npa",
+    certificate_path: "Proofs/Ai/Combinatorics/Cardinality/certificate.npcert",
+    meta_path: "Proofs/Ai/Combinatorics/Cardinality/meta.json",
+    replay_path: "Proofs/Ai/Combinatorics/Cardinality/replay.json",
+    imports: &["Proofs.Ai.Combinatorics.Finite"],
+    inductives: &[],
+    definitions: COMBINATORICS_CARDINALITY_DEFINITIONS,
+    theorems: COMBINATORICS_CARDINALITY_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9768,6 +9782,581 @@ const COMBINATORICS_FINITE_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun Item => fun Member => fun family_args => ",
             "fun SetTheoryFiniteCardinalityEvidence => fun bridge => bridge family_args"
+        ),
+    },
+];
+
+const COMBINATORICS_CARDINALITY_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "InjectivePredicate",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Source : Sort u), ",
+            "forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), Prop"
+        ),
+        value: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "forall (x : Source), forall (y : Source), ",
+            "forall (image_eq : TargetEquivalent (map x) (map y)), SourceEquivalent x y"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SurjectivePredicate",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Source : Sort u), ",
+            "forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), Prop"
+        ),
+        value: concat!(
+            "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => ",
+            "forall (y : Target), forall (target_member : TargetMember y), HasPreimage y"
+        ),
+    },
+    DefinitionArtifact {
+        name: "BijectionPredicate",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Source : Sort u), ",
+            "forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), Prop"
+        ),
+        value: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun TargetMember => fun HasPreimage => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), ",
+            "forall (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteEquivalencePredicate",
+        universe_params: &["i", "j", "u", "v"],
+        ty: concat!(
+            "forall (SourceIndex : Sort i), ",
+            "forall (TargetIndex : Sort j), ",
+            "forall (Source : Sort u), ",
+            "forall (Target : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), ",
+            "forall (targetEnumerate : forall (idx : TargetIndex), Target), ",
+            "forall (SourceMember : forall (x : Source), Prop), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (SourceNoDuplicate : Prop), ",
+            "forall (SourceEnumerationComplete : Prop), ",
+            "forall (SourceEnumerationSound : Prop), ",
+            "forall (TargetNoDuplicate : Prop), ",
+            "forall (TargetEnumerationComplete : Prop), ",
+            "forall (TargetEnumerationSound : Prop), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetHasPreimage : forall (y : Target), Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_args : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (CardinalityEqual : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceIndex => fun TargetIndex => fun Source => fun Target => ",
+            "fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => ",
+            "fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => ",
+            "fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (cardinality_eq_law : CardinalityEqual), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteImageCardinalityPredicate",
+        universe_params: &["i", "j", "u", "v"],
+        ty: concat!(
+            "forall (SourceIndex : Sort i), ",
+            "forall (ImageIndex : Sort j), ",
+            "forall (Source : Sort u), ",
+            "forall (Image : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), ",
+            "forall (imageEnumerate : forall (idx : ImageIndex), Image), ",
+            "forall (map : forall (x : Source), Image), ",
+            "forall (SourceMember : forall (x : Source), Prop), ",
+            "forall (ImageMember : forall (y : Image), Prop), ",
+            "forall (SourceNoDuplicate : Prop), ",
+            "forall (SourceEnumerationComplete : Prop), ",
+            "forall (SourceEnumerationSound : Prop), ",
+            "forall (ImageNoDuplicate : Prop), ",
+            "forall (ImageEnumerationComplete : Prop), ",
+            "forall (ImageEnumerationSound : Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (image_args : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), ",
+            "forall (ImageCardinalityEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceIndex => fun ImageIndex => fun Source => fun Image => ",
+            "fun sourceEnumerate => fun imageEnumerate => fun map => fun SourceMember => fun ImageMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun ImageNoDuplicate => fun ImageEnumerationComplete => fun ImageEnumerationSound => ",
+            "fun source_args => fun image_args => fun ImageCardinalityEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (image_finite_law : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), ",
+            "forall (image_cardinality_law : ImageCardinalityEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteSubsetCardinalityPredicate",
+        universe_params: &["i", "j", "u"],
+        ty: concat!(
+            "forall (AmbientIndex : Sort i), ",
+            "forall (SubsetIndex : Sort j), ",
+            "forall (Item : Sort u), ",
+            "forall (ambientEnumerate : forall (idx : AmbientIndex), Item), ",
+            "forall (subsetEnumerate : forall (idx : SubsetIndex), Item), ",
+            "forall (AmbientMember : forall (x : Item), Prop), ",
+            "forall (SubsetMember : forall (x : Item), Prop), ",
+            "forall (AmbientNoDuplicate : Prop), ",
+            "forall (AmbientEnumerationComplete : Prop), ",
+            "forall (AmbientEnumerationSound : Prop), ",
+            "forall (SubsetNoDuplicate : Prop), ",
+            "forall (SubsetEnumerationComplete : Prop), ",
+            "forall (SubsetEnumerationSound : Prop), ",
+            "forall (ambient_args : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), ",
+            "forall (subset_args : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), ",
+            "forall (SubsetIncluded : Prop), ",
+            "forall (SubsetCardinalityEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun AmbientIndex => fun SubsetIndex => fun Item => ",
+            "fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => ",
+            "fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => ",
+            "fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => ",
+            "fun ambient_args => fun subset_args => fun SubsetIncluded => fun SubsetCardinalityEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), ",
+            "forall (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), ",
+            "forall (subset_inclusion_law : SubsetIncluded), ",
+            "forall (subset_cardinality_law : SubsetCardinalityEvidence), P), P"
+        ),
+    },
+];
+
+const COMBINATORICS_CARDINALITY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "injective_predicate_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (injective_law : forall (x : Source), forall (y : Source), forall (image_eq : TargetEquivalent (map x) (map y)), SourceEquivalent x y), ",
+            "@InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun injective_law => injective_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "injective_statement",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (injective_args : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), ",
+            "forall (x : Source), forall (y : Source), forall (image_eq : TargetEquivalent (map x) (map y)), SourceEquivalent x y"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun injective_args => fun x => fun y => fun image_eq => injective_args x y image_eq"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_predicate_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (surjective_law : forall (y : Target), forall (target_member : TargetMember y), HasPreimage y), ",
+            "@SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => ",
+            "fun surjective_law => surjective_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_statement",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (surjective_args : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), ",
+            "forall (y : Target), forall (target_member : TargetMember y), HasPreimage y"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => ",
+            "fun surjective_args => fun y => fun target_member => surjective_args y target_member"
+        ),
+    },
+    TheoremArtifact {
+        name: "bijection_predicate_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (injective_args : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), ",
+            "forall (surjective_args : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), ",
+            "@BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember HasPreimage"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun TargetMember => fun HasPreimage => fun injective_args => fun surjective_args => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), ",
+            "forall (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), P) => ",
+            "mk injective_args surjective_args"
+        ),
+    },
+    TheoremArtifact {
+        name: "bijection_injective_statement",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember HasPreimage), ",
+            "@InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun TargetMember => fun HasPreimage => fun bijection_args => ",
+            "bijection_args (@InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) ",
+            "(fun (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) => ",
+            "fun (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) => injective_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "bijection_surjective_statement",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember HasPreimage), ",
+            "@SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun TargetMember => fun HasPreimage => fun bijection_args => ",
+            "bijection_args (@SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) ",
+            "(fun (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) => ",
+            "fun (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) => surjective_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_equivalence_predicate_intro",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (SourceIndex : Sort i), forall (TargetIndex : Sort j), forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), forall (targetEnumerate : forall (idx : TargetIndex), Target), ",
+            "forall (SourceMember : forall (x : Source), Prop), forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (SourceNoDuplicate : Prop), forall (SourceEnumerationComplete : Prop), forall (SourceEnumerationSound : Prop), ",
+            "forall (TargetNoDuplicate : Prop), forall (TargetEnumerationComplete : Prop), forall (TargetEnumerationSound : Prop), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetHasPreimage : forall (y : Target), Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_args : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (CardinalityEqual : Prop), forall (cardinality_eq_law : CardinalityEqual), ",
+            "@FiniteEquivalencePredicate.{i,j,u,v} SourceIndex TargetIndex Source Target sourceEnumerate targetEnumerate SourceMember TargetMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound map SourceEquivalent TargetEquivalent TargetHasPreimage source_args target_args bijection_args CardinalityEqual"
+        ),
+        proof: concat!(
+            "fun SourceIndex => fun TargetIndex => fun Source => fun Target => ",
+            "fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => ",
+            "fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => ",
+            "fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun cardinality_eq_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (cardinality_eq_law : CardinalityEqual), P) => ",
+            "mk source_args target_args bijection_args cardinality_eq_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_equivalence_source_finite_statement",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (SourceIndex : Sort i), forall (TargetIndex : Sort j), forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), forall (targetEnumerate : forall (idx : TargetIndex), Target), ",
+            "forall (SourceMember : forall (x : Source), Prop), forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (SourceNoDuplicate : Prop), forall (SourceEnumerationComplete : Prop), forall (SourceEnumerationSound : Prop), ",
+            "forall (TargetNoDuplicate : Prop), forall (TargetEnumerationComplete : Prop), forall (TargetEnumerationSound : Prop), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetHasPreimage : forall (y : Target), Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_args : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (CardinalityEqual : Prop), ",
+            "forall (equivalence_args : @FiniteEquivalencePredicate.{i,j,u,v} SourceIndex TargetIndex Source Target sourceEnumerate targetEnumerate SourceMember TargetMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound map SourceEquivalent TargetEquivalent TargetHasPreimage source_args target_args bijection_args CardinalityEqual), ",
+            "@FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound"
+        ),
+        proof: concat!(
+            "fun SourceIndex => fun TargetIndex => fun Source => fun Target => ",
+            "fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => ",
+            "fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => ",
+            "fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun equivalence_args => ",
+            "equivalence_args (@FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) ",
+            "(fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => ",
+            "fun (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) => ",
+            "fun (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage) => ",
+            "fun (cardinality_eq_law : CardinalityEqual) => source_finite_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_equivalence_target_finite_statement",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (SourceIndex : Sort i), forall (TargetIndex : Sort j), forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), forall (targetEnumerate : forall (idx : TargetIndex), Target), ",
+            "forall (SourceMember : forall (x : Source), Prop), forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (SourceNoDuplicate : Prop), forall (SourceEnumerationComplete : Prop), forall (SourceEnumerationSound : Prop), ",
+            "forall (TargetNoDuplicate : Prop), forall (TargetEnumerationComplete : Prop), forall (TargetEnumerationSound : Prop), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetHasPreimage : forall (y : Target), Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_args : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (CardinalityEqual : Prop), ",
+            "forall (equivalence_args : @FiniteEquivalencePredicate.{i,j,u,v} SourceIndex TargetIndex Source Target sourceEnumerate targetEnumerate SourceMember TargetMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound map SourceEquivalent TargetEquivalent TargetHasPreimage source_args target_args bijection_args CardinalityEqual), ",
+            "@FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound"
+        ),
+        proof: concat!(
+            "fun SourceIndex => fun TargetIndex => fun Source => fun Target => ",
+            "fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => ",
+            "fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => ",
+            "fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun equivalence_args => ",
+            "equivalence_args (@FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) ",
+            "(fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => ",
+            "fun (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) => ",
+            "fun (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage) => ",
+            "fun (cardinality_eq_law : CardinalityEqual) => target_finite_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "cardinality_invariant_under_explicit_bijection",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (SourceIndex : Sort i), forall (TargetIndex : Sort j), forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), forall (targetEnumerate : forall (idx : TargetIndex), Target), ",
+            "forall (SourceMember : forall (x : Source), Prop), forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (SourceNoDuplicate : Prop), forall (SourceEnumerationComplete : Prop), forall (SourceEnumerationSound : Prop), ",
+            "forall (TargetNoDuplicate : Prop), forall (TargetEnumerationComplete : Prop), forall (TargetEnumerationSound : Prop), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (TargetHasPreimage : forall (y : Target), Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (target_args : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), ",
+            "forall (bijection_args : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), ",
+            "forall (CardinalityEqual : Prop), ",
+            "forall (equivalence_args : @FiniteEquivalencePredicate.{i,j,u,v} SourceIndex TargetIndex Source Target sourceEnumerate targetEnumerate SourceMember TargetMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound map SourceEquivalent TargetEquivalent TargetHasPreimage source_args target_args bijection_args CardinalityEqual), ",
+            "CardinalityEqual"
+        ),
+        proof: concat!(
+            "fun SourceIndex => fun TargetIndex => fun Source => fun Target => ",
+            "fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => ",
+            "fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => ",
+            "fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun equivalence_args => ",
+            "equivalence_args CardinalityEqual ",
+            "(fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => ",
+            "fun (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) => ",
+            "fun (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage) => ",
+            "fun (cardinality_eq_law : CardinalityEqual) => cardinality_eq_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_image_cardinality_predicate_intro",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (SourceIndex : Sort i), forall (ImageIndex : Sort j), forall (Source : Sort u), forall (Image : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), forall (imageEnumerate : forall (idx : ImageIndex), Image), ",
+            "forall (map : forall (x : Source), Image), ",
+            "forall (SourceMember : forall (x : Source), Prop), forall (ImageMember : forall (y : Image), Prop), ",
+            "forall (SourceNoDuplicate : Prop), forall (SourceEnumerationComplete : Prop), forall (SourceEnumerationSound : Prop), ",
+            "forall (ImageNoDuplicate : Prop), forall (ImageEnumerationComplete : Prop), forall (ImageEnumerationSound : Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (image_args : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), ",
+            "forall (ImageCardinalityEvidence : Prop), forall (image_cardinality_law : ImageCardinalityEvidence), ",
+            "@FiniteImageCardinalityPredicate.{i,j,u,v} SourceIndex ImageIndex Source Image sourceEnumerate imageEnumerate map SourceMember ImageMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound source_args image_args ImageCardinalityEvidence"
+        ),
+        proof: concat!(
+            "fun SourceIndex => fun ImageIndex => fun Source => fun Image => ",
+            "fun sourceEnumerate => fun imageEnumerate => fun map => fun SourceMember => fun ImageMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun ImageNoDuplicate => fun ImageEnumerationComplete => fun ImageEnumerationSound => ",
+            "fun source_args => fun image_args => fun ImageCardinalityEvidence => fun image_cardinality_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (image_finite_law : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), ",
+            "forall (image_cardinality_law : ImageCardinalityEvidence), P) => ",
+            "mk source_args image_args image_cardinality_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_image_cardinality_statement",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (SourceIndex : Sort i), forall (ImageIndex : Sort j), forall (Source : Sort u), forall (Image : Sort v), ",
+            "forall (sourceEnumerate : forall (idx : SourceIndex), Source), forall (imageEnumerate : forall (idx : ImageIndex), Image), ",
+            "forall (map : forall (x : Source), Image), ",
+            "forall (SourceMember : forall (x : Source), Prop), forall (ImageMember : forall (y : Image), Prop), ",
+            "forall (SourceNoDuplicate : Prop), forall (SourceEnumerationComplete : Prop), forall (SourceEnumerationSound : Prop), ",
+            "forall (ImageNoDuplicate : Prop), forall (ImageEnumerationComplete : Prop), forall (ImageEnumerationSound : Prop), ",
+            "forall (source_args : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), ",
+            "forall (image_args : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), ",
+            "forall (ImageCardinalityEvidence : Prop), ",
+            "forall (image_args_package : @FiniteImageCardinalityPredicate.{i,j,u,v} SourceIndex ImageIndex Source Image sourceEnumerate imageEnumerate map SourceMember ImageMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound source_args image_args ImageCardinalityEvidence), ",
+            "ImageCardinalityEvidence"
+        ),
+        proof: concat!(
+            "fun SourceIndex => fun ImageIndex => fun Source => fun Image => ",
+            "fun sourceEnumerate => fun imageEnumerate => fun map => fun SourceMember => fun ImageMember => ",
+            "fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => ",
+            "fun ImageNoDuplicate => fun ImageEnumerationComplete => fun ImageEnumerationSound => ",
+            "fun source_args => fun image_args => fun ImageCardinalityEvidence => fun image_args_package => ",
+            "image_args_package ImageCardinalityEvidence ",
+            "(fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => ",
+            "fun (image_finite_law : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound) => ",
+            "fun (image_cardinality_law : ImageCardinalityEvidence) => image_cardinality_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_subset_cardinality_predicate_intro",
+        universe_params: &["i", "j", "u"],
+        statement: concat!(
+            "forall (AmbientIndex : Sort i), forall (SubsetIndex : Sort j), forall (Item : Sort u), ",
+            "forall (ambientEnumerate : forall (idx : AmbientIndex), Item), forall (subsetEnumerate : forall (idx : SubsetIndex), Item), ",
+            "forall (AmbientMember : forall (x : Item), Prop), forall (SubsetMember : forall (x : Item), Prop), ",
+            "forall (AmbientNoDuplicate : Prop), forall (AmbientEnumerationComplete : Prop), forall (AmbientEnumerationSound : Prop), ",
+            "forall (SubsetNoDuplicate : Prop), forall (SubsetEnumerationComplete : Prop), forall (SubsetEnumerationSound : Prop), ",
+            "forall (ambient_args : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), ",
+            "forall (subset_args : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), ",
+            "forall (SubsetIncluded : Prop), forall (subset_inclusion_law : SubsetIncluded), ",
+            "forall (SubsetCardinalityEvidence : Prop), forall (subset_cardinality_law : SubsetCardinalityEvidence), ",
+            "@FiniteSubsetCardinalityPredicate.{i,j,u} AmbientIndex SubsetIndex Item ambientEnumerate subsetEnumerate AmbientMember SubsetMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound ambient_args subset_args SubsetIncluded SubsetCardinalityEvidence"
+        ),
+        proof: concat!(
+            "fun AmbientIndex => fun SubsetIndex => fun Item => ",
+            "fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => ",
+            "fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => ",
+            "fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => ",
+            "fun ambient_args => fun subset_args => fun SubsetIncluded => fun subset_inclusion_law => ",
+            "fun SubsetCardinalityEvidence => fun subset_cardinality_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), ",
+            "forall (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), ",
+            "forall (subset_inclusion_law : SubsetIncluded), ",
+            "forall (subset_cardinality_law : SubsetCardinalityEvidence), P) => ",
+            "mk ambient_args subset_args subset_inclusion_law subset_cardinality_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_subset_inclusion_statement",
+        universe_params: &["i", "j", "u"],
+        statement: concat!(
+            "forall (AmbientIndex : Sort i), forall (SubsetIndex : Sort j), forall (Item : Sort u), ",
+            "forall (ambientEnumerate : forall (idx : AmbientIndex), Item), forall (subsetEnumerate : forall (idx : SubsetIndex), Item), ",
+            "forall (AmbientMember : forall (x : Item), Prop), forall (SubsetMember : forall (x : Item), Prop), ",
+            "forall (AmbientNoDuplicate : Prop), forall (AmbientEnumerationComplete : Prop), forall (AmbientEnumerationSound : Prop), ",
+            "forall (SubsetNoDuplicate : Prop), forall (SubsetEnumerationComplete : Prop), forall (SubsetEnumerationSound : Prop), ",
+            "forall (ambient_args : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), ",
+            "forall (subset_args : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), ",
+            "forall (SubsetIncluded : Prop), forall (SubsetCardinalityEvidence : Prop), ",
+            "forall (subset_args_package : @FiniteSubsetCardinalityPredicate.{i,j,u} AmbientIndex SubsetIndex Item ambientEnumerate subsetEnumerate AmbientMember SubsetMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound ambient_args subset_args SubsetIncluded SubsetCardinalityEvidence), ",
+            "SubsetIncluded"
+        ),
+        proof: concat!(
+            "fun AmbientIndex => fun SubsetIndex => fun Item => ",
+            "fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => ",
+            "fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => ",
+            "fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => ",
+            "fun ambient_args => fun subset_args => fun SubsetIncluded => fun SubsetCardinalityEvidence => fun subset_args_package => ",
+            "subset_args_package SubsetIncluded ",
+            "(fun (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound) => ",
+            "fun (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound) => ",
+            "fun (subset_inclusion_law : SubsetIncluded) => ",
+            "fun (subset_cardinality_law : SubsetCardinalityEvidence) => subset_inclusion_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_subset_cardinality_statement",
+        universe_params: &["i", "j", "u"],
+        statement: concat!(
+            "forall (AmbientIndex : Sort i), forall (SubsetIndex : Sort j), forall (Item : Sort u), ",
+            "forall (ambientEnumerate : forall (idx : AmbientIndex), Item), forall (subsetEnumerate : forall (idx : SubsetIndex), Item), ",
+            "forall (AmbientMember : forall (x : Item), Prop), forall (SubsetMember : forall (x : Item), Prop), ",
+            "forall (AmbientNoDuplicate : Prop), forall (AmbientEnumerationComplete : Prop), forall (AmbientEnumerationSound : Prop), ",
+            "forall (SubsetNoDuplicate : Prop), forall (SubsetEnumerationComplete : Prop), forall (SubsetEnumerationSound : Prop), ",
+            "forall (ambient_args : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), ",
+            "forall (subset_args : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), ",
+            "forall (SubsetIncluded : Prop), forall (SubsetCardinalityEvidence : Prop), ",
+            "forall (subset_args_package : @FiniteSubsetCardinalityPredicate.{i,j,u} AmbientIndex SubsetIndex Item ambientEnumerate subsetEnumerate AmbientMember SubsetMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound ambient_args subset_args SubsetIncluded SubsetCardinalityEvidence), ",
+            "SubsetCardinalityEvidence"
+        ),
+        proof: concat!(
+            "fun AmbientIndex => fun SubsetIndex => fun Item => ",
+            "fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => ",
+            "fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => ",
+            "fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => ",
+            "fun ambient_args => fun subset_args => fun SubsetIncluded => fun SubsetCardinalityEvidence => fun subset_args_package => ",
+            "subset_args_package SubsetCardinalityEvidence ",
+            "(fun (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound) => ",
+            "fun (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound) => ",
+            "fun (subset_inclusion_law : SubsetIncluded) => ",
+            "fun (subset_cardinality_law : SubsetCardinalityEvidence) => subset_cardinality_law)"
         ),
     },
 ];
@@ -40685,6 +41274,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_RSA_MODULE.module
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
         || config.module == COMBINATORICS_FINITE_MODULE.module
+        || config.module == COMBINATORICS_CARDINALITY_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
