@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.CircleMethod",
+  "source": "Proofs/Ai/NumberTheory/CircleMethod/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/CircleMethod/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fd454f38858c3251fa8789ca020132131bb17dd9533858abaa86d2c47639bdcc",
+  "certificate_file_sha256": "sha256:f1a82bd332b576e284c7f75b42c98cebb3ab49d200d1536f88d71c273c2890a8",
+  "export_hash": "sha256:8303cc98883f05c9cfb84f088619d04b2907748e9343a0aee3b69f0621bb5e9d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c02378b32b6c5ed67a43ab9320920fc5099195476b0c9089ea8ad2b8b34bd4c7",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "hardy_littlewood_circle_method_interface", "kind": "theorem" },
+    { "name": "major_arc_contribution_interface", "kind": "theorem" },
+    { "name": "minor_arc_contribution_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

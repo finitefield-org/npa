@@ -206,6 +206,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE,
     &NUMBER_THEORY_DIRICHLET_L_MODULE,
     &NUMBER_THEORY_SIEVE_MODULE,
+    &NUMBER_THEORY_CIRCLE_METHOD_MODULE,
+    &NUMBER_THEORY_ADDITIVE_PRIME_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2361,6 +2363,32 @@ const NUMBER_THEORY_SIEVE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_SIEVE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CIRCLE_METHOD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.CircleMethod",
+    source_path: "Proofs/Ai/NumberTheory/CircleMethod/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/CircleMethod/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/CircleMethod/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/CircleMethod/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CIRCLE_METHOD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ADDITIVE_PRIME_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.AdditivePrime",
+    source_path: "Proofs/Ai/NumberTheory/AdditivePrime/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/AdditivePrime/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/AdditivePrime/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/AdditivePrime/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_ADDITIVE_PRIME_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -20059,6 +20087,70 @@ const NUMBER_THEORY_SIEVE_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun ParityLimitationProp => fun sieve_parity_problem_law => sieve_parity_problem_law"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CIRCLE_METHOD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "hardy_littlewood_circle_method_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Complex : Type), forall (MajorArcs : Prop), forall (MinorArcs : Prop), forall (CircleMethodRelation : Prop), ",
+            "forall (circle_method_law : forall (maj : MajorArcs), forall (min : MinorArcs), CircleMethodRelation), ",
+            "forall (maj : MajorArcs), forall (min : MinorArcs), CircleMethodRelation"
+        ),
+        proof: concat!(
+            "fun Real => fun Complex => fun MajorArcs => fun MinorArcs => fun CircleMethodRelation => fun circle_method_law => fun maj => fun min => circle_method_law maj min"
+        ),
+    },
+    TheoremArtifact {
+        name: "major_arc_contribution_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (MajorArcs : Prop), forall (MajorArcContribution : Prop), forall (major_arcs_law : forall (maj : MajorArcs), MajorArcContribution), ",
+            "forall (maj : MajorArcs), MajorArcContribution"
+        ),
+        proof: concat!(
+            "fun MajorArcs => fun MajorArcContribution => fun major_arcs_law => fun maj => major_arcs_law maj"
+        ),
+    },
+    TheoremArtifact {
+        name: "minor_arc_contribution_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (MinorArcs : Prop), forall (MinorArcContribution : Prop), forall (minor_arcs_law : forall (min : MinorArcs), MinorArcContribution), ",
+            "forall (min : MinorArcs), MinorArcContribution"
+        ),
+        proof: concat!(
+            "fun MinorArcs => fun MinorArcContribution => fun minor_arcs_law => fun min => minor_arcs_law min"
+        ),
+    },
+];
+
+const NUMBER_THEORY_ADDITIVE_PRIME_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "vinogradov_three_primes_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (IsOdd : Int -> Prop), forall (SufficientlyLarge : Int -> Prop), forall (SumOfThreePrimes : Int -> Prop), ",
+            "forall (vinogradov_law : forall (n : Int), forall (odd_n : IsOdd n), forall (large_n : SufficientlyLarge n), SumOfThreePrimes n), ",
+            "forall (n : Int), forall (odd_n : IsOdd n), forall (large_n : SufficientlyLarge n), SumOfThreePrimes n"
+        ),
+        proof: concat!(
+            "fun Int => fun IsOdd => fun SufficientlyLarge => fun SumOfThreePrimes => fun vinogradov_law => fun n => fun odd_n => fun large_n => vinogradov_law n odd_n large_n"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_goldbach_conjecture_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (IsOdd : Int -> Prop), forall (GreaterThanFive : Int -> Prop), forall (SumOfThreePrimes : Int -> Prop), ",
+            "forall (weak_goldbach_law : forall (n : Int), forall (odd_n : IsOdd n), forall (gt5 : GreaterThanFive n), SumOfThreePrimes n), ",
+            "forall (n : Int), forall (odd_n : IsOdd n), forall (gt5 : GreaterThanFive n), SumOfThreePrimes n"
+        ),
+        proof: concat!(
+            "fun Int => fun IsOdd => fun GreaterThanFive => fun SumOfThreePrimes => fun weak_goldbach_law => fun n => fun odd_n => fun gt5 => weak_goldbach_law n odd_n gt5"
         ),
     },
 ];

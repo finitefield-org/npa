@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.AdditivePrime",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "vinogradov_three_primes_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun IsOdd => fun SufficientlyLarge => fun SumOfThreePrimes => fun vinogradov_law => fun n => fun odd_n => fun large_n => vinogradov_law n odd_n large_n"
+    },
+    {
+      "declaration": "weak_goldbach_conjecture_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun IsOdd => fun GreaterThanFive => fun SumOfThreePrimes => fun weak_goldbach_law => fun n => fun odd_n => fun gt5 => weak_goldbach_law n odd_n gt5"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/AdditivePrime/certificate.npcert"
+  }
+}

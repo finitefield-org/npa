@@ -1,0 +1,10 @@
+import Std.Logic.Eq
+
+theorem vinogradov_three_primes_theorem_interface :
+  forall (Int : Type), forall (IsOdd : Int -> Prop), forall (SufficientlyLarge : Int -> Prop), forall (SumOfThreePrimes : Int -> Prop), forall (vinogradov_law : forall (n : Int), forall (odd_n : IsOdd n), forall (large_n : SufficientlyLarge n), SumOfThreePrimes n), forall (n : Int), forall (odd_n : IsOdd n), forall (large_n : SufficientlyLarge n), SumOfThreePrimes n :=
+  fun Int => fun IsOdd => fun SufficientlyLarge => fun SumOfThreePrimes => fun vinogradov_law => fun n => fun odd_n => fun large_n => vinogradov_law n odd_n large_n
+
+theorem weak_goldbach_conjecture_interface :
+  forall (Int : Type), forall (IsOdd : Int -> Prop), forall (GreaterThanFive : Int -> Prop), forall (SumOfThreePrimes : Int -> Prop), forall (weak_goldbach_law : forall (n : Int), forall (odd_n : IsOdd n), forall (gt5 : GreaterThanFive n), SumOfThreePrimes n), forall (n : Int), forall (odd_n : IsOdd n), forall (gt5 : GreaterThanFive n), SumOfThreePrimes n :=
+  fun Int => fun IsOdd => fun GreaterThanFive => fun SumOfThreePrimes => fun weak_goldbach_law => fun n => fun odd_n => fun gt5 => weak_goldbach_law n odd_n gt5
+

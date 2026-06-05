@@ -1047,7 +1047,7 @@ later in the file.
 
 ### NT-T36 Add Circle Method And Additive Prime Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T35`, `NT-T30`
 - Areas: `Proofs/Ai/NumberTheory/CircleMethod/`, `Proofs/Ai/NumberTheory/AdditivePrime/`
 - Tasks:

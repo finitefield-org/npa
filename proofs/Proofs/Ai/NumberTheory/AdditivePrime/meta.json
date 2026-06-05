@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.AdditivePrime",
+  "source": "Proofs/Ai/NumberTheory/AdditivePrime/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/AdditivePrime/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:aa6c80509eef62b9be0bfde02f10e352361e6292934943349577a26a81da6cd3",
+  "certificate_file_sha256": "sha256:d00c970a7adff0bcc60e0707405adde7929949f4a6869a21d03cad134af42e35",
+  "export_hash": "sha256:4c96eaf24a598909800871bad28aab3fd9baf94222850024ed7034e3f9c78ed6",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:683f43c4800a7d5f94c8553556ed9020dd2a349c51cc3073b5bb3cf3952d3c76",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "vinogradov_three_primes_theorem_interface", "kind": "theorem" },
+    { "name": "weak_goldbach_conjecture_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

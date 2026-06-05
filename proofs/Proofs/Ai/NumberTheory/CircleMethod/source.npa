@@ -1,0 +1,14 @@
+import Std.Logic.Eq
+
+theorem hardy_littlewood_circle_method_interface :
+  forall (Real : Type), forall (Complex : Type), forall (MajorArcs : Prop), forall (MinorArcs : Prop), forall (CircleMethodRelation : Prop), forall (circle_method_law : forall (maj : MajorArcs), forall (min : MinorArcs), CircleMethodRelation), forall (maj : MajorArcs), forall (min : MinorArcs), CircleMethodRelation :=
+  fun Real => fun Complex => fun MajorArcs => fun MinorArcs => fun CircleMethodRelation => fun circle_method_law => fun maj => fun min => circle_method_law maj min
+
+theorem major_arc_contribution_interface :
+  forall (MajorArcs : Prop), forall (MajorArcContribution : Prop), forall (major_arcs_law : forall (maj : MajorArcs), MajorArcContribution), forall (maj : MajorArcs), MajorArcContribution :=
+  fun MajorArcs => fun MajorArcContribution => fun major_arcs_law => fun maj => major_arcs_law maj
+
+theorem minor_arc_contribution_interface :
+  forall (MinorArcs : Prop), forall (MinorArcContribution : Prop), forall (minor_arcs_law : forall (min : MinorArcs), MinorArcContribution), forall (min : MinorArcs), MinorArcContribution :=
+  fun MinorArcs => fun MinorArcContribution => fun minor_arcs_law => fun min => minor_arcs_law min
+
