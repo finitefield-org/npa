@@ -251,7 +251,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T04 Prove Sum And Product Counting Rules
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`
 - Areas: `Proofs.Ai.Combinatorics.Counting.Basic`
 - Tasks:
@@ -259,13 +259,16 @@ guessing. The split must preserve the dependency order in this document.
   - Add sum rule and product rule aliases with stable theorem-search names.
   - Add finite fiber counting interface.
 - Deliverables:
-  - Elementary counting rule certificates.
+  - Elementary counting rule certificates in
+    `Proofs.Ai.Combinatorics.Counting.Basic`.
 - Acceptance criteria:
   - Disjointness and fiber hypotheses are testable in theorem statements.
   - Product counting does not introduce private tuple or product primitives.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Counting.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Counting.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T05 Add Factorial And Permutation Counting
 

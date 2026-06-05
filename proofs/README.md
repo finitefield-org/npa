@@ -66,9 +66,10 @@ Current bundles:
   explicit finite-enumeration evidence. It does not add finite cardinality as a kernel primitive,
   and it does not assume choice or quotient extensionality.
 - `Proofs/Ai/Combinatorics/Counting/Basic/`: certificate-backed finite comparison and
-  pigeonhole interface targets for injective and surjective counting routes. Finite, nonempty,
-  decidable-equality, collision, and overfull-fiber hypotheses are named evidence slots rather
-  than hidden assumptions.
+  pigeonhole interface targets for injective and surjective counting routes, plus elementary
+  disjoint-union, product, sum-rule, product-rule, and finite-fiber counting packages. Finite,
+  nonempty, decidable-equality, disjointness, product-carrier, fiber, collision, and overfull-fiber
+  hypotheses are named evidence slots rather than hidden assumptions.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
