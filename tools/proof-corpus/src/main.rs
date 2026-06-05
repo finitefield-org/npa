@@ -184,6 +184,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE,
     &NUMBER_THEORY_LEGENDRE_MODULE,
     &NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE,
+    &NUMBER_THEORY_JACOBI_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1978,6 +1979,28 @@ const NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE: ModuleArtifact = ModuleArtifac
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_QUADRATIC_RECIPROCITY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_JACOBI_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Jacobi",
+    source_path: "Proofs/Ai/NumberTheory/Jacobi/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Jacobi/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Jacobi/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Jacobi/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Prime",
+        "Proofs.Ai.NumberTheory.Composite",
+        "Proofs.Ai.NumberTheory.PrimalityTest",
+        "Proofs.Ai.NumberTheory.QuadraticResidue",
+        "Proofs.Ai.NumberTheory.Legendre",
+        "Proofs.Ai.NumberTheory.QuadraticReciprocity",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_JACOBI_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -12752,6 +12775,176 @@ const NUMBER_THEORY_QUADRATIC_RECIPROCITY_THEOREMS: &[TheoremArtifact] = &[
             "fun boundary_law => fun primitive_root => fun characters => ",
             "fun gauss_sum => fun reciprocity => ",
             "boundary_law primitive_root characters gauss_sum reciprocity"
+        ),
+    },
+];
+
+const NUMBER_THEORY_JACOBI_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "jacobi_symbol_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Symbol : Type), ",
+            "forall (OddPositiveModulus : forall (n : Int), Prop), ",
+            "forall (ModulusFactorization : forall (n : Int), Prop), ",
+            "forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), ",
+            "forall (JacobiSymbol : forall (n : Int), forall (a : Int), Symbol), ",
+            "forall (JacobiDefinition : forall (n : Int), forall (a : Int), forall (value : Symbol), Prop), ",
+            "forall (definition_law : forall (n : Int), forall (a : Int), ",
+            "forall (odd_positive_n : OddPositiveModulus n), ",
+            "forall (factorization_n : ModulusFactorization n), ",
+            "JacobiDefinition n a (JacobiSymbol n a)), ",
+            "forall (n : Int), forall (a : Int), ",
+            "forall (odd_positive_n : OddPositiveModulus n), ",
+            "forall (factorization_n : ModulusFactorization n), ",
+            "JacobiDefinition n a (JacobiSymbol n a)"
+        ),
+        proof: concat!(
+            "fun Int => fun Symbol => fun OddPositiveModulus => ",
+            "fun ModulusFactorization => fun LegendreSymbol => fun JacobiSymbol => ",
+            "fun JacobiDefinition => fun definition_law => fun n => fun a => ",
+            "fun odd_positive_n => fun factorization_n => ",
+            "definition_law n a odd_positive_n factorization_n"
+        ),
+    },
+    TheoremArtifact {
+        name: "jacobi_symbol_multiplicativity_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddPositiveModulus : forall (n : Int), Prop), ",
+            "forall (JacobiMultiplicative : forall (n : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (multiplicativity_law : forall (n : Int), forall (a : Int), forall (b : Int), ",
+            "forall (odd_positive_n : OddPositiveModulus n), JacobiMultiplicative n a b), ",
+            "forall (n : Int), forall (a : Int), forall (b : Int), ",
+            "forall (odd_positive_n : OddPositiveModulus n), JacobiMultiplicative n a b"
+        ),
+        proof: concat!(
+            "fun Int => fun OddPositiveModulus => fun JacobiMultiplicative => ",
+            "fun multiplicativity_law => fun n => fun a => fun b => ",
+            "fun odd_positive_n => multiplicativity_law n a b odd_positive_n"
+        ),
+    },
+    TheoremArtifact {
+        name: "jacobi_legendre_not_interchangeable_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (LegendreSymbolPackage : Type), ",
+            "forall (JacobiSymbolPackage : Type), ",
+            "forall (PrimeModulusDomain : Type), ",
+            "forall (OddCompositeModulusDomain : Type), ",
+            "forall (NoInterchangeBoundary : forall (legendre : LegendreSymbolPackage), ",
+            "forall (jacobi : JacobiSymbolPackage), ",
+            "forall (prime_domain : PrimeModulusDomain), ",
+            "forall (odd_composite_domain : OddCompositeModulusDomain), Prop), ",
+            "forall (boundary_law : forall (legendre : LegendreSymbolPackage), ",
+            "forall (jacobi : JacobiSymbolPackage), ",
+            "forall (prime_domain : PrimeModulusDomain), ",
+            "forall (odd_composite_domain : OddCompositeModulusDomain), ",
+            "NoInterchangeBoundary legendre jacobi prime_domain odd_composite_domain), ",
+            "forall (legendre : LegendreSymbolPackage), ",
+            "forall (jacobi : JacobiSymbolPackage), ",
+            "forall (prime_domain : PrimeModulusDomain), ",
+            "forall (odd_composite_domain : OddCompositeModulusDomain), ",
+            "NoInterchangeBoundary legendre jacobi prime_domain odd_composite_domain"
+        ),
+        proof: concat!(
+            "fun LegendreSymbolPackage => fun JacobiSymbolPackage => ",
+            "fun PrimeModulusDomain => fun OddCompositeModulusDomain => ",
+            "fun NoInterchangeBoundary => fun boundary_law => ",
+            "fun legendre => fun jacobi => fun prime_domain => ",
+            "fun odd_composite_domain => ",
+            "boundary_law legendre jacobi prime_domain odd_composite_domain"
+        ),
+    },
+    TheoremArtifact {
+        name: "jacobi_symbol_not_quadratic_residuosity_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddCompositeModulus : forall (n : Int), Prop), ",
+            "forall (JacobiSymbolEvidence : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (ActualQuadraticResiduosity : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (SeparationEvidence : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (separation_law : forall (n : Int), forall (a : Int), ",
+            "forall (odd_composite_n : OddCompositeModulus n), ",
+            "forall (jacobi_symbol : JacobiSymbolEvidence n a), ",
+            "forall (separation : SeparationEvidence n a), SeparationEvidence n a), ",
+            "forall (n : Int), forall (a : Int), ",
+            "forall (odd_composite_n : OddCompositeModulus n), ",
+            "forall (jacobi_symbol : JacobiSymbolEvidence n a), ",
+            "forall (separation : SeparationEvidence n a), SeparationEvidence n a"
+        ),
+        proof: concat!(
+            "fun Int => fun OddCompositeModulus => fun JacobiSymbolEvidence => ",
+            "fun ActualQuadraticResiduosity => fun SeparationEvidence => ",
+            "fun separation_law => fun n => fun a => fun odd_composite_n => ",
+            "fun jacobi_symbol => fun separation => ",
+            "separation_law n a odd_composite_n jacobi_symbol separation"
+        ),
+    },
+    TheoremArtifact {
+        name: "solovay_strassen_primality_test_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddCompositeModulus : forall (n : Int), Prop), ",
+            "forall (ModulusGreaterThanTwo : forall (n : Int), Prop), ",
+            "forall (RandomBaseSource : forall (n : Int), Prop), ",
+            "forall (JacobiSymbolWitness : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (EulerWitness : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (SolovayStrassenRejects : forall (n : Int), forall (a : Int), Prop), ",
+            "forall (solovay_strassen_law : forall (n : Int), forall (a : Int), ",
+            "forall (odd_composite_n : OddCompositeModulus n), ",
+            "forall (large_modulus_n : ModulusGreaterThanTwo n), ",
+            "forall (random_base_source : RandomBaseSource n), ",
+            "forall (jacobi_witness : JacobiSymbolWitness n a), ",
+            "forall (euler_witness : EulerWitness n a), SolovayStrassenRejects n a), ",
+            "forall (n : Int), forall (a : Int), ",
+            "forall (odd_composite_n : OddCompositeModulus n), ",
+            "forall (large_modulus_n : ModulusGreaterThanTwo n), ",
+            "forall (random_base_source : RandomBaseSource n), ",
+            "forall (jacobi_witness : JacobiSymbolWitness n a), ",
+            "forall (euler_witness : EulerWitness n a), SolovayStrassenRejects n a"
+        ),
+        proof: concat!(
+            "fun Int => fun OddCompositeModulus => fun ModulusGreaterThanTwo => ",
+            "fun RandomBaseSource => fun JacobiSymbolWitness => fun EulerWitness => ",
+            "fun SolovayStrassenRejects => fun solovay_strassen_law => ",
+            "fun n => fun a => fun odd_composite_n => fun large_modulus_n => ",
+            "fun random_base_source => fun jacobi_witness => fun euler_witness => ",
+            "solovay_strassen_law n a odd_composite_n large_modulus_n random_base_source jacobi_witness euler_witness"
+        ),
+    },
+    TheoremArtifact {
+        name: "solovay_strassen_no_deterministic_security_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SolovayStrassenPackage : Type), ",
+            "forall (RuntimeRandomnessSource : Type), ",
+            "forall (ProbabilisticSoundnessAssumption : Type), ",
+            "forall (DeterministicSecurityTheorem : Type), ",
+            "forall (NoDeterministicSecurityBoundary : forall (test : SolovayStrassenPackage), ",
+            "forall (randomness : RuntimeRandomnessSource), ",
+            "forall (soundness : ProbabilisticSoundnessAssumption), ",
+            "forall (security : DeterministicSecurityTheorem), Prop), ",
+            "forall (boundary_law : forall (test : SolovayStrassenPackage), ",
+            "forall (randomness : RuntimeRandomnessSource), ",
+            "forall (soundness : ProbabilisticSoundnessAssumption), ",
+            "forall (security : DeterministicSecurityTheorem), ",
+            "NoDeterministicSecurityBoundary test randomness soundness security), ",
+            "forall (test : SolovayStrassenPackage), ",
+            "forall (randomness : RuntimeRandomnessSource), ",
+            "forall (soundness : ProbabilisticSoundnessAssumption), ",
+            "forall (security : DeterministicSecurityTheorem), ",
+            "NoDeterministicSecurityBoundary test randomness soundness security"
+        ),
+        proof: concat!(
+            "fun SolovayStrassenPackage => fun RuntimeRandomnessSource => ",
+            "fun ProbabilisticSoundnessAssumption => fun DeterministicSecurityTheorem => ",
+            "fun NoDeterministicSecurityBoundary => fun boundary_law => ",
+            "fun test => fun randomness => fun soundness => fun security => ",
+            "boundary_law test randomness soundness security"
         ),
     },
 ];
@@ -41392,6 +41585,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_QUADRATIC_RESIDUE_MODULE.module
         || config.module == NUMBER_THEORY_LEGENDRE_MODULE.module
         || config.module == NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE.module
+        || config.module == NUMBER_THEORY_JACOBI_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

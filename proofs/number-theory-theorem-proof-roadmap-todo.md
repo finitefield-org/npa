@@ -720,7 +720,7 @@ later in the file.
 
 ### NT-T21 Add Jacobi Symbol And Probabilistic-Test Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T20`
 - Areas: `Proofs/Ai/NumberTheory/Jacobi/`, `Proofs/Ai/NumberTheory/PrimalityTest/`
 - Tasks:

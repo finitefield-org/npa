@@ -189,6 +189,11 @@ Current bundles:
   route downstream of `Legendre`, preserving Gauss lemma surfaces, supplementary laws for
   minus one and two, `quadratic_reciprocity` statements for distinct odd primes, and a boundary
   preventing primitive-root, character, or Gauss-sum milestones from assuming reciprocity.
+- `Proofs/Ai/NumberTheory/Jacobi/`: certificate-backed Jacobi symbol and Solovay-Strassen
+  interface downstream of `QuadraticReciprocity` and primality-test surfaces, preserving Jacobi
+  multiplicativity, separation from actual quadratic residuosity, non-interchangeability with
+  Legendre symbols, and probabilistic randomness/soundness assumptions outside deterministic
+  security theorems.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

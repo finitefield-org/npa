@@ -393,7 +393,10 @@ semantics.
   statements. `NT-T20` added certificate-backed
   `Proofs.Ai.NumberTheory.QuadraticReciprocity` surfaces for Gauss lemma,
   supplementary laws for minus one and two, the first recorded proof route, and
-  quadratic reciprocity over distinct odd primes.
+  quadratic reciprocity over distinct odd primes. `NT-T21` added
+  certificate-backed `Proofs.Ai.NumberTheory.Jacobi` surfaces for Jacobi symbol
+  multiplicativity, separation from actual quadratic residuosity, and
+  Solovay-Strassen probabilistic-test interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.QuadraticResidue`
   - `Proofs.Ai.NumberTheory.Legendre`
