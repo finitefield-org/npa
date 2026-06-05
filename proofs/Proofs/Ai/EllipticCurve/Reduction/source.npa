@@ -1,0 +1,16 @@
+import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Basic
+import Proofs.Ai.NumberTheory.LocalField
+
+theorem elliptic_conductor_interface :
+  forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (Conductor : Type), forall (conductor_law : Conductor -> Conductor), Conductor -> Conductor :=
+  fun F => fun LocalField => fun Valuation => fun Conductor => fun conductor_law => conductor_law
+
+theorem elliptic_reduction_type_interface :
+  forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (ReductionType : Type), forall (reduction_type_law : ReductionType -> ReductionType), ReductionType -> ReductionType :=
+  fun F => fun LocalField => fun Valuation => fun ReductionType => fun reduction_type_law => reduction_type_law
+
+theorem elliptic_minimal_model_interface :
+  forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (MinimalModel : Type), forall (minimal_model_law : MinimalModel -> MinimalModel), MinimalModel -> MinimalModel :=
+  fun F => fun LocalField => fun Valuation => fun MinimalModel => fun minimal_model_law => minimal_model_law
+

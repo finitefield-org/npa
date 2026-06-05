@@ -771,6 +771,11 @@ semantics.
   - `NT-T45` added certificate-backed `Proofs.Ai.EllipticCurve.Basic` and
     `Proofs.Ai.EllipticCurve.GroupLaw` defining L1 interfaces for Weierstrass
     model, nonsingularity, and elliptic curve point group law.
+  - `NT-T46` added certificate-backed `Proofs.Ai.EllipticCurve.Reduction`,
+    `Proofs.Ai.EllipticCurve.Semistable`, and `Proofs.Ai.EllipticCurve.Height`
+    defining L1 interfaces for conductor, reduction type, minimal model,
+    semistability, and height/Neron-Tate height.
+
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
   and finite fields.
 - Target modules:

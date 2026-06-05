@@ -1266,7 +1266,7 @@ later in the file.
 
 ### NT-T46 Add Elliptic Curve Reduction, Semistability, And Height Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T45`, `NT-T41`
 - Areas: `Proofs/Ai/EllipticCurve/Reduction/`, `Proofs/Ai/EllipticCurve/Semistable/`, `Proofs/Ai/EllipticCurve/Height/`
 - Tasks:

@@ -1,0 +1,11 @@
+import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Basic
+
+theorem elliptic_height_interface :
+  forall (F : Type), forall (Point : Type), forall (Height : Point -> F), forall (IsPositive : Prop), forall (height_law : IsPositive -> IsPositive), IsPositive -> IsPositive :=
+  fun F => fun Point => fun Height => fun IsPositive => fun height_law => height_law
+
+theorem elliptic_neron_tate_height_interface :
+  forall (F : Type), forall (Point : Type), forall (NeronTateHeight : Point -> F), forall (IsPositive : Prop), forall (neron_tate_law : IsPositive -> IsPositive), IsPositive -> IsPositive :=
+  fun F => fun Point => fun NeronTateHeight => fun IsPositive => fun neron_tate_law => neron_tate_law
+

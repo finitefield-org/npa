@@ -224,6 +224,9 @@ const MODULES: &[&ModuleArtifact] = &[
     &GALOIS_COHOMOLOGY_BASIC_MODULE,
     &ELLIPTIC_CURVE_BASIC_MODULE,
     &ELLIPTIC_CURVE_GROUP_LAW_MODULE,
+    &ELLIPTIC_CURVE_REDUCTION_MODULE,
+    &ELLIPTIC_CURVE_SEMISTABLE_MODULE,
+    &ELLIPTIC_CURVE_HEIGHT_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2619,6 +2622,53 @@ const ELLIPTIC_CURVE_GROUP_LAW_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_GROUP_LAW_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_REDUCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.Reduction",
+    source_path: "Proofs/Ai/EllipticCurve/Reduction/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/Reduction/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/Reduction/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/Reduction/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.NumberTheory.LocalField",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_REDUCTION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_SEMISTABLE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.Semistable",
+    source_path: "Proofs/Ai/EllipticCurve/Semistable/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/Semistable/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/Semistable/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.Reduction",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_SEMISTABLE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_HEIGHT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.Height",
+    source_path: "Proofs/Ai/EllipticCurve/Height/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/Height/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/Height/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/Height/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic"],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_HEIGHT_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21700,6 +21750,75 @@ const ELLIPTIC_CURVE_GROUP_LAW_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun F => fun Point => fun IsGroup => fun group_law => group_law"
+        ),
+    },
+];
+
+const ELLIPTIC_CURVE_REDUCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "elliptic_conductor_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (Conductor : Type), forall (conductor_law : Conductor -> Conductor), Conductor -> Conductor"
+        ),
+        proof: concat!(
+            "fun F => fun LocalField => fun Valuation => fun Conductor => fun conductor_law => conductor_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "elliptic_reduction_type_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (ReductionType : Type), forall (reduction_type_law : ReductionType -> ReductionType), ReductionType -> ReductionType"
+        ),
+        proof: concat!(
+            "fun F => fun LocalField => fun Valuation => fun ReductionType => fun reduction_type_law => reduction_type_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "elliptic_minimal_model_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (MinimalModel : Type), forall (minimal_model_law : MinimalModel -> MinimalModel), MinimalModel -> MinimalModel"
+        ),
+        proof: concat!(
+            "fun F => fun LocalField => fun Valuation => fun MinimalModel => fun minimal_model_law => minimal_model_law"
+        ),
+    },
+];
+
+const ELLIPTIC_CURVE_SEMISTABLE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "elliptic_semistable_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (LocalField : Type), forall (IsSemistable : Prop), forall (semistable_law : IsSemistable -> IsSemistable), IsSemistable -> IsSemistable"
+        ),
+        proof: concat!(
+            "fun F => fun LocalField => fun IsSemistable => fun semistable_law => semistable_law"
+        ),
+    },
+];
+
+const ELLIPTIC_CURVE_HEIGHT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "elliptic_height_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (Point : Type), forall (Height : Point -> F), forall (IsPositive : Prop), forall (height_law : IsPositive -> IsPositive), IsPositive -> IsPositive"
+        ),
+        proof: concat!(
+            "fun F => fun Point => fun Height => fun IsPositive => fun height_law => height_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "elliptic_neron_tate_height_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (F : Type), forall (Point : Type), forall (NeronTateHeight : Point -> F), forall (IsPositive : Prop), forall (neron_tate_law : IsPositive -> IsPositive), IsPositive -> IsPositive"
+        ),
+        proof: concat!(
+            "fun F => fun Point => fun NeronTateHeight => fun IsPositive => fun neron_tate_law => neron_tate_law"
         ),
     },
 ];

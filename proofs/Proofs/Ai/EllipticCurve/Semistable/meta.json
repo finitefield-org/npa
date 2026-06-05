@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.Semistable",
+  "source": "Proofs/Ai/EllipticCurve/Semistable/source.npa",
+  "certificate": "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fe1233717cdd2143c3115578a4ce09b682f40027c11c51dc7bc9fb3adf3cf480",
+  "certificate_file_sha256": "sha256:6191bafa0b4df9ba96601eedf0563416ab73282e875a88613daf26f48e84f5ef",
+  "export_hash": "sha256:93aa542fe0e45d8872e429df97b10c4284bd5f08ab54a759e38570dcce6a7612",
+  "axiom_report_hash": "sha256:a1ef77782ab68d41aede3e412c79174432934c3cac66c319dd2d406cf514f40e",
+  "certificate_hash": "sha256:0bd4d64307e70a6117581ed222f946e190101a41c58989799c4daaa662865dcc",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "elliptic_semistable_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

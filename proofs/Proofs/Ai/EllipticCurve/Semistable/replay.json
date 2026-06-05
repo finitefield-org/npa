@@ -1,0 +1,17 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.Semistable",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "elliptic_semistable_interface",
+      "source_kind": "explicit_term",
+      "term": "fun F => fun LocalField => fun IsSemistable => fun semistable_law => semistable_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert"
+  }
+}

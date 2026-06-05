@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.Height",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "elliptic_height_interface",
+      "source_kind": "explicit_term",
+      "term": "fun F => fun Point => fun Height => fun IsPositive => fun height_law => height_law"
+    },
+    {
+      "declaration": "elliptic_neron_tate_height_interface",
+      "source_kind": "explicit_term",
+      "term": "fun F => fun Point => fun NeronTateHeight => fun IsPositive => fun neron_tate_law => neron_tate_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/Height/certificate.npcert"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.Reduction",
+  "source": "Proofs/Ai/EllipticCurve/Reduction/source.npa",
+  "certificate": "Proofs/Ai/EllipticCurve/Reduction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5b74a7659ff2f2585888918a382b174c1bf58147d906277f47688eab88aca04b",
+  "certificate_file_sha256": "sha256:67ce770640fd181d066502d56e961b13daf0ecd1270ea398a1dfc8a188d21949",
+  "export_hash": "sha256:d454dee9b239a0956d27b44f3aab5d87e74e238e46c3ff62c92bbd9886e23bdf",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:1f40f39b9212a65417bd92dab995ba92efa021a2ec568dcc68040a5a086d1252",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.NumberTheory.LocalField"],
+  "axioms": [],
+  "declarations": [
+    { "name": "elliptic_conductor_interface", "kind": "theorem" },
+    { "name": "elliptic_reduction_type_interface", "kind": "theorem" },
+    { "name": "elliptic_minimal_model_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
