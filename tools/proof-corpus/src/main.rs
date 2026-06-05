@@ -3351,6 +3351,115 @@ macro_rules! intermediate_value_evidence_app {
     };
 }
 
+macro_rules! interval_image_set_app {
+    ($lower:expr, $upper:expr, $function:expr, $value:expr) => {
+        concat!(
+            "@IntervalImageSet.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $value
+        )
+    };
+}
+
+macro_rules! interval_image_set_pred_app {
+    ($lower:expr, $upper:expr, $function:expr) => {
+        concat!(
+            "(fun (value : Scalar) => ",
+            interval_image_set_app!($lower, $upper, $function, "value"),
+            ")"
+        )
+    };
+}
+
+macro_rules! interval_maximum_attained_app {
+    ($lower:expr, $upper:expr, $function:expr, $point:expr) => {
+        concat!(
+            "@IntervalMaximumAttained.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! interval_minimum_attained_app {
+    ($lower:expr, $upper:expr, $function:expr, $point:expr) => {
+        concat!(
+            "@IntervalMinimumAttained.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! interval_maximum_choice_app {
+    ($lower:expr, $upper:expr, $function:expr) => {
+        concat!(
+            "@IntervalMaximumChoice.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function
+        )
+    };
+}
+
+macro_rules! interval_minimum_choice_app {
+    ($lower:expr, $upper:expr, $function:expr) => {
+        concat!(
+            "@IntervalMinimumChoice.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function
+        )
+    };
+}
+
+macro_rules! extreme_value_evidence_app {
+    ($lower:expr, $upper:expr, $function:expr, $approaches_at:expr) => {
+        concat!(
+            "@ExtremeValueEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! extreme_value_conclusion_app {
+    ($lower:expr, $upper:expr, $function:expr) => {
+        concat!(
+            "@ExtremeValueConclusion.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function
+        )
+    };
+}
+
 macro_rules! sequence_limit_uniqueness_evidence_app {
     ($left:literal, $right:literal) => {
         concat!(
@@ -34296,6 +34405,84 @@ const ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "IntervalImageSet",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (value : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun value => forall (P : Prop), forall (mk : forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) value), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalMaximumAttained",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (max_point : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun max_point => forall (P : Prop), forall (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "max_point"),
+            "), forall (upper_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f x) (f max_point)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalMinimumAttained",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (min_point : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun min_point => forall (P : Prop), forall (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "min_point"),
+            "), forall (lower_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f min_point) (f x)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalMaximumChoice",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => forall (P : Prop), forall (choose : forall (max_point : Scalar), forall (attained : ",
+            interval_maximum_attained_app!("a", "b", "f", "max_point"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalMinimumChoice",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => forall (P : Prop), forall (choose : forall (min_point : Scalar), forall (attained : ",
+            interval_minimum_attained_app!("a", "b", "f", "min_point"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ExtremeValueConclusion",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => forall (P : Prop), forall (mk : forall (maximum : ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum : ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
         name: "IntervalContinuousOn",
         universe_params: &["u"],
         ty: analysis_real_basic_params!(
@@ -34356,6 +34543,34 @@ const ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS: &[DefinitionArtifact] = &[
             intermediate_value_hypothesis_app!("a", "b", "f", "target"),
             "), ",
             interval_image_witness_app!("a", "b", "f", "target"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ExtremeValueEvidence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => forall (P : Prop), forall (mk : forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (image_nonempty : ",
+            nonempty_set_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (image_bounded_above : ",
+            bounded_above_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (image_bounded_below : ",
+            bounded_below_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (maximum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f"),
             "), P), P"
         )),
     },
@@ -34433,6 +34648,197 @@ const ANALYSIS_CONTINUITY_INTERVAL_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "interval_image_set_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (value : Scalar), forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) value), ",
+            interval_image_set_app!("a", "b", "f", "value")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun value => fun point => fun point_mem => fun value_eq => fun (P : Prop) => fun (mk : forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) value), P) => mk point point_mem value_eq"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_image_set_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (value : Scalar), forall (image_value : ",
+            interval_image_set_app!("a", "b", "f", "value"),
+            "), forall (P : Prop), forall (mk : forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) value), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun value => fun image_value => fun P => fun mk => image_value P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_image_witness_to_image_set",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (witness : ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_set_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun witness => witness (",
+            interval_image_set_app!("a", "b", "f", "target"),
+            ") (fun (point : Scalar) => fun (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            ") => fun (value_eq : @Eq.{u} Scalar (f point) target) => @interval_image_set_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target point point_mem value_eq)"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_image_set_to_witness",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (image_value : ",
+            interval_image_set_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun image_value => image_value (",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            ") (fun (point : Scalar) => fun (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            ") => fun (value_eq : @Eq.{u} Scalar (f point) target) => @interval_image_witness_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target point point_mem value_eq)"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_maximum_attained_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (max_point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "max_point"),
+            "), forall (upper_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f x) (f max_point)), ",
+            interval_maximum_attained_app!("a", "b", "f", "max_point")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun max_point => fun point_mem => fun upper_bound => fun (P : Prop) => fun (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "max_point"),
+            "), forall (upper_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f x) (f max_point)), P) => mk point_mem upper_bound"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_maximum_attained_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (max_point : Scalar), forall (attained : ",
+            interval_maximum_attained_app!("a", "b", "f", "max_point"),
+            "), forall (P : Prop), forall (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "max_point"),
+            "), forall (upper_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f x) (f max_point)), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun max_point => fun attained => fun P => fun mk => attained P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_minimum_attained_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (min_point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "min_point"),
+            "), forall (lower_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f min_point) (f x)), ",
+            interval_minimum_attained_app!("a", "b", "f", "min_point")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun min_point => fun point_mem => fun lower_bound => fun (P : Prop) => fun (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "min_point"),
+            "), forall (lower_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f min_point) (f x)), P) => mk point_mem lower_bound"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_minimum_attained_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (min_point : Scalar), forall (attained : ",
+            interval_minimum_attained_app!("a", "b", "f", "min_point"),
+            "), forall (P : Prop), forall (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "min_point"),
+            "), forall (lower_bound : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), le_rel (f min_point) (f x)), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun min_point => fun attained => fun P => fun mk => attained P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_maximum_choice_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (max_point : Scalar), forall (attained : ",
+            interval_maximum_attained_app!("a", "b", "f", "max_point"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun max_point => fun attained => fun (P : Prop) => fun (choose : forall (max_point : Scalar), forall (attained : ",
+            interval_maximum_attained_app!("a", "b", "f", "max_point"),
+            "), P) => choose max_point attained"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_maximum_choice_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (choice : ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (P : Prop), forall (choose : forall (max_point : Scalar), forall (attained : ",
+            interval_maximum_attained_app!("a", "b", "f", "max_point"),
+            "), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun choice => fun P => fun choose => choice P choose"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_minimum_choice_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (min_point : Scalar), forall (attained : ",
+            interval_minimum_attained_app!("a", "b", "f", "min_point"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun min_point => fun attained => fun (P : Prop) => fun (choose : forall (min_point : Scalar), forall (attained : ",
+            interval_minimum_attained_app!("a", "b", "f", "min_point"),
+            "), P) => choose min_point attained"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_minimum_choice_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (choice : ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), forall (P : Prop), forall (choose : forall (min_point : Scalar), forall (attained : ",
+            interval_minimum_attained_app!("a", "b", "f", "min_point"),
+            "), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun choice => fun P => fun choose => choice P choose"
+        ),
+    },
+    TheoremArtifact {
         name: "interval_continuous_on_intro",
         universe_params: &["u"],
         statement: analysis_real_basic_params!(concat!(
@@ -34457,6 +34863,203 @@ const ANALYSIS_CONTINUITY_INTERVAL_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_real_basic_abs!(
             "fun a => fun b => fun f => fun ApproachesAt => fun continuous => continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "extreme_value_evidence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (image_nonempty : ",
+            nonempty_set_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (image_bounded_above : ",
+            bounded_above_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (image_bounded_below : ",
+            bounded_below_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (maximum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), ",
+            extreme_value_evidence_app!("a", "b", "f", "ApproachesAt")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun compactness_route => fun endpoint_order => fun image_nonempty => fun image_bounded_above => fun image_bounded_below => fun maximum_bridge => fun minimum_bridge => fun (P : Prop) => fun (mk : forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (image_nonempty : ",
+            nonempty_set_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (image_bounded_above : ",
+            bounded_above_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (image_bounded_below : ",
+            bounded_below_app!(interval_image_set_pred_app!("a", "b", "f")),
+            "), forall (maximum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), P) => mk compactness_route endpoint_order image_nonempty image_bounded_above image_bounded_below maximum_bridge minimum_bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "extreme_value_evidence_maximum",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            extreme_value_evidence_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => evidence (",
+            interval_maximum_choice_app!("a", "b", "f"),
+            ") (fun (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            ") => fun (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            ") => fun (image_nonempty : ",
+            nonempty_set_app!(interval_image_set_pred_app!("a", "b", "f")),
+            ") => fun (image_bounded_above : ",
+            bounded_above_app!(interval_image_set_pred_app!("a", "b", "f")),
+            ") => fun (image_bounded_below : ",
+            bounded_below_app!(interval_image_set_pred_app!("a", "b", "f")),
+            ") => fun (maximum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            ") => fun (minimum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            ") => maximum_bridge continuous)"
+        )),
+    },
+    TheoremArtifact {
+        name: "extreme_value_evidence_minimum",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            extreme_value_evidence_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => evidence (",
+            interval_minimum_choice_app!("a", "b", "f"),
+            ") (fun (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            ") => fun (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            ") => fun (image_nonempty : ",
+            nonempty_set_app!(interval_image_set_pred_app!("a", "b", "f")),
+            ") => fun (image_bounded_above : ",
+            bounded_above_app!(interval_image_set_pred_app!("a", "b", "f")),
+            ") => fun (image_bounded_below : ",
+            bounded_below_app!(interval_image_set_pred_app!("a", "b", "f")),
+            ") => fun (maximum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            ") => fun (minimum_bridge : forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            ") => minimum_bridge continuous)"
+        )),
+    },
+    TheoremArtifact {
+        name: "extreme_value_conclusion_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (maximum : ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum : ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), ",
+            extreme_value_conclusion_app!("a", "b", "f")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun maximum => fun minimum => fun (P : Prop) => fun (mk : forall (maximum : ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum : ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), P) => mk maximum minimum"
+        )),
+    },
+    TheoremArtifact {
+        name: "extreme_value_conclusion_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (conclusion : ",
+            extreme_value_conclusion_app!("a", "b", "f"),
+            "), forall (P : Prop), forall (mk : forall (maximum : ",
+            interval_maximum_choice_app!("a", "b", "f"),
+            "), forall (minimum : ",
+            interval_minimum_choice_app!("a", "b", "f"),
+            "), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun conclusion => fun P => fun mk => conclusion P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "extreme_value_theorem",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            extreme_value_evidence_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            extreme_value_conclusion_app!("a", "b", "f")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => @extreme_value_conclusion_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f (@extreme_value_evidence_maximum.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f ApproachesAt evidence continuous) (@extreme_value_evidence_minimum.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f ApproachesAt evidence continuous)"
+        ),
+    },
+    TheoremArtifact {
+        name: "extreme_value_maximum",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            extreme_value_evidence_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_maximum_choice_app!("a", "b", "f")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => @extreme_value_evidence_maximum.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f ApproachesAt evidence continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "extreme_value_minimum",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            extreme_value_evidence_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_minimum_choice_app!("a", "b", "f")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => @extreme_value_evidence_minimum.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f ApproachesAt evidence continuous"
         ),
     },
     TheoremArtifact {
