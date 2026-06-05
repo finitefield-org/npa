@@ -178,6 +178,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_CARMICHAEL_MODULE,
     &NUMBER_THEORY_PRIMALITY_TEST_MODULE,
     &NUMBER_THEORY_RSA_MODULE,
+    &NUMBER_THEORY_PRIMITIVE_ROOT_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1853,6 +1854,24 @@ const NUMBER_THEORY_RSA_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_RSA_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PRIMITIVE_ROOT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.PrimitiveRoot",
+    source_path: "Proofs/Ai/NumberTheory/PrimitiveRoot/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/PrimitiveRoot/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/PrimitiveRoot/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/PrimitiveRoot/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.Phi",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PRIMITIVE_ROOT_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -11606,6 +11625,193 @@ const NUMBER_THEORY_RSA_THEOREMS: &[TheoremArtifact] = &[
             "fun NoSecurityBoundary => fun boundary_law => fun correctness => ",
             "fun security => fun runtime_solver => fun randomness => ",
             "boundary_law correctness security runtime_solver randomness"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PRIMITIVE_ROOT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "element_order_power_congruence_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (ElementOrderModulo : forall (modulus : Int), forall (a : Int), Nat), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (PowerCongruenceModulo : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), Prop), ",
+            "forall (ElementOrderEvidence : forall (modulus : Int), forall (a : Int), forall (order_value : Nat), Prop), ",
+            "forall (power_law : forall (modulus : Int), forall (a : Int), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (order_evidence : ElementOrderEvidence modulus a (ElementOrderModulo modulus a)), ",
+            "PowerCongruenceModulo modulus a (ElementOrderModulo modulus a)), ",
+            "forall (modulus : Int), forall (a : Int), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (order_evidence : ElementOrderEvidence modulus a (ElementOrderModulo modulus a)), ",
+            "PowerCongruenceModulo modulus a (ElementOrderModulo modulus a)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun ElementOrderModulo => fun UnitModulo => ",
+            "fun PowerCongruenceModulo => fun ElementOrderEvidence => ",
+            "fun power_law => fun modulus => fun a => fun unit_a => ",
+            "fun order_evidence => power_law modulus a unit_a order_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "element_order_minimal_positive_power_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (ElementOrderModulo : forall (modulus : Int), forall (a : Int), Nat), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (PositiveNat : forall (n : Nat), Prop), ",
+            "forall (LtNat : forall (m : Nat), forall (n : Nat), Prop), ",
+            "forall (PowerCongruenceModulo : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), Prop), ",
+            "forall (ElementOrderMinimalEvidence : forall (modulus : Int), forall (a : Int), forall (order_value : Nat), Prop), ",
+            "forall (ElementOrderMinimalityClaim : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), Prop), ",
+            "forall (minimal_law : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (positive_exponent : PositiveNat exponent), ",
+            "forall (smaller_exponent : LtNat exponent (ElementOrderModulo modulus a)), ",
+            "forall (power_step : PowerCongruenceModulo modulus a exponent), ",
+            "forall (minimal_order : ElementOrderMinimalEvidence modulus a (ElementOrderModulo modulus a)), ",
+            "ElementOrderMinimalityClaim modulus a exponent), ",
+            "forall (modulus : Int), forall (a : Int), forall (exponent : Nat), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "forall (positive_exponent : PositiveNat exponent), ",
+            "forall (smaller_exponent : LtNat exponent (ElementOrderModulo modulus a)), ",
+            "forall (power_step : PowerCongruenceModulo modulus a exponent), ",
+            "forall (minimal_order : ElementOrderMinimalEvidence modulus a (ElementOrderModulo modulus a)), ",
+            "ElementOrderMinimalityClaim modulus a exponent"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun ElementOrderModulo => fun UnitModulo => ",
+            "fun PositiveNat => fun LtNat => fun PowerCongruenceModulo => ",
+            "fun ElementOrderMinimalEvidence => fun ElementOrderMinimalityClaim => ",
+            "fun minimal_law => fun modulus => fun a => fun exponent => ",
+            "fun unit_a => fun positive_exponent => fun smaller_exponent => ",
+            "fun power_step => fun minimal_order => ",
+            "minimal_law modulus a exponent unit_a positive_exponent smaller_exponent power_step minimal_order"
+        ),
+    },
+    TheoremArtifact {
+        name: "primitive_root_definition_generator_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (g : Int), Prop), ",
+            "forall (ResidueUnitGroupGenerator : forall (modulus : Int), forall (g : Int), Prop), ",
+            "forall (PrimitiveRootModulo : forall (modulus : Int), forall (g : Int), Prop), ",
+            "forall (PrimitiveRootDefinitionEvidence : forall (modulus : Int), forall (g : Int), Prop), ",
+            "forall (definition_law : forall (modulus : Int), forall (g : Int), ",
+            "forall (unit_g : UnitModulo modulus g), ",
+            "forall (generator_g : ResidueUnitGroupGenerator modulus g), ",
+            "forall (definition : PrimitiveRootDefinitionEvidence modulus g), ",
+            "PrimitiveRootModulo modulus g), ",
+            "forall (modulus : Int), forall (g : Int), ",
+            "forall (unit_g : UnitModulo modulus g), ",
+            "forall (generator_g : ResidueUnitGroupGenerator modulus g), ",
+            "forall (definition : PrimitiveRootDefinitionEvidence modulus g), ",
+            "PrimitiveRootModulo modulus g"
+        ),
+        proof: concat!(
+            "fun Int => fun UnitModulo => fun ResidueUnitGroupGenerator => ",
+            "fun PrimitiveRootModulo => fun PrimitiveRootDefinitionEvidence => ",
+            "fun definition_law => fun modulus => fun g => fun unit_g => ",
+            "fun generator_g => fun definition => ",
+            "definition_law modulus g unit_g generator_g definition"
+        ),
+    },
+    TheoremArtifact {
+        name: "residue_unit_group_generator_depends_on_modular_group_surface",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Unit : Sort u), forall (one : Unit), ",
+            "forall (mul : forall (a : Unit), forall (b : Unit), Unit), ",
+            "forall (inv : forall (a : Unit), Unit), ",
+            "forall (ModularUnitGroupPackage : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), ",
+            "forall (CyclicResidueUnitGroupEvidence : forall (laws : @GroupLawArgs.{u} Unit one mul inv), Prop), ",
+            "forall (GeneratorElement : forall (x : Unit), Prop), ",
+            "forall (generator_law : forall (laws : @GroupLawArgs.{u} Unit one mul inv), ",
+            "forall (unit_group : ModularUnitGroupPackage laws), ",
+            "forall (cyclic_units : CyclicResidueUnitGroupEvidence laws), ",
+            "forall (g : Unit), GeneratorElement g), ",
+            "forall (laws : @GroupLawArgs.{u} Unit one mul inv), ",
+            "forall (unit_group : ModularUnitGroupPackage laws), ",
+            "forall (cyclic_units : CyclicResidueUnitGroupEvidence laws), ",
+            "forall (g : Unit), GeneratorElement g"
+        ),
+        proof: concat!(
+            "fun Unit => fun one => fun mul => fun inv => ",
+            "fun ModularUnitGroupPackage => fun CyclicResidueUnitGroupEvidence => ",
+            "fun GeneratorElement => fun generator_law => fun laws => ",
+            "fun unit_group => fun cyclic_units => fun g => ",
+            "generator_law laws unit_group cyclic_units g"
+        ),
+    },
+    TheoremArtifact {
+        name: "abstract_cyclic_group_generator_count_formula_surface",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (G : Sort u), forall (one : G), ",
+            "forall (mul : forall (a : G), forall (b : G), G), ",
+            "forall (inv : forall (a : G), G), ",
+            "forall (Nat : Type), ",
+            "forall (EulerPhi : forall (n : Nat), Nat), ",
+            "forall (GroupOrder : forall (laws : @GroupLawArgs.{u} G one mul inv), Nat), ",
+            "forall (GeneratorCount : forall (laws : @GroupLawArgs.{u} G one mul inv), Nat), ",
+            "forall (FiniteGroupEvidence : forall (laws : @GroupLawArgs.{u} G one mul inv), Prop), ",
+            "forall (CyclicGroupEvidence : forall (laws : @GroupLawArgs.{u} G one mul inv), Prop), ",
+            "forall (GeneratorCountFormula : forall (laws : @GroupLawArgs.{u} G one mul inv), forall (actual : Nat), forall (expected : Nat), Prop), ",
+            "forall (formula_law : forall (laws : @GroupLawArgs.{u} G one mul inv), ",
+            "forall (finite_group : FiniteGroupEvidence laws), ",
+            "forall (cyclic_group : CyclicGroupEvidence laws), ",
+            "GeneratorCountFormula laws (GeneratorCount laws) (EulerPhi (GroupOrder laws))), ",
+            "forall (laws : @GroupLawArgs.{u} G one mul inv), ",
+            "forall (finite_group : FiniteGroupEvidence laws), ",
+            "forall (cyclic_group : CyclicGroupEvidence laws), ",
+            "GeneratorCountFormula laws (GeneratorCount laws) (EulerPhi (GroupOrder laws))"
+        ),
+        proof: concat!(
+            "fun G => fun one => fun mul => fun inv => fun Nat => fun EulerPhi => ",
+            "fun GroupOrder => fun GeneratorCount => fun FiniteGroupEvidence => ",
+            "fun CyclicGroupEvidence => fun GeneratorCountFormula => ",
+            "fun formula_law => fun laws => fun finite_group => fun cyclic_group => ",
+            "formula_law laws finite_group cyclic_group"
+        ),
+    },
+    TheoremArtifact {
+        name: "primitive_root_no_existence_assumption_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (PrimitiveRootPackage : Type), ",
+            "forall (ResidueUnitGroupPackage : Type), ",
+            "forall (AbstractCyclicGroupPackage : Type), ",
+            "forall (PrimitiveRootExistenceTheorem : Type), ",
+            "forall (PrimePowerClassificationPackage : Type), ",
+            "forall (NoExistenceAssumptionBoundary : forall (primitive_root : PrimitiveRootPackage), ",
+            "forall (unit_group : ResidueUnitGroupPackage), ",
+            "forall (cyclic_group : AbstractCyclicGroupPackage), ",
+            "forall (existence : PrimitiveRootExistenceTheorem), ",
+            "forall (classification : PrimePowerClassificationPackage), Prop), ",
+            "forall (boundary_law : forall (primitive_root : PrimitiveRootPackage), ",
+            "forall (unit_group : ResidueUnitGroupPackage), ",
+            "forall (cyclic_group : AbstractCyclicGroupPackage), ",
+            "forall (existence : PrimitiveRootExistenceTheorem), ",
+            "forall (classification : PrimePowerClassificationPackage), ",
+            "NoExistenceAssumptionBoundary primitive_root unit_group cyclic_group existence classification), ",
+            "forall (primitive_root : PrimitiveRootPackage), ",
+            "forall (unit_group : ResidueUnitGroupPackage), ",
+            "forall (cyclic_group : AbstractCyclicGroupPackage), ",
+            "forall (existence : PrimitiveRootExistenceTheorem), ",
+            "forall (classification : PrimePowerClassificationPackage), ",
+            "NoExistenceAssumptionBoundary primitive_root unit_group cyclic_group existence classification"
+        ),
+        proof: concat!(
+            "fun PrimitiveRootPackage => fun ResidueUnitGroupPackage => ",
+            "fun AbstractCyclicGroupPackage => fun PrimitiveRootExistenceTheorem => ",
+            "fun PrimePowerClassificationPackage => fun NoExistenceAssumptionBoundary => ",
+            "fun boundary_law => fun primitive_root => fun unit_group => ",
+            "fun cyclic_group => fun existence => fun classification => ",
+            "boundary_law primitive_root unit_group cyclic_group existence classification"
         ),
     },
 ];
@@ -40240,6 +40446,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_CARMICHAEL_MODULE.module
         || config.module == NUMBER_THEORY_PRIMALITY_TEST_MODULE.module
         || config.module == NUMBER_THEORY_RSA_MODULE.module
+        || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

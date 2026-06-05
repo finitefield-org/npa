@@ -162,6 +162,11 @@ Current bundles:
   Carmichael and primality-test surfaces, preserving modulus factorization, coprimality, and
   key-congruence hypotheses, plus a boundary separating mathematical round-trip correctness from
   runtime solvers, randomness, or security assumptions.
+- `Proofs/Ai/NumberTheory/PrimitiveRoot/`: certificate-backed element-order and primitive-root
+  base interface downstream of abstract groups, modular unit groups, and `phi`, preserving
+  `element_order` power-congruence and minimality surfaces, primitive root definitions as
+  residue-unit group generator evidence, an abstract cyclic-group generator-count formula, and a
+  boundary separating definitions from primitive-root existence or classification assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

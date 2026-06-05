@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimitiveRoot",
+  "source": "Proofs/Ai/NumberTheory/PrimitiveRoot/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PrimitiveRoot/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8d371c81d28b3c311f7618297f56f363c432a6ba444e2d8ca7e35eb1754d1901",
+  "certificate_file_sha256": "sha256:c73413d2a50b64bff581594a7924a354deae7b06345f75bc7c50bc9c329285ef",
+  "export_hash": "sha256:3bd0cfb311eb4b7441aa584a72228d431e8f74416f72806f065c2a161faf8aa9",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:54e6ff8c37448c5cb01d51c7415bcad846cf927e3af62c96f64396b7d0c35988",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Phi"],
+  "axioms": [],
+  "declarations": [
+    { "name": "element_order_power_congruence_surface", "kind": "theorem" },
+    { "name": "element_order_minimal_positive_power_surface", "kind": "theorem" },
+    { "name": "primitive_root_definition_generator_surface", "kind": "theorem" },
+    { "name": "residue_unit_group_generator_depends_on_modular_group_surface", "kind": "theorem" },
+    { "name": "abstract_cyclic_group_generator_count_formula_surface", "kind": "theorem" },
+    { "name": "primitive_root_no_existence_assumption_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

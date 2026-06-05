@@ -617,7 +617,7 @@ later in the file.
 
 ### NT-T16 Add Element Order And Primitive Root Basics
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T14`, finite cyclic group interfaces
 - Areas: `Proofs/Ai/NumberTheory/PrimitiveRoot/`
 - Tasks:

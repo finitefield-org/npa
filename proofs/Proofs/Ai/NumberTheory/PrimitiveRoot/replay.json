@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimitiveRoot",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "element_order_power_congruence_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun ElementOrderModulo => fun UnitModulo => fun PowerCongruenceModulo => fun ElementOrderEvidence => fun power_law => fun modulus => fun a => fun unit_a => fun order_evidence => power_law modulus a unit_a order_evidence"
+    },
+    {
+      "declaration": "element_order_minimal_positive_power_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun ElementOrderModulo => fun UnitModulo => fun PositiveNat => fun LtNat => fun PowerCongruenceModulo => fun ElementOrderMinimalEvidence => fun ElementOrderMinimalityClaim => fun minimal_law => fun modulus => fun a => fun exponent => fun unit_a => fun positive_exponent => fun smaller_exponent => fun power_step => fun minimal_order => minimal_law modulus a exponent unit_a positive_exponent smaller_exponent power_step minimal_order"
+    },
+    {
+      "declaration": "primitive_root_definition_generator_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun UnitModulo => fun ResidueUnitGroupGenerator => fun PrimitiveRootModulo => fun PrimitiveRootDefinitionEvidence => fun definition_law => fun modulus => fun g => fun unit_g => fun generator_g => fun definition => definition_law modulus g unit_g generator_g definition"
+    },
+    {
+      "declaration": "residue_unit_group_generator_depends_on_modular_group_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Unit => fun one => fun mul => fun inv => fun ModularUnitGroupPackage => fun CyclicResidueUnitGroupEvidence => fun GeneratorElement => fun generator_law => fun laws => fun unit_group => fun cyclic_units => fun g => generator_law laws unit_group cyclic_units g"
+    },
+    {
+      "declaration": "abstract_cyclic_group_generator_count_formula_surface",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun one => fun mul => fun inv => fun Nat => fun EulerPhi => fun GroupOrder => fun GeneratorCount => fun FiniteGroupEvidence => fun CyclicGroupEvidence => fun GeneratorCountFormula => fun formula_law => fun laws => fun finite_group => fun cyclic_group => formula_law laws finite_group cyclic_group"
+    },
+    {
+      "declaration": "primitive_root_no_existence_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimitiveRootPackage => fun ResidueUnitGroupPackage => fun AbstractCyclicGroupPackage => fun PrimitiveRootExistenceTheorem => fun PrimePowerClassificationPackage => fun NoExistenceAssumptionBoundary => fun boundary_law => fun primitive_root => fun unit_group => fun cyclic_group => fun existence => fun classification => boundary_law primitive_root unit_group cyclic_group existence classification"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PrimitiveRoot/certificate.npcert"
+  }
+}

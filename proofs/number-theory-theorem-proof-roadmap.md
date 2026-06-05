@@ -348,6 +348,11 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-05`, finite cyclic group and character interfaces.
+- Implementation progress: `NT-T16` added the certificate-backed
+  `Proofs.Ai.NumberTheory.PrimitiveRoot` base surfaces for element order,
+  primitive-root definitions, cyclic residue-unit generators, and the abstract
+  cyclic-group generator-count formula without assuming primitive-root
+  existence.
 - Target modules:
   - `Proofs.Ai.NumberTheory.PrimitiveRoot`
   - `Proofs.Ai.NumberTheory.Character`
