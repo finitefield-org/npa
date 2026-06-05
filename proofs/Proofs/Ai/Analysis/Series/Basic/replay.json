@@ -1,0 +1,152 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Series.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SeriesPartialSums",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => PartialSumRel seq partial_sum"
+    },
+    {
+      "declaration": "SeriesConvergesTo",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun limit => forall (P : Prop), forall (mk : forall (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum), forall (partial_sum_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit limit), P), P"
+    },
+    {
+      "declaration": "SeriesConverges",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => forall (P : Prop), forall (choose : forall (limit : Scalar), forall (converges : @SeriesConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit), P), P"
+    },
+    {
+      "declaration": "SeriesAbsoluteTerms",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun abs_terms => forall (n : SequenceIndex), AbsoluteTermRel (seq n) (abs_terms n)"
+    },
+    {
+      "declaration": "SeriesAbsolutelyConverges",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => forall (P : Prop), forall (mk : forall (absolute_terms : @SeriesAbsoluteTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel abs_terms), forall (absolute_series_converges : @SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex abs_terms NearLimit PartialSumRel abs_partial_sum), P), P"
+    },
+    {
+      "declaration": "SeriesTail",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun TailRel => fun start => fun tail_terms => TailRel start seq tail_terms"
+    },
+    {
+      "declaration": "SeriesCauchy",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun CauchyNear => forall (P : Prop), forall (mk : forall (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum), forall (partial_sum_cauchy : @SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit CauchyNear), P), P"
+    },
+    {
+      "declaration": "series_partial_sums_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun hpartial => hpartial"
+    },
+    {
+      "declaration": "series_partial_sums_project",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun partial_sums => partial_sums"
+    },
+    {
+      "declaration": "series_converges_to_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun limit => fun partial_sums => fun partial_sum_converges => fun (P : Prop) => fun (mk : forall (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum), forall (partial_sum_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit limit), P) => mk partial_sums partial_sum_converges"
+    },
+    {
+      "declaration": "series_converges_to_partial_sums",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun limit => fun converges => converges (@SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) (fun (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) => fun (partial_sum_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit limit) => partial_sums)"
+    },
+    {
+      "declaration": "series_converges_to_sequence_converges",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun limit => fun converges => converges (@SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit limit) (fun (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) => fun (partial_sum_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit limit) => partial_sum_converges)"
+    },
+    {
+      "declaration": "series_convergence_is_partial_sum_sequence_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun limit => fun converges => @series_converges_to_sequence_converges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit converges"
+    },
+    {
+      "declaration": "series_converges_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun limit => fun converges => fun (P : Prop) => fun (choose : forall (limit : Scalar), forall (converges : @SeriesConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit), P) => choose limit converges"
+    },
+    {
+      "declaration": "series_converges_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun converges => fun P => fun choose => converges P choose"
+    },
+    {
+      "declaration": "series_absolute_terms_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun abs_terms => fun abs_term => abs_term"
+    },
+    {
+      "declaration": "series_absolute_terms_project",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun abs_terms => fun absolute_terms => fun n => absolute_terms n"
+    },
+    {
+      "declaration": "series_absolutely_converges_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun absolute_terms => fun absolute_series_converges => fun (P : Prop) => fun (mk : forall (absolute_terms : @SeriesAbsoluteTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel abs_terms), forall (absolute_series_converges : @SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex abs_terms NearLimit PartialSumRel abs_partial_sum), P) => mk absolute_terms absolute_series_converges"
+    },
+    {
+      "declaration": "series_absolutely_converges_terms",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun absolute_converges => absolute_converges (@SeriesAbsoluteTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel abs_terms) (fun (absolute_terms : @SeriesAbsoluteTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel abs_terms) => fun (absolute_series_converges : @SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex abs_terms NearLimit PartialSumRel abs_partial_sum) => absolute_terms)"
+    },
+    {
+      "declaration": "series_absolutely_converges_series",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun absolute_converges => absolute_converges (@SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex abs_terms NearLimit PartialSumRel abs_partial_sum) (fun (absolute_terms : @SeriesAbsoluteTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel abs_terms) => fun (absolute_series_converges : @SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex abs_terms NearLimit PartialSumRel abs_partial_sum) => absolute_series_converges)"
+    },
+    {
+      "declaration": "series_tail_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun TailRel => fun start => fun tail_terms => fun tail_relation => tail_relation"
+    },
+    {
+      "declaration": "series_tail_project",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun TailRel => fun start => fun tail_terms => fun tail => tail"
+    },
+    {
+      "declaration": "series_cauchy_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun CauchyNear => fun partial_sums => fun partial_sum_cauchy => fun (P : Prop) => fun (mk : forall (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum), forall (partial_sum_cauchy : @SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit CauchyNear), P) => mk partial_sums partial_sum_cauchy"
+    },
+    {
+      "declaration": "series_cauchy_partial_sums",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun CauchyNear => fun cauchy => cauchy (@SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) (fun (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) => fun (partial_sum_cauchy : @SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit CauchyNear) => partial_sums)"
+    },
+    {
+      "declaration": "series_cauchy_sequence_cauchy",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun CauchyNear => fun cauchy => cauchy (@SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit CauchyNear) (fun (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) => fun (partial_sum_cauchy : @SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit CauchyNear) => partial_sum_cauchy)"
+    },
+    {
+      "declaration": "series_cauchy_converges_from_sequence_criterion",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => cauchy (@SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) (fun (partial_sums : @SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) => fun (partial_sum_cauchy : @SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit CauchyNear) => (@sequence_cauchy_converges_from_completeness.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit norm CauchyNear CauchySmall ConvergesSmall evidence partial_sum_cauchy) (@SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum) (fun (limit : Scalar) => fun (partial_sum_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit limit) => @series_converges_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit (@series_converges_to_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit partial_sums partial_sum_converges)))"
+    },
+    {
+      "declaration": "series_cauchy_convergence_criterion",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => @series_cauchy_converges_from_sequence_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum norm CauchyNear CauchySmall ConvergesSmall evidence cauchy"
+    },
+    {
+      "declaration": "cauchy_series_criterion",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun PartialSumRel => fun partial_sum => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => @series_cauchy_convergence_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum norm CauchyNear CauchySmall ConvergesSmall evidence cauchy"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Series/Basic/certificate.npcert"
+  }
+}

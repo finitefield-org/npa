@@ -432,7 +432,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T06 Add Series Basics And Cauchy Criterion
 
-- Status: Pending
+- Status: `ANQ-008` complete. `Proofs.Ai.Analysis.Series.Basic`
+  now defines abstract partial-sum evidence, series convergence,
+  absolute-convergence evidence, tails, and a series Cauchy criterion that
+  reuses the sequence Cauchy convergence theorem on the partial-sum sequence.
 - Depends on: ANA-T03
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -456,7 +459,11 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Basic`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Basic::series_cauchy_converges_from_sequence_criterion /tmp/anq008-series-cauchy-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Stable downstream import names are
+  `series_convergence_is_partial_sum_sequence_convergence`,
+  `series_cauchy_convergence_criterion`, and `cauchy_series_criterion`.
 
 ### ANA-T07 Add Absolute Convergence And Comparison Tests
 

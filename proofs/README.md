@@ -1849,6 +1849,47 @@ boundedness supplies nested closed intervals, shrinking lengths, and interval-co
 the checked theorem then calls `interval_nesting_theorem` and passes its intersection point to the
 subsequence bridge.
 
+#### `Proofs.Ai.Analysis.Series.Basic`
+
+This module is the first series-convergence layer over `Proofs.Ai.Analysis.Sequence.Basic`.
+It keeps the partial-sum construction abstract as an explicit relation between a term sequence
+and its partial-sum sequence. Series convergence is therefore not a separate limit theory: the
+checked API reduces it to `SequenceConvergesTo` for the partial sums. The module imports sequence
+and real-analysis foundations, but does not import continuity, compactness criteria, or integration
+modules.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SeriesPartialSums` | abstract relation witnessing that a sequence is the partial-sum sequence of the ambient term sequence |
+| `SeriesConvergesTo` | packages partial-sum evidence and convergence of that partial-sum sequence to a limit |
+| `SeriesConverges` | existential-style choice of a series limit |
+| `SeriesAbsoluteTerms` | abstract relation assigning absolute-value terms without adding a primitive absolute-value function |
+| `SeriesAbsolutelyConverges` | convergence of the series formed from explicit absolute-value terms |
+| `SeriesTail` | abstract tail relation from a starting index to a tail term sequence |
+| `SeriesCauchy` | packages partial-sum evidence and Cauchy evidence for the partial-sum sequence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `series_partial_sums_intro`, `series_partial_sums_project` | introduce and project partial-sum evidence |
+| `series_converges_to_intro` | builds series convergence-to evidence from partial-sum evidence and sequence convergence |
+| `series_converges_to_partial_sums`, `series_converges_to_sequence_converges` | project the partial-sum and sequence-convergence witnesses |
+| `series_convergence_is_partial_sum_sequence_convergence` | stable reduction theorem from series convergence to sequence convergence of partial sums |
+| `series_converges_intro`, `series_converges_elim` | package and eliminate the chosen series limit |
+| `series_absolute_terms_intro`, `series_absolute_terms_project` | package and project absolute-term evidence |
+| `series_absolutely_converges_intro`, `series_absolutely_converges_terms`, `series_absolutely_converges_series` | package and project absolute convergence |
+| `series_tail_intro`, `series_tail_project` | package and project tail evidence |
+| `series_cauchy_intro`, `series_cauchy_partial_sums`, `series_cauchy_sequence_cauchy` | package and project the series Cauchy criterion hypotheses |
+| `series_cauchy_converges_from_sequence_criterion` | derives series convergence by applying `sequence_cauchy_converges_from_completeness` to partial sums |
+| `series_cauchy_convergence_criterion`, `cauchy_series_criterion` | stable aliases for later series criteria modules |
+
+The module has an empty axiom report. Absolute values, finite sums, and tails remain explicit
+relations supplied by callers, so later comparison-test modules can choose concrete law packages
+without changing the core convergence statements.
+
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
 No new carrier or operation definition lives here. This implemented module provides checked

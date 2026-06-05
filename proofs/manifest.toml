@@ -1589,6 +1589,24 @@ theorems = ["subsequence_extraction_evidence_intro", "subsequence_extraction_evi
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Analysis.Series.Basic"
+source = "Proofs/Ai/Analysis/Series/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Series/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Series/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Series/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2d9f9af58ababf53b3daecd45a81bbb0abd625e056d2cf5e5faeb7e312311732"
+certificate_file_sha256 = "sha256:44c8653aca4b463165308f9894249cc81d7b58720fc7fa566e48911fa4dc4d85"
+export_hash = "sha256:3f26243f4112c1c9601126d417c2ae87ae1f9123ccb8e9139ec0edbf0a898840"
+axiom_report_hash = "sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12"
+certificate_hash = "sha256:421b8194238a52294ce541831f50b64583c63e118b3ec025ecf56044dac3542e"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"]
+definitions = ["SeriesPartialSums", "SeriesConvergesTo", "SeriesConverges", "SeriesAbsoluteTerms", "SeriesAbsolutelyConverges", "SeriesTail", "SeriesCauchy"]
+theorems = ["series_partial_sums_intro", "series_partial_sums_project", "series_converges_to_intro", "series_converges_to_partial_sums", "series_converges_to_sequence_converges", "series_convergence_is_partial_sum_sequence_convergence", "series_converges_intro", "series_converges_elim", "series_absolute_terms_intro", "series_absolute_terms_project", "series_absolutely_converges_intro", "series_absolutely_converges_terms", "series_absolutely_converges_series", "series_tail_intro", "series_tail_project", "series_cauchy_intro", "series_cauchy_partial_sums", "series_cauchy_sequence_cauchy", "series_cauchy_converges_from_sequence_criterion", "series_cauchy_convergence_criterion", "cauchy_series_criterion"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Analysis.AbstractInverseFunction"
 source = "Proofs/Ai/Analysis/AbstractInverseFunction/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert"

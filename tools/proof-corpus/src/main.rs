@@ -192,6 +192,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_FIXED_POINT_MODULE,
     &ANALYSIS_SEQUENCE_BASIC_MODULE,
     &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
+    &ANALYSIS_SERIES_BASIC_MODULE,
     &ABSTRACT_INVERSE_FUNCTION_MODULE,
     &ABSTRACT_IMPLICIT_PHI_MODULE,
     &ABSTRACT_IMPLICIT_FUNCTION_MODULE,
@@ -642,6 +643,31 @@ const ANALYSIS_SEQUENCE_COMPACTNESS_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ANALYSIS_SEQUENCE_COMPACTNESS_DEFINITIONS,
     theorems: ANALYSIS_SEQUENCE_COMPACTNESS_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_SERIES_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Series.Basic",
+    source_path: "Proofs/Ai/Analysis/Series/Basic/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Series/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Series/Basic/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Series/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+        "Proofs.Ai.Analysis.Sequence.Basic",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_SERIES_BASIC_DEFINITIONS,
+    theorems: ANALYSIS_SERIES_BASIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -2876,6 +2902,17 @@ macro_rules! sequence_cauchy_seq_app {
     };
 }
 
+macro_rules! sequence_cauchy_seq_for_app {
+    ($sequence:literal, $small:literal) => {
+        concat!(
+            "@SequenceCauchySeq.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex ",
+            $sequence,
+            " NearLimit ",
+            $small
+        )
+    };
+}
+
 macro_rules! sequence_convergence_choice_app {
     () => {
         "@SequenceConvergenceChoice.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
@@ -2886,6 +2923,23 @@ macro_rules! sequence_cauchy_completeness_evidence_app {
     ($norm:literal, $cauchy_near:literal, $cauchy_small:literal, $converges_small:literal) => {
         concat!(
             "@SequenceCauchyCompletenessEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $norm,
+            " ",
+            $cauchy_near,
+            " ",
+            $cauchy_small,
+            " ",
+            $converges_small
+        )
+    };
+}
+
+macro_rules! sequence_cauchy_completeness_evidence_for_app {
+    ($sequence:literal, $norm:literal, $cauchy_near:literal, $cauchy_small:literal, $converges_small:literal) => {
+        concat!(
+            "@SequenceCauchyCompletenessEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex ",
+            $sequence,
+            " NearLimit ",
             $norm,
             " ",
             $cauchy_near,
@@ -2955,6 +3009,106 @@ macro_rules! sequence_cauchy_completeness_evidence_elim {
             ") => ",
             $body,
             ")"
+        )
+    };
+}
+
+macro_rules! series_partial_sums_app {
+    ($partial_sum_rel:literal, $partial_sum:literal) => {
+        concat!(
+            "@SeriesPartialSums.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $partial_sum_rel,
+            " ",
+            $partial_sum
+        )
+    };
+}
+
+macro_rules! series_converges_to_app {
+    ($partial_sum_rel:literal, $partial_sum:literal, $limit:literal) => {
+        concat!(
+            "@SeriesConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $partial_sum_rel,
+            " ",
+            $partial_sum,
+            " ",
+            $limit
+        )
+    };
+}
+
+macro_rules! series_converges_app {
+    ($partial_sum_rel:literal, $partial_sum:literal) => {
+        concat!(
+            "@SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $partial_sum_rel,
+            " ",
+            $partial_sum
+        )
+    };
+}
+
+macro_rules! series_converges_for_app {
+    ($terms:literal, $partial_sum_rel:literal, $partial_sum:literal) => {
+        concat!(
+            "@SeriesConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex ",
+            $terms,
+            " NearLimit ",
+            $partial_sum_rel,
+            " ",
+            $partial_sum
+        )
+    };
+}
+
+macro_rules! series_absolute_terms_app {
+    ($absolute_term_rel:literal, $abs_terms:literal) => {
+        concat!(
+            "@SeriesAbsoluteTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $abs_terms
+        )
+    };
+}
+
+macro_rules! series_absolutely_converges_app {
+    ($absolute_term_rel:literal, $partial_sum_rel:literal, $abs_terms:literal, $abs_partial_sum:literal) => {
+        concat!(
+            "@SeriesAbsolutelyConverges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $partial_sum_rel,
+            " ",
+            $abs_terms,
+            " ",
+            $abs_partial_sum
+        )
+    };
+}
+
+macro_rules! series_tail_app {
+    ($tail_rel:literal, $start:literal, $tail_terms:literal) => {
+        concat!(
+            "@SeriesTail.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $tail_rel,
+            " ",
+            $start,
+            " ",
+            $tail_terms
+        )
+    };
+}
+
+macro_rules! series_cauchy_app {
+    ($partial_sum_rel:literal, $partial_sum:literal, $cauchy_near:literal) => {
+        concat!(
+            "@SeriesCauchy.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $partial_sum_rel,
+            " ",
+            $partial_sum,
+            " ",
+            $cauchy_near
         )
     };
 }
@@ -32784,6 +32938,466 @@ const ANALYSIS_SEQUENCE_COMPACTNESS_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_SERIES_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SeriesPartialSums",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => PartialSumRel seq partial_sum"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesConvergesTo",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun limit => forall (P : Prop), forall (mk : forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), forall (partial_sum_converges : ",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SeriesConverges",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => forall (P : Prop), forall (choose : forall (limit : Scalar), forall (converges : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SeriesAbsoluteTerms",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun abs_terms => forall (n : SequenceIndex), AbsoluteTermRel (seq n) (abs_terms n)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesAbsolutelyConverges",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), forall (abs_partial_sum : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => forall (P : Prop), forall (mk : forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (absolute_series_converges : ",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SeriesTail",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (TailRel : forall (start : SequenceIndex), forall (terms : forall (n : SequenceIndex), Scalar), forall (tail_terms : forall (n : SequenceIndex), Scalar), Prop), forall (start : SequenceIndex), forall (tail_terms : forall (n : SequenceIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun TailRel => fun start => fun tail_terms => TailRel start seq tail_terms"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesCauchy",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun CauchyNear => forall (P : Prop), forall (mk : forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), forall (partial_sum_cauchy : ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            "), P), P"
+        )),
+    },
+];
+
+const ANALYSIS_SERIES_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "series_partial_sums_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (hpartial : PartialSumRel seq partial_sum), ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun hpartial => hpartial"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_partial_sums_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), PartialSumRel seq partial_sum"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun partial_sums => partial_sums"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_converges_to_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), forall (partial_sum_converges : ",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            "), ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun limit => fun partial_sums => fun partial_sum_converges => fun (P : Prop) => fun (mk : forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), forall (partial_sum_converges : ",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            "), P) => mk partial_sums partial_sum_converges"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_converges_to_partial_sums",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (converges : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun limit => fun converges => converges (",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") (fun (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") => fun (partial_sum_converges : ",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            ") => partial_sums)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_converges_to_sequence_converges",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (converges : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), ",
+            sequence_converges_to_for_app!("partial_sum", "limit")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun limit => fun converges => converges (",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            ") (fun (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") => fun (partial_sum_converges : ",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            ") => partial_sum_converges)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_convergence_is_partial_sum_sequence_convergence",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (converges : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), ",
+            sequence_converges_to_for_app!("partial_sum", "limit")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun limit => fun converges => @series_converges_to_sequence_converges.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit converges"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_converges_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (limit : Scalar), forall (converges : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun limit => fun converges => fun (P : Prop) => fun (choose : forall (limit : Scalar), forall (converges : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), P) => choose limit converges"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_converges_elim",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (converges : ",
+            series_converges_app!("PartialSumRel", "partial_sum"),
+            "), forall (P : Prop), forall (choose : forall (limit : Scalar), forall (converges_to : ",
+            series_converges_to_app!("PartialSumRel", "partial_sum", "limit"),
+            "), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun converges => fun P => fun choose => converges P choose"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_absolute_terms_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), forall (abs_term : forall (n : SequenceIndex), AbsoluteTermRel (seq n) (abs_terms n)), ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun abs_terms => fun abs_term => abs_term"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_absolute_terms_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (n : SequenceIndex), AbsoluteTermRel (seq n) (abs_terms n)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun abs_terms => fun absolute_terms => fun n => absolute_terms n"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_absolutely_converges_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), forall (abs_partial_sum : forall (n : SequenceIndex), Scalar), forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (absolute_series_converges : ",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum"),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun absolute_terms => fun absolute_series_converges => fun (P : Prop) => fun (mk : forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (absolute_series_converges : ",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum"),
+            "), P) => mk absolute_terms absolute_series_converges"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_absolutely_converges_terms",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), forall (abs_partial_sum : forall (n : SequenceIndex), Scalar), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun absolute_converges => absolute_converges (",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            ") (fun (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            ") => fun (absolute_series_converges : ",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum"),
+            ") => absolute_terms)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_absolutely_converges_series",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (n : SequenceIndex), Scalar), forall (abs_partial_sum : forall (n : SequenceIndex), Scalar), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun absolute_converges => absolute_converges (",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum"),
+            ") (fun (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            ") => fun (absolute_series_converges : ",
+            series_converges_for_app!("abs_terms", "PartialSumRel", "abs_partial_sum"),
+            ") => absolute_series_converges)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_tail_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (TailRel : forall (start : SequenceIndex), forall (terms : forall (n : SequenceIndex), Scalar), forall (tail_terms : forall (n : SequenceIndex), Scalar), Prop), forall (start : SequenceIndex), forall (tail_terms : forall (n : SequenceIndex), Scalar), forall (tail_relation : TailRel start seq tail_terms), ",
+            series_tail_app!("TailRel", "start", "tail_terms")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun TailRel => fun start => fun tail_terms => fun tail_relation => tail_relation"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_tail_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (TailRel : forall (start : SequenceIndex), forall (terms : forall (n : SequenceIndex), Scalar), forall (tail_terms : forall (n : SequenceIndex), Scalar), Prop), forall (start : SequenceIndex), forall (tail_terms : forall (n : SequenceIndex), Scalar), forall (tail : ",
+            series_tail_app!("TailRel", "start", "tail_terms"),
+            "), TailRel start seq tail_terms"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun TailRel => fun start => fun tail_terms => fun tail => tail"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_cauchy_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), forall (partial_sum_cauchy : ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun CauchyNear => fun partial_sums => fun partial_sum_cauchy => fun (P : Prop) => fun (mk : forall (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            "), forall (partial_sum_cauchy : ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            "), P) => mk partial_sums partial_sum_cauchy"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_cauchy_partial_sums",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (cauchy : ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun CauchyNear => fun cauchy => cauchy (",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") (fun (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") => fun (partial_sum_cauchy : ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            ") => partial_sums)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_cauchy_sequence_cauchy",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (cauchy : ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun CauchyNear => fun cauchy => cauchy (",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            ") (fun (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") => fun (partial_sum_cauchy : ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            ") => partial_sum_cauchy)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_cauchy_converges_from_sequence_criterion",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => cauchy (",
+            series_converges_app!("PartialSumRel", "partial_sum"),
+            ") (fun (partial_sums : ",
+            series_partial_sums_app!("PartialSumRel", "partial_sum"),
+            ") => fun (partial_sum_cauchy : ",
+            sequence_cauchy_seq_for_app!("partial_sum", "CauchyNear"),
+            ") => (@sequence_cauchy_converges_from_completeness.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex partial_sum NearLimit norm CauchyNear CauchySmall ConvergesSmall evidence partial_sum_cauchy) (",
+            series_converges_app!("PartialSumRel", "partial_sum"),
+            ") (fun (limit : Scalar) => fun (partial_sum_converges : ",
+            sequence_converges_to_for_app!("partial_sum", "limit"),
+            ") => @series_converges_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit (@series_converges_to_intro.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum limit partial_sums partial_sum_converges)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_cauchy_convergence_criterion",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => @series_cauchy_converges_from_sequence_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum norm CauchyNear CauchySmall ConvergesSmall evidence cauchy"
+        ),
+    },
+    TheoremArtifact {
+        name: "cauchy_series_criterion",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (n : SequenceIndex), Scalar), forall (partial_sum : forall (n : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (n : SequenceIndex), Scalar), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (seq : forall (n : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (seq : forall (n : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (cauchy : ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun evidence => fun cauchy => @series_cauchy_convergence_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum norm CauchyNear CauchySmall ConvergesSmall evidence cauchy"
+        ),
+    },
+];
+
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "square_def",
@@ -41321,6 +41935,38 @@ fn run_full() -> Result<(), String> {
         &analysis_sequence_compactness_imports,
         &analysis_sequence_compactness_source_interfaces,
     )?;
+    let analysis_series_basic_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+        analysis_sequence_basic.verified_module.clone(),
+    ];
+    let analysis_series_basic_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+        analysis_sequence_basic.source_interface.clone(),
+    ];
+    let _analysis_series_basic = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_SERIES_BASIC_MODULE,
+        &analysis_series_basic_imports,
+        &analysis_series_basic_source_interfaces,
+    )?;
     let abstract_inverse_function_imports = vec![
         eq_import.clone(),
         abstract_metric_topology.verified_module.clone(),
@@ -44248,6 +44894,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ANALYSIS_REAL_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_COMPACTNESS_MODULE.module
+        || config.module == ANALYSIS_SERIES_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module
