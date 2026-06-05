@@ -1906,6 +1906,10 @@ Implemented definitions / API declarations:
 | `AbsoluteConvergenceCauchyEvidence` | law package turning absolute convergence evidence into Cauchy evidence for the original partial sums |
 | `SeriesComparisonCauchyEvidence` | law package turning explicit nonnegative comparison hypotheses into Cauchy evidence |
 | `SeriesAbsoluteComparisonEvidence` | law package turning absolute domination by a convergent majorant into absolute convergence evidence |
+| `SeriesRatioTestHypothesis` | packages explicit ratio-step evidence with a below-one ratio-limit hypothesis |
+| `SeriesRootTestHypothesis` | packages explicit nth-root/root-term evidence with a below-one root-limit hypothesis |
+| `SeriesRatioTestEvidence` | law package turning ratio-test hypotheses into absolute convergence evidence |
+| `SeriesRootTestEvidence` | law package turning root-test hypotheses into absolute convergence evidence |
 
 Theorem targets:
 
@@ -1922,11 +1926,17 @@ Theorem targets:
 | `series_absolute_comparison_evidence_intro`, `series_absolute_comparison_evidence_apply` | package and apply the absolute-domination-to-absolute-convergence bridge |
 | `comparison_test_nonnegative`, `nonnegative_series_comparison_test` | prove ANQ-010 nonnegative comparison by applying `cauchy_series_criterion` to packaged comparison Cauchy evidence |
 | `comparison_test_absolutely_dominated`, `absolutely_dominated_series_comparison_test` | prove ANQ-010 absolute domination comparison via the ANQ-009 absolute-convergence theorem |
+| `series_ratio_test_hypothesis_intro`, `series_ratio_test_hypothesis_steps`, `series_ratio_test_hypothesis_limit` | package and project explicit ratio-test limit hypotheses |
+| `series_root_test_hypothesis_intro`, `series_root_test_hypothesis_terms`, `series_root_test_hypothesis_limit` | package and project explicit root-test limit hypotheses |
+| `series_ratio_test_evidence_intro`, `series_ratio_test_evidence_apply` | package and apply the ratio-test-to-absolute-convergence bridge |
+| `series_root_test_evidence_intro`, `series_root_test_evidence_apply` | package and apply the root-test-to-absolute-convergence bridge |
+| `d_alembert_ratio_test`, `ratio_test` | prove ANQ-011 ratio-test convergence via the ANQ-009 absolute-convergence theorem |
+| `cauchy_root_test`, `root_test` | prove ANQ-011 root-test convergence via the ANQ-009 absolute-convergence theorem |
 
 The module has an empty axiom report and imports `Series.Basic`, sequence, real, normed-space,
-and algebra foundations only. ANQ-009 and ANQ-010 keep all order, absolute-value, and comparison
-assumptions in explicit law packages; ratio and root tests are intentionally left for the next
-criteria theorem batch.
+and algebra foundations only. ANQ-009 through ANQ-011 keep all order, absolute-value,
+comparison, ratio-limit, exponent, and root assumptions in explicit law packages; no primitive
+exponentiation or nth-root operation is added to the criteria layer.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

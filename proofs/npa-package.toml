@@ -1552,14 +1552,14 @@ certificate = "Proofs/Ai/Analysis/Series/Criteria/certificate.npcert"
 meta = "Proofs/Ai/Analysis/Series/Criteria/meta.json"
 replay = "Proofs/Ai/Analysis/Series/Criteria/replay.json"
 producer_profile = "human-surface-explicit-term"
-expected_source_hash = "sha256:40681165fb8467b70de1b2b0172b7052cb2304972a7d58cf2aec12fc508bfc6d"
-expected_certificate_file_hash = "sha256:b38ea67defa5f1c7c0ba203d39fcb9d9b52e5432640e73d94ed1c94fdef2580b"
-expected_export_hash = "sha256:7fc19b23aacab70277920d88cd2cb35ea4495cd201ad6cf3dea1e935205932cc"
-expected_axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
-expected_certificate_hash = "sha256:0d72bb6fc404fb904b36adc7f3dab0f50afb446a8aca77f5e1a20197833ab11c"
+expected_source_hash = "sha256:d84ec6ac0cbc324f1a0e90cb45362fb599ad258e1c653bed6670d5cecae02067"
+expected_certificate_file_hash = "sha256:5e9fddc0fdc126077ec45fb86086f0e7732452cce1d6544bb1f3350903d98ef7"
+expected_export_hash = "sha256:9e1ab95ffb7ed49f6bb4d7cf78ab7e3c62e042a2b66d6151639e2000775d757b"
+expected_axiom_report_hash = "sha256:790847b5e96c0b69bbe213d7a92fc9600c64859cb4081d66393a33857680d3cf"
+expected_certificate_hash = "sha256:c317971796f35820cf312e9e9d43dc707b83ecb9681f61b44313976e6eb3b096"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Series.Basic"]
-definitions = ["SeriesNonnegativeTerms", "SeriesTermwiseDomination", "SeriesAbsoluteValueTerms", "AbsoluteConvergenceCauchyEvidence", "SeriesComparisonCauchyEvidence", "SeriesAbsoluteComparisonEvidence"]
-theorems = ["series_nonnegative_terms_intro", "series_nonnegative_terms_project", "series_termwise_domination_intro", "series_termwise_domination_project", "series_absolute_value_terms_intro", "series_absolute_value_terms_absolute_terms", "series_absolute_value_terms_nonnegative", "absolute_convergence_cauchy_evidence_intro", "absolute_convergence_cauchy_evidence_apply", "absolute_convergence_implies_cauchy", "absolute_convergence_implies_convergence", "absolute_convergent_series_converges", "series_comparison_cauchy_evidence_intro", "series_comparison_cauchy_evidence_apply", "series_absolute_comparison_evidence_intro", "series_absolute_comparison_evidence_apply", "comparison_test_nonnegative", "nonnegative_series_comparison_test", "comparison_test_absolutely_dominated", "absolutely_dominated_series_comparison_test"]
+definitions = ["SeriesNonnegativeTerms", "SeriesTermwiseDomination", "SeriesAbsoluteValueTerms", "AbsoluteConvergenceCauchyEvidence", "SeriesComparisonCauchyEvidence", "SeriesAbsoluteComparisonEvidence", "SeriesRatioTestHypothesis", "SeriesRootTestHypothesis", "SeriesRatioTestEvidence", "SeriesRootTestEvidence"]
+theorems = ["series_nonnegative_terms_intro", "series_nonnegative_terms_project", "series_termwise_domination_intro", "series_termwise_domination_project", "series_absolute_value_terms_intro", "series_absolute_value_terms_absolute_terms", "series_absolute_value_terms_nonnegative", "absolute_convergence_cauchy_evidence_intro", "absolute_convergence_cauchy_evidence_apply", "absolute_convergence_implies_cauchy", "absolute_convergence_implies_convergence", "absolute_convergent_series_converges", "series_comparison_cauchy_evidence_intro", "series_comparison_cauchy_evidence_apply", "series_absolute_comparison_evidence_intro", "series_absolute_comparison_evidence_apply", "comparison_test_nonnegative", "nonnegative_series_comparison_test", "comparison_test_absolutely_dominated", "absolutely_dominated_series_comparison_test", "series_ratio_test_hypothesis_intro", "series_ratio_test_hypothesis_steps", "series_ratio_test_hypothesis_limit", "series_root_test_hypothesis_intro", "series_root_test_hypothesis_terms", "series_root_test_hypothesis_limit", "series_ratio_test_evidence_intro", "series_ratio_test_evidence_apply", "series_root_test_evidence_intro", "series_root_test_evidence_apply", "d_alembert_ratio_test", "ratio_test", "cauchy_root_test", "root_test"]
 axioms = []
 
 [[modules]]

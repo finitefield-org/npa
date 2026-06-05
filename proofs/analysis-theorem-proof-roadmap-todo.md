@@ -501,7 +501,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T08 Add Ratio And Root Tests
 
-- Status: Pending
+- Status: `ANQ-011` complete. `Proofs.Ai.Analysis.Series.Criteria` now packages
+  explicit ratio-step, ratio-limit, root-term, and root-limit hypotheses and
+  proves d'Alembert ratio and Cauchy root tests by reducing them to the
+  ANQ-009 absolute-convergence theorem through explicit law evidence.
 - Depends on: ANA-T07
 - Inputs:
   - `Proofs.Ai.Analysis.Series.Criteria`
@@ -526,6 +529,8 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::d_alembert_ratio_test /tmp/anq011-ratio-test-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::cauchy_root_test /tmp/anq011-root-test-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### ANA-T09 Add Alternating, Dirichlet, Abel, And Rearrangement Planning Split

@@ -3267,6 +3267,110 @@ macro_rules! series_absolute_comparison_evidence_app {
     };
 }
 
+macro_rules! series_ratio_test_hypothesis_app {
+    (
+        $abs_terms:literal,
+        $ratio_terms:literal,
+        $ratio_step_rel:literal,
+        $ratio_limit_below_one:literal
+    ) => {
+        concat!(
+            "@SeriesRatioTestHypothesis.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $abs_terms,
+            " ",
+            $ratio_terms,
+            " ",
+            $ratio_step_rel,
+            " ",
+            $ratio_limit_below_one
+        )
+    };
+}
+
+macro_rules! series_root_test_hypothesis_app {
+    (
+        $abs_terms:literal,
+        $root_terms:literal,
+        $root_term_rel:literal,
+        $root_limit_below_one:literal
+    ) => {
+        concat!(
+            "@SeriesRootTestHypothesis.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $abs_terms,
+            " ",
+            $root_terms,
+            " ",
+            $root_term_rel,
+            " ",
+            $root_limit_below_one
+        )
+    };
+}
+
+macro_rules! series_ratio_test_evidence_app {
+    (
+        $absolute_term_rel:literal,
+        $partial_sum_rel:literal,
+        $abs_terms:literal,
+        $abs_partial_sum:literal,
+        $ratio_terms:literal,
+        $nonnegative:literal,
+        $ratio_step_rel:literal,
+        $ratio_limit_below_one:literal
+    ) => {
+        concat!(
+            "@SeriesRatioTestEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $partial_sum_rel,
+            " ",
+            $abs_terms,
+            " ",
+            $abs_partial_sum,
+            " ",
+            $ratio_terms,
+            " ",
+            $nonnegative,
+            " ",
+            $ratio_step_rel,
+            " ",
+            $ratio_limit_below_one
+        )
+    };
+}
+
+macro_rules! series_root_test_evidence_app {
+    (
+        $absolute_term_rel:literal,
+        $partial_sum_rel:literal,
+        $abs_terms:literal,
+        $abs_partial_sum:literal,
+        $root_terms:literal,
+        $nonnegative:literal,
+        $root_term_rel:literal,
+        $root_limit_below_one:literal
+    ) => {
+        concat!(
+            "@SeriesRootTestEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $partial_sum_rel,
+            " ",
+            $abs_terms,
+            " ",
+            $abs_partial_sum,
+            " ",
+            $root_terms,
+            " ",
+            $nonnegative,
+            " ",
+            $root_term_rel,
+            " ",
+            $root_limit_below_one
+        )
+    };
+}
+
 macro_rules! upper_bound_app {
     ($set:expr, $bound:expr) => {
         concat!(
@@ -33653,6 +33757,78 @@ const ANALYSIS_SERIES_CRITERIA_DEFINITIONS: &[DefinitionArtifact] = &[
             "), P), P"
         )),
     },
+    DefinitionArtifact {
+        name: "SeriesRatioTestHypothesis",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun ratio_terms => fun RatioStepRel => fun RatioLimitBelowOne => forall (P : Prop), forall (mk : forall (ratio_steps : RatioStepRel abs_terms ratio_terms), forall (ratio_limit : RatioLimitBelowOne ratio_terms), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesRootTestHypothesis",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun root_terms => fun RootTermRel => fun RootLimitBelowOne => forall (P : Prop), forall (mk : forall (root_terms_evidence : RootTermRel abs_terms root_terms), forall (root_limit : RootLimitBelowOne root_terms), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesRatioTestEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), Prop"
+        )),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun ratio_terms => fun Nonnegative => fun RatioStepRel => fun RatioLimitBelowOne => forall (P : Prop), forall (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SeriesRootTestEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), Prop"
+        )),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun root_terms => fun Nonnegative => fun RootTermRel => fun RootLimitBelowOne => forall (P : Prop), forall (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), P), P"
+        )),
+    },
 ];
 
 const ANALYSIS_SERIES_CRITERIA_THEOREMS: &[TheoremArtifact] = &[
@@ -34304,6 +34480,524 @@ const ANALYSIS_SERIES_CRITERIA_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_sequence_basic_abs!(
             "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun majorant_nonnegative => fun dominated => fun majorant_converges => fun sequence_evidence => fun absolute_criterion => fun comparison_evidence => @comparison_test_absolutely_dominated.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum majorant_terms majorant_partial_sum Nonnegative DominatedBy norm CauchyNear CauchySmall ConvergesSmall absolute_values majorant_nonnegative dominated majorant_converges sequence_evidence absolute_criterion comparison_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_ratio_test_hypothesis_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (ratio_steps : RatioStepRel abs_terms ratio_terms), forall (ratio_limit : RatioLimitBelowOne ratio_terms), ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun ratio_terms => fun RatioStepRel => fun RatioLimitBelowOne => fun ratio_steps => fun ratio_limit => fun (P : Prop) => fun (mk : forall (ratio_steps : RatioStepRel abs_terms ratio_terms), forall (ratio_limit : RatioLimitBelowOne ratio_terms), P) => mk ratio_steps ratio_limit"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_ratio_test_hypothesis_steps",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), RatioStepRel abs_terms ratio_terms"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun ratio_terms => fun RatioStepRel => fun RatioLimitBelowOne => fun hypothesis => hypothesis (RatioStepRel abs_terms ratio_terms) (fun (ratio_steps : RatioStepRel abs_terms ratio_terms) => fun (ratio_limit : RatioLimitBelowOne ratio_terms) => ratio_steps)"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_ratio_test_hypothesis_limit",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), RatioLimitBelowOne ratio_terms"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun ratio_terms => fun RatioStepRel => fun RatioLimitBelowOne => fun hypothesis => hypothesis (RatioLimitBelowOne ratio_terms) (fun (ratio_steps : RatioStepRel abs_terms ratio_terms) => fun (ratio_limit : RatioLimitBelowOne ratio_terms) => ratio_limit)"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_root_test_hypothesis_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (root_terms_evidence : RootTermRel abs_terms root_terms), forall (root_limit : RootLimitBelowOne root_terms), ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun root_terms => fun RootTermRel => fun RootLimitBelowOne => fun root_terms_evidence => fun root_limit => fun (P : Prop) => fun (mk : forall (root_terms_evidence : RootTermRel abs_terms root_terms), forall (root_limit : RootLimitBelowOne root_terms), P) => mk root_terms_evidence root_limit"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_root_test_hypothesis_terms",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), RootTermRel abs_terms root_terms"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun root_terms => fun RootTermRel => fun RootLimitBelowOne => fun hypothesis => hypothesis (RootTermRel abs_terms root_terms) (fun (root_terms_evidence : RootTermRel abs_terms root_terms) => fun (root_limit : RootLimitBelowOne root_terms) => root_terms_evidence)"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_root_test_hypothesis_limit",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), RootLimitBelowOne root_terms"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun abs_terms => fun root_terms => fun RootTermRel => fun RootLimitBelowOne => fun hypothesis => hypothesis (RootLimitBelowOne root_terms) (fun (root_terms_evidence : RootTermRel abs_terms root_terms) => fun (root_limit : RootLimitBelowOne root_terms) => root_limit)"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_ratio_test_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_ratio_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "ratio_terms",
+                "Nonnegative",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun ratio_terms => fun Nonnegative => fun RatioStepRel => fun RatioLimitBelowOne => fun bridge => fun (P : Prop) => fun (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), P) => mk bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_ratio_test_evidence_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (evidence : ",
+            series_ratio_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "ratio_terms",
+                "Nonnegative",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun ratio_terms => fun Nonnegative => fun RatioStepRel => fun RatioLimitBelowOne => fun evidence => fun absolute_values => fun ratio_hypothesis => evidence (",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            ") (fun (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            ") => bridge absolute_values ratio_hypothesis)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_root_test_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_root_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "root_terms",
+                "Nonnegative",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun root_terms => fun Nonnegative => fun RootTermRel => fun RootLimitBelowOne => fun bridge => fun (P : Prop) => fun (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), P) => mk bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_root_test_evidence_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (evidence : ",
+            series_root_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "root_terms",
+                "Nonnegative",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun root_terms => fun Nonnegative => fun RootTermRel => fun RootLimitBelowOne => fun evidence => fun absolute_values => fun root_hypothesis => evidence (",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            ") (fun (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            ") => bridge absolute_values root_hypothesis)"
+        )),
+    },
+    TheoremArtifact {
+        name: "d_alembert_ratio_test",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (absolute_criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (ratio_evidence : ",
+            series_ratio_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "ratio_terms",
+                "Nonnegative",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun ratio_terms => fun Nonnegative => fun RatioStepRel => fun RatioLimitBelowOne => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun ratio_hypothesis => fun sequence_evidence => fun absolute_criterion => fun ratio_evidence => @absolute_convergence_implies_convergence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative norm CauchyNear CauchySmall ConvergesSmall absolute_values sequence_evidence absolute_criterion (@series_ratio_test_evidence_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum ratio_terms Nonnegative RatioStepRel RatioLimitBelowOne ratio_evidence absolute_values ratio_hypothesis)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ratio_test",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (ratio_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RatioStepRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (RatioLimitBelowOne : forall (ratios : forall (k : SequenceIndex), Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (ratio_hypothesis : ",
+            series_ratio_test_hypothesis_app!(
+                "abs_terms",
+                "ratio_terms",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (absolute_criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (ratio_evidence : ",
+            series_ratio_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "ratio_terms",
+                "Nonnegative",
+                "RatioStepRel",
+                "RatioLimitBelowOne"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun ratio_terms => fun Nonnegative => fun RatioStepRel => fun RatioLimitBelowOne => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun ratio_hypothesis => fun sequence_evidence => fun absolute_criterion => fun ratio_evidence => @d_alembert_ratio_test.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum ratio_terms Nonnegative RatioStepRel RatioLimitBelowOne norm CauchyNear CauchySmall ConvergesSmall absolute_values ratio_hypothesis sequence_evidence absolute_criterion ratio_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "cauchy_root_test",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (absolute_criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (root_evidence : ",
+            series_root_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "root_terms",
+                "Nonnegative",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun root_terms => fun Nonnegative => fun RootTermRel => fun RootLimitBelowOne => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun root_hypothesis => fun sequence_evidence => fun absolute_criterion => fun root_evidence => @absolute_convergence_implies_convergence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative norm CauchyNear CauchySmall ConvergesSmall absolute_values sequence_evidence absolute_criterion (@series_root_test_evidence_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum root_terms Nonnegative RootTermRel RootLimitBelowOne root_evidence absolute_values root_hypothesis)"
+        ),
+    },
+    TheoremArtifact {
+        name: "root_test",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (root_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (RootTermRel : forall (absolute_terms : forall (k : SequenceIndex), Scalar), forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (RootLimitBelowOne : forall (roots : forall (k : SequenceIndex), Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (root_hypothesis : ",
+            series_root_test_hypothesis_app!(
+                "abs_terms",
+                "root_terms",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (absolute_criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (root_evidence : ",
+            series_root_test_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "root_terms",
+                "Nonnegative",
+                "RootTermRel",
+                "RootLimitBelowOne"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun root_terms => fun Nonnegative => fun RootTermRel => fun RootLimitBelowOne => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun root_hypothesis => fun sequence_evidence => fun absolute_criterion => fun root_evidence => @cauchy_root_test.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum root_terms Nonnegative RootTermRel RootLimitBelowOne norm CauchyNear CauchySmall ConvergesSmall absolute_values root_hypothesis sequence_evidence absolute_criterion root_evidence"
         ),
     },
 ];
