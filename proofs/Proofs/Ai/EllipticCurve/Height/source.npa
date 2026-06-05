@@ -9,3 +9,10 @@ theorem elliptic_neron_tate_height_interface :
   forall (F : Type), forall (Point : Type), forall (NeronTateHeight : Point -> F), forall (IsPositive : Prop), forall (neron_tate_law : IsPositive -> IsPositive), IsPositive -> IsPositive :=
   fun F => fun Point => fun NeronTateHeight => fun IsPositive => fun neron_tate_law => neron_tate_law
 
+theorem height_field_and_positivity_hypotheses_surface :
+  forall (FieldCarrier : Type), forall (Point : Type), forall (Height : Point -> FieldCarrier), forall (Nonnegative : FieldCarrier -> Prop), forall (FieldHypotheses : Prop), forall (PositivityHypotheses : Prop), forall (height_law : forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (Height point)), forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (Height point) :=
+  fun FieldCarrier => fun Point => fun Height => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun height_law => fun field_hypotheses => fun positivity_hypotheses => fun point => height_law field_hypotheses positivity_hypotheses point
+
+theorem neron_tate_height_field_positivity_pairing_surface :
+  forall (FieldCarrier : Type), forall (Point : Type), forall (NeronTateHeight : Point -> FieldCarrier), forall (Pairing : Point -> Point -> FieldCarrier), forall (Nonnegative : FieldCarrier -> Prop), forall (FieldHypotheses : Prop), forall (PositivityHypotheses : Prop), forall (neron_law : forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)), forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point) :=
+  fun FieldCarrier => fun Point => fun NeronTateHeight => fun Pairing => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun neron_law => fun field_hypotheses => fun positivity_hypotheses => fun point => neron_law field_hypotheses positivity_hypotheses point

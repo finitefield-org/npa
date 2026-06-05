@@ -8,6 +8,16 @@
       "declaration": "elliptic_semistable_interface",
       "source_kind": "explicit_term",
       "term": "fun F => fun LocalField => fun IsSemistable => fun semistable_law => semistable_law"
+    },
+    {
+      "declaration": "semistability_general_elliptic_curve_predicate_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurve => fun LocalField => fun ReductionType => fun IsSemistable => fun semistable_law => fun curve => fun local_field => semistable_law curve local_field"
+    },
+    {
+      "declaration": "semistability_not_frey_specific_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun GeneralEllipticCurvePackage => fun FreyCurvePackage => fun SemistabilityPredicate => fun NotFreySpecific => fun boundary_law => fun curve_package => fun frey_package => boundary_law curve_package frey_package"
     }
   ],
   "acceptance": {

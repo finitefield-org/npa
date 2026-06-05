@@ -807,7 +807,10 @@ semantics.
   - `NT-T46` added certificate-backed `Proofs.Ai.EllipticCurve.Reduction`,
     `Proofs.Ai.EllipticCurve.Semistable`, and `Proofs.Ai.EllipticCurve.Height`
     defining L1 interfaces for conductor, reduction type, minimal model,
-    semistability, and height/Neron-Tate height.
+    semistability, and height/Neron-Tate height, with explicit LocalField and
+    valuation dependencies, conductor/reduction/minimal-model compatibility,
+    semistability as a general non-Frey-specific elliptic-curve predicate, and
+    named field/positivity hypotheses for height and Neron-Tate height.
 
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
   and finite fields.

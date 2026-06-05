@@ -18,6 +18,16 @@
       "declaration": "elliptic_minimal_model_interface",
       "source_kind": "explicit_term",
       "term": "fun F => fun LocalField => fun Valuation => fun MinimalModel => fun minimal_model_law => minimal_model_law"
+    },
+    {
+      "declaration": "reduction_local_field_valuation_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurve => fun LocalField => fun ValueGroup => fun Valuation => fun ReductionData => fun Dependency => fun dependency_law => fun curve => fun local_point => fun reduction_data => dependency_law curve local_point reduction_data"
+    },
+    {
+      "declaration": "conductor_reduction_minimal_model_compatibility_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun LocalField => fun Valuation => fun Conductor => fun ReductionType => fun MinimalModel => fun Compatibility => fun compatibility_law => fun conductor => fun reduction_type => fun minimal_model => compatibility_law conductor reduction_type minimal_model"
     }
   ],
   "acceptance": {

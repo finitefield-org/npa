@@ -5,15 +5,17 @@
   "certificate": "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:fe1233717cdd2143c3115578a4ce09b682f40027c11c51dc7bc9fb3adf3cf480",
-  "certificate_file_sha256": "sha256:fd70a737c3630215df01b95bd9eca0faff0d3997dc047a696285e10eab399993",
-  "export_hash": "sha256:93aa542fe0e45d8872e429df97b10c4284bd5f08ab54a759e38570dcce6a7612",
-  "axiom_report_hash": "sha256:a1ef77782ab68d41aede3e412c79174432934c3cac66c319dd2d406cf514f40e",
-  "certificate_hash": "sha256:2fa050e09afed214c7837245a5d24d38d4a4eb2afbd1134187ac6e34bfccd7a1",
+  "source_sha256": "sha256:324071dbd185459578588904c34302c69866a887fef60fa917af1be76c09eb3b",
+  "certificate_file_sha256": "sha256:6a421e66b11bce27c54b9f85a934fa042bf2119c4d88a386c219a4c12fe28736",
+  "export_hash": "sha256:5b97bc312b9fb890a117863e3ab435ede69d38b00c01a88c392b386fd7de1a64",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:0e4308e41e4ea89040e037e29cf8137b4223c4a3de2c58578d172f5745dc2f45",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction"],
   "axioms": [],
   "declarations": [
-    { "name": "elliptic_semistable_interface", "kind": "theorem" }
+    { "name": "elliptic_semistable_interface", "kind": "theorem" },
+    { "name": "semistability_general_elliptic_curve_predicate_boundary", "kind": "theorem" },
+    { "name": "semistability_not_frey_specific_boundary", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

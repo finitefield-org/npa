@@ -6,3 +6,10 @@ theorem elliptic_semistable_interface :
   forall (F : Type), forall (LocalField : Type), forall (IsSemistable : Prop), forall (semistable_law : IsSemistable -> IsSemistable), IsSemistable -> IsSemistable :=
   fun F => fun LocalField => fun IsSemistable => fun semistable_law => semistable_law
 
+theorem semistability_general_elliptic_curve_predicate_boundary :
+  forall (EllipticCurve : Type), forall (LocalField : Type), forall (ReductionType : Type), forall (IsSemistable : EllipticCurve -> LocalField -> Prop), forall (semistable_law : forall (curve : EllipticCurve), forall (local_field : LocalField), IsSemistable curve local_field), forall (curve : EllipticCurve), forall (local_field : LocalField), IsSemistable curve local_field :=
+  fun EllipticCurve => fun LocalField => fun ReductionType => fun IsSemistable => fun semistable_law => fun curve => fun local_field => semistable_law curve local_field
+
+theorem semistability_not_frey_specific_boundary :
+  forall (GeneralEllipticCurvePackage : Type), forall (FreyCurvePackage : Type), forall (SemistabilityPredicate : GeneralEllipticCurvePackage -> Prop), forall (NotFreySpecific : GeneralEllipticCurvePackage -> FreyCurvePackage -> Prop), forall (boundary_law : forall (curve_package : GeneralEllipticCurvePackage), forall (frey_package : FreyCurvePackage), NotFreySpecific curve_package frey_package), forall (curve_package : GeneralEllipticCurvePackage), forall (frey_package : FreyCurvePackage), NotFreySpecific curve_package frey_package :=
+  fun GeneralEllipticCurvePackage => fun FreyCurvePackage => fun SemistabilityPredicate => fun NotFreySpecific => fun boundary_law => fun curve_package => fun frey_package => boundary_law curve_package frey_package

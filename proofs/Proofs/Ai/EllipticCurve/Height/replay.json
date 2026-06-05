@@ -13,6 +13,16 @@
       "declaration": "elliptic_neron_tate_height_interface",
       "source_kind": "explicit_term",
       "term": "fun F => fun Point => fun NeronTateHeight => fun IsPositive => fun neron_tate_law => neron_tate_law"
+    },
+    {
+      "declaration": "height_field_and_positivity_hypotheses_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun Point => fun Height => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun height_law => fun field_hypotheses => fun positivity_hypotheses => fun point => height_law field_hypotheses positivity_hypotheses point"
+    },
+    {
+      "declaration": "neron_tate_height_field_positivity_pairing_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun Point => fun NeronTateHeight => fun Pairing => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun neron_law => fun field_hypotheses => fun positivity_hypotheses => fun point => neron_law field_hypotheses positivity_hypotheses point"
     }
   ],
   "acceptance": {

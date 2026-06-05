@@ -22294,6 +22294,18 @@ const ELLIPTIC_CURVE_REDUCTION_THEOREMS: &[TheoremArtifact] = &[
             "fun F => fun LocalField => fun Valuation => fun MinimalModel => fun minimal_model_law => minimal_model_law"
         ),
     },
+    TheoremArtifact {
+        name: "reduction_local_field_valuation_dependency_surface",
+        universe_params: &[],
+        statement: "forall (EllipticCurve : Type), forall (LocalField : Type), forall (ValueGroup : Type), forall (Valuation : LocalField -> ValueGroup), forall (ReductionData : EllipticCurve -> LocalField -> Type), forall (Dependency : forall (curve : EllipticCurve), forall (local_point : LocalField), ReductionData curve local_point -> Prop), forall (dependency_law : forall (curve : EllipticCurve), forall (local_point : LocalField), forall (reduction_data : ReductionData curve local_point), Dependency curve local_point reduction_data), forall (curve : EllipticCurve), forall (local_point : LocalField), forall (reduction_data : ReductionData curve local_point), Dependency curve local_point reduction_data",
+        proof: "fun EllipticCurve => fun LocalField => fun ValueGroup => fun Valuation => fun ReductionData => fun Dependency => fun dependency_law => fun curve => fun local_point => fun reduction_data => dependency_law curve local_point reduction_data",
+    },
+    TheoremArtifact {
+        name: "conductor_reduction_minimal_model_compatibility_surface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (LocalField : Type), forall (Valuation : LocalField -> FieldCarrier), forall (Conductor : Type), forall (ReductionType : Type), forall (MinimalModel : Type), forall (Compatibility : Conductor -> ReductionType -> MinimalModel -> Prop), forall (compatibility_law : forall (conductor : Conductor), forall (reduction_type : ReductionType), forall (minimal_model : MinimalModel), Compatibility conductor reduction_type minimal_model), forall (conductor : Conductor), forall (reduction_type : ReductionType), forall (minimal_model : MinimalModel), Compatibility conductor reduction_type minimal_model",
+        proof: "fun FieldCarrier => fun LocalField => fun Valuation => fun Conductor => fun ReductionType => fun MinimalModel => fun Compatibility => fun compatibility_law => fun conductor => fun reduction_type => fun minimal_model => compatibility_law conductor reduction_type minimal_model",
+    },
 ];
 
 const ELLIPTIC_CURVE_SEMISTABLE_THEOREMS: &[TheoremArtifact] = &[
@@ -22306,6 +22318,18 @@ const ELLIPTIC_CURVE_SEMISTABLE_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun F => fun LocalField => fun IsSemistable => fun semistable_law => semistable_law"
         ),
+    },
+    TheoremArtifact {
+        name: "semistability_general_elliptic_curve_predicate_boundary",
+        universe_params: &[],
+        statement: "forall (EllipticCurve : Type), forall (LocalField : Type), forall (ReductionType : Type), forall (IsSemistable : EllipticCurve -> LocalField -> Prop), forall (semistable_law : forall (curve : EllipticCurve), forall (local_field : LocalField), IsSemistable curve local_field), forall (curve : EllipticCurve), forall (local_field : LocalField), IsSemistable curve local_field",
+        proof: "fun EllipticCurve => fun LocalField => fun ReductionType => fun IsSemistable => fun semistable_law => fun curve => fun local_field => semistable_law curve local_field",
+    },
+    TheoremArtifact {
+        name: "semistability_not_frey_specific_boundary",
+        universe_params: &[],
+        statement: "forall (GeneralEllipticCurvePackage : Type), forall (FreyCurvePackage : Type), forall (SemistabilityPredicate : GeneralEllipticCurvePackage -> Prop), forall (NotFreySpecific : GeneralEllipticCurvePackage -> FreyCurvePackage -> Prop), forall (boundary_law : forall (curve_package : GeneralEllipticCurvePackage), forall (frey_package : FreyCurvePackage), NotFreySpecific curve_package frey_package), forall (curve_package : GeneralEllipticCurvePackage), forall (frey_package : FreyCurvePackage), NotFreySpecific curve_package frey_package",
+        proof: "fun GeneralEllipticCurvePackage => fun FreyCurvePackage => fun SemistabilityPredicate => fun NotFreySpecific => fun boundary_law => fun curve_package => fun frey_package => boundary_law curve_package frey_package",
     },
 ];
 
@@ -22329,6 +22353,18 @@ const ELLIPTIC_CURVE_HEIGHT_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun F => fun Point => fun NeronTateHeight => fun IsPositive => fun neron_tate_law => neron_tate_law"
         ),
+    },
+    TheoremArtifact {
+        name: "height_field_and_positivity_hypotheses_surface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (Point : Type), forall (Height : Point -> FieldCarrier), forall (Nonnegative : FieldCarrier -> Prop), forall (FieldHypotheses : Prop), forall (PositivityHypotheses : Prop), forall (height_law : forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (Height point)), forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (Height point)",
+        proof: "fun FieldCarrier => fun Point => fun Height => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun height_law => fun field_hypotheses => fun positivity_hypotheses => fun point => height_law field_hypotheses positivity_hypotheses point",
+    },
+    TheoremArtifact {
+        name: "neron_tate_height_field_positivity_pairing_surface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (Point : Type), forall (NeronTateHeight : Point -> FieldCarrier), forall (Pairing : Point -> Point -> FieldCarrier), forall (Nonnegative : FieldCarrier -> Prop), forall (FieldHypotheses : Prop), forall (PositivityHypotheses : Prop), forall (neron_law : forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)), forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)",
+        proof: "fun FieldCarrier => fun Point => fun NeronTateHeight => fun Pairing => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun neron_law => fun field_hypotheses => fun positivity_hypotheses => fun point => neron_law field_hypotheses positivity_hypotheses point",
     },
 ];
 
@@ -50987,6 +51023,9 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE.module
         || config.module == ELLIPTIC_CURVE_BASIC_MODULE.module
         || config.module == ELLIPTIC_CURVE_GROUP_LAW_MODULE.module
+        || config.module == ELLIPTIC_CURVE_REDUCTION_MODULE.module
+        || config.module == ELLIPTIC_CURVE_SEMISTABLE_MODULE.module
+        || config.module == ELLIPTIC_CURVE_HEIGHT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

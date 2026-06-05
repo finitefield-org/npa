@@ -312,6 +312,16 @@ Current bundles:
   GroupLaw interface preserving point addition, identity, inverse, closure,
   associativity, Basic dependency, and independence from modularity, Ribet, or
   bridge-axiom packages.
+- `Proofs/Ai/EllipticCurve/Reduction/`: certificate-backed elliptic-curve
+  reduction interface preserving conductor, reduction type, minimal model,
+  explicit LocalField/valuation dependencies, and compatibility between
+  conductor, reduction type, and minimal model data.
+- `Proofs/Ai/EllipticCurve/Semistable/`: certificate-backed semistability
+  interface preserving semistability as a general elliptic-curve/local-field
+  predicate, reduction dependency, and an explicit non-Frey-specific boundary.
+- `Proofs/Ai/EllipticCurve/Height/`: certificate-backed height interface
+  preserving height and Neron-Tate height surfaces with named field hypotheses,
+  positivity hypotheses, nonnegativity predicates, and pairing context.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

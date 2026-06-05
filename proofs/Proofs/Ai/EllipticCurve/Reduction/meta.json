@@ -5,17 +5,19 @@
   "certificate": "Proofs/Ai/EllipticCurve/Reduction/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:5b74a7659ff2f2585888918a382b174c1bf58147d906277f47688eab88aca04b",
-  "certificate_file_sha256": "sha256:a99286f84b700498df90739d72a8f3d984e34b8fd8bf6be047f144508f7073e8",
-  "export_hash": "sha256:d454dee9b239a0956d27b44f3aab5d87e74e238e46c3ff62c92bbd9886e23bdf",
-  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
-  "certificate_hash": "sha256:f0c06e7966c30192cd4719d7a6d18e3e79bdb4d67803747f7bc523ecf93dd33c",
+  "source_sha256": "sha256:2e33fd9c9aad73034863b3b3b4a8c2737de8803314cfee4056f63627c326ee02",
+  "certificate_file_sha256": "sha256:c0388cd6dbb298482230ecead5f1434caca5eb11c0497f46778c7abb445efbb4",
+  "export_hash": "sha256:b0e09b89ec74c7026cc5f3ba0bd018af7af05b2d6f20b59cf7493cf359aee7b3",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:1d4f0ada4d465c7e3c1a1f35e54e63493327b9b1d0270d86201e9202f2adf730",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.NumberTheory.LocalField"],
   "axioms": [],
   "declarations": [
     { "name": "elliptic_conductor_interface", "kind": "theorem" },
     { "name": "elliptic_reduction_type_interface", "kind": "theorem" },
-    { "name": "elliptic_minimal_model_interface", "kind": "theorem" }
+    { "name": "elliptic_minimal_model_interface", "kind": "theorem" },
+    { "name": "reduction_local_field_valuation_dependency_surface", "kind": "theorem" },
+    { "name": "conductor_reduction_minimal_model_compatibility_surface", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

@@ -5,16 +5,18 @@
   "certificate": "Proofs/Ai/EllipticCurve/Height/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:9408c9e97ececde0781ad80675cdb32a27b575c4c5b58db1b9f1d6bed68f9dd1",
-  "certificate_file_sha256": "sha256:98e22dc62b99af9ba27d0302fd57f572104e29a6bb27dda6d10e0962bf1da36d",
-  "export_hash": "sha256:78d40eaaae9e0fe8c5608442de7292b6ceef530463cbf6c5ac70149c5058a774",
-  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
-  "certificate_hash": "sha256:a06ec6f0de4eee79c26439c70288c96ab4e96640c0454450ac7bf77272896df7",
+  "source_sha256": "sha256:73ff7b7f45d11d08059203470873ca1e8fdc125ee228390a7640a77f0ead8e5c",
+  "certificate_file_sha256": "sha256:2825f4b069c75100aa5cfb69779a24e3a4cb58e4a745e3093c3d6f8a56a7e1e3",
+  "export_hash": "sha256:de4796a785384c5769858df8c15b091738df078cbb0c36611c7b1db8efa5f515",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:28c6a0039df0ced87d0a746cb57dc2d308fdf4d74e3c07f38aa90da8817e4a79",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic"],
   "axioms": [],
   "declarations": [
     { "name": "elliptic_height_interface", "kind": "theorem" },
-    { "name": "elliptic_neron_tate_height_interface", "kind": "theorem" }
+    { "name": "elliptic_neron_tate_height_interface", "kind": "theorem" },
+    { "name": "height_field_and_positivity_hypotheses_surface", "kind": "theorem" },
+    { "name": "neron_tate_height_field_positivity_pairing_surface", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
