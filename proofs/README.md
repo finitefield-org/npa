@@ -258,6 +258,11 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/NumberField/`: certificate-backed NumberField interface preserving
   algebraic number, number field, and ring_of_integers surfaces, with field-extension
   dependencies routed through `develop/proof-corpus-field-theory-roadmap.md`.
+- `Proofs/Ai/NumberTheory/DedekindDomain/`: certificate-backed number-field invariant
+  and DedekindDomain interface preserving Norm, Trace, Discriminant, integral basis,
+  ring-of-integers Dedekind-domain surfaces, explicit field-extension, basis, and
+  finite-dimensional vector-space dependencies, and a boundary excluding ideal
+  factorization as a definition.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

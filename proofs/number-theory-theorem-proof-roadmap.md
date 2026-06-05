@@ -656,7 +656,10 @@ semantics.
     algebraic-integer ring structure from becoming a kernel primitive.
   - `NT-T38` added certificate-backed `Proofs.Ai.NumberTheory.DedekindDomain`
     defining L1 interfaces for norm, trace, discriminant, integral basis, and
-    Dedekind domain.
+    Dedekind domain, plus field-extension, basis, and finite-dimensional
+    vector-space theorem surfaces, a ring-of-integers Dedekind-domain surface,
+    and a boundary preventing ideal factorization from being assumed as a
+    definition.
   - `NT-T39` added certificate-backed `Proofs.Ai.NumberTheory.ClassGroup`
     defining L1 interfaces for ideal factorization, uniqueness, fractional ideals,
     class group, class number finiteness, Minkowski bound, Dirichlet unit theorem,

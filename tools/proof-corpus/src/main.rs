@@ -2462,7 +2462,10 @@ const NUMBER_THEORY_DEDEKIND_DOMAIN_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/DedekindDomain/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/DedekindDomain/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/DedekindDomain/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DEDEKIND_DOMAIN_THEOREMS,
@@ -21399,6 +21402,21 @@ const NUMBER_THEORY_DEDEKIND_DOMAIN_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "norm_trace_discriminant_field_extension_basis_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (BaseField : Type), forall (NumberField : Type), forall (Basis : Type), ",
+            "forall (FieldExtensionEvidence : BaseField -> NumberField -> Prop), ",
+            "forall (FiniteDimensionalVectorSpaceEvidence : NumberField -> BaseField -> Basis -> Prop), ",
+            "forall (NormTraceDiscriminantData : NumberField -> Basis -> Prop), ",
+            "forall (data_law : forall (K : BaseField), forall (L : NumberField), forall (B : Basis), forall (field_extension : FieldExtensionEvidence K L), forall (finite_dimensional : FiniteDimensionalVectorSpaceEvidence L K B), NormTraceDiscriminantData L B), ",
+            "forall (K : BaseField), forall (L : NumberField), forall (B : Basis), forall (field_extension : FieldExtensionEvidence K L), forall (finite_dimensional : FiniteDimensionalVectorSpaceEvidence L K B), NormTraceDiscriminantData L B"
+        ),
+        proof: concat!(
+            "fun BaseField => fun NumberField => fun Basis => fun FieldExtensionEvidence => fun FiniteDimensionalVectorSpaceEvidence => fun NormTraceDiscriminantData => fun data_law => fun K => fun L => fun B => fun field_extension => fun finite_dimensional => data_law K L B field_extension finite_dimensional"
+        ),
+    },
+    TheoremArtifact {
         name: "integral_basis_interface",
         universe_params: &[],
         statement: concat!(
@@ -21418,6 +21436,32 @@ const NUMBER_THEORY_DEDEKIND_DOMAIN_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Ring => fun IsDedekindDomain => fun R => fun dedekind_law => dedekind_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "ring_of_integers_dedekind_domain_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (NumberField : Type), forall (RingOfIntegers : Type), ",
+            "forall (IsRingOfIntegers : NumberField -> RingOfIntegers -> Prop), forall (IsDedekindDomain : RingOfIntegers -> Prop), ",
+            "forall (dedekind_law : forall (K : NumberField), forall (O_K : RingOfIntegers), forall (ring_of_integers : IsRingOfIntegers K O_K), IsDedekindDomain O_K), ",
+            "forall (K : NumberField), forall (O_K : RingOfIntegers), forall (ring_of_integers : IsRingOfIntegers K O_K), IsDedekindDomain O_K"
+        ),
+        proof: concat!(
+            "fun NumberField => fun RingOfIntegers => fun IsRingOfIntegers => fun IsDedekindDomain => fun dedekind_law => fun K => fun O_K => fun ring_of_integers => dedekind_law K O_K ring_of_integers"
+        ),
+    },
+    TheoremArtifact {
+        name: "dedekind_domain_no_ideal_factorization_definition_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (DedekindDomainPackage : Type), forall (IdealFactorizationPackage : Type), forall (RingOfIntegersDefinitionPackage : Type), ",
+            "forall (NoFactorizationAsDefinition : DedekindDomainPackage -> IdealFactorizationPackage -> RingOfIntegersDefinitionPackage -> Prop), ",
+            "forall (boundary_law : forall (dedekind_domain : DedekindDomainPackage), forall (ideal_factorization : IdealFactorizationPackage), forall (ring_of_integers_definition : RingOfIntegersDefinitionPackage), NoFactorizationAsDefinition dedekind_domain ideal_factorization ring_of_integers_definition), ",
+            "forall (dedekind_domain : DedekindDomainPackage), forall (ideal_factorization : IdealFactorizationPackage), forall (ring_of_integers_definition : RingOfIntegersDefinitionPackage), NoFactorizationAsDefinition dedekind_domain ideal_factorization ring_of_integers_definition"
+        ),
+        proof: concat!(
+            "fun DedekindDomainPackage => fun IdealFactorizationPackage => fun RingOfIntegersDefinitionPackage => fun NoFactorizationAsDefinition => fun boundary_law => fun dedekind_domain => fun ideal_factorization => fun ring_of_integers_definition => boundary_law dedekind_domain ideal_factorization ring_of_integers_definition"
         ),
     },
 ];

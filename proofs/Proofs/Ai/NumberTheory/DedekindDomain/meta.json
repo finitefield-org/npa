@@ -5,19 +5,22 @@
   "certificate": "Proofs/Ai/NumberTheory/DedekindDomain/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:c9a8a2004b6b209b8427b81daf6819c79208a288ac0f8c96dcb36baef38c5c99",
-  "certificate_file_sha256": "sha256:90a91670c1a97c179bd9cfb06233db61cbc1b8ed8bcb655f9621e73239d6749e",
-  "export_hash": "sha256:57f7a5a336ef25d550fbfefc75304955b511b965c7777d45f17207d0c96d235b",
-  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
-  "certificate_hash": "sha256:9c287676a0e4f4d096aedf8969aef3da75168d23cb4c0bc31ceb2907b3ee4087",
-  "imports": ["Std.Logic.Eq"],
+  "source_sha256": "sha256:c99d0187d63c8eb21a7c9d7ecd8ec2166cb76c8b71952baca207003764fc2e59",
+  "certificate_file_sha256": "sha256:3454700d8917edf089221e9569c24c6d835b41b7965b3121b8465e6882311afb",
+  "export_hash": "sha256:b9781df0cb27ae1c794bedbd13fadbbdc05730196427bb09716ed56ae6f1d35e",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:4c156b9e320d1163f968ef2e6c62516bda3c81ded2c3c747aba8c3b1d3b957bc",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
   "axioms": [],
   "declarations": [
     { "name": "norm_interface", "kind": "theorem" },
     { "name": "trace_interface", "kind": "theorem" },
     { "name": "discriminant_interface", "kind": "theorem" },
+    { "name": "norm_trace_discriminant_field_extension_basis_surface", "kind": "theorem" },
     { "name": "integral_basis_interface", "kind": "theorem" },
-    { "name": "dedekind_domain_interface", "kind": "theorem" }
+    { "name": "dedekind_domain_interface", "kind": "theorem" },
+    { "name": "ring_of_integers_dedekind_domain_surface", "kind": "theorem" },
+    { "name": "dedekind_domain_no_ideal_factorization_definition_boundary", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
