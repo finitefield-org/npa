@@ -514,7 +514,7 @@ semantics.
 
 ## NT-10 Diophantine Equations And Additive Number Theory
 
-- Status: planned.
+- Status: completed.
 - Depends on: `NT-03`, `NT-07`, `NT-09`.
 - Implementation progress: `NT-T28` added certificate-backed
   `Proofs.Ai.NumberTheory.Diophantine` and
@@ -525,6 +525,9 @@ semantics.
   theorem interface to `Proofs.Ai.NumberTheory.SumsOfSquares`, and added
   `Proofs.Ai.NumberTheory.Waring` containing Waring's problem existence,
   Hilbert-Waring theorem, and Frobenius coin problem interfaces.
+  `NT-T30` created the `Proofs.Ai.NumberTheory.Additive` module containing
+  L1 interfaces for Cauchy-Davenport, Kneser, Vosper, Freiman, Plunnecke-Ruzsa,
+  Szemeredi, Green-Tao, van der Waerden, Hindman, and Erdos-Ginzburg-Ziv theorems.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Diophantine`
   - `Proofs.Ai.NumberTheory.SumsOfSquares`

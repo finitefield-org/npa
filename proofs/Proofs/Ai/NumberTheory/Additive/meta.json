@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Additive",
+  "source": "Proofs/Ai/NumberTheory/Additive/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Additive/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fb752be37729ee9fc6ba4c059120f7b941f697a70ef8579c62c88cc90ac2fec1",
+  "certificate_file_sha256": "sha256:7024cc7bd5be12b17fcb0b8cee632dcf8d10980f37c1a467e9e1acb6324ccac0",
+  "export_hash": "sha256:2073c3c322b42204c9085a8639170ebff6fce3b41e54d7d9e34a49baab0f9d6c",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:074f237da86f9717c836c7300fa0e5b9de118a21585d76d1b951ba6626079f1e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "cauchy_davenport_interface", "kind": "theorem" },
+    { "name": "kneser_theorem_interface", "kind": "theorem" },
+    { "name": "vosper_theorem_interface", "kind": "theorem" },
+    { "name": "freiman_theorem_interface", "kind": "theorem" },
+    { "name": "plunnecke_ruzsa_interface", "kind": "theorem" },
+    { "name": "szemeredi_theorem_interface", "kind": "theorem" },
+    { "name": "green_tao_theorem_interface", "kind": "theorem" },
+    { "name": "van_der_waerden_interface", "kind": "theorem" },
+    { "name": "hindman_theorem_interface", "kind": "theorem" },
+    { "name": "erdos_ginzburg_ziv_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

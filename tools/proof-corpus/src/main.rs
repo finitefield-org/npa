@@ -200,6 +200,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_DIOPHANTINE_MODULE,
     &NUMBER_THEORY_SUMS_OF_SQUARES_MODULE,
     &NUMBER_THEORY_WARING_MODULE,
+    &NUMBER_THEORY_ADDITIVE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2272,6 +2273,19 @@ const NUMBER_THEORY_WARING_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_WARING_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ADDITIVE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Additive",
+    source_path: "Proofs/Ai/NumberTheory/Additive/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Additive/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Additive/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Additive/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_ADDITIVE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19275,6 +19289,184 @@ const NUMBER_THEORY_WARING_THEOREMS: &[TheoremArtifact] = &[
             "fun Int => fun CoinSet => fun GcdEqualsOne => fun NonnegativeCombination => ",
             "fun FrobeniusNumber => fun coin_law => fun coins => fun gcd_one => ",
             "fun target => fun above_frobenius => coin_law coins gcd_one target above_frobenius"
+        ),
+    },
+];
+
+const NUMBER_THEORY_ADDITIVE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "cauchy_davenport_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Subset : Type), forall (Card : Subset -> Nat), ",
+            "forall (Prime : Nat -> Prop), forall (Sumset : Subset -> Subset -> Subset), ",
+            "forall (Min : Nat -> Nat -> Nat), forall (Add : Nat -> Nat -> Nat), ",
+            "forall (Sub : Nat -> Nat -> Nat), forall (One : Nat), forall (Le : Nat -> Nat -> Prop), ",
+            "forall (cauchy_davenport_law : forall (p : Nat), forall (prime_p : Prime p), ",
+            "forall (A : Subset), forall (B : Subset), Le (Min p (Sub (Add (Card A) (Card B)) One)) (Card (Sumset A B))), ",
+            "forall (p : Nat), forall (prime_p : Prime p), forall (A : Subset), forall (B : Subset), ",
+            "Le (Min p (Sub (Add (Card A) (Card B)) One)) (Card (Sumset A B))"
+        ),
+        proof: concat!(
+            "fun Nat => fun Subset => fun Card => fun Prime => fun Sumset => fun Min => ",
+            "fun Add => fun Sub => fun One => fun Le => fun cauchy_davenport_law => ",
+            "fun p => fun prime_p => fun A => fun B => cauchy_davenport_law p prime_p A B"
+        ),
+    },
+    TheoremArtifact {
+        name: "kneser_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Group : Type), forall (Nat : Type), forall (Subset : Type), forall (Subgroup : Type), ",
+            "forall (CardSubset : Subset -> Nat), forall (CardSubgroup : Subgroup -> Nat), ",
+            "forall (Stabilizer : Subset -> Subgroup), forall (Sumset : Subset -> Subset -> Subset), ",
+            "forall (AddHelper : Subset -> Subgroup -> Subset), forall (Add : Nat -> Nat -> Nat), ",
+            "forall (Sub : Nat -> Nat -> Nat), forall (Le : Nat -> Nat -> Prop), ",
+            "forall (kneser_law : forall (A : Subset), forall (B : Subset), forall (H : Subgroup), ",
+            "forall (eq_stab : @Eq.{1} Subgroup H (Stabilizer (Sumset A B))), ",
+            "Le (Sub (Add (CardSubset (AddHelper A H)) (CardSubset (AddHelper B H))) (CardSubgroup H)) (CardSubset (Sumset A B))), ",
+            "forall (A : Subset), forall (B : Subset), forall (H : Subgroup), ",
+            "forall (eq_stab : @Eq.{1} Subgroup H (Stabilizer (Sumset A B))), ",
+            "Le (Sub (Add (CardSubset (AddHelper A H)) (CardSubset (AddHelper B H))) (CardSubgroup H)) (CardSubset (Sumset A B))"
+        ),
+        proof: concat!(
+            "fun Group => fun Nat => fun Subset => fun Subgroup => fun CardSubset => fun CardSubgroup => ",
+            "fun Stabilizer => fun Sumset => fun AddHelper => fun Add => fun Sub => fun Le => ",
+            "fun kneser_law => fun A => fun B => fun H => fun eq_stab => kneser_law A B H eq_stab"
+        ),
+    },
+    TheoremArtifact {
+        name: "vosper_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Subset : Type), forall (Card : Subset -> Nat), ",
+            "forall (Sumset : Subset -> Subset -> Subset), forall (Add : Nat -> Nat -> Nat), ",
+            "forall (Sub : Nat -> Nat -> Nat), forall (Le : Nat -> Nat -> Prop), ",
+            "forall (One : Nat), forall (Two : Nat), forall (VosperStructure : Subset -> Subset -> Prop), ",
+            "forall (vosper_law : forall (p : Nat), forall (A : Subset), forall (B : Subset), ",
+            "forall (size_A : Le Two (Card A)), forall (size_B : Le Two (Card B)), ",
+            "forall (eq_sumset : @Eq.{1} Nat (Card (Sumset A B)) (Sub (Add (Card A) (Card B)) One)), ",
+            "forall (bound_sumset : Le (Card (Sumset A B)) (Sub p Two)), VosperStructure A B), ",
+            "forall (p : Nat), forall (A : Subset), forall (B : Subset), forall (size_A : Le Two (Card A)), ",
+            "forall (size_B : Le Two (Card B)), forall (eq_sumset : @Eq.{1} Nat (Card (Sumset A B)) (Sub (Add (Card A) (Card B)) One)), ",
+            "forall (bound_sumset : Le (Card (Sumset A B)) (Sub p Two)), VosperStructure A B"
+        ),
+        proof: concat!(
+            "fun Nat => fun Subset => fun Card => fun Sumset => fun Add => fun Sub => fun Le => ",
+            "fun One => fun Two => fun VosperStructure => fun vosper_law => fun p => fun A => fun B => ",
+            "fun size_A => fun size_B => fun eq_sumset => fun bound_sumset => vosper_law p A B size_A size_B eq_sumset bound_sumset"
+        ),
+    },
+    TheoremArtifact {
+        name: "freiman_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Subset : Type), forall (Real : Type), forall (Card : Subset -> Real), ",
+            "forall (Sumset : Subset -> Subset -> Subset), forall (Mul : Real -> Real -> Real), ",
+            "forall (Le : Real -> Real -> Prop), forall (FreimanBound : Real -> Subset -> Prop), ",
+            "forall (freiman_law : forall (A : Subset), forall (C : Real), ",
+            "forall (doubling_bound : Le (Card (Sumset A A)) (Mul C (Card A))), FreimanBound C A), ",
+            "forall (A : Subset), forall (C : Real), forall (doubling_bound : Le (Card (Sumset A A)) (Mul C (Card A))), ",
+            "FreimanBound C A"
+        ),
+        proof: concat!(
+            "fun Subset => fun Real => fun Card => fun Sumset => fun Mul => fun Le => ",
+            "fun FreimanBound => fun freiman_law => fun A => fun C => fun doubling_bound => ",
+            "freiman_law A C doubling_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "plunnecke_ruzsa_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Subset : Type), forall (Real : Type), forall (Card : Subset -> Real), ",
+            "forall (Sumset : Subset -> Subset -> Subset), forall (IteratedSumset : Subset -> Subset), ",
+            "forall (Mul : Real -> Real -> Real), forall (Pow : Real -> Real), forall (Le : Real -> Real -> Prop), ",
+            "forall (plunnecke_ruzsa_law : forall (A : Subset), forall (B : Subset), forall (K : Real), ",
+            "forall (sum_bound : Le (Card (Sumset A B)) (Mul K (Card B))), Le (Card (IteratedSumset A)) (Mul (Pow K) (Card B))), ",
+            "forall (A : Subset), forall (B : Subset), forall (K : Real), ",
+            "forall (sum_bound : Le (Card (Sumset A B)) (Mul K (Card B))), Le (Card (IteratedSumset A)) (Mul (Pow K) (Card B))"
+        ),
+        proof: concat!(
+            "fun Subset => fun Real => fun Card => fun Sumset => fun IteratedSumset => fun Mul => fun Pow => ",
+            "fun Le => fun plunnecke_ruzsa_law => fun A => fun B => fun K => fun sum_bound => ",
+            "plunnecke_ruzsa_law A B K sum_bound"
+        ),
+    },
+    TheoremArtifact {
+        name: "szemeredi_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Subset : Type), forall (Nat : Type), forall (PositiveDensity : Subset -> Prop), ",
+            "forall (HasArithmeticProgression : Subset -> Nat -> Prop), ",
+            "forall (szemeredi_law : forall (A : Subset), forall (pos_density : PositiveDensity A), ",
+            "forall (k : Nat), HasArithmeticProgression A k), ",
+            "forall (A : Subset), forall (pos_density : PositiveDensity A), forall (k : Nat), ",
+            "HasArithmeticProgression A k"
+        ),
+        proof: concat!(
+            "fun Subset => fun Nat => fun PositiveDensity => fun HasArithmeticProgression => ",
+            "fun szemeredi_law => fun A => fun pos_density => fun k => szemeredi_law A pos_density k"
+        ),
+    },
+    TheoremArtifact {
+        name: "green_tao_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Subset : Type), forall (Nat : Type), forall (IsPrimeSubset : Subset -> Prop), ",
+            "forall (HasArithmeticProgression : Subset -> Nat -> Prop), ",
+            "forall (green_tao_law : forall (P : Subset), forall (prime_set : IsPrimeSubset P), ",
+            "forall (k : Nat), HasArithmeticProgression P k), ",
+            "forall (P : Subset), forall (prime_set : IsPrimeSubset P), forall (k : Nat), ",
+            "HasArithmeticProgression P k"
+        ),
+        proof: concat!(
+            "fun Subset => fun Nat => fun IsPrimeSubset => fun HasArithmeticProgression => ",
+            "fun green_tao_law => fun P => fun prime_set => fun k => green_tao_law P prime_set k"
+        ),
+    },
+    TheoremArtifact {
+        name: "van_der_waerden_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coloring : Type), forall (MonochromaticProgressionExists : Coloring -> Nat -> Prop), ",
+            "forall (van_der_waerden_law : forall (c : Coloring), forall (k : Nat), MonochromaticProgressionExists c k), ",
+            "forall (c : Coloring), forall (k : Nat), MonochromaticProgressionExists c k"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coloring => fun MonochromaticProgressionExists => fun van_der_waerden_law => ",
+            "fun c => fun k => van_der_waerden_law c k"
+        ),
+    },
+    TheoremArtifact {
+        name: "hindman_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Coloring : Type), forall (InfiniteSet : Type), forall (MonochromaticFiniteSums : Coloring -> InfiniteSet -> Prop), ",
+            "forall (hindman_law : forall (c : Coloring), InfiniteSet), ",
+            "forall (hindman_property : forall (c : Coloring), MonochromaticFiniteSums c (hindman_law c)), ",
+            "forall (c : Coloring), MonochromaticFiniteSums c (hindman_law c)"
+        ),
+        proof: concat!(
+            "fun Coloring => fun InfiniteSet => fun MonochromaticFiniteSums => fun hindman_law => ",
+            "fun hindman_property => fun c => hindman_property c"
+        ),
+    },
+    TheoremArtifact {
+        name: "erdos_ginzburg_ziv_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Group : Type), forall (Nat : Type), forall (Sequence : Type), forall (Length : Sequence -> Nat), ",
+            "forall (SumsetZero : Sequence -> Prop), forall (Add : Nat -> Nat -> Nat), forall (Sub : Nat -> Nat -> Nat), ",
+            "forall (Mul : Nat -> Nat -> Nat), forall (Two : Nat), forall (One : Nat), ",
+            "forall (erdos_ginzburg_ziv_law : forall (n : Nat), forall (seq : Sequence), ",
+            "forall (eq_len : @Eq.{1} Nat (Length seq) (Sub (Mul Two n) One)), SumsetZero seq), ",
+            "forall (n : Nat), forall (seq : Sequence), forall (eq_len : @Eq.{1} Nat (Length seq) (Sub (Mul Two n) One)), ",
+            "SumsetZero seq"
+        ),
+        proof: concat!(
+            "fun Group => fun Nat => fun Sequence => fun Length => fun SumsetZero => fun Add => fun Sub => fun Mul => ",
+            "fun Two => fun One => fun erdos_ginzburg_ziv_law => fun n => fun seq => fun eq_len => erdos_ginzburg_ziv_law n seq eq_len"
         ),
     },
 ];

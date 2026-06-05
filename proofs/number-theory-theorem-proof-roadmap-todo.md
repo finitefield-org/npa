@@ -915,7 +915,7 @@ later in the file.
 
 ### NT-T30 Add Additive Number Theory And Combinatorics Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T29`
 - Areas: `Proofs/Ai/NumberTheory/Additive/`, `Proofs/Ai/NumberTheory/Combinatorial/`
 - Tasks:
