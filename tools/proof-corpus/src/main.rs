@@ -3460,6 +3460,38 @@ macro_rules! extreme_value_conclusion_app {
     };
 }
 
+macro_rules! interval_uniform_continuous_app {
+    ($lower:expr, $upper:expr, $function:expr, $uniform_rel:expr) => {
+        concat!(
+            "@IntervalUniformContinuous.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $uniform_rel
+        )
+    };
+}
+
+macro_rules! compact_interval_uniform_continuity_evidence_app {
+    ($lower:expr, $upper:expr, $function:expr, $approaches_at:expr, $uniform_rel:expr) => {
+        concat!(
+            "@CompactIntervalUniformContinuityEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $approaches_at,
+            " ",
+            $uniform_rel
+        )
+    };
+}
+
 macro_rules! sequence_limit_uniqueness_evidence_app {
     ($left:literal, $right:literal) => {
         concat!(
@@ -34495,6 +34527,18 @@ const ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS: &[DefinitionArtifact] = &[
         )),
     },
     DefinitionArtifact {
+        name: "IntervalUniformContinuous",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun UniformRel => @UniformContinuous.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => ",
+            interval_membership_app!("a", "b", "x"),
+            ") f UniformRel"
+        )),
+    },
+    DefinitionArtifact {
         name: "SignChangeAtEndpoints",
         universe_params: &["u"],
         ty: analysis_real_basic_params!(
@@ -34571,6 +34615,28 @@ const ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS: &[DefinitionArtifact] = &[
             interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
             "), ",
             interval_minimum_choice_app!("a", "b", "f"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "CompactIntervalUniformContinuityEvidence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun UniformRel => forall (P : Prop), forall (mk : forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel"),
             "), P), P"
         )),
     },
@@ -34866,6 +34932,33 @@ const ANALYSIS_CONTINUITY_INTERVAL_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "interval_uniform_continuous_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), forall (uniform : @UniformContinuous.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => ",
+            interval_membership_app!("a", "b", "x"),
+            ") f UniformRel), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun UniformRel => fun uniform => uniform"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_uniform_continuous_apply",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), forall (uniform : ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel"),
+            "), @UniformContinuous.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => ",
+            interval_membership_app!("a", "b", "x"),
+            ") f UniformRel"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun UniformRel => fun uniform => uniform"
+        ),
+    },
+    TheoremArtifact {
         name: "extreme_value_evidence_intro",
         universe_params: &["i", "j", "n", "u"],
         statement: analysis_sequence_basic_params!(concat!(
@@ -35060,6 +35153,103 @@ const ANALYSIS_CONTINUITY_INTERVAL_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_sequence_basic_abs!(
             "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => @extreme_value_evidence_minimum.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f ApproachesAt evidence continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "compact_interval_uniform_continuity_evidence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel"),
+            "), ",
+            compact_interval_uniform_continuity_evidence_app!(
+                "a",
+                "b",
+                "f",
+                "ApproachesAt",
+                "UniformRel"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun UniformRel => fun compactness_route => fun endpoint_order => fun bridge => fun (P : Prop) => fun (mk : forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel"),
+            "), P) => mk compactness_route endpoint_order bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "compact_interval_uniform_continuity_evidence_apply",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), forall (evidence : ",
+            compact_interval_uniform_continuity_evidence_app!(
+                "a",
+                "b",
+                "f",
+                "ApproachesAt",
+                "UniformRel"
+            ),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun UniformRel => fun evidence => fun continuous => evidence (",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel"),
+            ") (fun (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            ") => fun (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            ") => fun (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel"),
+            ") => bridge compactness_route endpoint_order continuous)"
+        )),
+    },
+    TheoremArtifact {
+        name: "uniform_continuity_on_compact_interval",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (UniformRel : forall (set : forall (x : Scalar), Prop), forall (candidate : forall (x : Scalar), Scalar), Prop), forall (evidence : ",
+            compact_interval_uniform_continuity_evidence_app!(
+                "a",
+                "b",
+                "f",
+                "ApproachesAt",
+                "UniformRel"
+            ),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), ",
+            interval_uniform_continuous_app!("a", "b", "f", "UniformRel")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun UniformRel => fun evidence => fun continuous => @compact_interval_uniform_continuity_evidence_apply.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f ApproachesAt UniformRel evidence continuous"
         ),
     },
     TheoremArtifact {

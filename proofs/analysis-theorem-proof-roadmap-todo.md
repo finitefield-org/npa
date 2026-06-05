@@ -647,7 +647,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T12 Add Extreme Value And Uniform Continuity On Compact Intervals
 
-- Status: Partial (ANQ-014 complete; ANQ-015 remains)
+- Status: Complete
 - Depends on: ANA-T11
 - Inputs:
   - `Proofs.Ai.Analysis.Continuity.Interval`
@@ -658,7 +658,7 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Define maximum/minimum attainment and compact interval evidence. (ANQ-014 done)
   - Prove extreme value theorem for closed intervals. (ANQ-014 done)
-  - Prove uniform continuity theorem on closed intervals.
+  - Prove uniform continuity theorem on closed intervals. (ANQ-015 done)
   - Leave the general compact-space form to the topology track.
 - Deliverables:
   - Certificate-backed extrema and uniform-continuity theorem targets.
@@ -679,7 +679,11 @@ guessing. The split must preserve the dependency order in this document.
   - `extreme_value_theorem`, `extreme_value_maximum`, and
     `extreme_value_minimum` derive extrema only from explicit compactness,
     endpoint-order, image-boundedness, and interval-continuity evidence.
-  - Uniform continuity on compact intervals remains scoped to ANQ-015.
+  - ANQ-015 adds `IntervalUniformContinuous`,
+    `CompactIntervalUniformContinuityEvidence`, and
+    `uniform_continuity_on_compact_interval`, deriving interval uniform
+    continuity only from explicit compactness-route, endpoint-order,
+    interval-continuity, and caller-supplied uniform bridge evidence.
 
 ### ANA-T13 Add One-Dimensional Derivative Bridge
 

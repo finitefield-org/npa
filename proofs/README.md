@@ -1904,8 +1904,10 @@ value theorem is driven by an `IntermediateValueEvidence` package that carries a
 `BolzanoWeierstrassCompletenessEvidence` route plus the bridge from that compactness route to an
 interval-image witness. Bolzano's zero theorem is a target-zero specialization of IVT, not a
 separate proof infrastructure. The extreme value theorem is interval-specific and requires
-explicit compactness, endpoint-order, image-boundedness, and extrema-bridge evidence; it does not
-introduce a general compact-space selection theorem.
+explicit compactness, endpoint-order, image-boundedness, and extrema-bridge evidence. The compact
+interval uniform-continuity theorem is also interval-specific and requires an explicit
+compactness-route bridge into the existing `Continuity.Basic.UniformContinuous` shape. Neither
+path introduces a general compact-space theorem.
 
 Implemented definitions / API declarations:
 
@@ -1919,10 +1921,12 @@ Implemented definitions / API declarations:
 | `IntervalMaximumChoice`, `IntervalMinimumChoice` | Church-encoded choice of an attained maximum or minimum point |
 | `ExtremeValueConclusion` | package containing both maximum and minimum choices |
 | `IntervalContinuousOn` | scalar continuity over the interval via `Continuity.Basic.ContinuousOn` |
+| `IntervalUniformContinuous` | scalar uniform continuity over the interval via `Continuity.Basic.UniformContinuous` |
 | `SignChangeAtEndpoints` | endpoint package for the zero-target Bolzano hypothesis |
 | `IntermediateValueHypothesis` | endpoint and bracketing package for a target value |
 | `IntermediateValueEvidence` | compactness route plus bridge from interval continuity and bracketing to an image witness |
 | `ExtremeValueEvidence` | compactness route, endpoint order, image boundedness, and extrema bridges for closed intervals |
+| `CompactIntervalUniformContinuityEvidence` | compactness route, endpoint order, and bridge from interval continuity to interval uniform continuity |
 
 Theorem targets:
 
@@ -1938,9 +1942,12 @@ Theorem targets:
 | `interval_maximum_choice_intro`, `interval_maximum_choice_elim` | package and eliminate a maximum-point choice |
 | `interval_minimum_choice_intro`, `interval_minimum_choice_elim` | package and eliminate a minimum-point choice |
 | `interval_continuous_on_intro`, `interval_continuous_on_apply` | bridge interval continuity to `ContinuousOn` over the closed interval predicate |
+| `interval_uniform_continuous_intro`, `interval_uniform_continuous_apply` | bridge interval uniform continuity to `UniformContinuous` over the closed interval predicate |
 | `extreme_value_evidence_intro`, `extreme_value_evidence_maximum`, `extreme_value_evidence_minimum` | package compactness-backed extrema evidence and project each extrema choice |
 | `extreme_value_conclusion_intro`, `extreme_value_conclusion_elim` | package and eliminate the paired extreme-value conclusion |
 | `extreme_value_theorem`, `extreme_value_maximum`, `extreme_value_minimum` | derive interval extrema from explicit compactness and continuity evidence |
+| `compact_interval_uniform_continuity_evidence_intro`, `compact_interval_uniform_continuity_evidence_apply` | package compactness-backed uniform-continuity evidence and apply its bridge |
+| `uniform_continuity_on_compact_interval` | derive interval uniform continuity from explicit compactness and interval-continuity evidence |
 | `sign_change_at_endpoints_intro`, `sign_change_at_endpoints_elim` | package and eliminate Bolzano endpoint hypotheses |
 | `intermediate_value_hypothesis_intro`, `intermediate_value_hypothesis_elim` | package and eliminate IVT endpoint bracketing hypotheses |
 | `intermediate_value_evidence_intro`, `intermediate_value_evidence_apply` | package and apply the compactness-backed IVT bridge |
