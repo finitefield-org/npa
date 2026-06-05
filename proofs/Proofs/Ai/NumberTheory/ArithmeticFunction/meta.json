@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ArithmeticFunction",
+  "source": "Proofs/Ai/NumberTheory/ArithmeticFunction/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ArithmeticFunction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:82ee620e06ccb35f0953b4b3ac36ee6a02526f051eaadc89ccd126f652827625",
+  "certificate_file_sha256": "sha256:9d2eb8f1e0ac694c07489cea3dffa7aec80a98afe58299de758f9abc11ec7e4b",
+  "export_hash": "sha256:9761f32f066b8c61464cebe8d4b0ffc94c904236ab086c9eb631657e80bc3049",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:91de2eb542d0eb5ddf4c07272c29a77f2a0d5a0710c0d7536cc44bb1c176173d",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Factorization", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.Carmichael"],
+  "axioms": [],
+  "declarations": [
+    { "name": "arithmetic_function_family_definition_surface", "kind": "theorem" },
+    { "name": "divisor_sum_finite_support_evidence_surface", "kind": "theorem" },
+    { "name": "multiplicative_function_coprime_surface", "kind": "theorem" },
+    { "name": "completely_multiplicative_function_surface", "kind": "theorem" },
+    { "name": "divisor_count_formula_from_prime_factorization_surface", "kind": "theorem" },
+    { "name": "divisor_sigma_formula_from_prime_factorization_surface", "kind": "theorem" },
+    { "name": "mobius_liouville_von_mangoldt_factorization_surface", "kind": "theorem" },
+    { "name": "euler_phi_carmichael_factorization_interfaces", "kind": "theorem" },
+    { "name": "arithmetic_function_no_dirichlet_series_or_complex_analysis_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

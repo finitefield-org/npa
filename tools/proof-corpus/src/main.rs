@@ -185,6 +185,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_LEGENDRE_MODULE,
     &NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE,
     &NUMBER_THEORY_JACOBI_MODULE,
+    &NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -2001,6 +2002,25 @@ const NUMBER_THEORY_JACOBI_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_JACOBI_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ArithmeticFunction",
+    source_path: "Proofs/Ai/NumberTheory/ArithmeticFunction/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ArithmeticFunction/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ArithmeticFunction/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ArithmeticFunction/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.Factorization",
+        "Proofs.Ai.NumberTheory.Phi",
+        "Proofs.Ai.NumberTheory.Carmichael",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_ARITHMETIC_FUNCTION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -12945,6 +12965,232 @@ const NUMBER_THEORY_JACOBI_THEOREMS: &[TheoremArtifact] = &[
             "fun NoDeterministicSecurityBoundary => fun boundary_law => ",
             "fun test => fun randomness => fun soundness => fun security => ",
             "boundary_law test randomness soundness security"
+        ),
+    },
+];
+
+const NUMBER_THEORY_ARITHMETIC_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "arithmetic_function_family_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DivisorCount : forall (n : Nat), Coeff), ",
+            "forall (DivisorSum : forall (n : Nat), Coeff), ",
+            "forall (EulerPhi : forall (n : Nat), Coeff), ",
+            "forall (Mobius : forall (n : Nat), Coeff), ",
+            "forall (Liouville : forall (n : Nat), Coeff), ",
+            "forall (VonMangoldt : forall (n : Nat), Coeff), ",
+            "forall (CarmichaelFunction : forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunctionFamily : forall (divisor_count : forall (n : Nat), Coeff), ",
+            "forall (divisor_sum : forall (n : Nat), Coeff), ",
+            "forall (euler_phi : forall (n : Nat), Coeff), ",
+            "forall (mobius : forall (n : Nat), Coeff), ",
+            "forall (liouville : forall (n : Nat), Coeff), ",
+            "forall (von_mangoldt : forall (n : Nat), Coeff), ",
+            "forall (carmichael : forall (n : Nat), Coeff), Prop), ",
+            "forall (definition_law : ArithmeticFunctionFamily DivisorCount DivisorSum EulerPhi ",
+            "Mobius Liouville VonMangoldt CarmichaelFunction), ",
+            "ArithmeticFunctionFamily DivisorCount DivisorSum EulerPhi Mobius Liouville ",
+            "VonMangoldt CarmichaelFunction"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DivisorCount => fun DivisorSum => ",
+            "fun EulerPhi => fun Mobius => fun Liouville => fun VonMangoldt => ",
+            "fun CarmichaelFunction => fun ArithmeticFunctionFamily => ",
+            "fun definition_law => definition_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "divisor_sum_finite_support_evidence_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DivisorSum : forall (n : Nat), Coeff), ",
+            "forall (DivisorSumFormula : forall (n : Nat), forall (value : Coeff), Prop), ",
+            "forall (sum_law : forall (n : Nat), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "DivisorSumFormula n (DivisorSum n)), ",
+            "forall (n : Nat), forall (finite_support : FiniteDivisorSupport n), ",
+            "DivisorSumFormula n (DivisorSum n)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DividesNat => fun FiniteDivisorSupport => ",
+            "fun DivisorSum => fun DivisorSumFormula => fun sum_law => ",
+            "fun n => fun finite_support => sum_law n finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "multiplicative_function_coprime_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (MulNat : forall (a : Nat), forall (b : Nat), Nat), ",
+            "forall (MulCoeff : forall (a : Coeff), forall (b : Coeff), Coeff), ",
+            "forall (CoprimeNat : forall (a : Nat), forall (b : Nat), Prop), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (MultiplicativeFunction : forall (f : forall (n : Nat), Coeff), ",
+            "forall (a : Nat), forall (b : Nat), Prop), ",
+            "forall (multiplicative_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (a : Nat), forall (b : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "forall (coprime_ab : CoprimeNat a b), ",
+            "MultiplicativeFunction f a b), ",
+            "forall (f : forall (n : Nat), Coeff), forall (a : Nat), forall (b : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "forall (coprime_ab : CoprimeNat a b), MultiplicativeFunction f a b"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun MulNat => fun MulCoeff => fun CoprimeNat => ",
+            "fun ArithmeticFunction => fun MultiplicativeFunction => ",
+            "fun multiplicative_law => fun f => fun a => fun b => ",
+            "fun function_f => fun coprime_ab => ",
+            "multiplicative_law f a b function_f coprime_ab"
+        ),
+    },
+    TheoremArtifact {
+        name: "completely_multiplicative_function_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (MulNat : forall (a : Nat), forall (b : Nat), Nat), ",
+            "forall (MulCoeff : forall (a : Coeff), forall (b : Coeff), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (CompletelyMultiplicativeFunction : forall (f : forall (n : Nat), Coeff), ",
+            "forall (a : Nat), forall (b : Nat), Prop), ",
+            "forall (complete_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (a : Nat), forall (b : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "CompletelyMultiplicativeFunction f a b), ",
+            "forall (f : forall (n : Nat), Coeff), forall (a : Nat), forall (b : Nat), ",
+            "forall (function_f : ArithmeticFunction f), CompletelyMultiplicativeFunction f a b"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun MulNat => fun MulCoeff => ",
+            "fun ArithmeticFunction => fun CompletelyMultiplicativeFunction => ",
+            "fun complete_law => fun f => fun a => fun b => fun function_f => ",
+            "complete_law f a b function_f"
+        ),
+    },
+    TheoremArtifact {
+        name: "divisor_count_formula_from_prime_factorization_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), ",
+            "forall (PrimeFactorizationSurface : forall (n : Nat), Prop), ",
+            "forall (FinitePrimePowerSupport : forall (n : Nat), Prop), ",
+            "forall (DivisorCountFormula : forall (n : Nat), Prop), ",
+            "forall (formula_law : forall (n : Nat), ",
+            "forall (factorization : PrimeFactorizationSurface n), ",
+            "forall (finite_support : FinitePrimePowerSupport n), DivisorCountFormula n), ",
+            "forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), ",
+            "forall (finite_support : FinitePrimePowerSupport n), DivisorCountFormula n"
+        ),
+        proof: concat!(
+            "fun Nat => fun PrimeFactorizationSurface => fun FinitePrimePowerSupport => ",
+            "fun DivisorCountFormula => fun formula_law => fun n => ",
+            "fun factorization => fun finite_support => ",
+            "formula_law n factorization finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "divisor_sigma_formula_from_prime_factorization_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (PrimeFactorizationSurface : forall (n : Nat), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DivisorSigma : forall (n : Nat), Coeff), ",
+            "forall (SigmaFormula : forall (n : Nat), forall (value : Coeff), Prop), ",
+            "forall (formula_law : forall (n : Nat), ",
+            "forall (factorization : PrimeFactorizationSurface n), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "SigmaFormula n (DivisorSigma n)), ",
+            "forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), ",
+            "forall (finite_support : FiniteDivisorSupport n), SigmaFormula n (DivisorSigma n)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun PrimeFactorizationSurface => ",
+            "fun FiniteDivisorSupport => fun DivisorSigma => fun SigmaFormula => ",
+            "fun formula_law => fun n => fun factorization => fun finite_support => ",
+            "formula_law n factorization finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "mobius_liouville_von_mangoldt_factorization_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (PrimeFactorizationSurface : forall (n : Nat), Prop), ",
+            "forall (Mobius : forall (n : Nat), Coeff), ",
+            "forall (Liouville : forall (n : Nat), Coeff), ",
+            "forall (VonMangoldt : forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunctionFactorizationPackage : forall (n : Nat), ",
+            "forall (mobius_value : Coeff), forall (liouville_value : Coeff), ",
+            "forall (von_mangoldt_value : Coeff), Prop), ",
+            "forall (formula_law : forall (n : Nat), ",
+            "forall (factorization : PrimeFactorizationSurface n), ",
+            "ArithmeticFunctionFactorizationPackage n (Mobius n) (Liouville n) (VonMangoldt n)), ",
+            "forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), ",
+            "ArithmeticFunctionFactorizationPackage n (Mobius n) (Liouville n) (VonMangoldt n)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun PrimeFactorizationSurface => ",
+            "fun Mobius => fun Liouville => fun VonMangoldt => ",
+            "fun ArithmeticFunctionFactorizationPackage => fun formula_law => ",
+            "fun n => fun factorization => formula_law n factorization"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_phi_carmichael_factorization_interfaces",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (PrimeFactorizationSurface : forall (n : Nat), Prop), ",
+            "forall (EulerPhi : forall (n : Nat), Coeff), ",
+            "forall (CarmichaelFunction : forall (n : Nat), Coeff), ",
+            "forall (PhiCarmichaelFormulaPackage : forall (n : Nat), ",
+            "forall (phi_value : Coeff), forall (carmichael_value : Coeff), Prop), ",
+            "forall (phi_law : forall (n : Nat), ",
+            "forall (factorization : PrimeFactorizationSurface n), ",
+            "PhiCarmichaelFormulaPackage n (EulerPhi n) (CarmichaelFunction n)), ",
+            "forall (n : Nat), forall (factorization : PrimeFactorizationSurface n), ",
+            "PhiCarmichaelFormulaPackage n (EulerPhi n) (CarmichaelFunction n)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun PrimeFactorizationSurface => ",
+            "fun EulerPhi => fun CarmichaelFunction => fun PhiCarmichaelFormulaPackage => ",
+            "fun phi_law => fun n => fun factorization => ",
+            "phi_law n factorization"
+        ),
+    },
+    TheoremArtifact {
+        name: "arithmetic_function_no_dirichlet_series_or_complex_analysis_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (ArithmeticFunctionPackage : Type), ",
+            "forall (DirichletSeriesPackage : Type), ",
+            "forall (ComplexAnalysisPackage : Type), ",
+            "forall (NoAnalyticDependencyBoundary : forall (arithmetic_functions : ArithmeticFunctionPackage), ",
+            "forall (dirichlet_series : DirichletSeriesPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), Prop), ",
+            "forall (boundary_law : forall (arithmetic_functions : ArithmeticFunctionPackage), ",
+            "forall (dirichlet_series : DirichletSeriesPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), ",
+            "NoAnalyticDependencyBoundary arithmetic_functions dirichlet_series complex_analysis), ",
+            "forall (arithmetic_functions : ArithmeticFunctionPackage), ",
+            "forall (dirichlet_series : DirichletSeriesPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), ",
+            "NoAnalyticDependencyBoundary arithmetic_functions dirichlet_series complex_analysis"
+        ),
+        proof: concat!(
+            "fun ArithmeticFunctionPackage => fun DirichletSeriesPackage => ",
+            "fun ComplexAnalysisPackage => fun NoAnalyticDependencyBoundary => ",
+            "fun boundary_law => fun arithmetic_functions => fun dirichlet_series => ",
+            "fun complex_analysis => ",
+            "boundary_law arithmetic_functions dirichlet_series complex_analysis"
         ),
     },
 ];
@@ -41586,6 +41832,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_LEGENDRE_MODULE.module
         || config.module == NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE.module
         || config.module == NUMBER_THEORY_JACOBI_MODULE.module
+        || config.module == NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

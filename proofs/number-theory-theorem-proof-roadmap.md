@@ -427,6 +427,11 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-03`, `NT-04`.
+- Implementation progress: `NT-T22` added certificate-backed
+  `Proofs.Ai.NumberTheory.ArithmeticFunction` surfaces for divisor-count,
+  divisor-sigma, Euler `phi`, Mobius, Liouville, von Mangoldt, and Carmichael
+  function interfaces, with finite divisor-support evidence and coprimality
+  hypotheses explicit in multiplicativity statements.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ArithmeticFunction`
   - `Proofs.Ai.NumberTheory.DirichletConvolution`

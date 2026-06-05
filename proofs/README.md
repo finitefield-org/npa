@@ -194,6 +194,12 @@ Current bundles:
   multiplicativity, separation from actual quadratic residuosity, non-interchangeability with
   Legendre symbols, and probabilistic randomness/soundness assumptions outside deterministic
   security theorems.
+- `Proofs/Ai/NumberTheory/ArithmeticFunction/`: certificate-backed arithmetic-function
+  interface downstream of factorization, `phi`, and Carmichael surfaces, preserving divisor-count,
+  divisor-sigma, Euler `phi`, Mobius, Liouville, von_Mangoldt, and Carmichael function packages,
+  finite divisor-support evidence for divisor sums, coprimality hypotheses for multiplicative
+  functions, completely multiplicative function interfaces, and a boundary excluding Dirichlet
+  series or complex-analysis dependencies.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

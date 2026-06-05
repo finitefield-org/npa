@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ArithmeticFunction",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "arithmetic_function_family_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DivisorCount => fun DivisorSum => fun EulerPhi => fun Mobius => fun Liouville => fun VonMangoldt => fun CarmichaelFunction => fun ArithmeticFunctionFamily => fun definition_law => definition_law"
+    },
+    {
+      "declaration": "divisor_sum_finite_support_evidence_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DividesNat => fun FiniteDivisorSupport => fun DivisorSum => fun DivisorSumFormula => fun sum_law => fun n => fun finite_support => sum_law n finite_support"
+    },
+    {
+      "declaration": "multiplicative_function_coprime_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun MulNat => fun MulCoeff => fun CoprimeNat => fun ArithmeticFunction => fun MultiplicativeFunction => fun multiplicative_law => fun f => fun a => fun b => fun function_f => fun coprime_ab => multiplicative_law f a b function_f coprime_ab"
+    },
+    {
+      "declaration": "completely_multiplicative_function_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun MulNat => fun MulCoeff => fun ArithmeticFunction => fun CompletelyMultiplicativeFunction => fun complete_law => fun f => fun a => fun b => fun function_f => complete_law f a b function_f"
+    },
+    {
+      "declaration": "divisor_count_formula_from_prime_factorization_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun PrimeFactorizationSurface => fun FinitePrimePowerSupport => fun DivisorCountFormula => fun formula_law => fun n => fun factorization => fun finite_support => formula_law n factorization finite_support"
+    },
+    {
+      "declaration": "divisor_sigma_formula_from_prime_factorization_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun PrimeFactorizationSurface => fun FiniteDivisorSupport => fun DivisorSigma => fun SigmaFormula => fun formula_law => fun n => fun factorization => fun finite_support => formula_law n factorization finite_support"
+    },
+    {
+      "declaration": "mobius_liouville_von_mangoldt_factorization_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun PrimeFactorizationSurface => fun Mobius => fun Liouville => fun VonMangoldt => fun ArithmeticFunctionFactorizationPackage => fun formula_law => fun n => fun factorization => formula_law n factorization"
+    },
+    {
+      "declaration": "euler_phi_carmichael_factorization_interfaces",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun PrimeFactorizationSurface => fun EulerPhi => fun CarmichaelFunction => fun PhiCarmichaelFormulaPackage => fun phi_law => fun n => fun factorization => phi_law n factorization"
+    },
+    {
+      "declaration": "arithmetic_function_no_dirichlet_series_or_complex_analysis_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ArithmeticFunctionPackage => fun DirichletSeriesPackage => fun ComplexAnalysisPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun arithmetic_functions => fun dirichlet_series => fun complex_analysis => boundary_law arithmetic_functions dirichlet_series complex_analysis"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ArithmeticFunction/certificate.npcert"
+  }
+}
