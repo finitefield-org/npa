@@ -2599,7 +2599,7 @@ const NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/ClassField/Local/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/ClassField/Local/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/ClassField/Local/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LocalField"],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CLASS_FIELD_LOCAL_THEOREMS,
@@ -2612,7 +2612,11 @@ const NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/ClassField/Global/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/ClassField/Global/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/ClassField/Global/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.ClassGroup",
+        "Proofs.Ai.NumberTheory.ClassField.Local",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS,
@@ -21974,6 +21978,18 @@ const NUMBER_THEORY_CLASS_FIELD_LOCAL_THEOREMS: &[TheoremArtifact] = &[
             "fun K => fun IsAbelianExtension => fun IsCyclotomicExtension => fun kw_law => kw_law"
         ),
     },
+    TheoremArtifact {
+        name: "local_reciprocity_map_domain_codomain_normalization_functoriality_surface",
+        universe_params: &[],
+        statement: "forall (LocalDomain : Type), forall (LocalCodomain : Type), forall (ReciprocityMap : LocalDomain -> LocalCodomain), forall (Normalization : Prop), forall (Functoriality : Prop), forall (LocalReciprocityData : (LocalDomain -> LocalCodomain) -> Prop), forall (data_law : Normalization -> Functoriality -> LocalReciprocityData ReciprocityMap), Normalization -> Functoriality -> LocalReciprocityData ReciprocityMap",
+        proof: "fun LocalDomain => fun LocalCodomain => fun ReciprocityMap => fun Normalization => fun Functoriality => fun LocalReciprocityData => fun data_law => data_law",
+    },
+    TheoremArtifact {
+        name: "explicit_class_field_bridge_name_surface",
+        universe_params: &[],
+        statement: "forall (BridgeName : Type), forall (ClassFieldBridgeAssumption : BridgeName -> Prop), forall (ExplicitBridgeName : BridgeName -> Prop), forall (bridge_law : forall (name : BridgeName), ClassFieldBridgeAssumption name -> ExplicitBridgeName name), forall (name : BridgeName), ClassFieldBridgeAssumption name -> ExplicitBridgeName name",
+        proof: "fun BridgeName => fun ClassFieldBridgeAssumption => fun ExplicitBridgeName => fun bridge_law => fun name => bridge_law name",
+    },
 ];
 
 const NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS: &[TheoremArtifact] = &[
@@ -22016,6 +22032,30 @@ const NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun K => fun H => fun IsHilbertClassField => fun hilbert_law => hilbert_law"
         ),
+    },
+    TheoremArtifact {
+        name: "global_reciprocity_map_domain_codomain_normalization_functoriality_surface",
+        universe_params: &[],
+        statement: "forall (IdeleClassDomain : Type), forall (GlobalGaloisCodomain : Type), forall (GlobalArtinMap : IdeleClassDomain -> GlobalGaloisCodomain), forall (Normalization : Prop), forall (Functoriality : Prop), forall (GlobalReciprocityData : (IdeleClassDomain -> GlobalGaloisCodomain) -> Prop), forall (data_law : Normalization -> Functoriality -> GlobalReciprocityData GlobalArtinMap), Normalization -> Functoriality -> GlobalReciprocityData GlobalArtinMap",
+        proof: "fun IdeleClassDomain => fun GlobalGaloisCodomain => fun GlobalArtinMap => fun Normalization => fun Functoriality => fun GlobalReciprocityData => fun data_law => data_law",
+    },
+    TheoremArtifact {
+        name: "no_class_field_theorem_under_generic_algebra_name_boundary",
+        universe_params: &[],
+        statement: "forall (ClassFieldTheoremPackage : Type), forall (GenericAlgebraNamePackage : Type), forall (NoGenericAlgebraImport : ClassFieldTheoremPackage -> GenericAlgebraNamePackage -> Prop), forall (boundary_law : forall (class_field_theorem : ClassFieldTheoremPackage), forall (generic_algebra_name : GenericAlgebraNamePackage), NoGenericAlgebraImport class_field_theorem generic_algebra_name), forall (class_field_theorem : ClassFieldTheoremPackage), forall (generic_algebra_name : GenericAlgebraNamePackage), NoGenericAlgebraImport class_field_theorem generic_algebra_name",
+        proof: "fun ClassFieldTheoremPackage => fun GenericAlgebraNamePackage => fun NoGenericAlgebraImport => fun boundary_law => fun class_field_theorem => fun generic_algebra_name => boundary_law class_field_theorem generic_algebra_name",
+    },
+    TheoremArtifact {
+        name: "bridge_assumptions_rejected_by_final_promotion_gate_boundary",
+        universe_params: &[],
+        statement: "forall (ClassFieldBridgeAssumptionPackage : Type), forall (FinalPromotionGatePackage : Type), forall (BridgeRejectedAtPromotion : ClassFieldBridgeAssumptionPackage -> FinalPromotionGatePackage -> Prop), forall (rejection_law : forall (bridge_assumption : ClassFieldBridgeAssumptionPackage), forall (promotion_gate : FinalPromotionGatePackage), BridgeRejectedAtPromotion bridge_assumption promotion_gate), forall (bridge_assumption : ClassFieldBridgeAssumptionPackage), forall (promotion_gate : FinalPromotionGatePackage), BridgeRejectedAtPromotion bridge_assumption promotion_gate",
+        proof: "fun ClassFieldBridgeAssumptionPackage => fun FinalPromotionGatePackage => fun BridgeRejectedAtPromotion => fun rejection_law => fun bridge_assumption => fun promotion_gate => rejection_law bridge_assumption promotion_gate",
+    },
+    TheoremArtifact {
+        name: "local_global_reciprocity_separation_surface",
+        universe_params: &[],
+        statement: "forall (LocalReciprocityPackage : Type), forall (GlobalReciprocityPackage : Type), forall (SeparatedReciprocityRoute : LocalReciprocityPackage -> GlobalReciprocityPackage -> Prop), forall (separation_law : forall (local_route : LocalReciprocityPackage), forall (global_route : GlobalReciprocityPackage), SeparatedReciprocityRoute local_route global_route), forall (local_route : LocalReciprocityPackage), forall (global_route : GlobalReciprocityPackage), SeparatedReciprocityRoute local_route global_route",
+        proof: "fun LocalReciprocityPackage => fun GlobalReciprocityPackage => fun SeparatedReciprocityRoute => fun separation_law => fun local_route => fun global_route => separation_law local_route global_route",
     },
 ];
 

@@ -754,7 +754,10 @@ semantics.
   - `NT-T43` added certificate-backed `Proofs.Ai.NumberTheory.ClassField.Local` and
     `Proofs.Ai.NumberTheory.ClassField.Global` defining L1 interfaces for Artin map,
     local reciprocity, Kronecker-Weber theorem, idele class group, global reciprocity,
-    Takagi existence, and Hilbert class field.
+    Takagi existence, and Hilbert class field, with explicit reciprocity
+    domain/codomain/normalization/functoriality data, no-generic-algebra-import
+    boundaries, named bridge assumptions, final-promotion bridge rejection, and
+    separated local/global reciprocity routes.
   - `NT-T44` added certificate-backed `Proofs.Ai.GaloisCohomology.Basic` defining
     L1 interfaces for Hilbert theorem 90, norm-residue symbol, Hasse norm theorem,
     Grunwald-Wang theorem, Brauer group, and Tate cohomology.

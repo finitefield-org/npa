@@ -18,6 +18,16 @@
       "declaration": "kronecker_weber_theorem_interface",
       "source_kind": "explicit_term",
       "term": "fun K => fun IsAbelianExtension => fun IsCyclotomicExtension => fun kw_law => kw_law"
+    },
+    {
+      "declaration": "local_reciprocity_map_domain_codomain_normalization_functoriality_surface",
+      "source_kind": "explicit_term",
+      "term": "fun LocalDomain => fun LocalCodomain => fun ReciprocityMap => fun Normalization => fun Functoriality => fun LocalReciprocityData => fun data_law => data_law"
+    },
+    {
+      "declaration": "explicit_class_field_bridge_name_surface",
+      "source_kind": "explicit_term",
+      "term": "fun BridgeName => fun ClassFieldBridgeAssumption => fun ExplicitBridgeName => fun bridge_law => fun name => bridge_law name"
     }
   ],
   "acceptance": {

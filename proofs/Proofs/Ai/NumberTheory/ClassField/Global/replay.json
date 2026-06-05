@@ -23,6 +23,26 @@
       "declaration": "hilbert_class_field_interface",
       "source_kind": "explicit_term",
       "term": "fun K => fun H => fun IsHilbertClassField => fun hilbert_law => hilbert_law"
+    },
+    {
+      "declaration": "global_reciprocity_map_domain_codomain_normalization_functoriality_surface",
+      "source_kind": "explicit_term",
+      "term": "fun IdeleClassDomain => fun GlobalGaloisCodomain => fun GlobalArtinMap => fun Normalization => fun Functoriality => fun GlobalReciprocityData => fun data_law => data_law"
+    },
+    {
+      "declaration": "no_class_field_theorem_under_generic_algebra_name_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ClassFieldTheoremPackage => fun GenericAlgebraNamePackage => fun NoGenericAlgebraImport => fun boundary_law => fun class_field_theorem => fun generic_algebra_name => boundary_law class_field_theorem generic_algebra_name"
+    },
+    {
+      "declaration": "bridge_assumptions_rejected_by_final_promotion_gate_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ClassFieldBridgeAssumptionPackage => fun FinalPromotionGatePackage => fun BridgeRejectedAtPromotion => fun rejection_law => fun bridge_assumption => fun promotion_gate => rejection_law bridge_assumption promotion_gate"
+    },
+    {
+      "declaration": "local_global_reciprocity_separation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun LocalReciprocityPackage => fun GlobalReciprocityPackage => fun SeparatedReciprocityRoute => fun separation_law => fun local_route => fun global_route => separation_law local_route global_route"
     }
   ],
   "acceptance": {

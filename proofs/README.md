@@ -289,6 +289,14 @@ Current bundles:
   interface preserving measure, integration, Amice transform, Kubota-Leopoldt
   p-adic L-function, measure-theory-roadmap dependencies, and explicit
   interpolation-assumption surfaces.
+- `Proofs/Ai/NumberTheory/ClassField/Local/`: certificate-backed local class-field
+  interface preserving Artin map, local reciprocity, Kronecker-Weber, explicit
+  reciprocity domain/codomain/normalization/functoriality data, and named bridge
+  assumptions.
+- `Proofs/Ai/NumberTheory/ClassField/Global/`: certificate-backed global class-field
+  interface preserving idele class group, global reciprocity, Takagi existence,
+  Hilbert class field, no-generic-algebra-import boundary, bridge rejection at
+  final promotion, and separated local/global reciprocity routes.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite
