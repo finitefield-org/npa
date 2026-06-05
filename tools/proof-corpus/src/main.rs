@@ -208,6 +208,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_SIEVE_MODULE,
     &NUMBER_THEORY_CIRCLE_METHOD_MODULE,
     &NUMBER_THEORY_ADDITIVE_PRIME_MODULE,
+    &NUMBER_THEORY_ALGEBRAIC_INTEGER_MODULE,
+    &NUMBER_THEORY_NUMBER_FIELD_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2389,6 +2391,32 @@ const NUMBER_THEORY_ADDITIVE_PRIME_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_ADDITIVE_PRIME_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ALGEBRAIC_INTEGER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.AlgebraicInteger",
+    source_path: "Proofs/Ai/NumberTheory/AlgebraicInteger/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/AlgebraicInteger/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/AlgebraicInteger/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/AlgebraicInteger/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_ALGEBRAIC_INTEGER_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_NUMBER_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.NumberField",
+    source_path: "Proofs/Ai/NumberTheory/NumberField/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/NumberField/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/NumberField/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/NumberField/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_NUMBER_FIELD_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -20151,6 +20179,87 @@ const NUMBER_THEORY_ADDITIVE_PRIME_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Int => fun IsOdd => fun GreaterThanFive => fun SumOfThreePrimes => fun weak_goldbach_law => fun n => fun odd_n => fun gt5 => weak_goldbach_law n odd_n gt5"
+        ),
+    },
+];
+
+const NUMBER_THEORY_ALGEBRAIC_INTEGER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "algebraic_integer_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Ext : Type), forall (IsAlgebraicInteger : Ext -> Prop), forall (PolyInt : Type), forall (HasRoot : Ext -> PolyInt -> Prop), ",
+            "forall (algebraic_integer_law : forall (x : Ext), forall (p : PolyInt), HasRoot x p -> IsAlgebraicInteger x), ",
+            "forall (x : Ext), forall (p : PolyInt), HasRoot x p -> IsAlgebraicInteger x"
+        ),
+        proof: concat!(
+            "fun Int => fun Ext => fun IsAlgebraicInteger => fun PolyInt => fun HasRoot => fun algebraic_integer_law => fun x => fun p => fun hroot => algebraic_integer_law x p hroot"
+        ),
+    },
+    TheoremArtifact {
+        name: "algebraic_integers_form_ring_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ext : Type), forall (IsAlgebraicInteger : Ext -> Prop), forall (Zero : Ext), forall (One : Ext), forall (Add : Ext -> Ext -> Ext), forall (Mul : Ext -> Ext -> Ext), forall (Neg : Ext -> Ext), ",
+            "forall (z_alg : IsAlgebraicInteger Zero), forall (o_alg : IsAlgebraicInteger One), ",
+            "forall (add_closed : forall (x y : Ext), IsAlgebraicInteger x -> IsAlgebraicInteger y -> IsAlgebraicInteger (Add x y)), ",
+            "forall (mul_closed : forall (x y : Ext), IsAlgebraicInteger x -> IsAlgebraicInteger y -> IsAlgebraicInteger (Mul x y)), ",
+            "forall (neg_closed : forall (x : Ext), IsAlgebraicInteger x -> IsAlgebraicInteger (Neg x)), ",
+            "forall (AlgebraicIntegersRing : Prop), forall (ring_law : forall (za : IsAlgebraicInteger Zero), forall (oa : IsAlgebraicInteger One), forall (ac : forall (x y : Ext), IsAlgebraicInteger x -> IsAlgebraicInteger y -> IsAlgebraicInteger (Add x y)), forall (mc : forall (x y : Ext), IsAlgebraicInteger x -> IsAlgebraicInteger y -> IsAlgebraicInteger (Mul x y)), forall (nc : forall (x : Ext), IsAlgebraicInteger x -> IsAlgebraicInteger (Neg x)), AlgebraicIntegersRing), AlgebraicIntegersRing"
+        ),
+        proof: concat!(
+            "fun Ext => fun IsAlgebraicInteger => fun Zero => fun One => fun Add => fun Mul => fun Neg => fun z_alg => fun o_alg => fun add_closed => fun mul_closed => fun neg_closed => fun AlgebraicIntegersRing => fun ring_law => ring_law z_alg o_alg add_closed mul_closed neg_closed"
+        ),
+    },
+    TheoremArtifact {
+        name: "rational_algebraic_integer_implies_integer_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Rat : Type), forall (IsInteger : Rat -> Prop), forall (IsAlgebraicInteger : Rat -> Prop), ",
+            "forall (rational_integer_law : forall (q : Rat), IsAlgebraicInteger q -> IsInteger q), ",
+            "forall (q : Rat), IsAlgebraicInteger q -> IsInteger q"
+        ),
+        proof: concat!(
+            "fun Int => fun Rat => fun IsInteger => fun IsAlgebraicInteger => fun rational_integer_law => fun q => fun halg => rational_integer_law q halg"
+        ),
+    },
+];
+
+const NUMBER_THEORY_NUMBER_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "number_field_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Rat : Type), forall (Ext : Type), forall (FieldExtension : Type -> Type -> Prop), forall (IsFiniteExtension : Type -> Type -> Prop), forall (IsNumberField : Type -> Prop), ",
+            "forall (number_field_law : forall (K : Type), FieldExtension Rat K -> IsFiniteExtension Rat K -> IsNumberField K), ",
+            "forall (K : Type), FieldExtension Rat K -> IsFiniteExtension Rat K -> IsNumberField K"
+        ),
+        proof: concat!(
+            "fun Rat => fun Ext => fun FieldExtension => fun IsFiniteExtension => fun IsNumberField => fun number_field_law => fun K => fun ext => fun fin => number_field_law K ext fin"
+        ),
+    },
+    TheoremArtifact {
+        name: "ring_of_integers_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ext : Type), forall (IsAlgebraicInteger : Ext -> Prop), forall (RingOfIntegers : Ext -> Prop), ",
+            "forall (ring_of_integers_law : forall (x : Ext), IsAlgebraicInteger x -> RingOfIntegers x), ",
+            "forall (x : Ext), IsAlgebraicInteger x -> RingOfIntegers x"
+        ),
+        proof: concat!(
+            "fun Ext => fun IsAlgebraicInteger => fun RingOfIntegers => fun ring_of_integers_law => fun x => fun halg => ring_of_integers_law x halg"
+        ),
+    },
+    TheoremArtifact {
+        name: "algebraic_number_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Rat : Type), forall (Ext : Type), forall (IsAlgebraicOver : Type -> Type -> Ext -> Prop), forall (IsAlgebraicNumber : Ext -> Prop), ",
+            "forall (algebraic_number_law : forall (x : Ext), IsAlgebraicOver Rat Ext x -> IsAlgebraicNumber x), ",
+            "forall (x : Ext), IsAlgebraicOver Rat Ext x -> IsAlgebraicNumber x"
+        ),
+        proof: concat!(
+            "fun Rat => fun Ext => fun IsAlgebraicOver => fun IsAlgebraicNumber => fun algebraic_number_law => fun x => fun halg => algebraic_number_law x halg"
         ),
     },
 ];

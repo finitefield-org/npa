@@ -1,0 +1,14 @@
+import Std.Logic.Eq
+
+theorem number_field_interface :
+  forall (Rat : Type), forall (Ext : Type), forall (FieldExtension : Type -> Type -> Prop), forall (IsFiniteExtension : Type -> Type -> Prop), forall (IsNumberField : Type -> Prop), forall (number_field_law : forall (K : Type), FieldExtension Rat K -> IsFiniteExtension Rat K -> IsNumberField K), forall (K : Type), FieldExtension Rat K -> IsFiniteExtension Rat K -> IsNumberField K :=
+  fun Rat => fun Ext => fun FieldExtension => fun IsFiniteExtension => fun IsNumberField => fun number_field_law => fun K => fun ext => fun fin => number_field_law K ext fin
+
+theorem ring_of_integers_interface :
+  forall (Ext : Type), forall (IsAlgebraicInteger : Ext -> Prop), forall (RingOfIntegers : Ext -> Prop), forall (ring_of_integers_law : forall (x : Ext), IsAlgebraicInteger x -> RingOfIntegers x), forall (x : Ext), IsAlgebraicInteger x -> RingOfIntegers x :=
+  fun Ext => fun IsAlgebraicInteger => fun RingOfIntegers => fun ring_of_integers_law => fun x => fun halg => ring_of_integers_law x halg
+
+theorem algebraic_number_interface :
+  forall (Rat : Type), forall (Ext : Type), forall (IsAlgebraicOver : Type -> Type -> Ext -> Prop), forall (IsAlgebraicNumber : Ext -> Prop), forall (algebraic_number_law : forall (x : Ext), IsAlgebraicOver Rat Ext x -> IsAlgebraicNumber x), forall (x : Ext), IsAlgebraicOver Rat Ext x -> IsAlgebraicNumber x :=
+  fun Rat => fun Ext => fun IsAlgebraicOver => fun IsAlgebraicNumber => fun algebraic_number_law => fun x => fun halg => algebraic_number_law x halg
+

@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.AlgebraicInteger",
+  "source": "Proofs/Ai/NumberTheory/AlgebraicInteger/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/AlgebraicInteger/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7e5856f3996e3092166e771726226f6e7c0c678cff6dcd6df3623ee4539c3723",
+  "certificate_file_sha256": "sha256:588050998f96aa6f895207e8bda37114da9ed7a7457e47cf245a49c974ed8950",
+  "export_hash": "sha256:6f2863024878f7d5e0da7b8c70a1920c97fd1d81157dc5879a3bc2e1cd3508c3",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3d94651c29d69bbc3dca4ac7b0e4d9aede6b59f45130b768ddf56023f55467ce",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "algebraic_integer_interface", "kind": "theorem" },
+    { "name": "algebraic_integers_form_ring_interface", "kind": "theorem" },
+    { "name": "rational_algebraic_integer_implies_integer_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

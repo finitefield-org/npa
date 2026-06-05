@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.NumberField",
+  "source": "Proofs/Ai/NumberTheory/NumberField/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/NumberField/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:87ef77c501282662284c02b4303197a99985b6665502431d5221959f84a81a75",
+  "certificate_file_sha256": "sha256:0fb822d43ce603c5f82788a4e70488cbe321c516a084f7d5b57f5495b17e442b",
+  "export_hash": "sha256:c5f467b52026986b2c1e5f7122712dacbc09b0c50d326c3bc5105e476dc9fb53",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c6c5f5ebb06e97fe8f3e541faa8a7c509946fbbb3d73b752a7f9b6a0d98159d2",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "number_field_interface", "kind": "theorem" },
+    { "name": "ring_of_integers_interface", "kind": "theorem" },
+    { "name": "algebraic_number_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

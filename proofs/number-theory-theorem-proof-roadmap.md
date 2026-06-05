@@ -639,7 +639,12 @@ semantics.
 
 ## NT-13 Algebraic Number Theory
 
-- Status: planned.
+- Status: in-progress.
+- Implementation progress:
+  - `NT-T37` added certificate-backed `Proofs.Ai.NumberTheory.AlgebraicInteger`
+    and `Proofs.Ai.NumberTheory.NumberField` defining L1 interfaces for
+    algebraic numbers, algebraic integers, their ring structure, rational
+    algebraic integer implies integer, number fields, and the ring of integers.
 - Depends on: existing `Proofs.Ai.Algebra.*` modules,
   `develop/proof-corpus-field-theory-roadmap.md`, `NT-03`, ideals, modules,
   field extensions, and finite-dimensional vector spaces from

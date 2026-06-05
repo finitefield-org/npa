@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.AlgebraicInteger",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "algebraic_integer_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Ext => fun IsAlgebraicInteger => fun PolyInt => fun HasRoot => fun algebraic_integer_law => fun x => fun p => fun hroot => algebraic_integer_law x p hroot"
+    },
+    {
+      "declaration": "algebraic_integers_form_ring_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ext => fun IsAlgebraicInteger => fun Zero => fun One => fun Add => fun Mul => fun Neg => fun z_alg => fun o_alg => fun add_closed => fun mul_closed => fun neg_closed => fun AlgebraicIntegersRing => fun ring_law => ring_law z_alg o_alg add_closed mul_closed neg_closed"
+    },
+    {
+      "declaration": "rational_algebraic_integer_implies_integer_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Rat => fun IsInteger => fun IsAlgebraicInteger => fun rational_integer_law => fun q => fun halg => rational_integer_law q halg"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/AlgebraicInteger/certificate.npcert"
+  }
+}

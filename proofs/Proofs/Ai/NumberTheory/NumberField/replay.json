@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.NumberField",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "number_field_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Rat => fun Ext => fun FieldExtension => fun IsFiniteExtension => fun IsNumberField => fun number_field_law => fun K => fun ext => fun fin => number_field_law K ext fin"
+    },
+    {
+      "declaration": "ring_of_integers_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ext => fun IsAlgebraicInteger => fun RingOfIntegers => fun ring_of_integers_law => fun x => fun halg => ring_of_integers_law x halg"
+    },
+    {
+      "declaration": "algebraic_number_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Rat => fun Ext => fun IsAlgebraicOver => fun IsAlgebraicNumber => fun algebraic_number_law => fun x => fun halg => algebraic_number_law x halg"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/NumberField/certificate.npcert"
+  }
+}

@@ -1068,7 +1068,7 @@ later in the file.
 
 ### NT-T37 Add Algebraic Integer And Number Field Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T09`, field-theory roadmap milestones through field extension
 - Areas: `Proofs/Ai/NumberTheory/AlgebraicInteger/`, `Proofs/Ai/NumberTheory/NumberField/`
 - Tasks:
