@@ -5,17 +5,21 @@
   "certificate": "Proofs/Ai/NumberTheory/Valuation/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:d3a773770dbb54a22bb7be7f0d6e2b1d8ed49b91ddbb04c1d4c6560c536aae3f",
-  "certificate_file_sha256": "sha256:d6bfeecb94c04e73db8a1162c406fb8e73e71cabda6a9940089bdd879e830d0c",
-  "export_hash": "sha256:8e8a72c00779ffbe2d19e9129df0d7dea4bb82725410eb33c33aabe921a141e5",
-  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
-  "certificate_hash": "sha256:d2758d6c01803e2711f89ed61a1c634e5d6a29b175f7467ead0ec86a1596e6a0",
-  "imports": ["Std.Logic.Eq"],
+  "source_sha256": "sha256:4c1bd785e03057b17bcdc55e572dbdd01c717bd031553aab7bc18cdc7d9e112a",
+  "certificate_file_sha256": "sha256:1faeef36cdb00288e555c75268d92efb4d4d0ef3cb6a0a09afb7412ce2e4e99d",
+  "export_hash": "sha256:d0051ecb8303dc7f88efa2412426c1c6cc64ccc0d7d61aab3085182afa614ba8",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:e21df8bf55b6d6c5a5c5d1e715f51f47e9a0d3aa61e2f92bbe9c82bead33fbd2",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint"],
   "axioms": [],
   "declarations": [
     { "name": "padic_valuation_interface", "kind": "theorem" },
     { "name": "padic_absolute_value_interface", "kind": "theorem" },
-    { "name": "non_archimedean_metric_law_interface", "kind": "theorem" }
+    { "name": "non_archimedean_metric_law_interface", "kind": "theorem" },
+    { "name": "non_Archimedean_metric_from_valuation_surface", "kind": "theorem" },
+    { "name": "p_adic_valuation_algebra_before_completion_boundary", "kind": "theorem" },
+    { "name": "p_adic_completion_topology_dependency_surface", "kind": "theorem" },
+    { "name": "no_local_field_for_basic_valuation_boundary", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

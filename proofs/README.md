@@ -267,6 +267,12 @@ Current bundles:
   preserving ideal factorization, uniqueness, fractional ideal group, class number,
   Dirichlet unit, and Minkowski surfaces, with explicit quotient construction,
   geometry-of-numbers dependencies, and an L1 analytic class-number formula boundary.
+- `Proofs/Ai/NumberTheory/Valuation/`: certificate-backed Valuation and p_adic
+  metric interface preserving p-adic valuation, p-adic absolute value,
+  non_Archimedean metric, algebra-before-completion, topology/analysis completion
+  dependency, and no-local-field-dependency boundary surfaces.
+- `Proofs/Ai/NumberTheory/Padic/`: certificate-backed p-adic completion and
+  p-adic field construction interface for the NT-T40 local-field route.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

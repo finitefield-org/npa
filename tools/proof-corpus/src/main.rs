@@ -2499,7 +2499,14 @@ const NUMBER_THEORY_VALUATION_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/Valuation/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/Valuation/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/Valuation/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_VALUATION_THEOREMS,
@@ -21638,6 +21645,30 @@ const NUMBER_THEORY_VALUATION_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun K => fun Real => fun AbsVal => fun NonArchimedean => fun x => fun y => NonArchimedean x y"
         ),
+    },
+    TheoremArtifact {
+        name: "non_Archimedean_metric_from_valuation_surface",
+        universe_params: &[],
+        statement: "forall (K : Type), forall (MetricValue : Type), forall (Valuation : K -> MetricValue), forall (p_adic_absolute_value : K -> MetricValue), forall (non_ArchimedeanMetric : K -> K -> Prop), forall (metric_law : forall (x : K), forall (y : K), non_ArchimedeanMetric x y), forall (x : K), forall (y : K), non_ArchimedeanMetric x y",
+        proof: "fun K => fun MetricValue => fun Valuation => fun p_adic_absolute_value => fun non_ArchimedeanMetric => fun metric_law => fun x => fun y => metric_law x y",
+    },
+    TheoremArtifact {
+        name: "p_adic_valuation_algebra_before_completion_boundary",
+        universe_params: &[],
+        statement: "forall (ValuationAlgebraLawPackage : Type), forall (MetricCompletionPackage : Type), forall (AlgebraBeforeCompletion : ValuationAlgebraLawPackage -> MetricCompletionPackage -> Prop), forall (boundary_law : forall (valuation_laws : ValuationAlgebraLawPackage), forall (completion : MetricCompletionPackage), AlgebraBeforeCompletion valuation_laws completion), forall (valuation_laws : ValuationAlgebraLawPackage), forall (completion : MetricCompletionPackage), AlgebraBeforeCompletion valuation_laws completion",
+        proof: "fun ValuationAlgebraLawPackage => fun MetricCompletionPackage => fun AlgebraBeforeCompletion => fun boundary_law => fun valuation_laws => fun completion => boundary_law valuation_laws completion",
+    },
+    TheoremArtifact {
+        name: "p_adic_completion_topology_dependency_surface",
+        universe_params: &[],
+        statement: "forall (PadicField : Type), forall (MetricTopologyPackage : Type), forall (MetricCompletionPackage : Type), forall (CompletionDependency : PadicField -> MetricTopologyPackage -> MetricCompletionPackage -> Prop), forall (dependency_law : forall (Qp : PadicField), forall (topology : MetricTopologyPackage), forall (completion : MetricCompletionPackage), CompletionDependency Qp topology completion), forall (Qp : PadicField), forall (topology : MetricTopologyPackage), forall (completion : MetricCompletionPackage), CompletionDependency Qp topology completion",
+        proof: "fun PadicField => fun MetricTopologyPackage => fun MetricCompletionPackage => fun CompletionDependency => fun dependency_law => fun Qp => fun topology => fun completion => dependency_law Qp topology completion",
+    },
+    TheoremArtifact {
+        name: "no_local_field_for_basic_valuation_boundary",
+        universe_params: &[],
+        statement: "forall (BasicValuationPackage : Type), forall (LocalFieldTheoremPackage : Type), forall (NoLocalFieldDependency : BasicValuationPackage -> LocalFieldTheoremPackage -> Prop), forall (boundary_law : forall (valuation_package : BasicValuationPackage), forall (local_field_theorem : LocalFieldTheoremPackage), NoLocalFieldDependency valuation_package local_field_theorem), forall (valuation_package : BasicValuationPackage), forall (local_field_theorem : LocalFieldTheoremPackage), NoLocalFieldDependency valuation_package local_field_theorem",
+        proof: "fun BasicValuationPackage => fun LocalFieldTheoremPackage => fun NoLocalFieldDependency => fun boundary_law => fun valuation_package => fun local_field_theorem => boundary_law valuation_package local_field_theorem",
     },
 ];
 
