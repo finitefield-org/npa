@@ -1512,6 +1512,23 @@ theorems = ["sequence_value_intro", "sequence_value_elim", "eventually_intro", "
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Sequence.Compactness"
+source = "Proofs/Ai/Analysis/Sequence/Compactness/source.npa"
+certificate = "Proofs/Ai/Analysis/Sequence/Compactness/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Sequence/Compactness/meta.json"
+replay = "Proofs/Ai/Analysis/Sequence/Compactness/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:d11b08c524933ec943ea6e60c7265bf21bf3510004a6d10acb4ecc5d63999fc4"
+expected_certificate_file_hash = "sha256:58861949ad91fc63e56acdbf8d9b94d0e6c58ee89beb36af6d3cad8e388c2024"
+expected_export_hash = "sha256:ce946d68c62bc28894fe3f958d1680b2f7f71494eaca73749dab7609f3f9e069"
+expected_axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+expected_certificate_hash = "sha256:d281fb9c096dd185108c4f1db63bcb5be7acddc90f51c6d16e68448e963b3f03"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"]
+definitions = ["SubsequenceExtractionEvidence", "ConvergentSubsequenceEvidence", "BolzanoWeierstrassChoice", "BolzanoWeierstrassCompletenessEvidence"]
+theorems = ["subsequence_extraction_evidence_intro", "subsequence_extraction_evidence_subsequence", "convergent_subsequence_evidence_intro", "convergent_subsequence_evidence_extraction", "convergent_subsequence_evidence_converges", "bolzano_weierstrass_choice_intro", "bolzano_weierstrass_choice_elim", "bolzano_weierstrass_completeness_evidence_intro", "bounded_sequence_compactness_from_interval_nesting", "bolzano_weierstrass_from_completeness", "bolzano_weierstrass_theorem"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.AbstractInverseFunction"
 source = "Proofs/Ai/Analysis/AbstractInverseFunction/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert"

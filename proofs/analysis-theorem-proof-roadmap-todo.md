@@ -394,7 +394,11 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T05 Add Bolzano-Weierstrass And Sequence Compactness
 
-- Status: Pending
+- Status: `ANQ-007` complete. `Proofs.Ai.Analysis.Sequence.Compactness`
+  now defines subsequence extraction evidence, convergent-subsequence
+  evidence, a bounded-sequence compactness choice package, and
+  Bolzano-Weierstrass theorem aliases derived through the interval-nesting
+  route.
 - Depends on: ANA-T04
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -418,8 +422,13 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Compactness`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Compactness`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Compactness::bolzano_weierstrass_from_completeness /tmp/anq007-bolzano-weierstrass-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Stable downstream import names are
+  `bounded_sequence_compactness_from_interval_nesting`,
+  `bolzano_weierstrass_from_completeness`, and
+  `bolzano_weierstrass_theorem`.
 
 ### ANA-T06 Add Series Basics And Cauchy Criterion
 

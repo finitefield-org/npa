@@ -191,6 +191,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ABSTRACT_DERIVATIVE_MODULE,
     &ABSTRACT_FIXED_POINT_MODULE,
     &ANALYSIS_SEQUENCE_BASIC_MODULE,
+    &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
     &ABSTRACT_INVERSE_FUNCTION_MODULE,
     &ABSTRACT_IMPLICIT_PHI_MODULE,
     &ABSTRACT_IMPLICIT_FUNCTION_MODULE,
@@ -616,6 +617,31 @@ const ANALYSIS_SEQUENCE_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ANALYSIS_SEQUENCE_BASIC_DEFINITIONS,
     theorems: ANALYSIS_SEQUENCE_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_SEQUENCE_COMPACTNESS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Sequence.Compactness",
+    source_path: "Proofs/Ai/Analysis/Sequence/Compactness/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Sequence/Compactness/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Sequence/Compactness/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Sequence/Compactness/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+        "Proofs.Ai.Analysis.Sequence.Basic",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_SEQUENCE_COMPACTNESS_DEFINITIONS,
+    theorems: ANALYSIS_SEQUENCE_COMPACTNESS_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -2581,6 +2607,23 @@ macro_rules! sequence_converges_to_for_app {
     };
 }
 
+macro_rules! sequence_converges_to_on_app {
+    ($index_universe:literal, $index_type:literal, $sequence:literal, $near_limit:literal, $limit:literal) => {
+        concat!(
+            "@SequenceConvergesTo.{",
+            $index_universe,
+            ",n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field ",
+            $index_type,
+            " ",
+            $sequence,
+            " ",
+            $near_limit,
+            " ",
+            $limit
+        )
+    };
+}
+
 macro_rules! sequence_limit_app {
     ($limit:literal) => {
         concat!(
@@ -2744,6 +2787,48 @@ macro_rules! nested_interval_completeness_evidence_app {
             " ",
             $length
         )
+    };
+}
+
+macro_rules! subsequence_extraction_evidence_app {
+    ($sub_index:literal, $selector:literal, $subseq:literal) => {
+        concat!(
+            "@SubsequenceExtractionEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $sub_index,
+            " ",
+            $selector,
+            " ",
+            $subseq
+        )
+    };
+}
+
+macro_rules! convergent_subsequence_evidence_app {
+    ($sub_index:literal, $selector:literal, $subseq:literal, $sub_near_limit:literal, $limit:literal) => {
+        concat!(
+            "@ConvergentSubsequenceEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $sub_index,
+            " ",
+            $selector,
+            " ",
+            $subseq,
+            " ",
+            $sub_near_limit,
+            " ",
+            $limit
+        )
+    };
+}
+
+macro_rules! bolzano_weierstrass_choice_app {
+    () => {
+        "@BolzanoWeierstrassChoice.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
+    };
+}
+
+macro_rules! bolzano_weierstrass_completeness_evidence_app {
+    () => {
+        "@BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
     };
 }
 
@@ -32371,6 +32456,334 @@ const ANALYSIS_SEQUENCE_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_SEQUENCE_COMPACTNESS_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SubsequenceExtractionEvidence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun SubIndex => fun selector => fun subseq => forall (P : Prop), forall (mk : forall (subsequence : ",
+            subsequence_app!("SubIndex", "selector", "subseq"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "ConvergentSubsequenceEvidence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun SubIndex => fun selector => fun subseq => fun SubNearLimit => fun limit => forall (P : Prop), forall (mk : forall (extraction : ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            "), forall (converges : ",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "BolzanoWeierstrassChoice",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!("Prop"),
+        value: analysis_sequence_basic_abs!(concat!(
+            "forall (P : Prop), forall (choose : forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (evidence : ",
+            convergent_subsequence_evidence_app!(
+                "SubIndex",
+                "selector",
+                "subseq",
+                "SubNearLimit",
+                "limit"
+            ),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "BolzanoWeierstrassCompletenessEvidence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!("Prop"),
+        value: analysis_sequence_basic_abs!(concat!(
+            "forall (P : Prop), forall (mk : forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (nested_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), forall (interval_evidence_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length"),
+            "), forall (subsequence_bridge : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (point : ",
+            nested_interval_point_app!("lower", "upper"),
+            "), ",
+            bolzano_weierstrass_choice_app!(),
+            "), P), P"
+        )),
+    },
+];
+
+const ANALYSIS_SEQUENCE_COMPACTNESS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "subsequence_extraction_evidence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (subsequence : ",
+            subsequence_app!("SubIndex", "selector", "subseq"),
+            "), ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun SubIndex => fun selector => fun subseq => fun subsequence => fun (P : Prop) => fun (mk : forall (subsequence : @Subsequence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit SubIndex selector subseq), P) => mk subsequence"
+        ),
+    },
+    TheoremArtifact {
+        name: "subsequence_extraction_evidence_subsequence",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (evidence : ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            "), ",
+            subsequence_app!("SubIndex", "selector", "subseq")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun SubIndex => fun selector => fun subseq => fun evidence => evidence (",
+            subsequence_app!("SubIndex", "selector", "subseq"),
+            ") (fun (subsequence : ",
+            subsequence_app!("SubIndex", "selector", "subseq"),
+            ") => subsequence)"
+        )),
+    },
+    TheoremArtifact {
+        name: "convergent_subsequence_evidence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (extraction : ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            "), forall (converges : ",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit"),
+            "), ",
+            convergent_subsequence_evidence_app!(
+                "SubIndex",
+                "selector",
+                "subseq",
+                "SubNearLimit",
+                "limit"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun SubIndex => fun selector => fun subseq => fun SubNearLimit => fun limit => fun extraction => fun converges => fun (P : Prop) => fun (mk : forall (extraction : ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            "), forall (converges : ",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit"),
+            "), P) => mk extraction converges"
+        )),
+    },
+    TheoremArtifact {
+        name: "convergent_subsequence_evidence_extraction",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (evidence : ",
+            convergent_subsequence_evidence_app!(
+                "SubIndex",
+                "selector",
+                "subseq",
+                "SubNearLimit",
+                "limit"
+            ),
+            "), ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun SubIndex => fun selector => fun subseq => fun SubNearLimit => fun limit => fun evidence => evidence (",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            ") (fun (extraction : ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            ") => fun (converges : ",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit"),
+            ") => extraction)"
+        )),
+    },
+    TheoremArtifact {
+        name: "convergent_subsequence_evidence_converges",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (evidence : ",
+            convergent_subsequence_evidence_app!(
+                "SubIndex",
+                "selector",
+                "subseq",
+                "SubNearLimit",
+                "limit"
+            ),
+            "), ",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun SubIndex => fun selector => fun subseq => fun SubNearLimit => fun limit => fun evidence => evidence (",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit"),
+            ") (fun (extraction : ",
+            subsequence_extraction_evidence_app!("SubIndex", "selector", "subseq"),
+            ") => fun (converges : ",
+            sequence_converges_to_on_app!("j", "SubIndex", "subseq", "SubNearLimit", "limit"),
+            ") => converges)"
+        )),
+    },
+    TheoremArtifact {
+        name: "bolzano_weierstrass_choice_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (evidence : ",
+            convergent_subsequence_evidence_app!(
+                "SubIndex",
+                "selector",
+                "subseq",
+                "SubNearLimit",
+                "limit"
+            ),
+            "), ",
+            bolzano_weierstrass_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun SubIndex => fun selector => fun subseq => fun SubNearLimit => fun limit => fun evidence => fun (P : Prop) => fun (choose : forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (evidence : @ConvergentSubsequenceEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit SubIndex selector subseq SubNearLimit limit), P) => choose SubIndex selector subseq SubNearLimit limit evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "bolzano_weierstrass_choice_elim",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (choice : ",
+            bolzano_weierstrass_choice_app!(),
+            "), forall (P : Prop), forall (choose : forall (SubIndex : Sort j), forall (selector : forall (k : SubIndex), SequenceIndex), forall (subseq : forall (k : SubIndex), Scalar), forall (SubNearLimit : forall (candidate : forall (k : SubIndex), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (limit : Scalar), forall (evidence : ",
+            convergent_subsequence_evidence_app!(
+                "SubIndex",
+                "selector",
+                "subseq",
+                "SubNearLimit",
+                "limit"
+            ),
+            "), P), P"
+        )),
+        proof: analysis_sequence_basic_abs!("fun choice => fun P => fun choose => choice P choose"),
+    },
+    TheoremArtifact {
+        name: "bolzano_weierstrass_completeness_evidence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (nested_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), forall (interval_evidence_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length"),
+            "), forall (subsequence_bridge : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (point : ",
+            nested_interval_point_app!("lower", "upper"),
+            "), ",
+            bolzano_weierstrass_choice_app!(),
+            "), ",
+            bolzano_weierstrass_completeness_evidence_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun IndexLe => fun lower => fun upper => fun length => fun nested_for_bounds => fun shrinking_for_bounds => fun interval_evidence_for_bounds => fun subsequence_bridge => fun (P : Prop) => fun (mk : forall (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop), forall (lower : forall (n : SequenceIndex), Scalar), forall (upper : forall (n : SequenceIndex), Scalar), forall (length : forall (n : SequenceIndex), Scalar), forall (nested_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            "), forall (shrinking_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            "), forall (interval_evidence_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length"),
+            "), forall (subsequence_bridge : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (point : ",
+            nested_interval_point_app!("lower", "upper"),
+            "), ",
+            bolzano_weierstrass_choice_app!(),
+            "), P) => mk IndexLe lower upper length nested_for_bounds shrinking_for_bounds interval_evidence_for_bounds subsequence_bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "bounded_sequence_compactness_from_interval_nesting",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (evidence : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), ",
+            bolzano_weierstrass_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun bounded => fun evidence => evidence (",
+            bolzano_weierstrass_choice_app!(),
+            ") (fun (IndexLe : forall (m : SequenceIndex), forall (n : SequenceIndex), Prop) => fun (lower : forall (n : SequenceIndex), Scalar) => fun (upper : forall (n : SequenceIndex), Scalar) => fun (length : forall (n : SequenceIndex), Scalar) => fun (nested_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_closed_intervals_app!("IndexLe", "lower", "upper"),
+            ") => fun (shrinking_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            shrinking_interval_length_app!("lower", "upper", "length"),
+            ") => fun (interval_evidence_for_bounds : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), ",
+            nested_interval_completeness_evidence_app!("IndexLe", "lower", "upper", "length"),
+            ") => fun (subsequence_bridge : forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (point : ",
+            nested_interval_point_app!("lower", "upper"),
+            "), ",
+            bolzano_weierstrass_choice_app!(),
+            ") => subsequence_bridge bounded (@interval_nesting_theorem.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit IndexLe lower upper length (nested_for_bounds bounded) (shrinking_for_bounds bounded) (interval_evidence_for_bounds bounded)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "bolzano_weierstrass_from_completeness",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (evidence : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), ",
+            bolzano_weierstrass_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun bounded => fun evidence => @bounded_sequence_compactness_from_interval_nesting.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit bounded evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "bolzano_weierstrass_theorem",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (bounded : ",
+            bounded_sequence_app!(),
+            "), forall (evidence : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), ",
+            bolzano_weierstrass_choice_app!()
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun bounded => fun evidence => @bolzano_weierstrass_from_completeness.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit bounded evidence"
+        ),
+    },
+];
+
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "square_def",
@@ -40876,6 +41289,38 @@ fn run_full() -> Result<(), String> {
         &analysis_sequence_basic_imports,
         &analysis_sequence_basic_source_interfaces,
     )?;
+    let analysis_sequence_compactness_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+        analysis_sequence_basic.verified_module.clone(),
+    ];
+    let analysis_sequence_compactness_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+        analysis_sequence_basic.source_interface.clone(),
+    ];
+    let _analysis_sequence_compactness = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
+        &analysis_sequence_compactness_imports,
+        &analysis_sequence_compactness_source_interfaces,
+    )?;
     let abstract_inverse_function_imports = vec![
         eq_import.clone(),
         abstract_metric_topology.verified_module.clone(),
@@ -43802,6 +44247,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE.module
         || config.module == ANALYSIS_REAL_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_BASIC_MODULE.module
+        || config.module == ANALYSIS_SEQUENCE_COMPACTNESS_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module

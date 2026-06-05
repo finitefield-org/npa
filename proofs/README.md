@@ -1814,6 +1814,41 @@ the length sequence and its convergence to zero, and `nested_interval_point_from
 chooses a supremum of the lower-endpoint set through `supremum_exists_from_completeness` before
 applying the explicit supremum-to-intersection bridge.
 
+#### `Proofs.Ai.Analysis.Sequence.Compactness`
+
+This module is the bounded-sequence compactness layer over
+`Proofs.Ai.Analysis.Sequence.Basic`. It keeps the subsequence carrier, selector, extracted
+sequence, and extracted convergence predicate explicit, and derives Bolzano-Weierstrass through
+the existing interval-nesting theorem rather than introducing a primitive compactness axiom. Its
+direct imports are the sequence and real-analysis foundations only; it does not import series or
+integration modules.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SubsequenceExtractionEvidence` | Church-encoded package containing the imported `Subsequence` witness for a selector and extracted sequence |
+| `ConvergentSubsequenceEvidence` | package combining extraction evidence with convergence of the extracted sequence under its own smallness predicate |
+| `BolzanoWeierstrassChoice` | existential-style choice of a convergent subsequence and limit |
+| `BolzanoWeierstrassCompletenessEvidence` | explicit bounded-sequence-to-nested-interval route plus a bridge from the interval point to a convergent-subsequence choice |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `subsequence_extraction_evidence_intro`, `subsequence_extraction_evidence_subsequence` | package and recover subsequence extraction witnesses |
+| `convergent_subsequence_evidence_intro` | package extraction and convergence witnesses for an extracted sequence |
+| `convergent_subsequence_evidence_extraction`, `convergent_subsequence_evidence_converges` | project the extraction and convergence witnesses |
+| `bolzano_weierstrass_choice_intro`, `bolzano_weierstrass_choice_elim` | package and eliminate the convergent-subsequence choice |
+| `bolzano_weierstrass_completeness_evidence_intro` | package the bounded-sequence interval route and subsequence bridge |
+| `bounded_sequence_compactness_from_interval_nesting` | derives a convergent-subsequence choice by calling `interval_nesting_theorem` |
+| `bolzano_weierstrass_from_completeness`, `bolzano_weierstrass_theorem` | stable aliases for bounded-sequence Bolzano-Weierstrass imports |
+
+The module has an empty axiom report. The compactness proof path requires explicit evidence that
+boundedness supplies nested closed intervals, shrinking lengths, and interval-completeness data;
+the checked theorem then calls `interval_nesting_theorem` and passes its intersection point to the
+subsequence bridge.
+
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
 No new carrier or operation definition lives here. This implemented module provides checked
