@@ -2673,7 +2673,7 @@ const ELLIPTIC_CURVE_GROUP_LAW_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/EllipticCurve/GroupLaw/certificate.npcert",
     meta_path: "Proofs/Ai/EllipticCurve/GroupLaw/meta.json",
     replay_path: "Proofs/Ai/EllipticCurve/GroupLaw/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic"],
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_GROUP_LAW_THEOREMS,
@@ -22212,6 +22212,24 @@ const ELLIPTIC_CURVE_BASIC_THEOREMS: &[TheoremArtifact] = &[
             "fun F => fun a => fun b => fun DiscriminantNotZero => fun nonsingular_law => nonsingular_law"
         ),
     },
+    TheoremArtifact {
+        name: "weierstrass_field_polynomial_assumptions_surface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (Zero : FieldCarrier), forall (One : FieldCarrier), forall (Add : FieldCarrier -> FieldCarrier -> FieldCarrier), forall (Mul : FieldCarrier -> FieldCarrier -> FieldCarrier), forall (Neg : FieldCarrier -> FieldCarrier), forall (PolynomialEquation : FieldCarrier -> FieldCarrier -> FieldCarrier -> FieldCarrier -> Prop), forall (FieldAxioms : Prop), forall (PolynomialAssumptions : Prop), forall (assumption_law : forall (field_axioms : FieldAxioms), forall (polynomial_assumptions : PolynomialAssumptions), forall (x : FieldCarrier), forall (y : FieldCarrier), forall (a : FieldCarrier), forall (b : FieldCarrier), PolynomialEquation x y a b), forall (field_axioms : FieldAxioms), forall (polynomial_assumptions : PolynomialAssumptions), forall (x : FieldCarrier), forall (y : FieldCarrier), forall (a : FieldCarrier), forall (b : FieldCarrier), PolynomialEquation x y a b",
+        proof: "fun FieldCarrier => fun Zero => fun One => fun Add => fun Mul => fun Neg => fun PolynomialEquation => fun FieldAxioms => fun PolynomialAssumptions => fun assumption_law => fun field_axioms => fun polynomial_assumptions => fun x => fun y => fun a => fun b => assumption_law field_axioms polynomial_assumptions x y a b",
+    },
+    TheoremArtifact {
+        name: "nonsingular_discriminant_polynomial_surface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (Discriminant : FieldCarrier -> FieldCarrier -> FieldCarrier), forall (Nonzero : FieldCarrier -> Prop), forall (NonsingularModel : FieldCarrier -> FieldCarrier -> Prop), forall (nonsingular_law : forall (a : FieldCarrier), forall (b : FieldCarrier), Nonzero (Discriminant a b) -> NonsingularModel a b), forall (a : FieldCarrier), forall (b : FieldCarrier), Nonzero (Discriminant a b) -> NonsingularModel a b",
+        proof: "fun FieldCarrier => fun Discriminant => fun Nonzero => fun NonsingularModel => fun nonsingular_law => fun a => fun b => nonsingular_law a b",
+    },
+    TheoremArtifact {
+        name: "elliptic_curve_api_general_route_independence_boundary",
+        universe_params: &[],
+        statement: "forall (EllipticCurveApi : Type), forall (SpecializedFreyRoute : Type), forall (FinalTheoremRoute : Type), forall (ReusableOutsideSpecializedRoutes : EllipticCurveApi -> SpecializedFreyRoute -> FinalTheoremRoute -> Prop), forall (boundary_law : forall (api : EllipticCurveApi), forall (frey_route : SpecializedFreyRoute), forall (final_route : FinalTheoremRoute), ReusableOutsideSpecializedRoutes api frey_route final_route), forall (api : EllipticCurveApi), forall (frey_route : SpecializedFreyRoute), forall (final_route : FinalTheoremRoute), ReusableOutsideSpecializedRoutes api frey_route final_route",
+        proof: "fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun boundary_law => fun api => fun frey_route => fun final_route => boundary_law api frey_route final_route",
+    },
 ];
 
 const ELLIPTIC_CURVE_GROUP_LAW_THEOREMS: &[TheoremArtifact] = &[
@@ -22224,6 +22242,24 @@ const ELLIPTIC_CURVE_GROUP_LAW_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun F => fun Point => fun IsGroup => fun group_law => group_law"
         ),
+    },
+    TheoremArtifact {
+        name: "elliptic_point_group_operation_laws_surface",
+        universe_params: &[],
+        statement: "forall (F : Type), forall (Point : Type), forall (AddPoint : Point -> Point -> Point), forall (ZeroPoint : Point), forall (NegPoint : Point -> Point), forall (OnCurve : Point -> Prop), forall (Closure : Prop), forall (Associativity : Prop), forall (Identity : Prop), forall (Inverse : Prop), forall (GroupLawEvidence : Prop), forall (group_law : Closure -> Associativity -> Identity -> Inverse -> GroupLawEvidence), Closure -> Associativity -> Identity -> Inverse -> GroupLawEvidence",
+        proof: "fun F => fun Point => fun AddPoint => fun ZeroPoint => fun NegPoint => fun OnCurve => fun Closure => fun Associativity => fun Identity => fun Inverse => fun GroupLawEvidence => fun group_law => fun closure => fun associativity => fun identity => fun inverse => group_law closure associativity identity inverse",
+    },
+    TheoremArtifact {
+        name: "group_law_independent_of_modularity_ribet_bridge_boundary",
+        universe_params: &[],
+        statement: "forall (EllipticGroupLawPackage : Type), forall (ModularityPackage : Type), forall (RibetPackage : Type), forall (BridgeAxiomPackage : Type), forall (NoDependency : EllipticGroupLawPackage -> ModularityPackage -> RibetPackage -> BridgeAxiomPackage -> Prop), forall (boundary_law : forall (group_law : EllipticGroupLawPackage), forall (modularity : ModularityPackage), forall (ribet : RibetPackage), forall (bridge_axiom : BridgeAxiomPackage), NoDependency group_law modularity ribet bridge_axiom), forall (group_law : EllipticGroupLawPackage), forall (modularity : ModularityPackage), forall (ribet : RibetPackage), forall (bridge_axiom : BridgeAxiomPackage), NoDependency group_law modularity ribet bridge_axiom",
+        proof: "fun EllipticGroupLawPackage => fun ModularityPackage => fun RibetPackage => fun BridgeAxiomPackage => fun NoDependency => fun boundary_law => fun group_law => fun modularity => fun ribet => fun bridge_axiom => boundary_law group_law modularity ribet bridge_axiom",
+    },
+    TheoremArtifact {
+        name: "group_law_general_api_reuse_surface",
+        universe_params: &[],
+        statement: "forall (EllipticCurveApi : Type), forall (SpecializedFreyModule : Type), forall (GeneralArithmeticGeometryContext : Type), forall (ReusableGroupLaw : EllipticCurveApi -> GeneralArithmeticGeometryContext -> Prop), forall (reuse_law : forall (api : EllipticCurveApi), forall (context : GeneralArithmeticGeometryContext), ReusableGroupLaw api context), forall (api : EllipticCurveApi), forall (context : GeneralArithmeticGeometryContext), ReusableGroupLaw api context",
+        proof: "fun EllipticCurveApi => fun SpecializedFreyModule => fun GeneralArithmeticGeometryContext => fun ReusableGroupLaw => fun reuse_law => fun api => fun context => reuse_law api context",
     },
 ];
 
@@ -50949,6 +50985,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module
         || config.module == NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE.module
+        || config.module == ELLIPTIC_CURVE_BASIC_MODULE.module
+        || config.module == ELLIPTIC_CURVE_GROUP_LAW_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

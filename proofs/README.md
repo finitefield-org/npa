@@ -304,6 +304,14 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/ClassField/Cohomology/`: certificate-backed class-field
   cohomology bridge preserving explicit Galois-cohomology dependencies,
   reciprocity-route links, and Norm residue local/global context routing.
+- `Proofs/Ai/EllipticCurve/Basic/`: certificate-backed elliptic-curve interface
+  preserving Weierstrass models, nonsingularity, explicit field and polynomial
+  assumptions, discriminant/nonzero boundaries, and general API reuse outside
+  specialized final-theorem routes.
+- `Proofs/Ai/EllipticCurve/GroupLaw/`: certificate-backed elliptic-curve point
+  GroupLaw interface preserving point addition, identity, inverse, closure,
+  associativity, Basic dependency, and independence from modularity, Ribet, or
+  bridge-axiom packages.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

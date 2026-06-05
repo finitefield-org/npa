@@ -13,6 +13,21 @@
       "declaration": "nonsingular_condition_interface",
       "source_kind": "explicit_term",
       "term": "fun F => fun a => fun b => fun DiscriminantNotZero => fun nonsingular_law => nonsingular_law"
+    },
+    {
+      "declaration": "weierstrass_field_polynomial_assumptions_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun Zero => fun One => fun Add => fun Mul => fun Neg => fun PolynomialEquation => fun FieldAxioms => fun PolynomialAssumptions => fun assumption_law => fun field_axioms => fun polynomial_assumptions => fun x => fun y => fun a => fun b => assumption_law field_axioms polynomial_assumptions x y a b"
+    },
+    {
+      "declaration": "nonsingular_discriminant_polynomial_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun Discriminant => fun Nonzero => fun NonsingularModel => fun nonsingular_law => fun a => fun b => nonsingular_law a b"
+    },
+    {
+      "declaration": "elliptic_curve_api_general_route_independence_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun boundary_law => fun api => fun frey_route => fun final_route => boundary_law api frey_route final_route"
     }
   ],
   "acceptance": {

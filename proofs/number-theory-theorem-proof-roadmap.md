@@ -800,7 +800,10 @@ semantics.
 - Implementation progress:
   - `NT-T45` added certificate-backed `Proofs.Ai.EllipticCurve.Basic` and
     `Proofs.Ai.EllipticCurve.GroupLaw` defining L1 interfaces for Weierstrass
-    model, nonsingularity, and elliptic curve point group law.
+    model, nonsingularity, and elliptic curve point group law, with explicit
+    field and polynomial assumptions, discriminant/nonzero boundaries, Basic to
+    GroupLaw dependency, general API reuse surfaces, and independence from
+    modularity, Ribet, Frey-route, or bridge-axiom packages.
   - `NT-T46` added certificate-backed `Proofs.Ai.EllipticCurve.Reduction`,
     `Proofs.Ai.EllipticCurve.Semistable`, and `Proofs.Ai.EllipticCurve.Height`
     defining L1 interfaces for conductor, reduction type, minimal model,

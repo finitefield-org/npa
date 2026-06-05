@@ -8,6 +8,21 @@
       "declaration": "group_law_theorem_interface",
       "source_kind": "explicit_term",
       "term": "fun F => fun Point => fun IsGroup => fun group_law => group_law"
+    },
+    {
+      "declaration": "elliptic_point_group_operation_laws_surface",
+      "source_kind": "explicit_term",
+      "term": "fun F => fun Point => fun AddPoint => fun ZeroPoint => fun NegPoint => fun OnCurve => fun Closure => fun Associativity => fun Identity => fun Inverse => fun GroupLawEvidence => fun group_law => fun closure => fun associativity => fun identity => fun inverse => group_law closure associativity identity inverse"
+    },
+    {
+      "declaration": "group_law_independent_of_modularity_ribet_bridge_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticGroupLawPackage => fun ModularityPackage => fun RibetPackage => fun BridgeAxiomPackage => fun NoDependency => fun boundary_law => fun group_law => fun modularity => fun ribet => fun bridge_axiom => boundary_law group_law modularity ribet bridge_axiom"
+    },
+    {
+      "declaration": "group_law_general_api_reuse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurveApi => fun SpecializedFreyModule => fun GeneralArithmeticGeometryContext => fun ReusableGroupLaw => fun reuse_law => fun api => fun context => reuse_law api context"
     }
   ],
   "acceptance": {
