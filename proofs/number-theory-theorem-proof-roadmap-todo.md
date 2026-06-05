@@ -637,7 +637,7 @@ later in the file.
 
 ### NT-T17 Add Primitive Root Existence And Classification Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T16`, `NT-T12`
 - Areas: `Proofs/Ai/NumberTheory/PrimitiveRoot/`, `Proofs/Ai/NumberTheory/PrimePower/`
 - Tasks:

@@ -352,7 +352,9 @@ semantics.
   `Proofs.Ai.NumberTheory.PrimitiveRoot` base surfaces for element order,
   primitive-root definitions, cyclic residue-unit generators, and the abstract
   cyclic-group generator-count formula without assuming primitive-root
-  existence.
+  existence. `NT-T17` extended that package with odd-prime and prime_power
+  existence surfaces plus a ChineseRemainder-dependent classification route for
+  moduli admitting primitive roots.
 - Target modules:
   - `Proofs.Ai.NumberTheory.PrimitiveRoot`
   - `Proofs.Ai.NumberTheory.Character`

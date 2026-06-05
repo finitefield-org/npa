@@ -165,8 +165,10 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/PrimitiveRoot/`: certificate-backed element-order and primitive-root
   base interface downstream of abstract groups, modular unit groups, and `phi`, preserving
   `element_order` power-congruence and minimality surfaces, primitive root definitions as
-  residue-unit group generator evidence, an abstract cyclic-group generator-count formula, and a
-  boundary separating definitions from primitive-root existence or classification assumptions.
+  residue-unit group generator evidence, an abstract cyclic-group generator-count formula, odd
+  prime and prime_power existence surfaces, a ChineseRemainder-dependent classification route,
+  and boundaries separating definitions from primitive-root existence/classification assumptions
+  and preventing backward dependency from finite unit-group theorems.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
