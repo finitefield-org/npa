@@ -110,6 +110,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &PROP_MODULE,
     &COMBINATORICS_FINITE_MODULE,
     &COMBINATORICS_CARDINALITY_MODULE,
+    &COMBINATORICS_COUNTING_BASIC_MODULE,
     &NUMBER_THEORY_INVENTORY_MODULE,
     &NUMBER_THEORY_ELEMENTARY_MODULE,
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
@@ -511,6 +512,22 @@ const COMBINATORICS_CARDINALITY_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: COMBINATORICS_CARDINALITY_DEFINITIONS,
     theorems: COMBINATORICS_CARDINALITY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const COMBINATORICS_COUNTING_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Combinatorics.Counting.Basic",
+    source_path: "Proofs/Ai/Combinatorics/Counting/Basic/source.npa",
+    certificate_path: "Proofs/Ai/Combinatorics/Counting/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/Combinatorics/Counting/Basic/meta.json",
+    replay_path: "Proofs/Ai/Combinatorics/Counting/Basic/replay.json",
+    imports: &[
+        "Proofs.Ai.Combinatorics.Finite",
+        "Proofs.Ai.Combinatorics.Cardinality",
+    ],
+    inductives: &[],
+    definitions: COMBINATORICS_COUNTING_BASIC_DEFINITIONS,
+    theorems: COMBINATORICS_COUNTING_BASIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -10357,6 +10374,769 @@ const COMBINATORICS_CARDINALITY_THEOREMS: &[TheoremArtifact] = &[
             "fun (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound) => ",
             "fun (subset_inclusion_law : SubsetIncluded) => ",
             "fun (subset_cardinality_law : SubsetCardinalityEvidence) => subset_cardinality_law)"
+        ),
+    },
+];
+
+const COMBINATORICS_COUNTING_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FiniteCardinalLePredicate",
+        universe_params: &[],
+        ty: "forall (SourceFinite : Prop), forall (TargetFinite : Prop), forall (CardinalityLeEvidence : Prop), Prop",
+        value: concat!(
+            "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteCardinalLtPredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (CardinalityLtEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun CardinalityLtEvidence => forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (cardinality_lt_law : CardinalityLtEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "InjectiveFiniteComparisonPredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (InjectiveEvidence : Prop), forall (CardinalityLeEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => ",
+            "fun CardinalityLeEvidence => forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (injective_law : InjectiveEvidence), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SurjectiveFiniteComparisonPredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SurjectiveEvidence : Prop), ",
+            "forall (TargetCardinalityLeSourceEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => ",
+            "fun TargetCardinalityLeSourceEvidence => forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (surjective_law : SurjectiveEvidence), ",
+            "forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "WeakPigeonholePredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (SourceCardinalityGreaterThanTarget : Prop), ",
+            "forall (CollisionEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => ",
+            "fun CollisionEvidence => forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (target_decidable_equality_law : TargetDecidableEquality), ",
+            "forall (source_gt_target_law : SourceCardinalityGreaterThanTarget), ",
+            "forall (collision_law : CollisionEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "StrongPigeonholePredicate",
+        universe_params: &[],
+        ty: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (FiberCountingEvidence : Prop), ",
+            "forall (SourceExceedsUniformCapacity : Prop), ",
+            "forall (OverfullFiberEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun FiberCountingEvidence => ",
+            "fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (target_decidable_equality_law : TargetDecidableEquality), ",
+            "forall (fiber_counting_law : FiberCountingEvidence), ",
+            "forall (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity), ",
+            "forall (overfull_fiber_law : OverfullFiberEvidence), P), P"
+        ),
+    },
+];
+
+const COMBINATORICS_COUNTING_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_cardinal_le_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (CardinalityLeEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), ",
+            "FiniteCardinalLePredicate SourceFinite TargetFinite CardinalityLeEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => ",
+            "fun source_finite_law => fun target_finite_law => fun cardinality_le_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), P) => ",
+            "mk source_finite_law target_finite_law cardinality_le_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_cardinal_le_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (CardinalityLeEvidence : Prop), ",
+            "forall (comparison_args : FiniteCardinalLePredicate SourceFinite TargetFinite CardinalityLeEvidence), ",
+            "CardinalityLeEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => ",
+            "fun comparison_args => comparison_args CardinalityLeEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (cardinality_le_law : CardinalityLeEvidence) => cardinality_le_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_cardinal_lt_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (CardinalityLtEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (cardinality_lt_law : CardinalityLtEvidence), ",
+            "FiniteCardinalLtPredicate SourceFinite TargetFinite SourceNonempty TargetNonempty CardinalityLtEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun CardinalityLtEvidence => fun source_finite_law => fun target_finite_law => ",
+            "fun source_nonempty_law => fun target_nonempty_law => fun cardinality_lt_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (cardinality_lt_law : CardinalityLtEvidence), P) => ",
+            "mk source_finite_law target_finite_law source_nonempty_law target_nonempty_law cardinality_lt_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_cardinal_lt_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (CardinalityLtEvidence : Prop), ",
+            "forall (comparison_args : FiniteCardinalLtPredicate SourceFinite TargetFinite SourceNonempty TargetNonempty CardinalityLtEvidence), ",
+            "CardinalityLtEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun CardinalityLtEvidence => fun comparison_args => ",
+            "comparison_args CardinalityLtEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (cardinality_lt_law : CardinalityLtEvidence) => cardinality_lt_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_cardinal_lt_source_nonempty_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (CardinalityLtEvidence : Prop), ",
+            "forall (comparison_args : FiniteCardinalLtPredicate SourceFinite TargetFinite SourceNonempty TargetNonempty CardinalityLtEvidence), ",
+            "SourceNonempty"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun CardinalityLtEvidence => fun comparison_args => comparison_args SourceNonempty ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (cardinality_lt_law : CardinalityLtEvidence) => source_nonempty_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_cardinal_lt_target_nonempty_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (CardinalityLtEvidence : Prop), ",
+            "forall (comparison_args : FiniteCardinalLtPredicate SourceFinite TargetFinite SourceNonempty TargetNonempty CardinalityLtEvidence), ",
+            "TargetNonempty"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun CardinalityLtEvidence => fun comparison_args => comparison_args TargetNonempty ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (cardinality_lt_law : CardinalityLtEvidence) => target_nonempty_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "injective_finite_comparison_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (InjectiveEvidence : Prop), forall (CardinalityLeEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (injective_law : InjectiveEvidence), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), ",
+            "InjectiveFiniteComparisonPredicate SourceFinite TargetFinite InjectiveEvidence CardinalityLeEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => ",
+            "fun source_finite_law => fun target_finite_law => fun injective_law => fun cardinality_le_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (injective_law : InjectiveEvidence), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), P) => ",
+            "mk source_finite_law target_finite_law injective_law cardinality_le_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "injective_finite_cardinal_le_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (InjectiveEvidence : Prop), forall (CardinalityLeEvidence : Prop), ",
+            "forall (comparison_args : InjectiveFiniteComparisonPredicate SourceFinite TargetFinite InjectiveEvidence CardinalityLeEvidence), ",
+            "CardinalityLeEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => ",
+            "fun comparison_args => comparison_args CardinalityLeEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (injective_law : InjectiveEvidence) => ",
+            "fun (cardinality_le_law : CardinalityLeEvidence) => cardinality_le_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "injective_finite_comparison_injective_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (InjectiveEvidence : Prop), forall (CardinalityLeEvidence : Prop), ",
+            "forall (comparison_args : InjectiveFiniteComparisonPredicate SourceFinite TargetFinite InjectiveEvidence CardinalityLeEvidence), ",
+            "InjectiveEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => ",
+            "fun comparison_args => comparison_args InjectiveEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (injective_law : InjectiveEvidence) => ",
+            "fun (cardinality_le_law : CardinalityLeEvidence) => injective_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "injective_map_finite_comparison_predicate_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (CardinalityLeEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (injective_args : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), ",
+            "InjectiveFiniteComparisonPredicate SourceFinite TargetFinite (@InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) CardinalityLeEvidence"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => ",
+            "fun source_finite_law => fun target_finite_law => fun injective_args => fun cardinality_le_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), ",
+            "forall (cardinality_le_law : CardinalityLeEvidence), P) => ",
+            "mk source_finite_law target_finite_law injective_args cardinality_le_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "injective_map_finite_cardinal_le_statement",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (SourceEquivalent : forall (x : Source), forall (y : Source), Prop), ",
+            "forall (TargetEquivalent : forall (x : Target), forall (y : Target), Prop), ",
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (CardinalityLeEvidence : Prop), ",
+            "forall (comparison_args : InjectiveFiniteComparisonPredicate SourceFinite TargetFinite (@InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) CardinalityLeEvidence), ",
+            "CardinalityLeEvidence"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => ",
+            "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => fun comparison_args => ",
+            "comparison_args CardinalityLeEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) => ",
+            "fun (cardinality_le_law : CardinalityLeEvidence) => cardinality_le_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_finite_comparison_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SurjectiveEvidence : Prop), ",
+            "forall (TargetCardinalityLeSourceEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (surjective_law : SurjectiveEvidence), ",
+            "forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), ",
+            "SurjectiveFiniteComparisonPredicate SourceFinite TargetFinite SurjectiveEvidence TargetCardinalityLeSourceEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => ",
+            "fun TargetCardinalityLeSourceEvidence => fun source_finite_law => ",
+            "fun target_finite_law => fun surjective_law => fun target_cardinality_le_source_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (surjective_law : SurjectiveEvidence), ",
+            "forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), P) => ",
+            "mk source_finite_law target_finite_law surjective_law target_cardinality_le_source_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_finite_cardinal_ge_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SurjectiveEvidence : Prop), ",
+            "forall (TargetCardinalityLeSourceEvidence : Prop), ",
+            "forall (comparison_args : SurjectiveFiniteComparisonPredicate SourceFinite TargetFinite SurjectiveEvidence TargetCardinalityLeSourceEvidence), ",
+            "TargetCardinalityLeSourceEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => ",
+            "fun TargetCardinalityLeSourceEvidence => fun comparison_args => ",
+            "comparison_args TargetCardinalityLeSourceEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (surjective_law : SurjectiveEvidence) => ",
+            "fun (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence) => ",
+            "target_cardinality_le_source_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_finite_comparison_surjective_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SurjectiveEvidence : Prop), ",
+            "forall (TargetCardinalityLeSourceEvidence : Prop), ",
+            "forall (comparison_args : SurjectiveFiniteComparisonPredicate SourceFinite TargetFinite SurjectiveEvidence TargetCardinalityLeSourceEvidence), ",
+            "SurjectiveEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => ",
+            "fun TargetCardinalityLeSourceEvidence => fun comparison_args => ",
+            "comparison_args SurjectiveEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (surjective_law : SurjectiveEvidence) => ",
+            "fun (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence) => ",
+            "surjective_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_map_finite_comparison_predicate_intro",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (TargetCardinalityLeSourceEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (surjective_args : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), ",
+            "forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), ",
+            "SurjectiveFiniteComparisonPredicate SourceFinite TargetFinite (@SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) TargetCardinalityLeSourceEvidence"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => ",
+            "fun SourceFinite => fun TargetFinite => fun TargetCardinalityLeSourceEvidence => ",
+            "fun source_finite_law => fun target_finite_law => fun surjective_args => ",
+            "fun target_cardinality_le_source_law => fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), ",
+            "forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), P) => ",
+            "mk source_finite_law target_finite_law surjective_args target_cardinality_le_source_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "surjective_map_finite_cardinal_ge_statement",
+        universe_params: &["u", "v"],
+        statement: concat!(
+            "forall (Source : Sort u), forall (Target : Sort v), ",
+            "forall (map : forall (x : Source), Target), ",
+            "forall (TargetMember : forall (y : Target), Prop), ",
+            "forall (HasPreimage : forall (y : Target), Prop), ",
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (TargetCardinalityLeSourceEvidence : Prop), ",
+            "forall (comparison_args : SurjectiveFiniteComparisonPredicate SourceFinite TargetFinite (@SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) TargetCardinalityLeSourceEvidence), ",
+            "TargetCardinalityLeSourceEvidence"
+        ),
+        proof: concat!(
+            "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => ",
+            "fun SourceFinite => fun TargetFinite => fun TargetCardinalityLeSourceEvidence => ",
+            "fun comparison_args => comparison_args TargetCardinalityLeSourceEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) => ",
+            "fun (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence) => ",
+            "target_cardinality_le_source_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_pigeonhole_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (SourceCardinalityGreaterThanTarget : Prop), ",
+            "forall (CollisionEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (target_decidable_equality_law : TargetDecidableEquality), ",
+            "forall (source_gt_target_law : SourceCardinalityGreaterThanTarget), ",
+            "forall (collision_law : CollisionEvidence), ",
+            "WeakPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality SourceCardinalityGreaterThanTarget CollisionEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => ",
+            "fun CollisionEvidence => fun source_finite_law => fun target_finite_law => ",
+            "fun source_nonempty_law => fun target_nonempty_law => ",
+            "fun target_decidable_equality_law => fun source_gt_target_law => fun collision_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (target_decidable_equality_law : TargetDecidableEquality), ",
+            "forall (source_gt_target_law : SourceCardinalityGreaterThanTarget), ",
+            "forall (collision_law : CollisionEvidence), P) => ",
+            "mk source_finite_law target_finite_law source_nonempty_law target_nonempty_law ",
+            "target_decidable_equality_law source_gt_target_law collision_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_pigeonhole_collision_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (SourceCardinalityGreaterThanTarget : Prop), ",
+            "forall (CollisionEvidence : Prop), ",
+            "forall (pigeonhole_args : WeakPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality SourceCardinalityGreaterThanTarget CollisionEvidence), ",
+            "CollisionEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => ",
+            "fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args CollisionEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => ",
+            "fun (collision_law : CollisionEvidence) => collision_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_pigeonhole_decidable_equality_requirement_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (SourceCardinalityGreaterThanTarget : Prop), ",
+            "forall (CollisionEvidence : Prop), ",
+            "forall (pigeonhole_args : WeakPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality SourceCardinalityGreaterThanTarget CollisionEvidence), ",
+            "TargetDecidableEquality"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => ",
+            "fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args TargetDecidableEquality ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => ",
+            "fun (collision_law : CollisionEvidence) => target_decidable_equality_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_pigeonhole_source_nonempty_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (SourceCardinalityGreaterThanTarget : Prop), ",
+            "forall (CollisionEvidence : Prop), ",
+            "forall (pigeonhole_args : WeakPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality SourceCardinalityGreaterThanTarget CollisionEvidence), ",
+            "SourceNonempty"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => ",
+            "fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args SourceNonempty ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => ",
+            "fun (collision_law : CollisionEvidence) => source_nonempty_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_pigeonhole_target_nonempty_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (SourceCardinalityGreaterThanTarget : Prop), ",
+            "forall (CollisionEvidence : Prop), ",
+            "forall (pigeonhole_args : WeakPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality SourceCardinalityGreaterThanTarget CollisionEvidence), ",
+            "TargetNonempty"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => ",
+            "fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args TargetNonempty ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => ",
+            "fun (collision_law : CollisionEvidence) => target_nonempty_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "strong_pigeonhole_predicate_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (FiberCountingEvidence : Prop), ",
+            "forall (SourceExceedsUniformCapacity : Prop), ",
+            "forall (OverfullFiberEvidence : Prop), ",
+            "forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (target_decidable_equality_law : TargetDecidableEquality), ",
+            "forall (fiber_counting_law : FiberCountingEvidence), ",
+            "forall (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity), ",
+            "forall (overfull_fiber_law : OverfullFiberEvidence), ",
+            "StrongPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality FiberCountingEvidence SourceExceedsUniformCapacity OverfullFiberEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun FiberCountingEvidence => ",
+            "fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => ",
+            "fun source_finite_law => fun target_finite_law => ",
+            "fun source_nonempty_law => fun target_nonempty_law => ",
+            "fun target_decidable_equality_law => fun fiber_counting_law => ",
+            "fun source_exceeds_uniform_capacity_law => fun overfull_fiber_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (source_finite_law : SourceFinite), ",
+            "forall (target_finite_law : TargetFinite), ",
+            "forall (source_nonempty_law : SourceNonempty), ",
+            "forall (target_nonempty_law : TargetNonempty), ",
+            "forall (target_decidable_equality_law : TargetDecidableEquality), ",
+            "forall (fiber_counting_law : FiberCountingEvidence), ",
+            "forall (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity), ",
+            "forall (overfull_fiber_law : OverfullFiberEvidence), P) => ",
+            "mk source_finite_law target_finite_law source_nonempty_law target_nonempty_law ",
+            "target_decidable_equality_law fiber_counting_law ",
+            "source_exceeds_uniform_capacity_law overfull_fiber_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "strong_pigeonhole_overfull_fiber_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (FiberCountingEvidence : Prop), ",
+            "forall (SourceExceedsUniformCapacity : Prop), ",
+            "forall (OverfullFiberEvidence : Prop), ",
+            "forall (pigeonhole_args : StrongPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality FiberCountingEvidence SourceExceedsUniformCapacity OverfullFiberEvidence), ",
+            "OverfullFiberEvidence"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun FiberCountingEvidence => ",
+            "fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => ",
+            "fun pigeonhole_args => pigeonhole_args OverfullFiberEvidence ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (fiber_counting_law : FiberCountingEvidence) => ",
+            "fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => ",
+            "fun (overfull_fiber_law : OverfullFiberEvidence) => overfull_fiber_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "strong_pigeonhole_decidable_equality_requirement_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (FiberCountingEvidence : Prop), ",
+            "forall (SourceExceedsUniformCapacity : Prop), ",
+            "forall (OverfullFiberEvidence : Prop), ",
+            "forall (pigeonhole_args : StrongPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality FiberCountingEvidence SourceExceedsUniformCapacity OverfullFiberEvidence), ",
+            "TargetDecidableEquality"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun FiberCountingEvidence => ",
+            "fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => ",
+            "fun pigeonhole_args => pigeonhole_args TargetDecidableEquality ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (fiber_counting_law : FiberCountingEvidence) => ",
+            "fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => ",
+            "fun (overfull_fiber_law : OverfullFiberEvidence) => target_decidable_equality_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "strong_pigeonhole_source_nonempty_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (FiberCountingEvidence : Prop), ",
+            "forall (SourceExceedsUniformCapacity : Prop), ",
+            "forall (OverfullFiberEvidence : Prop), ",
+            "forall (pigeonhole_args : StrongPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality FiberCountingEvidence SourceExceedsUniformCapacity OverfullFiberEvidence), ",
+            "SourceNonempty"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun FiberCountingEvidence => ",
+            "fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => ",
+            "fun pigeonhole_args => pigeonhole_args SourceNonempty ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (fiber_counting_law : FiberCountingEvidence) => ",
+            "fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => ",
+            "fun (overfull_fiber_law : OverfullFiberEvidence) => source_nonempty_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "strong_pigeonhole_target_nonempty_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SourceFinite : Prop), forall (TargetFinite : Prop), ",
+            "forall (SourceNonempty : Prop), forall (TargetNonempty : Prop), ",
+            "forall (TargetDecidableEquality : Prop), ",
+            "forall (FiberCountingEvidence : Prop), ",
+            "forall (SourceExceedsUniformCapacity : Prop), ",
+            "forall (OverfullFiberEvidence : Prop), ",
+            "forall (pigeonhole_args : StrongPigeonholePredicate SourceFinite TargetFinite SourceNonempty TargetNonempty TargetDecidableEquality FiberCountingEvidence SourceExceedsUniformCapacity OverfullFiberEvidence), ",
+            "TargetNonempty"
+        ),
+        proof: concat!(
+            "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => ",
+            "fun TargetDecidableEquality => fun FiberCountingEvidence => ",
+            "fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => ",
+            "fun pigeonhole_args => pigeonhole_args TargetNonempty ",
+            "(fun (source_finite_law : SourceFinite) => ",
+            "fun (target_finite_law : TargetFinite) => ",
+            "fun (source_nonempty_law : SourceNonempty) => ",
+            "fun (target_nonempty_law : TargetNonempty) => ",
+            "fun (target_decidable_equality_law : TargetDecidableEquality) => ",
+            "fun (fiber_counting_law : FiberCountingEvidence) => ",
+            "fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => ",
+            "fun (overfull_fiber_law : OverfullFiberEvidence) => target_nonempty_law)"
         ),
     },
 ];
@@ -41275,6 +42055,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
         || config.module == COMBINATORICS_FINITE_MODULE.module
         || config.module == COMBINATORICS_CARDINALITY_MODULE.module
+        || config.module == COMBINATORICS_COUNTING_BASIC_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

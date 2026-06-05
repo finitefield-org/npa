@@ -230,7 +230,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T03 Add Finite Comparison And Pigeonhole Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`
 - Areas: `Proofs.Ai.Combinatorics.Cardinality`, `Proofs.Ai.Combinatorics.Counting.Basic`
 - Tasks:
@@ -238,13 +238,16 @@ guessing. The split must preserve the dependency order in this document.
   - Prove or interface the injective/surjective finite comparison route.
   - Add weak and strong pigeonhole theorem targets.
 - Deliverables:
-  - Pigeonhole and finite comparison API for counting and graph bounds.
+  - `Proofs.Ai.Combinatorics.Counting.Basic` pigeonhole and finite comparison
+    API for counting and graph bounds.
 - Acceptance criteria:
   - All finite and nonempty hypotheses are explicit.
   - Decidable equality requirements, if any, are named in the statement.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Counting.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Counting.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Counting.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T04 Prove Sum And Product Counting Rules
 
