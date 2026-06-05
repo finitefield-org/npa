@@ -108,6 +108,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &EQ_MODULE,
     &NAT_MODULE,
     &PROP_MODULE,
+    &COMBINATORICS_FINITE_MODULE,
     &NUMBER_THEORY_INVENTORY_MODULE,
     &NUMBER_THEORY_ELEMENTARY_MODULE,
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
@@ -483,6 +484,19 @@ const PROP_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: PROP_THEOREMS,
+    expected_axioms: &[],
+};
+
+const COMBINATORICS_FINITE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Combinatorics.Finite",
+    source_path: "Proofs/Ai/Combinatorics/Finite/source.npa",
+    certificate_path: "Proofs/Ai/Combinatorics/Finite/certificate.npcert",
+    meta_path: "Proofs/Ai/Combinatorics/Finite/meta.json",
+    replay_path: "Proofs/Ai/Combinatorics/Finite/replay.json",
+    imports: &[],
+    inductives: &[],
+    definitions: COMBINATORICS_FINITE_DEFINITIONS,
+    theorems: COMBINATORICS_FINITE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -9532,6 +9546,229 @@ const BASIC_THEOREMS: &[TheoremArtifact] = &[
         statement:
             "forall (A : Type), forall (B : Type), forall (C : Type), forall (h : forall (f : forall (x : A), B), C), forall (f : forall (x : A), B), C",
         proof: "fun A => fun B => fun C => fun h => fun f => h f",
+    },
+];
+
+const COMBINATORICS_FINITE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FiniteFamilyLawArgs",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Item : Sort u), ",
+            "forall (Member : forall (x : Item), Prop), Prop"
+        ),
+        value: concat!(
+            "fun Item => fun Member => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (membership_law : forall (x : Item), ",
+            "forall (member : Member x), Member x), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "FiniteEnumerationLawArgs",
+        universe_params: &["i", "u"],
+        ty: concat!(
+            "forall (Index : Sort i), ",
+            "forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), Prop"
+        ),
+        value: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (no_duplicate_law : NoDuplicate), ",
+            "forall (enumeration_complete_law : EnumerationComplete), ",
+            "forall (enumeration_sound_law : EnumerationSound), P), P"
+        ),
+    },
+];
+
+const COMBINATORICS_FINITE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_family_law_intro",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Item : Sort u), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (membership_law : forall (x : Item), forall (member : Member x), Member x), ",
+            "@FiniteFamilyLawArgs.{u} Item Member"
+        ),
+        proof: concat!(
+            "fun Item => fun Member => fun membership_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (membership_law : forall (x : Item), ",
+            "forall (member : Member x), Member x), P) => mk membership_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_family_membership_statement",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Item : Sort u), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (family_args : @FiniteFamilyLawArgs.{u} Item Member), ",
+            "forall (x : Item), forall (member : Member x), Member x"
+        ),
+        proof: concat!(
+            "fun Item => fun Member => fun family_args => ",
+            "family_args (forall (x : Item), forall (member : Member x), Member x) ",
+            "(fun (membership_law : forall (x : Item), forall (member : Member x), Member x) => ",
+            "membership_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_enumeration_law_intro",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), ",
+            "forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (no_duplicate_law : NoDuplicate), ",
+            "forall (enumeration_complete_law : EnumerationComplete), ",
+            "forall (enumeration_sound_law : EnumerationSound), ",
+            "@FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun no_duplicate_law => fun enumeration_complete_law => fun enumeration_sound_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (no_duplicate_law : NoDuplicate), ",
+            "forall (enumeration_complete_law : EnumerationComplete), ",
+            "forall (enumeration_sound_law : EnumerationSound), P) => ",
+            "mk no_duplicate_law enumeration_complete_law enumeration_sound_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_enumeration_no_duplicate_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), ",
+            "forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (enumeration_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "NoDuplicate"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun enumeration_args => ",
+            "enumeration_args NoDuplicate ",
+            "(fun (no_duplicate_law : NoDuplicate) => ",
+            "fun (enumeration_complete_law : EnumerationComplete) => ",
+            "fun (enumeration_sound_law : EnumerationSound) => no_duplicate_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_enumeration_complete_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), ",
+            "forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (enumeration_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "EnumerationComplete"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun enumeration_args => ",
+            "enumeration_args EnumerationComplete ",
+            "(fun (no_duplicate_law : NoDuplicate) => ",
+            "fun (enumeration_complete_law : EnumerationComplete) => ",
+            "fun (enumeration_sound_law : EnumerationSound) => enumeration_complete_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_enumeration_sound_statement",
+        universe_params: &["i", "u"],
+        statement: concat!(
+            "forall (Index : Sort i), ",
+            "forall (Item : Sort u), ",
+            "forall (enumerate : forall (idx : Index), Item), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (NoDuplicate : Prop), ",
+            "forall (EnumerationComplete : Prop), ",
+            "forall (EnumerationSound : Prop), ",
+            "forall (enumeration_args : @FiniteEnumerationLawArgs.{i,u} Index Item enumerate Member NoDuplicate EnumerationComplete EnumerationSound), ",
+            "EnumerationSound"
+        ),
+        proof: concat!(
+            "fun Index => fun Item => fun enumerate => fun Member => ",
+            "fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => ",
+            "fun enumeration_args => ",
+            "enumeration_args EnumerationSound ",
+            "(fun (no_duplicate_law : NoDuplicate) => ",
+            "fun (enumeration_complete_law : EnumerationComplete) => ",
+            "fun (enumeration_sound_law : EnumerationSound) => enumeration_sound_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_enumeration_reusable_for_graph_vertex_and_edge_sets",
+        universe_params: &["i", "j", "u", "v"],
+        statement: concat!(
+            "forall (VertexIndex : Sort i), ",
+            "forall (EdgeIndex : Sort j), ",
+            "forall (Vertex : Sort u), ",
+            "forall (Edge : Sort v), ",
+            "forall (vertexEnumerate : forall (idx : VertexIndex), Vertex), ",
+            "forall (edgeEnumerate : forall (idx : EdgeIndex), Edge), ",
+            "forall (VertexMember : forall (x : Vertex), Prop), ",
+            "forall (EdgeMember : forall (e : Edge), Prop), ",
+            "forall (VertexNoDuplicate : Prop), ",
+            "forall (VertexEnumerationComplete : Prop), ",
+            "forall (VertexEnumerationSound : Prop), ",
+            "forall (EdgeNoDuplicate : Prop), ",
+            "forall (EdgeEnumerationComplete : Prop), ",
+            "forall (EdgeEnumerationSound : Prop), ",
+            "forall (vertex_args : @FiniteEnumerationLawArgs.{i,u} VertexIndex Vertex vertexEnumerate VertexMember VertexNoDuplicate VertexEnumerationComplete VertexEnumerationSound), ",
+            "forall (edge_args : @FiniteEnumerationLawArgs.{j,v} EdgeIndex Edge edgeEnumerate EdgeMember EdgeNoDuplicate EdgeEnumerationComplete EdgeEnumerationSound), ",
+            "forall (GraphFiniteCarrierEvidence : Prop), ",
+            "forall (reuse : forall (vertex_evidence : @FiniteEnumerationLawArgs.{i,u} VertexIndex Vertex vertexEnumerate VertexMember VertexNoDuplicate VertexEnumerationComplete VertexEnumerationSound), ",
+            "forall (edge_evidence : @FiniteEnumerationLawArgs.{j,v} EdgeIndex Edge edgeEnumerate EdgeMember EdgeNoDuplicate EdgeEnumerationComplete EdgeEnumerationSound), GraphFiniteCarrierEvidence), ",
+            "GraphFiniteCarrierEvidence"
+        ),
+        proof: concat!(
+            "fun VertexIndex => fun EdgeIndex => fun Vertex => fun Edge => ",
+            "fun vertexEnumerate => fun edgeEnumerate => ",
+            "fun VertexMember => fun EdgeMember => ",
+            "fun VertexNoDuplicate => fun VertexEnumerationComplete => fun VertexEnumerationSound => ",
+            "fun EdgeNoDuplicate => fun EdgeEnumerationComplete => fun EdgeEnumerationSound => ",
+            "fun vertex_args => fun edge_args => ",
+            "fun GraphFiniteCarrierEvidence => fun reuse => reuse vertex_args edge_args"
+        ),
+    },
+    TheoremArtifact {
+        name: "future_set_theory_finite_cardinality_bridge_point",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Item : Sort u), ",
+            "forall (Member : forall (x : Item), Prop), ",
+            "forall (family_args : @FiniteFamilyLawArgs.{u} Item Member), ",
+            "forall (SetTheoryFiniteCardinalityEvidence : Prop), ",
+            "forall (bridge : forall (family_evidence : @FiniteFamilyLawArgs.{u} Item Member), SetTheoryFiniteCardinalityEvidence), ",
+            "SetTheoryFiniteCardinalityEvidence"
+        ),
+        proof: concat!(
+            "fun Item => fun Member => fun family_args => ",
+            "fun SetTheoryFiniteCardinalityEvidence => fun bridge => bridge family_args"
+        ),
     },
 ];
 
@@ -40447,6 +40684,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PRIMALITY_TEST_MODULE.module
         || config.module == NUMBER_THEORY_RSA_MODULE.module
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
+        || config.module == COMBINATORICS_FINITE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

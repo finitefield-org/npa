@@ -183,7 +183,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T01 Add Finite Family And Enumeration Law Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T00`
 - Areas: `Proofs.Ai.Combinatorics.Finite`, `tools/proof-corpus/src/main.rs`,
   `proofs/README.md`
@@ -194,14 +194,16 @@ guessing. The split must preserve the dependency order in this document.
     statement names.
   - Record bridge points to future set-theory finite-cardinality modules.
 - Deliverables:
-  - First combinatorics finite-family foundation module or a documented
-    insertion plan if source work is blocked.
+  - `Proofs.Ai.Combinatorics.Finite` first combinatorics finite-family
+    foundation module.
 - Acceptance criteria:
   - Finite enumeration is not added as a kernel primitive.
   - Enumeration evidence can be reused for graph vertex and edge finite sets.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Finite`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Finite`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T02 Add Injection, Surjection, Bijection, And Cardinality Transport
 

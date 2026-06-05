@@ -57,6 +57,10 @@ Current bundles:
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
+- `Proofs/Ai/Combinatorics/Finite/`: certificate-backed finite-family and finite-enumeration
+  law package preserving membership, no-duplicate, enumeration-complete, and enumeration-sound
+  evidence as ordinary proof-corpus structures, with graph vertex/edge finite-set reuse and a
+  named bridge point for future set-theory finite-cardinality modules.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
