@@ -339,7 +339,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T08 Add Inclusion-Exclusion For Finite Families
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T04`, `CG-T06`
 - Areas: `Proofs.Ai.Combinatorics.InclusionExclusion`
 - Tasks:
@@ -353,7 +353,11 @@ guessing. The split must preserve the dependency order in this document.
   - The theorem conclusion is not supplied as a law-package field.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.InclusionExclusion`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.InclusionExclusion`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.InclusionExclusion --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "InclusionExclusion|inclusion-exclusion|finite union upper-bound" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/InclusionExclusion/source.npa`
+  - `git diff --check`
 
 ### CG-T09 Add Set-System Bounds And Covering Interfaces
 
