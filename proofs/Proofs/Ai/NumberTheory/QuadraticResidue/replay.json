@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.QuadraticResidue",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "quadratic_residue_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun SquareModulo => fun QuadraticResidue => fun definition_law => fun modulus => fun a => fun x => fun square_witness => definition_law modulus a x square_witness"
+    },
+    {
+      "declaration": "quadratic_nonresidue_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddPrime => fun UnitModulo => fun QuadraticResidue => fun QuadraticNonresidue => fun NonResidueEvidence => fun definition_law => fun p => fun a => fun odd_prime => fun unit_a => fun not_residue => definition_law p a odd_prime unit_a not_residue"
+    },
+    {
+      "declaration": "quadratic_residue_count_odd_prime_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun OddPrime => fun QuadraticResidueCount => fun NonzeroResidueCountFormula => fun count_law => fun p => fun odd_prime => count_law p odd_prime"
+    },
+    {
+      "declaration": "quadratic_residue_cyclic_square_class_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddPrime => fun PrimitiveRootModulo => fun FiniteCyclicUnitGroupFact => fun SquareClassEvidence => fun cyclic_square_law => fun p => fun a => fun g => fun odd_prime => fun primitive_root => fun finite_cyclic_units => cyclic_square_law p a g odd_prime primitive_root finite_cyclic_units"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/QuadraticResidue/certificate.npcert"
+  }
+}

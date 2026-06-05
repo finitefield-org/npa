@@ -190,8 +190,69 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/PrimitiveRoot/`: certificate-backed element-order and primitive-root
   base interface downstream of abstract groups, modular unit groups, and `phi`, preserving
   `element_order` power-congruence and minimality surfaces, primitive root definitions as
-  residue-unit group generator evidence, an abstract cyclic-group generator-count formula, and a
-  boundary separating definitions from primitive-root existence or classification assumptions.
+  residue-unit group generator evidence, an abstract cyclic-group generator-count formula, odd
+  prime and prime_power existence surfaces, a ChineseRemainder-dependent classification route,
+  and boundaries separating definitions from primitive-root existence/classification assumptions
+  and preventing backward dependency from finite unit-group theorems.
+- `Proofs/Ai/NumberTheory/Character/`: certificate-backed Dirichlet character interface
+  downstream of modular unit groups, `phi`, and primitive roots, preserving
+  `DirichletCharacter` definition surfaces, finite character-group packaging, orthogonality
+  relations without analytic `L`-function dependencies, and `discrete_log` statement surfaces
+  that keep algorithms and runtime solvers outside trusted certificates.
+- `Proofs/Ai/NumberTheory/GaussSum/`: certificate-backed Gauss sum interface downstream of
+  `Character`, preserving `GaussSum` definitions over an explicit coefficient ring,
+  multiplicative Dirichlet character data, additive character data, basic identities,
+  orthogonality bridges, and boundaries excluding analytic `L`-function assumptions.
+- `Proofs/Ai/NumberTheory/QuadraticResidue/`: certificate-backed quadratic residue and
+  nonresidue interface downstream of prime, congruence, modular unit-group, and primitive-root
+  surfaces, preserving explicit odd prime hypotheses and nonzero residue count statements.
+- `Proofs/Ai/NumberTheory/Legendre/`: certificate-backed Legendre symbol interface downstream
+  of `QuadraticResidue` and primitive-root cyclic-unit facts, preserving multiplicativity,
+  Euler criterion statement surfaces, count compatibility, and a boundary separating the
+  Legendre API from the later Jacobi symbol API.
+- `Proofs/Ai/NumberTheory/QuadraticReciprocity/`: certificate-backed quadratic reciprocity
+  route downstream of `Legendre`, preserving Gauss lemma surfaces, supplementary laws for
+  minus one and two, `quadratic_reciprocity` statements for distinct odd primes, and a boundary
+  preventing primitive-root, character, or Gauss-sum milestones from assuming reciprocity.
+- `Proofs/Ai/NumberTheory/Jacobi/`: certificate-backed Jacobi symbol and Solovay-Strassen
+  interface downstream of `QuadraticReciprocity` and primality-test surfaces, preserving Jacobi
+  multiplicativity, separation from actual quadratic residuosity, non-interchangeability with
+  Legendre symbols, and probabilistic randomness/soundness assumptions outside deterministic
+  security theorems.
+- `Proofs/Ai/NumberTheory/ArithmeticFunction/`: certificate-backed arithmetic-function
+  interface downstream of factorization, `phi`, and Carmichael surfaces, preserving divisor-count,
+  divisor-sigma, Euler `phi`, Mobius, Liouville, von_Mangoldt, and Carmichael function packages,
+  finite divisor-support evidence for divisor sums, coprimality hypotheses for multiplicative
+  functions, completely multiplicative function interfaces, and a boundary excluding Dirichlet
+  series or complex-analysis dependencies.
+- `Proofs/Ai/NumberTheory/DirichletConvolution/`: certificate-backed Dirichlet convolution
+  interface downstream of arithmetic-function surfaces, preserving algebraic convolution
+  definition, associativity, commutativity, identity, inverse interfaces, explicit finite divisor
+  sum rearrangement evidence, and boundaries excluding Mobius inversion, infinite series, or
+  complex-analysis assumptions.
+- `Proofs/Ai/NumberTheory/Mobius/`: certificate-backed Mobius inversion interface downstream of
+  Dirichlet convolution, preserving the Mobius function as a Dirichlet inverse, algebraic Mobius
+  inversion, generalized Mobius inversion, finite-support requirements, and boundaries excluding
+  analytic number theory or infinite-series dependencies.
+- `Proofs/Ai/NumberTheory/EulerProduct/`: certificate-backed algebraic EulerProduct interface
+  downstream of Mobius and Dirichlet convolution, preserving finite Euler products,
+  multiplicative Dirichlet series interfaces, zeta and Dirichlet `L` milestone inputs, and
+  explicit convergence prerequisites deferred to later analytic tasks.
+- `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
+  interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
+  dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite
+  ContinuedFraction interfaces for irrational inputs, best approximation surfaces, and explicit
+  real-analysis prerequisites.
+- `Proofs/Ai/NumberTheory/Pell/`: certificate-backed Pell interface downstream of continued
+  fractions, preserving quadratic irrational periodic interfaces, equation existence and
+  structure surfaces, positivity and nonsquare hypotheses, normalized-solution conventions, and
+  boundaries separating interface statements from derived certificates.
+- `Proofs/Ai/NumberTheory/DiophantineApproximation/`: certificate-backed
+  DiophantineApproximation interfaces downstream of Pell, preserving Dirichlet approximation,
+  simultaneous approximation, Liouville/Roth/Schmidt L1 interfaces, Khintchine and
+  Duffin-Schaeffer metric-measure prerequisites, Baker and Lindemann-Weierstrass transcendence
+  interfaces, geometry-of-numbers assumptions, and boundaries excluding elementary-number-theory
+  reliance on transcendence results.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

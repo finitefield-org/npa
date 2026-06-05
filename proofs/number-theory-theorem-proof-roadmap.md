@@ -352,7 +352,12 @@ semantics.
   `Proofs.Ai.NumberTheory.PrimitiveRoot` base surfaces for element order,
   primitive-root definitions, cyclic residue-unit generators, and the abstract
   cyclic-group generator-count formula without assuming primitive-root
-  existence.
+  existence. `NT-T17` extended that package with odd-prime and prime_power
+  existence surfaces plus a ChineseRemainder-dependent classification route for
+  moduli admitting primitive roots. `NT-T18` added certificate-backed
+  `Proofs.Ai.NumberTheory.Character` and `Proofs.Ai.NumberTheory.GaussSum`
+  surfaces for discrete logarithm statements, Dirichlet character groups,
+  orthogonality relations, and basic Gauss sum identities.
 - Target modules:
   - `Proofs.Ai.NumberTheory.PrimitiveRoot`
   - `Proofs.Ai.NumberTheory.Character`
@@ -380,6 +385,18 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-06`.
+- Implementation progress: `NT-T19` added certificate-backed
+  `Proofs.Ai.NumberTheory.QuadraticResidue` and
+  `Proofs.Ai.NumberTheory.Legendre` surfaces for quadratic residue and
+  nonresidue definitions, Legendre symbol multiplicativity, Euler criterion
+  interfaces from finite cyclic group facts, and odd-prime residue-count
+  statements. `NT-T20` added certificate-backed
+  `Proofs.Ai.NumberTheory.QuadraticReciprocity` surfaces for Gauss lemma,
+  supplementary laws for minus one and two, the first recorded proof route, and
+  quadratic reciprocity over distinct odd primes. `NT-T21` added
+  certificate-backed `Proofs.Ai.NumberTheory.Jacobi` surfaces for Jacobi symbol
+  multiplicativity, separation from actual quadratic residuosity, and
+  Solovay-Strassen probabilistic-test interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.QuadraticResidue`
   - `Proofs.Ai.NumberTheory.Legendre`
@@ -410,10 +427,25 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-03`, `NT-04`.
+- Implementation progress: `NT-T22` added certificate-backed
+  `Proofs.Ai.NumberTheory.ArithmeticFunction` surfaces for divisor-count,
+  divisor-sigma, Euler `phi`, Mobius, Liouville, von Mangoldt, and Carmichael
+  function interfaces, with finite divisor-support evidence and coprimality
+  hypotheses explicit in multiplicativity statements. `NT-T23` added
+  certificate-backed `Proofs.Ai.NumberTheory.DirichletConvolution` surfaces for
+  Dirichlet convolution definition, associativity, commutativity, identity,
+  inverse interfaces, finite divisor-sum rearrangement, and boundaries excluding
+  Mobius inversion and infinite-series assumptions. `NT-T24` added
+  certificate-backed `Proofs.Ai.NumberTheory.Mobius` and
+  `Proofs.Ai.NumberTheory.EulerProduct` surfaces for algebraic Mobius
+  inversion, generalized Mobius inversion, finite Euler-product interfaces,
+  multiplicative Dirichlet series interfaces, and deferred analytic convergence
+  prerequisites.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ArithmeticFunction`
   - `Proofs.Ai.NumberTheory.DirichletConvolution`
   - `Proofs.Ai.NumberTheory.Mobius`
+  - `Proofs.Ai.NumberTheory.EulerProduct`
 - Theorem order:
   1. divisor-count, divisor-sum, Euler `phi`, Mobius, Liouville, von Mangoldt,
      and Carmichael functions;
@@ -436,6 +468,25 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-02`, ordered-field and real-analysis prerequisites.
+- Implementation progress: `NT-T25` added certificate-backed
+  `Proofs.Ai.NumberTheory.ContinuedFraction` surfaces for finite continued
+  fractions over rationals, convergent recurrence interfaces, EuclideanDivision
+  based finite-expansion routes, normalized finite-expansion uniqueness, explicit
+  final-partial-quotient conventions, and boundaries excluding real-analysis or
+  infinite-continued-fraction dependencies. `NT-T26` extended
+  `Proofs.Ai.NumberTheory.ContinuedFraction` with infinite continued-fraction
+  interfaces for irrational inputs, best approximation surfaces, and explicit
+  real-analysis prerequisites, and added certificate-backed
+  `Proofs.Ai.NumberTheory.Pell` surfaces for quadratic irrational periodicity,
+  Pell equation existence and structure, positivity and nonsquare hypotheses,
+  normalized-solution conventions, and interface-vs-derived-certificate
+  boundaries. `NT-T27` added certificate-backed
+  `Proofs.Ai.NumberTheory.DiophantineApproximation` surfaces for Dirichlet
+  approximation, simultaneous approximation, Liouville/Roth/Schmidt L1
+  interfaces, Khintchine and Duffin-Schaeffer metric-measure prerequisites,
+  Baker and Lindemann-Weierstrass transcendence interfaces, geometry-of-numbers
+  assumptions, and boundaries separating metric-measure, algebraic, real-field,
+  and elementary-number-theory dependencies.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ContinuedFraction`
   - `Proofs.Ai.NumberTheory.Pell`

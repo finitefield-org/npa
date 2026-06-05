@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DirichletConvolution",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dirichlet_convolution_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun MulNat => fun MulCoeff => fun DividesNat => fun FiniteDivisorSupport => fun ArithmeticFunction => fun DirichletConvolution => fun DirichletConvolutionDefinition => fun definition_law => fun f => fun g => fun n => fun function_f => fun function_g => fun finite_support => definition_law f g n function_f function_g finite_support"
+    },
+    {
+      "declaration": "dirichlet_convolution_associative_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DirichletConvolution => fun ArithmeticFunction => fun FiniteDivisorSupport => fun DivisorSumRearrangement => fun DirichletConvolutionAssociative => fun associativity_law => fun f => fun g => fun h => fun n => fun function_f => fun function_g => fun function_h => fun finite_support => fun rearrangement => associativity_law f g h n function_f function_g function_h finite_support rearrangement"
+    },
+    {
+      "declaration": "dirichlet_convolution_commutative_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DirichletConvolution => fun ArithmeticFunction => fun FiniteDivisorSupport => fun DivisorPairSymmetry => fun DirichletConvolutionCommutative => fun commutativity_law => fun f => fun g => fun n => fun function_f => fun function_g => fun finite_support => fun pair_symmetry => commutativity_law f g n function_f function_g finite_support pair_symmetry"
+    },
+    {
+      "declaration": "dirichlet_convolution_identity_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DirichletIdentity => fun DirichletConvolution => fun ArithmeticFunction => fun FiniteDivisorSupport => fun DirichletConvolutionIdentity => fun identity_law => fun f => fun n => fun function_f => fun identity_function => fun finite_support => identity_law f n function_f identity_function finite_support"
+    },
+    {
+      "declaration": "dirichlet_convolution_inverse_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DirichletIdentity => fun DirichletConvolution => fun ArithmeticFunction => fun FiniteDivisorSupport => fun InverseCandidateEvidence => fun DirichletConvolutionInverse => fun inverse_law => fun f => fun g => fun n => fun function_f => fun function_g => fun identity_function => fun finite_support => fun inverse_candidate => inverse_law f g n function_f function_g identity_function finite_support inverse_candidate"
+    },
+    {
+      "declaration": "finite_divisor_sum_rearrangement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun FiniteDivisorSupport => fun DivisorSum => fun DivisorSumRearrangement => fun rearrangement_law => fun n => fun finite_support => rearrangement_law n finite_support"
+    },
+    {
+      "declaration": "dirichlet_convolution_no_mobius_inversion_assumption_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun DirichletConvolutionPackage => fun InverseInterfacePackage => fun MobiusInversionTheorem => fun NoMobiusInversionAssumptionBoundary => fun boundary_law => fun convolution => fun inverse_interface => fun mobius_inversion => boundary_law convolution inverse_interface mobius_inversion"
+    },
+    {
+      "declaration": "dirichlet_convolution_no_infinite_series_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun DirichletConvolutionPackage => fun FiniteDivisorSumPackage => fun InfiniteSeriesPackage => fun ComplexAnalysisPackage => fun NoInfiniteSeriesBoundary => fun boundary_law => fun convolution => fun finite_divisor_sum => fun infinite_series => fun complex_analysis => boundary_law convolution finite_divisor_sum infinite_series complex_analysis"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/DirichletConvolution/certificate.npcert"
+  }
+}

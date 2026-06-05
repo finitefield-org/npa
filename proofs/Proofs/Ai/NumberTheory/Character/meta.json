@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Character",
+  "source": "Proofs/Ai/NumberTheory/Character/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Character/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f00ec40a828c7eb203d959bba5a2eac7f133449e97e5fb0ae771bded2c185657",
+  "certificate_file_sha256": "sha256:a35b6f30728575a7fb2633623834a96845a91863e4b7b886abaa8df78b2130cb",
+  "export_hash": "sha256:700ac82e62030aa205d34d47f61aa8303c9677912108fa0f0b154ff5ee333976",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:8a53b3ae7ccf4e798f0834ecf63f31ace5a5b2c399c5db256e095516682e3881",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.PrimitiveRoot"],
+  "axioms": [],
+  "declarations": [
+    { "name": "dirichlet_character_definition_surface", "kind": "theorem" },
+    { "name": "dirichlet_character_group_interface_surface", "kind": "theorem" },
+    { "name": "character_orthogonality_relation_surface", "kind": "theorem" },
+    { "name": "character_orthogonality_no_analytic_l_function_boundary", "kind": "theorem" },
+    { "name": "discrete_log_statement_surface", "kind": "theorem" },
+    { "name": "discrete_log_algorithm_not_trusted_solver_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

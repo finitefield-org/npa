@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DiophantineApproximation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dirichlet_approximation_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Real => fun Rational => fun Height => fun ApproximationError => fun RealFieldAssumption => fun MetricAssumption => fun DirichletApproximation => fun dirichlet_law => fun x => fun q => fun real_field => fun metric => dirichlet_law x q real_field metric"
+    },
+    {
+      "declaration": "simultaneous_dirichlet_approximation_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Real => fun Rational => fun Point => fun CommonDenominator => fun FiniteDimensionAssumption => fun RealFieldAssumption => fun MetricAssumption => fun SimultaneousApproximation => fun simultaneous_law => fun finite_dimension => fun real_field => fun metric => simultaneous_law Point CommonDenominator finite_dimension real_field metric"
+    },
+    {
+      "declaration": "liouville_roth_schmidt_l1_interface_hierarchy",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun LiouvilleTheorem => fun RothTheorem => fun SchmidtTheorem => fun L1InterfacePrerequisite => fun RealFieldAssumption => fun MetricAssumption => fun AdvancedApproximationInterface => fun hierarchy_law => fun x => fun l1_prereq => fun real_field => fun metric => hierarchy_law x l1_prereq real_field metric"
+    },
+    {
+      "declaration": "khintchine_duffin_schaeffer_metric_measure_interface",
+      "source_kind": "explicit_term",
+      "term": "fun MetricSpaceAssumption => fun MeasureSpaceAssumption => fun BorelStructure => fun KhintchineTheorem => fun DuffinSchaefferTheorem => fun MetricDiophantineInterface => fun metric_law => fun metric => fun measure => fun borel => metric_law metric measure borel"
+    },
+    {
+      "declaration": "baker_lindemann_weierstrass_transcendence_interface",
+      "source_kind": "explicit_term",
+      "term": "fun AlgebraicNumber => fun ComplexNumber => fun AlgebraicPrerequisite => fun ComplexFieldAssumption => fun BakerTheorem => fun LindemannWeierstrassTheorem => fun TranscendenceInterface => fun transcendence_law => fun alpha => fun z => fun algebraic_prereq => fun complex_field => transcendence_law alpha z algebraic_prereq complex_field"
+    },
+    {
+      "declaration": "geometry_of_numbers_minkowski_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Lattice => fun ConvexBody => fun VolumeMeasure => fun GeometryOfNumbersPrerequisite => fun MinkowskiTheorem => fun GeometryOfNumbersInterface => fun geometry_law => fun lattice => fun body => fun volume => fun geometry_prereq => geometry_law lattice body volume geometry_prereq"
+    },
+    {
+      "declaration": "metric_measure_algebraic_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun MetricMeasurePackage => fun AlgebraicApproximationPackage => fun RealFieldPackage => fun DependencyBoundary => fun boundary_law => fun metric_measure => fun algebraic => fun real_field => boundary_law metric_measure algebraic real_field"
+    },
+    {
+      "declaration": "advanced_diophantine_approximation_l1_interface_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun AdvancedTheoremPackage => fun CertifiedAnalyticPrerequisite => fun CertifiedMeasurePrerequisite => fun L1InterfaceLevel => fun L1Boundary => fun boundary_law => fun advanced => fun analytic => fun measure => fun level => boundary_law advanced analytic measure level"
+    },
+    {
+      "declaration": "transcendence_not_elementary_number_theory_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun TranscendencePackage => fun ElementaryNumberTheoryPackage => fun DependencyBoundary => fun boundary_law => fun transcendence => fun elementary => boundary_law transcendence elementary"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/DiophantineApproximation/certificate.npcert"
+  }
+}

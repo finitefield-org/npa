@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Jacobi",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "jacobi_symbol_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Symbol => fun OddPositiveModulus => fun ModulusFactorization => fun LegendreSymbol => fun JacobiSymbol => fun JacobiDefinition => fun definition_law => fun n => fun a => fun odd_positive_n => fun factorization_n => definition_law n a odd_positive_n factorization_n"
+    },
+    {
+      "declaration": "jacobi_symbol_multiplicativity_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddPositiveModulus => fun JacobiMultiplicative => fun multiplicativity_law => fun n => fun a => fun b => fun odd_positive_n => multiplicativity_law n a b odd_positive_n"
+    },
+    {
+      "declaration": "jacobi_legendre_not_interchangeable_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun LegendreSymbolPackage => fun JacobiSymbolPackage => fun PrimeModulusDomain => fun OddCompositeModulusDomain => fun NoInterchangeBoundary => fun boundary_law => fun legendre => fun jacobi => fun prime_domain => fun odd_composite_domain => boundary_law legendre jacobi prime_domain odd_composite_domain"
+    },
+    {
+      "declaration": "jacobi_symbol_not_quadratic_residuosity_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddCompositeModulus => fun JacobiSymbolEvidence => fun ActualQuadraticResiduosity => fun SeparationEvidence => fun separation_law => fun n => fun a => fun odd_composite_n => fun jacobi_symbol => fun separation => separation_law n a odd_composite_n jacobi_symbol separation"
+    },
+    {
+      "declaration": "solovay_strassen_primality_test_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddCompositeModulus => fun ModulusGreaterThanTwo => fun RandomBaseSource => fun JacobiSymbolWitness => fun EulerWitness => fun SolovayStrassenRejects => fun solovay_strassen_law => fun n => fun a => fun odd_composite_n => fun large_modulus_n => fun random_base_source => fun jacobi_witness => fun euler_witness => solovay_strassen_law n a odd_composite_n large_modulus_n random_base_source jacobi_witness euler_witness"
+    },
+    {
+      "declaration": "solovay_strassen_no_deterministic_security_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun SolovayStrassenPackage => fun RuntimeRandomnessSource => fun ProbabilisticSoundnessAssumption => fun DeterministicSecurityTheorem => fun NoDeterministicSecurityBoundary => fun boundary_law => fun test => fun randomness => fun soundness => fun security => boundary_law test randomness soundness security"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Jacobi/certificate.npcert"
+  }
+}

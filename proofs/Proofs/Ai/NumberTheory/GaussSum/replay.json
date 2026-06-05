@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.GaussSum",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "gauss_sum_definition_coefficient_ring_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Coeff => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Int => fun DirichletCharacter => fun AdditiveCharacterData => fun GaussSum => fun GaussSumDefinitionEvidence => fun definition_law => fun ring_laws => fun modulus => fun chi => fun psi => fun multiplicative_character => fun additive_character => definition_law ring_laws modulus chi psi multiplicative_character additive_character"
+    },
+    {
+      "declaration": "gauss_sum_basic_identity_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Coeff => fun GaussSum => fun DirichletCharacter => fun AdditiveCharacterData => fun GaussSumBasicIdentity => fun identity_law => fun modulus => fun chi => fun psi => fun multiplicative_character => fun additive_character => identity_law modulus chi psi multiplicative_character additive_character"
+    },
+    {
+      "declaration": "gauss_sum_orthogonality_bridge_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Coeff => fun CharacterOrthogonalityRelation => fun GaussSum => fun GaussSumOrthogonalityIdentity => fun bridge_law => fun modulus => fun orthogonality => bridge_law modulus orthogonality"
+    },
+    {
+      "declaration": "gauss_sum_no_analytic_l_function_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun GaussSumPackage => fun DirichletCharacterPackage => fun AdditiveCharacterPackage => fun AnalyticLFunctionPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun gauss_sum => fun characters => fun additive => fun l_function => boundary_law gauss_sum characters additive l_function"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/GaussSum/certificate.npcert"
+  }
+}

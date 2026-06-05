@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Jacobi",
+  "source": "Proofs/Ai/NumberTheory/Jacobi/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Jacobi/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4a694431f38129f28a8a2e8d759bde9e91888e0ca71cc7ef64b778295b4c85f7",
+  "certificate_file_sha256": "sha256:98e9d690b7f71c0d511c4ad15f53a51297dfb73e23c3aa0d3df22e8468225954",
+  "export_hash": "sha256:6d71facf8a714f569a2c06d90e43715a1cf1198edf9f62d42ba7df4f24b7c380",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:878418d448ebdb9365056a6aab783f2031bc959969cbcdb220b69fd966701662",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.PrimalityTest", "Proofs.Ai.NumberTheory.QuadraticResidue", "Proofs.Ai.NumberTheory.Legendre", "Proofs.Ai.NumberTheory.QuadraticReciprocity"],
+  "axioms": [],
+  "declarations": [
+    { "name": "jacobi_symbol_definition_surface", "kind": "theorem" },
+    { "name": "jacobi_symbol_multiplicativity_surface", "kind": "theorem" },
+    { "name": "jacobi_legendre_not_interchangeable_boundary", "kind": "theorem" },
+    { "name": "jacobi_symbol_not_quadratic_residuosity_surface", "kind": "theorem" },
+    { "name": "solovay_strassen_primality_test_interface_surface", "kind": "theorem" },
+    { "name": "solovay_strassen_no_deterministic_security_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

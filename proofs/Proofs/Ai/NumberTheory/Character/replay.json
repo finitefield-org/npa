@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Character",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dirichlet_character_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Coeff => fun DirichletCharacter => fun UnitModulo => fun PeriodicityModulo => fun MultiplicativeModulo => fun VanishesOffUnits => fun definition_law => fun modulus => fun chi => fun periodic => fun multiplicative => fun off_units => definition_law modulus chi periodic multiplicative off_units"
+    },
+    {
+      "declaration": "dirichlet_character_group_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Character => fun one => fun mul => fun inv => fun DirichletCharacterGroupPackage => fun FiniteCharacterGroupEvidence => fun package_law => fun laws => fun finite_characters => package_law laws finite_characters"
+    },
+    {
+      "declaration": "character_orthogonality_relation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Coeff => fun DirichletCharacter => fun UnitModulo => fun FiniteCharacterGroupEvidence => fun CharacterSum => fun CharacterOrthogonalityRelation => fun orthogonality_law => fun modulus => fun a => fun b => fun unit_a => fun unit_b => fun finite_characters => orthogonality_law modulus a b unit_a unit_b finite_characters"
+    },
+    {
+      "declaration": "character_orthogonality_no_analytic_l_function_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun DirichletCharacterPackage => fun CharacterOrthogonalityPackage => fun AnalyticLFunctionPackage => fun ComplexAnalysisPackage => fun NoAnalyticDependencyBoundary => fun boundary_law => fun characters => fun orthogonality => fun l_function => fun complex_analysis => boundary_law characters orthogonality l_function complex_analysis"
+    },
+    {
+      "declaration": "discrete_log_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun PrimitiveRootModulo => fun UnitModulo => fun DiscreteLog => fun discrete_log_statement => fun statement_law => fun modulus => fun g => fun a => fun primitive_root_g => fun unit_a => statement_law modulus g a primitive_root_g unit_a"
+    },
+    {
+      "declaration": "discrete_log_algorithm_not_trusted_solver_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun DiscreteLogStatementPackage => fun DiscreteLogAlgorithmPackage => fun RuntimeSolverPackage => fun TrustedCertificatePackage => fun NoTrustedSolverBoundary => fun boundary_law => fun statement => fun algorithm => fun runtime_solver => fun certificate => boundary_law statement algorithm runtime_solver certificate"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Character/certificate.npcert"
+  }
+}
