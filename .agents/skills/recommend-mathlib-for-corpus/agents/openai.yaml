@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recommend Mathlib For Corpus"
+  short_description: "Rank npa-mathlib modules for proofs"
+  default_prompt: "Use $recommend-mathlib-for-corpus to recommend which npa-mathlib modules should be imported next into the NPA proof corpus."
