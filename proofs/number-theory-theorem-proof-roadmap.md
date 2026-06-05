@@ -480,7 +480,13 @@ semantics.
   `Proofs.Ai.NumberTheory.Pell` surfaces for quadratic irrational periodicity,
   Pell equation existence and structure, positivity and nonsquare hypotheses,
   normalized-solution conventions, and interface-vs-derived-certificate
-  boundaries.
+  boundaries. `NT-T27` added certificate-backed
+  `Proofs.Ai.NumberTheory.DiophantineApproximation` surfaces for Dirichlet
+  approximation, simultaneous approximation, Liouville/Roth/Schmidt L1
+  interfaces, Khintchine and Duffin-Schaeffer metric-measure prerequisites,
+  Baker and Lindemann-Weierstrass transcendence interfaces, geometry-of-numbers
+  assumptions, and boundaries separating metric-measure, algebraic, real-field,
+  and elementary-number-theory dependencies.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ContinuedFraction`
   - `Proofs.Ai.NumberTheory.Pell`

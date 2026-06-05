@@ -191,6 +191,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_EULER_PRODUCT_MODULE,
     &NUMBER_THEORY_CONTINUED_FRACTION_MODULE,
     &NUMBER_THEORY_PELL_MODULE,
+    &NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -2100,6 +2101,23 @@ const NUMBER_THEORY_PELL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PELL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.DiophantineApproximation",
+    source_path: "Proofs/Ai/NumberTheory/DiophantineApproximation/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/DiophantineApproximation/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/DiophantineApproximation/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/DiophantineApproximation/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.ContinuedFraction",
+        "Proofs.Ai.NumberTheory.Pell",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -14306,6 +14324,269 @@ const NUMBER_THEORY_PELL_THEOREMS: &[TheoremArtifact] = &[
             "fun InterfaceCertificateBoundary => fun boundary_law => ",
             "fun interface_statement => fun derived_certificate => ",
             "boundary_law interface_statement derived_certificate"
+        ),
+    },
+];
+
+const NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dirichlet_approximation_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Real : Type), forall (Rational : Type), ",
+            "forall (Height : forall (q : Rational), Nat), ",
+            "forall (ApproximationError : forall (x : Real), ",
+            "forall (q : Rational), Real), ",
+            "forall (RealFieldAssumption : Prop), ",
+            "forall (MetricAssumption : Prop), ",
+            "forall (DirichletApproximation : forall (x : Real), ",
+            "forall (q : Rational), Prop), ",
+            "forall (dirichlet_law : forall (x : Real), forall (q : Rational), ",
+            "forall (real_field : RealFieldAssumption), ",
+            "forall (metric : MetricAssumption), DirichletApproximation x q), ",
+            "forall (x : Real), forall (q : Rational), ",
+            "forall (real_field : RealFieldAssumption), ",
+            "forall (metric : MetricAssumption), DirichletApproximation x q"
+        ),
+        proof: concat!(
+            "fun Nat => fun Real => fun Rational => fun Height => ",
+            "fun ApproximationError => fun RealFieldAssumption => ",
+            "fun MetricAssumption => fun DirichletApproximation => ",
+            "fun dirichlet_law => fun x => fun q => fun real_field => ",
+            "fun metric => dirichlet_law x q real_field metric"
+        ),
+    },
+    TheoremArtifact {
+        name: "simultaneous_dirichlet_approximation_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Index : Type), forall (Real : Type), forall (Rational : Type), ",
+            "forall (Point : forall (i : Index), Real), ",
+            "forall (CommonDenominator : Rational), ",
+            "forall (FiniteDimensionAssumption : Prop), ",
+            "forall (RealFieldAssumption : Prop), ",
+            "forall (MetricAssumption : Prop), ",
+            "forall (SimultaneousApproximation : forall (point : forall (i : Index), Real), ",
+            "forall (denominator : Rational), Prop), ",
+            "forall (simultaneous_law : forall (point : forall (i : Index), Real), ",
+            "forall (denominator : Rational), ",
+            "forall (finite_dimension : FiniteDimensionAssumption), ",
+            "forall (real_field : RealFieldAssumption), ",
+            "forall (metric : MetricAssumption), ",
+            "SimultaneousApproximation point denominator), ",
+            "forall (finite_dimension : FiniteDimensionAssumption), ",
+            "forall (real_field : RealFieldAssumption), ",
+            "forall (metric : MetricAssumption), ",
+            "SimultaneousApproximation Point CommonDenominator"
+        ),
+        proof: concat!(
+            "fun Index => fun Real => fun Rational => fun Point => ",
+            "fun CommonDenominator => fun FiniteDimensionAssumption => ",
+            "fun RealFieldAssumption => fun MetricAssumption => ",
+            "fun SimultaneousApproximation => fun simultaneous_law => ",
+            "fun finite_dimension => fun real_field => fun metric => ",
+            "simultaneous_law Point CommonDenominator finite_dimension ",
+            "real_field metric"
+        ),
+    },
+    TheoremArtifact {
+        name: "liouville_roth_schmidt_l1_interface_hierarchy",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), ",
+            "forall (LiouvilleTheorem : forall (x : Real), Prop), ",
+            "forall (RothTheorem : forall (x : Real), Prop), ",
+            "forall (SchmidtTheorem : forall (x : Real), Prop), ",
+            "forall (L1InterfacePrerequisite : Type), ",
+            "forall (RealFieldAssumption : Type), ",
+            "forall (MetricAssumption : Type), ",
+            "forall (AdvancedApproximationInterface : forall (x : Real), Prop), ",
+            "forall (hierarchy_law : forall (x : Real), ",
+            "forall (l1_prereq : L1InterfacePrerequisite), ",
+            "forall (real_field : RealFieldAssumption), ",
+            "forall (metric : MetricAssumption), AdvancedApproximationInterface x), ",
+            "forall (x : Real), forall (l1_prereq : L1InterfacePrerequisite), ",
+            "forall (real_field : RealFieldAssumption), ",
+            "forall (metric : MetricAssumption), AdvancedApproximationInterface x"
+        ),
+        proof: concat!(
+            "fun Real => fun LiouvilleTheorem => fun RothTheorem => ",
+            "fun SchmidtTheorem => fun L1InterfacePrerequisite => ",
+            "fun RealFieldAssumption => fun MetricAssumption => ",
+            "fun AdvancedApproximationInterface => fun hierarchy_law => ",
+            "fun x => fun l1_prereq => fun real_field => fun metric => ",
+            "hierarchy_law x l1_prereq real_field metric"
+        ),
+    },
+    TheoremArtifact {
+        name: "khintchine_duffin_schaeffer_metric_measure_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (MetricSpaceAssumption : Type), ",
+            "forall (MeasureSpaceAssumption : Type), ",
+            "forall (BorelStructure : Type), ",
+            "forall (KhintchineTheorem : forall (metric : MetricSpaceAssumption), ",
+            "forall (measure : MeasureSpaceAssumption), ",
+            "forall (borel : BorelStructure), Prop), ",
+            "forall (DuffinSchaefferTheorem : forall (metric : MetricSpaceAssumption), ",
+            "forall (measure : MeasureSpaceAssumption), ",
+            "forall (borel : BorelStructure), Prop), ",
+            "forall (MetricDiophantineInterface : forall (metric : MetricSpaceAssumption), ",
+            "forall (measure : MeasureSpaceAssumption), ",
+            "forall (borel : BorelStructure), Prop), ",
+            "forall (metric_law : forall (metric : MetricSpaceAssumption), ",
+            "forall (measure : MeasureSpaceAssumption), ",
+            "forall (borel : BorelStructure), ",
+            "MetricDiophantineInterface metric measure borel), ",
+            "forall (metric : MetricSpaceAssumption), ",
+            "forall (measure : MeasureSpaceAssumption), ",
+            "forall (borel : BorelStructure), ",
+            "MetricDiophantineInterface metric measure borel"
+        ),
+        proof: concat!(
+            "fun MetricSpaceAssumption => fun MeasureSpaceAssumption => ",
+            "fun BorelStructure => fun KhintchineTheorem => ",
+            "fun DuffinSchaefferTheorem => fun MetricDiophantineInterface => ",
+            "fun metric_law => fun metric => fun measure => fun borel => ",
+            "metric_law metric measure borel"
+        ),
+    },
+    TheoremArtifact {
+        name: "baker_lindemann_weierstrass_transcendence_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AlgebraicNumber : Type), forall (ComplexNumber : Type), ",
+            "forall (AlgebraicPrerequisite : Type), ",
+            "forall (ComplexFieldAssumption : Type), ",
+            "forall (BakerTheorem : forall (alpha : AlgebraicNumber), Prop), ",
+            "forall (LindemannWeierstrassTheorem : forall (z : ComplexNumber), Prop), ",
+            "forall (TranscendenceInterface : forall (alpha : AlgebraicNumber), ",
+            "forall (z : ComplexNumber), Prop), ",
+            "forall (transcendence_law : forall (alpha : AlgebraicNumber), ",
+            "forall (z : ComplexNumber), ",
+            "forall (algebraic_prereq : AlgebraicPrerequisite), ",
+            "forall (complex_field : ComplexFieldAssumption), ",
+            "TranscendenceInterface alpha z), ",
+            "forall (alpha : AlgebraicNumber), forall (z : ComplexNumber), ",
+            "forall (algebraic_prereq : AlgebraicPrerequisite), ",
+            "forall (complex_field : ComplexFieldAssumption), ",
+            "TranscendenceInterface alpha z"
+        ),
+        proof: concat!(
+            "fun AlgebraicNumber => fun ComplexNumber => ",
+            "fun AlgebraicPrerequisite => fun ComplexFieldAssumption => ",
+            "fun BakerTheorem => fun LindemannWeierstrassTheorem => ",
+            "fun TranscendenceInterface => fun transcendence_law => ",
+            "fun alpha => fun z => fun algebraic_prereq => ",
+            "fun complex_field => ",
+            "transcendence_law alpha z algebraic_prereq complex_field"
+        ),
+    },
+    TheoremArtifact {
+        name: "geometry_of_numbers_minkowski_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Lattice : Type), forall (ConvexBody : Type), ",
+            "forall (VolumeMeasure : Type), ",
+            "forall (GeometryOfNumbersPrerequisite : Type), ",
+            "forall (MinkowskiTheorem : forall (lattice : Lattice), ",
+            "forall (body : ConvexBody), forall (volume : VolumeMeasure), Prop), ",
+            "forall (GeometryOfNumbersInterface : forall (lattice : Lattice), ",
+            "forall (body : ConvexBody), forall (volume : VolumeMeasure), Prop), ",
+            "forall (geometry_law : forall (lattice : Lattice), ",
+            "forall (body : ConvexBody), forall (volume : VolumeMeasure), ",
+            "forall (geometry_prereq : GeometryOfNumbersPrerequisite), ",
+            "GeometryOfNumbersInterface lattice body volume), ",
+            "forall (lattice : Lattice), forall (body : ConvexBody), ",
+            "forall (volume : VolumeMeasure), ",
+            "forall (geometry_prereq : GeometryOfNumbersPrerequisite), ",
+            "GeometryOfNumbersInterface lattice body volume"
+        ),
+        proof: concat!(
+            "fun Lattice => fun ConvexBody => fun VolumeMeasure => ",
+            "fun GeometryOfNumbersPrerequisite => fun MinkowskiTheorem => ",
+            "fun GeometryOfNumbersInterface => fun geometry_law => ",
+            "fun lattice => fun body => fun volume => fun geometry_prereq => ",
+            "geometry_law lattice body volume geometry_prereq"
+        ),
+    },
+    TheoremArtifact {
+        name: "metric_measure_algebraic_dependency_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (MetricMeasurePackage : Type), ",
+            "forall (AlgebraicApproximationPackage : Type), ",
+            "forall (RealFieldPackage : Type), ",
+            "forall (DependencyBoundary : forall (metric_measure : MetricMeasurePackage), ",
+            "forall (algebraic : AlgebraicApproximationPackage), ",
+            "forall (real_field : RealFieldPackage), Prop), ",
+            "forall (boundary_law : forall (metric_measure : MetricMeasurePackage), ",
+            "forall (algebraic : AlgebraicApproximationPackage), ",
+            "forall (real_field : RealFieldPackage), ",
+            "DependencyBoundary metric_measure algebraic real_field), ",
+            "forall (metric_measure : MetricMeasurePackage), ",
+            "forall (algebraic : AlgebraicApproximationPackage), ",
+            "forall (real_field : RealFieldPackage), ",
+            "DependencyBoundary metric_measure algebraic real_field"
+        ),
+        proof: concat!(
+            "fun MetricMeasurePackage => fun AlgebraicApproximationPackage => ",
+            "fun RealFieldPackage => fun DependencyBoundary => ",
+            "fun boundary_law => fun metric_measure => fun algebraic => ",
+            "fun real_field => boundary_law metric_measure algebraic real_field"
+        ),
+    },
+    TheoremArtifact {
+        name: "advanced_diophantine_approximation_l1_interface_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AdvancedTheoremPackage : Type), ",
+            "forall (CertifiedAnalyticPrerequisite : Type), ",
+            "forall (CertifiedMeasurePrerequisite : Type), ",
+            "forall (L1InterfaceLevel : Type), ",
+            "forall (L1Boundary : forall (advanced : AdvancedTheoremPackage), ",
+            "forall (analytic : CertifiedAnalyticPrerequisite), ",
+            "forall (measure : CertifiedMeasurePrerequisite), ",
+            "forall (level : L1InterfaceLevel), Prop), ",
+            "forall (boundary_law : forall (advanced : AdvancedTheoremPackage), ",
+            "forall (analytic : CertifiedAnalyticPrerequisite), ",
+            "forall (measure : CertifiedMeasurePrerequisite), ",
+            "forall (level : L1InterfaceLevel), ",
+            "L1Boundary advanced analytic measure level), ",
+            "forall (advanced : AdvancedTheoremPackage), ",
+            "forall (analytic : CertifiedAnalyticPrerequisite), ",
+            "forall (measure : CertifiedMeasurePrerequisite), ",
+            "forall (level : L1InterfaceLevel), ",
+            "L1Boundary advanced analytic measure level"
+        ),
+        proof: concat!(
+            "fun AdvancedTheoremPackage => fun CertifiedAnalyticPrerequisite => ",
+            "fun CertifiedMeasurePrerequisite => fun L1InterfaceLevel => ",
+            "fun L1Boundary => fun boundary_law => fun advanced => ",
+            "fun analytic => fun measure => fun level => ",
+            "boundary_law advanced analytic measure level"
+        ),
+    },
+    TheoremArtifact {
+        name: "transcendence_not_elementary_number_theory_dependency_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (TranscendencePackage : Type), ",
+            "forall (ElementaryNumberTheoryPackage : Type), ",
+            "forall (DependencyBoundary : forall (transcendence : TranscendencePackage), ",
+            "forall (elementary : ElementaryNumberTheoryPackage), Prop), ",
+            "forall (boundary_law : forall (transcendence : TranscendencePackage), ",
+            "forall (elementary : ElementaryNumberTheoryPackage), ",
+            "DependencyBoundary transcendence elementary), ",
+            "forall (transcendence : TranscendencePackage), ",
+            "forall (elementary : ElementaryNumberTheoryPackage), ",
+            "DependencyBoundary transcendence elementary"
+        ),
+        proof: concat!(
+            "fun TranscendencePackage => fun ElementaryNumberTheoryPackage => ",
+            "fun DependencyBoundary => fun boundary_law => ",
+            "fun transcendence => fun elementary => ",
+            "boundary_law transcendence elementary"
         ),
     },
 ];
@@ -42953,6 +43234,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_EULER_PRODUCT_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
+        || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

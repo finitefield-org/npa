@@ -222,6 +222,12 @@ Current bundles:
   fractions, preserving quadratic irrational periodic interfaces, equation existence and
   structure surfaces, positivity and nonsquare hypotheses, normalized-solution conventions, and
   boundaries separating interface statements from derived certificates.
+- `Proofs/Ai/NumberTheory/DiophantineApproximation/`: certificate-backed
+  DiophantineApproximation interfaces downstream of Pell, preserving Dirichlet approximation,
+  simultaneous approximation, Liouville/Roth/Schmidt L1 interfaces, Khintchine and
+  Duffin-Schaeffer metric-measure prerequisites, Baker and Lindemann-Weierstrass transcendence
+  interfaces, geometry-of-numbers assumptions, and boundaries excluding elementary-number-theory
+  reliance on transcendence results.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

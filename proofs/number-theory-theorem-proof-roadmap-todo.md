@@ -848,7 +848,7 @@ later in the file.
 
 ### NT-T27 Add Diophantine Approximation Statement Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T26`, measure and real-analysis prerequisites
 - Areas: `Proofs/Ai/NumberTheory/DiophantineApproximation/`
 - Tasks:
