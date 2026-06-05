@@ -3206,6 +3206,67 @@ macro_rules! absolute_convergence_cauchy_evidence_app {
     };
 }
 
+macro_rules! series_comparison_cauchy_evidence_app {
+    (
+        $partial_sum_rel:literal,
+        $partial_sum:literal,
+        $majorant_terms:literal,
+        $majorant_partial_sum:literal,
+        $nonnegative:literal,
+        $dominated_by:literal,
+        $cauchy_near:literal
+    ) => {
+        concat!(
+            "@SeriesComparisonCauchyEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $partial_sum_rel,
+            " ",
+            $partial_sum,
+            " ",
+            $majorant_terms,
+            " ",
+            $majorant_partial_sum,
+            " ",
+            $nonnegative,
+            " ",
+            $dominated_by,
+            " ",
+            $cauchy_near
+        )
+    };
+}
+
+macro_rules! series_absolute_comparison_evidence_app {
+    (
+        $absolute_term_rel:literal,
+        $partial_sum_rel:literal,
+        $abs_terms:literal,
+        $abs_partial_sum:literal,
+        $majorant_terms:literal,
+        $majorant_partial_sum:literal,
+        $nonnegative:literal,
+        $dominated_by:literal
+    ) => {
+        concat!(
+            "@SeriesAbsoluteComparisonEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $partial_sum_rel,
+            " ",
+            $abs_terms,
+            " ",
+            $abs_partial_sum,
+            " ",
+            $majorant_terms,
+            " ",
+            $majorant_partial_sum,
+            " ",
+            $nonnegative,
+            " ",
+            $dominated_by
+        )
+    };
+}
+
 macro_rules! upper_bound_app {
     ($set:expr, $bound:expr) => {
         concat!(
@@ -33547,6 +33608,51 @@ const ANALYSIS_SERIES_CRITERIA_DEFINITIONS: &[DefinitionArtifact] = &[
             "), P), P"
         )),
     },
+    DefinitionArtifact {
+        name: "SeriesComparisonCauchyEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), Prop"
+        )),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun CauchyNear => forall (P : Prop), forall (mk : forall (bridge : forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SeriesAbsoluteComparisonEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), Prop"
+        )),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => forall (P : Prop), forall (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), P), P"
+        )),
+    },
 ];
 
 const ANALYSIS_SERIES_CRITERIA_THEOREMS: &[TheoremArtifact] = &[
@@ -33841,6 +33947,363 @@ const ANALYSIS_SERIES_CRITERIA_THEOREMS: &[TheoremArtifact] = &[
         )),
         proof: analysis_sequence_basic_abs!(
             "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun sequence_evidence => fun criterion => fun absolute_converges => @absolute_convergence_implies_convergence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative norm CauchyNear CauchySmall ConvergesSmall absolute_values sequence_evidence criterion absolute_converges"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_comparison_cauchy_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (bridge : forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            series_comparison_cauchy_evidence_app!(
+                "PartialSumRel",
+                "partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy",
+                "CauchyNear"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun CauchyNear => fun bridge => fun (P : Prop) => fun (mk : forall (bridge : forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), P) => mk bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_comparison_cauchy_evidence_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            series_comparison_cauchy_evidence_app!(
+                "PartialSumRel",
+                "partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy",
+                "CauchyNear"
+            ),
+            "), forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun PartialSumRel => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun CauchyNear => fun evidence => fun lower_nonnegative => fun majorant_nonnegative => fun dominated => fun majorant_converges => evidence (",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            ") (fun (bridge : forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            ") => bridge lower_nonnegative majorant_nonnegative dominated majorant_converges)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_absolute_comparison_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_absolute_comparison_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun bridge => fun (P : Prop) => fun (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), P) => mk bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_absolute_comparison_evidence_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (evidence : ",
+            series_absolute_comparison_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy"
+            ),
+            "), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun evidence => fun absolute_values => fun majorant_nonnegative => fun dominated => fun majorant_converges => evidence (",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            ") (fun (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            ") => bridge absolute_values majorant_nonnegative dominated majorant_converges)"
+        )),
+    },
+    TheoremArtifact {
+        name: "comparison_test_nonnegative",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (comparison_evidence : ",
+            series_comparison_cauchy_evidence_app!(
+                "PartialSumRel",
+                "partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy",
+                "CauchyNear"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun lower_nonnegative => fun majorant_nonnegative => fun dominated => fun majorant_converges => fun sequence_evidence => fun comparison_evidence => @cauchy_series_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum norm CauchyNear CauchySmall ConvergesSmall sequence_evidence (@series_comparison_cauchy_evidence_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum majorant_terms majorant_partial_sum Nonnegative DominatedBy CauchyNear comparison_evidence lower_nonnegative majorant_nonnegative dominated majorant_converges)"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonnegative_series_comparison_test",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (lower_nonnegative : ",
+            series_nonnegative_terms_app!("seq", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("seq", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (comparison_evidence : ",
+            series_comparison_cauchy_evidence_app!(
+                "PartialSumRel",
+                "partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy",
+                "CauchyNear"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun PartialSumRel => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun lower_nonnegative => fun majorant_nonnegative => fun dominated => fun majorant_converges => fun sequence_evidence => fun comparison_evidence => @comparison_test_nonnegative.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum majorant_terms majorant_partial_sum Nonnegative DominatedBy norm CauchyNear CauchySmall ConvergesSmall lower_nonnegative majorant_nonnegative dominated majorant_converges sequence_evidence comparison_evidence"
+        ),
+    },
+    TheoremArtifact {
+        name: "comparison_test_absolutely_dominated",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (absolute_criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (comparison_evidence : ",
+            series_absolute_comparison_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun majorant_nonnegative => fun dominated => fun majorant_converges => fun sequence_evidence => fun absolute_criterion => fun comparison_evidence => @absolute_convergence_implies_convergence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative norm CauchyNear CauchySmall ConvergesSmall absolute_values sequence_evidence absolute_criterion (@series_absolute_comparison_evidence_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum majorant_terms majorant_partial_sum Nonnegative DominatedBy comparison_evidence absolute_values majorant_nonnegative dominated majorant_converges)"
+        ),
+    },
+    TheoremArtifact {
+        name: "absolutely_dominated_series_comparison_test",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (majorant_terms : forall (k : SequenceIndex), Scalar), forall (majorant_partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (majorant_nonnegative : ",
+            series_nonnegative_terms_app!("majorant_terms", "Nonnegative"),
+            "), forall (dominated : ",
+            series_termwise_domination_app!("abs_terms", "majorant_terms", "DominatedBy"),
+            "), forall (majorant_converges : ",
+            series_converges_for_app!("majorant_terms", "PartialSumRel", "majorant_partial_sum"),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (absolute_criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (comparison_evidence : ",
+            series_absolute_comparison_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "majorant_terms",
+                "majorant_partial_sum",
+                "Nonnegative",
+                "DominatedBy"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun majorant_terms => fun majorant_partial_sum => fun Nonnegative => fun DominatedBy => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun majorant_nonnegative => fun dominated => fun majorant_converges => fun sequence_evidence => fun absolute_criterion => fun comparison_evidence => @comparison_test_absolutely_dominated.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum majorant_terms majorant_partial_sum Nonnegative DominatedBy norm CauchyNear CauchySmall ConvergesSmall absolute_values majorant_nonnegative dominated majorant_converges sequence_evidence absolute_criterion comparison_evidence"
         ),
     },
 ];

@@ -1904,6 +1904,8 @@ Implemented definitions / API declarations:
 | `SeriesTermwiseDomination` | explicit pointwise domination relation between two term sequences |
 | `SeriesAbsoluteValueTerms` | packages absolute-term evidence with nonnegativity evidence |
 | `AbsoluteConvergenceCauchyEvidence` | law package turning absolute convergence evidence into Cauchy evidence for the original partial sums |
+| `SeriesComparisonCauchyEvidence` | law package turning explicit nonnegative comparison hypotheses into Cauchy evidence |
+| `SeriesAbsoluteComparisonEvidence` | law package turning absolute domination by a convergent majorant into absolute convergence evidence |
 
 Theorem targets:
 
@@ -1916,10 +1918,15 @@ Theorem targets:
 | `absolute_convergence_implies_cauchy` | derives the original series Cauchy criterion from absolute convergence via the explicit bridge |
 | `absolute_convergence_implies_convergence` | proves ANQ-009 by applying `cauchy_series_criterion` to the Cauchy evidence obtained from absolute convergence |
 | `absolute_convergent_series_converges` | stable alias for downstream criteria modules |
+| `series_comparison_cauchy_evidence_intro`, `series_comparison_cauchy_evidence_apply` | package and apply the explicit nonnegative comparison-to-Cauchy bridge |
+| `series_absolute_comparison_evidence_intro`, `series_absolute_comparison_evidence_apply` | package and apply the absolute-domination-to-absolute-convergence bridge |
+| `comparison_test_nonnegative`, `nonnegative_series_comparison_test` | prove ANQ-010 nonnegative comparison by applying `cauchy_series_criterion` to packaged comparison Cauchy evidence |
+| `comparison_test_absolutely_dominated`, `absolutely_dominated_series_comparison_test` | prove ANQ-010 absolute domination comparison via the ANQ-009 absolute-convergence theorem |
 
 The module has an empty axiom report and imports `Series.Basic`, sequence, real, normed-space,
-and algebra foundations only. Comparison tests are intentionally left for the next criteria
-theorem batch.
+and algebra foundations only. ANQ-009 and ANQ-010 keep all order, absolute-value, and comparison
+assumptions in explicit law packages; ratio and root tests are intentionally left for the next
+criteria theorem batch.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

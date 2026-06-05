@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Analysis/Series/Criteria/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:0e68b3fa747c623aa93352cbdff252fab88c68cfb16df80040ba0d2159b0915d",
-  "certificate_file_sha256": "sha256:8494ae5683b05e2af464aa2465116c49cc9e71e1c9a96bd01fa5845d3d6e6bd3",
-  "export_hash": "sha256:643813783dac28e72b139f462525e6632a5d263715a9e6ca13809f3957a26e80",
-  "axiom_report_hash": "sha256:b1c966ff112a4d21e88c23443f7594255da9b1129a7d1cbea048b57e695c9f2e",
-  "certificate_hash": "sha256:61a0dad213786f76f521810ed21ac9c8a346a20c3eff6ecd3d86be5ddfba54c5",
+  "source_sha256": "sha256:40681165fb8467b70de1b2b0172b7052cb2304972a7d58cf2aec12fc508bfc6d",
+  "certificate_file_sha256": "sha256:b38ea67defa5f1c7c0ba203d39fcb9d9b52e5432640e73d94ed1c94fdef2580b",
+  "export_hash": "sha256:7fc19b23aacab70277920d88cd2cb35ea4495cd201ad6cf3dea1e935205932cc",
+  "axiom_report_hash": "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1",
+  "certificate_hash": "sha256:0d72bb6fc404fb904b36adc7f3dab0f50afb446a8aca77f5e1a20197833ab11c",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Series.Basic"],
   "axioms": [],
   "declarations": [
@@ -17,6 +17,8 @@
     { "name": "SeriesTermwiseDomination", "kind": "def" },
     { "name": "SeriesAbsoluteValueTerms", "kind": "def" },
     { "name": "AbsoluteConvergenceCauchyEvidence", "kind": "def" },
+    { "name": "SeriesComparisonCauchyEvidence", "kind": "def" },
+    { "name": "SeriesAbsoluteComparisonEvidence", "kind": "def" },
     { "name": "series_nonnegative_terms_intro", "kind": "theorem" },
     { "name": "series_nonnegative_terms_project", "kind": "theorem" },
     { "name": "series_termwise_domination_intro", "kind": "theorem" },
@@ -28,7 +30,15 @@
     { "name": "absolute_convergence_cauchy_evidence_apply", "kind": "theorem" },
     { "name": "absolute_convergence_implies_cauchy", "kind": "theorem" },
     { "name": "absolute_convergence_implies_convergence", "kind": "theorem" },
-    { "name": "absolute_convergent_series_converges", "kind": "theorem" }
+    { "name": "absolute_convergent_series_converges", "kind": "theorem" },
+    { "name": "series_comparison_cauchy_evidence_intro", "kind": "theorem" },
+    { "name": "series_comparison_cauchy_evidence_apply", "kind": "theorem" },
+    { "name": "series_absolute_comparison_evidence_intro", "kind": "theorem" },
+    { "name": "series_absolute_comparison_evidence_apply", "kind": "theorem" },
+    { "name": "comparison_test_nonnegative", "kind": "theorem" },
+    { "name": "nonnegative_series_comparison_test", "kind": "theorem" },
+    { "name": "comparison_test_absolutely_dominated", "kind": "theorem" },
+    { "name": "absolutely_dominated_series_comparison_test", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

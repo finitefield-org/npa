@@ -467,11 +467,11 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T07 Add Absolute Convergence And Comparison Tests
 
-- Status: `ANQ-009` complete and `ANQ-010` pending. `Proofs.Ai.Analysis.Series.Criteria`
+- Status: `ANQ-009` and `ANQ-010` complete. `Proofs.Ai.Analysis.Series.Criteria`
   now defines nonnegative-term evidence, pointwise domination evidence,
-  absolute-value term evidence, and an explicit absolute-convergence-to-Cauchy
-  bridge used to prove absolute convergence implies convergence via the
-  `Series.Basic` Cauchy criterion.
+  absolute-value term evidence, explicit absolute-convergence-to-Cauchy evidence,
+  and comparison evidence packages used to prove nonnegative and absolutely
+  dominated comparison tests via the `Series.Basic` Cauchy criterion.
 - Depends on: ANA-T06
 - Inputs:
   - `Proofs.Ai.Analysis.Series.Basic`
@@ -495,6 +495,8 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::absolute_convergence_implies_convergence /tmp/anq009-absolute-convergence-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::comparison_test_nonnegative /tmp/anq010-nonnegative-comparison-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::comparison_test_absolutely_dominated /tmp/anq010-absolute-comparison-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### ANA-T08 Add Ratio And Root Tests

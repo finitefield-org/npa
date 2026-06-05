@@ -1552,14 +1552,14 @@ certificate = "Proofs/Ai/Analysis/Series/Criteria/certificate.npcert"
 meta = "Proofs/Ai/Analysis/Series/Criteria/meta.json"
 replay = "Proofs/Ai/Analysis/Series/Criteria/replay.json"
 producer_profile = "human-surface-explicit-term"
-expected_source_hash = "sha256:0e68b3fa747c623aa93352cbdff252fab88c68cfb16df80040ba0d2159b0915d"
-expected_certificate_file_hash = "sha256:8494ae5683b05e2af464aa2465116c49cc9e71e1c9a96bd01fa5845d3d6e6bd3"
-expected_export_hash = "sha256:643813783dac28e72b139f462525e6632a5d263715a9e6ca13809f3957a26e80"
-expected_axiom_report_hash = "sha256:b1c966ff112a4d21e88c23443f7594255da9b1129a7d1cbea048b57e695c9f2e"
-expected_certificate_hash = "sha256:61a0dad213786f76f521810ed21ac9c8a346a20c3eff6ecd3d86be5ddfba54c5"
+expected_source_hash = "sha256:40681165fb8467b70de1b2b0172b7052cb2304972a7d58cf2aec12fc508bfc6d"
+expected_certificate_file_hash = "sha256:b38ea67defa5f1c7c0ba203d39fcb9d9b52e5432640e73d94ed1c94fdef2580b"
+expected_export_hash = "sha256:7fc19b23aacab70277920d88cd2cb35ea4495cd201ad6cf3dea1e935205932cc"
+expected_axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+expected_certificate_hash = "sha256:0d72bb6fc404fb904b36adc7f3dab0f50afb446a8aca77f5e1a20197833ab11c"
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Series.Basic"]
-definitions = ["SeriesNonnegativeTerms", "SeriesTermwiseDomination", "SeriesAbsoluteValueTerms", "AbsoluteConvergenceCauchyEvidence"]
-theorems = ["series_nonnegative_terms_intro", "series_nonnegative_terms_project", "series_termwise_domination_intro", "series_termwise_domination_project", "series_absolute_value_terms_intro", "series_absolute_value_terms_absolute_terms", "series_absolute_value_terms_nonnegative", "absolute_convergence_cauchy_evidence_intro", "absolute_convergence_cauchy_evidence_apply", "absolute_convergence_implies_cauchy", "absolute_convergence_implies_convergence", "absolute_convergent_series_converges"]
+definitions = ["SeriesNonnegativeTerms", "SeriesTermwiseDomination", "SeriesAbsoluteValueTerms", "AbsoluteConvergenceCauchyEvidence", "SeriesComparisonCauchyEvidence", "SeriesAbsoluteComparisonEvidence"]
+theorems = ["series_nonnegative_terms_intro", "series_nonnegative_terms_project", "series_termwise_domination_intro", "series_termwise_domination_project", "series_absolute_value_terms_intro", "series_absolute_value_terms_absolute_terms", "series_absolute_value_terms_nonnegative", "absolute_convergence_cauchy_evidence_intro", "absolute_convergence_cauchy_evidence_apply", "absolute_convergence_implies_cauchy", "absolute_convergence_implies_convergence", "absolute_convergent_series_converges", "series_comparison_cauchy_evidence_intro", "series_comparison_cauchy_evidence_apply", "series_absolute_comparison_evidence_intro", "series_absolute_comparison_evidence_apply", "comparison_test_nonnegative", "nonnegative_series_comparison_test", "comparison_test_absolutely_dominated", "absolutely_dominated_series_comparison_test"]
 axioms = []
 
 [[modules]]
