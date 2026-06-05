@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Diophantine",
+  "source": "Proofs/Ai/NumberTheory/Diophantine/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Diophantine/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:dced9cd0448ff90b1467bbc7cfc818174ecb34961ea8576965a43f5aa996dafd",
+  "certificate_file_sha256": "sha256:7bcd6aac99f0f5e8da2063cade9f0c9b1983facca5c1824a1b33725a009d5719",
+  "export_hash": "sha256:891081612fe73a6e899d6172f16b1997c6f605dd0a4c5edcfbbf6e865d381b41",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:685d93e7e7689440d67ad28b63665a6ce97affe8023232ba73c957110537c6e9",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LinearDiophantine", "Proofs.Ai.NumberTheory.Prime"],
+  "axioms": [],
+  "declarations": [
+    { "name": "pythagorean_triple_definition_surface", "kind": "theorem" },
+    { "name": "pythagorean_triple_classification_interface", "kind": "theorem" },
+    { "name": "pythagorean_primitive_triple_formula_soundness", "kind": "theorem" },
+    { "name": "pythagorean_triple_algebra_identity_reuse", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

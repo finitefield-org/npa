@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.SumsOfSquares",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "fermat_two_square_theorem_statement_route",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddPrime => fun CongruentModulo => fun TwoSquareRepresentable => fun IffEvidence => fun TwoSquareTheoremStatement => fun route_law => fun p => fun odd_prime => route_law p odd_prime"
+    },
+    {
+      "declaration": "fermat_two_square_theorem_quadratic_residue_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Four => fun One => fun OddPrime => fun CongruentModulo => fun QuadraticResidueOfMinusOne => fun TwoSquareRepresentable => fun dependency_law => fun p => fun odd_prime => fun cong_one_mod_four => fun quad_residue => dependency_law p odd_prime cong_one_mod_four quad_residue"
+    },
+    {
+      "declaration": "sums_of_squares_algebraic_identity_reuse",
+      "source_kind": "explicit_term",
+      "term": "fun AlgebraicIdentity => fun TwoSquareTheorem => fun ReuseBoundary => fun boundary_law => fun identity => fun two_square => boundary_law identity two_square"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/SumsOfSquares/certificate.npcert"
+  }
+}

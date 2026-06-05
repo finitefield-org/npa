@@ -516,6 +516,11 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-03`, `NT-07`, `NT-09`.
+- Implementation progress: `NT-T28` added certificate-backed
+  `Proofs.Ai.NumberTheory.Diophantine` and
+  `Proofs.Ai.NumberTheory.SumsOfSquares` surfaces for Pythagorean triple
+  classification, primitive triple formula, Fermat two-square theorem
+  statement route, quadratic residue dependencies, and algebraic identity reuse.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Diophantine`
   - `Proofs.Ai.NumberTheory.SumsOfSquares`

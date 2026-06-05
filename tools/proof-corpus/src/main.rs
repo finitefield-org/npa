@@ -197,6 +197,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_CONTINUED_FRACTION_MODULE,
     &NUMBER_THEORY_PELL_MODULE,
     &NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE,
+    &NUMBER_THEORY_DIOPHANTINE_MODULE,
+    &NUMBER_THEORY_SUMS_OF_SQUARES_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2222,6 +2224,40 @@ const NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE: ModuleArtifact = ModuleArt
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DIOPHANTINE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Diophantine",
+    source_path: "Proofs/Ai/NumberTheory/Diophantine/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Diophantine/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Diophantine/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Diophantine/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.LinearDiophantine",
+        "Proofs.Ai.NumberTheory.Prime",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DIOPHANTINE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_SUMS_OF_SQUARES_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.SumsOfSquares",
+    source_path: "Proofs/Ai/NumberTheory/SumsOfSquares/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/SumsOfSquares/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/SumsOfSquares/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/SumsOfSquares/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.QuadraticResidue",
+        "Proofs.Ai.NumberTheory.Legendre",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_SUMS_OF_SQUARES_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -18974,6 +19010,163 @@ const NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_THEOREMS: &[TheoremArtifact] = &[
             "fun DependencyBoundary => fun boundary_law => ",
             "fun transcendence => fun elementary => ",
             "boundary_law transcendence elementary"
+        ),
+    },
+];
+
+const NUMBER_THEORY_DIOPHANTINE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "pythagorean_triple_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Mul : forall (a : Int), forall (b : Int), Int), ",
+            "forall (Add : forall (a : Int), forall (b : Int), Int), ",
+            "forall (PythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), ",
+            "forall (definition_law : forall (x : Int), forall (y : Int), forall (z : Int), ",
+            "forall (eq_pyth : @Eq.{1} Int (Add (Mul x x) (Mul y y)) (Mul z z)), ",
+            "PythagoreanTriple x y z), ",
+            "forall (x : Int), forall (y : Int), forall (z : Int), ",
+            "forall (eq_pyth : @Eq.{1} Int (Add (Mul x x) (Mul y y)) (Mul z z)), ",
+            "PythagoreanTriple x y z"
+        ),
+        proof: concat!(
+            "fun Int => fun Mul => fun Add => fun PythagoreanTriple => ",
+            "fun definition_law => fun x => fun y => fun z => fun eq_pyth => ",
+            "definition_law x y z eq_pyth"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_triple_classification_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Coprime : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (PythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), ",
+            "forall (PrimitivePythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), ",
+            "forall (EuclidFormulaParameters : forall (x : Int), forall (y : Int), forall (z : Int), forall (m : Int), forall (n : Int), Prop), ",
+            "forall (classification_law : forall (x : Int), forall (y : Int), forall (z : Int), ",
+            "forall (triple : PythagoreanTriple x y z), ",
+            "forall (primitive : PrimitivePythagoreanTriple x y z), ",
+            "forall (coprime_xy : Coprime x y), forall (m : Int), forall (n : Int), ",
+            "EuclidFormulaParameters x y z m n), ",
+            "forall (x : Int), forall (y : Int), forall (z : Int), ",
+            "forall (triple : PythagoreanTriple x y z), ",
+            "forall (primitive : PrimitivePythagoreanTriple x y z), ",
+            "forall (coprime_xy : Coprime x y), forall (m : Int), forall (n : Int), ",
+            "EuclidFormulaParameters x y z m n"
+        ),
+        proof: concat!(
+            "fun Int => fun Coprime => fun PythagoreanTriple => fun PrimitivePythagoreanTriple => ",
+            "fun EuclidFormulaParameters => fun classification_law => ",
+            "fun x => fun y => fun z => fun triple => fun primitive => fun coprime_xy => ",
+            "fun m => fun n => classification_law x y z triple primitive coprime_xy m n"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_primitive_triple_formula_soundness",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Mul : forall (a : Int), forall (b : Int), Int), ",
+            "forall (Add : forall (a : Int), forall (b : Int), Int), ",
+            "forall (Sub : forall (a : Int), forall (b : Int), Int), ",
+            "forall (Two : Int), ",
+            "forall (PythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), ",
+            "forall (soundness_law : forall (m : Int), forall (n : Int), ",
+            "PythagoreanTriple (Mul (Mul Two m) n) (Sub (Mul m m) (Mul n n)) (Add (Mul m m) (Mul n n))), ",
+            "forall (m : Int), forall (n : Int), ",
+            "PythagoreanTriple (Mul (Mul Two m) n) (Sub (Mul m m) (Mul n n)) (Add (Mul m m) (Mul n n))"
+        ),
+        proof: concat!(
+            "fun Int => fun Mul => fun Add => fun Sub => fun Two => ",
+            "fun PythagoreanTriple => fun soundness_law => fun m => fun n => ",
+            "soundness_law m n"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_triple_algebra_identity_reuse",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AlgebraicIdentity : Type), ",
+            "forall (PythagoreanTripleClassification : Type), ",
+            "forall (ReuseBoundary : forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), Prop), ",
+            "forall (boundary_law : forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), ",
+            "ReuseBoundary identity classification), ",
+            "forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), ",
+            "ReuseBoundary identity classification"
+        ),
+        proof: concat!(
+            "fun AlgebraicIdentity => fun PythagoreanTripleClassification => ",
+            "fun ReuseBoundary => fun boundary_law => fun identity => fun classification => ",
+            "boundary_law identity classification"
+        ),
+    },
+];
+
+const NUMBER_THEORY_SUMS_OF_SQUARES_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "fermat_two_square_theorem_statement_route",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (TwoSquareRepresentable : forall (p : Int), Prop), ",
+            "forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), ",
+            "forall (TwoSquareTheoremStatement : forall (p : Int), Prop), ",
+            "forall (route_law : forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "TwoSquareTheoremStatement p), ",
+            "forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "TwoSquareTheoremStatement p"
+        ),
+        proof: concat!(
+            "fun Int => fun OddPrime => fun CongruentModulo => fun TwoSquareRepresentable => ",
+            "fun IffEvidence => fun TwoSquareTheoremStatement => fun route_law => ",
+            "fun p => fun odd_prime => route_law p odd_prime"
+        ),
+    },
+    TheoremArtifact {
+        name: "fermat_two_square_theorem_quadratic_residue_dependency",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), ",
+            "forall (Four : Int), ",
+            "forall (One : Int), ",
+            "forall (OddPrime : forall (p : Int), Prop), ",
+            "forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (QuadraticResidueOfMinusOne : forall (p : Int), Prop), ",
+            "forall (TwoSquareRepresentable : forall (p : Int), Prop), ",
+            "forall (dependency_law : forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "forall (cong_one_mod_four : CongruentModulo Four p One), forall (quad_residue : QuadraticResidueOfMinusOne p), ",
+            "TwoSquareRepresentable p), ",
+            "forall (p : Int), forall (odd_prime : OddPrime p), ",
+            "forall (cong_one_mod_four : CongruentModulo Four p One), forall (quad_residue : QuadraticResidueOfMinusOne p), ",
+            "TwoSquareRepresentable p"
+        ),
+        proof: concat!(
+            "fun Int => fun Four => fun One => fun OddPrime => fun CongruentModulo => fun QuadraticResidueOfMinusOne => ",
+            "fun TwoSquareRepresentable => fun dependency_law => fun p => fun odd_prime => ",
+            "fun cong_one_mod_four => fun quad_residue => ",
+            "dependency_law p odd_prime cong_one_mod_four quad_residue"
+        ),
+    },
+    TheoremArtifact {
+        name: "sums_of_squares_algebraic_identity_reuse",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AlgebraicIdentity : Type), ",
+            "forall (TwoSquareTheorem : Type), ",
+            "forall (ReuseBoundary : forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), Prop), ",
+            "forall (boundary_law : forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), ",
+            "ReuseBoundary identity two_square), ",
+            "forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), ",
+            "ReuseBoundary identity two_square"
+        ),
+        proof: concat!(
+            "fun AlgebraicIdentity => fun TwoSquareTheorem => fun ReuseBoundary => ",
+            "fun boundary_law => fun identity => fun two_square => ",
+            "boundary_law identity two_square"
         ),
     },
 ];

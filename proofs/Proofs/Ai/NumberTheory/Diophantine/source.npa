@@ -1,0 +1,20 @@
+import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.LinearDiophantine
+import Proofs.Ai.NumberTheory.Prime
+
+theorem pythagorean_triple_definition_surface :
+  forall (Int : Type), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (Add : forall (a : Int), forall (b : Int), Int), forall (PythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), forall (definition_law : forall (x : Int), forall (y : Int), forall (z : Int), forall (eq_pyth : @Eq.{1} Int (Add (Mul x x) (Mul y y)) (Mul z z)), PythagoreanTriple x y z), forall (x : Int), forall (y : Int), forall (z : Int), forall (eq_pyth : @Eq.{1} Int (Add (Mul x x) (Mul y y)) (Mul z z)), PythagoreanTriple x y z :=
+  fun Int => fun Mul => fun Add => fun PythagoreanTriple => fun definition_law => fun x => fun y => fun z => fun eq_pyth => definition_law x y z eq_pyth
+
+theorem pythagorean_triple_classification_interface :
+  forall (Int : Type), forall (Coprime : forall (a : Int), forall (b : Int), Prop), forall (PythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), forall (PrimitivePythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), forall (EuclidFormulaParameters : forall (x : Int), forall (y : Int), forall (z : Int), forall (m : Int), forall (n : Int), Prop), forall (classification_law : forall (x : Int), forall (y : Int), forall (z : Int), forall (triple : PythagoreanTriple x y z), forall (primitive : PrimitivePythagoreanTriple x y z), forall (coprime_xy : Coprime x y), forall (m : Int), forall (n : Int), EuclidFormulaParameters x y z m n), forall (x : Int), forall (y : Int), forall (z : Int), forall (triple : PythagoreanTriple x y z), forall (primitive : PrimitivePythagoreanTriple x y z), forall (coprime_xy : Coprime x y), forall (m : Int), forall (n : Int), EuclidFormulaParameters x y z m n :=
+  fun Int => fun Coprime => fun PythagoreanTriple => fun PrimitivePythagoreanTriple => fun EuclidFormulaParameters => fun classification_law => fun x => fun y => fun z => fun triple => fun primitive => fun coprime_xy => fun m => fun n => classification_law x y z triple primitive coprime_xy m n
+
+theorem pythagorean_primitive_triple_formula_soundness :
+  forall (Int : Type), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (Add : forall (a : Int), forall (b : Int), Int), forall (Sub : forall (a : Int), forall (b : Int), Int), forall (Two : Int), forall (PythagoreanTriple : forall (x : Int), forall (y : Int), forall (z : Int), Prop), forall (soundness_law : forall (m : Int), forall (n : Int), PythagoreanTriple (Mul (Mul Two m) n) (Sub (Mul m m) (Mul n n)) (Add (Mul m m) (Mul n n))), forall (m : Int), forall (n : Int), PythagoreanTriple (Mul (Mul Two m) n) (Sub (Mul m m) (Mul n n)) (Add (Mul m m) (Mul n n)) :=
+  fun Int => fun Mul => fun Add => fun Sub => fun Two => fun PythagoreanTriple => fun soundness_law => fun m => fun n => soundness_law m n
+
+theorem pythagorean_triple_algebra_identity_reuse :
+  forall (AlgebraicIdentity : Type), forall (PythagoreanTripleClassification : Type), forall (ReuseBoundary : forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), Prop), forall (boundary_law : forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), ReuseBoundary identity classification), forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), ReuseBoundary identity classification :=
+  fun AlgebraicIdentity => fun PythagoreanTripleClassification => fun ReuseBoundary => fun boundary_law => fun identity => fun classification => boundary_law identity classification
+

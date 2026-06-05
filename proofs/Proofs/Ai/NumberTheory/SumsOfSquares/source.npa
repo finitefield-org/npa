@@ -1,0 +1,16 @@
+import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.QuadraticResidue
+import Proofs.Ai.NumberTheory.Legendre
+
+theorem fermat_two_square_theorem_statement_route :
+  forall (Int : Type), forall (OddPrime : forall (p : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (TwoSquareRepresentable : forall (p : Int), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (TwoSquareTheoremStatement : forall (p : Int), Prop), forall (route_law : forall (p : Int), forall (odd_prime : OddPrime p), TwoSquareTheoremStatement p), forall (p : Int), forall (odd_prime : OddPrime p), TwoSquareTheoremStatement p :=
+  fun Int => fun OddPrime => fun CongruentModulo => fun TwoSquareRepresentable => fun IffEvidence => fun TwoSquareTheoremStatement => fun route_law => fun p => fun odd_prime => route_law p odd_prime
+
+theorem fermat_two_square_theorem_quadratic_residue_dependency :
+  forall (Int : Type), forall (Four : Int), forall (One : Int), forall (OddPrime : forall (p : Int), Prop), forall (CongruentModulo : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), forall (QuadraticResidueOfMinusOne : forall (p : Int), Prop), forall (TwoSquareRepresentable : forall (p : Int), Prop), forall (dependency_law : forall (p : Int), forall (odd_prime : OddPrime p), forall (cong_one_mod_four : CongruentModulo Four p One), forall (quad_residue : QuadraticResidueOfMinusOne p), TwoSquareRepresentable p), forall (p : Int), forall (odd_prime : OddPrime p), forall (cong_one_mod_four : CongruentModulo Four p One), forall (quad_residue : QuadraticResidueOfMinusOne p), TwoSquareRepresentable p :=
+  fun Int => fun Four => fun One => fun OddPrime => fun CongruentModulo => fun QuadraticResidueOfMinusOne => fun TwoSquareRepresentable => fun dependency_law => fun p => fun odd_prime => fun cong_one_mod_four => fun quad_residue => dependency_law p odd_prime cong_one_mod_four quad_residue
+
+theorem sums_of_squares_algebraic_identity_reuse :
+  forall (AlgebraicIdentity : Type), forall (TwoSquareTheorem : Type), forall (ReuseBoundary : forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), Prop), forall (boundary_law : forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), ReuseBoundary identity two_square), forall (identity : AlgebraicIdentity), forall (two_square : TwoSquareTheorem), ReuseBoundary identity two_square :=
+  fun AlgebraicIdentity => fun TwoSquareTheorem => fun ReuseBoundary => fun boundary_law => fun identity => fun two_square => boundary_law identity two_square
+

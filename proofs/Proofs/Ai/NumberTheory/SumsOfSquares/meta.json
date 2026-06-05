@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.SumsOfSquares",
+  "source": "Proofs/Ai/NumberTheory/SumsOfSquares/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/SumsOfSquares/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d753bc1619ab96ca93e73b9916e5dfdefdef326ac31f6c007fc05ed01b278549",
+  "certificate_file_sha256": "sha256:1b680c6e93a2f819a4547d8087e40c82ae414d8fd03a1f008cba31a636b693ec",
+  "export_hash": "sha256:b795e684a10fa51b3d1459c505655d56c62da364f1b3cd6621df3af92112325c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:fbcccd612564f70d60dd808fa915fa8d30c34f7bb947309fc8a91a1a73ad1a65",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.QuadraticResidue", "Proofs.Ai.NumberTheory.Legendre"],
+  "axioms": [],
+  "declarations": [
+    { "name": "fermat_two_square_theorem_statement_route", "kind": "theorem" },
+    { "name": "fermat_two_square_theorem_quadratic_residue_dependency", "kind": "theorem" },
+    { "name": "sums_of_squares_algebraic_identity_reuse", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

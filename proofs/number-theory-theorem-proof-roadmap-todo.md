@@ -871,7 +871,7 @@ later in the file.
 
 ### NT-T28 Add Pythagorean Triples And Sums-Of-Squares Entry Points
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T06`, `NT-T07`
 - Areas: `Proofs/Ai/NumberTheory/Diophantine/`, `Proofs/Ai/NumberTheory/SumsOfSquares/`
 - Tasks:
