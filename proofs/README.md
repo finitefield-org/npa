@@ -74,6 +74,10 @@ Current bundles:
   finite-family permutation, and permutation-counting interfaces. Permutations are ordinary
   structure carriers with explicit index-bijection evidence, and factorial arithmetic requirements
   are named evidence slots rather than hidden numeric normalization.
+- `Proofs/Ai/Combinatorics/Binomial/`: certificate-backed k-subset, combination-counting,
+  binomial coefficient, Vandermonde, and multinomial interfaces. Subset cardinality, arithmetic
+  carrier, Pascal recurrence, Vandermonde summation, and multinomial partition assumptions are
+  explicit evidence slots.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

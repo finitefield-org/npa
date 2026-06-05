@@ -293,7 +293,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T06 Add Binomial, Combination, And Multinomial Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T05`
 - Areas: `Proofs.Ai.Combinatorics.Binomial`
 - Tasks:
@@ -302,14 +302,16 @@ guessing. The split must preserve the dependency order in this document.
     and subset counting.
   - Add multinomial coefficient interface.
 - Deliverables:
-  - Binomial and combination theorem layer.
+  - `Proofs.Ai.Combinatorics.Binomial` binomial and combination theorem layer.
 - Acceptance criteria:
   - `k`-subset cardinality evidence is explicit.
   - Pascal and Vandermonde identities state the arithmetic carrier and
     recurrence assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Binomial`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Binomial --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T07 Add Binomial Algebra And Vandermonde Interfaces
 
