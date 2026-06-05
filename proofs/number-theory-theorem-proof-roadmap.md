@@ -693,12 +693,18 @@ semantics.
     `Proofs.Ai.NumberTheory.LocalField` defining L1 interfaces for Hensel lemma,
     Ostrowski theorem, DVR, complete DVR, local-field structure, unramified extension,
     and totally ramified extension.
+  - `NT-T42` added certificate-backed `Proofs.Ai.NumberTheory.PadicAnalysis` and
+    `Proofs.Ai.NumberTheory.PadicMeasure` defining L1 interfaces for p-adic exponential,
+    logarithm, Newton polygon, Strassmann theorem, Weierstrass preparation, Mahler
+    expansion, p-adic measure, and p-adic integration.
 - Depends on: `NT-13`, topology, metric completion, and valuation interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Valuation`
   - `Proofs.Ai.NumberTheory.Padic`
   - `Proofs.Ai.NumberTheory.LocalField`
   - `Proofs.Ai.NumberTheory.Hensel`
+  - `Proofs.Ai.NumberTheory.PadicAnalysis`
+  - `Proofs.Ai.NumberTheory.PadicMeasure`
 - Theorem order:
   1. p-adic valuation and absolute value;
   2. non-Archimedean metric law package;

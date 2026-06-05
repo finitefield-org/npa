@@ -217,6 +217,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PADIC_MODULE,
     &NUMBER_THEORY_HENSEL_MODULE,
     &NUMBER_THEORY_LOCAL_FIELD_MODULE,
+    &NUMBER_THEORY_PADIC_ANALYSIS_MODULE,
+    &NUMBER_THEORY_PADIC_MEASURE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2521,6 +2523,32 @@ const NUMBER_THEORY_LOCAL_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_LOCAL_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PADIC_ANALYSIS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.PadicAnalysis",
+    source_path: "Proofs/Ai/NumberTheory/PadicAnalysis/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/PadicAnalysis/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/PadicAnalysis/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/PadicAnalysis/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PADIC_ANALYSIS_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PADIC_MEASURE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.PadicMeasure",
+    source_path: "Proofs/Ai/NumberTheory/PadicMeasure/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/PadicMeasure/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/PadicMeasure/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/PadicMeasure/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PADIC_MEASURE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21341,6 +21369,92 @@ const NUMBER_THEORY_LOCAL_FIELD_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun K => fun L => fun IsTotallyRamified => fun ram_law => ram_law"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PADIC_ANALYSIS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "padic_exp_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Exp : K -> K), forall (exp_law : forall (x : K), @Eq.{1} K (Exp x) (Exp x)), forall (x : K), @Eq.{1} K (Exp x) (Exp x)"
+        ),
+        proof: concat!(
+            "fun K => fun Exp => fun exp_law => fun x => exp_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_log_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Log : K -> K), forall (log_law : forall (x : K), @Eq.{1} K (Log x) (Log x)), forall (x : K), @Eq.{1} K (Log x) (Log x)"
+        ),
+        proof: concat!(
+            "fun K => fun Log => fun log_law => fun x => log_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "newton_polygon_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Poly : Type), forall (Polygon : Type), forall (ToPolygon : Poly -> Polygon), forall (poly_law : forall (p : Poly), @Eq.{1} Polygon (ToPolygon p) (ToPolygon p)), forall (p : Poly), @Eq.{1} Polygon (ToPolygon p) (ToPolygon p)"
+        ),
+        proof: concat!(
+            "fun Poly => fun Polygon => fun ToPolygon => fun poly_law => fun p => poly_law p"
+        ),
+    },
+    TheoremArtifact {
+        name: "strassmann_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Poly : Type), forall (ZerosCount : Poly -> Type), forall (strassmann_law : forall (p : Poly), ZerosCount p -> ZerosCount p), forall (p : Poly), ZerosCount p -> ZerosCount p"
+        ),
+        proof: concat!(
+            "fun Poly => fun ZerosCount => fun strassmann_law => fun p => strassmann_law p"
+        ),
+    },
+    TheoremArtifact {
+        name: "weierstrass_preparation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Poly : Type), forall (IsUnit : Poly -> Prop), forall (IsDistinguished : Poly -> Prop), forall (weierstrass_law : forall (p : Poly), IsUnit p -> IsDistinguished p), forall (p : Poly), IsUnit p -> IsDistinguished p"
+        ),
+        proof: concat!(
+            "fun Poly => fun IsUnit => fun IsDistinguished => fun weierstrass_law => fun p => weierstrass_law p"
+        ),
+    },
+    TheoremArtifact {
+        name: "mahler_expansion_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Binomial : K -> K -> K), forall (MahlerSeries : (K -> K) -> Type), forall (mahler_law : forall (f : K -> K), MahlerSeries f -> MahlerSeries f), forall (f : K -> K), MahlerSeries f -> MahlerSeries f"
+        ),
+        proof: concat!(
+            "fun K => fun Binomial => fun MahlerSeries => fun mahler_law => fun f => mahler_law f"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PADIC_MEASURE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "padic_measure_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Space : Type), forall (Measure : Type), forall (measure_law : forall (m : Measure), @Eq.{1} Measure m m), forall (m : Measure), @Eq.{1} Measure m m"
+        ),
+        proof: concat!(
+            "fun Space => fun Measure => fun measure_law => fun m => measure_law m"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_integration_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Space : Type), forall (Measure : Type), forall (Integrand : Type), forall (Integral : Integrand -> Measure -> Prop), forall (integral_law : forall (f : Integrand), forall (mu : Measure), Integral f mu -> Integral f mu), forall (f : Integrand), forall (mu : Measure), Integral f mu -> Integral f mu"
+        ),
+        proof: concat!(
+            "fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu"
         ),
     },
 ];

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PadicMeasure",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "padic_measure_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun Measure => fun measure_law => fun m => measure_law m"
+    },
+    {
+      "declaration": "padic_integration_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PadicMeasure/certificate.npcert"
+  }
+}

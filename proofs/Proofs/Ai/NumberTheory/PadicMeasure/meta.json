@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PadicMeasure",
+  "source": "Proofs/Ai/NumberTheory/PadicMeasure/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PadicMeasure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:77e1f45e62758026e32b9c91406b546ec2e83abdfeb5e8a17de511036e665291",
+  "certificate_file_sha256": "sha256:b5c22ee58b17917eec1df20aaf769b76caa21a7cb711ee7b7b10a05aa0cedf32",
+  "export_hash": "sha256:08be049657133554153f9b2901b9ad7c9f8ccc98955443569fed2092952e4948",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:d5ee8b923d1078bcfd92496bf6493d7fc267bac0f4f7ab09e608b54a0d76c3c4",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "padic_measure_interface", "kind": "theorem" },
+    { "name": "padic_integration_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

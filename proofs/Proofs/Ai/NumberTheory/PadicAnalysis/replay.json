@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PadicAnalysis",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "padic_exp_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Exp => fun exp_law => fun x => exp_law x"
+    },
+    {
+      "declaration": "padic_log_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Log => fun log_law => fun x => log_law x"
+    },
+    {
+      "declaration": "newton_polygon_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Poly => fun Polygon => fun ToPolygon => fun poly_law => fun p => poly_law p"
+    },
+    {
+      "declaration": "strassmann_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Poly => fun ZerosCount => fun strassmann_law => fun p => strassmann_law p"
+    },
+    {
+      "declaration": "weierstrass_preparation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Poly => fun IsUnit => fun IsDistinguished => fun weierstrass_law => fun p => weierstrass_law p"
+    },
+    {
+      "declaration": "mahler_expansion_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Binomial => fun MahlerSeries => fun mahler_law => fun f => mahler_law f"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PadicAnalysis/certificate.npcert"
+  }
+}

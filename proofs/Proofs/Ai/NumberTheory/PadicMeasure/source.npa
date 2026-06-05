@@ -1,0 +1,10 @@
+import Std.Logic.Eq
+
+theorem padic_measure_interface :
+  forall (Space : Type), forall (Measure : Type), forall (measure_law : forall (m : Measure), @Eq.{1} Measure m m), forall (m : Measure), @Eq.{1} Measure m m :=
+  fun Space => fun Measure => fun measure_law => fun m => measure_law m
+
+theorem padic_integration_interface :
+  forall (Space : Type), forall (Measure : Type), forall (Integrand : Type), forall (Integral : Integrand -> Measure -> Prop), forall (integral_law : forall (f : Integrand), forall (mu : Measure), Integral f mu -> Integral f mu), forall (f : Integrand), forall (mu : Measure), Integral f mu -> Integral f mu :=
+  fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu
+

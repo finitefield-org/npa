@@ -1,0 +1,26 @@
+import Std.Logic.Eq
+
+theorem padic_exp_interface :
+  forall (K : Type), forall (Exp : K -> K), forall (exp_law : forall (x : K), @Eq.{1} K (Exp x) (Exp x)), forall (x : K), @Eq.{1} K (Exp x) (Exp x) :=
+  fun K => fun Exp => fun exp_law => fun x => exp_law x
+
+theorem padic_log_interface :
+  forall (K : Type), forall (Log : K -> K), forall (log_law : forall (x : K), @Eq.{1} K (Log x) (Log x)), forall (x : K), @Eq.{1} K (Log x) (Log x) :=
+  fun K => fun Log => fun log_law => fun x => log_law x
+
+theorem newton_polygon_interface :
+  forall (Poly : Type), forall (Polygon : Type), forall (ToPolygon : Poly -> Polygon), forall (poly_law : forall (p : Poly), @Eq.{1} Polygon (ToPolygon p) (ToPolygon p)), forall (p : Poly), @Eq.{1} Polygon (ToPolygon p) (ToPolygon p) :=
+  fun Poly => fun Polygon => fun ToPolygon => fun poly_law => fun p => poly_law p
+
+theorem strassmann_theorem_interface :
+  forall (Poly : Type), forall (ZerosCount : Poly -> Type), forall (strassmann_law : forall (p : Poly), ZerosCount p -> ZerosCount p), forall (p : Poly), ZerosCount p -> ZerosCount p :=
+  fun Poly => fun ZerosCount => fun strassmann_law => fun p => strassmann_law p
+
+theorem weierstrass_preparation_interface :
+  forall (Poly : Type), forall (IsUnit : Poly -> Prop), forall (IsDistinguished : Poly -> Prop), forall (weierstrass_law : forall (p : Poly), IsUnit p -> IsDistinguished p), forall (p : Poly), IsUnit p -> IsDistinguished p :=
+  fun Poly => fun IsUnit => fun IsDistinguished => fun weierstrass_law => fun p => weierstrass_law p
+
+theorem mahler_expansion_interface :
+  forall (K : Type), forall (Binomial : K -> K -> K), forall (MahlerSeries : (K -> K) -> Type), forall (mahler_law : forall (f : K -> K), MahlerSeries f -> MahlerSeries f), forall (f : K -> K), MahlerSeries f -> MahlerSeries f :=
+  fun K => fun Binomial => fun MahlerSeries => fun mahler_law => fun f => mahler_law f
+
