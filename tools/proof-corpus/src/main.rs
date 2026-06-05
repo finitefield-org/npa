@@ -187,6 +187,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_JACOBI_MODULE,
     &NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE,
     &NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE,
+    &NUMBER_THEORY_MOBIUS_MODULE,
+    &NUMBER_THEORY_EULER_PRODUCT_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -2035,6 +2037,41 @@ const NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE: ModuleArtifact = ModuleArtifac
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DIRICHLET_CONVOLUTION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_MOBIUS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Mobius",
+    source_path: "Proofs/Ai/NumberTheory/Mobius/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Mobius/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Mobius/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Mobius/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.ArithmeticFunction",
+        "Proofs.Ai.NumberTheory.DirichletConvolution",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_MOBIUS_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_EULER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.EulerProduct",
+    source_path: "Proofs/Ai/NumberTheory/EulerProduct/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/EulerProduct/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/EulerProduct/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/EulerProduct/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.ArithmeticFunction",
+        "Proofs.Ai.NumberTheory.DirichletConvolution",
+        "Proofs.Ai.NumberTheory.Mobius",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_EULER_PRODUCT_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -13461,6 +13498,304 @@ const NUMBER_THEORY_DIRICHLET_CONVOLUTION_THEOREMS: &[TheoremArtifact] = &[
             "fun convolution => fun finite_divisor_sum => fun infinite_series => ",
             "fun complex_analysis => ",
             "boundary_law convolution finite_divisor_sum infinite_series complex_analysis"
+        ),
+    },
+];
+
+const NUMBER_THEORY_MOBIUS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "mobius_function_dirichlet_inverse_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DirichletIdentity : forall (n : Nat), Coeff), ",
+            "forall (OneFunction : forall (n : Nat), Coeff), ",
+            "forall (Mobius : forall (n : Nat), Coeff), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DirichletConvolutionInverse : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Prop), ",
+            "forall (inverse_law : forall (n : Nat), ",
+            "forall (one_function : ArithmeticFunction OneFunction), ",
+            "forall (mobius_function : ArithmeticFunction Mobius), ",
+            "forall (identity_function : ArithmeticFunction DirichletIdentity), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "DirichletConvolutionInverse OneFunction Mobius n), ",
+            "forall (n : Nat), forall (one_function : ArithmeticFunction OneFunction), ",
+            "forall (mobius_function : ArithmeticFunction Mobius), ",
+            "forall (identity_function : ArithmeticFunction DirichletIdentity), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "DirichletConvolutionInverse OneFunction Mobius n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DirichletIdentity => fun OneFunction => ",
+            "fun Mobius => fun DirichletConvolution => fun ArithmeticFunction => ",
+            "fun FiniteDivisorSupport => fun DirichletConvolutionInverse => ",
+            "fun inverse_law => fun n => fun one_function => fun mobius_function => ",
+            "fun identity_function => fun finite_support => ",
+            "inverse_law n one_function mobius_function identity_function finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "mobius_inversion_algebraic_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (Mobius : forall (n : Nat), Coeff), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (MobiusInversionStatement : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Prop), ",
+            "forall (ConvolutionRelation : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Prop), ",
+            "forall (inversion_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), forall (function_g : ArithmeticFunction g), ",
+            "forall (mobius_function : ArithmeticFunction Mobius), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (convolution_relation : ConvolutionRelation f g n), ",
+            "MobiusInversionStatement f g n), ",
+            "forall (f : forall (n : Nat), Coeff), forall (g : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), forall (function_f : ArithmeticFunction f), ",
+            "forall (function_g : ArithmeticFunction g), ",
+            "forall (mobius_function : ArithmeticFunction Mobius), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (convolution_relation : ConvolutionRelation f g n), ",
+            "MobiusInversionStatement f g n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun Mobius => fun DirichletConvolution => ",
+            "fun ArithmeticFunction => fun FiniteDivisorSupport => ",
+            "fun MobiusInversionStatement => fun ConvolutionRelation => ",
+            "fun inversion_law => fun f => fun g => fun n => fun function_f => ",
+            "fun function_g => fun mobius_function => fun finite_support => ",
+            "fun convolution_relation => ",
+            "inversion_law f g n function_f function_g mobius_function finite_support convolution_relation"
+        ),
+    },
+    TheoremArtifact {
+        name: "generalized_mobius_inversion_algebraic_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (IncidenceRelation : forall (a : Nat), forall (b : Nat), Prop), ",
+            "forall (FiniteIntervalSupport : forall (upper : Nat), Prop), ",
+            "forall (MobiusKernel : forall (a : Nat), forall (b : Nat), Coeff), ",
+            "forall (GeneralizedConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (GeneralizedMobiusInversion : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Prop), ",
+            "forall (generalized_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (finite_interval : FiniteIntervalSupport n), ",
+            "GeneralizedMobiusInversion f g n), ",
+            "forall (f : forall (n : Nat), Coeff), forall (g : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), forall (finite_interval : FiniteIntervalSupport n), ",
+            "GeneralizedMobiusInversion f g n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun IncidenceRelation => ",
+            "fun FiniteIntervalSupport => fun MobiusKernel => ",
+            "fun GeneralizedConvolution => fun GeneralizedMobiusInversion => ",
+            "fun generalized_law => fun f => fun g => fun n => ",
+            "fun finite_interval => generalized_law f g n finite_interval"
+        ),
+    },
+    TheoremArtifact {
+        name: "mobius_inversion_finite_support_requirement_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (MobiusInversionInput : forall (n : Nat), Prop), ",
+            "forall (support_law : forall (n : Nat), ",
+            "forall (finite_support : FiniteDivisorSupport n), MobiusInversionInput n), ",
+            "forall (n : Nat), forall (finite_support : FiniteDivisorSupport n), ",
+            "MobiusInversionInput n"
+        ),
+        proof: concat!(
+            "fun Nat => fun FiniteDivisorSupport => fun MobiusInversionInput => ",
+            "fun support_law => fun n => fun finite_support => ",
+            "support_law n finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "mobius_inversion_no_analysis_dependency_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (MobiusInversionPackage : Type), ",
+            "forall (DirichletConvolutionPackage : Type), ",
+            "forall (AnalyticNumberTheoryPackage : Type), ",
+            "forall (InfiniteSeriesPackage : Type), ",
+            "forall (NoAnalysisDependencyBoundary : forall (mobius_inversion : MobiusInversionPackage), ",
+            "forall (convolution : DirichletConvolutionPackage), ",
+            "forall (analytic : AnalyticNumberTheoryPackage), ",
+            "forall (infinite_series : InfiniteSeriesPackage), Prop), ",
+            "forall (boundary_law : forall (mobius_inversion : MobiusInversionPackage), ",
+            "forall (convolution : DirichletConvolutionPackage), ",
+            "forall (analytic : AnalyticNumberTheoryPackage), ",
+            "forall (infinite_series : InfiniteSeriesPackage), ",
+            "NoAnalysisDependencyBoundary mobius_inversion convolution analytic infinite_series), ",
+            "forall (mobius_inversion : MobiusInversionPackage), ",
+            "forall (convolution : DirichletConvolutionPackage), ",
+            "forall (analytic : AnalyticNumberTheoryPackage), ",
+            "forall (infinite_series : InfiniteSeriesPackage), ",
+            "NoAnalysisDependencyBoundary mobius_inversion convolution analytic infinite_series"
+        ),
+        proof: concat!(
+            "fun MobiusInversionPackage => fun DirichletConvolutionPackage => ",
+            "fun AnalyticNumberTheoryPackage => fun InfiniteSeriesPackage => ",
+            "fun NoAnalysisDependencyBoundary => fun boundary_law => ",
+            "fun mobius_inversion => fun convolution => fun analytic => ",
+            "fun infinite_series => ",
+            "boundary_law mobius_inversion convolution analytic infinite_series"
+        ),
+    },
+];
+
+const NUMBER_THEORY_EULER_PRODUCT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_euler_product_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (PrimeNat : forall (p : Nat), Prop), ",
+            "forall (FinitePrimeSupport : forall (bound : Nat), Prop), ",
+            "forall (EulerFactor : forall (p : Nat), forall (s : Nat), Coeff), ",
+            "forall (FiniteEulerProduct : forall (bound : Nat), forall (s : Nat), Coeff), ",
+            "forall (EulerProductFiniteStatement : forall (bound : Nat), ",
+            "forall (s : Nat), forall (value : Coeff), Prop), ",
+            "forall (finite_product_law : forall (bound : Nat), forall (s : Nat), ",
+            "forall (finite_primes : FinitePrimeSupport bound), ",
+            "EulerProductFiniteStatement bound s (FiniteEulerProduct bound s)), ",
+            "forall (bound : Nat), forall (s : Nat), ",
+            "forall (finite_primes : FinitePrimeSupport bound), ",
+            "EulerProductFiniteStatement bound s (FiniteEulerProduct bound s)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun PrimeNat => fun FinitePrimeSupport => ",
+            "fun EulerFactor => fun FiniteEulerProduct => ",
+            "fun EulerProductFiniteStatement => fun finite_product_law => ",
+            "fun bound => fun s => fun finite_primes => ",
+            "finite_product_law bound s finite_primes"
+        ),
+    },
+    TheoremArtifact {
+        name: "multiplicative_dirichlet_series_euler_product_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (MultiplicativeFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (DirichletSeries : forall (f : forall (n : Nat), Coeff), forall (s : Nat), Coeff), ",
+            "forall (EulerProduct : forall (f : forall (n : Nat), Coeff), forall (s : Nat), Coeff), ",
+            "forall (EulerProductInterface : forall (f : forall (n : Nat), Coeff), ",
+            "forall (s : Nat), Prop), ",
+            "forall (interface_law : forall (f : forall (n : Nat), Coeff), forall (s : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "forall (multiplicative_f : MultiplicativeFunction f), ",
+            "EulerProductInterface f s), ",
+            "forall (f : forall (n : Nat), Coeff), forall (s : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "forall (multiplicative_f : MultiplicativeFunction f), ",
+            "EulerProductInterface f s"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun ArithmeticFunction => ",
+            "fun MultiplicativeFunction => fun DirichletSeries => fun EulerProduct => ",
+            "fun EulerProductInterface => fun interface_law => fun f => fun s => ",
+            "fun function_f => fun multiplicative_f => ",
+            "interface_law f s function_f multiplicative_f"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_product_convergence_prerequisites_deferred_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (EulerProductInterfacePackage : Type), ",
+            "forall (DirichletSeriesPackage : Type), ",
+            "forall (AnalyticConvergencePrerequisite : Type), ",
+            "forall (ConvergenceTheoremClaim : Type), ",
+            "forall (ConvergenceDeferredBoundary : forall (euler_product : EulerProductInterfacePackage), ",
+            "forall (dirichlet_series : DirichletSeriesPackage), ",
+            "forall (analysis_prereq : AnalyticConvergencePrerequisite), ",
+            "forall (convergence_claim : ConvergenceTheoremClaim), Prop), ",
+            "forall (boundary_law : forall (euler_product : EulerProductInterfacePackage), ",
+            "forall (dirichlet_series : DirichletSeriesPackage), ",
+            "forall (analysis_prereq : AnalyticConvergencePrerequisite), ",
+            "forall (convergence_claim : ConvergenceTheoremClaim), ",
+            "ConvergenceDeferredBoundary euler_product dirichlet_series analysis_prereq convergence_claim), ",
+            "forall (euler_product : EulerProductInterfacePackage), ",
+            "forall (dirichlet_series : DirichletSeriesPackage), ",
+            "forall (analysis_prereq : AnalyticConvergencePrerequisite), ",
+            "forall (convergence_claim : ConvergenceTheoremClaim), ",
+            "ConvergenceDeferredBoundary euler_product dirichlet_series analysis_prereq convergence_claim"
+        ),
+        proof: concat!(
+            "fun EulerProductInterfacePackage => fun DirichletSeriesPackage => ",
+            "fun AnalyticConvergencePrerequisite => fun ConvergenceTheoremClaim => ",
+            "fun ConvergenceDeferredBoundary => fun boundary_law => ",
+            "fun euler_product => fun dirichlet_series => fun analysis_prereq => ",
+            "fun convergence_claim => ",
+            "boundary_law euler_product dirichlet_series analysis_prereq convergence_claim"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_product_zeta_and_dirichlet_l_milestone_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (EulerProductInterfacePackage : Type), ",
+            "forall (ZetaMilestoneInput : Type), ",
+            "forall (DirichletLMilestoneInput : Type), ",
+            "forall (FeedsAnalyticMilestones : forall (euler_product : EulerProductInterfacePackage), ",
+            "forall (zeta : ZetaMilestoneInput), ",
+            "forall (dirichlet_l : DirichletLMilestoneInput), Prop), ",
+            "forall (feed_law : forall (euler_product : EulerProductInterfacePackage), ",
+            "forall (zeta : ZetaMilestoneInput), ",
+            "forall (dirichlet_l : DirichletLMilestoneInput), ",
+            "FeedsAnalyticMilestones euler_product zeta dirichlet_l), ",
+            "forall (euler_product : EulerProductInterfacePackage), ",
+            "forall (zeta : ZetaMilestoneInput), ",
+            "forall (dirichlet_l : DirichletLMilestoneInput), ",
+            "FeedsAnalyticMilestones euler_product zeta dirichlet_l"
+        ),
+        proof: concat!(
+            "fun EulerProductInterfacePackage => fun ZetaMilestoneInput => ",
+            "fun DirichletLMilestoneInput => fun FeedsAnalyticMilestones => ",
+            "fun feed_law => fun euler_product => fun zeta => fun dirichlet_l => ",
+            "feed_law euler_product zeta dirichlet_l"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_euler_product_separate_from_infinite_product_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FiniteEulerProductPackage : Type), ",
+            "forall (InfiniteEulerProductPackage : Type), ",
+            "forall (AnalyticConvergencePrerequisite : Type), ",
+            "forall (FiniteInfiniteProductBoundary : ",
+            "forall (finite_product : FiniteEulerProductPackage), ",
+            "forall (infinite_product : InfiniteEulerProductPackage), ",
+            "forall (analysis_prereq : AnalyticConvergencePrerequisite), Prop), ",
+            "forall (boundary_law : forall (finite_product : FiniteEulerProductPackage), ",
+            "forall (infinite_product : InfiniteEulerProductPackage), ",
+            "forall (analysis_prereq : AnalyticConvergencePrerequisite), ",
+            "FiniteInfiniteProductBoundary finite_product infinite_product analysis_prereq), ",
+            "forall (finite_product : FiniteEulerProductPackage), ",
+            "forall (infinite_product : InfiniteEulerProductPackage), ",
+            "forall (analysis_prereq : AnalyticConvergencePrerequisite), ",
+            "FiniteInfiniteProductBoundary finite_product infinite_product analysis_prereq"
+        ),
+        proof: concat!(
+            "fun FiniteEulerProductPackage => fun InfiniteEulerProductPackage => ",
+            "fun AnalyticConvergencePrerequisite => fun FiniteInfiniteProductBoundary => ",
+            "fun boundary_law => fun finite_product => fun infinite_product => ",
+            "fun analysis_prereq => ",
+            "boundary_law finite_product infinite_product analysis_prereq"
         ),
     },
 ];
@@ -42104,6 +42439,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_JACOBI_MODULE.module
         || config.module == NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE.module
         || config.module == NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE.module
+        || config.module == NUMBER_THEORY_MOBIUS_MODULE.module
+        || config.module == NUMBER_THEORY_EULER_PRODUCT_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

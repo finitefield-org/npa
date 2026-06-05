@@ -205,6 +205,14 @@ Current bundles:
   definition, associativity, commutativity, identity, inverse interfaces, explicit finite divisor
   sum rearrangement evidence, and boundaries excluding Mobius inversion, infinite series, or
   complex-analysis assumptions.
+- `Proofs/Ai/NumberTheory/Mobius/`: certificate-backed Mobius inversion interface downstream of
+  Dirichlet convolution, preserving the Mobius function as a Dirichlet inverse, algebraic Mobius
+  inversion, generalized Mobius inversion, finite-support requirements, and boundaries excluding
+  analytic number theory or infinite-series dependencies.
+- `Proofs/Ai/NumberTheory/EulerProduct/`: certificate-backed algebraic EulerProduct interface
+  downstream of Mobius and Dirichlet convolution, preserving finite Euler products,
+  multiplicative Dirichlet series interfaces, zeta and Dirichlet `L` milestone inputs, and
+  explicit convergence prerequisites deferred to later analytic tasks.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

@@ -435,11 +435,17 @@ semantics.
   certificate-backed `Proofs.Ai.NumberTheory.DirichletConvolution` surfaces for
   Dirichlet convolution definition, associativity, commutativity, identity,
   inverse interfaces, finite divisor-sum rearrangement, and boundaries excluding
-  Mobius inversion and infinite-series assumptions.
+  Mobius inversion and infinite-series assumptions. `NT-T24` added
+  certificate-backed `Proofs.Ai.NumberTheory.Mobius` and
+  `Proofs.Ai.NumberTheory.EulerProduct` surfaces for algebraic Mobius
+  inversion, generalized Mobius inversion, finite Euler-product interfaces,
+  multiplicative Dirichlet series interfaces, and deferred analytic convergence
+  prerequisites.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ArithmeticFunction`
   - `Proofs.Ai.NumberTheory.DirichletConvolution`
   - `Proofs.Ai.NumberTheory.Mobius`
+  - `Proofs.Ai.NumberTheory.EulerProduct`
 - Theorem order:
   1. divisor-count, divisor-sum, Euler `phi`, Mobius, Liouville, von Mangoldt,
      and Carmichael functions;

@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Mobius",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "mobius_function_dirichlet_inverse_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun DirichletIdentity => fun OneFunction => fun Mobius => fun DirichletConvolution => fun ArithmeticFunction => fun FiniteDivisorSupport => fun DirichletConvolutionInverse => fun inverse_law => fun n => fun one_function => fun mobius_function => fun identity_function => fun finite_support => inverse_law n one_function mobius_function identity_function finite_support"
+    },
+    {
+      "declaration": "mobius_inversion_algebraic_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun Mobius => fun DirichletConvolution => fun ArithmeticFunction => fun FiniteDivisorSupport => fun MobiusInversionStatement => fun ConvolutionRelation => fun inversion_law => fun f => fun g => fun n => fun function_f => fun function_g => fun mobius_function => fun finite_support => fun convolution_relation => inversion_law f g n function_f function_g mobius_function finite_support convolution_relation"
+    },
+    {
+      "declaration": "generalized_mobius_inversion_algebraic_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun IncidenceRelation => fun FiniteIntervalSupport => fun MobiusKernel => fun GeneralizedConvolution => fun GeneralizedMobiusInversion => fun generalized_law => fun f => fun g => fun n => fun finite_interval => generalized_law f g n finite_interval"
+    },
+    {
+      "declaration": "mobius_inversion_finite_support_requirement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun FiniteDivisorSupport => fun MobiusInversionInput => fun support_law => fun n => fun finite_support => support_law n finite_support"
+    },
+    {
+      "declaration": "mobius_inversion_no_analysis_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun MobiusInversionPackage => fun DirichletConvolutionPackage => fun AnalyticNumberTheoryPackage => fun InfiniteSeriesPackage => fun NoAnalysisDependencyBoundary => fun boundary_law => fun mobius_inversion => fun convolution => fun analytic => fun infinite_series => boundary_law mobius_inversion convolution analytic infinite_series"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Mobius/certificate.npcert"
+  }
+}
