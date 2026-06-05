@@ -1,0 +1,27 @@
+import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.Zeta
+
+theorem chebyshev_estimates_interface :
+  forall (Real : Type), forall (ChebyshevTheta : Real -> Real), forall (ChebyshevPsi : Real -> Real), forall (Mul : Real -> Real -> Real), forall (Le : Real -> Real -> Prop), forall (chebyshev_theta_bound_law : forall (C : Real), forall (x : Real), Le (ChebyshevTheta x) (Mul C x)), forall (chebyshev_psi_bound_law : forall (C : Real), forall (x : Real), Le (ChebyshevPsi x) (Mul C x)), forall (C : Real), forall (x : Real), Le (ChebyshevTheta x) (Mul C x) :=
+  fun Real => fun ChebyshevTheta => fun ChebyshevPsi => fun Mul => fun Le => fun chebyshev_theta_bound_law => fun chebyshev_psi_bound_law => fun C => fun x => chebyshev_theta_bound_law C x
+
+theorem prime_number_theorem_interface :
+  forall (Real : Type), forall (PrimeCount : Real -> Real), forall (AsymptoticEquivalent : (Real -> Real) -> (Real -> Real) -> Prop), forall (XOverLogX : Real -> Real), forall (pnt_asymptotic_law : AsymptoticEquivalent PrimeCount XOverLogX), AsymptoticEquivalent PrimeCount XOverLogX :=
+  fun Real => fun PrimeCount => fun AsymptoticEquivalent => fun XOverLogX => fun pnt_asymptotic_law => pnt_asymptotic_law
+
+theorem zeta_zero_free_region_de_la_vallee_poussin_interface :
+  forall (Complex : Type), forall (ZetaZeroRelation : Complex -> Prop), forall (DeLaValleePoussinRegion : Complex -> Prop), forall (Not : Prop -> Prop), forall (zero_free_region_law : forall (s : Complex), forall (h : DeLaValleePoussinRegion s), Not (ZetaZeroRelation s)), forall (s : Complex), forall (h : DeLaValleePoussinRegion s), Not (ZetaZeroRelation s) :=
+  fun Complex => fun ZetaZeroRelation => fun DeLaValleePoussinRegion => fun Not => fun zero_free_region_law => fun s => fun h => zero_free_region_law s h
+
+theorem de_la_vallee_poussin_error_bound_interface :
+  forall (Real : Type), forall (PrimeCount : Real -> Real), forall (LogIntegral : Real -> Real), forall (DeLaValleePoussinErrorBound : Real -> Prop), forall (de_la_vallee_poussin_law : forall (x : Real), DeLaValleePoussinErrorBound x), forall (x : Real), DeLaValleePoussinErrorBound x :=
+  fun Real => fun PrimeCount => fun LogIntegral => fun DeLaValleePoussinErrorBound => fun de_la_vallee_poussin_law => fun x => de_la_vallee_poussin_law x
+
+theorem bertrands_postulate_interface :
+  forall (Nat : Type), forall (ExistsPrimeBetween : Nat -> Prop), forall (bertrands_postulate_law : forall (n : Nat), ExistsPrimeBetween n), forall (n : Nat), ExistsPrimeBetween n :=
+  fun Nat => fun ExistsPrimeBetween => fun bertrands_postulate_law => fun n => bertrands_postulate_law n
+
+theorem pnt_from_tauberian_interface :
+  forall (IkeharaTauberianTheorem : Prop), forall (PrimeNumberTheoremAsymptotic : Prop), forall (pnt_from_ikehara_law : forall (h : IkeharaTauberianTheorem), PrimeNumberTheoremAsymptotic), forall (h : IkeharaTauberianTheorem), PrimeNumberTheoremAsymptotic :=
+  fun IkeharaTauberianTheorem => fun PrimeNumberTheoremAsymptotic => fun pnt_from_ikehara_law => fun h => pnt_from_ikehara_law h
+

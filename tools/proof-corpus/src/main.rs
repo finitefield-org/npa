@@ -203,6 +203,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_ADDITIVE_MODULE,
     &NUMBER_THEORY_DIRICHLET_SERIES_MODULE,
     &NUMBER_THEORY_ZETA_MODULE,
+    &NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2314,6 +2315,19 @@ const NUMBER_THEORY_ZETA_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_ZETA_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.PrimeNumberTheorem",
+    source_path: "Proofs/Ai/NumberTheory/PrimeNumberTheorem/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/PrimeNumberTheorem/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/PrimeNumberTheorem/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/PrimeNumberTheorem/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Zeta"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PRIME_NUMBER_THEOREM_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19673,6 +19687,90 @@ const NUMBER_THEORY_ZETA_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun Real => fun RiemannHypothesis => fun PntErrorBoundRH => ",
             "fun riemann_hypothesis_conditional_law => fun rh => fun x => riemann_hypothesis_conditional_law rh x"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PRIME_NUMBER_THEOREM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "chebyshev_estimates_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (ChebyshevTheta : Real -> Real), forall (ChebyshevPsi : Real -> Real), ",
+            "forall (Mul : Real -> Real -> Real), forall (Le : Real -> Real -> Prop), ",
+            "forall (chebyshev_theta_bound_law : forall (C : Real), forall (x : Real), Le (ChebyshevTheta x) (Mul C x)), ",
+            "forall (chebyshev_psi_bound_law : forall (C : Real), forall (x : Real), Le (ChebyshevPsi x) (Mul C x)), ",
+            "forall (C : Real), forall (x : Real), Le (ChebyshevTheta x) (Mul C x)"
+        ),
+        proof: concat!(
+            "fun Real => fun ChebyshevTheta => fun ChebyshevPsi => fun Mul => fun Le => ",
+            "fun chebyshev_theta_bound_law => fun chebyshev_psi_bound_law => fun C => fun x => chebyshev_theta_bound_law C x"
+        ),
+    },
+    TheoremArtifact {
+        name: "prime_number_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (PrimeCount : Real -> Real), ",
+            "forall (AsymptoticEquivalent : (Real -> Real) -> (Real -> Real) -> Prop), forall (XOverLogX : Real -> Real), ",
+            "forall (pnt_asymptotic_law : AsymptoticEquivalent PrimeCount XOverLogX), AsymptoticEquivalent PrimeCount XOverLogX"
+        ),
+        proof: concat!(
+            "fun Real => fun PrimeCount => fun AsymptoticEquivalent => fun XOverLogX => ",
+            "fun pnt_asymptotic_law => pnt_asymptotic_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "zeta_zero_free_region_de_la_vallee_poussin_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (ZetaZeroRelation : Complex -> Prop), ",
+            "forall (DeLaValleePoussinRegion : Complex -> Prop), forall (Not : Prop -> Prop), ",
+            "forall (zero_free_region_law : forall (s : Complex), forall (h : DeLaValleePoussinRegion s), Not (ZetaZeroRelation s)), ",
+            "forall (s : Complex), forall (h : DeLaValleePoussinRegion s), Not (ZetaZeroRelation s)"
+        ),
+        proof: concat!(
+            "fun Complex => fun ZetaZeroRelation => fun DeLaValleePoussinRegion => fun Not => ",
+            "fun zero_free_region_law => fun s => fun h => zero_free_region_law s h"
+        ),
+    },
+    TheoremArtifact {
+        name: "de_la_vallee_poussin_error_bound_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (PrimeCount : Real -> Real), forall (LogIntegral : Real -> Real), ",
+            "forall (DeLaValleePoussinErrorBound : Real -> Prop), ",
+            "forall (de_la_vallee_poussin_law : forall (x : Real), DeLaValleePoussinErrorBound x), ",
+            "forall (x : Real), DeLaValleePoussinErrorBound x"
+        ),
+        proof: concat!(
+            "fun Real => fun PrimeCount => fun LogIntegral => fun DeLaValleePoussinErrorBound => ",
+            "fun de_la_vallee_poussin_law => fun x => de_la_vallee_poussin_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "bertrands_postulate_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (ExistsPrimeBetween : Nat -> Prop), ",
+            "forall (bertrands_postulate_law : forall (n : Nat), ExistsPrimeBetween n), ",
+            "forall (n : Nat), ExistsPrimeBetween n"
+        ),
+        proof: concat!(
+            "fun Nat => fun ExistsPrimeBetween => fun bertrands_postulate_law => fun n => bertrands_postulate_law n"
+        ),
+    },
+    TheoremArtifact {
+        name: "pnt_from_tauberian_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (IkeharaTauberianTheorem : Prop), forall (PrimeNumberTheoremAsymptotic : Prop), ",
+            "forall (pnt_from_ikehara_law : forall (h : IkeharaTauberianTheorem), PrimeNumberTheoremAsymptotic), ",
+            "forall (h : IkeharaTauberianTheorem), PrimeNumberTheoremAsymptotic"
+        ),
+        proof: concat!(
+            "fun IkeharaTauberianTheorem => fun PrimeNumberTheoremAsymptotic => ",
+            "fun pnt_from_ikehara_law => fun h => pnt_from_ikehara_law h"
         ),
     },
 ];

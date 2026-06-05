@@ -981,7 +981,7 @@ later in the file.
 
 ### NT-T33 Add Chebyshev And Prime Number Theorem Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T32`, Tauberian-analysis prerequisites
 - Areas: `Proofs/Ai/NumberTheory/PrimeNumberTheorem/`
 - Tasks:

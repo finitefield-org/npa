@@ -567,6 +567,10 @@ semantics.
     defining L1 interfaces for Riemann Zeta function, half-plane Euler product,
     analytic continuation, functional equation, zero-free region, Riemann-von Mangoldt
     zero count, explicit formula, and Riemann hypothesis conditional consequence.
+  - `NT-T33` added certificate-backed `Proofs.Ai.NumberTheory.PrimeNumberTheorem`
+    defining L1 interfaces for Chebyshev estimates, Prime Number Theorem asymptotic
+    equivalence, de la Vallee Poussin zero-free region and error bound, Bertrand's
+    postulate (independent elementary fact), and Ikehara Tauberian theorem dependency.
 - Target modules:
   - `Proofs.Ai.NumberTheory.DirichletSeries`
   - `Proofs.Ai.NumberTheory.Zeta`
