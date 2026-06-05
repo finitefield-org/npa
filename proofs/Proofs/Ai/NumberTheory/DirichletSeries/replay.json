@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DirichletSeries",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dirichlet_series_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Nat => fun IsDirichletSeries => fun dirichlet_law => fun a => fun s => fun sum => dirichlet_law a s sum"
+    },
+    {
+      "declaration": "dirichlet_series_abscissa_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Complex => fun Nat => fun Coeff => fun Re => fun Lt => fun DirichletSeriesStructure => fun Converges => fun AbscissaOfConvergence => fun abscissa_law => fun a => fun s => abscissa_law a s"
+    },
+    {
+      "declaration": "euler_product_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Nat => fun IsMultiplicative => fun DirichletSeriesStructure => fun EulerProductStructure => fun euler_product_law => fun a => fun is_mult => fun s => euler_product_law a is_mult s"
+    },
+    {
+      "declaration": "analytic_continuation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Nat => fun Domain => fun DirichletSeriesStructure => fun AnalyticContinuation => fun continuation_law => fun a => fun D => fun F => continuation_law a D F"
+    },
+    {
+      "declaration": "tauberian_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Complex => fun Nat => fun Coeff => fun FunctionBehaviorNearConvergence => fun AsymptoticCoefficientBehavior => fun tauberian_law => fun F => fun a => tauberian_law F a"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/DirichletSeries/certificate.npcert"
+  }
+}

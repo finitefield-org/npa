@@ -556,9 +556,13 @@ semantics.
 
 ## NT-11 Analytic Number Theory Foundations
 
-- Status: planned.
+- Status: in progress.
 - Depends on: `NT-08`, analysis, topology, measure, real, and complex
   foundations.
+- Implementation progress: `NT-T31` added certificate-backed
+  `Proofs.Ai.NumberTheory.DirichletSeries` defining L1 interfaces for Dirichlet
+  series, abscissa of convergence, algebraic Euler product, analytic continuation,
+  and Tauberian inputs.
 - Target modules:
   - `Proofs.Ai.NumberTheory.DirichletSeries`
   - `Proofs.Ai.NumberTheory.Zeta`

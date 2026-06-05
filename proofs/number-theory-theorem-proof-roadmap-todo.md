@@ -939,7 +939,7 @@ later in the file.
 
 ### NT-T31 Add Dirichlet Series And Algebraic Euler Product Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T24`, analysis prerequisites
 - Areas: `Proofs/Ai/NumberTheory/DirichletSeries/`, `Proofs/Ai/NumberTheory/EulerProduct/`
 - Tasks:

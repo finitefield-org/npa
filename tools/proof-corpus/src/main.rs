@@ -201,6 +201,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_SUMS_OF_SQUARES_MODULE,
     &NUMBER_THEORY_WARING_MODULE,
     &NUMBER_THEORY_ADDITIVE_MODULE,
+    &NUMBER_THEORY_DIRICHLET_SERIES_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2286,6 +2287,19 @@ const NUMBER_THEORY_ADDITIVE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_ADDITIVE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DIRICHLET_SERIES_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.DirichletSeries",
+    source_path: "Proofs/Ai/NumberTheory/DirichletSeries/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/DirichletSeries/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/DirichletSeries/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/DirichletSeries/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DIRICHLET_SERIES_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19467,6 +19481,84 @@ const NUMBER_THEORY_ADDITIVE_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun Group => fun Nat => fun Sequence => fun Length => fun SumsetZero => fun Add => fun Sub => fun Mul => ",
             "fun Two => fun One => fun erdos_ginzburg_ziv_law => fun n => fun seq => fun eq_len => erdos_ginzburg_ziv_law n seq eq_len"
+        ),
+    },
+];
+
+const NUMBER_THEORY_DIRICHLET_SERIES_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dirichlet_series_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Nat : Type), ",
+            "forall (IsDirichletSeries : (Nat -> Coeff) -> Complex -> Coeff -> Prop), ",
+            "forall (dirichlet_law : forall (a : Nat -> Coeff), forall (s : Complex), forall (sum : Coeff), IsDirichletSeries a s sum), ",
+            "forall (a : Nat -> Coeff), forall (s : Complex), forall (sum : Coeff), IsDirichletSeries a s sum"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Nat => fun IsDirichletSeries => fun dirichlet_law => ",
+            "fun a => fun s => fun sum => dirichlet_law a s sum"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_series_abscissa_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Complex : Type), forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (Re : Complex -> Real), forall (Lt : Real -> Real -> Prop), ",
+            "forall (DirichletSeriesStructure : (Nat -> Coeff) -> Complex -> Coeff), ",
+            "forall (Converges : (Complex -> Coeff) -> Prop), forall (AbscissaOfConvergence : (Nat -> Coeff) -> Real), ",
+            "forall (abscissa_law : forall (a : Nat -> Coeff), forall (s : Complex), Lt (AbscissaOfConvergence a) (Re s) -> Converges (DirichletSeriesStructure a)), ",
+            "forall (a : Nat -> Coeff), forall (s : Complex), Lt (AbscissaOfConvergence a) (Re s) -> Converges (DirichletSeriesStructure a)"
+        ),
+        proof: concat!(
+            "fun Real => fun Complex => fun Nat => fun Coeff => fun Re => fun Lt => fun DirichletSeriesStructure => ",
+            "fun Converges => fun AbscissaOfConvergence => fun abscissa_law => fun a => fun s => abscissa_law a s"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_product_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Nat : Type), forall (IsMultiplicative : (Nat -> Coeff) -> Prop), ",
+            "forall (DirichletSeriesStructure : (Nat -> Coeff) -> Complex -> Coeff), ",
+            "forall (EulerProductStructure : (Nat -> Coeff) -> Complex -> Coeff), ",
+            "forall (euler_product_law : forall (a : Nat -> Coeff), forall (is_mult : IsMultiplicative a), forall (s : Complex), @Eq.{1} Coeff (DirichletSeriesStructure a s) (EulerProductStructure a s)), ",
+            "forall (a : Nat -> Coeff), forall (is_mult : IsMultiplicative a), forall (s : Complex), @Eq.{1} Coeff (DirichletSeriesStructure a s) (EulerProductStructure a s)"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Nat => fun IsMultiplicative => fun DirichletSeriesStructure => ",
+            "fun EulerProductStructure => fun euler_product_law => fun a => fun is_mult => fun s => euler_product_law a is_mult s"
+        ),
+    },
+    TheoremArtifact {
+        name: "analytic_continuation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Nat : Type), forall (Domain : Type), ",
+            "forall (DirichletSeriesStructure : (Nat -> Coeff) -> Complex -> Coeff), ",
+            "forall (AnalyticContinuation : (Nat -> Coeff) -> Domain -> (Complex -> Coeff) -> Prop), ",
+            "forall (continuation_law : forall (a : Nat -> Coeff), forall (D : Domain), forall (F : Complex -> Coeff), AnalyticContinuation a D F), ",
+            "forall (a : Nat -> Coeff), forall (D : Domain), forall (F : Complex -> Coeff), AnalyticContinuation a D F"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Nat => fun Domain => fun DirichletSeriesStructure => fun AnalyticContinuation => ",
+            "fun continuation_law => fun a => fun D => fun F => continuation_law a D F"
+        ),
+    },
+    TheoremArtifact {
+        name: "tauberian_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Complex : Type), forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (FunctionBehaviorNearConvergence : (Complex -> Coeff) -> Prop), ",
+            "forall (AsymptoticCoefficientBehavior : (Nat -> Coeff) -> Prop), ",
+            "forall (tauberian_law : forall (F : Complex -> Coeff), forall (a : Nat -> Coeff), FunctionBehaviorNearConvergence F -> AsymptoticCoefficientBehavior a), ",
+            "forall (F : Complex -> Coeff), forall (a : Nat -> Coeff), FunctionBehaviorNearConvergence F -> AsymptoticCoefficientBehavior a"
+        ),
+        proof: concat!(
+            "fun Real => fun Complex => fun Nat => fun Coeff => fun FunctionBehaviorNearConvergence => ",
+            "fun AsymptoticCoefficientBehavior => fun tauberian_law => fun F => fun a => tauberian_law F a"
         ),
     },
 ];
