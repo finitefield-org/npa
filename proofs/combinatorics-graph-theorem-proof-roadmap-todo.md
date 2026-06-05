@@ -315,7 +315,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T07 Add Binomial Algebra And Vandermonde Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T06`, algebra prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Binomial.Algebra`
 - Tasks:
@@ -323,12 +323,17 @@ guessing. The split must preserve the dependency order in this document.
   - Add Vandermonde identity and multinomial theorem interfaces.
   - Cross-link polynomial and formal power series dependencies.
 - Deliverables:
-  - Algebraic binomial identity interface module.
+  - `Proofs.Ai.Combinatorics.Binomial.Algebra` algebraic binomial
+    identity interface module.
 - Acceptance criteria:
   - Ring/semiring assumptions are imported as ordinary law packages.
   - Algebraic identities are not confused with finite counting proofs unless
     both sides have a bridge theorem.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Binomial.Algebra`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Binomial.Algebra --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `rg -n "Vandermonde|binomial theorem|multinomial" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 

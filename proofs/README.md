@@ -78,6 +78,10 @@ Current bundles:
   binomial coefficient, Vandermonde, and multinomial interfaces. Subset cardinality, arithmetic
   carrier, Pascal recurrence, Vandermonde summation, and multinomial partition assumptions are
   explicit evidence slots.
+- `Proofs/Ai/Combinatorics/Binomial/Algebra/`: certificate-backed algebraic binomial theorem,
+  Vandermonde, and multinomial theorem interfaces. Ring/semiring law packages, polynomial
+  extension dependencies, formal power series assumptions, and finite-counting-to-algebra bridge
+  evidence are explicit.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
