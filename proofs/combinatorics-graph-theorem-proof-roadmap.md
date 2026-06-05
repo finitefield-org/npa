@@ -213,7 +213,8 @@ semantics.
   4. mark large theorem interfaces and conjectural or open statements
      explicitly.
 - Deliverables:
-  - theorem-card inventory and duplicate-home map.
+  - `proofs/combinatorics-graph-theorem-cards.md` theorem-card inventory and
+    duplicate-home map.
 - Acceptance criteria:
   - every theorem family has one primary home;
   - no card treats source, replay, AI index, or this roadmap as proof evidence;

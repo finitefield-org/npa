@@ -1,0 +1,257 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Counting.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteCardinalLePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (cardinality_le_law : CardinalityLeEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteCardinalLtPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun CardinalityLtEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (source_nonempty_law : SourceNonempty), forall (target_nonempty_law : TargetNonempty), forall (cardinality_lt_law : CardinalityLtEvidence), P), P"
+    },
+    {
+      "declaration": "InjectiveFiniteComparisonPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (injective_law : InjectiveEvidence), forall (cardinality_le_law : CardinalityLeEvidence), P), P"
+    },
+    {
+      "declaration": "SurjectiveFiniteComparisonPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => fun TargetCardinalityLeSourceEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (surjective_law : SurjectiveEvidence), forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), P), P"
+    },
+    {
+      "declaration": "WeakPigeonholePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => fun CollisionEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (source_nonempty_law : SourceNonempty), forall (target_nonempty_law : TargetNonempty), forall (target_decidable_equality_law : TargetDecidableEquality), forall (source_gt_target_law : SourceCardinalityGreaterThanTarget), forall (collision_law : CollisionEvidence), P), P"
+    },
+    {
+      "declaration": "StrongPigeonholePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun FiberCountingEvidence => fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (source_nonempty_law : SourceNonempty), forall (target_nonempty_law : TargetNonempty), forall (target_decidable_equality_law : TargetDecidableEquality), forall (fiber_counting_law : FiberCountingEvidence), forall (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity), forall (overfull_fiber_law : OverfullFiberEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteDisjointUnionCardinalityPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun SumCarrier => fun leftInject => fun rightInject => fun DisjointImages => fun LeftFinite => fun RightFinite => fun SumFinite => fun SumCardinalityEvidence => forall (P : Prop), forall (mk : forall (left_finite_law : LeftFinite), forall (right_finite_law : RightFinite), forall (sum_finite_law : SumFinite), forall (disjoint_images_law : forall (left : Left), forall (right : Right), DisjointImages left right), forall (sum_cardinality_law : SumCardinalityEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteProductCardinalityPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun ProductCarrier => fun leftProjection => fun rightProjection => fun PairRepresented => fun LeftFinite => fun RightFinite => fun ProductFinite => fun ProductCoordinateEvidence => fun ProductCardinalityEvidence => forall (P : Prop), forall (mk : forall (left_finite_law : LeftFinite), forall (right_finite_law : RightFinite), forall (product_finite_law : ProductFinite), forall (pair_represented_law : forall (left : Left), forall (right : Right), PairRepresented left right), forall (product_coordinate_law : ProductCoordinateEvidence), forall (product_cardinality_law : ProductCardinalityEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteFiberCountingPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Source => fun Target => fun map => fun FiberMember => fun SourceFinite => fun TargetFinite => fun FiberFinite => fun FiberCardinalityEvidence => fun FiberPartitionEvidence => fun TotalFiberSumEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (fiber_finite_law : forall (target : Target), FiberFinite target), forall (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target), forall (fiber_partition_law : FiberPartitionEvidence), forall (total_fiber_sum_law : TotalFiberSumEvidence), P), P"
+    },
+    {
+      "declaration": "finite_cardinal_le_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => fun source_finite_law => fun target_finite_law => fun cardinality_le_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (cardinality_le_law : CardinalityLeEvidence), P) => mk source_finite_law target_finite_law cardinality_le_law"
+    },
+    {
+      "declaration": "finite_cardinal_le_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => fun comparison_args => comparison_args CardinalityLeEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (cardinality_le_law : CardinalityLeEvidence) => cardinality_le_law)"
+    },
+    {
+      "declaration": "finite_cardinal_lt_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun CardinalityLtEvidence => fun source_finite_law => fun target_finite_law => fun source_nonempty_law => fun target_nonempty_law => fun cardinality_lt_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (source_nonempty_law : SourceNonempty), forall (target_nonempty_law : TargetNonempty), forall (cardinality_lt_law : CardinalityLtEvidence), P) => mk source_finite_law target_finite_law source_nonempty_law target_nonempty_law cardinality_lt_law"
+    },
+    {
+      "declaration": "finite_cardinal_lt_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun CardinalityLtEvidence => fun comparison_args => comparison_args CardinalityLtEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (cardinality_lt_law : CardinalityLtEvidence) => cardinality_lt_law)"
+    },
+    {
+      "declaration": "finite_cardinal_lt_source_nonempty_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun CardinalityLtEvidence => fun comparison_args => comparison_args SourceNonempty (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (cardinality_lt_law : CardinalityLtEvidence) => source_nonempty_law)"
+    },
+    {
+      "declaration": "finite_cardinal_lt_target_nonempty_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun CardinalityLtEvidence => fun comparison_args => comparison_args TargetNonempty (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (cardinality_lt_law : CardinalityLtEvidence) => target_nonempty_law)"
+    },
+    {
+      "declaration": "injective_finite_comparison_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => fun source_finite_law => fun target_finite_law => fun injective_law => fun cardinality_le_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (injective_law : InjectiveEvidence), forall (cardinality_le_law : CardinalityLeEvidence), P) => mk source_finite_law target_finite_law injective_law cardinality_le_law"
+    },
+    {
+      "declaration": "injective_finite_cardinal_le_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => fun comparison_args => comparison_args CardinalityLeEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (injective_law : InjectiveEvidence) => fun (cardinality_le_law : CardinalityLeEvidence) => cardinality_le_law)"
+    },
+    {
+      "declaration": "injective_finite_comparison_injective_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun InjectiveEvidence => fun CardinalityLeEvidence => fun comparison_args => comparison_args InjectiveEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (injective_law : InjectiveEvidence) => fun (cardinality_le_law : CardinalityLeEvidence) => injective_law)"
+    },
+    {
+      "declaration": "injective_map_finite_comparison_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => fun source_finite_law => fun target_finite_law => fun injective_args => fun cardinality_le_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), forall (cardinality_le_law : CardinalityLeEvidence), P) => mk source_finite_law target_finite_law injective_args cardinality_le_law"
+    },
+    {
+      "declaration": "injective_map_finite_cardinal_le_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun SourceFinite => fun TargetFinite => fun CardinalityLeEvidence => fun comparison_args => comparison_args CardinalityLeEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) => fun (cardinality_le_law : CardinalityLeEvidence) => cardinality_le_law)"
+    },
+    {
+      "declaration": "surjective_finite_comparison_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => fun TargetCardinalityLeSourceEvidence => fun source_finite_law => fun target_finite_law => fun surjective_law => fun target_cardinality_le_source_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (surjective_law : SurjectiveEvidence), forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), P) => mk source_finite_law target_finite_law surjective_law target_cardinality_le_source_law"
+    },
+    {
+      "declaration": "surjective_finite_cardinal_ge_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => fun TargetCardinalityLeSourceEvidence => fun comparison_args => comparison_args TargetCardinalityLeSourceEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (surjective_law : SurjectiveEvidence) => fun (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence) => target_cardinality_le_source_law)"
+    },
+    {
+      "declaration": "surjective_finite_comparison_surjective_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SurjectiveEvidence => fun TargetCardinalityLeSourceEvidence => fun comparison_args => comparison_args SurjectiveEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (surjective_law : SurjectiveEvidence) => fun (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence) => surjective_law)"
+    },
+    {
+      "declaration": "surjective_map_finite_comparison_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => fun SourceFinite => fun TargetFinite => fun TargetCardinalityLeSourceEvidence => fun source_finite_law => fun target_finite_law => fun surjective_args => fun target_cardinality_le_source_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), forall (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence), P) => mk source_finite_law target_finite_law surjective_args target_cardinality_le_source_law"
+    },
+    {
+      "declaration": "surjective_map_finite_cardinal_ge_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => fun SourceFinite => fun TargetFinite => fun TargetCardinalityLeSourceEvidence => fun comparison_args => comparison_args TargetCardinalityLeSourceEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) => fun (target_cardinality_le_source_law : TargetCardinalityLeSourceEvidence) => target_cardinality_le_source_law)"
+    },
+    {
+      "declaration": "weak_pigeonhole_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => fun CollisionEvidence => fun source_finite_law => fun target_finite_law => fun source_nonempty_law => fun target_nonempty_law => fun target_decidable_equality_law => fun source_gt_target_law => fun collision_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (source_nonempty_law : SourceNonempty), forall (target_nonempty_law : TargetNonempty), forall (target_decidable_equality_law : TargetDecidableEquality), forall (source_gt_target_law : SourceCardinalityGreaterThanTarget), forall (collision_law : CollisionEvidence), P) => mk source_finite_law target_finite_law source_nonempty_law target_nonempty_law target_decidable_equality_law source_gt_target_law collision_law"
+    },
+    {
+      "declaration": "weak_pigeonhole_collision_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args CollisionEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => fun (collision_law : CollisionEvidence) => collision_law)"
+    },
+    {
+      "declaration": "weak_pigeonhole_decidable_equality_requirement_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args TargetDecidableEquality (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => fun (collision_law : CollisionEvidence) => target_decidable_equality_law)"
+    },
+    {
+      "declaration": "weak_pigeonhole_source_nonempty_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args SourceNonempty (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => fun (collision_law : CollisionEvidence) => source_nonempty_law)"
+    },
+    {
+      "declaration": "weak_pigeonhole_target_nonempty_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun SourceCardinalityGreaterThanTarget => fun CollisionEvidence => fun pigeonhole_args => pigeonhole_args TargetNonempty (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (source_gt_target_law : SourceCardinalityGreaterThanTarget) => fun (collision_law : CollisionEvidence) => target_nonempty_law)"
+    },
+    {
+      "declaration": "strong_pigeonhole_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun FiberCountingEvidence => fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => fun source_finite_law => fun target_finite_law => fun source_nonempty_law => fun target_nonempty_law => fun target_decidable_equality_law => fun fiber_counting_law => fun source_exceeds_uniform_capacity_law => fun overfull_fiber_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (source_nonempty_law : SourceNonempty), forall (target_nonempty_law : TargetNonempty), forall (target_decidable_equality_law : TargetDecidableEquality), forall (fiber_counting_law : FiberCountingEvidence), forall (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity), forall (overfull_fiber_law : OverfullFiberEvidence), P) => mk source_finite_law target_finite_law source_nonempty_law target_nonempty_law target_decidable_equality_law fiber_counting_law source_exceeds_uniform_capacity_law overfull_fiber_law"
+    },
+    {
+      "declaration": "strong_pigeonhole_overfull_fiber_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun FiberCountingEvidence => fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => fun pigeonhole_args => pigeonhole_args OverfullFiberEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (fiber_counting_law : FiberCountingEvidence) => fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => fun (overfull_fiber_law : OverfullFiberEvidence) => overfull_fiber_law)"
+    },
+    {
+      "declaration": "strong_pigeonhole_decidable_equality_requirement_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun FiberCountingEvidence => fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => fun pigeonhole_args => pigeonhole_args TargetDecidableEquality (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (fiber_counting_law : FiberCountingEvidence) => fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => fun (overfull_fiber_law : OverfullFiberEvidence) => target_decidable_equality_law)"
+    },
+    {
+      "declaration": "strong_pigeonhole_source_nonempty_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun FiberCountingEvidence => fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => fun pigeonhole_args => pigeonhole_args SourceNonempty (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (fiber_counting_law : FiberCountingEvidence) => fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => fun (overfull_fiber_law : OverfullFiberEvidence) => source_nonempty_law)"
+    },
+    {
+      "declaration": "strong_pigeonhole_target_nonempty_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceFinite => fun TargetFinite => fun SourceNonempty => fun TargetNonempty => fun TargetDecidableEquality => fun FiberCountingEvidence => fun SourceExceedsUniformCapacity => fun OverfullFiberEvidence => fun pigeonhole_args => pigeonhole_args TargetNonempty (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (source_nonempty_law : SourceNonempty) => fun (target_nonempty_law : TargetNonempty) => fun (target_decidable_equality_law : TargetDecidableEquality) => fun (fiber_counting_law : FiberCountingEvidence) => fun (source_exceeds_uniform_capacity_law : SourceExceedsUniformCapacity) => fun (overfull_fiber_law : OverfullFiberEvidence) => target_nonempty_law)"
+    },
+    {
+      "declaration": "finite_disjoint_union_cardinality_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun SumCarrier => fun leftInject => fun rightInject => fun DisjointImages => fun LeftFinite => fun RightFinite => fun SumFinite => fun SumCardinalityEvidence => fun left_finite_law => fun right_finite_law => fun sum_finite_law => fun disjoint_images_law => fun sum_cardinality_law => fun (P : Prop) => fun (mk : forall (left_finite_law : LeftFinite), forall (right_finite_law : RightFinite), forall (sum_finite_law : SumFinite), forall (disjoint_images_law : forall (left : Left), forall (right : Right), DisjointImages left right), forall (sum_cardinality_law : SumCardinalityEvidence), P) => mk left_finite_law right_finite_law sum_finite_law disjoint_images_law sum_cardinality_law"
+    },
+    {
+      "declaration": "finite_disjoint_union_cardinality_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun SumCarrier => fun leftInject => fun rightInject => fun DisjointImages => fun LeftFinite => fun RightFinite => fun SumFinite => fun SumCardinalityEvidence => fun counting_args => counting_args SumCardinalityEvidence (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (sum_finite_law : SumFinite) => fun (disjoint_images_law : forall (left : Left), forall (right : Right), DisjointImages left right) => fun (sum_cardinality_law : SumCardinalityEvidence) => sum_cardinality_law)"
+    },
+    {
+      "declaration": "finite_disjoint_union_disjointness_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun SumCarrier => fun leftInject => fun rightInject => fun DisjointImages => fun LeftFinite => fun RightFinite => fun SumFinite => fun SumCardinalityEvidence => fun counting_args => counting_args (forall (left : Left), forall (right : Right), DisjointImages left right) (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (sum_finite_law : SumFinite) => fun (disjoint_images_law : forall (left : Left), forall (right : Right), DisjointImages left right) => fun (sum_cardinality_law : SumCardinalityEvidence) => disjoint_images_law)"
+    },
+    {
+      "declaration": "finite_sum_rule_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun SumCarrier => fun leftInject => fun rightInject => fun DisjointImages => fun LeftFinite => fun RightFinite => fun SumFinite => fun SumCardinalityEvidence => fun counting_args => counting_args SumCardinalityEvidence (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (sum_finite_law : SumFinite) => fun (disjoint_images_law : forall (left : Left), forall (right : Right), DisjointImages left right) => fun (sum_cardinality_law : SumCardinalityEvidence) => sum_cardinality_law)"
+    },
+    {
+      "declaration": "finite_product_cardinality_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun ProductCarrier => fun leftProjection => fun rightProjection => fun PairRepresented => fun LeftFinite => fun RightFinite => fun ProductFinite => fun ProductCoordinateEvidence => fun ProductCardinalityEvidence => fun left_finite_law => fun right_finite_law => fun product_finite_law => fun pair_represented_law => fun product_coordinate_law => fun product_cardinality_law => fun (P : Prop) => fun (mk : forall (left_finite_law : LeftFinite), forall (right_finite_law : RightFinite), forall (product_finite_law : ProductFinite), forall (pair_represented_law : forall (left : Left), forall (right : Right), PairRepresented left right), forall (product_coordinate_law : ProductCoordinateEvidence), forall (product_cardinality_law : ProductCardinalityEvidence), P) => mk left_finite_law right_finite_law product_finite_law pair_represented_law product_coordinate_law product_cardinality_law"
+    },
+    {
+      "declaration": "finite_product_cardinality_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun ProductCarrier => fun leftProjection => fun rightProjection => fun PairRepresented => fun LeftFinite => fun RightFinite => fun ProductFinite => fun ProductCoordinateEvidence => fun ProductCardinalityEvidence => fun counting_args => counting_args ProductCardinalityEvidence (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (product_finite_law : ProductFinite) => fun (pair_represented_law : forall (left : Left), forall (right : Right), PairRepresented left right) => fun (product_coordinate_law : ProductCoordinateEvidence) => fun (product_cardinality_law : ProductCardinalityEvidence) => product_cardinality_law)"
+    },
+    {
+      "declaration": "finite_product_rule_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun ProductCarrier => fun leftProjection => fun rightProjection => fun PairRepresented => fun LeftFinite => fun RightFinite => fun ProductFinite => fun ProductCoordinateEvidence => fun ProductCardinalityEvidence => fun counting_args => counting_args ProductCardinalityEvidence (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (product_finite_law : ProductFinite) => fun (pair_represented_law : forall (left : Left), forall (right : Right), PairRepresented left right) => fun (product_coordinate_law : ProductCoordinateEvidence) => fun (product_cardinality_law : ProductCardinalityEvidence) => product_cardinality_law)"
+    },
+    {
+      "declaration": "finite_product_pair_representation_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun ProductCarrier => fun leftProjection => fun rightProjection => fun PairRepresented => fun LeftFinite => fun RightFinite => fun ProductFinite => fun ProductCoordinateEvidence => fun ProductCardinalityEvidence => fun counting_args => counting_args (forall (left : Left), forall (right : Right), PairRepresented left right) (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (product_finite_law : ProductFinite) => fun (pair_represented_law : forall (left : Left), forall (right : Right), PairRepresented left right) => fun (product_coordinate_law : ProductCoordinateEvidence) => fun (product_cardinality_law : ProductCardinalityEvidence) => pair_represented_law)"
+    },
+    {
+      "declaration": "finite_product_coordinate_evidence_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun ProductCarrier => fun leftProjection => fun rightProjection => fun PairRepresented => fun LeftFinite => fun RightFinite => fun ProductFinite => fun ProductCoordinateEvidence => fun ProductCardinalityEvidence => fun counting_args => counting_args ProductCoordinateEvidence (fun (left_finite_law : LeftFinite) => fun (right_finite_law : RightFinite) => fun (product_finite_law : ProductFinite) => fun (pair_represented_law : forall (left : Left), forall (right : Right), PairRepresented left right) => fun (product_coordinate_law : ProductCoordinateEvidence) => fun (product_cardinality_law : ProductCardinalityEvidence) => product_coordinate_law)"
+    },
+    {
+      "declaration": "finite_fiber_counting_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun FiberMember => fun SourceFinite => fun TargetFinite => fun FiberFinite => fun FiberCardinalityEvidence => fun FiberPartitionEvidence => fun TotalFiberSumEvidence => fun source_finite_law => fun target_finite_law => fun fiber_finite_law => fun fiber_cardinality_law => fun fiber_partition_law => fun total_fiber_sum_law => fun (P : Prop) => fun (mk : forall (source_finite_law : SourceFinite), forall (target_finite_law : TargetFinite), forall (fiber_finite_law : forall (target : Target), FiberFinite target), forall (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target), forall (fiber_partition_law : FiberPartitionEvidence), forall (total_fiber_sum_law : TotalFiberSumEvidence), P) => mk source_finite_law target_finite_law fiber_finite_law fiber_cardinality_law fiber_partition_law total_fiber_sum_law"
+    },
+    {
+      "declaration": "finite_fiber_counting_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun FiberMember => fun SourceFinite => fun TargetFinite => fun FiberFinite => fun FiberCardinalityEvidence => fun FiberPartitionEvidence => fun TotalFiberSumEvidence => fun fiber_args => fiber_args TotalFiberSumEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (fiber_finite_law : forall (target : Target), FiberFinite target) => fun (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target) => fun (fiber_partition_law : FiberPartitionEvidence) => fun (total_fiber_sum_law : TotalFiberSumEvidence) => total_fiber_sum_law)"
+    },
+    {
+      "declaration": "finite_fiber_partition_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun FiberMember => fun SourceFinite => fun TargetFinite => fun FiberFinite => fun FiberCardinalityEvidence => fun FiberPartitionEvidence => fun TotalFiberSumEvidence => fun fiber_args => fiber_args FiberPartitionEvidence (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (fiber_finite_law : forall (target : Target), FiberFinite target) => fun (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target) => fun (fiber_partition_law : FiberPartitionEvidence) => fun (total_fiber_sum_law : TotalFiberSumEvidence) => fiber_partition_law)"
+    },
+    {
+      "declaration": "finite_fiber_finite_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun FiberMember => fun SourceFinite => fun TargetFinite => fun FiberFinite => fun FiberCardinalityEvidence => fun FiberPartitionEvidence => fun TotalFiberSumEvidence => fun fiber_args => fiber_args (forall (target : Target), FiberFinite target) (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (fiber_finite_law : forall (target : Target), FiberFinite target) => fun (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target) => fun (fiber_partition_law : FiberPartitionEvidence) => fun (total_fiber_sum_law : TotalFiberSumEvidence) => fiber_finite_law)"
+    },
+    {
+      "declaration": "finite_fiber_cardinality_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun FiberMember => fun SourceFinite => fun TargetFinite => fun FiberFinite => fun FiberCardinalityEvidence => fun FiberPartitionEvidence => fun TotalFiberSumEvidence => fun fiber_args => fiber_args (forall (target : Target), FiberCardinalityEvidence target) (fun (source_finite_law : SourceFinite) => fun (target_finite_law : TargetFinite) => fun (fiber_finite_law : forall (target : Target), FiberFinite target) => fun (fiber_cardinality_law : forall (target : Target), FiberCardinalityEvidence target) => fun (fiber_partition_law : FiberPartitionEvidence) => fun (total_fiber_sum_law : TotalFiberSumEvidence) => fiber_cardinality_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Combinatorics/Counting/Basic/certificate.npcert"
+  }
+}

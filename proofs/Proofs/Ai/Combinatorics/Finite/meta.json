@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Finite",
+  "source": "Proofs/Ai/Combinatorics/Finite/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Finite/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f61bebf48d1ff2eaac96e97a9613ce5d62bb41d2157cf54daaac4c738e0d376f",
+  "certificate_file_sha256": "sha256:428d86fb20fdcb6855e0ad197e34c3fed799a7c48b43494d144f7a7683829632",
+  "export_hash": "sha256:a3a63507e47f0c43cfcdde8f740567ace31252832a6ab9bf0e7e877743ddd4ed",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:89bd3405384acdbd7768db7cfb50fd90ced27e7fc1abaa2d3f0164ae3aff5728",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteFamilyLawArgs", "kind": "def" },
+    { "name": "FiniteEnumerationLawArgs", "kind": "def" },
+    { "name": "finite_family_law_intro", "kind": "theorem" },
+    { "name": "finite_family_membership_statement", "kind": "theorem" },
+    { "name": "finite_enumeration_law_intro", "kind": "theorem" },
+    { "name": "finite_enumeration_no_duplicate_statement", "kind": "theorem" },
+    { "name": "finite_enumeration_complete_statement", "kind": "theorem" },
+    { "name": "finite_enumeration_sound_statement", "kind": "theorem" },
+    { "name": "finite_enumeration_reusable_for_graph_vertex_and_edge_sets", "kind": "theorem" },
+    { "name": "future_set_theory_finite_cardinality_bridge_point", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

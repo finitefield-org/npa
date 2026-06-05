@@ -57,6 +57,31 @@ Current bundles:
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
+- `Proofs/Ai/Combinatorics/Finite/`: certificate-backed finite-family and finite-enumeration
+  law package preserving membership, no-duplicate, enumeration-complete, and enumeration-sound
+  evidence as ordinary proof-corpus structures, with graph vertex/edge finite-set reuse and a
+  named bridge point for future set-theory finite-cardinality modules.
+- `Proofs/Ai/Combinatorics/Cardinality/`: certificate-backed injection, surjection, bijection,
+  finite-equivalence, finite-image, and finite-subset cardinality transport interfaces built from
+  explicit finite-enumeration evidence. It does not add finite cardinality as a kernel primitive,
+  and it does not assume choice or quotient extensionality.
+- `Proofs/Ai/Combinatorics/Counting/Basic/`: certificate-backed finite comparison and
+  pigeonhole interface targets for injective and surjective counting routes, plus elementary
+  disjoint-union, product, sum-rule, product-rule, and finite-fiber counting packages. Finite,
+  nonempty, decidable-equality, disjointness, product-carrier, fiber, collision, and overfull-fiber
+  hypotheses are named evidence slots rather than hidden assumptions.
+- `Proofs/Ai/Combinatorics/Permutation/`: certificate-backed factorial, falling-factorial,
+  finite-family permutation, and permutation-counting interfaces. Permutations are ordinary
+  structure carriers with explicit index-bijection evidence, and factorial arithmetic requirements
+  are named evidence slots rather than hidden numeric normalization.
+- `Proofs/Ai/Combinatorics/Binomial/`: certificate-backed k-subset, combination-counting,
+  binomial coefficient, Vandermonde, and multinomial interfaces. Subset cardinality, arithmetic
+  carrier, Pascal recurrence, Vandermonde summation, and multinomial partition assumptions are
+  explicit evidence slots.
+- `Proofs/Ai/Combinatorics/Binomial/Algebra/`: certificate-backed algebraic binomial theorem,
+  Vandermonde, and multinomial theorem interfaces. Ring/semiring law packages, polynomial
+  extension dependencies, formal power series assumptions, and finite-counting-to-algebra bridge
+  evidence are explicit.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
@@ -545,6 +570,9 @@ Planning documents:
   promotion.
 - `combinatorics-graph-theorem-proof-roadmap-todo.md`: CG-T00 through CG-T46
   implementation task breakdown for the combinatorics/graph roadmap.
+- `combinatorics-graph-theorem-cards.md`: CG-T00 theorem-card inventory,
+  duplicate-home map, finite/infinite boundary map, and target-level tags for
+  the combinatorics/graph roadmap. It is a planning sidecar, not proof evidence.
 - `number-theory-theorem-proof-roadmap.md`: NT-00 through NT-24 plan for number-theory theorem
   families, from elementary arithmetic through promotion.
 - `number-theory-theorem-proof-roadmap-todo.md`: NT-T00 through NT-T70 implementation task

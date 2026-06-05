@@ -154,7 +154,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T00 Build Combinatorics And Graph Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Areas: `proofs/README.md`, proof-corpus theorem-card sidecars, AI index
   sidecars
@@ -167,7 +167,8 @@ guessing. The split must preserve the dependency order in this document.
     facts, random graphs, infinite Ramsey theory, graph minors, algorithms, and
     optimization aliases.
 - Deliverables:
-  - Combinatorics/graph theorem-card inventory and duplicate map.
+  - `proofs/combinatorics-graph-theorem-cards.md` combinatorics/graph
+    theorem-card inventory and duplicate map.
 - Acceptance criteria:
   - Every roadmap theorem family has exactly one primary home milestone.
   - Infinite set-theoretic statements and finite combinatorial statements are
@@ -175,12 +176,14 @@ guessing. The split must preserve the dependency order in this document.
   - No theorem card treats source, replay, theorem indexes, or this todo as
     proof evidence.
 - Verification:
-  - `rg -n "CG-00|CG-23|Ramsey|Hall|Turan|sidecar" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `rg -n "CG-00|CG-23|Ramsey|Hall|Turan|sidecar" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/combinatorics-graph-theorem-cards.md`
   - `git diff --check`
+  - Completed with documentation-only validation; no certificate was generated
+    because `CG-T00` is an `L0` theorem-card inventory task.
 
 ### CG-T01 Add Finite Family And Enumeration Law Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T00`
 - Areas: `Proofs.Ai.Combinatorics.Finite`, `tools/proof-corpus/src/main.rs`,
   `proofs/README.md`
@@ -191,18 +194,20 @@ guessing. The split must preserve the dependency order in this document.
     statement names.
   - Record bridge points to future set-theory finite-cardinality modules.
 - Deliverables:
-  - First combinatorics finite-family foundation module or a documented
-    insertion plan if source work is blocked.
+  - `Proofs.Ai.Combinatorics.Finite` first combinatorics finite-family
+    foundation module.
 - Acceptance criteria:
   - Finite enumeration is not added as a kernel primitive.
   - Enumeration evidence can be reused for graph vertex and edge finite sets.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Finite`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Finite`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T02 Add Injection, Surjection, Bijection, And Cardinality Transport
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T01`
 - Areas: `Proofs.Ai.Combinatorics.Cardinality`
 - Tasks:
@@ -210,7 +215,8 @@ guessing. The split must preserve the dependency order in this document.
   - Prove cardinality invariance under explicit bijection evidence.
   - Add finite image and finite subset cardinality theorem targets.
 - Deliverables:
-  - Cardinality transport layer for counting and graph-isomorphism tasks.
+  - `Proofs.Ai.Combinatorics.Cardinality` cardinality transport layer for
+    counting and graph-isomorphism tasks.
 - Acceptance criteria:
   - Bijection transport does not assume quotient extensionality or choice
     silently.
@@ -218,11 +224,13 @@ guessing. The split must preserve the dependency order in this document.
     counting modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Cardinality`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Cardinality`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T03 Add Finite Comparison And Pigeonhole Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`
 - Areas: `Proofs.Ai.Combinatorics.Cardinality`, `Proofs.Ai.Combinatorics.Counting.Basic`
 - Tasks:
@@ -230,17 +238,20 @@ guessing. The split must preserve the dependency order in this document.
   - Prove or interface the injective/surjective finite comparison route.
   - Add weak and strong pigeonhole theorem targets.
 - Deliverables:
-  - Pigeonhole and finite comparison API for counting and graph bounds.
+  - `Proofs.Ai.Combinatorics.Counting.Basic` pigeonhole and finite comparison
+    API for counting and graph bounds.
 - Acceptance criteria:
   - All finite and nonempty hypotheses are explicit.
   - Decidable equality requirements, if any, are named in the statement.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Counting.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Counting.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Counting.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T04 Prove Sum And Product Counting Rules
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`
 - Areas: `Proofs.Ai.Combinatorics.Counting.Basic`
 - Tasks:
@@ -248,17 +259,20 @@ guessing. The split must preserve the dependency order in this document.
   - Add sum rule and product rule aliases with stable theorem-search names.
   - Add finite fiber counting interface.
 - Deliverables:
-  - Elementary counting rule certificates.
+  - Elementary counting rule certificates in
+    `Proofs.Ai.Combinatorics.Counting.Basic`.
 - Acceptance criteria:
   - Disjointness and fiber hypotheses are testable in theorem statements.
   - Product counting does not introduce private tuple or product primitives.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Counting.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Counting.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T05 Add Factorial And Permutation Counting
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T04`
 - Areas: `Proofs.Ai.Combinatorics.Permutation`
 - Tasks:
@@ -267,17 +281,19 @@ guessing. The split must preserve the dependency order in this document.
   - Prove permutation-counting theorem targets or mark blocked arithmetic
     prerequisites.
 - Deliverables:
-  - Permutation counting layer.
+  - `Proofs.Ai.Combinatorics.Permutation` permutation counting layer.
 - Acceptance criteria:
   - Permutations are ordinary structures, not trusted list syntax.
   - Factorial arithmetic assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Permutation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Permutation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Permutation --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T06 Add Binomial, Combination, And Multinomial Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T05`
 - Areas: `Proofs.Ai.Combinatorics.Binomial`
 - Tasks:
@@ -286,18 +302,20 @@ guessing. The split must preserve the dependency order in this document.
     and subset counting.
   - Add multinomial coefficient interface.
 - Deliverables:
-  - Binomial and combination theorem layer.
+  - `Proofs.Ai.Combinatorics.Binomial` binomial and combination theorem layer.
 - Acceptance criteria:
   - `k`-subset cardinality evidence is explicit.
   - Pascal and Vandermonde identities state the arithmetic carrier and
     recurrence assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Binomial`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Binomial --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
 
 ### CG-T07 Add Binomial Algebra And Vandermonde Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T06`, algebra prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Binomial.Algebra`
 - Tasks:
@@ -305,12 +323,17 @@ guessing. The split must preserve the dependency order in this document.
   - Add Vandermonde identity and multinomial theorem interfaces.
   - Cross-link polynomial and formal power series dependencies.
 - Deliverables:
-  - Algebraic binomial identity interface module.
+  - `Proofs.Ai.Combinatorics.Binomial.Algebra` algebraic binomial
+    identity interface module.
 - Acceptance criteria:
   - Ring/semiring assumptions are imported as ordinary law packages.
   - Algebraic identities are not confused with finite counting proofs unless
     both sides have a bridge theorem.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Binomial.Algebra`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Binomial.Algebra --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `rg -n "Vandermonde|binomial theorem|multinomial" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 

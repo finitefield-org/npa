@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Finite",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteFamilyLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Item => fun Member => forall (P : Prop), forall (mk : forall (membership_law : forall (x : Item), forall (member : Member x), Member x), P), P"
+    },
+    {
+      "declaration": "FiniteEnumerationLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Item => fun enumerate => fun Member => fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => forall (P : Prop), forall (mk : forall (no_duplicate_law : NoDuplicate), forall (enumeration_complete_law : EnumerationComplete), forall (enumeration_sound_law : EnumerationSound), P), P"
+    },
+    {
+      "declaration": "finite_family_law_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Item => fun Member => fun membership_law => fun (P : Prop) => fun (mk : forall (membership_law : forall (x : Item), forall (member : Member x), Member x), P) => mk membership_law"
+    },
+    {
+      "declaration": "finite_family_membership_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Item => fun Member => fun family_args => family_args (forall (x : Item), forall (member : Member x), Member x) (fun (membership_law : forall (x : Item), forall (member : Member x), Member x) => membership_law)"
+    },
+    {
+      "declaration": "finite_enumeration_law_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Item => fun enumerate => fun Member => fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => fun no_duplicate_law => fun enumeration_complete_law => fun enumeration_sound_law => fun (P : Prop) => fun (mk : forall (no_duplicate_law : NoDuplicate), forall (enumeration_complete_law : EnumerationComplete), forall (enumeration_sound_law : EnumerationSound), P) => mk no_duplicate_law enumeration_complete_law enumeration_sound_law"
+    },
+    {
+      "declaration": "finite_enumeration_no_duplicate_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Item => fun enumerate => fun Member => fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => fun enumeration_args => enumeration_args NoDuplicate (fun (no_duplicate_law : NoDuplicate) => fun (enumeration_complete_law : EnumerationComplete) => fun (enumeration_sound_law : EnumerationSound) => no_duplicate_law)"
+    },
+    {
+      "declaration": "finite_enumeration_complete_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Item => fun enumerate => fun Member => fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => fun enumeration_args => enumeration_args EnumerationComplete (fun (no_duplicate_law : NoDuplicate) => fun (enumeration_complete_law : EnumerationComplete) => fun (enumeration_sound_law : EnumerationSound) => enumeration_complete_law)"
+    },
+    {
+      "declaration": "finite_enumeration_sound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Item => fun enumerate => fun Member => fun NoDuplicate => fun EnumerationComplete => fun EnumerationSound => fun enumeration_args => enumeration_args EnumerationSound (fun (no_duplicate_law : NoDuplicate) => fun (enumeration_complete_law : EnumerationComplete) => fun (enumeration_sound_law : EnumerationSound) => enumeration_sound_law)"
+    },
+    {
+      "declaration": "finite_enumeration_reusable_for_graph_vertex_and_edge_sets",
+      "source_kind": "explicit_term",
+      "term": "fun VertexIndex => fun EdgeIndex => fun Vertex => fun Edge => fun vertexEnumerate => fun edgeEnumerate => fun VertexMember => fun EdgeMember => fun VertexNoDuplicate => fun VertexEnumerationComplete => fun VertexEnumerationSound => fun EdgeNoDuplicate => fun EdgeEnumerationComplete => fun EdgeEnumerationSound => fun vertex_args => fun edge_args => fun GraphFiniteCarrierEvidence => fun reuse => reuse vertex_args edge_args"
+    },
+    {
+      "declaration": "future_set_theory_finite_cardinality_bridge_point",
+      "source_kind": "explicit_term",
+      "term": "fun Item => fun Member => fun family_args => fun SetTheoryFiniteCardinalityEvidence => fun bridge => bridge family_args"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Combinatorics/Finite/certificate.npcert"
+  }
+}
