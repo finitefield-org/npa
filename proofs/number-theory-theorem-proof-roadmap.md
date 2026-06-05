@@ -616,7 +616,10 @@ semantics.
   - `NT-T36` added certificate-backed `Proofs.Ai.NumberTheory.CircleMethod`
     and `Proofs.Ai.NumberTheory.AdditivePrime` defining L1 interfaces for
     the Hardy-Littlewood circle method, major/minor arc contributions,
-    Vinogradov's three-prime theorem, and the weak Goldbach conjecture.
+    named asymptotic assumptions, harmonic-analysis and exponential-sum dependencies,
+    Vinogradov's three-prime theorem, the weak Goldbach conjecture, conditional
+    analytic-prerequisite surfaces, and a boundary preventing elementary additive
+    theorem surfaces from depending on weak Goldbach.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Sieve`
   - `Proofs.Ai.NumberTheory.CircleMethod`

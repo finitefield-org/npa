@@ -21134,6 +21134,46 @@ const NUMBER_THEORY_CIRCLE_METHOD_THEOREMS: &[TheoremArtifact] = &[
             "fun MinorArcs => fun MinorArcContribution => fun minor_arcs_law => fun min => minor_arcs_law min"
         ),
     },
+    TheoremArtifact {
+        name: "circle_method_asymptotic_assumption_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Real : Type), forall (TargetCount : Nat -> Real), forall (MajorArcMainTerm : Nat -> Real), forall (MinorArcErrorTerm : Nat -> Real), ",
+            "forall (AsymptoticWithError : Real -> Real -> Real -> Prop), ",
+            "forall (asymptotic_law : forall (N : Nat), AsymptoticWithError (TargetCount N) (MajorArcMainTerm N) (MinorArcErrorTerm N)), ",
+            "forall (N : Nat), AsymptoticWithError (TargetCount N) (MajorArcMainTerm N) (MinorArcErrorTerm N)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Real => fun TargetCount => fun MajorArcMainTerm => fun MinorArcErrorTerm => fun AsymptoticWithError => fun asymptotic_law => fun N => asymptotic_law N"
+        ),
+    },
+    TheoremArtifact {
+        name: "circle_method_harmonic_exponential_dependency_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (CircleMethodResultPackage : Type), forall (HarmonicAnalysisPackage : Type), forall (ExponentialSumEstimatePackage : Type), ",
+            "forall (MajorArcInputPackage : Type), forall (MinorArcInputPackage : Type), ",
+            "forall (AnalyticDependency : CircleMethodResultPackage -> HarmonicAnalysisPackage -> ExponentialSumEstimatePackage -> MajorArcInputPackage -> MinorArcInputPackage -> Prop), ",
+            "forall (dependency_law : forall (result : CircleMethodResultPackage), forall (harmonic : HarmonicAnalysisPackage), forall (exponential : ExponentialSumEstimatePackage), forall (major_arc : MajorArcInputPackage), forall (minor_arc : MinorArcInputPackage), AnalyticDependency result harmonic exponential major_arc minor_arc), ",
+            "forall (result : CircleMethodResultPackage), forall (harmonic : HarmonicAnalysisPackage), forall (exponential : ExponentialSumEstimatePackage), forall (major_arc : MajorArcInputPackage), forall (minor_arc : MinorArcInputPackage), AnalyticDependency result harmonic exponential major_arc minor_arc"
+        ),
+        proof: concat!(
+            "fun CircleMethodResultPackage => fun HarmonicAnalysisPackage => fun ExponentialSumEstimatePackage => fun MajorArcInputPackage => fun MinorArcInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun harmonic => fun exponential => fun major_arc => fun minor_arc => dependency_law result harmonic exponential major_arc minor_arc"
+        ),
+    },
+    TheoremArtifact {
+        name: "circle_method_conditional_analytic_prerequisite_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (CircleMethodResultPackage : Type), forall (AnalyticPrerequisitePackage : Type), ",
+            "forall (ConditionalOnAnalyticPrerequisites : CircleMethodResultPackage -> AnalyticPrerequisitePackage -> Prop), ",
+            "forall (conditional_law : forall (result : CircleMethodResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq), ",
+            "forall (result : CircleMethodResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq"
+        ),
+        proof: concat!(
+            "fun CircleMethodResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq"
+        ),
+    },
 ];
 
 const NUMBER_THEORY_ADDITIVE_PRIME_THEOREMS: &[TheoremArtifact] = &[
@@ -21159,6 +21199,46 @@ const NUMBER_THEORY_ADDITIVE_PRIME_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Int => fun IsOdd => fun GreaterThanFive => fun SumOfThreePrimes => fun weak_goldbach_law => fun n => fun odd_n => fun gt5 => weak_goldbach_law n odd_n gt5"
+        ),
+    },
+    TheoremArtifact {
+        name: "additive_prime_circle_method_dependency_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AdditivePrimeResultPackage : Type), forall (CircleMethodPackage : Type), forall (MajorArcEstimatePackage : Type), forall (MinorArcEstimatePackage : Type), ",
+            "forall (ExponentialSumEstimatePackage : Type), ",
+            "forall (AnalyticDependency : AdditivePrimeResultPackage -> CircleMethodPackage -> MajorArcEstimatePackage -> MinorArcEstimatePackage -> ExponentialSumEstimatePackage -> Prop), ",
+            "forall (dependency_law : forall (result : AdditivePrimeResultPackage), forall (circle_method : CircleMethodPackage), forall (major_arc : MajorArcEstimatePackage), forall (minor_arc : MinorArcEstimatePackage), forall (exponential_sum : ExponentialSumEstimatePackage), AnalyticDependency result circle_method major_arc minor_arc exponential_sum), ",
+            "forall (result : AdditivePrimeResultPackage), forall (circle_method : CircleMethodPackage), forall (major_arc : MajorArcEstimatePackage), forall (minor_arc : MinorArcEstimatePackage), forall (exponential_sum : ExponentialSumEstimatePackage), AnalyticDependency result circle_method major_arc minor_arc exponential_sum"
+        ),
+        proof: concat!(
+            "fun AdditivePrimeResultPackage => fun CircleMethodPackage => fun MajorArcEstimatePackage => fun MinorArcEstimatePackage => fun ExponentialSumEstimatePackage => fun AnalyticDependency => fun dependency_law => fun result => fun circle_method => fun major_arc => fun minor_arc => fun exponential_sum => dependency_law result circle_method major_arc minor_arc exponential_sum"
+        ),
+    },
+    TheoremArtifact {
+        name: "weak_goldbach_no_elementary_additive_dependency_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (WeakGoldbachPackage : Type), forall (ElementaryAdditiveTheoremPackage : Type), ",
+            "forall (NoWeakGoldbachDependency : ElementaryAdditiveTheoremPackage -> WeakGoldbachPackage -> Prop), ",
+            "forall (boundary_law : forall (elementary : ElementaryAdditiveTheoremPackage), forall (weak_goldbach : WeakGoldbachPackage), NoWeakGoldbachDependency elementary weak_goldbach), ",
+            "forall (elementary : ElementaryAdditiveTheoremPackage), forall (weak_goldbach : WeakGoldbachPackage), NoWeakGoldbachDependency elementary weak_goldbach"
+        ),
+        proof: concat!(
+            "fun WeakGoldbachPackage => fun ElementaryAdditiveTheoremPackage => fun NoWeakGoldbachDependency => fun boundary_law => fun elementary => fun weak_goldbach => boundary_law elementary weak_goldbach"
+        ),
+    },
+    TheoremArtifact {
+        name: "additive_prime_conditional_analytic_prerequisite_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AdditivePrimeResultPackage : Type), forall (AnalyticPrerequisitePackage : Type), ",
+            "forall (ConditionalOnAnalyticPrerequisites : AdditivePrimeResultPackage -> AnalyticPrerequisitePackage -> Prop), ",
+            "forall (conditional_law : forall (result : AdditivePrimeResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq), ",
+            "forall (result : AdditivePrimeResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq"
+        ),
+        proof: concat!(
+            "fun AdditivePrimeResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq"
         ),
     },
 ];

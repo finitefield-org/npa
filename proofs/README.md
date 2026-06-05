@@ -243,6 +243,14 @@ Current bundles:
   convergence, Chen theorem, GPY, Zhang, Maynard-Tao, parity-problem limitations, explicit
   `ErrorTerm` and asymptotic inputs, visible analytic dependencies, and a boundary excluding
   derivation of unresolved conjectures from sieve surfaces.
+- `Proofs/Ai/NumberTheory/CircleMethod/`: certificate-backed Hardy-Littlewood CircleMethod
+  interface preserving major arc and minor arc contributions, named asymptotic assumptions,
+  harmonic-analysis and exponential-sum dependency surfaces, and conditional analytic
+  prerequisite boundaries.
+- `Proofs/Ai/NumberTheory/AdditivePrime/`: certificate-backed additive-prime interface
+  preserving Vinogradov three-primes and weak Goldbach theorem surfaces, explicit CircleMethod,
+  major arc, minor arc, and exponential-sum dependencies, and a boundary preventing elementary
+  additive theorem surfaces from depending on weak Goldbach.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite
