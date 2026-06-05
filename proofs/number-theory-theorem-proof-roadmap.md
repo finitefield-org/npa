@@ -473,7 +473,14 @@ semantics.
   fractions over rationals, convergent recurrence interfaces, EuclideanDivision
   based finite-expansion routes, normalized finite-expansion uniqueness, explicit
   final-partial-quotient conventions, and boundaries excluding real-analysis or
-  infinite-continued-fraction dependencies.
+  infinite-continued-fraction dependencies. `NT-T26` extended
+  `Proofs.Ai.NumberTheory.ContinuedFraction` with infinite continued-fraction
+  interfaces for irrational inputs, best approximation surfaces, and explicit
+  real-analysis prerequisites, and added certificate-backed
+  `Proofs.Ai.NumberTheory.Pell` surfaces for quadratic irrational periodicity,
+  Pell equation existence and structure, positivity and nonsquare hypotheses,
+  normalized-solution conventions, and interface-vs-derived-certificate
+  boundaries.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ContinuedFraction`
   - `Proofs.Ai.NumberTheory.Pell`

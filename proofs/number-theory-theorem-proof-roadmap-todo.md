@@ -826,7 +826,7 @@ later in the file.
 
 ### NT-T26 Add Infinite Continued Fractions And Pell Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T25`, ordered-field and real-analysis prerequisites
 - Areas: `Proofs/Ai/NumberTheory/ContinuedFraction/`, `Proofs/Ai/NumberTheory/Pell/`
 - Tasks:

@@ -190,6 +190,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_MOBIUS_MODULE,
     &NUMBER_THEORY_EULER_PRODUCT_MODULE,
     &NUMBER_THEORY_CONTINUED_FRACTION_MODULE,
+    &NUMBER_THEORY_PELL_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -2086,6 +2087,19 @@ const NUMBER_THEORY_CONTINUED_FRACTION_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CONTINUED_FRACTION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_PELL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Pell",
+    source_path: "Proofs/Ai/NumberTheory/Pell/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Pell/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Pell/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Pell/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ContinuedFraction"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_PELL_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -14012,6 +14026,286 @@ const NUMBER_THEORY_CONTINUED_FRACTION_THEOREMS: &[TheoremArtifact] = &[
             "fun real_analysis => fun infinite_cf => ",
             "boundary_law finite_cf rational_expansion euclidean_division ",
             "real_analysis infinite_cf"
+        ),
+    },
+    TheoremArtifact {
+        name: "infinite_continued_fraction_irrational_expansion_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Real : Type), ",
+            "forall (PartialQuotient : forall (i : Nat), Nat), ",
+            "forall (Irrational : forall (x : Real), Prop), ",
+            "forall (RealAnalysisPrerequisite : forall (x : Real), Prop), ",
+            "forall (InfiniteContinuedFraction : forall (x : Real), ",
+            "forall (partial_quotients : forall (i : Nat), Nat), Prop), ",
+            "forall (expansion_law : forall (x : Real), ",
+            "forall (irrational_x : Irrational x), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite x), ",
+            "InfiniteContinuedFraction x PartialQuotient), ",
+            "forall (x : Real), forall (irrational_x : Irrational x), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite x), ",
+            "InfiniteContinuedFraction x PartialQuotient"
+        ),
+        proof: concat!(
+            "fun Nat => fun Real => fun PartialQuotient => ",
+            "fun Irrational => fun RealAnalysisPrerequisite => ",
+            "fun InfiniteContinuedFraction => fun expansion_law => ",
+            "fun x => fun irrational_x => fun analysis_prereq => ",
+            "expansion_law x irrational_x analysis_prereq"
+        ),
+    },
+    TheoremArtifact {
+        name: "convergent_best_approximation_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Real : Type), forall (Rational : Type), ",
+            "forall (Convergent : forall (i : Nat), Rational), ",
+            "forall (Denominator : forall (q : Rational), Nat), ",
+            "forall (ApproximationError : forall (x : Real), ",
+            "forall (q : Rational), Real), ",
+            "forall (BestApproximation : forall (x : Real), forall (i : Nat), Prop), ",
+            "forall (RealAnalysisPrerequisite : forall (x : Real), Prop), ",
+            "forall (best_law : forall (x : Real), forall (i : Nat), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite x), ",
+            "BestApproximation x i), ",
+            "forall (x : Real), forall (i : Nat), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite x), ",
+            "BestApproximation x i"
+        ),
+        proof: concat!(
+            "fun Nat => fun Real => fun Rational => fun Convergent => ",
+            "fun Denominator => fun ApproximationError => ",
+            "fun BestApproximation => fun RealAnalysisPrerequisite => ",
+            "fun best_law => fun x => fun i => fun analysis_prereq => ",
+            "best_law x i analysis_prereq"
+        ),
+    },
+    TheoremArtifact {
+        name: "infinite_continued_fraction_real_analysis_prerequisites_explicit",
+        universe_params: &[],
+        statement: concat!(
+            "forall (InfiniteContinuedFractionPackage : Type), ",
+            "forall (ConvergentPackage : Type), ",
+            "forall (BestApproximationPackage : Type), ",
+            "forall (RealAnalysisPrerequisite : Type), ",
+            "forall (PrerequisiteBoundary : ",
+            "forall (infinite_cf : InfiniteContinuedFractionPackage), ",
+            "forall (convergent : ConvergentPackage), ",
+            "forall (best_approximation : BestApproximationPackage), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite), Prop), ",
+            "forall (boundary_law : ",
+            "forall (infinite_cf : InfiniteContinuedFractionPackage), ",
+            "forall (convergent : ConvergentPackage), ",
+            "forall (best_approximation : BestApproximationPackage), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite), ",
+            "PrerequisiteBoundary infinite_cf convergent best_approximation ",
+            "analysis_prereq), ",
+            "forall (infinite_cf : InfiniteContinuedFractionPackage), ",
+            "forall (convergent : ConvergentPackage), ",
+            "forall (best_approximation : BestApproximationPackage), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite), ",
+            "PrerequisiteBoundary infinite_cf convergent best_approximation ",
+            "analysis_prereq"
+        ),
+        proof: concat!(
+            "fun InfiniteContinuedFractionPackage => fun ConvergentPackage => ",
+            "fun BestApproximationPackage => fun RealAnalysisPrerequisite => ",
+            "fun PrerequisiteBoundary => fun boundary_law => ",
+            "fun infinite_cf => fun convergent => fun best_approximation => ",
+            "fun analysis_prereq => ",
+            "boundary_law infinite_cf convergent best_approximation analysis_prereq"
+        ),
+    },
+];
+
+const NUMBER_THEORY_PELL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "quadratic_irrational_periodic_continued_fraction_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), ",
+            "forall (QuadraticIrrational : forall (x : Real), Prop), ",
+            "forall (PeriodicContinuedFraction : forall (x : Real), Prop), ",
+            "forall (RealAnalysisPrerequisite : forall (x : Real), Prop), ",
+            "forall (periodicity_law : forall (x : Real), ",
+            "forall (quadratic_irrational_x : QuadraticIrrational x), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite x), ",
+            "PeriodicContinuedFraction x), ",
+            "forall (x : Real), ",
+            "forall (quadratic_irrational_x : QuadraticIrrational x), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite x), ",
+            "PeriodicContinuedFraction x"
+        ),
+        proof: concat!(
+            "fun Real => fun QuadraticIrrational => ",
+            "fun PeriodicContinuedFraction => fun RealAnalysisPrerequisite => ",
+            "fun periodicity_law => fun x => fun quadratic_irrational_x => ",
+            "fun analysis_prereq => ",
+            "periodicity_law x quadratic_irrational_x analysis_prereq"
+        ),
+    },
+    TheoremArtifact {
+        name: "pell_equation_existence_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Solution : Type), ",
+            "forall (Positive : forall (d : Int), Prop), ",
+            "forall (Nonsquare : forall (d : Int), Prop), ",
+            "forall (PellEquation : forall (d : Int), forall (solution : Solution), Prop), ",
+            "forall (NormalizedSolution : forall (solution : Solution), Prop), ",
+            "forall (PellExistence : forall (d : Int), ",
+            "forall (solution : Solution), Prop), ",
+            "forall (existence_law : forall (d : Int), ",
+            "forall (solution : Solution), forall (positive_d : Positive d), ",
+            "forall (nonsquare_d : Nonsquare d), ",
+            "forall (normalized_solution : NormalizedSolution solution), ",
+            "forall (pell_solution : PellEquation d solution), ",
+            "PellExistence d solution), ",
+            "forall (d : Int), forall (solution : Solution), ",
+            "forall (positive_d : Positive d), ",
+            "forall (nonsquare_d : Nonsquare d), ",
+            "forall (normalized_solution : NormalizedSolution solution), ",
+            "forall (pell_solution : PellEquation d solution), ",
+            "PellExistence d solution"
+        ),
+        proof: concat!(
+            "fun Int => fun Solution => fun Positive => fun Nonsquare => ",
+            "fun PellEquation => fun NormalizedSolution => fun PellExistence => ",
+            "fun existence_law => fun d => fun solution => fun positive_d => ",
+            "fun nonsquare_d => fun normalized_solution => fun pell_solution => ",
+            "existence_law d solution positive_d nonsquare_d ",
+            "normalized_solution pell_solution"
+        ),
+    },
+    TheoremArtifact {
+        name: "pell_solution_structure_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Solution : Type), ",
+            "forall (Positive : forall (d : Int), Prop), ",
+            "forall (Nonsquare : forall (d : Int), Prop), ",
+            "forall (PellEquation : forall (d : Int), forall (solution : Solution), Prop), ",
+            "forall (NormalizedSolution : forall (solution : Solution), Prop), ",
+            "forall (SolutionComposition : forall (left : Solution), ",
+            "forall (right : Solution), Solution), ",
+            "forall (PellSolutionStructure : forall (d : Int), ",
+            "forall (solution : Solution), Prop), ",
+            "forall (structure_law : forall (d : Int), ",
+            "forall (left : Solution), forall (right : Solution), ",
+            "forall (positive_d : Positive d), ",
+            "forall (nonsquare_d : Nonsquare d), ",
+            "forall (left_solution : PellEquation d left), ",
+            "forall (right_solution : PellEquation d right), ",
+            "forall (left_normalized : NormalizedSolution left), ",
+            "forall (right_normalized : NormalizedSolution right), ",
+            "PellSolutionStructure d (SolutionComposition left right)), ",
+            "forall (d : Int), forall (left : Solution), ",
+            "forall (right : Solution), forall (positive_d : Positive d), ",
+            "forall (nonsquare_d : Nonsquare d), ",
+            "forall (left_solution : PellEquation d left), ",
+            "forall (right_solution : PellEquation d right), ",
+            "forall (left_normalized : NormalizedSolution left), ",
+            "forall (right_normalized : NormalizedSolution right), ",
+            "PellSolutionStructure d (SolutionComposition left right)"
+        ),
+        proof: concat!(
+            "fun Int => fun Solution => fun Positive => fun Nonsquare => ",
+            "fun PellEquation => fun NormalizedSolution => ",
+            "fun SolutionComposition => fun PellSolutionStructure => ",
+            "fun structure_law => fun d => fun left => fun right => ",
+            "fun positive_d => fun nonsquare_d => fun left_solution => ",
+            "fun right_solution => fun left_normalized => fun right_normalized => ",
+            "structure_law d left right positive_d nonsquare_d left_solution ",
+            "right_solution left_normalized right_normalized"
+        ),
+    },
+    TheoremArtifact {
+        name: "pell_fundamental_solution_generation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Solution : Type), ",
+            "forall (Positive : forall (d : Int), Prop), ",
+            "forall (Nonsquare : forall (d : Int), Prop), ",
+            "forall (FundamentalSolution : forall (d : Int), ",
+            "forall (solution : Solution), Prop), ",
+            "forall (NormalizedSolution : forall (solution : Solution), Prop), ",
+            "forall (GenerateSolution : forall (base : Solution), ",
+            "forall (step : Int), Solution), ",
+            "forall (PellSolutionFamily : forall (d : Int), ",
+            "forall (solution : Solution), Prop), ",
+            "forall (generation_law : forall (d : Int), ",
+            "forall (base : Solution), forall (step : Int), ",
+            "forall (positive_d : Positive d), ",
+            "forall (nonsquare_d : Nonsquare d), ",
+            "forall (fundamental : FundamentalSolution d base), ",
+            "forall (normalized_base : NormalizedSolution base), ",
+            "PellSolutionFamily d (GenerateSolution base step)), ",
+            "forall (d : Int), forall (base : Solution), forall (step : Int), ",
+            "forall (positive_d : Positive d), ",
+            "forall (nonsquare_d : Nonsquare d), ",
+            "forall (fundamental : FundamentalSolution d base), ",
+            "forall (normalized_base : NormalizedSolution base), ",
+            "PellSolutionFamily d (GenerateSolution base step)"
+        ),
+        proof: concat!(
+            "fun Int => fun Solution => fun Positive => fun Nonsquare => ",
+            "fun FundamentalSolution => fun NormalizedSolution => ",
+            "fun GenerateSolution => fun PellSolutionFamily => ",
+            "fun generation_law => fun d => fun base => fun step => ",
+            "fun positive_d => fun nonsquare_d => fun fundamental => ",
+            "fun normalized_base => ",
+            "generation_law d base step positive_d nonsquare_d fundamental ",
+            "normalized_base"
+        ),
+    },
+    TheoremArtifact {
+        name: "pell_real_analysis_prerequisites_explicit_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (PellInterface : Type), ",
+            "forall (PeriodicContinuedFractionInterface : Type), ",
+            "forall (RealAnalysisPrerequisite : Type), ",
+            "forall (PrerequisiteBoundary : forall (pell : PellInterface), ",
+            "forall (periodic_cf : PeriodicContinuedFractionInterface), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite), Prop), ",
+            "forall (boundary_law : forall (pell : PellInterface), ",
+            "forall (periodic_cf : PeriodicContinuedFractionInterface), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite), ",
+            "PrerequisiteBoundary pell periodic_cf analysis_prereq), ",
+            "forall (pell : PellInterface), ",
+            "forall (periodic_cf : PeriodicContinuedFractionInterface), ",
+            "forall (analysis_prereq : RealAnalysisPrerequisite), ",
+            "PrerequisiteBoundary pell periodic_cf analysis_prereq"
+        ),
+        proof: concat!(
+            "fun PellInterface => fun PeriodicContinuedFractionInterface => ",
+            "fun RealAnalysisPrerequisite => fun PrerequisiteBoundary => ",
+            "fun boundary_law => fun pell => fun periodic_cf => ",
+            "fun analysis_prereq => boundary_law pell periodic_cf analysis_prereq"
+        ),
+    },
+    TheoremArtifact {
+        name: "pell_interface_not_derived_certificate_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (PellInterfaceStatement : Type), ",
+            "forall (DerivedPellCertificate : Type), ",
+            "forall (InterfaceCertificateBoundary : ",
+            "forall (interface_statement : PellInterfaceStatement), ",
+            "forall (derived_certificate : DerivedPellCertificate), Prop), ",
+            "forall (boundary_law : ",
+            "forall (interface_statement : PellInterfaceStatement), ",
+            "forall (derived_certificate : DerivedPellCertificate), ",
+            "InterfaceCertificateBoundary interface_statement derived_certificate), ",
+            "forall (interface_statement : PellInterfaceStatement), ",
+            "forall (derived_certificate : DerivedPellCertificate), ",
+            "InterfaceCertificateBoundary interface_statement derived_certificate"
+        ),
+        proof: concat!(
+            "fun PellInterfaceStatement => fun DerivedPellCertificate => ",
+            "fun InterfaceCertificateBoundary => fun boundary_law => ",
+            "fun interface_statement => fun derived_certificate => ",
+            "boundary_law interface_statement derived_certificate"
         ),
     },
 ];
@@ -42658,6 +42952,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_MOBIUS_MODULE.module
         || config.module == NUMBER_THEORY_EULER_PRODUCT_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
+        || config.module == NUMBER_THEORY_PELL_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

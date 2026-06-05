@@ -33,6 +33,21 @@
       "declaration": "finite_continued_fraction_no_real_analysis_dependency_boundary",
       "source_kind": "explicit_term",
       "term": "fun FiniteContinuedFractionPackage => fun RationalExpansionPackage => fun EuclideanDivisionPackage => fun RealAnalysisPackage => fun InfiniteContinuedFractionPackage => fun NoRealAnalysisDependencyBoundary => fun boundary_law => fun finite_cf => fun rational_expansion => fun euclidean_division => fun real_analysis => fun infinite_cf => boundary_law finite_cf rational_expansion euclidean_division real_analysis infinite_cf"
+    },
+    {
+      "declaration": "infinite_continued_fraction_irrational_expansion_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Real => fun PartialQuotient => fun Irrational => fun RealAnalysisPrerequisite => fun InfiniteContinuedFraction => fun expansion_law => fun x => fun irrational_x => fun analysis_prereq => expansion_law x irrational_x analysis_prereq"
+    },
+    {
+      "declaration": "convergent_best_approximation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Real => fun Rational => fun Convergent => fun Denominator => fun ApproximationError => fun BestApproximation => fun RealAnalysisPrerequisite => fun best_law => fun x => fun i => fun analysis_prereq => best_law x i analysis_prereq"
+    },
+    {
+      "declaration": "infinite_continued_fraction_real_analysis_prerequisites_explicit",
+      "source_kind": "explicit_term",
+      "term": "fun InfiniteContinuedFractionPackage => fun ConvergentPackage => fun BestApproximationPackage => fun RealAnalysisPrerequisite => fun PrerequisiteBoundary => fun boundary_law => fun infinite_cf => fun convergent => fun best_approximation => fun analysis_prereq => boundary_law infinite_cf convergent best_approximation analysis_prereq"
     }
   ],
   "acceptance": {

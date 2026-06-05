@@ -215,8 +215,13 @@ Current bundles:
   explicit convergence prerequisites deferred to later analytic tasks.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
-  dependence, normalized final-partial-quotient conventions, uniqueness surfaces, and boundaries
-  excluding real-analysis or infinite-continued-fraction dependencies.
+  dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite
+  ContinuedFraction interfaces for irrational inputs, best approximation surfaces, and explicit
+  real-analysis prerequisites.
+- `Proofs/Ai/NumberTheory/Pell/`: certificate-backed Pell interface downstream of continued
+  fractions, preserving quadratic irrational periodic interfaces, equation existence and
+  structure surfaces, positivity and nonsquare hypotheses, normalized-solution conventions, and
+  boundaries separating interface statements from derived certificates.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
