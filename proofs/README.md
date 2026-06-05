@@ -1894,6 +1894,45 @@ boundedness supplies nested closed intervals, shrinking lengths, and interval-co
 the checked theorem then calls `interval_nesting_theorem` and passes its intersection point to the
 subsequence bridge.
 
+#### `Proofs.Ai.Analysis.Continuity.Interval`
+
+This module is the compactness-backed interval-continuity layer over
+`Proofs.Ai.Analysis.Continuity.Basic`, `Proofs.Ai.Analysis.Sequence.Compactness`, and
+`Proofs.Ai.Analysis.Real.Basic`. It keeps endpoint order, closed-interval membership, endpoint
+sign data, and interval images as explicit checked packages. The intermediate value theorem is
+driven by an `IntermediateValueEvidence` package that carries a certified
+`BolzanoWeierstrassCompletenessEvidence` route plus the bridge from that compactness route to an
+interval-image witness. Bolzano's zero theorem is a target-zero specialization of IVT, not a
+separate proof infrastructure.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `IntervalEndpointOrder` | endpoint-order predicate for closed scalar intervals |
+| `IntervalMembership` | interval membership vocabulary reusing `ClosedInterval` from `Real.Basic` |
+| `IntervalImageWitness` | Church-encoded witness that a target value lies in the image of an interval |
+| `IntervalContinuousOn` | scalar continuity over the interval via `Continuity.Basic.ContinuousOn` |
+| `SignChangeAtEndpoints` | endpoint package for the zero-target Bolzano hypothesis |
+| `IntermediateValueHypothesis` | endpoint and bracketing package for a target value |
+| `IntermediateValueEvidence` | compactness route plus bridge from interval continuity and bracketing to an image witness |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `interval_endpoint_order_intro`, `interval_endpoint_order_apply` | introduce and project endpoint-order evidence |
+| `interval_membership_intro`, `interval_membership_closed_interval` | move between the local interval vocabulary and `ClosedInterval` |
+| `interval_image_witness_intro`, `interval_image_witness_elim` | introduce and eliminate interval-image witnesses |
+| `interval_continuous_on_intro`, `interval_continuous_on_apply` | bridge interval continuity to `ContinuousOn` over the closed interval predicate |
+| `sign_change_at_endpoints_intro`, `sign_change_at_endpoints_elim` | package and eliminate Bolzano endpoint hypotheses |
+| `intermediate_value_hypothesis_intro`, `intermediate_value_hypothesis_elim` | package and eliminate IVT endpoint bracketing hypotheses |
+| `intermediate_value_evidence_intro`, `intermediate_value_evidence_apply` | package and apply the compactness-backed IVT bridge |
+| `intermediate_value_from_compactness`, `intermediate_value_theorem` | derive the interval-image witness from compactness, continuity, and bracketing |
+| `intermediate_value_hypothesis_of_sign_change`, `bolzano_theorem` | convert sign-change data to the zero-target IVT hypothesis and prove Bolzano as an IVT corollary |
+
+The module has an empty axiom report. It does not import derivative or integration modules.
+
 #### `Proofs.Ai.Analysis.Series.Basic`
 
 This module is the first series-convergence layer over `Proofs.Ai.Analysis.Sequence.Basic`.

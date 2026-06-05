@@ -1,0 +1,137 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Continuity.Interval",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "IntervalEndpointOrder",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => le_rel a b"
+    },
+    {
+      "declaration": "IntervalMembership",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun x => @ClosedInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x"
+    },
+    {
+      "declaration": "IntervalImageWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun target => forall (P : Prop), forall (mk : forall (point : Scalar), forall (point_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b point), forall (value_eq : @Eq.{u} Scalar (f point) target), P), P"
+    },
+    {
+      "declaration": "IntervalContinuousOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun ApproachesAt => @ContinuousOn.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x) f ApproachesAt"
+    },
+    {
+      "declaration": "SignChangeAtEndpoints",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => forall (P : Prop), forall (mk : forall (endpoint_order : @IntervalEndpointOrder.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b), forall (left_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b a), forall (right_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b b), forall (left_nonpositive : le_rel (f a) zero), forall (right_nonnegative : le_rel zero (f b)), P), P"
+    },
+    {
+      "declaration": "IntermediateValueHypothesis",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun target => forall (P : Prop), forall (mk : forall (endpoint_order : @IntervalEndpointOrder.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b), forall (left_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b a), forall (right_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b b), forall (lower_value : le_rel (f a) target), forall (upper_value : le_rel target (f b)), P), P"
+    },
+    {
+      "declaration": "IntermediateValueEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun a => fun b => fun f => fun target => fun ApproachesAt => forall (P : Prop), forall (mk : forall (compactness_route : @BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), forall (bridge : forall (route : @BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), forall (continuous : @IntervalContinuousOn.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f ApproachesAt), forall (hypothesis : @IntermediateValueHypothesis.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target), @IntervalImageWitness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target), P), P"
+    },
+    {
+      "declaration": "interval_endpoint_order_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun order => order"
+    },
+    {
+      "declaration": "interval_endpoint_order_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun order => order"
+    },
+    {
+      "declaration": "interval_membership_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun x => fun closed => closed"
+    },
+    {
+      "declaration": "interval_membership_closed_interval",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun x => fun member => member"
+    },
+    {
+      "declaration": "interval_image_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun target => fun point => fun point_mem => fun value_eq => fun (P : Prop) => fun (mk : forall (point : Scalar), forall (point_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b point), forall (value_eq : @Eq.{u} Scalar (f point) target), P) => mk point point_mem value_eq"
+    },
+    {
+      "declaration": "interval_image_witness_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun target => fun witness => fun P => fun mk => witness P mk"
+    },
+    {
+      "declaration": "interval_continuous_on_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun ApproachesAt => fun continuous => continuous"
+    },
+    {
+      "declaration": "interval_continuous_on_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun ApproachesAt => fun continuous => continuous"
+    },
+    {
+      "declaration": "sign_change_at_endpoints_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun endpoint_order => fun left_endpoint => fun right_endpoint => fun left_nonpositive => fun right_nonnegative => fun (P : Prop) => fun (mk : forall (endpoint_order : @IntervalEndpointOrder.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b), forall (left_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b a), forall (right_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b b), forall (left_nonpositive : le_rel (f a) zero), forall (right_nonnegative : le_rel zero (f b)), P) => mk endpoint_order left_endpoint right_endpoint left_nonpositive right_nonnegative"
+    },
+    {
+      "declaration": "sign_change_at_endpoints_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun sign_change => fun P => fun mk => sign_change P mk"
+    },
+    {
+      "declaration": "intermediate_value_hypothesis_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun target => fun endpoint_order => fun left_endpoint => fun right_endpoint => fun lower_value => fun upper_value => fun (P : Prop) => fun (mk : forall (endpoint_order : @IntervalEndpointOrder.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b), forall (left_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b a), forall (right_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b b), forall (lower_value : le_rel (f a) target), forall (upper_value : le_rel target (f b)), P) => mk endpoint_order left_endpoint right_endpoint lower_value upper_value"
+    },
+    {
+      "declaration": "intermediate_value_hypothesis_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun target => fun hypothesis => fun P => fun mk => hypothesis P mk"
+    },
+    {
+      "declaration": "intermediate_value_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun a => fun b => fun f => fun target => fun ApproachesAt => fun compactness_route => fun bridge => fun (P : Prop) => fun (mk : forall (compactness_route : @BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), forall (bridge : forall (route : @BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), forall (continuous : @IntervalContinuousOn.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f ApproachesAt), forall (hypothesis : @IntermediateValueHypothesis.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target), @IntervalImageWitness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target), P) => mk compactness_route bridge"
+    },
+    {
+      "declaration": "intermediate_value_evidence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun a => fun b => fun f => fun target => fun ApproachesAt => fun evidence => fun continuous => fun hypothesis => evidence (@IntervalImageWitness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target) (fun (compactness_route : @BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit) => fun (bridge : forall (route : @BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit), forall (continuous : @IntervalContinuousOn.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f ApproachesAt), forall (hypothesis : @IntermediateValueHypothesis.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target), @IntervalImageWitness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f target) => bridge compactness_route continuous hypothesis)"
+    },
+    {
+      "declaration": "intermediate_value_from_compactness",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun a => fun b => fun f => fun target => fun ApproachesAt => fun compactness_route => fun bridge => fun continuous => fun hypothesis => bridge compactness_route continuous hypothesis"
+    },
+    {
+      "declaration": "intermediate_value_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun a => fun b => fun f => fun target => fun ApproachesAt => fun evidence => fun continuous => fun hypothesis => @intermediate_value_evidence_apply.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f target ApproachesAt evidence continuous hypothesis"
+    },
+    {
+      "declaration": "intermediate_value_hypothesis_of_sign_change",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun sign_change => sign_change (@IntermediateValueHypothesis.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f zero) (fun (endpoint_order : @IntervalEndpointOrder.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b) => fun (left_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b a) => fun (right_endpoint : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b b) => fun (left_nonpositive : le_rel (f a) zero) => fun (right_nonnegative : le_rel zero (f b)) => @intermediate_value_hypothesis_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f zero endpoint_order left_endpoint right_endpoint left_nonpositive right_nonnegative)"
+    },
+    {
+      "declaration": "bolzano_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => fun sign_change => @intermediate_value_theorem.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f zero ApproachesAt evidence continuous (@intermediate_value_hypothesis_of_sign_change.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f sign_change)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Continuity/Interval/certificate.npcert"
+  }
+}

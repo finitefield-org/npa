@@ -1546,6 +1546,23 @@ theorems = ["subsequence_extraction_evidence_intro", "subsequence_extraction_evi
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Continuity.Interval"
+source = "Proofs/Ai/Analysis/Continuity/Interval/source.npa"
+certificate = "Proofs/Ai/Analysis/Continuity/Interval/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Continuity/Interval/meta.json"
+replay = "Proofs/Ai/Analysis/Continuity/Interval/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:5ef0428e1f4287502471ef436e5fa65cc08a357288fb34ed08aa08498ff2a951"
+expected_certificate_file_hash = "sha256:8be4648725a71a4351318474f8079d030ce2496af19bc4b0d484b38271ab8630"
+expected_export_hash = "sha256:ff2538811f9b9e0dc4b83d59a45bb4a9b18b93cb6d006c63cd6b66adacf4490f"
+expected_axiom_report_hash = "sha256:6d14a3d02748965eba554beb8d48d3bfcbd201a68c65df3c0fd2edf58cc167fc"
+expected_certificate_hash = "sha256:332515c6b19885f904336bc41853311c8295152f3f55a494580cd67ad0c68f3f"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness"]
+definitions = ["IntervalEndpointOrder", "IntervalMembership", "IntervalImageWitness", "IntervalContinuousOn", "SignChangeAtEndpoints", "IntermediateValueHypothesis", "IntermediateValueEvidence"]
+theorems = ["interval_endpoint_order_intro", "interval_endpoint_order_apply", "interval_membership_intro", "interval_membership_closed_interval", "interval_image_witness_intro", "interval_image_witness_elim", "interval_continuous_on_intro", "interval_continuous_on_apply", "sign_change_at_endpoints_intro", "sign_change_at_endpoints_elim", "intermediate_value_hypothesis_intro", "intermediate_value_hypothesis_elim", "intermediate_value_evidence_intro", "intermediate_value_evidence_apply", "intermediate_value_from_compactness", "intermediate_value_theorem", "intermediate_value_hypothesis_of_sign_change", "bolzano_theorem"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.Series.Basic"
 source = "Proofs/Ai/Analysis/Series/Basic/source.npa"
 certificate = "Proofs/Ai/Analysis/Series/Basic/certificate.npcert"

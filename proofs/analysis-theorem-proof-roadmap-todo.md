@@ -606,7 +606,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T11 Add Bolzano And Intermediate Value Theorems
 
-- Status: Pending
+- Status: Complete (ANQ-013)
 - Depends on: ANA-T10
 - Inputs:
   - `Proofs.Ai.Analysis.Continuity.Basic`
@@ -632,6 +632,18 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Interval`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Continuity.Interval` with endpoint-order, interval-membership,
+    sign-change, interval-image, interval-continuity, IVT-hypothesis, and compactness-backed
+    IVT-evidence packages.
+  - `intermediate_value_theorem` is derived by applying explicit `IntermediateValueEvidence`,
+    whose bridge receives a certified `BolzanoWeierstrassCompletenessEvidence` route from the
+    sequence compactness layer.
+  - `bolzano_theorem` is represented as the zero-target specialization of IVT via
+    `intermediate_value_hypothesis_of_sign_change`; no duplicate theorem aliases were added.
+  - The module imports continuity, sequence compactness, metric topology, and real-analysis
+    foundations, and does not import derivative or integration modules.
+  - The generated axiom report is empty.
 
 ### ANA-T12 Add Extreme Value And Uniform Continuity On Compact Intervals
 

@@ -193,6 +193,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ANALYSIS_SEQUENCE_BASIC_MODULE,
     &ANALYSIS_CONTINUITY_BASIC_MODULE,
     &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
+    &ANALYSIS_CONTINUITY_INTERVAL_MODULE,
     &ANALYSIS_SERIES_BASIC_MODULE,
     &ANALYSIS_SERIES_CRITERIA_MODULE,
     &ABSTRACT_INVERSE_FUNCTION_MODULE,
@@ -670,6 +671,33 @@ const ANALYSIS_CONTINUITY_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ANALYSIS_CONTINUITY_BASIC_DEFINITIONS,
     theorems: ANALYSIS_CONTINUITY_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_CONTINUITY_INTERVAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Continuity.Interval",
+    source_path: "Proofs/Ai/Analysis/Continuity/Interval/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Continuity/Interval/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Continuity/Interval/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Continuity/Interval/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+        "Proofs.Ai.Analysis.Sequence.Basic",
+        "Proofs.Ai.Analysis.Continuity.Basic",
+        "Proofs.Ai.Analysis.Sequence.Compactness",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS,
+    theorems: ANALYSIS_CONTINUITY_INTERVAL_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -3221,6 +3249,105 @@ macro_rules! bolzano_weierstrass_choice_app {
 macro_rules! bolzano_weierstrass_completeness_evidence_app {
     () => {
         "@BolzanoWeierstrassCompletenessEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit"
+    };
+}
+
+macro_rules! interval_endpoint_order_app {
+    ($lower:literal, $upper:literal) => {
+        concat!(
+            "@IntervalEndpointOrder.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper
+        )
+    };
+}
+
+macro_rules! interval_membership_app {
+    ($lower:literal, $upper:literal, $point:literal) => {
+        concat!(
+            "@IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! interval_image_witness_app {
+    ($lower:literal, $upper:literal, $function:literal, $target:literal) => {
+        concat!(
+            "@IntervalImageWitness.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $target
+        )
+    };
+}
+
+macro_rules! interval_continuous_on_app {
+    ($lower:literal, $upper:literal, $function:literal, $approaches_at:literal) => {
+        concat!(
+            "@IntervalContinuousOn.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $approaches_at
+        )
+    };
+}
+
+macro_rules! sign_change_at_endpoints_app {
+    ($lower:literal, $upper:literal, $function:literal) => {
+        concat!(
+            "@SignChangeAtEndpoints.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function
+        )
+    };
+}
+
+macro_rules! intermediate_value_hypothesis_app {
+    ($lower:literal, $upper:literal, $function:literal, $target:literal) => {
+        concat!(
+            "@IntermediateValueHypothesis.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $target
+        )
+    };
+}
+
+macro_rules! intermediate_value_evidence_app {
+    ($lower:literal, $upper:literal, $function:literal, $target:literal, $approaches_at:literal) => {
+        concat!(
+            "@IntermediateValueEvidence.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $target,
+            " ",
+            $approaches_at
+        )
     };
 }
 
@@ -34136,6 +34263,426 @@ const ANALYSIS_SEQUENCE_COMPACTNESS_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "IntervalEndpointOrder",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!("fun a => fun b => le_rel a b"),
+    },
+    DefinitionArtifact {
+        name: "IntervalMembership",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun x => ",
+            closed_interval_app!("a", "b", "x")
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalImageWitness",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => forall (P : Prop), forall (mk : forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) target), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntervalContinuousOn",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun ApproachesAt => @ContinuousOn.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => ",
+            interval_membership_app!("a", "b", "x"),
+            ") f ApproachesAt"
+        )),
+    },
+    DefinitionArtifact {
+        name: "SignChangeAtEndpoints",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => forall (P : Prop), forall (mk : forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (left_nonpositive : le_rel (f a) zero), forall (right_nonnegative : le_rel zero (f b)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntermediateValueHypothesis",
+        universe_params: &["u"],
+        ty: analysis_real_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), Prop"
+        ),
+        value: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => forall (P : Prop), forall (mk : forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (lower_value : le_rel (f a) target), forall (upper_value : le_rel target (f b)), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "IntermediateValueEvidence",
+        universe_params: &["i", "j", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun ApproachesAt => forall (P : Prop), forall (mk : forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            "), P), P"
+        )),
+    },
+];
+
+const ANALYSIS_CONTINUITY_INTERVAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "interval_endpoint_order_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (order : le_rel a b), ",
+            interval_endpoint_order_app!("a", "b")
+        )),
+        proof: analysis_real_basic_abs!("fun a => fun b => fun order => order"),
+    },
+    TheoremArtifact {
+        name: "interval_endpoint_order_apply",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), le_rel a b"
+        )),
+        proof: analysis_real_basic_abs!("fun a => fun b => fun order => order"),
+    },
+    TheoremArtifact {
+        name: "interval_membership_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), forall (closed : ",
+            closed_interval_app!("a", "b", "x"),
+            "), ",
+            interval_membership_app!("a", "b", "x")
+        )),
+        proof: analysis_real_basic_abs!("fun a => fun b => fun x => fun closed => closed"),
+    },
+    TheoremArtifact {
+        name: "interval_membership_closed_interval",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), forall (member : ",
+            interval_membership_app!("a", "b", "x"),
+            "), ",
+            closed_interval_app!("a", "b", "x")
+        )),
+        proof: analysis_real_basic_abs!("fun a => fun b => fun x => fun member => member"),
+    },
+    TheoremArtifact {
+        name: "interval_image_witness_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) target), ",
+            interval_image_witness_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun point => fun point_mem => fun value_eq => fun (P : Prop) => fun (mk : forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) target), P) => mk point point_mem value_eq"
+        )),
+    },
+    TheoremArtifact {
+        name: "interval_image_witness_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (witness : ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            "), forall (P : Prop), forall (mk : forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (value_eq : @Eq.{u} Scalar (f point) target), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun target => fun witness => fun P => fun mk => witness P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_continuous_on_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (continuous : @ContinuousOn.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => ",
+            interval_membership_app!("a", "b", "x"),
+            ") f ApproachesAt), ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt")
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun continuous => continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "interval_continuous_on_apply",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), @ContinuousOn.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar (fun (x : Scalar) => ",
+            interval_membership_app!("a", "b", "x"),
+            ") f ApproachesAt"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun continuous => continuous"
+        ),
+    },
+    TheoremArtifact {
+        name: "sign_change_at_endpoints_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (left_nonpositive : le_rel (f a) zero), forall (right_nonnegative : le_rel zero (f b)), ",
+            sign_change_at_endpoints_app!("a", "b", "f")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun endpoint_order => fun left_endpoint => fun right_endpoint => fun left_nonpositive => fun right_nonnegative => fun (P : Prop) => fun (mk : forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (left_nonpositive : le_rel (f a) zero), forall (right_nonnegative : le_rel zero (f b)), P) => mk endpoint_order left_endpoint right_endpoint left_nonpositive right_nonnegative"
+        )),
+    },
+    TheoremArtifact {
+        name: "sign_change_at_endpoints_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (sign_change : ",
+            sign_change_at_endpoints_app!("a", "b", "f"),
+            "), forall (P : Prop), forall (mk : forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (left_nonpositive : le_rel (f a) zero), forall (right_nonnegative : le_rel zero (f b)), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun sign_change => fun P => fun mk => sign_change P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_hypothesis_intro",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (lower_value : le_rel (f a) target), forall (upper_value : le_rel target (f b)), ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun endpoint_order => fun left_endpoint => fun right_endpoint => fun lower_value => fun upper_value => fun (P : Prop) => fun (mk : forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (lower_value : le_rel (f a) target), forall (upper_value : le_rel target (f b)), P) => mk endpoint_order left_endpoint right_endpoint lower_value upper_value"
+        )),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_hypothesis_elim",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), forall (P : Prop), forall (mk : forall (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            "), forall (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            "), forall (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            "), forall (lower_value : le_rel (f a) target), forall (upper_value : le_rel target (f b)), P), P"
+        )),
+        proof: analysis_real_basic_abs!(
+            "fun a => fun b => fun f => fun target => fun hypothesis => fun P => fun mk => hypothesis P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_evidence_intro",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            "), ",
+            intermediate_value_evidence_app!("a", "b", "f", "target", "ApproachesAt")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun ApproachesAt => fun compactness_route => fun bridge => fun (P : Prop) => fun (mk : forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            "), P) => mk compactness_route bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_evidence_apply",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            intermediate_value_evidence_app!("a", "b", "f", "target", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun target => fun ApproachesAt => fun evidence => fun continuous => fun hypothesis => evidence (",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            ") (fun (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            ") => fun (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            ") => bridge compactness_route continuous hypothesis)"
+        )),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_from_compactness",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (compactness_route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (bridge : forall (route : ",
+            bolzano_weierstrass_completeness_evidence_app!(),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun target => fun ApproachesAt => fun compactness_route => fun bridge => fun continuous => fun hypothesis => bridge compactness_route continuous hypothesis"
+        ),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_theorem",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (target : Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            intermediate_value_evidence_app!("a", "b", "f", "target", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (hypothesis : ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "target"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "target")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun target => fun ApproachesAt => fun evidence => fun continuous => fun hypothesis => @intermediate_value_evidence_apply.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f target ApproachesAt evidence continuous hypothesis"
+        ),
+    },
+    TheoremArtifact {
+        name: "intermediate_value_hypothesis_of_sign_change",
+        universe_params: &["u"],
+        statement: analysis_real_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (sign_change : ",
+            sign_change_at_endpoints_app!("a", "b", "f"),
+            "), ",
+            intermediate_value_hypothesis_app!("a", "b", "f", "zero")
+        )),
+        proof: analysis_real_basic_abs!(concat!(
+            "fun a => fun b => fun f => fun sign_change => sign_change (",
+            intermediate_value_hypothesis_app!("a", "b", "f", "zero"),
+            ") (fun (endpoint_order : ",
+            interval_endpoint_order_app!("a", "b"),
+            ") => fun (left_endpoint : ",
+            interval_membership_app!("a", "b", "a"),
+            ") => fun (right_endpoint : ",
+            interval_membership_app!("a", "b", "b"),
+            ") => fun (left_nonpositive : le_rel (f a) zero) => fun (right_nonnegative : le_rel zero (f b)) => @intermediate_value_hypothesis_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f zero endpoint_order left_endpoint right_endpoint left_nonpositive right_nonnegative)"
+        )),
+    },
+    TheoremArtifact {
+        name: "bolzano_theorem",
+        universe_params: &["i", "j", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), forall (ApproachesAt : forall (candidate : forall (x : Scalar), Scalar), forall (point : Scalar), forall (limit : Scalar), Prop), forall (evidence : ",
+            intermediate_value_evidence_app!("a", "b", "f", "zero", "ApproachesAt"),
+            "), forall (continuous : ",
+            interval_continuous_on_app!("a", "b", "f", "ApproachesAt"),
+            "), forall (sign_change : ",
+            sign_change_at_endpoints_app!("a", "b", "f"),
+            "), ",
+            interval_image_witness_app!("a", "b", "f", "zero")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun a => fun b => fun f => fun ApproachesAt => fun evidence => fun continuous => fun sign_change => @intermediate_value_theorem.{i,j,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit a b f zero ApproachesAt evidence continuous (@intermediate_value_hypothesis_of_sign_change.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f sign_change)"
+        ),
+    },
+];
+
 const ANALYSIS_SERIES_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "SeriesPartialSums",
@@ -44473,7 +45020,7 @@ fn run_full() -> Result<(), String> {
         abstract_fixed_point.source_interface.clone(),
         analysis_sequence_basic.source_interface.clone(),
     ];
-    let _analysis_continuity_basic = build_and_write_module(
+    let analysis_continuity_basic = build_and_write_module(
         &proof_root,
         &ANALYSIS_CONTINUITY_BASIC_MODULE,
         &analysis_continuity_basic_imports,
@@ -44505,11 +45052,47 @@ fn run_full() -> Result<(), String> {
         abstract_fixed_point.source_interface.clone(),
         analysis_sequence_basic.source_interface.clone(),
     ];
-    let _analysis_sequence_compactness = build_and_write_module(
+    let analysis_sequence_compactness = build_and_write_module(
         &proof_root,
         &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
         &analysis_sequence_compactness_imports,
         &analysis_sequence_compactness_source_interfaces,
+    )?;
+    let analysis_continuity_interval_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+        analysis_sequence_basic.verified_module.clone(),
+        analysis_continuity_basic.verified_module.clone(),
+        analysis_sequence_compactness.verified_module.clone(),
+    ];
+    let analysis_continuity_interval_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+        analysis_sequence_basic.source_interface.clone(),
+        analysis_continuity_basic.source_interface.clone(),
+        analysis_sequence_compactness.source_interface.clone(),
+    ];
+    let _analysis_continuity_interval = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_CONTINUITY_INTERVAL_MODULE,
+        &analysis_continuity_interval_imports,
+        &analysis_continuity_interval_source_interfaces,
     )?;
     let analysis_series_basic_imports = vec![
         eq_import.clone(),
@@ -47505,6 +48088,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ANALYSIS_SEQUENCE_BASIC_MODULE.module
         || config.module == ANALYSIS_CONTINUITY_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_COMPACTNESS_MODULE.module
+        || config.module == ANALYSIS_CONTINUITY_INTERVAL_MODULE.module
         || config.module == ANALYSIS_SERIES_BASIC_MODULE.module
         || config.module == ANALYSIS_SERIES_CRITERIA_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
