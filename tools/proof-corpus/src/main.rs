@@ -2532,7 +2532,11 @@ const NUMBER_THEORY_HENSEL_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/Hensel/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/Hensel/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/Hensel/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.Valuation",
+        "Proofs.Ai.NumberTheory.Padic",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_HENSEL_THEOREMS,
@@ -2545,7 +2549,11 @@ const NUMBER_THEORY_LOCAL_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/LocalField/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/LocalField/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/LocalField/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.Valuation",
+        "Proofs.Ai.NumberTheory.Padic",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_LOCAL_FIELD_THEOREMS,
@@ -21711,6 +21719,18 @@ const NUMBER_THEORY_HENSEL_THEOREMS: &[TheoremArtifact] = &[
             "fun hensel_law => hensel_law"
         ),
     },
+    TheoremArtifact {
+        name: "hensel_named_hypotheses_surface",
+        universe_params: &[],
+        statement: "forall (K : Type), forall (Poly : Type), forall (CompletenessHypothesis : Prop), forall (ValuationHypothesis : Prop), forall (DerivativeHypothesis : Prop), forall (LiftingHypothesis : Prop), forall (HenselConclusion : Prop), forall (hensel_law : CompletenessHypothesis -> ValuationHypothesis -> DerivativeHypothesis -> LiftingHypothesis -> HenselConclusion), CompletenessHypothesis -> ValuationHypothesis -> DerivativeHypothesis -> LiftingHypothesis -> HenselConclusion",
+        proof: "fun K => fun Poly => fun CompletenessHypothesis => fun ValuationHypothesis => fun DerivativeHypothesis => fun LiftingHypothesis => fun HenselConclusion => fun hensel_law => hensel_law",
+    },
+    TheoremArtifact {
+        name: "hensel_not_generic_root_finder_boundary",
+        universe_params: &[],
+        statement: "forall (HenselLemmaPackage : Type), forall (GenericRootFinderPrimitive : Type), forall (CompletenessValuationDerivativeLiftingBoundary : HenselLemmaPackage -> GenericRootFinderPrimitive -> Prop), forall (boundary_law : forall (hensel : HenselLemmaPackage), forall (root_finder : GenericRootFinderPrimitive), CompletenessValuationDerivativeLiftingBoundary hensel root_finder), forall (hensel : HenselLemmaPackage), forall (root_finder : GenericRootFinderPrimitive), CompletenessValuationDerivativeLiftingBoundary hensel root_finder",
+        proof: "fun HenselLemmaPackage => fun GenericRootFinderPrimitive => fun CompletenessValuationDerivativeLiftingBoundary => fun boundary_law => fun hensel => fun root_finder => boundary_law hensel root_finder",
+    },
 ];
 
 const NUMBER_THEORY_LOCAL_FIELD_THEOREMS: &[TheoremArtifact] = &[
@@ -21773,6 +21793,24 @@ const NUMBER_THEORY_LOCAL_FIELD_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun K => fun L => fun IsTotallyRamified => fun ram_law => ram_law"
         ),
+    },
+    TheoremArtifact {
+        name: "ostrowski_dvr_valuation_completion_dependency_surface",
+        universe_params: &[],
+        statement: "forall (ValuationInterface : Type), forall (CompletionInterface : Type), forall (OstrowskiDVRInterface : Type), forall (Dependency : OstrowskiDVRInterface -> ValuationInterface -> CompletionInterface -> Prop), forall (dependency_law : forall (local_interface : OstrowskiDVRInterface), forall (valuation : ValuationInterface), forall (completion : CompletionInterface), Dependency local_interface valuation completion), forall (local_interface : OstrowskiDVRInterface), forall (valuation : ValuationInterface), forall (completion : CompletionInterface), Dependency local_interface valuation completion",
+        proof: "fun ValuationInterface => fun CompletionInterface => fun OstrowskiDVRInterface => fun Dependency => fun dependency_law => fun local_interface => fun valuation => fun completion => dependency_law local_interface valuation completion",
+    },
+    TheoremArtifact {
+        name: "local_field_interface_level_construction_boundary",
+        universe_params: &[],
+        statement: "forall (LocalFieldStructureInterface : Type), forall (ConstructionDependencyPackage : Type), forall (InterfaceLevelUntilConstruction : LocalFieldStructureInterface -> ConstructionDependencyPackage -> Prop), forall (boundary_law : forall (local_field_interface : LocalFieldStructureInterface), forall (construction_dependency : ConstructionDependencyPackage), InterfaceLevelUntilConstruction local_field_interface construction_dependency), forall (local_field_interface : LocalFieldStructureInterface), forall (construction_dependency : ConstructionDependencyPackage), InterfaceLevelUntilConstruction local_field_interface construction_dependency",
+        proof: "fun LocalFieldStructureInterface => fun ConstructionDependencyPackage => fun InterfaceLevelUntilConstruction => fun boundary_law => fun local_field_interface => fun construction_dependency => boundary_law local_field_interface construction_dependency",
+    },
+    TheoremArtifact {
+        name: "ramification_vocabulary_shared_with_galois_representation_surface",
+        universe_params: &[],
+        statement: "forall (LocalFieldRamificationVocabulary : Type), forall (GaloisRepresentationRamificationVocabulary : Type), forall (SharedRamificationVocabulary : LocalFieldRamificationVocabulary -> GaloisRepresentationRamificationVocabulary -> Prop), forall (shared_law : forall (local_ramification : LocalFieldRamificationVocabulary), forall (galois_representation_ramification : GaloisRepresentationRamificationVocabulary), SharedRamificationVocabulary local_ramification galois_representation_ramification), forall (local_ramification : LocalFieldRamificationVocabulary), forall (galois_representation_ramification : GaloisRepresentationRamificationVocabulary), SharedRamificationVocabulary local_ramification galois_representation_ramification",
+        proof: "fun LocalFieldRamificationVocabulary => fun GaloisRepresentationRamificationVocabulary => fun SharedRamificationVocabulary => fun shared_law => fun local_ramification => fun galois_representation_ramification => shared_law local_ramification galois_representation_ramification",
     },
 ];
 

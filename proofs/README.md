@@ -273,6 +273,14 @@ Current bundles:
   dependency, and no-local-field-dependency boundary surfaces.
 - `Proofs/Ai/NumberTheory/Padic/`: certificate-backed p-adic completion and
   p-adic field construction interface for the NT-T40 local-field route.
+- `Proofs/Ai/NumberTheory/Hensel/`: certificate-backed Hensel interface
+  preserving named completeness, valuation, derivative, and lifting hypotheses,
+  with an explicit boundary excluding generic root-finder primitives.
+- `Proofs/Ai/NumberTheory/LocalField/`: certificate-backed LocalField interface
+  preserving Ostrowski, DVR, complete DVR, local-field structure, unramified,
+  and totally ramified surfaces, with valuation/completion dependencies,
+  interface-level construction boundaries, and shared Galois-representation
+  ramification vocabulary.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

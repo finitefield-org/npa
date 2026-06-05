@@ -1,6 +1,16 @@
 import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.Valuation
+import Proofs.Ai.NumberTheory.Padic
 
 theorem hensel_lemma_interface :
   forall (K : Type), forall (Valuation : K -> K), forall (IsComplete : Prop), forall (Poly : Type), forall (Derivative : Poly -> Poly), forall (Eval : Poly -> K -> K), forall (f : Poly), forall (a : K), forall (hensel_law : IsComplete -> @Eq.{1} K (Valuation (Eval f a)) (Valuation (Eval f a))), IsComplete -> @Eq.{1} K (Valuation (Eval f a)) (Valuation (Eval f a)) :=
   fun K => fun Valuation => fun IsComplete => fun Poly => fun Derivative => fun Eval => fun f => fun a => fun hensel_law => hensel_law
+
+theorem hensel_named_hypotheses_surface :
+  forall (K : Type), forall (Poly : Type), forall (CompletenessHypothesis : Prop), forall (ValuationHypothesis : Prop), forall (DerivativeHypothesis : Prop), forall (LiftingHypothesis : Prop), forall (HenselConclusion : Prop), forall (hensel_law : CompletenessHypothesis -> ValuationHypothesis -> DerivativeHypothesis -> LiftingHypothesis -> HenselConclusion), CompletenessHypothesis -> ValuationHypothesis -> DerivativeHypothesis -> LiftingHypothesis -> HenselConclusion :=
+  fun K => fun Poly => fun CompletenessHypothesis => fun ValuationHypothesis => fun DerivativeHypothesis => fun LiftingHypothesis => fun HenselConclusion => fun hensel_law => hensel_law
+
+theorem hensel_not_generic_root_finder_boundary :
+  forall (HenselLemmaPackage : Type), forall (GenericRootFinderPrimitive : Type), forall (CompletenessValuationDerivativeLiftingBoundary : HenselLemmaPackage -> GenericRootFinderPrimitive -> Prop), forall (boundary_law : forall (hensel : HenselLemmaPackage), forall (root_finder : GenericRootFinderPrimitive), CompletenessValuationDerivativeLiftingBoundary hensel root_finder), forall (hensel : HenselLemmaPackage), forall (root_finder : GenericRootFinderPrimitive), CompletenessValuationDerivativeLiftingBoundary hensel root_finder :=
+  fun HenselLemmaPackage => fun GenericRootFinderPrimitive => fun CompletenessValuationDerivativeLiftingBoundary => fun boundary_law => fun hensel => fun root_finder => boundary_law hensel root_finder
 

@@ -707,7 +707,10 @@ semantics.
   - `NT-T41` added certificate-backed `Proofs.Ai.NumberTheory.Hensel` and
     `Proofs.Ai.NumberTheory.LocalField` defining L1 interfaces for Hensel lemma,
     Ostrowski theorem, DVR, complete DVR, local-field structure, unramified extension,
-    and totally ramified extension.
+    and totally ramified extension, with explicit named Hensel hypotheses,
+    no-generic-root-finder boundary, valuation/completion dependency surfaces,
+    interface-level construction boundaries, and shared Galois-representation
+    ramification vocabulary.
   - `NT-T42` added certificate-backed `Proofs.Ai.NumberTheory.PadicAnalysis` and
     `Proofs.Ai.NumberTheory.PadicMeasure` defining L1 interfaces for p-adic exponential,
     logarithm, Newton polygon, Strassmann theorem, Weierstrass preparation, Mahler

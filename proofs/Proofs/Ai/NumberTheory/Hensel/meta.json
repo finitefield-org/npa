@@ -5,15 +5,17 @@
   "certificate": "Proofs/Ai/NumberTheory/Hensel/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:1a6627ea8b5c3ee67f5b7c6c6c1a5b56255108724a487f43ea397410aa0523a2",
-  "certificate_file_sha256": "sha256:db1401f03f71227cb1b3f3a32895654bfbb9f3e9ef17b23f0ea5356185d0de9c",
-  "export_hash": "sha256:50ca1b5161d60dacdb77e7bb39ebd7d0ae8ac0ac93e8ad9573a63cc0370ffe28",
-  "axiom_report_hash": "sha256:a1ef77782ab68d41aede3e412c79174432934c3cac66c319dd2d406cf514f40e",
-  "certificate_hash": "sha256:111ef3033515e934c1a893aacb22404927fae405af71b74b44ea99b493ab14be",
-  "imports": ["Std.Logic.Eq"],
+  "source_sha256": "sha256:2892c30d3066490593c2b304929744ceaf6e5b0a02d164092be271610c1e35c0",
+  "certificate_file_sha256": "sha256:e3d42ae2339a8d798de607bb76517a0777191af6b8e21565257458a985eaee63",
+  "export_hash": "sha256:127804ea875391297b9c71f5d6ddb0528dbbc7820e6eb356f2f81d3be4db6392",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:d58311c99d828957adcb8fb4ff4cd1073b7f1a9ba46b89a14a52be92dd6b023e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Valuation", "Proofs.Ai.NumberTheory.Padic"],
   "axioms": [],
   "declarations": [
-    { "name": "hensel_lemma_interface", "kind": "theorem" }
+    { "name": "hensel_lemma_interface", "kind": "theorem" },
+    { "name": "hensel_named_hypotheses_surface", "kind": "theorem" },
+    { "name": "hensel_not_generic_root_finder_boundary", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
