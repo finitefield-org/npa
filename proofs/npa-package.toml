@@ -1546,6 +1546,23 @@ theorems = ["series_partial_sums_intro", "series_partial_sums_project", "series_
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Series.Criteria"
+source = "Proofs/Ai/Analysis/Series/Criteria/source.npa"
+certificate = "Proofs/Ai/Analysis/Series/Criteria/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Series/Criteria/meta.json"
+replay = "Proofs/Ai/Analysis/Series/Criteria/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:0e68b3fa747c623aa93352cbdff252fab88c68cfb16df80040ba0d2159b0915d"
+expected_certificate_file_hash = "sha256:8494ae5683b05e2af464aa2465116c49cc9e71e1c9a96bd01fa5845d3d6e6bd3"
+expected_export_hash = "sha256:643813783dac28e72b139f462525e6632a5d263715a9e6ca13809f3957a26e80"
+expected_axiom_report_hash = "sha256:b1c966ff112a4d21e88c23443f7594255da9b1129a7d1cbea048b57e695c9f2e"
+expected_certificate_hash = "sha256:61a0dad213786f76f521810ed21ac9c8a346a20c3eff6ecd3d86be5ddfba54c5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Series.Basic"]
+definitions = ["SeriesNonnegativeTerms", "SeriesTermwiseDomination", "SeriesAbsoluteValueTerms", "AbsoluteConvergenceCauchyEvidence"]
+theorems = ["series_nonnegative_terms_intro", "series_nonnegative_terms_project", "series_termwise_domination_intro", "series_termwise_domination_project", "series_absolute_value_terms_intro", "series_absolute_value_terms_absolute_terms", "series_absolute_value_terms_nonnegative", "absolute_convergence_cauchy_evidence_intro", "absolute_convergence_cauchy_evidence_apply", "absolute_convergence_implies_cauchy", "absolute_convergence_implies_convergence", "absolute_convergent_series_converges"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.AbstractInverseFunction"
 source = "Proofs/Ai/Analysis/AbstractInverseFunction/source.npa"
 certificate = "Proofs/Ai/Analysis/AbstractInverseFunction/certificate.npcert"

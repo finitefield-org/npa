@@ -1890,6 +1890,37 @@ The module has an empty axiom report. Absolute values, finite sums, and tails re
 relations supplied by callers, so later comparison-test modules can choose concrete law packages
 without changing the core convergence statements.
 
+#### `Proofs.Ai.Analysis.Series.Criteria`
+
+This module adds the first certificate-backed series criteria layer on top of
+`Proofs.Ai.Analysis.Series.Basic`. It keeps absolute values and order assumptions explicit:
+there is no primitive absolute-value function and no typeclass search.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SeriesNonnegativeTerms` | explicit nonnegativity evidence for a term sequence |
+| `SeriesTermwiseDomination` | explicit pointwise domination relation between two term sequences |
+| `SeriesAbsoluteValueTerms` | packages absolute-term evidence with nonnegativity evidence |
+| `AbsoluteConvergenceCauchyEvidence` | law package turning absolute convergence evidence into Cauchy evidence for the original partial sums |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `series_nonnegative_terms_intro`, `series_nonnegative_terms_project` | introduce and project nonnegative-term evidence |
+| `series_termwise_domination_intro`, `series_termwise_domination_project` | introduce and project pointwise domination evidence |
+| `series_absolute_value_terms_intro`, `series_absolute_value_terms_absolute_terms`, `series_absolute_value_terms_nonnegative` | package and project explicit absolute-value evidence |
+| `absolute_convergence_cauchy_evidence_intro`, `absolute_convergence_cauchy_evidence_apply` | package and apply the absolute-convergence-to-Cauchy bridge |
+| `absolute_convergence_implies_cauchy` | derives the original series Cauchy criterion from absolute convergence via the explicit bridge |
+| `absolute_convergence_implies_convergence` | proves ANQ-009 by applying `cauchy_series_criterion` to the Cauchy evidence obtained from absolute convergence |
+| `absolute_convergent_series_converges` | stable alias for downstream criteria modules |
+
+The module has an empty axiom report and imports `Series.Basic`, sequence, real, normed-space,
+and algebra foundations only. Comparison tests are intentionally left for the next criteria
+theorem batch.
+
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
 No new carrier or operation definition lives here. This implemented module provides checked

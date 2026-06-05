@@ -193,6 +193,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ANALYSIS_SEQUENCE_BASIC_MODULE,
     &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
     &ANALYSIS_SERIES_BASIC_MODULE,
+    &ANALYSIS_SERIES_CRITERIA_MODULE,
     &ABSTRACT_INVERSE_FUNCTION_MODULE,
     &ABSTRACT_IMPLICIT_PHI_MODULE,
     &ABSTRACT_IMPLICIT_FUNCTION_MODULE,
@@ -668,6 +669,32 @@ const ANALYSIS_SERIES_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ANALYSIS_SERIES_BASIC_DEFINITIONS,
     theorems: ANALYSIS_SERIES_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_SERIES_CRITERIA_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Series.Criteria",
+    source_path: "Proofs/Ai/Analysis/Series/Criteria/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Series/Criteria/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Series/Criteria/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Series/Criteria/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+        "Proofs.Ai.Analysis.Sequence.Basic",
+        "Proofs.Ai.Analysis.Series.Basic",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_SERIES_CRITERIA_DEFINITIONS,
+    theorems: ANALYSIS_SERIES_CRITERIA_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -3107,6 +3134,72 @@ macro_rules! series_cauchy_app {
             $partial_sum_rel,
             " ",
             $partial_sum,
+            " ",
+            $cauchy_near
+        )
+    };
+}
+
+macro_rules! series_nonnegative_terms_app {
+    ($terms:literal, $nonnegative:literal) => {
+        concat!(
+            "@SeriesNonnegativeTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $terms,
+            " ",
+            $nonnegative
+        )
+    };
+}
+
+macro_rules! series_termwise_domination_app {
+    ($lower_terms:literal, $upper_terms:literal, $dominated_by:literal) => {
+        concat!(
+            "@SeriesTermwiseDomination.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $lower_terms,
+            " ",
+            $upper_terms,
+            " ",
+            $dominated_by
+        )
+    };
+}
+
+macro_rules! series_absolute_value_terms_app {
+    ($absolute_term_rel:literal, $abs_terms:literal, $nonnegative:literal) => {
+        concat!(
+            "@SeriesAbsoluteValueTerms.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $abs_terms,
+            " ",
+            $nonnegative
+        )
+    };
+}
+
+macro_rules! absolute_convergence_cauchy_evidence_app {
+    (
+        $absolute_term_rel:literal,
+        $partial_sum_rel:literal,
+        $abs_terms:literal,
+        $abs_partial_sum:literal,
+        $partial_sum:literal,
+        $nonnegative:literal,
+        $cauchy_near:literal
+    ) => {
+        concat!(
+            "@AbsoluteConvergenceCauchyEvidence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit ",
+            $absolute_term_rel,
+            " ",
+            $partial_sum_rel,
+            " ",
+            $abs_terms,
+            " ",
+            $abs_partial_sum,
+            " ",
+            $partial_sum,
+            " ",
+            $nonnegative,
             " ",
             $cauchy_near
         )
@@ -33398,6 +33491,360 @@ const ANALYSIS_SERIES_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_SERIES_CRITERIA_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "SeriesNonnegativeTerms",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun terms => fun Nonnegative => forall (k : SequenceIndex), Nonnegative (terms k)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesTermwiseDomination",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (lower_terms : forall (k : SequenceIndex), Scalar), forall (upper_terms : forall (k : SequenceIndex), Scalar), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(
+            "fun lower_terms => fun upper_terms => fun DominatedBy => forall (k : SequenceIndex), DominatedBy (lower_terms k) (upper_terms k)"
+        ),
+    },
+    DefinitionArtifact {
+        name: "SeriesAbsoluteValueTerms",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), Prop"
+        ),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun abs_terms => fun Nonnegative => forall (P : Prop), forall (mk : forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (abs_terms_nonnegative : ",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "AbsoluteConvergenceCauchyEvidence",
+        universe_params: &["i", "n", "u"],
+        ty: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), Prop"
+        )),
+        value: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun CauchyNear => forall (P : Prop), forall (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), P), P"
+        )),
+    },
+];
+
+const ANALYSIS_SERIES_CRITERIA_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "series_nonnegative_terms_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (h_nonnegative : forall (k : SequenceIndex), Nonnegative (terms k)), ",
+            series_nonnegative_terms_app!("terms", "Nonnegative")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun terms => fun Nonnegative => fun h_nonnegative => h_nonnegative"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_nonnegative_terms_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (nonnegative_terms : ",
+            series_nonnegative_terms_app!("terms", "Nonnegative"),
+            "), forall (k : SequenceIndex), Nonnegative (terms k)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun terms => fun Nonnegative => fun nonnegative_terms => fun k => nonnegative_terms k"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_termwise_domination_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower_terms : forall (k : SequenceIndex), Scalar), forall (upper_terms : forall (k : SequenceIndex), Scalar), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (h_dominated : forall (k : SequenceIndex), DominatedBy (lower_terms k) (upper_terms k)), ",
+            series_termwise_domination_app!("lower_terms", "upper_terms", "DominatedBy")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower_terms => fun upper_terms => fun DominatedBy => fun h_dominated => h_dominated"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_termwise_domination_project",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (lower_terms : forall (k : SequenceIndex), Scalar), forall (upper_terms : forall (k : SequenceIndex), Scalar), forall (DominatedBy : forall (a : Scalar), forall (b : Scalar), Prop), forall (dominated : ",
+            series_termwise_domination_app!("lower_terms", "upper_terms", "DominatedBy"),
+            "), forall (k : SequenceIndex), DominatedBy (lower_terms k) (upper_terms k)"
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun lower_terms => fun upper_terms => fun DominatedBy => fun dominated => fun k => dominated k"
+        ),
+    },
+    TheoremArtifact {
+        name: "series_absolute_value_terms_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (abs_terms_nonnegative : ",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative"),
+            "), ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun abs_terms => fun Nonnegative => fun absolute_terms => fun abs_terms_nonnegative => fun (P : Prop) => fun (mk : forall (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            "), forall (abs_terms_nonnegative : ",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative"),
+            "), P) => mk absolute_terms abs_terms_nonnegative"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_absolute_value_terms_absolute_terms",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun abs_terms => fun Nonnegative => fun absolute_values => absolute_values (",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            ") (fun (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            ") => fun (abs_terms_nonnegative : ",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative"),
+            ") => absolute_terms)"
+        )),
+    },
+    TheoremArtifact {
+        name: "series_absolute_value_terms_nonnegative",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), ",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun abs_terms => fun Nonnegative => fun absolute_values => absolute_values (",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative"),
+            ") (fun (absolute_terms : ",
+            series_absolute_terms_app!("AbsoluteTermRel", "abs_terms"),
+            ") => fun (abs_terms_nonnegative : ",
+            series_nonnegative_terms_app!("abs_terms", "Nonnegative"),
+            ") => abs_terms_nonnegative)"
+        )),
+    },
+    TheoremArtifact {
+        name: "absolute_convergence_cauchy_evidence_intro",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            )
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun CauchyNear => fun bridge => fun (P : Prop) => fun (mk : forall (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            "), P) => mk bridge"
+        )),
+    },
+    TheoremArtifact {
+        name: "absolute_convergence_cauchy_evidence_apply",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (evidence : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear")
+        )),
+        proof: analysis_sequence_basic_abs!(concat!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun CauchyNear => fun evidence => fun absolute_values => fun absolute_converges => evidence (",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            ") (fun (bridge : forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear"),
+            ") => bridge absolute_values absolute_converges)"
+        )),
+    },
+    TheoremArtifact {
+        name: "absolute_convergence_implies_cauchy",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_cauchy_app!("PartialSumRel", "partial_sum", "CauchyNear")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun CauchyNear => fun criterion => fun absolute_values => fun absolute_converges => @absolute_convergence_cauchy_evidence_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative CauchyNear criterion absolute_values absolute_converges"
+        ),
+    },
+    TheoremArtifact {
+        name: "absolute_convergence_implies_convergence",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun sequence_evidence => fun criterion => fun absolute_converges => @cauchy_series_criterion.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit PartialSumRel partial_sum norm CauchyNear CauchySmall ConvergesSmall sequence_evidence (@absolute_convergence_implies_cauchy.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative CauchyNear criterion absolute_values absolute_converges)"
+        ),
+    },
+    TheoremArtifact {
+        name: "absolute_convergent_series_converges",
+        universe_params: &["i", "n", "u"],
+        statement: analysis_sequence_basic_params!(concat!(
+            "forall (AbsoluteTermRel : forall (term : Scalar), forall (abs_term : Scalar), Prop), forall (PartialSumRel : forall (terms : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), Prop), forall (abs_terms : forall (k : SequenceIndex), Scalar), forall (abs_partial_sum : forall (k : SequenceIndex), Scalar), forall (partial_sum : forall (k : SequenceIndex), Scalar), forall (Nonnegative : forall (x : Scalar), Prop), forall (norm : forall (x : Scalar), Scalar), forall (CauchyNear : forall (candidate : forall (k : SequenceIndex), Scalar), forall (eps : Scalar), Prop), forall (CauchySmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort i), forall (candidate : forall (k : Sequence), Scalar), forall (limit : Scalar), forall (eps : Scalar), Prop), forall (absolute_values : ",
+            series_absolute_value_terms_app!("AbsoluteTermRel", "abs_terms", "Nonnegative"),
+            "), forall (sequence_evidence : ",
+            sequence_cauchy_completeness_evidence_for_app!(
+                "partial_sum",
+                "norm",
+                "CauchyNear",
+                "CauchySmall",
+                "ConvergesSmall"
+            ),
+            "), forall (criterion : ",
+            absolute_convergence_cauchy_evidence_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum",
+                "partial_sum",
+                "Nonnegative",
+                "CauchyNear"
+            ),
+            "), forall (absolute_converges : ",
+            series_absolutely_converges_app!(
+                "AbsoluteTermRel",
+                "PartialSumRel",
+                "abs_terms",
+                "abs_partial_sum"
+            ),
+            "), ",
+            series_converges_app!("PartialSumRel", "partial_sum")
+        )),
+        proof: analysis_sequence_basic_abs!(
+            "fun AbsoluteTermRel => fun PartialSumRel => fun abs_terms => fun abs_partial_sum => fun partial_sum => fun Nonnegative => fun norm => fun CauchyNear => fun CauchySmall => fun ConvergesSmall => fun absolute_values => fun sequence_evidence => fun criterion => fun absolute_converges => @absolute_convergence_implies_convergence.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit AbsoluteTermRel PartialSumRel abs_terms abs_partial_sum partial_sum Nonnegative norm CauchyNear CauchySmall ConvergesSmall absolute_values sequence_evidence criterion absolute_converges"
+        ),
+    },
+];
+
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "square_def",
@@ -41961,11 +42408,45 @@ fn run_full() -> Result<(), String> {
         abstract_fixed_point.source_interface.clone(),
         analysis_sequence_basic.source_interface.clone(),
     ];
-    let _analysis_series_basic = build_and_write_module(
+    let analysis_series_basic = build_and_write_module(
         &proof_root,
         &ANALYSIS_SERIES_BASIC_MODULE,
         &analysis_series_basic_imports,
         &analysis_series_basic_source_interfaces,
+    )?;
+    let analysis_series_criteria_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+        analysis_sequence_basic.verified_module.clone(),
+        analysis_series_basic.verified_module.clone(),
+    ];
+    let analysis_series_criteria_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+        analysis_sequence_basic.source_interface.clone(),
+        analysis_series_basic.source_interface.clone(),
+    ];
+    let _analysis_series_criteria = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_SERIES_CRITERIA_MODULE,
+        &analysis_series_criteria_imports,
+        &analysis_series_criteria_source_interfaces,
     )?;
     let abstract_inverse_function_imports = vec![
         eq_import.clone(),
@@ -44895,6 +45376,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ANALYSIS_SEQUENCE_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_COMPACTNESS_MODULE.module
         || config.module == ANALYSIS_SERIES_BASIC_MODULE.module
+        || config.module == ANALYSIS_SERIES_CRITERIA_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_SUBSPACE_BASIC_MODULE.module
         || config.module == LINEAR_ALGEBRA_BASIS_DIMENSION_MODULE.module
