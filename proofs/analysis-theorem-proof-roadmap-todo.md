@@ -154,7 +154,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T00 Build Theorem Card Inventory
 
-- Status: Pending
+- Status: Complete
 - Depends on: None
 - Inputs:
   - `proofs/analysis-theorem-proof-roadmap.md`
@@ -713,6 +713,15 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Calculus.OneVariable` as a certificate-backed
+    scalar specialization of `FrechetDerivativeAt`, with no separate derivative
+    primitive.
+  - Added derivative-value, derivative-zero, differentiability-on-interval,
+    local-extremum, interior-point, and critical-point packages for the Fermat,
+    Rolle, and MVT layers.
+  - Added bridge lemmas in both directions between one-variable derivative
+    statements and the existing Frechet derivative/differentiability packages.
 
 ### ANA-T14 Add Fermat, Rolle, And Mean Value Theorem
 

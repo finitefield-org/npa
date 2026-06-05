@@ -1,0 +1,217 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Calculus.OneVariable",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OneVariableSlopeMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun slope => fun h => mul slope h"
+    },
+    {
+      "declaration": "OneVariableDerivativeValue",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun df => df one"
+    },
+    {
+      "declaration": "OneVariableDerivativeAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => @FrechetDerivativeAt.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small"
+    },
+    {
+      "declaration": "OneVariableDifferentiableAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => forall (P : Prop), forall (mk : forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small), P), P"
+    },
+    {
+      "declaration": "OneVariableDifferentiableOnInterval",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => forall (x : Scalar), forall (x_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x), @OneVariableDifferentiableAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f x"
+    },
+    {
+      "declaration": "OneVariableDerivativeZeroAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => forall (P : Prop), forall (mk : forall (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small), forall (value_zero : @Eq.{u} Scalar (@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm df) zero), P), P"
+    },
+    {
+      "declaration": "OneVariableCriticalPoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => forall (P : Prop), forall (mk : forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_zero : @OneVariableDerivativeZeroAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small), P), P"
+    },
+    {
+      "declaration": "OneVariableLocalMaximumAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => @IntervalMaximumAttained.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f point"
+    },
+    {
+      "declaration": "OneVariableLocalMinimumAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => @IntervalMinimumAttained.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f point"
+    },
+    {
+      "declaration": "OneVariableLocalExtremumAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => forall (P : Prop), forall (max_case : @OneVariableLocalMaximumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P), forall (min_case : @OneVariableLocalMinimumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P), P"
+    },
+    {
+      "declaration": "InteriorPointOfInterval",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun point => forall (P : Prop), forall (mk : forall (lower_lt : lt_rel a point), forall (upper_lt : lt_rel point b), P), P"
+    },
+    {
+      "declaration": "OneVariableIntervalCriticalPoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => forall (P : Prop), forall (mk : forall (point_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b point), forall (critical : @OneVariableCriticalPoint.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point), P), P"
+    },
+    {
+      "declaration": "one_variable_slope_map_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun slope => fun h => @Eq.refl.{u} Scalar (@OneVariableSlopeMap.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm slope h)"
+    },
+    {
+      "declaration": "one_variable_derivative_value_def",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun df => @Eq.refl.{u} Scalar (@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm df)"
+    },
+    {
+      "declaration": "one_variable_derivative_at_from_frechet",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun frechet_at => frechet_at"
+    },
+    {
+      "declaration": "one_variable_derivative_at_to_frechet",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => derivative_at"
+    },
+    {
+      "declaration": "one_variable_derivative_at_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun linear_law => fun operator_bound_law => fun remainder_law => @frechet_derivative_at_intro.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small linear_law operator_bound_law remainder_law"
+    },
+    {
+      "declaration": "one_variable_derivative_linear_from_at",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => @frechet_derivative_linear_from_at.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small derivative_at"
+    },
+    {
+      "declaration": "one_variable_derivative_bound_from_at",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => @frechet_derivative_bound_from_at.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small derivative_at"
+    },
+    {
+      "declaration": "one_variable_derivative_remainder_from_at",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => fun h => @frechet_derivative_remainder_from_at.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small derivative_at h"
+    },
+    {
+      "declaration": "one_variable_differentiable_at_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => fun (P : Prop) => fun (mk : forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small), P) => mk df bound remainder_small derivative_at"
+    },
+    {
+      "declaration": "one_variable_differentiable_at_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun diff_at => fun P => fun mk => diff_at P mk"
+    },
+    {
+      "declaration": "one_variable_differentiable_at_to_frechet",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun diff_at => diff_at (@FrechetDifferentiableAt.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point) (fun (df : forall (h : Scalar), Scalar) => fun (bound : Scalar) => fun (remainder_small : forall (r : Scalar), Prop) => fun (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small) => @frechet_differentiable_at_intro.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small derivative_at)"
+    },
+    {
+      "declaration": "one_variable_differentiable_at_from_frechet",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun frechet_diff => frechet_diff (@OneVariableDifferentiableAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point) (fun (df : forall (h : Scalar), Scalar) => fun (bound : Scalar) => fun (remainder_small : forall (r : Scalar), Prop) => fun (derivative_at : @FrechetDerivativeAt.{u,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul scalar_norm Scalar zero add neg mul scalar_norm f point df bound remainder_small) => @one_variable_differentiable_at_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small derivative_at)"
+    },
+    {
+      "declaration": "one_variable_differentiable_on_interval_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun law => law"
+    },
+    {
+      "declaration": "one_variable_differentiable_on_interval_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun diff_on => fun x => fun x_mem => diff_on x x_mem"
+    },
+    {
+      "declaration": "one_variable_derivative_zero_at_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => fun value_zero => fun (P : Prop) => fun (mk : forall (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small), forall (value_zero : @Eq.{u} Scalar (@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm df) zero), P) => mk derivative_at value_zero"
+    },
+    {
+      "declaration": "one_variable_derivative_zero_at_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun zero_at => fun P => fun mk => zero_at P mk"
+    },
+    {
+      "declaration": "one_variable_derivative_at_from_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun zero_at => zero_at (@OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small) (fun (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small) => fun (value_zero : @Eq.{u} Scalar (@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm df) zero) => derivative_at)"
+    },
+    {
+      "declaration": "one_variable_derivative_value_zero_from_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun zero_at => zero_at (@Eq.{u} Scalar (@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm df) zero) (fun (derivative_at : @OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small) => fun (value_zero : @Eq.{u} Scalar (@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm df) zero) => value_zero)"
+    },
+    {
+      "declaration": "one_variable_critical_point_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_zero => fun (P : Prop) => fun (mk : forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_zero : @OneVariableDerivativeZeroAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small), P) => mk df bound remainder_small derivative_zero"
+    },
+    {
+      "declaration": "one_variable_critical_point_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun f => fun point => fun critical => fun P => fun mk => critical P mk"
+    },
+    {
+      "declaration": "one_variable_local_maximum_to_interval",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun maximum => maximum"
+    },
+    {
+      "declaration": "one_variable_local_minimum_to_interval",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun minimum => minimum"
+    },
+    {
+      "declaration": "one_variable_local_extremum_intro_max",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun maximum => fun (P : Prop) => fun (max_case : @OneVariableLocalMaximumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P) => fun (min_case : @OneVariableLocalMinimumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P) => max_case maximum"
+    },
+    {
+      "declaration": "one_variable_local_extremum_intro_min",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun minimum => fun (P : Prop) => fun (max_case : @OneVariableLocalMaximumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P) => fun (min_case : @OneVariableLocalMinimumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P) => min_case minimum"
+    },
+    {
+      "declaration": "one_variable_local_extremum_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun extremum => fun (P : Prop) => fun (max_case : @OneVariableLocalMaximumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P) => fun (min_case : @OneVariableLocalMinimumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm a b f point -> P) => extremum P max_case min_case"
+    },
+    {
+      "declaration": "interior_point_of_interval_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun point => fun lower_lt => fun upper_lt => fun (P : Prop) => fun (mk : forall (lower_lt : lt_rel a point), forall (upper_lt : lt_rel point b), P) => mk lower_lt upper_lt"
+    },
+    {
+      "declaration": "interior_point_of_interval_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun point => fun interior => fun (P : Prop) => fun (mk : forall (lower_lt : lt_rel a point), forall (upper_lt : lt_rel point b), P) => interior P mk"
+    },
+    {
+      "declaration": "one_variable_interval_critical_point_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun point_mem => fun critical => fun (P : Prop) => fun (mk : forall (point_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b point), forall (critical : @OneVariableCriticalPoint.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point), P) => mk point_mem critical"
+    },
+    {
+      "declaration": "one_variable_interval_critical_point_elim",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun point => fun interval_critical => fun P => fun mk => interval_critical P mk"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Calculus/OneVariable/certificate.npcert"
+  }
+}

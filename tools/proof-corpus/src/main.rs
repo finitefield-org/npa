@@ -194,6 +194,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ANALYSIS_CONTINUITY_BASIC_MODULE,
     &ANALYSIS_SEQUENCE_COMPACTNESS_MODULE,
     &ANALYSIS_CONTINUITY_INTERVAL_MODULE,
+    &ANALYSIS_CALCULUS_ONE_VARIABLE_MODULE,
     &ANALYSIS_SERIES_BASIC_MODULE,
     &ANALYSIS_SERIES_CRITERIA_MODULE,
     &ABSTRACT_INVERSE_FUNCTION_MODULE,
@@ -698,6 +699,36 @@ const ANALYSIS_CONTINUITY_INTERVAL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ANALYSIS_CONTINUITY_INTERVAL_DEFINITIONS,
     theorems: ANALYSIS_CONTINUITY_INTERVAL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ANALYSIS_CALCULUS_ONE_VARIABLE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Analysis.Calculus.OneVariable",
+    source_path: "Proofs/Ai/Analysis/Calculus/OneVariable/source.npa",
+    certificate_path: "Proofs/Ai/Analysis/Calculus/OneVariable/certificate.npcert",
+    meta_path: "Proofs/Ai/Analysis/Calculus/OneVariable/meta.json",
+    replay_path: "Proofs/Ai/Analysis/Calculus/OneVariable/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge",
+        "Proofs.Ai.Analysis.Real.Basic",
+        "Proofs.Ai.Analysis.AbstractMetricTopology",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.Analysis.AbstractLinearMap",
+        "Proofs.Ai.Analysis.AbstractDerivative",
+        "Proofs.Ai.Analysis.AbstractFixedPoint",
+        "Proofs.Ai.Analysis.Sequence.Basic",
+        "Proofs.Ai.Analysis.Continuity.Basic",
+        "Proofs.Ai.Analysis.Sequence.Compactness",
+        "Proofs.Ai.Analysis.Continuity.Interval",
+    ],
+    inductives: &[],
+    definitions: ANALYSIS_CALCULUS_ONE_VARIABLE_DEFINITIONS,
+    theorems: ANALYSIS_CALCULUS_ONE_VARIABLE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -3428,6 +3459,279 @@ macro_rules! interval_minimum_choice_app {
             $upper,
             " ",
             $function
+        )
+    };
+}
+
+macro_rules! one_variable_calculus_params {
+    (concat!($($tail:tt)+)) => {
+        analysis_real_basic_params!(concat!(
+            "forall (scalar_norm : forall (x : Scalar), Scalar), ",
+            $($tail)+
+        ))
+    };
+    ($tail:expr) => {
+        analysis_real_basic_params!(concat!(
+            "forall (scalar_norm : forall (x : Scalar), Scalar), ",
+            $tail
+        ))
+    };
+}
+
+macro_rules! one_variable_calculus_abs {
+    (concat!($($tail:tt)+)) => {
+        analysis_real_basic_abs!(concat!("fun scalar_norm => ", $($tail)+))
+    };
+    ($tail:expr) => {
+        analysis_real_basic_abs!(concat!("fun scalar_norm => ", $tail))
+    };
+}
+
+macro_rules! scalar_normed_space_args {
+    () => {
+        "Scalar zero add neg mul scalar_norm"
+    };
+}
+
+macro_rules! one_variable_slope_map_app {
+    ($slope:expr) => {
+        concat!(
+            "@OneVariableSlopeMap.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $slope
+        )
+    };
+}
+
+macro_rules! one_variable_derivative_value_app {
+    ($df:expr) => {
+        concat!(
+            "@OneVariableDerivativeValue.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $df
+        )
+    };
+}
+
+macro_rules! frechet_scalar_remainder_app {
+    ($function:expr, $point:expr, $df:expr, $h:expr) => {
+        concat!(
+            "@FrechetRemainder.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $df,
+            " ",
+            $h
+        )
+    };
+}
+
+macro_rules! frechet_scalar_derivative_at_app {
+    ($function:expr, $point:expr, $df:expr, $bound:expr, $remainder:expr) => {
+        concat!(
+            "@FrechetDerivativeAt.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $df,
+            " ",
+            $bound,
+            " ",
+            $remainder
+        )
+    };
+}
+
+macro_rules! frechet_scalar_differentiable_at_app {
+    ($function:expr, $point:expr) => {
+        concat!(
+            "@FrechetDifferentiableAt.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! linear_scalar_map_law_app {
+    ($df:expr) => {
+        concat!(
+            "@LinearMapLawArgs.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " ",
+            $df
+        )
+    };
+}
+
+macro_rules! operator_scalar_bound_app {
+    ($df:expr, $bound:expr) => {
+        concat!(
+            "@OperatorNormBound.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " ",
+            $df,
+            " ",
+            $bound
+        )
+    };
+}
+
+macro_rules! one_variable_derivative_at_app {
+    ($function:expr, $point:expr, $df:expr, $bound:expr, $remainder:expr) => {
+        concat!(
+            "@OneVariableDerivativeAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $df,
+            " ",
+            $bound,
+            " ",
+            $remainder
+        )
+    };
+}
+
+macro_rules! one_variable_differentiable_at_app {
+    ($function:expr, $point:expr) => {
+        concat!(
+            "@OneVariableDifferentiableAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! one_variable_differentiable_on_interval_app {
+    ($lower:expr, $upper:expr, $function:expr) => {
+        concat!(
+            "@OneVariableDifferentiableOnInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function
+        )
+    };
+}
+
+macro_rules! one_variable_derivative_zero_at_app {
+    ($function:expr, $point:expr, $df:expr, $bound:expr, $remainder:expr) => {
+        concat!(
+            "@OneVariableDerivativeZeroAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $function,
+            " ",
+            $point,
+            " ",
+            $df,
+            " ",
+            $bound,
+            " ",
+            $remainder
+        )
+    };
+}
+
+macro_rules! one_variable_critical_point_app {
+    ($function:expr, $point:expr) => {
+        concat!(
+            "@OneVariableCriticalPoint.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! one_variable_local_maximum_at_app {
+    ($lower:expr, $upper:expr, $function:expr, $point:expr) => {
+        concat!(
+            "@OneVariableLocalMaximumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! one_variable_local_minimum_at_app {
+    ($lower:expr, $upper:expr, $function:expr, $point:expr) => {
+        concat!(
+            "@OneVariableLocalMinimumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! one_variable_local_extremum_at_app {
+    ($lower:expr, $upper:expr, $function:expr, $point:expr) => {
+        concat!(
+            "@OneVariableLocalExtremumAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! interior_point_of_interval_app {
+    ($lower:expr, $upper:expr, $point:expr) => {
+        concat!(
+            "@InteriorPointOfInterval.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $point
+        )
+    };
+}
+
+macro_rules! one_variable_interval_critical_point_app {
+    ($lower:expr, $upper:expr, $function:expr, $point:expr) => {
+        concat!(
+            "@OneVariableIntervalCriticalPoint.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm ",
+            $lower,
+            " ",
+            $upper,
+            " ",
+            $function,
+            " ",
+            $point
         )
     };
 }
@@ -35476,6 +35780,690 @@ const ANALYSIS_CONTINUITY_INTERVAL_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ANALYSIS_CALCULUS_ONE_VARIABLE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "OneVariableSlopeMap",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(
+            "forall (slope : Scalar), forall (h : Scalar), Scalar"
+        ),
+        value: one_variable_calculus_abs!("fun slope => fun h => mul slope h"),
+    },
+    DefinitionArtifact {
+        name: "OneVariableDerivativeValue",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(
+            "forall (df : forall (h : Scalar), Scalar), Scalar"
+        ),
+        value: one_variable_calculus_abs!("fun df => df one"),
+    },
+    DefinitionArtifact {
+        name: "OneVariableDerivativeAt",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => ",
+            frechet_scalar_derivative_at_app!("f", "point", "df", "bound", "remainder_small")
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableDifferentiableAt",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), Prop"
+        ),
+        value: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => forall (P : Prop), forall (mk : ",
+            "forall (df : forall (h : Scalar), Scalar), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), ",
+            "forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableDifferentiableOnInterval",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "forall (f : forall (x : Scalar), Scalar), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), ",
+            one_variable_differentiable_at_app!("f", "x")
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableDerivativeZeroAt",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => forall (P : Prop), forall (mk : ",
+            "forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), forall (value_zero : @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableCriticalPoint",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), Prop"
+        ),
+        value: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => forall (P : Prop), forall (mk : ",
+            "forall (df : forall (h : Scalar), Scalar), ",
+            "forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), ",
+            "forall (derivative_zero : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableLocalMaximumAt",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => ",
+            interval_maximum_attained_app!("a", "b", "f", "point")
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableLocalMinimumAt",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => ",
+            interval_minimum_attained_app!("a", "b", "f", "point")
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableLocalExtremumAt",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => forall (P : Prop), ",
+            "forall (max_case : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            " -> P), forall (min_case : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            " -> P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "InteriorPointOfInterval",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(
+            "forall (a : Scalar), forall (b : Scalar), forall (point : Scalar), Prop"
+        ),
+        value: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun point => forall (P : Prop), forall (mk : ",
+            "forall (lower_lt : lt_rel a point), ",
+            "forall (upper_lt : lt_rel point b), P), P"
+        )),
+    },
+    DefinitionArtifact {
+        name: "OneVariableIntervalCriticalPoint",
+        universe_params: &["u"],
+        ty: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), ",
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), Prop"
+        )),
+        value: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => forall (P : Prop), forall (mk : ",
+            "forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (critical : ",
+            one_variable_critical_point_app!("f", "point"),
+            "), P), P"
+        )),
+    },
+];
+
+const ANALYSIS_CALCULUS_ONE_VARIABLE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "one_variable_slope_map_def",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (slope : Scalar), forall (h : Scalar), @Eq.{u} Scalar (",
+            one_variable_slope_map_app!("slope"),
+            " h) (mul slope h)"
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun slope => fun h => @Eq.refl.{u} Scalar (",
+            one_variable_slope_map_app!("slope"),
+            " h)"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_value_def",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (df : forall (h : Scalar), Scalar), @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") (df one)"
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun df => @Eq.refl.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ")"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_at_from_frechet",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (frechet_at : ",
+            frechet_scalar_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small")
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun frechet_at => frechet_at"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_at_to_frechet",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            frechet_scalar_derivative_at_app!("f", "point", "df", "bound", "remainder_small")
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => derivative_at"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_at_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (linear_law : ",
+            linear_scalar_map_law_app!("df"),
+            "), forall (operator_bound_law : ",
+            operator_scalar_bound_app!("df", "bound"),
+            "), forall (remainder_law : forall (h : Scalar), remainder_small (",
+            frechet_scalar_remainder_app!("f", "point", "df", "h"),
+            ")), ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun linear_law => fun operator_bound_law => fun remainder_law => ",
+            "@frechet_derivative_at_intro.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " f point df bound remainder_small linear_law operator_bound_law remainder_law"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_linear_from_at",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            linear_scalar_map_law_app!("df")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => ",
+            "@frechet_derivative_linear_from_at.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " f point df bound remainder_small derivative_at"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_bound_from_at",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            operator_scalar_bound_app!("df", "bound")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => ",
+            "@frechet_derivative_bound_from_at.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " f point df bound remainder_small derivative_at"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_remainder_from_at",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), forall (h : Scalar), remainder_small (",
+            frechet_scalar_remainder_app!("f", "point", "df", "h"),
+            ")"
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => fun h => ",
+            "@frechet_derivative_remainder_from_at.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " f point df bound remainder_small derivative_at h"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_differentiable_at_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            one_variable_differentiable_at_app!("f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => fun (P : Prop) => fun (mk : ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), P) => mk df bound remainder_small derivative_at"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_differentiable_at_elim",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (diff_at : ",
+            one_variable_differentiable_at_app!("f", "point"),
+            "), forall (P : Prop), forall (mk : forall (df : forall (h : Scalar), Scalar), ",
+            "forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), ",
+            "forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), P), P"
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun f => fun point => fun diff_at => fun P => fun mk => diff_at P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_differentiable_at_to_frechet",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (diff_at : ",
+            one_variable_differentiable_at_app!("f", "point"),
+            "), ",
+            frechet_scalar_differentiable_at_app!("f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun diff_at => diff_at (",
+            frechet_scalar_differentiable_at_app!("f", "point"),
+            ") (fun (df : forall (h : Scalar), Scalar) => fun (bound : Scalar) => fun (remainder_small : forall (r : Scalar), Prop) => fun (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            ") => @frechet_differentiable_at_intro.{u,u,u} Scalar zero one add neg sub mul le_rel ",
+            scalar_normed_space_args!(),
+            " ",
+            scalar_normed_space_args!(),
+            " f point df bound remainder_small derivative_at)"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_differentiable_at_from_frechet",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (frechet_diff : ",
+            frechet_scalar_differentiable_at_app!("f", "point"),
+            "), ",
+            one_variable_differentiable_at_app!("f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun frechet_diff => frechet_diff (",
+            one_variable_differentiable_at_app!("f", "point"),
+            ") (fun (df : forall (h : Scalar), Scalar) => fun (bound : Scalar) => fun (remainder_small : forall (r : Scalar), Prop) => fun (derivative_at : ",
+            frechet_scalar_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            ") => @one_variable_differentiable_at_intro.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm f point df bound remainder_small derivative_at)"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_differentiable_on_interval_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (law : forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), ",
+            one_variable_differentiable_at_app!("f", "x"),
+            "), ",
+            one_variable_differentiable_on_interval_app!("a", "b", "f")
+        )),
+        proof: one_variable_calculus_abs!("fun a => fun b => fun f => fun law => law"),
+    },
+    TheoremArtifact {
+        name: "one_variable_differentiable_on_interval_apply",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (diff_on : ",
+            one_variable_differentiable_on_interval_app!("a", "b", "f"),
+            "), forall (x : Scalar), forall (x_mem : ",
+            interval_membership_app!("a", "b", "x"),
+            "), ",
+            one_variable_differentiable_at_app!("f", "x")
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun a => fun b => fun f => fun diff_on => fun x => fun x_mem => diff_on x x_mem"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_zero_at_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), forall (value_zero : @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero), ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_at => fun value_zero => fun (P : Prop) => fun (mk : forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), forall (value_zero : @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero), P) => mk derivative_at value_zero"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_zero_at_elim",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (zero_at : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), forall (P : Prop), forall (mk : forall (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), forall (value_zero : @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero), P), P"
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun zero_at => fun P => fun mk => zero_at P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_at_from_zero",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (zero_at : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun zero_at => zero_at (",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            ") (fun (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            ") => fun (value_zero : @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero) => derivative_at)"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_derivative_value_zero_from_zero",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (zero_at : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero"
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun zero_at => zero_at (@Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero) (fun (derivative_at : ",
+            one_variable_derivative_at_app!("f", "point", "df", "bound", "remainder_small"),
+            ") => fun (value_zero : @Eq.{u} Scalar (",
+            one_variable_derivative_value_app!("df"),
+            ") zero) => value_zero)"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_critical_point_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), ",
+            "forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), ",
+            "forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_zero : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), ",
+            one_variable_critical_point_app!("f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun f => fun point => fun df => fun bound => fun remainder_small => fun derivative_zero => fun (P : Prop) => fun (mk : forall (df : forall (h : Scalar), Scalar), forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), forall (derivative_zero : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), P) => mk df bound remainder_small derivative_zero"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_critical_point_elim",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (f : forall (x : Scalar), Scalar), forall (point : Scalar), forall (critical : ",
+            one_variable_critical_point_app!("f", "point"),
+            "), forall (P : Prop), forall (mk : forall (df : forall (h : Scalar), Scalar), ",
+            "forall (bound : Scalar), forall (remainder_small : forall (r : Scalar), Prop), ",
+            "forall (derivative_zero : ",
+            one_variable_derivative_zero_at_app!("f", "point", "df", "bound", "remainder_small"),
+            "), P), P"
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun f => fun point => fun critical => fun P => fun mk => critical P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_local_maximum_to_interval",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (maximum : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            "), ",
+            interval_maximum_attained_app!("a", "b", "f", "point")
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun a => fun b => fun f => fun point => fun maximum => maximum"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_local_minimum_to_interval",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (minimum : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            "), ",
+            interval_minimum_attained_app!("a", "b", "f", "point")
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun a => fun b => fun f => fun point => fun minimum => minimum"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_local_extremum_intro_max",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (maximum : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            "), ",
+            one_variable_local_extremum_at_app!("a", "b", "f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => fun maximum => fun (P : Prop) => ",
+            "fun (max_case : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            " -> P) => fun (min_case : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            " -> P) => max_case maximum"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_local_extremum_intro_min",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (minimum : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            "), ",
+            one_variable_local_extremum_at_app!("a", "b", "f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => fun minimum => fun (P : Prop) => ",
+            "fun (max_case : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            " -> P) => fun (min_case : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            " -> P) => min_case minimum"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_local_extremum_elim",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (extremum : ",
+            one_variable_local_extremum_at_app!("a", "b", "f", "point"),
+            "), forall (P : Prop), forall (max_case : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            " -> P), forall (min_case : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            " -> P), P"
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => fun extremum => fun (P : Prop) => ",
+            "fun (max_case : ",
+            one_variable_local_maximum_at_app!("a", "b", "f", "point"),
+            " -> P) => fun (min_case : ",
+            one_variable_local_minimum_at_app!("a", "b", "f", "point"),
+            " -> P) => extremum P max_case min_case"
+        )),
+    },
+    TheoremArtifact {
+        name: "interior_point_of_interval_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (point : Scalar), ",
+            "forall (lower_lt : lt_rel a point), forall (upper_lt : lt_rel point b), ",
+            interior_point_of_interval_app!("a", "b", "point")
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun a => fun b => fun point => fun lower_lt => fun upper_lt => fun (P : Prop) => fun (mk : forall (lower_lt : lt_rel a point), forall (upper_lt : lt_rel point b), P) => mk lower_lt upper_lt"
+        ),
+    },
+    TheoremArtifact {
+        name: "interior_point_of_interval_elim",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (point : Scalar), ",
+            "forall (interior : ",
+            interior_point_of_interval_app!("a", "b", "point"),
+            "), forall (P : Prop), forall (mk : forall (lower_lt : lt_rel a point), ",
+            "forall (upper_lt : lt_rel point b), P), P"
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun a => fun b => fun point => fun interior => fun (P : Prop) => fun (mk : forall (lower_lt : lt_rel a point), forall (upper_lt : lt_rel point b), P) => interior P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "one_variable_interval_critical_point_intro",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (critical : ",
+            one_variable_critical_point_app!("f", "point"),
+            "), ",
+            one_variable_interval_critical_point_app!("a", "b", "f", "point")
+        )),
+        proof: one_variable_calculus_abs!(concat!(
+            "fun a => fun b => fun f => fun point => fun point_mem => fun critical => fun (P : Prop) => fun (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (critical : ",
+            one_variable_critical_point_app!("f", "point"),
+            "), P) => mk point_mem critical"
+        )),
+    },
+    TheoremArtifact {
+        name: "one_variable_interval_critical_point_elim",
+        universe_params: &["u"],
+        statement: one_variable_calculus_params!(concat!(
+            "forall (a : Scalar), forall (b : Scalar), forall (f : forall (x : Scalar), Scalar), ",
+            "forall (point : Scalar), forall (interval_critical : ",
+            one_variable_interval_critical_point_app!("a", "b", "f", "point"),
+            "), forall (P : Prop), forall (mk : forall (point_mem : ",
+            interval_membership_app!("a", "b", "point"),
+            "), forall (critical : ",
+            one_variable_critical_point_app!("f", "point"),
+            "), P), P"
+        )),
+        proof: one_variable_calculus_abs!(
+            "fun a => fun b => fun f => fun point => fun interval_critical => fun P => fun mk => interval_critical P mk"
+        ),
+    },
+];
+
 const ANALYSIS_SERIES_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "SeriesPartialSums",
@@ -45881,11 +46869,53 @@ fn run_full() -> Result<(), String> {
         analysis_continuity_basic.source_interface.clone(),
         analysis_sequence_compactness.source_interface.clone(),
     ];
-    let _analysis_continuity_interval = build_and_write_module(
+    let analysis_continuity_interval = build_and_write_module(
         &proof_root,
         &ANALYSIS_CONTINUITY_INTERVAL_MODULE,
         &analysis_continuity_interval_imports,
         &analysis_continuity_interval_source_interfaces,
+    )?;
+    let analysis_calculus_one_variable_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_field.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_ordered_field_field_bridge.verified_module.clone(),
+        analysis_real_basic.verified_module.clone(),
+        abstract_metric_topology.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_normed_space.verified_module.clone(),
+        abstract_linear_map.verified_module.clone(),
+        abstract_derivative.verified_module.clone(),
+        abstract_fixed_point.verified_module.clone(),
+        analysis_sequence_basic.verified_module.clone(),
+        analysis_continuity_basic.verified_module.clone(),
+        analysis_sequence_compactness.verified_module.clone(),
+        analysis_continuity_interval.verified_module.clone(),
+    ];
+    let analysis_calculus_one_variable_source_interfaces = vec![
+        eq_source_interface.clone(),
+        abstract_ring.source_interface.clone(),
+        abstract_field.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_ordered_field_field_bridge.source_interface.clone(),
+        analysis_real_basic.source_interface.clone(),
+        abstract_metric_topology.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_normed_space.source_interface.clone(),
+        abstract_linear_map.source_interface.clone(),
+        abstract_derivative.source_interface.clone(),
+        abstract_fixed_point.source_interface.clone(),
+        analysis_sequence_basic.source_interface.clone(),
+        analysis_continuity_basic.source_interface.clone(),
+        analysis_sequence_compactness.source_interface.clone(),
+        analysis_continuity_interval.source_interface.clone(),
+    ];
+    let _analysis_calculus_one_variable = build_and_write_module(
+        &proof_root,
+        &ANALYSIS_CALCULUS_ONE_VARIABLE_MODULE,
+        &analysis_calculus_one_variable_imports,
+        &analysis_calculus_one_variable_source_interfaces,
     )?;
     let analysis_series_basic_imports = vec![
         eq_import.clone(),
@@ -48882,6 +49912,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ANALYSIS_CONTINUITY_BASIC_MODULE.module
         || config.module == ANALYSIS_SEQUENCE_COMPACTNESS_MODULE.module
         || config.module == ANALYSIS_CONTINUITY_INTERVAL_MODULE.module
+        || config.module == ANALYSIS_CALCULUS_ONE_VARIABLE_MODULE.module
         || config.module == ANALYSIS_SERIES_BASIC_MODULE.module
         || config.module == ANALYSIS_SERIES_CRITERIA_MODULE.module
         || config.module == LINEAR_ALGEBRA_VECTOR_SPACE_BASIC_MODULE.module

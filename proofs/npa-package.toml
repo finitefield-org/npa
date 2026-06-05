@@ -1563,6 +1563,23 @@ theorems = ["interval_endpoint_order_intro", "interval_endpoint_order_apply", "i
 axioms = []
 
 [[modules]]
+module = "Proofs.Ai.Analysis.Calculus.OneVariable"
+source = "Proofs/Ai/Analysis/Calculus/OneVariable/source.npa"
+certificate = "Proofs/Ai/Analysis/Calculus/OneVariable/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Calculus/OneVariable/meta.json"
+replay = "Proofs/Ai/Analysis/Calculus/OneVariable/replay.json"
+producer_profile = "human-surface-explicit-term"
+expected_source_hash = "sha256:e4c6e3f74fa847b701e37a4ca310bfe12439cfe67e2d593e5a3f826f232c94b7"
+expected_certificate_file_hash = "sha256:d223e25d873ab5e19874243dd9b03ba90b6f956e2b4600cd05d19f73fe2bbda2"
+expected_export_hash = "sha256:9ae0decbbe0b7adebb537aa2a7dcfc8d7b0fe1e9b16b8209b338127deb7a054e"
+expected_axiom_report_hash = "sha256:c1bf30575cdfd332deaa042b630415f8816200141133fa2a6727308f4c32bdb4"
+expected_certificate_hash = "sha256:69bf22ecf93d247245cab7fc7f744432f9b05b1666d40d2ec1f1fccf4bf0d4cb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness", "Proofs.Ai.Analysis.Continuity.Interval"]
+definitions = ["OneVariableSlopeMap", "OneVariableDerivativeValue", "OneVariableDerivativeAt", "OneVariableDifferentiableAt", "OneVariableDifferentiableOnInterval", "OneVariableDerivativeZeroAt", "OneVariableCriticalPoint", "OneVariableLocalMaximumAt", "OneVariableLocalMinimumAt", "OneVariableLocalExtremumAt", "InteriorPointOfInterval", "OneVariableIntervalCriticalPoint"]
+theorems = ["one_variable_slope_map_def", "one_variable_derivative_value_def", "one_variable_derivative_at_from_frechet", "one_variable_derivative_at_to_frechet", "one_variable_derivative_at_intro", "one_variable_derivative_linear_from_at", "one_variable_derivative_bound_from_at", "one_variable_derivative_remainder_from_at", "one_variable_differentiable_at_intro", "one_variable_differentiable_at_elim", "one_variable_differentiable_at_to_frechet", "one_variable_differentiable_at_from_frechet", "one_variable_differentiable_on_interval_intro", "one_variable_differentiable_on_interval_apply", "one_variable_derivative_zero_at_intro", "one_variable_derivative_zero_at_elim", "one_variable_derivative_at_from_zero", "one_variable_derivative_value_zero_from_zero", "one_variable_critical_point_intro", "one_variable_critical_point_elim", "one_variable_local_maximum_to_interval", "one_variable_local_minimum_to_interval", "one_variable_local_extremum_intro_max", "one_variable_local_extremum_intro_min", "one_variable_local_extremum_elim", "interior_point_of_interval_intro", "interior_point_of_interval_elim", "one_variable_interval_critical_point_intro", "one_variable_interval_critical_point_elim"]
+axioms = []
+
+[[modules]]
 module = "Proofs.Ai.Analysis.Series.Basic"
 source = "Proofs/Ai/Analysis/Series/Basic/source.npa"
 certificate = "Proofs/Ai/Analysis/Series/Basic/certificate.npcert"

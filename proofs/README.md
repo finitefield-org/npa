@@ -39,6 +39,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractDerivative/`: Frechet derivative, differentiability, derivative
   uniqueness, calculus-rule evidence, pairing/projection, composition, and partial-derivative API
   for the inverse/implicit function route.
+- `Proofs/Ai/Analysis/Calculus/OneVariable/`: scalar-domain derivative bridge from Frechet
+  derivatives, derivative-value/zero vocabulary, interval differentiability, extrema, interior,
+  and critical-point packages for Fermat/Rolle/MVT layers.
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
