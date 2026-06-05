@@ -1224,7 +1224,7 @@ later in the file.
 
 ### NT-T44 Add Hilbert 90, Norm-Residue, Brauer, And Tate Cohomology Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T43`
 - Areas: `Proofs/Ai/NumberTheory/ClassField/Cohomology/`, `Proofs/Ai/GaloisCohomology/Basic/`
 - Tasks:

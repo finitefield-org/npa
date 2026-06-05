@@ -1,0 +1,26 @@
+import Std.Logic.Eq
+
+theorem hilbert_90_theorem_interface :
+  forall (K : Type), forall (L : Type), forall (G : Type), forall (H1 : Prop), forall (h90_law : H1 -> H1), H1 -> H1 :=
+  fun K => fun L => fun G => fun H1 => fun h90_law => h90_law
+
+theorem norm_residue_symbol_interface :
+  forall (K : Type), forall (a : K), forall (b : K), forall (Symbol : K -> K -> Type), forall (sym_law : forall (x : K), forall (y : K), Symbol x y -> Symbol x y), forall (x : K), forall (y : K), Symbol x y -> Symbol x y :=
+  fun K => fun a => fun b => fun Symbol => fun sym_law => fun x => fun y => sym_law x y
+
+theorem hasse_norm_theorem_interface :
+  forall (K : Type), forall (L : Type), forall (IsLocalNorm : Prop), forall (IsGlobalNorm : Prop), forall (hasse_law : IsLocalNorm -> IsGlobalNorm), IsLocalNorm -> IsGlobalNorm :=
+  fun K => fun L => fun IsLocalNorm => fun IsGlobalNorm => fun hasse_law => hasse_law
+
+theorem grunwald_wang_theorem_interface :
+  forall (K : Type), forall (IsLocalPower : Prop), forall (IsGlobalPower : Prop), forall (gw_law : IsLocalPower -> IsGlobalPower), IsLocalPower -> IsGlobalPower :=
+  fun K => fun IsLocalPower => fun IsGlobalPower => fun gw_law => gw_law
+
+theorem brauer_group_interface :
+  forall (K : Type), forall (Br : Type), forall (br_law : forall (x : Br), @Eq.{1} Br x x), forall (x : Br), @Eq.{1} Br x x :=
+  fun K => fun Br => fun br_law => fun x => br_law x
+
+theorem tate_cohomology_interface :
+  forall (G : Type), forall (A : Type), forall (Index : Type), forall (H : Index -> Type), forall (tate_law : forall (n : Index), forall (x : H n), @Eq.{1} (H n) x x), forall (n : Index), forall (x : H n), @Eq.{1} (H n) x x :=
+  fun G => fun A => fun Index => fun H => fun tate_law => fun n => fun x => tate_law n x
+

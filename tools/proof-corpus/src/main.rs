@@ -221,6 +221,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PADIC_MEASURE_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE,
+    &GALOIS_COHOMOLOGY_BASIC_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2577,6 +2578,19 @@ const NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const GALOIS_COHOMOLOGY_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.GaloisCohomology.Basic",
+    source_path: "Proofs/Ai/GaloisCohomology/Basic/source.npa",
+    certificate_path: "Proofs/Ai/GaloisCohomology/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/GaloisCohomology/Basic/meta.json",
+    replay_path: "Proofs/Ai/GaloisCohomology/Basic/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: GALOIS_COHOMOLOGY_BASIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21559,6 +21573,69 @@ const NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun K => fun H => fun IsHilbertClassField => fun hilbert_law => hilbert_law"
+        ),
+    },
+];
+
+const GALOIS_COHOMOLOGY_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "hilbert_90_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (G : Type), forall (H1 : Prop), forall (h90_law : H1 -> H1), H1 -> H1"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun G => fun H1 => fun h90_law => h90_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "norm_residue_symbol_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (a : K), forall (b : K), forall (Symbol : K -> K -> Type), forall (sym_law : forall (x : K), forall (y : K), Symbol x y -> Symbol x y), forall (x : K), forall (y : K), Symbol x y -> Symbol x y"
+        ),
+        proof: concat!(
+            "fun K => fun a => fun b => fun Symbol => fun sym_law => fun x => fun y => sym_law x y"
+        ),
+    },
+    TheoremArtifact {
+        name: "hasse_norm_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (IsLocalNorm : Prop), forall (IsGlobalNorm : Prop), forall (hasse_law : IsLocalNorm -> IsGlobalNorm), IsLocalNorm -> IsGlobalNorm"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun IsLocalNorm => fun IsGlobalNorm => fun hasse_law => hasse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "grunwald_wang_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (IsLocalPower : Prop), forall (IsGlobalPower : Prop), forall (gw_law : IsLocalPower -> IsGlobalPower), IsLocalPower -> IsGlobalPower"
+        ),
+        proof: concat!(
+            "fun K => fun IsLocalPower => fun IsGlobalPower => fun gw_law => gw_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "brauer_group_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Br : Type), forall (br_law : forall (x : Br), @Eq.{1} Br x x), forall (x : Br), @Eq.{1} Br x x"
+        ),
+        proof: concat!(
+            "fun K => fun Br => fun br_law => fun x => br_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "tate_cohomology_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (G : Type), forall (A : Type), forall (Index : Type), forall (H : Index -> Type), forall (tate_law : forall (n : Index), forall (x : H n), @Eq.{1} (H n) x x), forall (n : Index), forall (x : H n), @Eq.{1} (H n) x x"
+        ),
+        proof: concat!(
+            "fun G => fun A => fun Index => fun H => fun tate_law => fun n => fun x => tate_law n x"
         ),
     },
 ];
