@@ -238,6 +238,11 @@ Current bundles:
   downstream of Mobius and Dirichlet convolution, preserving finite Euler products,
   multiplicative Dirichlet series interfaces, zeta and Dirichlet `L` milestone inputs, and
   explicit convergence prerequisites deferred to later analytic tasks.
+- `Proofs/Ai/NumberTheory/Sieve/`: certificate-backed sieve-theory interface preserving Brun
+  sieve, Selberg sieve, large sieve, fundamental lemma, Brun theorem, twin-prime reciprocal
+  convergence, Chen theorem, GPY, Zhang, Maynard-Tao, parity-problem limitations, explicit
+  `ErrorTerm` and asymptotic inputs, visible analytic dependencies, and a boundary excluding
+  derivation of unresolved conjectures from sieve surfaces.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

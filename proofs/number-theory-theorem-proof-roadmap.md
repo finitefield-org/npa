@@ -610,7 +610,9 @@ semantics.
   - `NT-T35` added certificate-backed `Proofs.Ai.NumberTheory.Sieve`
     defining L1 interfaces for Brun sieve, Selberg sieve, large sieve, fundamental lemma,
     Brun's theorem, twin-prime reciprocal convergence, Chen's theorem, GPY, Zhang,
-    Maynard-Tao, and parity-problem limitations.
+    Maynard-Tao, parity-problem limitations, explicit error-term/asymptotic inputs,
+    visible analytic dependencies, and a boundary preventing sieve surfaces from deriving
+    unresolved conjectures.
   - `NT-T36` added certificate-backed `Proofs.Ai.NumberTheory.CircleMethod`
     and `Proofs.Ai.NumberTheory.AdditivePrime` defining L1 interfaces for
     the Hardy-Littlewood circle method, major/minor arc contributions,

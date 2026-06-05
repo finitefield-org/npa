@@ -20973,6 +20973,20 @@ const NUMBER_THEORY_SIEVE_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "sieve_error_term_asymptotic_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (AsymptoticWithError : Real -> Real -> Real -> Prop), ",
+            "forall (SievedCount : (Int -> Prop) -> Real -> Real -> Real), forall (MainTerm : (Int -> Prop) -> Real -> Real -> Real), ",
+            "forall (ErrorTerm : (Int -> Prop) -> Real -> Real -> Real), ",
+            "forall (asymptotic_law : forall (A : Int -> Prop), forall (x : Real), forall (z : Real), AsymptoticWithError (SievedCount A x z) (MainTerm A x z) (ErrorTerm A x z)), ",
+            "forall (A : Int -> Prop), forall (x : Real), forall (z : Real), AsymptoticWithError (SievedCount A x z) (MainTerm A x z) (ErrorTerm A x z)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun AsymptoticWithError => fun SievedCount => fun MainTerm => fun ErrorTerm => fun asymptotic_law => fun A => fun x => fun z => asymptotic_law A x z"
+        ),
+    },
+    TheoremArtifact {
         name: "brun_theorem_interface",
         universe_params: &[],
         statement: concat!(
@@ -21044,6 +21058,32 @@ const NUMBER_THEORY_SIEVE_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Int => fun Nat => fun InfinitelyManyTuplesWithBoundedGap => fun m_param => fun BoundH => fun maynard_tao_theorem_law => maynard_tao_theorem_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "sieve_analytic_dependency_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SieveResultPackage : Type), forall (AnalyticEstimatePackage : Type), forall (DistributionHypothesisPackage : Type), forall (LargeSieveInputPackage : Type), ",
+            "forall (AnalyticDependency : SieveResultPackage -> AnalyticEstimatePackage -> DistributionHypothesisPackage -> LargeSieveInputPackage -> Prop), ",
+            "forall (dependency_law : forall (result : SieveResultPackage), forall (analytic : AnalyticEstimatePackage), forall (distribution : DistributionHypothesisPackage), forall (large_sieve : LargeSieveInputPackage), AnalyticDependency result analytic distribution large_sieve), ",
+            "forall (result : SieveResultPackage), forall (analytic : AnalyticEstimatePackage), forall (distribution : DistributionHypothesisPackage), forall (large_sieve : LargeSieveInputPackage), AnalyticDependency result analytic distribution large_sieve"
+        ),
+        proof: concat!(
+            "fun SieveResultPackage => fun AnalyticEstimatePackage => fun DistributionHypothesisPackage => fun LargeSieveInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun analytic => fun distribution => fun large_sieve => dependency_law result analytic distribution large_sieve"
+        ),
+    },
+    TheoremArtifact {
+        name: "sieve_no_unresolved_conjecture_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (SieveResultPackage : Type), forall (UnresolvedConjecturePackage : Type), ",
+            "forall (NoUnresolvedConjectureDerivation : SieveResultPackage -> UnresolvedConjecturePackage -> Prop), ",
+            "forall (boundary_law : forall (sieve_result : SieveResultPackage), forall (conjecture : UnresolvedConjecturePackage), NoUnresolvedConjectureDerivation sieve_result conjecture), ",
+            "forall (sieve_result : SieveResultPackage), forall (conjecture : UnresolvedConjecturePackage), NoUnresolvedConjectureDerivation sieve_result conjecture"
+        ),
+        proof: concat!(
+            "fun SieveResultPackage => fun UnresolvedConjecturePackage => fun NoUnresolvedConjectureDerivation => fun boundary_law => fun sieve_result => fun conjecture => boundary_law sieve_result conjecture"
         ),
     },
     TheoremArtifact {

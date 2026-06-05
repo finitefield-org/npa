@@ -16,6 +16,10 @@ theorem fundamental_lemma_sieve_interface :
   forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), forall (SievedCount : (Int -> Prop) -> Real -> Real -> Real), forall (FundamentalLemmaApproximation : (Int -> Prop) -> Real -> Real -> Real), forall (fundamental_lemma_law : forall (A : Int -> Prop), forall (x : Real), forall (u : Real), Le (SievedCount A x u) (FundamentalLemmaApproximation A x u)), forall (A : Int -> Prop), forall (x : Real), forall (u : Real), Le (SievedCount A x u) (FundamentalLemmaApproximation A x u) :=
   fun Real => fun Int => fun Le => fun SievedCount => fun FundamentalLemmaApproximation => fun fundamental_lemma_law => fun A => fun x => fun u => fundamental_lemma_law A x u
 
+theorem sieve_error_term_asymptotic_interface :
+  forall (Real : Type), forall (Int : Type), forall (AsymptoticWithError : Real -> Real -> Real -> Prop), forall (SievedCount : (Int -> Prop) -> Real -> Real -> Real), forall (MainTerm : (Int -> Prop) -> Real -> Real -> Real), forall (ErrorTerm : (Int -> Prop) -> Real -> Real -> Real), forall (asymptotic_law : forall (A : Int -> Prop), forall (x : Real), forall (z : Real), AsymptoticWithError (SievedCount A x z) (MainTerm A x z) (ErrorTerm A x z)), forall (A : Int -> Prop), forall (x : Real), forall (z : Real), AsymptoticWithError (SievedCount A x z) (MainTerm A x z) (ErrorTerm A x z) :=
+  fun Real => fun Int => fun AsymptoticWithError => fun SievedCount => fun MainTerm => fun ErrorTerm => fun asymptotic_law => fun A => fun x => fun z => asymptotic_law A x z
+
 theorem brun_theorem_interface :
   forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), forall (TwinPrimeCount : Real -> Real), forall (BrunTheoremBound : Real -> Real), forall (brun_theorem_law : forall (x : Real), Le (TwinPrimeCount x) (BrunTheoremBound x)), forall (x : Real), Le (TwinPrimeCount x) (BrunTheoremBound x) :=
   fun Real => fun Int => fun Le => fun TwinPrimeCount => fun BrunTheoremBound => fun brun_theorem_law => fun x => brun_theorem_law x
@@ -39,6 +43,14 @@ theorem zhang_theorem_interface :
 theorem maynard_tao_theorem_interface :
   forall (Int : Type), forall (Nat : Type), forall (InfinitelyManyTuplesWithBoundedGap : Nat -> Int -> Prop), forall (m_param : Nat), forall (BoundH : Int), forall (maynard_tao_theorem_law : InfinitelyManyTuplesWithBoundedGap m_param BoundH), InfinitelyManyTuplesWithBoundedGap m_param BoundH :=
   fun Int => fun Nat => fun InfinitelyManyTuplesWithBoundedGap => fun m_param => fun BoundH => fun maynard_tao_theorem_law => maynard_tao_theorem_law
+
+theorem sieve_analytic_dependency_surface :
+  forall (SieveResultPackage : Type), forall (AnalyticEstimatePackage : Type), forall (DistributionHypothesisPackage : Type), forall (LargeSieveInputPackage : Type), forall (AnalyticDependency : SieveResultPackage -> AnalyticEstimatePackage -> DistributionHypothesisPackage -> LargeSieveInputPackage -> Prop), forall (dependency_law : forall (result : SieveResultPackage), forall (analytic : AnalyticEstimatePackage), forall (distribution : DistributionHypothesisPackage), forall (large_sieve : LargeSieveInputPackage), AnalyticDependency result analytic distribution large_sieve), forall (result : SieveResultPackage), forall (analytic : AnalyticEstimatePackage), forall (distribution : DistributionHypothesisPackage), forall (large_sieve : LargeSieveInputPackage), AnalyticDependency result analytic distribution large_sieve :=
+  fun SieveResultPackage => fun AnalyticEstimatePackage => fun DistributionHypothesisPackage => fun LargeSieveInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun analytic => fun distribution => fun large_sieve => dependency_law result analytic distribution large_sieve
+
+theorem sieve_no_unresolved_conjecture_boundary :
+  forall (SieveResultPackage : Type), forall (UnresolvedConjecturePackage : Type), forall (NoUnresolvedConjectureDerivation : SieveResultPackage -> UnresolvedConjecturePackage -> Prop), forall (boundary_law : forall (sieve_result : SieveResultPackage), forall (conjecture : UnresolvedConjecturePackage), NoUnresolvedConjectureDerivation sieve_result conjecture), forall (sieve_result : SieveResultPackage), forall (conjecture : UnresolvedConjecturePackage), NoUnresolvedConjectureDerivation sieve_result conjecture :=
+  fun SieveResultPackage => fun UnresolvedConjecturePackage => fun NoUnresolvedConjectureDerivation => fun boundary_law => fun sieve_result => fun conjecture => boundary_law sieve_result conjecture
 
 theorem sieve_parity_problem_limitation_interface :
   forall (ParityLimitationProp : Prop), forall (sieve_parity_problem_law : ParityLimitationProp), ParityLimitationProp :=

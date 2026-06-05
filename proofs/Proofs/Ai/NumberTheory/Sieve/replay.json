@@ -25,6 +25,11 @@
       "term": "fun Real => fun Int => fun Le => fun SievedCount => fun FundamentalLemmaApproximation => fun fundamental_lemma_law => fun A => fun x => fun u => fundamental_lemma_law A x u"
     },
     {
+      "declaration": "sieve_error_term_asymptotic_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun AsymptoticWithError => fun SievedCount => fun MainTerm => fun ErrorTerm => fun asymptotic_law => fun A => fun x => fun z => asymptotic_law A x z"
+    },
+    {
       "declaration": "brun_theorem_interface",
       "source_kind": "explicit_term",
       "term": "fun Real => fun Int => fun Le => fun TwinPrimeCount => fun BrunTheoremBound => fun brun_theorem_law => fun x => brun_theorem_law x"
@@ -53,6 +58,16 @@
       "declaration": "maynard_tao_theorem_interface",
       "source_kind": "explicit_term",
       "term": "fun Int => fun Nat => fun InfinitelyManyTuplesWithBoundedGap => fun m_param => fun BoundH => fun maynard_tao_theorem_law => maynard_tao_theorem_law"
+    },
+    {
+      "declaration": "sieve_analytic_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun SieveResultPackage => fun AnalyticEstimatePackage => fun DistributionHypothesisPackage => fun LargeSieveInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun analytic => fun distribution => fun large_sieve => dependency_law result analytic distribution large_sieve"
+    },
+    {
+      "declaration": "sieve_no_unresolved_conjecture_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun SieveResultPackage => fun UnresolvedConjecturePackage => fun NoUnresolvedConjectureDerivation => fun boundary_law => fun sieve_result => fun conjecture => boundary_law sieve_result conjecture"
     },
     {
       "declaration": "sieve_parity_problem_limitation_interface",
