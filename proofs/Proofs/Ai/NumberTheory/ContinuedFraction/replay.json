@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ContinuedFraction",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "finite_continued_fraction_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun Rational => fun FiniteContinuedFraction => fun Convergent => fun FiniteExpansionStatement => fun interface_law => fun length => fun partial_quotients => fun finite_cf => interface_law length partial_quotients finite_cf"
+    },
+    {
+      "declaration": "convergent_recurrence_relations_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Int => fun Rational => fun PartialQuotient => fun Numerator => fun Denominator => fun Convergent => fun ConvergentRecurrence => fun recurrence_law => fun i => recurrence_law i"
+    },
+    {
+      "declaration": "rational_finite_continued_fraction_expansion_from_euclidean_division",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Rational => fun Denominator => fun Nonzero => fun OrderedRationalInterface => fun EuclideanDivisionWitness => fun FiniteContinuedFractionExpansion => fun expansion_law => fun x => fun nonzero_denominator => fun ordered_rational => fun euclidean_division => expansion_law x nonzero_denominator ordered_rational euclidean_division"
+    },
+    {
+      "declaration": "normalized_finite_continued_fraction_uniqueness_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun Rational => fun FiniteContinuedFractionExpansion => fun NormalizedFiniteExpansion => fun FinalPartialQuotientConvention => fun EquivalentExpansion => fun uniqueness_law => fun x => fun length_left => fun left => fun length_right => fun right => fun left_expansion => fun right_expansion => fun left_normalized => fun right_normalized => fun left_final => fun right_final => uniqueness_law x length_left left length_right right left_expansion right_expansion left_normalized right_normalized left_final right_final"
+    },
+    {
+      "declaration": "final_partial_quotient_normalization_convention_explicit",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun NormalizedFiniteExpansion => fun FinalPartialQuotientConvention => fun normalization_law => fun length => fun partial_quotients => fun normalized => normalization_law length partial_quotients normalized"
+    },
+    {
+      "declaration": "finite_continued_fraction_no_real_analysis_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteContinuedFractionPackage => fun RationalExpansionPackage => fun EuclideanDivisionPackage => fun RealAnalysisPackage => fun InfiniteContinuedFractionPackage => fun NoRealAnalysisDependencyBoundary => fun boundary_law => fun finite_cf => fun rational_expansion => fun euclidean_division => fun real_analysis => fun infinite_cf => boundary_law finite_cf rational_expansion euclidean_division real_analysis infinite_cf"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ContinuedFraction/certificate.npcert"
+  }
+}

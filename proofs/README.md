@@ -213,6 +213,10 @@ Current bundles:
   downstream of Mobius and Dirichlet convolution, preserving finite Euler products,
   multiplicative Dirichlet series interfaces, zeta and Dirichlet `L` milestone inputs, and
   explicit convergence prerequisites deferred to later analytic tasks.
+- `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
+  interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
+  dependence, normalized final-partial-quotient conventions, uniqueness surfaces, and boundaries
+  excluding real-analysis or infinite-continued-fraction dependencies.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

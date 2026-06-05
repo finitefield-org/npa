@@ -805,7 +805,7 @@ later in the file.
 
 ### NT-T25 Add Finite Continued Fractions For Rationals
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T03`
 - Areas: `Proofs/Ai/NumberTheory/ContinuedFraction/`
 - Tasks:

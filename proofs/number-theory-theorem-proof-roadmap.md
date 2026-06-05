@@ -468,6 +468,12 @@ semantics.
 
 - Status: planned.
 - Depends on: `NT-02`, ordered-field and real-analysis prerequisites.
+- Implementation progress: `NT-T25` added certificate-backed
+  `Proofs.Ai.NumberTheory.ContinuedFraction` surfaces for finite continued
+  fractions over rationals, convergent recurrence interfaces, EuclideanDivision
+  based finite-expansion routes, normalized finite-expansion uniqueness, explicit
+  final-partial-quotient conventions, and boundaries excluding real-analysis or
+  infinite-continued-fraction dependencies.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ContinuedFraction`
   - `Proofs.Ai.NumberTheory.Pell`

@@ -189,6 +189,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE,
     &NUMBER_THEORY_MOBIUS_MODULE,
     &NUMBER_THEORY_EULER_PRODUCT_MODULE,
+    &NUMBER_THEORY_CONTINUED_FRACTION_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -2072,6 +2073,19 @@ const NUMBER_THEORY_EULER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_EULER_PRODUCT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CONTINUED_FRACTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ContinuedFraction",
+    source_path: "Proofs/Ai/NumberTheory/ContinuedFraction/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ContinuedFraction/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ContinuedFraction/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ContinuedFraction/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.EuclideanDivision"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CONTINUED_FRACTION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -13796,6 +13810,208 @@ const NUMBER_THEORY_EULER_PRODUCT_THEOREMS: &[TheoremArtifact] = &[
             "fun boundary_law => fun finite_product => fun infinite_product => ",
             "fun analysis_prereq => ",
             "boundary_law finite_product infinite_product analysis_prereq"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CONTINUED_FRACTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_continued_fraction_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), forall (Rational : Type), ",
+            "forall (FiniteContinuedFraction : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Prop), ",
+            "forall (Convergent : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Rational), ",
+            "forall (FiniteExpansionStatement : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), ",
+            "forall (value : Rational), Prop), ",
+            "forall (interface_law : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), ",
+            "forall (finite_cf : FiniteContinuedFraction length partial_quotients), ",
+            "FiniteExpansionStatement length partial_quotients ",
+            "(Convergent length partial_quotients)), ",
+            "forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), ",
+            "forall (finite_cf : FiniteContinuedFraction length partial_quotients), ",
+            "FiniteExpansionStatement length partial_quotients ",
+            "(Convergent length partial_quotients)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun Rational => ",
+            "fun FiniteContinuedFraction => fun Convergent => ",
+            "fun FiniteExpansionStatement => fun interface_law => ",
+            "fun length => fun partial_quotients => fun finite_cf => ",
+            "interface_law length partial_quotients finite_cf"
+        ),
+    },
+    TheoremArtifact {
+        name: "convergent_recurrence_relations_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Int : Type), forall (Rational : Type), ",
+            "forall (PartialQuotient : forall (i : Nat), Int), ",
+            "forall (Numerator : forall (i : Nat), Int), ",
+            "forall (Denominator : forall (i : Nat), Int), ",
+            "forall (Convergent : forall (i : Nat), Rational), ",
+            "forall (ConvergentRecurrence : forall (i : Nat), Prop), ",
+            "forall (recurrence_law : forall (i : Nat), ",
+            "ConvergentRecurrence i), ",
+            "forall (i : Nat), ConvergentRecurrence i"
+        ),
+        proof: concat!(
+            "fun Nat => fun Int => fun Rational => fun PartialQuotient => ",
+            "fun Numerator => fun Denominator => fun Convergent => ",
+            "fun ConvergentRecurrence => fun recurrence_law => fun i => ",
+            "recurrence_law i"
+        ),
+    },
+    TheoremArtifact {
+        name: "rational_finite_continued_fraction_expansion_from_euclidean_division",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Rational : Type), ",
+            "forall (Denominator : forall (x : Rational), Int), ",
+            "forall (Nonzero : forall (x : Int), Prop), ",
+            "forall (OrderedRationalInterface : forall (x : Rational), Prop), ",
+            "forall (EuclideanDivisionWitness : forall (x : Rational), Prop), ",
+            "forall (FiniteContinuedFractionExpansion : forall (x : Rational), Prop), ",
+            "forall (expansion_law : forall (x : Rational), ",
+            "forall (nonzero_denominator : Nonzero (Denominator x)), ",
+            "forall (ordered_rational : OrderedRationalInterface x), ",
+            "forall (euclidean_division : EuclideanDivisionWitness x), ",
+            "FiniteContinuedFractionExpansion x), ",
+            "forall (x : Rational), ",
+            "forall (nonzero_denominator : Nonzero (Denominator x)), ",
+            "forall (ordered_rational : OrderedRationalInterface x), ",
+            "forall (euclidean_division : EuclideanDivisionWitness x), ",
+            "FiniteContinuedFractionExpansion x"
+        ),
+        proof: concat!(
+            "fun Int => fun Rational => fun Denominator => fun Nonzero => ",
+            "fun OrderedRationalInterface => fun EuclideanDivisionWitness => ",
+            "fun FiniteContinuedFractionExpansion => fun expansion_law => ",
+            "fun x => fun nonzero_denominator => fun ordered_rational => ",
+            "fun euclidean_division => ",
+            "expansion_law x nonzero_denominator ordered_rational euclidean_division"
+        ),
+    },
+    TheoremArtifact {
+        name: "normalized_finite_continued_fraction_uniqueness_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), forall (Rational : Type), ",
+            "forall (FiniteContinuedFractionExpansion : forall (x : Rational), ",
+            "forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Prop), ",
+            "forall (NormalizedFiniteExpansion : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Prop), ",
+            "forall (FinalPartialQuotientConvention : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Prop), ",
+            "forall (EquivalentExpansion : forall (length_left : Nat), ",
+            "forall (left : forall (i : Nat), Coeff), ",
+            "forall (length_right : Nat), ",
+            "forall (right : forall (i : Nat), Coeff), Prop), ",
+            "forall (uniqueness_law : forall (x : Rational), ",
+            "forall (length_left : Nat), forall (left : forall (i : Nat), Coeff), ",
+            "forall (length_right : Nat), forall (right : forall (i : Nat), Coeff), ",
+            "forall (left_expansion : FiniteContinuedFractionExpansion x length_left left), ",
+            "forall (right_expansion : FiniteContinuedFractionExpansion x length_right right), ",
+            "forall (left_normalized : NormalizedFiniteExpansion length_left left), ",
+            "forall (right_normalized : NormalizedFiniteExpansion length_right right), ",
+            "forall (left_final : FinalPartialQuotientConvention length_left left), ",
+            "forall (right_final : FinalPartialQuotientConvention length_right right), ",
+            "EquivalentExpansion length_left left length_right right), ",
+            "forall (x : Rational), ",
+            "forall (length_left : Nat), forall (left : forall (i : Nat), Coeff), ",
+            "forall (length_right : Nat), forall (right : forall (i : Nat), Coeff), ",
+            "forall (left_expansion : FiniteContinuedFractionExpansion x length_left left), ",
+            "forall (right_expansion : FiniteContinuedFractionExpansion x length_right right), ",
+            "forall (left_normalized : NormalizedFiniteExpansion length_left left), ",
+            "forall (right_normalized : NormalizedFiniteExpansion length_right right), ",
+            "forall (left_final : FinalPartialQuotientConvention length_left left), ",
+            "forall (right_final : FinalPartialQuotientConvention length_right right), ",
+            "EquivalentExpansion length_left left length_right right"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun Rational => ",
+            "fun FiniteContinuedFractionExpansion => ",
+            "fun NormalizedFiniteExpansion => ",
+            "fun FinalPartialQuotientConvention => fun EquivalentExpansion => ",
+            "fun uniqueness_law => fun x => fun length_left => fun left => ",
+            "fun length_right => fun right => fun left_expansion => ",
+            "fun right_expansion => fun left_normalized => ",
+            "fun right_normalized => fun left_final => fun right_final => ",
+            "uniqueness_law x length_left left length_right right ",
+            "left_expansion right_expansion left_normalized right_normalized ",
+            "left_final right_final"
+        ),
+    },
+    TheoremArtifact {
+        name: "final_partial_quotient_normalization_convention_explicit",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (NormalizedFiniteExpansion : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Prop), ",
+            "forall (FinalPartialQuotientConvention : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), Prop), ",
+            "forall (normalization_law : forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), ",
+            "forall (normalized : NormalizedFiniteExpansion length partial_quotients), ",
+            "FinalPartialQuotientConvention length partial_quotients), ",
+            "forall (length : Nat), ",
+            "forall (partial_quotients : forall (i : Nat), Coeff), ",
+            "forall (normalized : NormalizedFiniteExpansion length partial_quotients), ",
+            "FinalPartialQuotientConvention length partial_quotients"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun NormalizedFiniteExpansion => ",
+            "fun FinalPartialQuotientConvention => fun normalization_law => ",
+            "fun length => fun partial_quotients => fun normalized => ",
+            "normalization_law length partial_quotients normalized"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_continued_fraction_no_real_analysis_dependency_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FiniteContinuedFractionPackage : Type), ",
+            "forall (RationalExpansionPackage : Type), ",
+            "forall (EuclideanDivisionPackage : Type), ",
+            "forall (RealAnalysisPackage : Type), ",
+            "forall (InfiniteContinuedFractionPackage : Type), ",
+            "forall (NoRealAnalysisDependencyBoundary : ",
+            "forall (finite_cf : FiniteContinuedFractionPackage), ",
+            "forall (rational_expansion : RationalExpansionPackage), ",
+            "forall (euclidean_division : EuclideanDivisionPackage), ",
+            "forall (real_analysis : RealAnalysisPackage), ",
+            "forall (infinite_cf : InfiniteContinuedFractionPackage), Prop), ",
+            "forall (boundary_law : forall (finite_cf : FiniteContinuedFractionPackage), ",
+            "forall (rational_expansion : RationalExpansionPackage), ",
+            "forall (euclidean_division : EuclideanDivisionPackage), ",
+            "forall (real_analysis : RealAnalysisPackage), ",
+            "forall (infinite_cf : InfiniteContinuedFractionPackage), ",
+            "NoRealAnalysisDependencyBoundary finite_cf rational_expansion ",
+            "euclidean_division real_analysis infinite_cf), ",
+            "forall (finite_cf : FiniteContinuedFractionPackage), ",
+            "forall (rational_expansion : RationalExpansionPackage), ",
+            "forall (euclidean_division : EuclideanDivisionPackage), ",
+            "forall (real_analysis : RealAnalysisPackage), ",
+            "forall (infinite_cf : InfiniteContinuedFractionPackage), ",
+            "NoRealAnalysisDependencyBoundary finite_cf rational_expansion ",
+            "euclidean_division real_analysis infinite_cf"
+        ),
+        proof: concat!(
+            "fun FiniteContinuedFractionPackage => ",
+            "fun RationalExpansionPackage => fun EuclideanDivisionPackage => ",
+            "fun RealAnalysisPackage => fun InfiniteContinuedFractionPackage => ",
+            "fun NoRealAnalysisDependencyBoundary => fun boundary_law => ",
+            "fun finite_cf => fun rational_expansion => fun euclidean_division => ",
+            "fun real_analysis => fun infinite_cf => ",
+            "boundary_law finite_cf rational_expansion euclidean_division ",
+            "real_analysis infinite_cf"
         ),
     },
 ];
@@ -42441,6 +42657,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE.module
         || config.module == NUMBER_THEORY_MOBIUS_MODULE.module
         || config.module == NUMBER_THEORY_EULER_PRODUCT_MODULE.module
+        || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
