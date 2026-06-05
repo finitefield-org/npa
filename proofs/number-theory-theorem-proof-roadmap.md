@@ -605,8 +605,12 @@ semantics.
 
 ## NT-12 Sieve Methods And Circle Method
 
-- Status: planned.
-- Depends on: `NT-08`, `NT-11`, finite-sum and asymptotic-analysis APIs.
+- Status: in-progress.
+- Implementation progress:
+  - `NT-T35` added certificate-backed `Proofs.Ai.NumberTheory.Sieve`
+    defining L1 interfaces for Brun sieve, Selberg sieve, large sieve, fundamental lemma,
+    Brun's theorem, twin-prime reciprocal convergence, Chen's theorem, GPY, Zhang,
+    Maynard-Tao, and parity-problem limitations.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Sieve`
   - `Proofs.Ai.NumberTheory.CircleMethod`

@@ -205,6 +205,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_ZETA_MODULE,
     &NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE,
     &NUMBER_THEORY_DIRICHLET_L_MODULE,
+    &NUMBER_THEORY_SIEVE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2347,6 +2348,19 @@ const NUMBER_THEORY_DIRICHLET_L_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DIRICHLET_L_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_SIEVE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Sieve",
+    source_path: "Proofs/Ai/NumberTheory/Sieve/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Sieve/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Sieve/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Sieve/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_SIEVE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19905,6 +19919,146 @@ const NUMBER_THEORY_DIRICHLET_L_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun GeneralizedRiemannHypothesis => fun ConsequenceProp => fun grh_conditional_law => fun h => grh_conditional_law h"
+        ),
+    },
+];
+
+const NUMBER_THEORY_SIEVE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "brun_sieve_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), ",
+            "forall (SievedCount : (Int -> Prop) -> Real -> Real -> Real), forall (BrunSieveBound : (Int -> Prop) -> Real -> Real -> Real), ",
+            "forall (brun_sieve_law : forall (A : Int -> Prop), forall (x : Real), forall (z : Real), Le (SievedCount A x z) (BrunSieveBound A x z)), ",
+            "forall (A : Int -> Prop), forall (x : Real), forall (z : Real), Le (SievedCount A x z) (BrunSieveBound A x z)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun Le => fun SievedCount => fun BrunSieveBound => fun brun_sieve_law => fun A => fun x => fun z => brun_sieve_law A x z"
+        ),
+    },
+    TheoremArtifact {
+        name: "selberg_sieve_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), ",
+            "forall (SievedCount : (Int -> Prop) -> Real -> Real -> Real), forall (SelbergSieveBound : (Int -> Prop) -> Real -> Real -> Real), ",
+            "forall (selberg_sieve_law : forall (A : Int -> Prop), forall (x : Real), forall (z : Real), Le (SievedCount A x z) (SelbergSieveBound A x z)), ",
+            "forall (A : Int -> Prop), forall (x : Real), forall (z : Real), Le (SievedCount A x z) (SelbergSieveBound A x z)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun Le => fun SievedCount => fun SelbergSieveBound => fun selberg_sieve_law => fun A => fun x => fun z => selberg_sieve_law A x z"
+        ),
+    },
+    TheoremArtifact {
+        name: "large_sieve_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), ",
+            "forall (LargeSieveSum : (Int -> Real) -> Real -> Real), forall (LargeSieveBound : (Int -> Real) -> Real -> Real), ",
+            "forall (large_sieve_law : forall (a : Int -> Real), forall (N : Real), Le (LargeSieveSum a N) (LargeSieveBound a N)), ",
+            "forall (a : Int -> Real), forall (N : Real), Le (LargeSieveSum a N) (LargeSieveBound a N)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun Le => fun LargeSieveSum => fun LargeSieveBound => fun large_sieve_law => fun a => fun N => large_sieve_law a N"
+        ),
+    },
+    TheoremArtifact {
+        name: "fundamental_lemma_sieve_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), ",
+            "forall (SievedCount : (Int -> Prop) -> Real -> Real -> Real), forall (FundamentalLemmaApproximation : (Int -> Prop) -> Real -> Real -> Real), ",
+            "forall (fundamental_lemma_law : forall (A : Int -> Prop), forall (x : Real), forall (u : Real), Le (SievedCount A x u) (FundamentalLemmaApproximation A x u)), ",
+            "forall (A : Int -> Prop), forall (x : Real), forall (u : Real), Le (SievedCount A x u) (FundamentalLemmaApproximation A x u)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun Le => fun SievedCount => fun FundamentalLemmaApproximation => fun fundamental_lemma_law => fun A => fun x => fun u => fundamental_lemma_law A x u"
+        ),
+    },
+    TheoremArtifact {
+        name: "brun_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Int : Type), forall (Le : Real -> Real -> Prop), ",
+            "forall (TwinPrimeCount : Real -> Real), forall (BrunTheoremBound : Real -> Real), ",
+            "forall (brun_theorem_law : forall (x : Real), Le (TwinPrimeCount x) (BrunTheoremBound x)), ",
+            "forall (x : Real), Le (TwinPrimeCount x) (BrunTheoremBound x)"
+        ),
+        proof: concat!(
+            "fun Real => fun Int => fun Le => fun TwinPrimeCount => fun BrunTheoremBound => fun brun_theorem_law => fun x => brun_theorem_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "twin_prime_reciprocal_convergence_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (SumReciprocalsTwinPrimes : Real), forall (Converges : Real -> Prop), ",
+            "forall (twin_prime_reciprocal_convergence_law : Converges SumReciprocalsTwinPrimes), ",
+            "Converges SumReciprocalsTwinPrimes"
+        ),
+        proof: concat!(
+            "fun Real => fun SumReciprocalsTwinPrimes => fun Converges => fun twin_prime_reciprocal_convergence_law => twin_prime_reciprocal_convergence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chen_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (IsEven : Int -> Prop), forall (SufficientlyLarge : Int -> Prop), forall (ChenSumRepresentable : Int -> Prop), ",
+            "forall (chen_theorem_law : forall (n : Int), forall (even_n : IsEven n), forall (large_n : SufficientlyLarge n), ChenSumRepresentable n), ",
+            "forall (n : Int), forall (even_n : IsEven n), forall (large_n : SufficientlyLarge n), ChenSumRepresentable n"
+        ),
+        proof: concat!(
+            "fun Int => fun IsEven => fun SufficientlyLarge => fun ChenSumRepresentable => fun chen_theorem_law => fun n => fun even_n => fun large_n => chen_theorem_law n even_n large_n"
+        ),
+    },
+    TheoremArtifact {
+        name: "gpy_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Lt : Real -> Real -> Prop), forall (InfPrimeGapsRatio : Real), forall (Zero : Real), ",
+            "forall (gpy_theorem_law : Lt InfPrimeGapsRatio Zero), ",
+            "Lt InfPrimeGapsRatio Zero"
+        ),
+        proof: concat!(
+            "fun Real => fun Lt => fun InfPrimeGapsRatio => fun Zero => fun gpy_theorem_law => gpy_theorem_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "zhang_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (InfinitelyManyPairsWithGap : Int -> Prop), forall (BoundH : Int), ",
+            "forall (zhang_theorem_law : InfinitelyManyPairsWithGap BoundH), ",
+            "InfinitelyManyPairsWithGap BoundH"
+        ),
+        proof: concat!(
+            "fun Int => fun InfinitelyManyPairsWithGap => fun BoundH => fun zhang_theorem_law => zhang_theorem_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "maynard_tao_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), forall (InfinitelyManyTuplesWithBoundedGap : Nat -> Int -> Prop), ",
+            "forall (m_param : Nat), forall (BoundH : Int), ",
+            "forall (maynard_tao_theorem_law : InfinitelyManyTuplesWithBoundedGap m_param BoundH), ",
+            "InfinitelyManyTuplesWithBoundedGap m_param BoundH"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun InfinitelyManyTuplesWithBoundedGap => fun m_param => fun BoundH => fun maynard_tao_theorem_law => maynard_tao_theorem_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "sieve_parity_problem_limitation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (ParityLimitationProp : Prop), forall (sieve_parity_problem_law : ParityLimitationProp), ",
+            "ParityLimitationProp"
+        ),
+        proof: concat!(
+            "fun ParityLimitationProp => fun sieve_parity_problem_law => sieve_parity_problem_law"
         ),
     },
 ];

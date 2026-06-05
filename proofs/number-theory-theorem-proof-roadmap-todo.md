@@ -1025,7 +1025,7 @@ later in the file.
 
 ### NT-T35 Add Sieve Theory Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T31`, `NT-T33`
 - Areas: `Proofs/Ai/NumberTheory/Sieve/`
 - Tasks:

@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Sieve",
+  "source": "Proofs/Ai/NumberTheory/Sieve/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Sieve/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:46a42908d3d62e857eecb1ccd8589e29491052deb05d7526dfffb109b5bf8c43",
+  "certificate_file_sha256": "sha256:24c500cc71971b631dcb302d9f883b10bc3d0cb46f380fcd688fc5dbd1163ab7",
+  "export_hash": "sha256:7f12d044f0cc2ba5391d72ff0999b38b8a4c1a1443081c6aca0a78fdbf7103de",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:8330acb60a1714c8fc8dedeee79e037526fe87596c3c355b8e152c87525b199f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "brun_sieve_interface", "kind": "theorem" },
+    { "name": "selberg_sieve_interface", "kind": "theorem" },
+    { "name": "large_sieve_interface", "kind": "theorem" },
+    { "name": "fundamental_lemma_sieve_interface", "kind": "theorem" },
+    { "name": "brun_theorem_interface", "kind": "theorem" },
+    { "name": "twin_prime_reciprocal_convergence_interface", "kind": "theorem" },
+    { "name": "chen_theorem_interface", "kind": "theorem" },
+    { "name": "gpy_theorem_interface", "kind": "theorem" },
+    { "name": "zhang_theorem_interface", "kind": "theorem" },
+    { "name": "maynard_tao_theorem_interface", "kind": "theorem" },
+    { "name": "sieve_parity_problem_limitation_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
