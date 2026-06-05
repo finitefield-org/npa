@@ -714,7 +714,10 @@ semantics.
   - `NT-T42` added certificate-backed `Proofs.Ai.NumberTheory.PadicAnalysis` and
     `Proofs.Ai.NumberTheory.PadicMeasure` defining L1 interfaces for p-adic exponential,
     logarithm, Newton polygon, Strassmann theorem, Weierstrass preparation, Mahler
-    expansion, p-adic measure, and p-adic integration.
+    expansion, p-adic measure, p-adic integration, Amice transform, and
+    Kubota-Leopoldt p-adic L-function interpolation, with explicit norm/series
+    convergence dependencies, measure-theory-roadmap dependencies, and
+    no-trusted-analytic-primitive boundaries.
 - Depends on: `NT-13`, topology, metric completion, and valuation interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Valuation`

@@ -2566,7 +2566,14 @@ const NUMBER_THEORY_PADIC_ANALYSIS_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/PadicAnalysis/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/PadicAnalysis/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/PadicAnalysis/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.NumberTheory.Padic",
+        "Proofs.Ai.NumberTheory.LocalField",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+    ],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PADIC_ANALYSIS_THEOREMS,
@@ -2579,7 +2586,7 @@ const NUMBER_THEORY_PADIC_MEASURE_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/NumberTheory/PadicMeasure/certificate.npcert",
     meta_path: "Proofs/Ai/NumberTheory/PadicMeasure/meta.json",
     replay_path: "Proofs/Ai/NumberTheory/PadicMeasure/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.PadicAnalysis"],
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PADIC_MEASURE_THEOREMS,
@@ -21875,6 +21882,18 @@ const NUMBER_THEORY_PADIC_ANALYSIS_THEOREMS: &[TheoremArtifact] = &[
             "fun K => fun Binomial => fun MahlerSeries => fun mahler_law => fun f => mahler_law f"
         ),
     },
+    TheoremArtifact {
+        name: "padic_analytic_convergence_norm_series_dependency_surface",
+        universe_params: &[],
+        statement: "forall (PadicAnalyticFunction : Type), forall (NormedSpacePrerequisite : Type), forall (SeriesConvergenceTheorem : Type), forall (ConvergenceDependency : PadicAnalyticFunction -> NormedSpacePrerequisite -> SeriesConvergenceTheorem -> Prop), forall (dependency_law : forall (f : PadicAnalyticFunction), forall (normed_space : NormedSpacePrerequisite), forall (series_theorem : SeriesConvergenceTheorem), ConvergenceDependency f normed_space series_theorem), forall (f : PadicAnalyticFunction), forall (normed_space : NormedSpacePrerequisite), forall (series_theorem : SeriesConvergenceTheorem), ConvergenceDependency f normed_space series_theorem",
+        proof: "fun PadicAnalyticFunction => fun NormedSpacePrerequisite => fun SeriesConvergenceTheorem => fun ConvergenceDependency => fun dependency_law => fun f => fun normed_space => fun series_theorem => dependency_law f normed_space series_theorem",
+    },
+    TheoremArtifact {
+        name: "padic_analytic_functions_not_trusted_primitives_boundary",
+        universe_params: &[],
+        statement: "forall (PadicAnalyticFunctionPackage : Type), forall (TrustedPrimitivePackage : Type), forall (NotTrustedPrimitiveBoundary : PadicAnalyticFunctionPackage -> TrustedPrimitivePackage -> Prop), forall (boundary_law : forall (analytic_function : PadicAnalyticFunctionPackage), forall (trusted_primitive : TrustedPrimitivePackage), NotTrustedPrimitiveBoundary analytic_function trusted_primitive), forall (analytic_function : PadicAnalyticFunctionPackage), forall (trusted_primitive : TrustedPrimitivePackage), NotTrustedPrimitiveBoundary analytic_function trusted_primitive",
+        proof: "fun PadicAnalyticFunctionPackage => fun TrustedPrimitivePackage => fun NotTrustedPrimitiveBoundary => fun boundary_law => fun analytic_function => fun trusted_primitive => boundary_law analytic_function trusted_primitive",
+    },
 ];
 
 const NUMBER_THEORY_PADIC_MEASURE_THEOREMS: &[TheoremArtifact] = &[
@@ -21897,6 +21916,30 @@ const NUMBER_THEORY_PADIC_MEASURE_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu"
         ),
+    },
+    TheoremArtifact {
+        name: "amice_transform_interface",
+        universe_params: &[],
+        statement: "forall (Measure : Type), forall (PowerSeries : Type), forall (AmiceTransform : Measure -> PowerSeries), forall (amice_law : forall (mu : Measure), @Eq.{1} PowerSeries (AmiceTransform mu) (AmiceTransform mu)), forall (mu : Measure), @Eq.{1} PowerSeries (AmiceTransform mu) (AmiceTransform mu)",
+        proof: "fun Measure => fun PowerSeries => fun AmiceTransform => fun amice_law => fun mu => amice_law mu",
+    },
+    TheoremArtifact {
+        name: "kubota_leopoldt_padic_l_function_interface",
+        universe_params: &[],
+        statement: "forall (Character : Type), forall (PadicLFunction : Type), forall (InterpolationAssumption : Character -> Prop), forall (SpecialValueFormula : Character -> PadicLFunction -> Prop), forall (kl_law : forall (chi : Character), forall (L_p : PadicLFunction), InterpolationAssumption chi -> SpecialValueFormula chi L_p), forall (chi : Character), forall (L_p : PadicLFunction), InterpolationAssumption chi -> SpecialValueFormula chi L_p",
+        proof: "fun Character => fun PadicLFunction => fun InterpolationAssumption => fun SpecialValueFormula => fun kl_law => fun chi => fun L_p => kl_law chi L_p",
+    },
+    TheoremArtifact {
+        name: "padic_measure_theory_roadmap_dependency_surface",
+        universe_params: &[],
+        statement: "forall (PadicMeasurePackage : Type), forall (MeasureTheoryRoadmapPrerequisite : Type), forall (MeasureDependency : PadicMeasurePackage -> MeasureTheoryRoadmapPrerequisite -> Prop), forall (dependency_law : forall (padic_measure : PadicMeasurePackage), forall (measure_prereq : MeasureTheoryRoadmapPrerequisite), MeasureDependency padic_measure measure_prereq), forall (padic_measure : PadicMeasurePackage), forall (measure_prereq : MeasureTheoryRoadmapPrerequisite), MeasureDependency padic_measure measure_prereq",
+        proof: "fun PadicMeasurePackage => fun MeasureTheoryRoadmapPrerequisite => fun MeasureDependency => fun dependency_law => fun padic_measure => fun measure_prereq => dependency_law padic_measure measure_prereq",
+    },
+    TheoremArtifact {
+        name: "padic_l_function_interpolation_assumptions_explicit_surface",
+        universe_params: &[],
+        statement: "forall (PadicLFunctionPackage : Type), forall (InterpolationAssumptionPackage : Type), forall (ExplicitInterpolationAssumptions : PadicLFunctionPackage -> InterpolationAssumptionPackage -> Prop), forall (explicit_law : forall (l_function : PadicLFunctionPackage), forall (interpolation_assumptions : InterpolationAssumptionPackage), ExplicitInterpolationAssumptions l_function interpolation_assumptions), forall (l_function : PadicLFunctionPackage), forall (interpolation_assumptions : InterpolationAssumptionPackage), ExplicitInterpolationAssumptions l_function interpolation_assumptions",
+        proof: "fun PadicLFunctionPackage => fun InterpolationAssumptionPackage => fun ExplicitInterpolationAssumptions => fun explicit_law => fun l_function => fun interpolation_assumptions => explicit_law l_function interpolation_assumptions",
     },
 ];
 

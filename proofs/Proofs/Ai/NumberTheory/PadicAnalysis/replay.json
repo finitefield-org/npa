@@ -33,6 +33,16 @@
       "declaration": "mahler_expansion_interface",
       "source_kind": "explicit_term",
       "term": "fun K => fun Binomial => fun MahlerSeries => fun mahler_law => fun f => mahler_law f"
+    },
+    {
+      "declaration": "padic_analytic_convergence_norm_series_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun PadicAnalyticFunction => fun NormedSpacePrerequisite => fun SeriesConvergenceTheorem => fun ConvergenceDependency => fun dependency_law => fun f => fun normed_space => fun series_theorem => dependency_law f normed_space series_theorem"
+    },
+    {
+      "declaration": "padic_analytic_functions_not_trusted_primitives_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PadicAnalyticFunctionPackage => fun TrustedPrimitivePackage => fun NotTrustedPrimitiveBoundary => fun boundary_law => fun analytic_function => fun trusted_primitive => boundary_law analytic_function trusted_primitive"
     }
   ],
   "acceptance": {

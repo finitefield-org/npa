@@ -13,6 +13,26 @@
       "declaration": "padic_integration_interface",
       "source_kind": "explicit_term",
       "term": "fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu"
+    },
+    {
+      "declaration": "amice_transform_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Measure => fun PowerSeries => fun AmiceTransform => fun amice_law => fun mu => amice_law mu"
+    },
+    {
+      "declaration": "kubota_leopoldt_padic_l_function_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Character => fun PadicLFunction => fun InterpolationAssumption => fun SpecialValueFormula => fun kl_law => fun chi => fun L_p => kl_law chi L_p"
+    },
+    {
+      "declaration": "padic_measure_theory_roadmap_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun PadicMeasurePackage => fun MeasureTheoryRoadmapPrerequisite => fun MeasureDependency => fun dependency_law => fun padic_measure => fun measure_prereq => dependency_law padic_measure measure_prereq"
+    },
+    {
+      "declaration": "padic_l_function_interpolation_assumptions_explicit_surface",
+      "source_kind": "explicit_term",
+      "term": "fun PadicLFunctionPackage => fun InterpolationAssumptionPackage => fun ExplicitInterpolationAssumptions => fun explicit_law => fun l_function => fun interpolation_assumptions => explicit_law l_function interpolation_assumptions"
     }
   ],
   "acceptance": {

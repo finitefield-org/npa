@@ -1,4 +1,9 @@
 import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.NumberTheory.Padic
+import Proofs.Ai.NumberTheory.LocalField
+import Proofs.Ai.Vector.AbstractSpace
+import Proofs.Ai.Analysis.AbstractNormedSpace
 
 theorem padic_exp_interface :
   forall (K : Type), forall (Exp : K -> K), forall (exp_law : forall (x : K), @Eq.{1} K (Exp x) (Exp x)), forall (x : K), @Eq.{1} K (Exp x) (Exp x) :=
@@ -23,4 +28,12 @@ theorem weierstrass_preparation_interface :
 theorem mahler_expansion_interface :
   forall (K : Type), forall (Binomial : K -> K -> K), forall (MahlerSeries : (K -> K) -> Type), forall (mahler_law : forall (f : K -> K), MahlerSeries f -> MahlerSeries f), forall (f : K -> K), MahlerSeries f -> MahlerSeries f :=
   fun K => fun Binomial => fun MahlerSeries => fun mahler_law => fun f => mahler_law f
+
+theorem padic_analytic_convergence_norm_series_dependency_surface :
+  forall (PadicAnalyticFunction : Type), forall (NormedSpacePrerequisite : Type), forall (SeriesConvergenceTheorem : Type), forall (ConvergenceDependency : PadicAnalyticFunction -> NormedSpacePrerequisite -> SeriesConvergenceTheorem -> Prop), forall (dependency_law : forall (f : PadicAnalyticFunction), forall (normed_space : NormedSpacePrerequisite), forall (series_theorem : SeriesConvergenceTheorem), ConvergenceDependency f normed_space series_theorem), forall (f : PadicAnalyticFunction), forall (normed_space : NormedSpacePrerequisite), forall (series_theorem : SeriesConvergenceTheorem), ConvergenceDependency f normed_space series_theorem :=
+  fun PadicAnalyticFunction => fun NormedSpacePrerequisite => fun SeriesConvergenceTheorem => fun ConvergenceDependency => fun dependency_law => fun f => fun normed_space => fun series_theorem => dependency_law f normed_space series_theorem
+
+theorem padic_analytic_functions_not_trusted_primitives_boundary :
+  forall (PadicAnalyticFunctionPackage : Type), forall (TrustedPrimitivePackage : Type), forall (NotTrustedPrimitiveBoundary : PadicAnalyticFunctionPackage -> TrustedPrimitivePackage -> Prop), forall (boundary_law : forall (analytic_function : PadicAnalyticFunctionPackage), forall (trusted_primitive : TrustedPrimitivePackage), NotTrustedPrimitiveBoundary analytic_function trusted_primitive), forall (analytic_function : PadicAnalyticFunctionPackage), forall (trusted_primitive : TrustedPrimitivePackage), NotTrustedPrimitiveBoundary analytic_function trusted_primitive :=
+  fun PadicAnalyticFunctionPackage => fun TrustedPrimitivePackage => fun NotTrustedPrimitiveBoundary => fun boundary_law => fun analytic_function => fun trusted_primitive => boundary_law analytic_function trusted_primitive
 

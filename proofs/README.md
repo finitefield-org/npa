@@ -281,6 +281,14 @@ Current bundles:
   and totally ramified surfaces, with valuation/completion dependencies,
   interface-level construction boundaries, and shared Galois-representation
   ramification vocabulary.
+- `Proofs/Ai/NumberTheory/PadicAnalysis/`: certificate-backed p-adic analysis
+  interface preserving p-adic exponential, logarithm, Newton polygon,
+  Strassmann, Weierstrass, Mahler, explicit norm/series convergence
+  dependencies, and a boundary excluding trusted analytic primitives.
+- `Proofs/Ai/NumberTheory/PadicMeasure/`: certificate-backed p-adic measure
+  interface preserving measure, integration, Amice transform, Kubota-Leopoldt
+  p-adic L-function, measure-theory-roadmap dependencies, and explicit
+  interpolation-assumption surfaces.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

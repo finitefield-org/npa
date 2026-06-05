@@ -1,4 +1,5 @@
 import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.PadicAnalysis
 
 theorem padic_measure_interface :
   forall (Space : Type), forall (Measure : Type), forall (measure_law : forall (m : Measure), @Eq.{1} Measure m m), forall (m : Measure), @Eq.{1} Measure m m :=
@@ -7,4 +8,20 @@ theorem padic_measure_interface :
 theorem padic_integration_interface :
   forall (Space : Type), forall (Measure : Type), forall (Integrand : Type), forall (Integral : Integrand -> Measure -> Prop), forall (integral_law : forall (f : Integrand), forall (mu : Measure), Integral f mu -> Integral f mu), forall (f : Integrand), forall (mu : Measure), Integral f mu -> Integral f mu :=
   fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu
+
+theorem amice_transform_interface :
+  forall (Measure : Type), forall (PowerSeries : Type), forall (AmiceTransform : Measure -> PowerSeries), forall (amice_law : forall (mu : Measure), @Eq.{1} PowerSeries (AmiceTransform mu) (AmiceTransform mu)), forall (mu : Measure), @Eq.{1} PowerSeries (AmiceTransform mu) (AmiceTransform mu) :=
+  fun Measure => fun PowerSeries => fun AmiceTransform => fun amice_law => fun mu => amice_law mu
+
+theorem kubota_leopoldt_padic_l_function_interface :
+  forall (Character : Type), forall (PadicLFunction : Type), forall (InterpolationAssumption : Character -> Prop), forall (SpecialValueFormula : Character -> PadicLFunction -> Prop), forall (kl_law : forall (chi : Character), forall (L_p : PadicLFunction), InterpolationAssumption chi -> SpecialValueFormula chi L_p), forall (chi : Character), forall (L_p : PadicLFunction), InterpolationAssumption chi -> SpecialValueFormula chi L_p :=
+  fun Character => fun PadicLFunction => fun InterpolationAssumption => fun SpecialValueFormula => fun kl_law => fun chi => fun L_p => kl_law chi L_p
+
+theorem padic_measure_theory_roadmap_dependency_surface :
+  forall (PadicMeasurePackage : Type), forall (MeasureTheoryRoadmapPrerequisite : Type), forall (MeasureDependency : PadicMeasurePackage -> MeasureTheoryRoadmapPrerequisite -> Prop), forall (dependency_law : forall (padic_measure : PadicMeasurePackage), forall (measure_prereq : MeasureTheoryRoadmapPrerequisite), MeasureDependency padic_measure measure_prereq), forall (padic_measure : PadicMeasurePackage), forall (measure_prereq : MeasureTheoryRoadmapPrerequisite), MeasureDependency padic_measure measure_prereq :=
+  fun PadicMeasurePackage => fun MeasureTheoryRoadmapPrerequisite => fun MeasureDependency => fun dependency_law => fun padic_measure => fun measure_prereq => dependency_law padic_measure measure_prereq
+
+theorem padic_l_function_interpolation_assumptions_explicit_surface :
+  forall (PadicLFunctionPackage : Type), forall (InterpolationAssumptionPackage : Type), forall (ExplicitInterpolationAssumptions : PadicLFunctionPackage -> InterpolationAssumptionPackage -> Prop), forall (explicit_law : forall (l_function : PadicLFunctionPackage), forall (interpolation_assumptions : InterpolationAssumptionPackage), ExplicitInterpolationAssumptions l_function interpolation_assumptions), forall (l_function : PadicLFunctionPackage), forall (interpolation_assumptions : InterpolationAssumptionPackage), ExplicitInterpolationAssumptions l_function interpolation_assumptions :=
+  fun PadicLFunctionPackage => fun InterpolationAssumptionPackage => fun ExplicitInterpolationAssumptions => fun explicit_law => fun l_function => fun interpolation_assumptions => explicit_law l_function interpolation_assumptions
 
