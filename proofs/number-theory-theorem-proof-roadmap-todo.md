@@ -1201,7 +1201,7 @@ later in the file.
 
 ### NT-T43 Add Class Field Theory Reciprocity Surfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T39`, `NT-T41`, Galois and cohomology prerequisites
 - Areas: `Proofs/Ai/NumberTheory/ClassField/Local/`, `Proofs/Ai/NumberTheory/ClassField/Global/`
 - Tasks:

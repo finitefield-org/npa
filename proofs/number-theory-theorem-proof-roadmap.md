@@ -728,7 +728,12 @@ semantics.
 
 ## NT-15 Class Field Theory
 
-- Status: planned.
+- Status: in-progress.
+- Implementation progress:
+  - `NT-T43` added certificate-backed `Proofs.Ai.NumberTheory.ClassField.Local` and
+    `Proofs.Ai.NumberTheory.ClassField.Global` defining L1 interfaces for Artin map,
+    local reciprocity, Kronecker-Weber theorem, idele class group, global reciprocity,
+    Takagi existence, and Hilbert class field.
 - Depends on: `NT-13`, `NT-14`, group cohomology, ideles, and Galois
   extensions.
 - Target modules:

@@ -219,6 +219,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_LOCAL_FIELD_MODULE,
     &NUMBER_THEORY_PADIC_ANALYSIS_MODULE,
     &NUMBER_THEORY_PADIC_MEASURE_MODULE,
+    &NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE,
+    &NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2549,6 +2551,32 @@ const NUMBER_THEORY_PADIC_MEASURE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PADIC_MEASURE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ClassField.Local",
+    source_path: "Proofs/Ai/NumberTheory/ClassField/Local/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ClassField/Local/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ClassField/Local/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ClassField/Local/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CLASS_FIELD_LOCAL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ClassField.Global",
+    source_path: "Proofs/Ai/NumberTheory/ClassField/Global/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ClassField/Global/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ClassField/Global/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ClassField/Global/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21455,6 +21483,82 @@ const NUMBER_THEORY_PADIC_MEASURE_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Space => fun Measure => fun Integrand => fun Integral => fun integral_law => fun f => fun mu => integral_law f mu"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CLASS_FIELD_LOCAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "artin_map_local_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (G : Type), forall (ArtinMap : K -> G), forall (artin_law : forall (x : K), @Eq.{1} G (ArtinMap x) (ArtinMap x)), forall (x : K), @Eq.{1} G (ArtinMap x) (ArtinMap x)"
+        ),
+        proof: concat!(
+            "fun K => fun G => fun ArtinMap => fun artin_law => fun x => artin_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_reciprocity_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (G : Type), forall (Isomorphism : Prop), forall (recip_law : Isomorphism -> Isomorphism), Isomorphism -> Isomorphism"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun G => fun Isomorphism => fun recip_law => recip_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "kronecker_weber_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (IsAbelianExtension : Prop), forall (IsCyclotomicExtension : Prop), forall (kw_law : IsAbelianExtension -> IsCyclotomicExtension), IsAbelianExtension -> IsCyclotomicExtension"
+        ),
+        proof: concat!(
+            "fun K => fun IsAbelianExtension => fun IsCyclotomicExtension => fun kw_law => kw_law"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "idele_class_group_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Idele : Type), forall (IdeleClass : Type), forall (class_law : forall (x : IdeleClass), @Eq.{1} IdeleClass x x), forall (x : IdeleClass), @Eq.{1} IdeleClass x x"
+        ),
+        proof: concat!(
+            "fun K => fun Idele => fun IdeleClass => fun class_law => fun x => class_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "global_reciprocity_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (IdeleClass : Type), forall (ArtinMap : IdeleClass -> Type), forall (recip_law : forall (c : IdeleClass), ArtinMap c -> ArtinMap c), forall (c : IdeleClass), ArtinMap c -> ArtinMap c"
+        ),
+        proof: concat!(
+            "fun K => fun IdeleClass => fun ArtinMap => fun recip_law => fun c => recip_law c"
+        ),
+    },
+    TheoremArtifact {
+        name: "takagi_existence_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (IdeleClass : Type), forall (IsClassField : Type -> Prop), forall (takagi_law : forall (L : Type), IsClassField L -> IsClassField L), forall (L : Type), IsClassField L -> IsClassField L"
+        ),
+        proof: concat!(
+            "fun K => fun IdeleClass => fun IsClassField => fun takagi_law => fun L => takagi_law L"
+        ),
+    },
+    TheoremArtifact {
+        name: "hilbert_class_field_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (H : Type), forall (IsHilbertClassField : Prop), forall (hilbert_law : IsHilbertClassField -> IsHilbertClassField), IsHilbertClassField -> IsHilbertClassField"
+        ),
+        proof: concat!(
+            "fun K => fun H => fun IsHilbertClassField => fun hilbert_law => hilbert_law"
         ),
     },
 ];

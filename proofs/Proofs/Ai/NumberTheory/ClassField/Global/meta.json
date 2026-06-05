@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassField.Global",
+  "source": "Proofs/Ai/NumberTheory/ClassField/Global/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ClassField/Global/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b68a0baf7ae5da008bce213537c516cb80078372ba6fc32e2f55bf747d1777f3",
+  "certificate_file_sha256": "sha256:60583b520eecd10961df7d63c336a0a879fbeac2acfa2185a74b429ec6aee905",
+  "export_hash": "sha256:51f833952717d7d694a40d8bb3ba41878c9da0c2a5f472ab71ed1f377452531f",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:0707ecfbef729f8160a2089b6d2fd329bed1d70c100b436638132cfac202bf44",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "idele_class_group_interface", "kind": "theorem" },
+    { "name": "global_reciprocity_theorem_interface", "kind": "theorem" },
+    { "name": "takagi_existence_theorem_interface", "kind": "theorem" },
+    { "name": "hilbert_class_field_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

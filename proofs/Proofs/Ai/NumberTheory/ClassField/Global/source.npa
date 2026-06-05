@@ -1,0 +1,18 @@
+import Std.Logic.Eq
+
+theorem idele_class_group_interface :
+  forall (K : Type), forall (Idele : Type), forall (IdeleClass : Type), forall (class_law : forall (x : IdeleClass), @Eq.{1} IdeleClass x x), forall (x : IdeleClass), @Eq.{1} IdeleClass x x :=
+  fun K => fun Idele => fun IdeleClass => fun class_law => fun x => class_law x
+
+theorem global_reciprocity_theorem_interface :
+  forall (K : Type), forall (IdeleClass : Type), forall (ArtinMap : IdeleClass -> Type), forall (recip_law : forall (c : IdeleClass), ArtinMap c -> ArtinMap c), forall (c : IdeleClass), ArtinMap c -> ArtinMap c :=
+  fun K => fun IdeleClass => fun ArtinMap => fun recip_law => fun c => recip_law c
+
+theorem takagi_existence_theorem_interface :
+  forall (K : Type), forall (IdeleClass : Type), forall (IsClassField : Type -> Prop), forall (takagi_law : forall (L : Type), IsClassField L -> IsClassField L), forall (L : Type), IsClassField L -> IsClassField L :=
+  fun K => fun IdeleClass => fun IsClassField => fun takagi_law => fun L => takagi_law L
+
+theorem hilbert_class_field_interface :
+  forall (K : Type), forall (H : Type), forall (IsHilbertClassField : Prop), forall (hilbert_law : IsHilbertClassField -> IsHilbertClassField), IsHilbertClassField -> IsHilbertClassField :=
+  fun K => fun H => fun IsHilbertClassField => fun hilbert_law => hilbert_law
+

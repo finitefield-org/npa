@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassField.Global",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "idele_class_group_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Idele => fun IdeleClass => fun class_law => fun x => class_law x"
+    },
+    {
+      "declaration": "global_reciprocity_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun IdeleClass => fun ArtinMap => fun recip_law => fun c => recip_law c"
+    },
+    {
+      "declaration": "takagi_existence_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun IdeleClass => fun IsClassField => fun takagi_law => fun L => takagi_law L"
+    },
+    {
+      "declaration": "hilbert_class_field_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun H => fun IsHilbertClassField => fun hilbert_law => hilbert_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ClassField/Global/certificate.npcert"
+  }
+}

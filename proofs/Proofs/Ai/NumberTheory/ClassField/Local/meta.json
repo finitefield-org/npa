@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassField.Local",
+  "source": "Proofs/Ai/NumberTheory/ClassField/Local/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ClassField/Local/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:189c448eebe9dbb5c289ac083235235c62708f9e620c55c0b5dd732d355a8e90",
+  "certificate_file_sha256": "sha256:1c917f913b460a7606f70bd0a2e0b5f2fb474d7f22122c9eb249a84b23b099a9",
+  "export_hash": "sha256:f0bb6e4b48d7afd84b1a45b4967c532de1b3c66acdb474c6d292404c706ed8a6",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:0142d77e5ebb5972b5510b3ea935bc9defd53fe515f338850b43838eff27ab8d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "artin_map_local_interface", "kind": "theorem" },
+    { "name": "local_reciprocity_theorem_interface", "kind": "theorem" },
+    { "name": "kronecker_weber_theorem_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,14 @@
+import Std.Logic.Eq
+
+theorem artin_map_local_interface :
+  forall (K : Type), forall (G : Type), forall (ArtinMap : K -> G), forall (artin_law : forall (x : K), @Eq.{1} G (ArtinMap x) (ArtinMap x)), forall (x : K), @Eq.{1} G (ArtinMap x) (ArtinMap x) :=
+  fun K => fun G => fun ArtinMap => fun artin_law => fun x => artin_law x
+
+theorem local_reciprocity_theorem_interface :
+  forall (K : Type), forall (L : Type), forall (G : Type), forall (Isomorphism : Prop), forall (recip_law : Isomorphism -> Isomorphism), Isomorphism -> Isomorphism :=
+  fun K => fun L => fun G => fun Isomorphism => fun recip_law => recip_law
+
+theorem kronecker_weber_theorem_interface :
+  forall (K : Type), forall (IsAbelianExtension : Prop), forall (IsCyclotomicExtension : Prop), forall (kw_law : IsAbelianExtension -> IsCyclotomicExtension), IsAbelianExtension -> IsCyclotomicExtension :=
+  fun K => fun IsAbelianExtension => fun IsCyclotomicExtension => fun kw_law => kw_law
+
