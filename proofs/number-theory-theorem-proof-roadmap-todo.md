@@ -657,7 +657,7 @@ later in the file.
 
 ### NT-T18 Add Dirichlet Characters And Gauss Sums
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T16`
 - Areas: `Proofs/Ai/NumberTheory/Character/`, `Proofs/Ai/NumberTheory/GaussSum/`
 - Tasks:

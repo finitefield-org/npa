@@ -169,6 +169,15 @@ Current bundles:
   prime and prime_power existence surfaces, a ChineseRemainder-dependent classification route,
   and boundaries separating definitions from primitive-root existence/classification assumptions
   and preventing backward dependency from finite unit-group theorems.
+- `Proofs/Ai/NumberTheory/Character/`: certificate-backed Dirichlet character interface
+  downstream of modular unit groups, `phi`, and primitive roots, preserving
+  `DirichletCharacter` definition surfaces, finite character-group packaging, orthogonality
+  relations without analytic `L`-function dependencies, and `discrete_log` statement surfaces
+  that keep algorithms and runtime solvers outside trusted certificates.
+- `Proofs/Ai/NumberTheory/GaussSum/`: certificate-backed Gauss sum interface downstream of
+  `Character`, preserving `GaussSum` definitions over an explicit coefficient ring,
+  multiplicative Dirichlet character data, additive character data, basic identities,
+  orthogonality bridges, and boundaries excluding analytic `L`-function assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

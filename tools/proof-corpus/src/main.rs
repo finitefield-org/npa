@@ -179,6 +179,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PRIMALITY_TEST_MODULE,
     &NUMBER_THEORY_RSA_MODULE,
     &NUMBER_THEORY_PRIMITIVE_ROOT_MODULE,
+    &NUMBER_THEORY_CHARACTER_MODULE,
+    &NUMBER_THEORY_GAUSS_SUM_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -1874,6 +1876,44 @@ const NUMBER_THEORY_PRIMITIVE_ROOT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PRIMITIVE_ROOT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CHARACTER_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Character",
+    source_path: "Proofs/Ai/NumberTheory/Character/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Character/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Character/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Character/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.ModularGroup",
+        "Proofs.Ai.NumberTheory.Phi",
+        "Proofs.Ai.NumberTheory.PrimitiveRoot",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_CHARACTER_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_GAUSS_SUM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.GaussSum",
+    source_path: "Proofs/Ai/NumberTheory/GaussSum/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/GaussSum/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/GaussSum/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/GaussSum/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.NumberTheory.Character",
+        "Proofs.Ai.NumberTheory.PrimitiveRoot",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_GAUSS_SUM_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -11986,6 +12026,291 @@ const NUMBER_THEORY_PRIMITIVE_ROOT_THEOREMS: &[TheoremArtifact] = &[
             "fun boundary_law => fun primitive_root => fun unit_group => ",
             "fun cyclic_group => fun existence => fun classification => ",
             "boundary_law primitive_root unit_group cyclic_group existence classification"
+        ),
+    },
+];
+
+const NUMBER_THEORY_CHARACTER_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dirichlet_character_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Coeff : Type), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (PeriodicityModulo : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (MultiplicativeModulo : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (VanishesOffUnits : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (definition_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), ",
+            "forall (periodic : PeriodicityModulo modulus chi), ",
+            "forall (multiplicative : MultiplicativeModulo modulus chi), ",
+            "forall (off_units : VanishesOffUnits modulus chi), ",
+            "DirichletCharacter modulus chi), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), ",
+            "forall (periodic : PeriodicityModulo modulus chi), ",
+            "forall (multiplicative : MultiplicativeModulo modulus chi), ",
+            "forall (off_units : VanishesOffUnits modulus chi), ",
+            "DirichletCharacter modulus chi"
+        ),
+        proof: concat!(
+            "fun Int => fun Coeff => fun DirichletCharacter => fun UnitModulo => ",
+            "fun PeriodicityModulo => fun MultiplicativeModulo => fun VanishesOffUnits => ",
+            "fun definition_law => fun modulus => fun chi => fun periodic => ",
+            "fun multiplicative => fun off_units => ",
+            "definition_law modulus chi periodic multiplicative off_units"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_character_group_interface_surface",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Character : Sort u), forall (one : Character), ",
+            "forall (mul : forall (a : Character), forall (b : Character), Character), ",
+            "forall (inv : forall (a : Character), Character), ",
+            "forall (DirichletCharacterGroupPackage : forall (laws : @GroupLawArgs.{u} Character one mul inv), Prop), ",
+            "forall (FiniteCharacterGroupEvidence : forall (laws : @GroupLawArgs.{u} Character one mul inv), Prop), ",
+            "forall (package_law : forall (laws : @GroupLawArgs.{u} Character one mul inv), ",
+            "forall (finite_characters : FiniteCharacterGroupEvidence laws), ",
+            "DirichletCharacterGroupPackage laws), ",
+            "forall (laws : @GroupLawArgs.{u} Character one mul inv), ",
+            "forall (finite_characters : FiniteCharacterGroupEvidence laws), ",
+            "DirichletCharacterGroupPackage laws"
+        ),
+        proof: concat!(
+            "fun Character => fun one => fun mul => fun inv => ",
+            "fun DirichletCharacterGroupPackage => fun FiniteCharacterGroupEvidence => ",
+            "fun package_law => fun laws => fun finite_characters => ",
+            "package_law laws finite_characters"
+        ),
+    },
+    TheoremArtifact {
+        name: "character_orthogonality_relation_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Coeff : Type), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (FiniteCharacterGroupEvidence : forall (modulus : Int), Prop), ",
+            "forall (CharacterSum : forall (modulus : Int), forall (f : forall (a : Int), Coeff), Coeff), ",
+            "forall (CharacterOrthogonalityRelation : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (orthogonality_law : forall (modulus : Int), forall (a : Int), forall (b : Int), ",
+            "forall (unit_a : UnitModulo modulus a), forall (unit_b : UnitModulo modulus b), ",
+            "forall (finite_characters : FiniteCharacterGroupEvidence modulus), ",
+            "CharacterOrthogonalityRelation modulus a b), ",
+            "forall (modulus : Int), forall (a : Int), forall (b : Int), ",
+            "forall (unit_a : UnitModulo modulus a), forall (unit_b : UnitModulo modulus b), ",
+            "forall (finite_characters : FiniteCharacterGroupEvidence modulus), ",
+            "CharacterOrthogonalityRelation modulus a b"
+        ),
+        proof: concat!(
+            "fun Int => fun Coeff => fun DirichletCharacter => fun UnitModulo => ",
+            "fun FiniteCharacterGroupEvidence => fun CharacterSum => ",
+            "fun CharacterOrthogonalityRelation => fun orthogonality_law => ",
+            "fun modulus => fun a => fun b => fun unit_a => fun unit_b => ",
+            "fun finite_characters => orthogonality_law modulus a b unit_a unit_b finite_characters"
+        ),
+    },
+    TheoremArtifact {
+        name: "character_orthogonality_no_analytic_l_function_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (DirichletCharacterPackage : Type), ",
+            "forall (CharacterOrthogonalityPackage : Type), ",
+            "forall (AnalyticLFunctionPackage : Type), ",
+            "forall (ComplexAnalysisPackage : Type), ",
+            "forall (NoAnalyticDependencyBoundary : forall (characters : DirichletCharacterPackage), ",
+            "forall (orthogonality : CharacterOrthogonalityPackage), ",
+            "forall (l_function : AnalyticLFunctionPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), Prop), ",
+            "forall (boundary_law : forall (characters : DirichletCharacterPackage), ",
+            "forall (orthogonality : CharacterOrthogonalityPackage), ",
+            "forall (l_function : AnalyticLFunctionPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), ",
+            "NoAnalyticDependencyBoundary characters orthogonality l_function complex_analysis), ",
+            "forall (characters : DirichletCharacterPackage), ",
+            "forall (orthogonality : CharacterOrthogonalityPackage), ",
+            "forall (l_function : AnalyticLFunctionPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), ",
+            "NoAnalyticDependencyBoundary characters orthogonality l_function complex_analysis"
+        ),
+        proof: concat!(
+            "fun DirichletCharacterPackage => fun CharacterOrthogonalityPackage => ",
+            "fun AnalyticLFunctionPackage => fun ComplexAnalysisPackage => ",
+            "fun NoAnalyticDependencyBoundary => fun boundary_law => ",
+            "fun characters => fun orthogonality => fun l_function => fun complex_analysis => ",
+            "boundary_law characters orthogonality l_function complex_analysis"
+        ),
+    },
+    TheoremArtifact {
+        name: "discrete_log_statement_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Nat : Type), ",
+            "forall (PrimitiveRootModulo : forall (modulus : Int), forall (g : Int), Prop), ",
+            "forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), ",
+            "forall (DiscreteLog : forall (modulus : Int), forall (g : Int), forall (a : Int), Nat), ",
+            "forall (discrete_log_statement : forall (modulus : Int), forall (g : Int), forall (a : Int), forall (k : Nat), Prop), ",
+            "forall (statement_law : forall (modulus : Int), forall (g : Int), forall (a : Int), ",
+            "forall (primitive_root_g : PrimitiveRootModulo modulus g), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "discrete_log_statement modulus g a (DiscreteLog modulus g a)), ",
+            "forall (modulus : Int), forall (g : Int), forall (a : Int), ",
+            "forall (primitive_root_g : PrimitiveRootModulo modulus g), ",
+            "forall (unit_a : UnitModulo modulus a), ",
+            "discrete_log_statement modulus g a (DiscreteLog modulus g a)"
+        ),
+        proof: concat!(
+            "fun Int => fun Nat => fun PrimitiveRootModulo => fun UnitModulo => ",
+            "fun DiscreteLog => fun discrete_log_statement => fun statement_law => ",
+            "fun modulus => fun g => fun a => fun primitive_root_g => fun unit_a => ",
+            "statement_law modulus g a primitive_root_g unit_a"
+        ),
+    },
+    TheoremArtifact {
+        name: "discrete_log_algorithm_not_trusted_solver_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (DiscreteLogStatementPackage : Type), ",
+            "forall (DiscreteLogAlgorithmPackage : Type), ",
+            "forall (RuntimeSolverPackage : Type), ",
+            "forall (TrustedCertificatePackage : Type), ",
+            "forall (NoTrustedSolverBoundary : forall (statement : DiscreteLogStatementPackage), ",
+            "forall (algorithm : DiscreteLogAlgorithmPackage), ",
+            "forall (runtime_solver : RuntimeSolverPackage), ",
+            "forall (certificate : TrustedCertificatePackage), Prop), ",
+            "forall (boundary_law : forall (statement : DiscreteLogStatementPackage), ",
+            "forall (algorithm : DiscreteLogAlgorithmPackage), ",
+            "forall (runtime_solver : RuntimeSolverPackage), ",
+            "forall (certificate : TrustedCertificatePackage), ",
+            "NoTrustedSolverBoundary statement algorithm runtime_solver certificate), ",
+            "forall (statement : DiscreteLogStatementPackage), ",
+            "forall (algorithm : DiscreteLogAlgorithmPackage), ",
+            "forall (runtime_solver : RuntimeSolverPackage), ",
+            "forall (certificate : TrustedCertificatePackage), ",
+            "NoTrustedSolverBoundary statement algorithm runtime_solver certificate"
+        ),
+        proof: concat!(
+            "fun DiscreteLogStatementPackage => fun DiscreteLogAlgorithmPackage => ",
+            "fun RuntimeSolverPackage => fun TrustedCertificatePackage => ",
+            "fun NoTrustedSolverBoundary => fun boundary_law => fun statement => ",
+            "fun algorithm => fun runtime_solver => fun certificate => ",
+            "boundary_law statement algorithm runtime_solver certificate"
+        ),
+    },
+];
+
+const NUMBER_THEORY_GAUSS_SUM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "gauss_sum_definition_coefficient_ring_surface",
+        universe_params: &["u"],
+        statement: concat!(
+            "forall (Coeff : Sort u), forall (zero : Coeff), forall (one : Coeff), ",
+            "forall (add : forall (a : Coeff), forall (b : Coeff), Coeff), ",
+            "forall (neg : forall (a : Coeff), Coeff), ",
+            "forall (sub : forall (a : Coeff), forall (b : Coeff), Coeff), ",
+            "forall (mul : forall (a : Coeff), forall (b : Coeff), Coeff), ",
+            "forall (Int : Type), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (AdditiveCharacterData : forall (modulus : Int), forall (psi : forall (a : Int), Coeff), Prop), ",
+            "forall (GaussSum : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), Coeff), ",
+            "forall (GaussSumDefinitionEvidence : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), Prop), ",
+            "forall (definition_law : forall (ring_laws : @RingLawArgs.{u} Coeff zero one add neg sub mul), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), ",
+            "forall (multiplicative_character : DirichletCharacter modulus chi), ",
+            "forall (additive_character : AdditiveCharacterData modulus psi), ",
+            "GaussSumDefinitionEvidence modulus chi psi), ",
+            "forall (ring_laws : @RingLawArgs.{u} Coeff zero one add neg sub mul), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), ",
+            "forall (multiplicative_character : DirichletCharacter modulus chi), ",
+            "forall (additive_character : AdditiveCharacterData modulus psi), ",
+            "GaussSumDefinitionEvidence modulus chi psi"
+        ),
+        proof: concat!(
+            "fun Coeff => fun zero => fun one => fun add => fun neg => fun sub => fun mul => ",
+            "fun Int => fun DirichletCharacter => fun AdditiveCharacterData => ",
+            "fun GaussSum => fun GaussSumDefinitionEvidence => fun definition_law => ",
+            "fun ring_laws => fun modulus => fun chi => fun psi => ",
+            "fun multiplicative_character => fun additive_character => ",
+            "definition_law ring_laws modulus chi psi multiplicative_character additive_character"
+        ),
+    },
+    TheoremArtifact {
+        name: "gauss_sum_basic_identity_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Coeff : Type), ",
+            "forall (GaussSum : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), Coeff), ",
+            "forall (DirichletCharacter : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), Prop), ",
+            "forall (AdditiveCharacterData : forall (modulus : Int), forall (psi : forall (a : Int), Coeff), Prop), ",
+            "forall (GaussSumBasicIdentity : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), Prop), ",
+            "forall (identity_law : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), ",
+            "forall (multiplicative_character : DirichletCharacter modulus chi), ",
+            "forall (additive_character : AdditiveCharacterData modulus psi), ",
+            "GaussSumBasicIdentity modulus chi psi), ",
+            "forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), ",
+            "forall (multiplicative_character : DirichletCharacter modulus chi), ",
+            "forall (additive_character : AdditiveCharacterData modulus psi), ",
+            "GaussSumBasicIdentity modulus chi psi"
+        ),
+        proof: concat!(
+            "fun Int => fun Coeff => fun GaussSum => fun DirichletCharacter => ",
+            "fun AdditiveCharacterData => fun GaussSumBasicIdentity => ",
+            "fun identity_law => fun modulus => fun chi => fun psi => ",
+            "fun multiplicative_character => fun additive_character => ",
+            "identity_law modulus chi psi multiplicative_character additive_character"
+        ),
+    },
+    TheoremArtifact {
+        name: "gauss_sum_orthogonality_bridge_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Int : Type), forall (Coeff : Type), ",
+            "forall (CharacterOrthogonalityRelation : forall (modulus : Int), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (GaussSum : forall (modulus : Int), forall (chi : forall (a : Int), Coeff), forall (psi : forall (a : Int), Coeff), Coeff), ",
+            "forall (GaussSumOrthogonalityIdentity : forall (modulus : Int), Prop), ",
+            "forall (bridge_law : forall (modulus : Int), ",
+            "forall (orthogonality : forall (a : Int), forall (b : Int), CharacterOrthogonalityRelation modulus a b), ",
+            "GaussSumOrthogonalityIdentity modulus), ",
+            "forall (modulus : Int), ",
+            "forall (orthogonality : forall (a : Int), forall (b : Int), CharacterOrthogonalityRelation modulus a b), ",
+            "GaussSumOrthogonalityIdentity modulus"
+        ),
+        proof: concat!(
+            "fun Int => fun Coeff => fun CharacterOrthogonalityRelation => ",
+            "fun GaussSum => fun GaussSumOrthogonalityIdentity => ",
+            "fun bridge_law => fun modulus => fun orthogonality => ",
+            "bridge_law modulus orthogonality"
+        ),
+    },
+    TheoremArtifact {
+        name: "gauss_sum_no_analytic_l_function_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (GaussSumPackage : Type), ",
+            "forall (DirichletCharacterPackage : Type), ",
+            "forall (AdditiveCharacterPackage : Type), ",
+            "forall (AnalyticLFunctionPackage : Type), ",
+            "forall (NoAnalyticDependencyBoundary : forall (gauss_sum : GaussSumPackage), ",
+            "forall (characters : DirichletCharacterPackage), ",
+            "forall (additive : AdditiveCharacterPackage), ",
+            "forall (l_function : AnalyticLFunctionPackage), Prop), ",
+            "forall (boundary_law : forall (gauss_sum : GaussSumPackage), ",
+            "forall (characters : DirichletCharacterPackage), ",
+            "forall (additive : AdditiveCharacterPackage), ",
+            "forall (l_function : AnalyticLFunctionPackage), ",
+            "NoAnalyticDependencyBoundary gauss_sum characters additive l_function), ",
+            "forall (gauss_sum : GaussSumPackage), ",
+            "forall (characters : DirichletCharacterPackage), ",
+            "forall (additive : AdditiveCharacterPackage), ",
+            "forall (l_function : AnalyticLFunctionPackage), ",
+            "NoAnalyticDependencyBoundary gauss_sum characters additive l_function"
+        ),
+        proof: concat!(
+            "fun GaussSumPackage => fun DirichletCharacterPackage => ",
+            "fun AdditiveCharacterPackage => fun AnalyticLFunctionPackage => ",
+            "fun NoAnalyticDependencyBoundary => fun boundary_law => ",
+            "fun gauss_sum => fun characters => fun additive => fun l_function => ",
+            "boundary_law gauss_sum characters additive l_function"
         ),
     },
 ];
@@ -40621,6 +40946,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PRIMALITY_TEST_MODULE.module
         || config.module == NUMBER_THEORY_RSA_MODULE.module
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
+        || config.module == NUMBER_THEORY_CHARACTER_MODULE.module
+        || config.module == NUMBER_THEORY_GAUSS_SUM_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

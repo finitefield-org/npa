@@ -354,7 +354,10 @@ semantics.
   cyclic-group generator-count formula without assuming primitive-root
   existence. `NT-T17` extended that package with odd-prime and prime_power
   existence surfaces plus a ChineseRemainder-dependent classification route for
-  moduli admitting primitive roots.
+  moduli admitting primitive roots. `NT-T18` added certificate-backed
+  `Proofs.Ai.NumberTheory.Character` and `Proofs.Ai.NumberTheory.GaussSum`
+  surfaces for discrete logarithm statements, Dirichlet character groups,
+  orthogonality relations, and basic Gauss sum identities.
 - Target modules:
   - `Proofs.Ai.NumberTheory.PrimitiveRoot`
   - `Proofs.Ai.NumberTheory.Character`
