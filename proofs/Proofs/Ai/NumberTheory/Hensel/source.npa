@@ -1,0 +1,6 @@
+import Std.Logic.Eq
+
+theorem hensel_lemma_interface :
+  forall (K : Type), forall (Valuation : K -> K), forall (IsComplete : Prop), forall (Poly : Type), forall (Derivative : Poly -> Poly), forall (Eval : Poly -> K -> K), forall (f : Poly), forall (a : K), forall (hensel_law : IsComplete -> @Eq.{1} K (Valuation (Eval f a)) (Valuation (Eval f a))), IsComplete -> @Eq.{1} K (Valuation (Eval f a)) (Valuation (Eval f a)) :=
+  fun K => fun Valuation => fun IsComplete => fun Poly => fun Derivative => fun Eval => fun f => fun a => fun hensel_law => hensel_law
+

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.LocalField",
+  "source": "Proofs/Ai/NumberTheory/LocalField/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/LocalField/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e98a955b5a4200e61c2719460bb109dc7e98318515199a949f69a75855aeb20b",
+  "certificate_file_sha256": "sha256:cb6d9e8df9849e14d711d26b7b180a7d485aa1d04f47d3dec0fbb0350451d2ac",
+  "export_hash": "sha256:434869ddecae81fd7b5f910009ac52357d0b7ee96122cfc11d13e7e8e3527569",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:c179eaa55e88376d3161e53260db64b9ae963e8a2b8c42200295955f01f17852",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ostrowski_theorem_interface", "kind": "theorem" },
+    { "name": "dvr_interface", "kind": "theorem" },
+    { "name": "complete_dvr_interface", "kind": "theorem" },
+    { "name": "local_field_structure_interface", "kind": "theorem" },
+    { "name": "unramified_extension_interface", "kind": "theorem" },
+    { "name": "totally_ramified_extension_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

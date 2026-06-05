@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.LocalField",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ostrowski_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun IsOstrowski => fun ostrowski_law => ostrowski_law"
+    },
+    {
+      "declaration": "dvr_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ring => fun IsDVR => fun R => fun dvr_law => dvr_law"
+    },
+    {
+      "declaration": "complete_dvr_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ring => fun IsCompleteDVR => fun R => fun dvr_law => dvr_law"
+    },
+    {
+      "declaration": "local_field_structure_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun IsLocalField => fun k => fun local_law => local_law"
+    },
+    {
+      "declaration": "unramified_extension_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun IsUnramified => fun unram_law => unram_law"
+    },
+    {
+      "declaration": "totally_ramified_extension_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun IsTotallyRamified => fun ram_law => ram_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/LocalField/certificate.npcert"
+  }
+}

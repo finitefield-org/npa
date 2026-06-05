@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Hensel",
+  "source": "Proofs/Ai/NumberTheory/Hensel/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Hensel/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1a6627ea8b5c3ee67f5b7c6c6c1a5b56255108724a487f43ea397410aa0523a2",
+  "certificate_file_sha256": "sha256:db1401f03f71227cb1b3f3a32895654bfbb9f3e9ef17b23f0ea5356185d0de9c",
+  "export_hash": "sha256:50ca1b5161d60dacdb77e7bb39ebd7d0ae8ac0ac93e8ad9573a63cc0370ffe28",
+  "axiom_report_hash": "sha256:a1ef77782ab68d41aede3e412c79174432934c3cac66c319dd2d406cf514f40e",
+  "certificate_hash": "sha256:111ef3033515e934c1a893aacb22404927fae405af71b74b44ea99b493ab14be",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "hensel_lemma_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

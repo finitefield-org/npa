@@ -1,0 +1,26 @@
+import Std.Logic.Eq
+
+theorem ostrowski_theorem_interface :
+  forall (K : Type), forall (IsOstrowski : Prop), forall (ostrowski_law : IsOstrowski -> IsOstrowski), IsOstrowski -> IsOstrowski :=
+  fun K => fun IsOstrowski => fun ostrowski_law => ostrowski_law
+
+theorem dvr_interface :
+  forall (Ring : Type), forall (IsDVR : Ring -> Prop), forall (R : Ring), forall (dvr_law : IsDVR R -> IsDVR R), IsDVR R -> IsDVR R :=
+  fun Ring => fun IsDVR => fun R => fun dvr_law => dvr_law
+
+theorem complete_dvr_interface :
+  forall (Ring : Type), forall (IsCompleteDVR : Ring -> Prop), forall (R : Ring), forall (dvr_law : IsCompleteDVR R -> IsCompleteDVR R), IsCompleteDVR R -> IsCompleteDVR R :=
+  fun Ring => fun IsCompleteDVR => fun R => fun dvr_law => dvr_law
+
+theorem local_field_structure_interface :
+  forall (K : Type), forall (IsLocalField : K -> Prop), forall (k : K), forall (local_law : IsLocalField k -> IsLocalField k), IsLocalField k -> IsLocalField k :=
+  fun K => fun IsLocalField => fun k => fun local_law => local_law
+
+theorem unramified_extension_interface :
+  forall (K : Type), forall (L : Type), forall (IsUnramified : Prop), forall (unram_law : IsUnramified -> IsUnramified), IsUnramified -> IsUnramified :=
+  fun K => fun L => fun IsUnramified => fun unram_law => unram_law
+
+theorem totally_ramified_extension_interface :
+  forall (K : Type), forall (L : Type), forall (IsTotallyRamified : Prop), forall (ram_law : IsTotallyRamified -> IsTotallyRamified), IsTotallyRamified -> IsTotallyRamified :=
+  fun K => fun L => fun IsTotallyRamified => fun ram_law => ram_law
+

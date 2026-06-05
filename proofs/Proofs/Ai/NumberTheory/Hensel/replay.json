@@ -1,0 +1,17 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Hensel",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "hensel_lemma_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Valuation => fun IsComplete => fun Poly => fun Derivative => fun Eval => fun f => fun a => fun hensel_law => hensel_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Hensel/certificate.npcert"
+  }
+}

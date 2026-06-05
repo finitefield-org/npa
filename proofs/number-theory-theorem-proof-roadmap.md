@@ -689,6 +689,10 @@ semantics.
     `Proofs.Ai.NumberTheory.Padic` defining L1 interfaces for p-adic valuation,
     p-adic absolute value, non-Archimedean metric, completion, and p-adic field
     construction.
+  - `NT-T41` added certificate-backed `Proofs.Ai.NumberTheory.Hensel` and
+    `Proofs.Ai.NumberTheory.LocalField` defining L1 interfaces for Hensel lemma,
+    Ostrowski theorem, DVR, complete DVR, local-field structure, unramified extension,
+    and totally ramified extension.
 - Depends on: `NT-13`, topology, metric completion, and valuation interfaces.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Valuation`

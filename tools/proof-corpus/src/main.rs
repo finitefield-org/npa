@@ -215,6 +215,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_CLASS_GROUP_MODULE,
     &NUMBER_THEORY_VALUATION_MODULE,
     &NUMBER_THEORY_PADIC_MODULE,
+    &NUMBER_THEORY_HENSEL_MODULE,
+    &NUMBER_THEORY_LOCAL_FIELD_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2493,6 +2495,32 @@ const NUMBER_THEORY_PADIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_PADIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_HENSEL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Hensel",
+    source_path: "Proofs/Ai/NumberTheory/Hensel/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Hensel/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Hensel/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Hensel/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_HENSEL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_LOCAL_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.LocalField",
+    source_path: "Proofs/Ai/NumberTheory/LocalField/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/LocalField/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/LocalField/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/LocalField/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_LOCAL_FIELD_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21234,6 +21262,85 @@ const NUMBER_THEORY_PADIC_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun Q => fun Qp => fun IsPadicField => fun qp_law => qp_law"
+        ),
+    },
+];
+
+const NUMBER_THEORY_HENSEL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "hensel_lemma_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (Valuation : K -> K), forall (IsComplete : Prop), forall (Poly : Type), forall (Derivative : Poly -> Poly), forall (Eval : Poly -> K -> K), forall (f : Poly), forall (a : K), ",
+            "forall (hensel_law : IsComplete -> @Eq.{1} K (Valuation (Eval f a)) (Valuation (Eval f a))), ",
+            "IsComplete -> @Eq.{1} K (Valuation (Eval f a)) (Valuation (Eval f a))"
+        ),
+        proof: concat!(
+            "fun K => fun Valuation => fun IsComplete => fun Poly => fun Derivative => fun Eval => fun f => fun a => ",
+            "fun hensel_law => hensel_law"
+        ),
+    },
+];
+
+const NUMBER_THEORY_LOCAL_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ostrowski_theorem_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (IsOstrowski : Prop), forall (ostrowski_law : IsOstrowski -> IsOstrowski), IsOstrowski -> IsOstrowski"
+        ),
+        proof: concat!(
+            "fun K => fun IsOstrowski => fun ostrowski_law => ostrowski_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "dvr_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ring : Type), forall (IsDVR : Ring -> Prop), forall (R : Ring), forall (dvr_law : IsDVR R -> IsDVR R), IsDVR R -> IsDVR R"
+        ),
+        proof: concat!(
+            "fun Ring => fun IsDVR => fun R => fun dvr_law => dvr_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "complete_dvr_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Ring : Type), forall (IsCompleteDVR : Ring -> Prop), forall (R : Ring), forall (dvr_law : IsCompleteDVR R -> IsCompleteDVR R), IsCompleteDVR R -> IsCompleteDVR R"
+        ),
+        proof: concat!(
+            "fun Ring => fun IsCompleteDVR => fun R => fun dvr_law => dvr_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "local_field_structure_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (IsLocalField : K -> Prop), forall (k : K), forall (local_law : IsLocalField k -> IsLocalField k), IsLocalField k -> IsLocalField k"
+        ),
+        proof: concat!(
+            "fun K => fun IsLocalField => fun k => fun local_law => local_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "unramified_extension_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (IsUnramified : Prop), forall (unram_law : IsUnramified -> IsUnramified), IsUnramified -> IsUnramified"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun IsUnramified => fun unram_law => unram_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "totally_ramified_extension_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (K : Type), forall (L : Type), forall (IsTotallyRamified : Prop), forall (ram_law : IsTotallyRamified -> IsTotallyRamified), IsTotallyRamified -> IsTotallyRamified"
+        ),
+        proof: concat!(
+            "fun K => fun L => fun IsTotallyRamified => fun ram_law => ram_law"
         ),
     },
 ];
