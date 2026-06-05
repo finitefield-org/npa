@@ -559,10 +559,14 @@ semantics.
 - Status: in progress.
 - Depends on: `NT-08`, analysis, topology, measure, real, and complex
   foundations.
-- Implementation progress: `NT-T31` added certificate-backed
-  `Proofs.Ai.NumberTheory.DirichletSeries` defining L1 interfaces for Dirichlet
-  series, abscissa of convergence, algebraic Euler product, analytic continuation,
-  and Tauberian inputs.
+- Implementation progress:
+  - `NT-T31` added certificate-backed `Proofs.Ai.NumberTheory.DirichletSeries`
+    defining L1 interfaces for Dirichlet series, abscissa of convergence, algebraic
+    Euler product, analytic continuation, and Tauberian inputs.
+  - `NT-T32` added certificate-backed `Proofs.Ai.NumberTheory.Zeta`
+    defining L1 interfaces for Riemann Zeta function, half-plane Euler product,
+    analytic continuation, functional equation, zero-free region, Riemann-von Mangoldt
+    zero count, explicit formula, and Riemann hypothesis conditional consequence.
 - Target modules:
   - `Proofs.Ai.NumberTheory.DirichletSeries`
   - `Proofs.Ai.NumberTheory.Zeta`

@@ -202,6 +202,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_WARING_MODULE,
     &NUMBER_THEORY_ADDITIVE_MODULE,
     &NUMBER_THEORY_DIRICHLET_SERIES_MODULE,
+    &NUMBER_THEORY_ZETA_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2300,6 +2301,19 @@ const NUMBER_THEORY_DIRICHLET_SERIES_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_DIRICHLET_SERIES_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ZETA_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Zeta",
+    source_path: "Proofs/Ai/NumberTheory/Zeta/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Zeta/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Zeta/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Zeta/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.DirichletSeries"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_ZETA_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -19559,6 +19573,106 @@ const NUMBER_THEORY_DIRICHLET_SERIES_THEOREMS: &[TheoremArtifact] = &[
         proof: concat!(
             "fun Real => fun Complex => fun Nat => fun Coeff => fun FunctionBehaviorNearConvergence => ",
             "fun AsymptoticCoefficientBehavior => fun tauberian_law => fun F => fun a => tauberian_law F a"
+        ),
+    },
+];
+
+const NUMBER_THEORY_ZETA_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "riemann_zeta_euler_product_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Complex : Type), forall (Coeff : Type), ",
+            "forall (Re : Complex -> Real), forall (Lt : Real -> Real -> Prop), forall (One : Real), ",
+            "forall (ZetaStructure : Complex -> Coeff), forall (IsZetaEulerProduct : Complex -> Coeff -> Prop), ",
+            "forall (euler_product_zeta_law : forall (s : Complex), forall (h : Lt One (Re s)), IsZetaEulerProduct s (ZetaStructure s)), ",
+            "forall (s : Complex), forall (h : Lt One (Re s)), IsZetaEulerProduct s (ZetaStructure s)"
+        ),
+        proof: concat!(
+            "fun Real => fun Complex => fun Coeff => fun Re => fun Lt => fun One => fun ZetaStructure => ",
+            "fun IsZetaEulerProduct => fun euler_product_zeta_law => fun s => fun h => euler_product_zeta_law s h"
+        ),
+    },
+    TheoremArtifact {
+        name: "zeta_analytic_continuation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Domain : Type), ",
+            "forall (ZetaStructure : Complex -> Coeff), forall (ZetaAnalyticContinuation : Domain -> (Complex -> Coeff) -> Prop), ",
+            "forall (continuation_zeta_law : forall (D : Domain), forall (F : Complex -> Coeff), ZetaAnalyticContinuation D F), ",
+            "forall (D : Domain), forall (F : Complex -> Coeff), ZetaAnalyticContinuation D F"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Domain => fun ZetaStructure => fun ZetaAnalyticContinuation => ",
+            "fun continuation_zeta_law => fun D => fun F => continuation_zeta_law D F"
+        ),
+    },
+    TheoremArtifact {
+        name: "zeta_functional_equation_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (Coeff : Type), forall (Sub : Complex -> Complex -> Complex), ",
+            "forall (One : Complex), forall (XiFunction : Complex -> Coeff), ",
+            "forall (xi_functional_equation_law : forall (s : Complex), @Eq.{1} Coeff (XiFunction s) (XiFunction (Sub One s))), ",
+            "forall (s : Complex), @Eq.{1} Coeff (XiFunction s) (XiFunction (Sub One s))"
+        ),
+        proof: concat!(
+            "fun Complex => fun Coeff => fun Sub => fun One => fun XiFunction => ",
+            "fun xi_functional_equation_law => fun s => xi_functional_equation_law s"
+        ),
+    },
+    TheoremArtifact {
+        name: "zeta_zero_free_region_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (ZetaZeroRelation : Complex -> Prop), ",
+            "forall (ZeroFreeRegion : Complex -> Prop), forall (Not : Prop -> Prop), ",
+            "forall (zero_free_law : forall (s : Complex), forall (h : ZeroFreeRegion s), Not (ZetaZeroRelation s)), ",
+            "forall (s : Complex), forall (h : ZeroFreeRegion s), Not (ZetaZeroRelation s)"
+        ),
+        proof: concat!(
+            "fun Complex => fun ZetaZeroRelation => fun ZeroFreeRegion => fun Not => ",
+            "fun zero_free_law => fun s => fun h => zero_free_law s h"
+        ),
+    },
+    TheoremArtifact {
+        name: "riemann_von_mangoldt_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (Nat : Type), forall (NumberOfZerosUpToHeight : Real -> Nat), ",
+            "forall (RiemannVonMangoldtBound : Real -> Nat -> Prop), ",
+            "forall (riemann_von_mangoldt_law : forall (T : Real), RiemannVonMangoldtBound T (NumberOfZerosUpToHeight T)), ",
+            "forall (T : Real), RiemannVonMangoldtBound T (NumberOfZerosUpToHeight T)"
+        ),
+        proof: concat!(
+            "fun Real => fun Nat => fun NumberOfZerosUpToHeight => fun RiemannVonMangoldtBound => ",
+            "fun riemann_von_mangoldt_law => fun T => riemann_von_mangoldt_law T"
+        ),
+    },
+    TheoremArtifact {
+        name: "zeta_explicit_formula_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (PsiFunction : Real -> Real), forall (ExplicitFormulaBound : Real -> Real -> Prop), ",
+            "forall (explicit_formula_law : forall (x : Real), ExplicitFormulaBound x (PsiFunction x)), ",
+            "forall (x : Real), ExplicitFormulaBound x (PsiFunction x)"
+        ),
+        proof: concat!(
+            "fun Real => fun PsiFunction => fun ExplicitFormulaBound => fun explicit_formula_law => ",
+            "fun x => explicit_formula_law x"
+        ),
+    },
+    TheoremArtifact {
+        name: "riemann_hypothesis_conditional_interface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Real : Type), forall (RiemannHypothesis : Prop), forall (PntErrorBoundRH : Real -> Prop), ",
+            "forall (riemann_hypothesis_conditional_law : forall (rh : RiemannHypothesis), forall (x : Real), PntErrorBoundRH x), ",
+            "forall (rh : RiemannHypothesis), forall (x : Real), PntErrorBoundRH x"
+        ),
+        proof: concat!(
+            "fun Real => fun RiemannHypothesis => fun PntErrorBoundRH => ",
+            "fun riemann_hypothesis_conditional_law => fun rh => fun x => riemann_hypothesis_conditional_law rh x"
         ),
     },
 ];

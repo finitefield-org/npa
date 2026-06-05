@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Zeta",
+  "source": "Proofs/Ai/NumberTheory/Zeta/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Zeta/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:eb9ae38017bfa85ab3cc1a5c16fc43b83a984ff5cd8dacfbf14b3fdcf8d4a473",
+  "certificate_file_sha256": "sha256:8431a9b1693f1b54b9f0e8d9d88fa50c786c7bb7e4e22154b6c669dadd214347",
+  "export_hash": "sha256:282e08148d7ef4998677378058729b4393304d5dacb5d10db2d1c352ce11902f",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:204e3326e74c2717f91255e257463c33a1185f81714958019a7b93fe877f4595",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.DirichletSeries"],
+  "axioms": [],
+  "declarations": [
+    { "name": "riemann_zeta_euler_product_interface", "kind": "theorem" },
+    { "name": "zeta_analytic_continuation_interface", "kind": "theorem" },
+    { "name": "zeta_functional_equation_interface", "kind": "theorem" },
+    { "name": "zeta_zero_free_region_interface", "kind": "theorem" },
+    { "name": "riemann_von_mangoldt_interface", "kind": "theorem" },
+    { "name": "zeta_explicit_formula_interface", "kind": "theorem" },
+    { "name": "riemann_hypothesis_conditional_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

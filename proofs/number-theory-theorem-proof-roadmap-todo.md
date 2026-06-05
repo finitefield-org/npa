@@ -960,7 +960,7 @@ later in the file.
 
 ### NT-T32 Add Riemann Zeta Function Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T31`, complex-analysis prerequisites
 - Areas: `Proofs/Ai/NumberTheory/Zeta/`
 - Tasks:
