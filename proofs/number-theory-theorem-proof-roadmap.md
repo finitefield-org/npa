@@ -431,7 +431,11 @@ semantics.
   `Proofs.Ai.NumberTheory.ArithmeticFunction` surfaces for divisor-count,
   divisor-sigma, Euler `phi`, Mobius, Liouville, von Mangoldt, and Carmichael
   function interfaces, with finite divisor-support evidence and coprimality
-  hypotheses explicit in multiplicativity statements.
+  hypotheses explicit in multiplicativity statements. `NT-T23` added
+  certificate-backed `Proofs.Ai.NumberTheory.DirichletConvolution` surfaces for
+  Dirichlet convolution definition, associativity, commutativity, identity,
+  inverse interfaces, finite divisor-sum rearrangement, and boundaries excluding
+  Mobius inversion and infinite-series assumptions.
 - Target modules:
   - `Proofs.Ai.NumberTheory.ArithmeticFunction`
   - `Proofs.Ai.NumberTheory.DirichletConvolution`

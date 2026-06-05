@@ -763,7 +763,7 @@ later in the file.
 
 ### NT-T23 Add Dirichlet Convolution Algebra
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T22`
 - Areas: `Proofs/Ai/NumberTheory/DirichletConvolution/`
 - Tasks:

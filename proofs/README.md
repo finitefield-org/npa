@@ -200,6 +200,11 @@ Current bundles:
   finite divisor-support evidence for divisor sums, coprimality hypotheses for multiplicative
   functions, completely multiplicative function interfaces, and a boundary excluding Dirichlet
   series or complex-analysis dependencies.
+- `Proofs/Ai/NumberTheory/DirichletConvolution/`: certificate-backed Dirichlet convolution
+  interface downstream of arithmetic-function surfaces, preserving algebraic convolution
+  definition, associativity, commutativity, identity, inverse interfaces, explicit finite divisor
+  sum rearrangement evidence, and boundaries excluding Mobius inversion, infinite series, or
+  complex-analysis assumptions.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.

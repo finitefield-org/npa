@@ -186,6 +186,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE,
     &NUMBER_THEORY_JACOBI_MODULE,
     &NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE,
+    &NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &ABSTRACT_HILBERT_NULLSTELLENSATZ_MODULE,
@@ -2021,6 +2022,19 @@ const NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact 
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_ARITHMETIC_FUNCTION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.DirichletConvolution",
+    source_path: "Proofs/Ai/NumberTheory/DirichletConvolution/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/DirichletConvolution/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/DirichletConvolution/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/DirichletConvolution/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ArithmeticFunction"],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_DIRICHLET_CONVOLUTION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -13191,6 +13205,262 @@ const NUMBER_THEORY_ARITHMETIC_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
             "fun boundary_law => fun arithmetic_functions => fun dirichlet_series => ",
             "fun complex_analysis => ",
             "boundary_law arithmetic_functions dirichlet_series complex_analysis"
+        ),
+    },
+];
+
+const NUMBER_THEORY_DIRICHLET_CONVOLUTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dirichlet_convolution_definition_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (MulNat : forall (a : Nat), forall (b : Nat), Nat), ",
+            "forall (MulCoeff : forall (a : Coeff), forall (b : Coeff), Coeff), ",
+            "forall (DividesNat : forall (d : Nat), forall (n : Nat), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (DirichletConvolutionDefinition : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), forall (value : Coeff), Prop), ",
+            "forall (definition_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), forall (function_g : ArithmeticFunction g), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "DirichletConvolutionDefinition f g n (DirichletConvolution f g n)), ",
+            "forall (f : forall (n : Nat), Coeff), forall (g : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), forall (function_f : ArithmeticFunction f), ",
+            "forall (function_g : ArithmeticFunction g), forall (finite_support : FiniteDivisorSupport n), ",
+            "DirichletConvolutionDefinition f g n (DirichletConvolution f g n)"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun MulNat => fun MulCoeff => ",
+            "fun DividesNat => fun FiniteDivisorSupport => fun ArithmeticFunction => ",
+            "fun DirichletConvolution => fun DirichletConvolutionDefinition => ",
+            "fun definition_law => fun f => fun g => fun n => fun function_f => ",
+            "fun function_g => fun finite_support => ",
+            "definition_law f g n function_f function_g finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_convolution_associative_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DivisorSumRearrangement : forall (n : Nat), Prop), ",
+            "forall (DirichletConvolutionAssociative : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (h : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), Prop), ",
+            "forall (associativity_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (h : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), forall (function_f : ArithmeticFunction f), ",
+            "forall (function_g : ArithmeticFunction g), forall (function_h : ArithmeticFunction h), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (rearrangement : DivisorSumRearrangement n), ",
+            "DirichletConvolutionAssociative f g h n), ",
+            "forall (f : forall (n : Nat), Coeff), forall (g : forall (n : Nat), Coeff), ",
+            "forall (h : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), forall (function_g : ArithmeticFunction g), ",
+            "forall (function_h : ArithmeticFunction h), forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (rearrangement : DivisorSumRearrangement n), ",
+            "DirichletConvolutionAssociative f g h n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DirichletConvolution => ",
+            "fun ArithmeticFunction => fun FiniteDivisorSupport => ",
+            "fun DivisorSumRearrangement => fun DirichletConvolutionAssociative => ",
+            "fun associativity_law => fun f => fun g => fun h => fun n => ",
+            "fun function_f => fun function_g => fun function_h => ",
+            "fun finite_support => fun rearrangement => ",
+            "associativity_law f g h n function_f function_g function_h finite_support rearrangement"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_convolution_commutative_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DivisorPairSymmetry : forall (n : Nat), Prop), ",
+            "forall (DirichletConvolutionCommutative : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Prop), ",
+            "forall (commutativity_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), forall (function_g : ArithmeticFunction g), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (pair_symmetry : DivisorPairSymmetry n), DirichletConvolutionCommutative f g n), ",
+            "forall (f : forall (n : Nat), Coeff), forall (g : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), forall (function_f : ArithmeticFunction f), ",
+            "forall (function_g : ArithmeticFunction g), forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (pair_symmetry : DivisorPairSymmetry n), DirichletConvolutionCommutative f g n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DirichletConvolution => ",
+            "fun ArithmeticFunction => fun FiniteDivisorSupport => ",
+            "fun DivisorPairSymmetry => fun DirichletConvolutionCommutative => ",
+            "fun commutativity_law => fun f => fun g => fun n => ",
+            "fun function_f => fun function_g => fun finite_support => ",
+            "fun pair_symmetry => ",
+            "commutativity_law f g n function_f function_g finite_support pair_symmetry"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_convolution_identity_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DirichletIdentity : forall (n : Nat), Coeff), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DirichletConvolutionIdentity : forall (f : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), Prop), ",
+            "forall (identity_law : forall (f : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "forall (identity_function : ArithmeticFunction DirichletIdentity), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "DirichletConvolutionIdentity f n), ",
+            "forall (f : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), ",
+            "forall (identity_function : ArithmeticFunction DirichletIdentity), ",
+            "forall (finite_support : FiniteDivisorSupport n), DirichletConvolutionIdentity f n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DirichletIdentity => ",
+            "fun DirichletConvolution => fun ArithmeticFunction => ",
+            "fun FiniteDivisorSupport => fun DirichletConvolutionIdentity => ",
+            "fun identity_law => fun f => fun n => fun function_f => ",
+            "fun identity_function => fun finite_support => ",
+            "identity_law f n function_f identity_function finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_convolution_inverse_interface_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (DirichletIdentity : forall (n : Nat), Coeff), ",
+            "forall (DirichletConvolution : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Coeff), ",
+            "forall (ArithmeticFunction : forall (f : forall (n : Nat), Coeff), Prop), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (InverseCandidateEvidence : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), Prop), ",
+            "forall (DirichletConvolutionInverse : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), Prop), ",
+            "forall (inverse_law : forall (f : forall (n : Nat), Coeff), ",
+            "forall (g : forall (n : Nat), Coeff), forall (n : Nat), ",
+            "forall (function_f : ArithmeticFunction f), forall (function_g : ArithmeticFunction g), ",
+            "forall (identity_function : ArithmeticFunction DirichletIdentity), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (inverse_candidate : InverseCandidateEvidence f g), ",
+            "DirichletConvolutionInverse f g n), ",
+            "forall (f : forall (n : Nat), Coeff), forall (g : forall (n : Nat), Coeff), ",
+            "forall (n : Nat), forall (function_f : ArithmeticFunction f), ",
+            "forall (function_g : ArithmeticFunction g), ",
+            "forall (identity_function : ArithmeticFunction DirichletIdentity), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "forall (inverse_candidate : InverseCandidateEvidence f g), ",
+            "DirichletConvolutionInverse f g n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun DirichletIdentity => ",
+            "fun DirichletConvolution => fun ArithmeticFunction => ",
+            "fun FiniteDivisorSupport => fun InverseCandidateEvidence => ",
+            "fun DirichletConvolutionInverse => fun inverse_law => ",
+            "fun f => fun g => fun n => fun function_f => fun function_g => ",
+            "fun identity_function => fun finite_support => fun inverse_candidate => ",
+            "inverse_law f g n function_f function_g identity_function finite_support inverse_candidate"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_divisor_sum_rearrangement_surface",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Nat : Type), forall (Coeff : Type), ",
+            "forall (FiniteDivisorSupport : forall (n : Nat), Prop), ",
+            "forall (DivisorSum : forall (n : Nat), Coeff), ",
+            "forall (DivisorSumRearrangement : forall (n : Nat), Prop), ",
+            "forall (rearrangement_law : forall (n : Nat), ",
+            "forall (finite_support : FiniteDivisorSupport n), ",
+            "DivisorSumRearrangement n), ",
+            "forall (n : Nat), forall (finite_support : FiniteDivisorSupport n), ",
+            "DivisorSumRearrangement n"
+        ),
+        proof: concat!(
+            "fun Nat => fun Coeff => fun FiniteDivisorSupport => ",
+            "fun DivisorSum => fun DivisorSumRearrangement => ",
+            "fun rearrangement_law => fun n => fun finite_support => ",
+            "rearrangement_law n finite_support"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_convolution_no_mobius_inversion_assumption_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (DirichletConvolutionPackage : Type), ",
+            "forall (InverseInterfacePackage : Type), ",
+            "forall (MobiusInversionTheorem : Type), ",
+            "forall (NoMobiusInversionAssumptionBoundary : ",
+            "forall (convolution : DirichletConvolutionPackage), ",
+            "forall (inverse_interface : InverseInterfacePackage), ",
+            "forall (mobius_inversion : MobiusInversionTheorem), Prop), ",
+            "forall (boundary_law : forall (convolution : DirichletConvolutionPackage), ",
+            "forall (inverse_interface : InverseInterfacePackage), ",
+            "forall (mobius_inversion : MobiusInversionTheorem), ",
+            "NoMobiusInversionAssumptionBoundary convolution inverse_interface mobius_inversion), ",
+            "forall (convolution : DirichletConvolutionPackage), ",
+            "forall (inverse_interface : InverseInterfacePackage), ",
+            "forall (mobius_inversion : MobiusInversionTheorem), ",
+            "NoMobiusInversionAssumptionBoundary convolution inverse_interface mobius_inversion"
+        ),
+        proof: concat!(
+            "fun DirichletConvolutionPackage => fun InverseInterfacePackage => ",
+            "fun MobiusInversionTheorem => fun NoMobiusInversionAssumptionBoundary => ",
+            "fun boundary_law => fun convolution => fun inverse_interface => ",
+            "fun mobius_inversion => ",
+            "boundary_law convolution inverse_interface mobius_inversion"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_convolution_no_infinite_series_boundary",
+        universe_params: &[],
+        statement: concat!(
+            "forall (DirichletConvolutionPackage : Type), ",
+            "forall (FiniteDivisorSumPackage : Type), ",
+            "forall (InfiniteSeriesPackage : Type), ",
+            "forall (ComplexAnalysisPackage : Type), ",
+            "forall (NoInfiniteSeriesBoundary : forall (convolution : DirichletConvolutionPackage), ",
+            "forall (finite_divisor_sum : FiniteDivisorSumPackage), ",
+            "forall (infinite_series : InfiniteSeriesPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), Prop), ",
+            "forall (boundary_law : forall (convolution : DirichletConvolutionPackage), ",
+            "forall (finite_divisor_sum : FiniteDivisorSumPackage), ",
+            "forall (infinite_series : InfiniteSeriesPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), ",
+            "NoInfiniteSeriesBoundary convolution finite_divisor_sum infinite_series complex_analysis), ",
+            "forall (convolution : DirichletConvolutionPackage), ",
+            "forall (finite_divisor_sum : FiniteDivisorSumPackage), ",
+            "forall (infinite_series : InfiniteSeriesPackage), ",
+            "forall (complex_analysis : ComplexAnalysisPackage), ",
+            "NoInfiniteSeriesBoundary convolution finite_divisor_sum infinite_series complex_analysis"
+        ),
+        proof: concat!(
+            "fun DirichletConvolutionPackage => fun FiniteDivisorSumPackage => ",
+            "fun InfiniteSeriesPackage => fun ComplexAnalysisPackage => ",
+            "fun NoInfiniteSeriesBoundary => fun boundary_law => ",
+            "fun convolution => fun finite_divisor_sum => fun infinite_series => ",
+            "fun complex_analysis => ",
+            "boundary_law convolution finite_divisor_sum infinite_series complex_analysis"
         ),
     },
 ];
@@ -41833,6 +42103,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_QUADRATIC_RECIPROCITY_MODULE.module
         || config.module == NUMBER_THEORY_JACOBI_MODULE.module
         || config.module == NUMBER_THEORY_ARITHMETIC_FUNCTION_MODULE.module
+        || config.module == NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
