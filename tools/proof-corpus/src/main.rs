@@ -234,6 +234,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_FINITE_FIELD_MODULE,
     &ELLIPTIC_CURVE_L_FUNCTION_MODULE,
     &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
+    &NUMBER_THEORY_FROBENIUS_MODULE,
     &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
     &NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE,
     &NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE,
@@ -2879,6 +2880,26 @@ const ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE: ModuleArtifact = ModuleArtifa
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_GALOIS_REPRESENTATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_FROBENIUS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Frobenius",
+    source_path: "Proofs/Ai/NumberTheory/Frobenius/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Frobenius/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Frobenius/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Frobenius/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.DedekindDomain",
+        "Proofs.Ai.NumberTheory.ClassGroup",
+        "Proofs.Ai.NumberTheory.LocalField",
+        "Proofs.Ai.NumberTheory.ClassField.Global",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_FROBENIUS_DEFINITIONS,
+    theorems: NUMBER_THEORY_FROBENIUS_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -27003,6 +27024,489 @@ const ELLIPTIC_CURVE_GALOIS_REPRESENTATION_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &[],
         statement: "forall (GaloisRepresentation : Type), forall (LocalCondition : GaloisRepresentation -> Prop), forall (SelmerDefinition : GaloisRepresentation -> Prop), forall (condition_law : forall (rho : GaloisRepresentation), LocalCondition rho -> SelmerDefinition rho), forall (rho : GaloisRepresentation), LocalCondition rho -> SelmerDefinition rho",
         proof: "fun GaloisRepresentation => fun LocalCondition => fun SelmerDefinition => fun condition_law => fun rho => condition_law rho",
+    },
+];
+
+macro_rules! frobenius_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (BaseField : Type), ",
+            "forall (ExtensionField : Type), ",
+            "forall (PrimeIdeal : Type), ",
+            "forall (GaloisElement : Type), ",
+            "forall (LocalCondition : Type), ",
+            "forall (RamificationTerm : Type), ",
+            "forall (PrimeIdealHypotheses : forall (base : BaseField), forall (extension : ExtensionField), forall (base_prime : PrimeIdeal), forall (prime_above : PrimeIdeal), Prop), ",
+            "forall (PrimeIdealDecomposition : forall (extension : ExtensionField), forall (base_prime : PrimeIdeal), forall (prime_above : PrimeIdeal), Prop), ",
+            "forall (DecompositionGroupHypotheses : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (DecompositionGroup : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (InertiaGroupHypotheses : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (InertiaGroup : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (UnramifiedPrimeIdeal : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), Prop), ",
+            "forall (FrobeniusElementHypotheses : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (FrobeniusElement : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (FrobeniusConjugacyClass : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), Prop), ",
+            "forall (LocalConditionReusable : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), forall (condition : LocalCondition), Prop), ",
+            "forall (RamificationVocabularyShared : forall (term : RamificationTerm), forall (condition : LocalCondition), Prop), ",
+            "forall (NoChebotarevImportBoundary : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), Prop), ",
+            "forall (DedekindDomainDependency : Prop), ",
+            "forall (ClassGroupIdealDependency : Prop), ",
+            "forall (LocalFieldRamificationDependency : Prop), ",
+            "forall (GaloisRepresentationLocalConditionDependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! frobenius_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun BaseField => fun ExtensionField => fun PrimeIdeal => ",
+            "fun GaloisElement => fun LocalCondition => fun RamificationTerm => ",
+            "fun PrimeIdealHypotheses => fun PrimeIdealDecomposition => ",
+            "fun DecompositionGroupHypotheses => fun DecompositionGroup => ",
+            "fun InertiaGroupHypotheses => fun InertiaGroup => ",
+            "fun UnramifiedPrimeIdeal => fun FrobeniusElementHypotheses => ",
+            "fun FrobeniusElement => fun FrobeniusConjugacyClass => ",
+            "fun LocalConditionReusable => fun RamificationVocabularyShared => ",
+            "fun NoChebotarevImportBoundary => fun DedekindDomainDependency => ",
+            "fun ClassGroupIdealDependency => fun LocalFieldRamificationDependency => ",
+            "fun GaloisRepresentationLocalConditionDependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! frobenius_data_app {
+    () => {
+        concat!(
+            "@FrobeniusData BaseField ExtensionField PrimeIdeal GaloisElement ",
+            "LocalCondition RamificationTerm PrimeIdealHypotheses ",
+            "PrimeIdealDecomposition DecompositionGroupHypotheses ",
+            "DecompositionGroup InertiaGroupHypotheses InertiaGroup ",
+            "UnramifiedPrimeIdeal FrobeniusElementHypotheses FrobeniusElement ",
+            "FrobeniusConjugacyClass LocalConditionReusable ",
+            "RamificationVocabularyShared NoChebotarevImportBoundary ",
+            "DedekindDomainDependency ClassGroupIdealDependency ",
+            "LocalFieldRamificationDependency GaloisRepresentationLocalConditionDependency"
+        )
+    };
+}
+
+macro_rules! frobenius_dedekind_dependency_law_type {
+    () => {
+        "DedekindDomainDependency"
+    };
+}
+
+macro_rules! frobenius_class_group_dependency_law_type {
+    () => {
+        "ClassGroupIdealDependency"
+    };
+}
+
+macro_rules! frobenius_local_field_dependency_law_type {
+    () => {
+        "LocalFieldRamificationDependency"
+    };
+}
+
+macro_rules! frobenius_galois_rep_dependency_law_type {
+    () => {
+        "GaloisRepresentationLocalConditionDependency"
+    };
+}
+
+macro_rules! prime_ideal_decomposition_law_type {
+    () => {
+        concat!(
+            "forall (base : BaseField), forall (extension : ExtensionField), ",
+            "forall (base_prime : PrimeIdeal), forall (prime_above : PrimeIdeal), ",
+            "PrimeIdealHypotheses base extension base_prime prime_above -> ",
+            "PrimeIdealDecomposition extension base_prime prime_above"
+        )
+    };
+}
+
+macro_rules! decomposition_group_law_type {
+    () => {
+        concat!(
+            "forall (base : BaseField), forall (extension : ExtensionField), ",
+            "forall (base_prime : PrimeIdeal), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), ",
+            "PrimeIdealHypotheses base extension base_prime prime_above -> ",
+            "PrimeIdealDecomposition extension base_prime prime_above -> ",
+            "DecompositionGroupHypotheses extension prime_above g -> ",
+            "DecompositionGroup extension prime_above g"
+        )
+    };
+}
+
+macro_rules! inertia_group_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), ",
+            "DecompositionGroup extension prime_above g -> ",
+            "InertiaGroupHypotheses extension prime_above g -> ",
+            "InertiaGroup extension prime_above g"
+        )
+    };
+}
+
+macro_rules! frobenius_element_law_type {
+    () => {
+        concat!(
+            "forall (base : BaseField), forall (extension : ExtensionField), ",
+            "forall (base_prime : PrimeIdeal), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), ",
+            "PrimeIdealHypotheses base extension base_prime prime_above -> ",
+            "UnramifiedPrimeIdeal extension prime_above -> ",
+            "DecompositionGroup extension prime_above g -> ",
+            "FrobeniusElementHypotheses extension prime_above g -> ",
+            "FrobeniusElement extension prime_above g"
+        )
+    };
+}
+
+macro_rules! frobenius_conjugacy_class_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), ",
+            "FrobeniusElement extension prime_above g -> ",
+            "FrobeniusConjugacyClass extension prime_above g"
+        )
+    };
+}
+
+macro_rules! decomposition_inertia_local_condition_reuse_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), forall (condition : LocalCondition), ",
+            "DecompositionGroup extension prime_above g -> ",
+            "InertiaGroup extension prime_above g -> ",
+            "LocalConditionReusable extension prime_above g condition"
+        )
+    };
+}
+
+macro_rules! ramification_vocabulary_shared_law_type {
+    () => {
+        concat!(
+            "forall (term : RamificationTerm), forall (condition : LocalCondition), ",
+            "RamificationVocabularyShared term condition"
+        )
+    };
+}
+
+macro_rules! no_chebotarev_import_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), ",
+            "FrobeniusConjugacyClass extension prime_above g -> ",
+            "NoChebotarevImportBoundary extension prime_above"
+        )
+    };
+}
+
+macro_rules! frobenius_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (dedekind_domain_dependency_law : ",
+            frobenius_dedekind_dependency_law_type!(),
+            "), forall (class_group_ideal_dependency_law : ",
+            frobenius_class_group_dependency_law_type!(),
+            "), forall (local_field_ramification_dependency_law : ",
+            frobenius_local_field_dependency_law_type!(),
+            "), forall (galois_representation_local_condition_dependency_law : ",
+            frobenius_galois_rep_dependency_law_type!(),
+            "), forall (prime_ideal_decomposition_law : ",
+            prime_ideal_decomposition_law_type!(),
+            "), forall (decomposition_group_law : ",
+            decomposition_group_law_type!(),
+            "), forall (inertia_group_law : ",
+            inertia_group_law_type!(),
+            "), forall (frobenius_element_law : ",
+            frobenius_element_law_type!(),
+            "), forall (frobenius_conjugacy_class_law : ",
+            frobenius_conjugacy_class_law_type!(),
+            "), forall (decomposition_inertia_local_condition_reuse_law : ",
+            decomposition_inertia_local_condition_reuse_law_type!(),
+            "), forall (ramification_vocabulary_shared_law : ",
+            ramification_vocabulary_shared_law_type!(),
+            "), forall (no_chebotarev_import_law : ",
+            no_chebotarev_import_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! frobenius_projection_proof {
+    ($target:expr, $selected:expr) => {
+        frobenius_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (dedekind_domain_dependency_law : ",
+            frobenius_dedekind_dependency_law_type!(),
+            ") => fun (class_group_ideal_dependency_law : ",
+            frobenius_class_group_dependency_law_type!(),
+            ") => fun (local_field_ramification_dependency_law : ",
+            frobenius_local_field_dependency_law_type!(),
+            ") => fun (galois_representation_local_condition_dependency_law : ",
+            frobenius_galois_rep_dependency_law_type!(),
+            ") => fun (prime_ideal_decomposition_law : ",
+            prime_ideal_decomposition_law_type!(),
+            ") => fun (decomposition_group_law : ",
+            decomposition_group_law_type!(),
+            ") => fun (inertia_group_law : ",
+            inertia_group_law_type!(),
+            ") => fun (frobenius_element_law : ",
+            frobenius_element_law_type!(),
+            ") => fun (frobenius_conjugacy_class_law : ",
+            frobenius_conjugacy_class_law_type!(),
+            ") => fun (decomposition_inertia_local_condition_reuse_law : ",
+            decomposition_inertia_local_condition_reuse_law_type!(),
+            ") => fun (ramification_vocabulary_shared_law : ",
+            ramification_vocabulary_shared_law_type!(),
+            ") => fun (no_chebotarev_import_law : ",
+            no_chebotarev_import_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const NUMBER_THEORY_FROBENIUS_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "FrobeniusData",
+    universe_params: &[],
+    ty: frobenius_params!("Prop"),
+    value: frobenius_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        frobenius_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_FROBENIUS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "frobenius_data_intro",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (dedekind_domain_dependency_law : ",
+            frobenius_dedekind_dependency_law_type!(),
+            "), forall (class_group_ideal_dependency_law : ",
+            frobenius_class_group_dependency_law_type!(),
+            "), forall (local_field_ramification_dependency_law : ",
+            frobenius_local_field_dependency_law_type!(),
+            "), forall (galois_representation_local_condition_dependency_law : ",
+            frobenius_galois_rep_dependency_law_type!(),
+            "), forall (prime_ideal_decomposition_law : ",
+            prime_ideal_decomposition_law_type!(),
+            "), forall (decomposition_group_law : ",
+            decomposition_group_law_type!(),
+            "), forall (inertia_group_law : ",
+            inertia_group_law_type!(),
+            "), forall (frobenius_element_law : ",
+            frobenius_element_law_type!(),
+            "), forall (frobenius_conjugacy_class_law : ",
+            frobenius_conjugacy_class_law_type!(),
+            "), forall (decomposition_inertia_local_condition_reuse_law : ",
+            decomposition_inertia_local_condition_reuse_law_type!(),
+            "), forall (ramification_vocabulary_shared_law : ",
+            ramification_vocabulary_shared_law_type!(),
+            "), forall (no_chebotarev_import_law : ",
+            no_chebotarev_import_law_type!(),
+            "), ",
+            frobenius_data_app!()
+        ),
+        proof: frobenius_abs!(
+            "fun dedekind_domain_dependency_law => ",
+            "fun class_group_ideal_dependency_law => ",
+            "fun local_field_ramification_dependency_law => ",
+            "fun galois_representation_local_condition_dependency_law => ",
+            "fun prime_ideal_decomposition_law => fun decomposition_group_law => ",
+            "fun inertia_group_law => fun frobenius_element_law => ",
+            "fun frobenius_conjugacy_class_law => ",
+            "fun decomposition_inertia_local_condition_reuse_law => ",
+            "fun ramification_vocabulary_shared_law => fun no_chebotarev_import_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            frobenius_mk_type!("Q"),
+            ") => mk dedekind_domain_dependency_law class_group_ideal_dependency_law ",
+            "local_field_ramification_dependency_law ",
+            "galois_representation_local_condition_dependency_law ",
+            "prime_ideal_decomposition_law decomposition_group_law ",
+            "inertia_group_law frobenius_element_law ",
+            "frobenius_conjugacy_class_law ",
+            "decomposition_inertia_local_condition_reuse_law ",
+            "ramification_vocabulary_shared_law no_chebotarev_import_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_dedekind_domain_dependency_explicit",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            frobenius_dedekind_dependency_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            frobenius_dedekind_dependency_law_type!(),
+            "dedekind_domain_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_class_group_ideal_dependency_explicit",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            frobenius_class_group_dependency_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            frobenius_class_group_dependency_law_type!(),
+            "class_group_ideal_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_local_field_ramification_dependency_explicit",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            frobenius_local_field_dependency_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            frobenius_local_field_dependency_law_type!(),
+            "local_field_ramification_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_galois_representation_local_condition_dependency_explicit",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            frobenius_galois_rep_dependency_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            frobenius_galois_rep_dependency_law_type!(),
+            "galois_representation_local_condition_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "prime_ideal_decomposition_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            prime_ideal_decomposition_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            prime_ideal_decomposition_law_type!(),
+            "prime_ideal_decomposition_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "decomposition_group_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            decomposition_group_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            decomposition_group_law_type!(),
+            "decomposition_group_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "inertia_group_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            inertia_group_law_type!()
+        ),
+        proof: frobenius_projection_proof!(inertia_group_law_type!(), "inertia_group_law"),
+    },
+    TheoremArtifact {
+        name: "frobenius_element_unramified_prime_ideal_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            frobenius_element_law_type!()
+        ),
+        proof: frobenius_projection_proof!(frobenius_element_law_type!(), "frobenius_element_law"),
+    },
+    TheoremArtifact {
+        name: "frobenius_conjugacy_class_theorem_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            frobenius_conjugacy_class_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            frobenius_conjugacy_class_law_type!(),
+            "frobenius_conjugacy_class_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "decomposition_inertia_reusable_by_local_conditions_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            decomposition_inertia_local_condition_reuse_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            decomposition_inertia_local_condition_reuse_law_type!(),
+            "decomposition_inertia_local_condition_reuse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_ramification_vocabulary_shared_surface",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            ramification_vocabulary_shared_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            ramification_vocabulary_shared_law_type!(),
+            "ramification_vocabulary_shared_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_definition_layer_no_chebotarev_import_boundary",
+        universe_params: &[],
+        statement: frobenius_params!(
+            "forall (data : ",
+            frobenius_data_app!(),
+            "), ",
+            no_chebotarev_import_law_type!()
+        ),
+        proof: frobenius_projection_proof!(
+            no_chebotarev_import_law_type!(),
+            "no_chebotarev_import_law"
+        ),
     },
 ];
 
@@ -59675,6 +60179,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_IWASAWA_BASIC_MODULE.module
         || config.module == NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE.module
         || config.module == NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE.module
+        || config.module == NUMBER_THEORY_FROBENIUS_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module

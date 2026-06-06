@@ -329,6 +329,12 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/ClassField/Cohomology/`: certificate-backed class-field
   cohomology bridge preserving explicit Galois-cohomology dependencies,
   reciprocity-route links, and Norm residue local/global context routing.
+- `Proofs/Ai/NumberTheory/Frobenius/`: certificate-backed Frobenius interface
+  preserving prime ideal decomposition, decomposition group, inertia group,
+  Frobenius element with explicit unramified and prime ideal hypotheses,
+  Frobenius conjugacy-class theorem, reusable local-condition terms, shared
+  ramification vocabulary, and a boundary excluding Chebotarev imports from
+  this definition layer.
 - `Proofs/Ai/NumberTheory/Iwasawa/Basic/`: certificate-backed Iwasawa basic
   interface preserving cyclotomic `Z_p` extension, Iwasawa algebra, explicit
   module-theoretic assumptions over the Iwasawa algebra, finitely generated

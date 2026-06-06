@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Frobenius",
+  "source": "Proofs/Ai/NumberTheory/Frobenius/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Frobenius/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0df9a2af76771966314e138d53c1c484725a83b3729ccec67bd56b8a05290829",
+  "certificate_file_sha256": "sha256:9110eb552c3927110cc6887bc6241db8d1ae1d0e0d8a37ba6afa6cbc8661318b",
+  "export_hash": "sha256:1ac8b281cfcea7ba2ae5fb51e99e123d08006dbd06017b1f42c385998ed57fc7",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:2f8f75562422402dc537f7c64e213fb283ba2b518cd52cc6e84b5beba4f19084",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.DedekindDomain", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.EllipticCurve.GaloisRepresentation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FrobeniusData", "kind": "def" },
+    { "name": "frobenius_data_intro", "kind": "theorem" },
+    { "name": "frobenius_dedekind_domain_dependency_explicit", "kind": "theorem" },
+    { "name": "frobenius_class_group_ideal_dependency_explicit", "kind": "theorem" },
+    { "name": "frobenius_local_field_ramification_dependency_explicit", "kind": "theorem" },
+    { "name": "frobenius_galois_representation_local_condition_dependency_explicit", "kind": "theorem" },
+    { "name": "prime_ideal_decomposition_surface", "kind": "theorem" },
+    { "name": "decomposition_group_surface", "kind": "theorem" },
+    { "name": "inertia_group_surface", "kind": "theorem" },
+    { "name": "frobenius_element_unramified_prime_ideal_surface", "kind": "theorem" },
+    { "name": "frobenius_conjugacy_class_theorem_surface", "kind": "theorem" },
+    { "name": "decomposition_inertia_reusable_by_local_conditions_surface", "kind": "theorem" },
+    { "name": "frobenius_ramification_vocabulary_shared_surface", "kind": "theorem" },
+    { "name": "frobenius_definition_layer_no_chebotarev_import_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

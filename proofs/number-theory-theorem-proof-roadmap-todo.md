@@ -1611,7 +1611,7 @@ later in the file.
 
 ### NT-T61 Add Frobenius And Prime-Ideal Decomposition Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T38`, Galois group prerequisites
 - Areas: `Proofs/Ai/NumberTheory/Frobenius/`
 - Tasks:

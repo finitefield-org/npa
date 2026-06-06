@@ -1071,6 +1071,15 @@ semantics.
 ## NT-21 Galois Representations And Density Theorems
 
 - Status: planned.
+- Progress:
+  - `NT-T61` added certificate-backed
+    `Proofs.Ai.NumberTheory.Frobenius`, preserving prime ideal decomposition,
+    decomposition group, inertia group, Frobenius element with explicit
+    unramified and prime-ideal hypotheses, Frobenius conjugacy-class theorem,
+    Dedekind-domain and class-group dependencies, local-field ramification and
+    Galois-representation local-condition dependencies, reusable decomposition
+    and inertia terms for local conditions, shared ramification vocabulary, and
+    a boundary excluding Chebotarev imports from the definition layer.
 - Depends on: field extensions, Galois groups, local fields, `NT-13`, `NT-16`,
   and representation theory.
 - Target modules:
