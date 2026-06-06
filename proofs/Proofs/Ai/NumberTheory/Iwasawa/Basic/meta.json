@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Iwasawa.Basic",
+  "source": "Proofs/Ai/NumberTheory/Iwasawa/Basic/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Iwasawa/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:11c0630a7cbab9aeef6206498c8365a0cc3aeb15440af6392542d45f76e98287",
+  "certificate_file_sha256": "sha256:14f790112ed0092ce6558d9554a04d16b5e0fcd95d08ea6635ec91807cdfccad",
+  "export_hash": "sha256:9d43f5221065b96d82b5fc54a5f5f6a721d3cdda2b51856603a3d19ad4751706",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:df30a83c00bc95530f2165beb0308108b2565c4e411da2afcb4c1a5fc5c99ec4",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Padic", "Proofs.Ai.NumberTheory.Valuation", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.ClassField.Local", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.GaloisCohomology.Basic", "Proofs.Ai.NumberTheory.ClassField.Cohomology"],
+  "axioms": [],
+  "declarations": [
+    { "name": "IwasawaBasicData", "kind": "def" },
+    { "name": "iwasawa_basic_data_intro", "kind": "theorem" },
+    { "name": "iwasawa_padic_dependency_explicit", "kind": "theorem" },
+    { "name": "iwasawa_galois_cohomology_dependency_explicit", "kind": "theorem" },
+    { "name": "iwasawa_module_theory_dependency_explicit", "kind": "theorem" },
+    { "name": "cyclotomic_zp_extension_surface", "kind": "theorem" },
+    { "name": "iwasawa_algebra_surface", "kind": "theorem" },
+    { "name": "iwasawa_module_theoretic_assumptions_explicit", "kind": "theorem" },
+    { "name": "module_over_iwasawa_algebra_surface", "kind": "theorem" },
+    { "name": "finitely_generated_torsion_module_structure_surface", "kind": "theorem" },
+    { "name": "lambda_invariant_surface", "kind": "theorem" },
+    { "name": "mu_invariant_surface", "kind": "theorem" },
+    { "name": "nu_invariant_surface", "kind": "theorem" },
+    { "name": "iwasawa_class_number_formula_surface", "kind": "theorem" },
+    { "name": "iwasawa_class_number_formula_not_analytic_class_number_formula", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

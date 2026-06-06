@@ -225,6 +225,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_ARTIN_L_MODULE,
     &GALOIS_COHOMOLOGY_BASIC_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE,
+    &NUMBER_THEORY_IWASAWA_BASIC_MODULE,
     &ELLIPTIC_CURVE_BASIC_MODULE,
     &ELLIPTIC_CURVE_GROUP_LAW_MODULE,
     &ELLIPTIC_CURVE_REDUCTION_MODULE,
@@ -2710,6 +2711,29 @@ const NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE: ModuleArtifact = ModuleArtifa
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_IWASAWA_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Iwasawa.Basic",
+    source_path: "Proofs/Ai/NumberTheory/Iwasawa/Basic/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Iwasawa/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Iwasawa/Basic/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Iwasawa/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.Padic",
+        "Proofs.Ai.NumberTheory.Valuation",
+        "Proofs.Ai.NumberTheory.LocalField",
+        "Proofs.Ai.NumberTheory.ClassGroup",
+        "Proofs.Ai.NumberTheory.ClassField.Local",
+        "Proofs.Ai.NumberTheory.ClassField.Global",
+        "Proofs.Ai.GaloisCohomology.Basic",
+        "Proofs.Ai.NumberTheory.ClassField.Cohomology",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_IWASAWA_BASIC_DEFINITIONS,
+    theorems: NUMBER_THEORY_IWASAWA_BASIC_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -25303,6 +25327,492 @@ const NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &[],
         statement: "forall (LocalContext : Type), forall (GlobalContext : Type), forall (ReciprocityRoute : Type), forall (NormResidueSymbol : LocalContext -> GlobalContext -> ReciprocityRoute -> Prop), forall (symbol_law : forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (route : ReciprocityRoute), NormResidueSymbol local_context global_context route), forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (route : ReciprocityRoute), NormResidueSymbol local_context global_context route",
         proof: "fun LocalContext => fun GlobalContext => fun ReciprocityRoute => fun NormResidueSymbol => fun symbol_law => fun local_context => fun global_context => fun route => symbol_law local_context global_context route",
+    },
+];
+
+macro_rules! iwasawa_basic_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (Prime : Type), ",
+            "forall (BaseField : Type), ",
+            "forall (IwasawaModule : Type), ",
+            "forall (CyclotomicZpExtension : forall (field : BaseField), Prop), ",
+            "forall (IwasawaAlgebra : forall (field : BaseField), Prop), ",
+            "forall (ModuleOverIwasawaAlgebra : forall (field : BaseField), forall (module : IwasawaModule), Prop), ",
+            "forall (IwasawaModuleAssumptions : forall (field : BaseField), forall (module : IwasawaModule), Prop), ",
+            "forall (FinitelyGenerated : forall (module : IwasawaModule), Prop), ",
+            "forall (TorsionModule : forall (module : IwasawaModule), Prop), ",
+            "forall (FinitelyGeneratedTorsionStructure : forall (module : IwasawaModule), Prop), ",
+            "forall (LambdaInvariant : forall (module : IwasawaModule), Prop), ",
+            "forall (MuInvariant : forall (module : IwasawaModule), Prop), ",
+            "forall (NuInvariant : forall (module : IwasawaModule), Prop), ",
+            "forall (IwasawaClassNumberFormula : forall (field : BaseField), forall (module : IwasawaModule), Prop), ",
+            "forall (IwasawaClassNumberFormulaNotAnalyticClassNumberFormula : forall (field : BaseField), forall (module : IwasawaModule), Prop), ",
+            "forall (PadicDependency : Prop), ",
+            "forall (GaloisCohomologyDependency : Prop), ",
+            "forall (ModuleTheoryDependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! iwasawa_basic_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun Prime => fun BaseField => fun IwasawaModule => ",
+            "fun CyclotomicZpExtension => fun IwasawaAlgebra => ",
+            "fun ModuleOverIwasawaAlgebra => fun IwasawaModuleAssumptions => ",
+            "fun FinitelyGenerated => fun TorsionModule => ",
+            "fun FinitelyGeneratedTorsionStructure => fun LambdaInvariant => ",
+            "fun MuInvariant => fun NuInvariant => fun IwasawaClassNumberFormula => ",
+            "fun IwasawaClassNumberFormulaNotAnalyticClassNumberFormula => ",
+            "fun PadicDependency => fun GaloisCohomologyDependency => ",
+            "fun ModuleTheoryDependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! iwasawa_basic_data_app {
+    () => {
+        concat!(
+            "@IwasawaBasicData Prime BaseField IwasawaModule CyclotomicZpExtension ",
+            "IwasawaAlgebra ModuleOverIwasawaAlgebra IwasawaModuleAssumptions ",
+            "FinitelyGenerated TorsionModule FinitelyGeneratedTorsionStructure ",
+            "LambdaInvariant MuInvariant NuInvariant IwasawaClassNumberFormula ",
+            "IwasawaClassNumberFormulaNotAnalyticClassNumberFormula PadicDependency ",
+            "GaloisCohomologyDependency ModuleTheoryDependency"
+        )
+    };
+}
+
+macro_rules! iwasawa_padic_dependency_law_type {
+    () => {
+        "PadicDependency"
+    };
+}
+
+macro_rules! iwasawa_galois_cohomology_dependency_law_type {
+    () => {
+        "GaloisCohomologyDependency"
+    };
+}
+
+macro_rules! iwasawa_module_theory_dependency_law_type {
+    () => {
+        "ModuleTheoryDependency"
+    };
+}
+
+macro_rules! cyclotomic_zp_extension_law_type {
+    () => {
+        "forall (field : BaseField), CyclotomicZpExtension field"
+    };
+}
+
+macro_rules! iwasawa_algebra_law_type {
+    () => {
+        concat!(
+            "forall (field : BaseField), ",
+            "forall (extension : CyclotomicZpExtension field), IwasawaAlgebra field"
+        )
+    };
+}
+
+macro_rules! iwasawa_module_assumptions_law_type {
+    () => {
+        concat!(
+            "forall (field : BaseField), forall (module : IwasawaModule), ",
+            "forall (algebra : IwasawaAlgebra field), ",
+            "IwasawaModuleAssumptions field module"
+        )
+    };
+}
+
+macro_rules! module_over_iwasawa_algebra_law_type {
+    () => {
+        concat!(
+            "forall (field : BaseField), forall (module : IwasawaModule), ",
+            "forall (assumptions : IwasawaModuleAssumptions field module), ",
+            "ModuleOverIwasawaAlgebra field module"
+        )
+    };
+}
+
+macro_rules! finitely_generated_torsion_structure_law_type {
+    () => {
+        concat!(
+            "forall (field : BaseField), forall (module : IwasawaModule), ",
+            "forall (module_over_algebra : ModuleOverIwasawaAlgebra field module), ",
+            "forall (finitely_generated : FinitelyGenerated module), ",
+            "forall (torsion_module : TorsionModule module), ",
+            "FinitelyGeneratedTorsionStructure module"
+        )
+    };
+}
+
+macro_rules! lambda_invariant_law_type {
+    () => {
+        concat!(
+            "forall (module : IwasawaModule), ",
+            "forall (structure : FinitelyGeneratedTorsionStructure module), ",
+            "LambdaInvariant module"
+        )
+    };
+}
+
+macro_rules! mu_invariant_law_type {
+    () => {
+        concat!(
+            "forall (module : IwasawaModule), ",
+            "forall (structure : FinitelyGeneratedTorsionStructure module), MuInvariant module"
+        )
+    };
+}
+
+macro_rules! nu_invariant_law_type {
+    () => {
+        concat!(
+            "forall (module : IwasawaModule), ",
+            "forall (structure : FinitelyGeneratedTorsionStructure module), NuInvariant module"
+        )
+    };
+}
+
+macro_rules! iwasawa_class_number_formula_law_type {
+    () => {
+        concat!(
+            "forall (field : BaseField), forall (module : IwasawaModule), ",
+            "forall (extension : CyclotomicZpExtension field), ",
+            "forall (structure : FinitelyGeneratedTorsionStructure module), ",
+            "forall (lambda_invariant : LambdaInvariant module), ",
+            "forall (mu_invariant : MuInvariant module), ",
+            "forall (nu_invariant : NuInvariant module), ",
+            "IwasawaClassNumberFormula field module"
+        )
+    };
+}
+
+macro_rules! iwasawa_class_number_not_analytic_law_type {
+    () => {
+        concat!(
+            "forall (field : BaseField), forall (module : IwasawaModule), ",
+            "forall (formula : IwasawaClassNumberFormula field module), ",
+            "IwasawaClassNumberFormulaNotAnalyticClassNumberFormula field module"
+        )
+    };
+}
+
+macro_rules! iwasawa_basic_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (padic_dependency_law : ",
+            iwasawa_padic_dependency_law_type!(),
+            "), forall (galois_cohomology_dependency_law : ",
+            iwasawa_galois_cohomology_dependency_law_type!(),
+            "), forall (module_theory_dependency_law : ",
+            iwasawa_module_theory_dependency_law_type!(),
+            "), forall (cyclotomic_zp_extension_law : ",
+            cyclotomic_zp_extension_law_type!(),
+            "), forall (iwasawa_algebra_law : ",
+            iwasawa_algebra_law_type!(),
+            "), forall (iwasawa_module_assumptions_law : ",
+            iwasawa_module_assumptions_law_type!(),
+            "), forall (module_over_iwasawa_algebra_law : ",
+            module_over_iwasawa_algebra_law_type!(),
+            "), forall (finitely_generated_torsion_structure_law : ",
+            finitely_generated_torsion_structure_law_type!(),
+            "), forall (lambda_invariant_law : ",
+            lambda_invariant_law_type!(),
+            "), forall (mu_invariant_law : ",
+            mu_invariant_law_type!(),
+            "), forall (nu_invariant_law : ",
+            nu_invariant_law_type!(),
+            "), forall (iwasawa_class_number_formula_law : ",
+            iwasawa_class_number_formula_law_type!(),
+            "), forall (iwasawa_class_number_not_analytic_law : ",
+            iwasawa_class_number_not_analytic_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! iwasawa_basic_projection_proof {
+    ($target:expr, $selected:expr) => {
+        iwasawa_basic_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (padic_dependency_law : ",
+            iwasawa_padic_dependency_law_type!(),
+            ") => fun (galois_cohomology_dependency_law : ",
+            iwasawa_galois_cohomology_dependency_law_type!(),
+            ") => fun (module_theory_dependency_law : ",
+            iwasawa_module_theory_dependency_law_type!(),
+            ") => fun (cyclotomic_zp_extension_law : ",
+            cyclotomic_zp_extension_law_type!(),
+            ") => fun (iwasawa_algebra_law : ",
+            iwasawa_algebra_law_type!(),
+            ") => fun (iwasawa_module_assumptions_law : ",
+            iwasawa_module_assumptions_law_type!(),
+            ") => fun (module_over_iwasawa_algebra_law : ",
+            module_over_iwasawa_algebra_law_type!(),
+            ") => fun (finitely_generated_torsion_structure_law : ",
+            finitely_generated_torsion_structure_law_type!(),
+            ") => fun (lambda_invariant_law : ",
+            lambda_invariant_law_type!(),
+            ") => fun (mu_invariant_law : ",
+            mu_invariant_law_type!(),
+            ") => fun (nu_invariant_law : ",
+            nu_invariant_law_type!(),
+            ") => fun (iwasawa_class_number_formula_law : ",
+            iwasawa_class_number_formula_law_type!(),
+            ") => fun (iwasawa_class_number_not_analytic_law : ",
+            iwasawa_class_number_not_analytic_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const NUMBER_THEORY_IWASAWA_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "IwasawaBasicData",
+    universe_params: &[],
+    ty: iwasawa_basic_params!("Prop"),
+    value: iwasawa_basic_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        iwasawa_basic_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_IWASAWA_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "iwasawa_basic_data_intro",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (padic_dependency_law : ",
+            iwasawa_padic_dependency_law_type!(),
+            "), forall (galois_cohomology_dependency_law : ",
+            iwasawa_galois_cohomology_dependency_law_type!(),
+            "), forall (module_theory_dependency_law : ",
+            iwasawa_module_theory_dependency_law_type!(),
+            "), forall (cyclotomic_zp_extension_law : ",
+            cyclotomic_zp_extension_law_type!(),
+            "), forall (iwasawa_algebra_law : ",
+            iwasawa_algebra_law_type!(),
+            "), forall (iwasawa_module_assumptions_law : ",
+            iwasawa_module_assumptions_law_type!(),
+            "), forall (module_over_iwasawa_algebra_law : ",
+            module_over_iwasawa_algebra_law_type!(),
+            "), forall (finitely_generated_torsion_structure_law : ",
+            finitely_generated_torsion_structure_law_type!(),
+            "), forall (lambda_invariant_law : ",
+            lambda_invariant_law_type!(),
+            "), forall (mu_invariant_law : ",
+            mu_invariant_law_type!(),
+            "), forall (nu_invariant_law : ",
+            nu_invariant_law_type!(),
+            "), forall (iwasawa_class_number_formula_law : ",
+            iwasawa_class_number_formula_law_type!(),
+            "), forall (iwasawa_class_number_not_analytic_law : ",
+            iwasawa_class_number_not_analytic_law_type!(),
+            "), ",
+            iwasawa_basic_data_app!()
+        ),
+        proof: iwasawa_basic_abs!(
+            "fun padic_dependency_law => fun galois_cohomology_dependency_law => ",
+            "fun module_theory_dependency_law => fun cyclotomic_zp_extension_law => ",
+            "fun iwasawa_algebra_law => fun iwasawa_module_assumptions_law => ",
+            "fun module_over_iwasawa_algebra_law => ",
+            "fun finitely_generated_torsion_structure_law => ",
+            "fun lambda_invariant_law => fun mu_invariant_law => ",
+            "fun nu_invariant_law => fun iwasawa_class_number_formula_law => ",
+            "fun iwasawa_class_number_not_analytic_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            iwasawa_basic_mk_type!("Q"),
+            ") => mk padic_dependency_law galois_cohomology_dependency_law ",
+            "module_theory_dependency_law cyclotomic_zp_extension_law ",
+            "iwasawa_algebra_law iwasawa_module_assumptions_law ",
+            "module_over_iwasawa_algebra_law ",
+            "finitely_generated_torsion_structure_law lambda_invariant_law ",
+            "mu_invariant_law nu_invariant_law iwasawa_class_number_formula_law ",
+            "iwasawa_class_number_not_analytic_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_padic_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_padic_dependency_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            iwasawa_padic_dependency_law_type!(),
+            "padic_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_galois_cohomology_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_galois_cohomology_dependency_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            iwasawa_galois_cohomology_dependency_law_type!(),
+            "galois_cohomology_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_module_theory_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_module_theory_dependency_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            iwasawa_module_theory_dependency_law_type!(),
+            "module_theory_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "cyclotomic_zp_extension_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            cyclotomic_zp_extension_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            cyclotomic_zp_extension_law_type!(),
+            "cyclotomic_zp_extension_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_algebra_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_algebra_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(iwasawa_algebra_law_type!(), "iwasawa_algebra_law"),
+    },
+    TheoremArtifact {
+        name: "iwasawa_module_theoretic_assumptions_explicit",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_module_assumptions_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            iwasawa_module_assumptions_law_type!(),
+            "iwasawa_module_assumptions_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "module_over_iwasawa_algebra_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            module_over_iwasawa_algebra_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            module_over_iwasawa_algebra_law_type!(),
+            "module_over_iwasawa_algebra_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finitely_generated_torsion_module_structure_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            finitely_generated_torsion_structure_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            finitely_generated_torsion_structure_law_type!(),
+            "finitely_generated_torsion_structure_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "lambda_invariant_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            lambda_invariant_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            lambda_invariant_law_type!(),
+            "lambda_invariant_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "mu_invariant_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            mu_invariant_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(mu_invariant_law_type!(), "mu_invariant_law"),
+    },
+    TheoremArtifact {
+        name: "nu_invariant_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            nu_invariant_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(nu_invariant_law_type!(), "nu_invariant_law"),
+    },
+    TheoremArtifact {
+        name: "iwasawa_class_number_formula_surface",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_class_number_formula_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            iwasawa_class_number_formula_law_type!(),
+            "iwasawa_class_number_formula_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_class_number_formula_not_analytic_class_number_formula",
+        universe_params: &[],
+        statement: iwasawa_basic_params!(
+            "forall (data : ",
+            iwasawa_basic_data_app!(),
+            "), ",
+            iwasawa_class_number_not_analytic_law_type!()
+        ),
+        proof: iwasawa_basic_projection_proof!(
+            iwasawa_class_number_not_analytic_law_type!(),
+            "iwasawa_class_number_not_analytic_law"
+        ),
     },
 ];
 
@@ -58260,6 +58770,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_L_FUNCTION_MODULE.module
         || config.module == NUMBER_THEORY_ARTIN_L_MODULE.module
         || config.module == NUMBER_THEORY_HECKE_L_MODULE.module
+        || config.module == NUMBER_THEORY_IWASAWA_BASIC_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module

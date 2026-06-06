@@ -329,6 +329,12 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/ClassField/Cohomology/`: certificate-backed class-field
   cohomology bridge preserving explicit Galois-cohomology dependencies,
   reciprocity-route links, and Norm residue local/global context routing.
+- `Proofs/Ai/NumberTheory/Iwasawa/Basic/`: certificate-backed Iwasawa basic
+  interface preserving cyclotomic `Z_p` extension, Iwasawa algebra, explicit
+  module-theoretic assumptions over the Iwasawa algebra, finitely generated
+  torsion module structure, lambda, mu, and nu invariants, Iwasawa class-number
+  formula, p-adic and Galois-cohomology dependencies, and a boundary separating
+  the Iwasawa class-number formula from the analytic class-number formula.
 - `Proofs/Ai/EllipticCurve/Basic/`: certificate-backed elliptic-curve interface
   preserving Weierstrass models, nonsingularity, explicit field and polynomial
   assumptions, discriminant/nonzero boundaries, and general API reuse outside

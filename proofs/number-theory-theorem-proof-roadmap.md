@@ -1025,6 +1025,14 @@ semantics.
 ## NT-20 Iwasawa Theory
 
 - Status: planned.
+- Progress:
+  - `NT-T59` added certificate-backed
+    `Proofs.Ai.NumberTheory.Iwasawa.Basic`, preserving cyclotomic `Z_p`
+    extension, Iwasawa algebra, explicit module-theoretic assumptions over the
+    Iwasawa algebra, finitely generated torsion module structure, lambda, mu,
+    and nu invariant, Iwasawa class-number formula, p-adic dependency,
+    Galois-cohomology dependency, and non-confusion with the `NT-T39` analytic
+    class-number formula surfaces.
 - Depends on: `NT-14`, `NT-15`, `NT-16`, `NT-18`, module theory, and Galois
   cohomology.
 - Target modules:
