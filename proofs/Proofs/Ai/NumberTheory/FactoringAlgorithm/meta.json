@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.FactoringAlgorithm",
+  "source": "Proofs/Ai/NumberTheory/FactoringAlgorithm/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/FactoringAlgorithm/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fb6570e3a0748d9675c86989c7b4308a33298310e1e04242d9ff156f450a585b",
+  "certificate_file_sha256": "sha256:aad4913663e011879c49a7d6fce9017e105bbb89c400ac7e9c4b3fc288801098",
+  "export_hash": "sha256:75c939681a3c5beab86aaa0feaad8bf8bd8ef2d8214cebf63c3ed56b520f8100",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:ce00a92ac784a8a8be390867ca6c35451fc730103e171b152396d29db44c5dac",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Algorithm", "Proofs.Ai.NumberTheory.PrimalityTest", "Proofs.Ai.NumberTheory.Factorization", "Proofs.Ai.NumberTheory.Sieve"],
+  "axioms": [],
+  "declarations": [
+    { "name": "pollard_rho_correctness_from_cycle_gcd_chain", "kind": "theorem" },
+    { "name": "quadratic_sieve_correctness_from_relation_matrix_chain", "kind": "theorem" },
+    { "name": "number_field_sieve_correctness_from_norm_relation_chain", "kind": "theorem" },
+    { "name": "pollard_rho_probability_requires_randomness_assumption", "kind": "theorem" },
+    { "name": "factoring_complexity_interface_requires_cost_model", "kind": "theorem" },
+    { "name": "factoring_hardness_assumption_not_derived_from_algorithm_correctness", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

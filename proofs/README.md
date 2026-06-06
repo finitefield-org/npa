@@ -186,9 +186,16 @@ Current bundles:
   oracle boundary.
 - `Proofs/Ai/NumberTheory/PrimalityTest/`: certificate-backed early primality-test interface
   downstream of prime/composite predicates, Fermat/Euler/Wilson, and Carmichael surfaces,
-  preserving pseudoprime, Carmichael-number, Korselt criterion, Fermat-test, and Miller-Rabin
-  witness theorem surfaces while keeping runtime randomness and probabilistic-security claims
-  outside trusted code.
+  preserving pseudoprime, Carmichael-number, Korselt criterion, Fermat-test, Miller-Rabin
+  witness/probability, and AKS polynomial-check theorem surfaces while separating correctness,
+  failure probability, complexity interfaces, runtime randomness, and security/hardness
+  assumptions from trusted kernel behavior.
+- `Proofs/Ai/NumberTheory/FactoringAlgorithm/`: certificate-backed factoring algorithm
+  statement surfaces downstream of algorithm correctness, primality tests, factorization, and
+  sieve theory, preserving Pollard rho cycle/gcd factor extraction, quadratic sieve relation
+  matrix extraction, number field sieve norm-relation extraction, probability claims requiring
+  randomness assumptions, complexity interfaces behind cost models, and hardness assumptions
+  as non-derived boundaries.
 - `Proofs/Ai/NumberTheory/Rsa/`: certificate-backed RSA correctness interface downstream of
   Carmichael and primality-test surfaces, preserving modulus factorization, coprimality, and
   key-congruence hypotheses, plus a boundary separating mathematical round-trip correctness from

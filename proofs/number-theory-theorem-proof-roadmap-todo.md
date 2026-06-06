@@ -1704,7 +1704,7 @@ later in the file.
 
 ### NT-T65 Add Primality And Factoring Algorithm Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T15`, `NT-T64`
 - Areas: `Proofs/Ai/NumberTheory/PrimalityTest/`, `Proofs/Ai/NumberTheory/FactoringAlgorithm/`
 - Tasks:

@@ -1137,11 +1137,18 @@ semantics.
     residue checks, and repeated-squaring invariants into correctness, and
     recording cost-model, mathematical-existence, and external-solver/oracle
     boundaries.
+  - `NT-T65` extended certificate-backed `Proofs.Ai.NumberTheory.PrimalityTest`
+    with Fermat, Miller-Rabin, and AKS algorithm correctness chains, explicit
+    randomness assumptions for probabilistic Miller-Rabin failure claims,
+    cost-model separation, and hardness non-derivation boundaries, and added
+    `Proofs.Ai.NumberTheory.FactoringAlgorithm` for Pollard rho, quadratic
+    sieve, and number field sieve factor-extraction statement surfaces.
 - Depends on: `NT-04`, `NT-05`, `NT-16`, finite-field and algorithmic
   correctness APIs.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Algorithm`
   - `Proofs.Ai.NumberTheory.PrimalityTest`
+  - `Proofs.Ai.NumberTheory.FactoringAlgorithm`
   - `Proofs.Ai.Cryptography.NumberTheory`
   - `Proofs.Ai.Cryptography.EllipticCurve`
 - Theorem order:
