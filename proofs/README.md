@@ -155,6 +155,14 @@ Current bundles:
   vertex-cover bridge package. It names matching-as-flow, flow-to-matching, maximum-matching,
   minimum-vertex-cover, Konig equality, and Hall ownership-boundary evidence slots instead of
   re-owning Hall theorem proof obligations.
+- `Proofs/Ai/Graph/Coloring/`: certificate-backed graph coloring foundation package. It records
+  a finite color carrier, explicit color-count/cardinality evidence, proper edge color separation,
+  chromatic-number evidence, greedy-ordering and greedy-coloring bound evidence, and finite color
+  classes as proof-corpus evidence slots.
+- `Proofs/Ai/Graph/Clique/`: certificate-backed clique and independent-set foundation package
+  over coloring and complement graph evidence. It records clique/independent-set cardinality and
+  number evidence, complement simple-graph preservation, complement bridges, and clique and
+  independence lower-bound aliases.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

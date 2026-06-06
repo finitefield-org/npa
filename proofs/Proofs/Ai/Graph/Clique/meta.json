@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Clique",
+  "source": "Proofs/Ai/Graph/Clique/source.npa",
+  "certificate": "Proofs/Ai/Graph/Clique/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:55321a9ab9e46d2fc9103bf2160cfd55138994979a764a7a1b41dc2db3ecea49",
+  "certificate_file_sha256": "sha256:cd8c0ae51eb17d6a88df6609a5a26ab317a0d5da73c2470ec7cafcc566a821cd",
+  "export_hash": "sha256:cd7d1bb6014e721a116b9e9531fcbb110706b0110e58707821c42ef20ae66c18",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:c10bec541ce1b5417e0d19dc81559fe8c62812bc680bcccff3797deb476025f5",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Coloring"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CliqueIndependenceFoundationPackage", "kind": "def" },
+    { "name": "clique_independence_foundation_package_intro", "kind": "theorem" },
+    { "name": "complement_preserves_simple_graph_statement", "kind": "theorem" },
+    { "name": "clique_pairwise_adjacency_statement", "kind": "theorem" },
+    { "name": "independent_pairwise_nonedge_statement", "kind": "theorem" },
+    { "name": "clique_lower_bound_alias_statement", "kind": "theorem" },
+    { "name": "independence_lower_bound_alias_statement", "kind": "theorem" },
+    { "name": "clique_complement_independence_bridge_statement", "kind": "theorem" },
+    { "name": "independent_complement_clique_bridge_statement", "kind": "theorem" },
+    { "name": "chromatic_number_clique_lower_bound_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

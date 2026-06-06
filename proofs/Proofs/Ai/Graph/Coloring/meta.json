@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Coloring",
+  "source": "Proofs/Ai/Graph/Coloring/source.npa",
+  "certificate": "Proofs/Ai/Graph/Coloring/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:dbadbf1ee5c6db97abf167cdff0f5ab2b34db367719b870cb64aa11056eb962b",
+  "certificate_file_sha256": "sha256:e7cc44b31d5b47d6a3dfb8fbdae70b2a786a32aad9607d207a2f5e1367689367",
+  "export_hash": "sha256:608737e96d02a1b70702c9a21ff1d3c90be1e384716e51215ec901165bc23181",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:09d3375f39e5e4ea0fa9c2f5b355d81ea2782bddaacf6b3447640449dfbf7413",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Graph.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphColoringFoundationPackage", "kind": "def" },
+    { "name": "graph_coloring_foundation_package_intro", "kind": "theorem" },
+    { "name": "color_set_finite_cardinality_statement", "kind": "theorem" },
+    { "name": "proper_coloring_edge_separation_statement", "kind": "theorem" },
+    { "name": "chromatic_number_certificate_statement", "kind": "theorem" },
+    { "name": "greedy_coloring_bound_statement", "kind": "theorem" },
+    { "name": "color_class_finite_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

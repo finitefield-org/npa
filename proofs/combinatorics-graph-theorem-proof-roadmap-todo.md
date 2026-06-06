@@ -695,22 +695,37 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T20 Add Coloring, Clique, And Independent-Set Foundations
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T12`, `CG-T14`
 - Areas: `Proofs.Ai.Graph.Coloring`, `Proofs.Ai.Graph.Clique`
 - Tasks:
-  - Define proper coloring, chromatic number, clique, independent set,
-    complement graph, and clique/independence numbers.
-  - Add greedy coloring theorem targets.
-  - Add clique lower bound and independence lower bound aliases.
+  - Done: Defined proper coloring, chromatic number, clique, independent set,
+    complement graph, and clique/independence number surfaces.
+  - Done: Added greedy coloring theorem targets through
+    `greedy_coloring_bound_statement`.
+  - Done: Added clique lower bound and independence lower bound aliases in
+    `Proofs.Ai.Graph.Clique`.
 - Deliverables:
-  - Coloring and clique/independence theorem layer.
+  - Delivered: Coloring and clique/independence theorem layer.
 - Acceptance criteria:
-  - Color sets are finite structures with explicit cardinality evidence.
-  - Complement graph assumptions preserve simple graph invariants.
+  - Satisfied: Color sets carry `ColorFiniteEvidence`,
+    `ColorEnumerationEvidence`, `ColorCardinalityEvidence`, and a `colorCount`
+    witness in `GraphColoringFoundationPackage`.
+  - Satisfied: Complement graph assumptions preserve simple graph invariants
+    through `ComplementGraphPackage` and
+    `complement_preserves_simple_graph_statement`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Coloring`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Clique`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Clique --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Clique`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `rg -n "ColorFiniteEvidence|ColorCardinalityEvidence|ComplementPreservesSimpleGraphEvidence|CliqueLowerBoundEvidence|IndependenceLowerBoundEvidence" proofs/Proofs/Ai/Graph proofs/combinatorics-graph-theorem-proof-roadmap-todo.md`
+  - `git diff --check`
 
 ### CG-T21 Add Advanced Coloring Interfaces
 
