@@ -114,6 +114,13 @@ Current bundles:
   endpoint-occurrence, orientation, loop, and finite-fiber counting assumptions are explicit
   evidence slots, and the degree-sum target consumes finite-fiber counting evidence rather than
   private graph-specific cardinal arithmetic.
+- `Proofs/Ai/Graph/Walk/`: certificate-backed walk, trail, path, cycle, walk-concatenation,
+  and walk-reversal packages. Walk data use explicit walk carriers, step indices, vertex-at
+  maps, endpoint evidence, length evidence, and validity evidence rather than parser notation.
+- `Proofs/Ai/Graph/Connected/`: certificate-backed reachability, connectedness, and connected
+  component partition packages. Reachability is built from explicit walk-witness evidence and a
+  named no-hidden-transitive-closure boundary, and component partitions expose component-carrier
+  and membership evidence slots.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

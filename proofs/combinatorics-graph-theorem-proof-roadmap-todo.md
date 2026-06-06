@@ -503,22 +503,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T14 Add Walk, Path, Cycle, And Connectivity APIs
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T12`
 - Areas: `Proofs.Ai.Graph.Walk`, `Proofs.Ai.Graph.Connected`
 - Tasks:
-  - Add walk, trail, path, cycle, reachability, connectedness, and connected
-    component predicates.
-  - Prove or interface walk concatenation, reversal, and path extraction.
-  - Add connected-component partition statement surface.
+  - Done: Added explicit walk, trail, path, cycle, reachability,
+    connectedness, and connected-component partition packages.
+  - Done: Added certificate-backed walk concatenation, reversal, path
+    extraction, and cycle-closure theorem targets.
+  - Done: Added connectedness and connected-component partition statement
+    surfaces built from explicit reachability witness evidence.
 - Deliverables:
-  - Graph traversal and connectedness layer.
+  - Delivered: graph traversal and connectedness layer in
+    `Proofs.Ai.Graph.Walk` and `Proofs.Ai.Graph.Connected`.
 - Acceptance criteria:
-  - Walk/path data are explicit structures or inductive evidence objects.
-  - Connectedness does not rely on parser notation or hidden transitive closure.
+  - Satisfied: walk/path data use explicit `Walk`, `StepIndex`, vertex-at,
+    endpoint, length, validity, repeated-edge, and repeated-vertex evidence
+    slots.
+  - Satisfied: connectedness uses explicit reachability witness evidence and a
+    named `NoHiddenTransitiveClosureEvidence` slot rather than parser notation
+    or hidden transitive closure.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Walk`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Walk Proofs.Ai.Graph.Connected`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Walk --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Connected --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Walk`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Connected`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
 
 ### CG-T15 Add Tree And Forest Characterizations
 

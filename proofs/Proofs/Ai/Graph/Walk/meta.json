@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Walk",
+  "source": "Proofs/Ai/Graph/Walk/source.npa",
+  "certificate": "Proofs/Ai/Graph/Walk/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:57e13675f1246a9caa180c9c239475013e7828fb946b4538fa79c787937e1805",
+  "certificate_file_sha256": "sha256:b8c51147fe3ed6a5d09a9c0afc75f3f339ef624df6eb52ab29470b578c4bd3e2",
+  "export_hash": "sha256:c4addca4893541da80e6cc5e2630c25a1b959ed6bfeb243b4bda5b8d64668ced",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:8e5bc35dc297d26ba25b55a3a60841a2fe2f0cd84e9ff039d84280663ab81979",
+  "imports": ["Proofs.Ai.Graph.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "WalkDataPackage", "kind": "def" },
+    { "name": "TrailPathCyclePackage", "kind": "def" },
+    { "name": "WalkConcatenationPackage", "kind": "def" },
+    { "name": "WalkReversalPackage", "kind": "def" },
+    { "name": "walk_data_package_intro", "kind": "theorem" },
+    { "name": "trail_path_cycle_package_intro", "kind": "theorem" },
+    { "name": "walk_concatenation_statement", "kind": "theorem" },
+    { "name": "walk_reversal_statement", "kind": "theorem" },
+    { "name": "path_extraction_statement", "kind": "theorem" },
+    { "name": "cycle_closure_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

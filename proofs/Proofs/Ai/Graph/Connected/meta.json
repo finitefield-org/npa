@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Connected",
+  "source": "Proofs/Ai/Graph/Connected/source.npa",
+  "certificate": "Proofs/Ai/Graph/Connected/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8454940d18185e9f38a174102cb074be515894fe76c52498997bbecac019f77e",
+  "certificate_file_sha256": "sha256:d5ba538dfd169bcba6822231465c6ceb7361658ac01065bfc478ac5d906751d8",
+  "export_hash": "sha256:18185a474359eba0d4e738c327fe182fa1eaf3730bd8cf292b1dbd9cfc46e811",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:20b20666f8087fb3310c0a1863b1b9d747953fa3c35b2801c774a8c6191c5959",
+  "imports": ["Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ReachabilityPackage", "kind": "def" },
+    { "name": "ConnectedGraphPackage", "kind": "def" },
+    { "name": "ConnectedComponentPartitionPackage", "kind": "def" },
+    { "name": "reachability_package_intro", "kind": "theorem" },
+    { "name": "reachability_from_explicit_walk_statement", "kind": "theorem" },
+    { "name": "connected_graph_package_intro", "kind": "theorem" },
+    { "name": "graph_connectedness_statement", "kind": "theorem" },
+    { "name": "connected_component_partition_package_intro", "kind": "theorem" },
+    { "name": "connected_component_partition_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
