@@ -200,6 +200,16 @@ Current bundles:
   Carmichael and primality-test surfaces, preserving modulus factorization, coprimality, and
   key-congruence hypotheses, plus a boundary separating mathematical round-trip correctness from
   runtime solvers, randomness, or security assumptions.
+- `Proofs/Ai/Cryptography/NumberTheory/`: certificate-backed cryptographic number theory
+  correctness interface downstream of algorithmic number theory, primality/factoring algorithms,
+  RSA, and discrete-log character surfaces, preserving Diffie-Hellman group/key-generation
+  correctness, discrete-log hardness boundaries, RSA round-trip reuse, LLL reduction correctness,
+  Coppersmith small-root extraction, and non-`L2` hardness export boundaries.
+- `Proofs/Ai/Cryptography/EllipticCurve/`: certificate-backed elliptic-curve cryptography
+  interface downstream of cryptographic number theory and elliptic-curve Basic/GroupLaw/
+  GaloisRepresentation APIs, preserving ECDH group/key-generation/randomness correctness, ECDSA
+  key-generation and nonce-randomness verification correctness, Weil and Tate pairing reuse of
+  elliptic-curve APIs, and hardness assumptions as non-derived boundaries.
 - `Proofs/Ai/NumberTheory/PrimitiveRoot/`: certificate-backed element-order and primitive-root
   base interface downstream of abstract groups, modular unit groups, and `phi`, preserving
   `element_order` power-congruence and minimality surfaces, primitive root definitions as

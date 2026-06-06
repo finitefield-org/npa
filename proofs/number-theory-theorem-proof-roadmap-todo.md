@@ -1726,7 +1726,7 @@ later in the file.
 
 ### NT-T66 Add Cryptographic Correctness Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T15`, `NT-T47`, `NT-T64`
 - Areas: `Proofs/Ai/Cryptography/NumberTheory/`, `Proofs/Ai/Cryptography/EllipticCurve/`
 - Tasks:

@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Cryptography.EllipticCurve",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "elliptic_curve_diffie_hellman_correctness_from_api_keygen_randomness",
+      "source_kind": "explicit_term",
+      "term": "fun Curve => fun Scalar => fun Point => fun RandomnessSource => fun EllipticCurveApi => fun EllipticGroupLaw => fun KeyGenerationAssumption => fun PublicKeyRelation => fun SharedSecretRelation => fun SharedSecretAgreement => fun EcDiffieHellmanCorrect => fun api_group_law => fun public_key_law => fun shared_secret_law => fun agreement_law => fun correctness_law => fun curve => fun alice_secret => fun bob_secret => fun randomness => fun alice_public => fun bob_public => fun alice_shared => fun bob_shared => fun api => fun alice_keygen => fun bob_keygen => correctness_law curve alice_secret bob_secret randomness alice_public bob_public alice_shared bob_shared api alice_keygen bob_keygen (agreement_law curve alice_secret bob_secret alice_public bob_public alice_shared bob_shared (shared_secret_law curve alice_secret bob_secret bob_public alice_shared (api_group_law curve api) (public_key_law curve randomness bob_secret bob_public (api_group_law curve api) bob_keygen)) (shared_secret_law curve bob_secret alice_secret alice_public bob_shared (api_group_law curve api) (public_key_law curve randomness alice_secret alice_public (api_group_law curve api) alice_keygen)))"
+    },
+    {
+      "declaration": "ecdsa_verification_correctness_from_group_keygen_nonce_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Curve => fun PrivateScalar => fun PublicPoint => fun Message => fun Signature => fun Nonce => fun RandomnessSource => fun EllipticGroupLaw => fun KeyGenerationAssumption => fun NonceRandomnessAssumption => fun SigningEquation => fun VerificationEquation => fun EcdsaCorrect => fun signing_law => fun verification_law => fun correctness_law => fun curve => fun private_key => fun public_key => fun message => fun nonce => fun signature => fun randomness => fun group_law => fun keygen => fun nonce_randomness => correctness_law curve private_key public_key message signature randomness keygen (verification_law curve private_key public_key message nonce signature (signing_law curve private_key public_key message nonce signature randomness group_law keygen nonce_randomness))"
+    },
+    {
+      "declaration": "weil_pairing_bilinearity_reuses_elliptic_curve_api",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurveApi => fun PairingPackage => fun TorsionSubgroup => fun RootOfUnity => fun WeilPairingBilinear => fun WeilPairingNondegenerate => fun PairingFactsReuseEllipticCurveApi => fun bilinear_law => fun nondegenerate_law => fun reuse_law => fun api => fun pairing => fun torsion => fun roots => reuse_law api pairing (bilinear_law api pairing torsion roots) (nondegenerate_law api pairing (bilinear_law api pairing torsion roots))"
+    },
+    {
+      "declaration": "tate_pairing_correctness_reuses_weil_pairing_api",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurveApi => fun WeilPairingPackage => fun TatePairingPackage => fun WeilPairingCompatibility => fun TatePairingCorrect => fun PairingFactsReuseEllipticCurveApi => fun compatibility_law => fun correctness_law => fun reuse_law => fun api => fun weil_pairing => fun tate_pairing => reuse_law api tate_pairing (correctness_law api weil_pairing tate_pairing (compatibility_law api weil_pairing tate_pairing))"
+    },
+    {
+      "declaration": "elliptic_curve_hardness_assumptions_not_derived_from_correctness",
+      "source_kind": "explicit_term",
+      "term": "fun Curve => fun Protocol => fun HardnessAssumption => fun CorrectnessStatement => fun HardnessAssumptionNotDerived => fun correctness_marker_law => fun hardness_boundary_law => fun curve => fun protocol => fun hardness => hardness_boundary_law curve protocol hardness (correctness_marker_law curve protocol)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Cryptography/EllipticCurve/certificate.npcert"
+  }
+}

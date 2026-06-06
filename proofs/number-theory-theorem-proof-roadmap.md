@@ -1143,6 +1143,12 @@ semantics.
     cost-model separation, and hardness non-derivation boundaries, and added
     `Proofs.Ai.NumberTheory.FactoringAlgorithm` for Pollard rho, quadratic
     sieve, and number field sieve factor-extraction statement surfaces.
+  - `NT-T66` added certificate-backed `Proofs.Ai.Cryptography.NumberTheory`
+    and `Proofs.Ai.Cryptography.EllipticCurve`, reusing RSA, discrete-log,
+    algorithmic factoring, and elliptic-curve group/pairing APIs for
+    Diffie-Hellman, ECDSA, Weil/Tate pairing, LLL, and Coppersmith theorem
+    surfaces, with explicit group, randomness, key-generation, and hardness
+    non-`L2` boundaries.
 - Depends on: `NT-04`, `NT-05`, `NT-16`, finite-field and algorithmic
   correctness APIs.
 - Target modules:
