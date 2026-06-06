@@ -931,6 +931,11 @@ semantics.
     assumptions, Arthur-Selberg, endoscopic transfer, Fundamental lemma,
     Rankin-Selberg, Langlands-Shahidi, converse theorem, and `L1` analytic
     continuation boundary surfaces.
+  - `NT-T55` added certificate-backed `Proofs.Ai.Langlands.Interface`,
+    preserving local/global correspondence, Jacquet-Langlands, base change,
+    conditional `L0` functoriality, Sato-Tate, potential automorphy,
+    promotable-subtheorem dependency graph, and no-broad-derived-certificate
+    boundary surfaces.
 - Depends on: `NT-11`, `NT-15`, `NT-17`, Galois representations, automorphic
   representation interfaces, and trace formula prerequisites.
 - Target modules:

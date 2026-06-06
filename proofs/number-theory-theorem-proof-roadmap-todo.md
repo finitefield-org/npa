@@ -1471,7 +1471,7 @@ later in the file.
 
 ### NT-T55 Add Langlands Correspondence Statement Graph
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T54`, `NT-T63`
 - Areas: `Proofs/Ai/Langlands/Interface/`
 - Tasks:

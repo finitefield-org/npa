@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Langlands.Interface",
+  "source": "Proofs/Ai/Langlands/Interface/source.npa",
+  "certificate": "Proofs/Ai/Langlands/Interface/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:288663f753a76745541248042e96380aa7f8a72cb7ebd3ea7a7191307cb85dfe",
+  "certificate_file_sha256": "sha256:3a6a0b1097fa4510929917836b8e87fd08b1e33a0433a953569d13b3dc9e4c2c",
+  "export_hash": "sha256:1a8ff781fa5f9a45a17208403fc01b0b826bfdf54d37c23c89da26b28b546016",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:6390ea2011fa1baff4cdf8d34d4020333164b3225bada1d3d1c4d1d98be60d39",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.HeckeL", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable", "Proofs.Ai.Langlands.TraceFormula", "Proofs.Ai.NumberTheory.AutomorphicL"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LanglandsInterfaceData", "kind": "def" },
+    { "name": "langlands_interface_data_intro", "kind": "theorem" },
+    { "name": "langlands_trace_formula_data", "kind": "theorem" },
+    { "name": "langlands_automorphic_l_data", "kind": "theorem" },
+    { "name": "langlands_local_correspondence_statement_surface", "kind": "theorem" },
+    { "name": "langlands_global_correspondence_statement_surface", "kind": "theorem" },
+    { "name": "jacquet_langlands_transfer_surface", "kind": "theorem" },
+    { "name": "langlands_base_change_surface", "kind": "theorem" },
+    { "name": "langlands_functoriality_l0_conditional_boundary", "kind": "theorem" },
+    { "name": "sato_tate_conditional_statement_surface", "kind": "theorem" },
+    { "name": "potential_automorphy_conditional_surface", "kind": "theorem" },
+    { "name": "langlands_promotable_subtheorem_boundary", "kind": "theorem" },
+    { "name": "langlands_dependency_graph_edge_surface", "kind": "theorem" },
+    { "name": "langlands_conjectural_statements_marked_l0", "kind": "theorem" },
+    { "name": "langlands_no_broad_derived_certificate_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

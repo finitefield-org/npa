@@ -245,6 +245,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &MODULARITY_SEMISTABLE_MODULE,
     &LANGLANDS_TRACE_FORMULA_MODULE,
     &NUMBER_THEORY_AUTOMORPHIC_L_MODULE,
+    &LANGLANDS_INTERFACE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -3046,6 +3047,32 @@ const NUMBER_THEORY_AUTOMORPHIC_L_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: NUMBER_THEORY_AUTOMORPHIC_L_DEFINITIONS,
     theorems: NUMBER_THEORY_AUTOMORPHIC_L_THEOREMS,
+    expected_axioms: &[],
+};
+
+const LANGLANDS_INTERFACE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Langlands.Interface",
+    source_path: "Proofs/Ai/Langlands/Interface/source.npa",
+    certificate_path: "Proofs/Ai/Langlands/Interface/certificate.npcert",
+    meta_path: "Proofs/Ai/Langlands/Interface/meta.json",
+    replay_path: "Proofs/Ai/Langlands/Interface/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.LFunction",
+        "Proofs.Ai.NumberTheory.HeckeL",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.Reduction",
+        "Proofs.Ai.EllipticCurve.Semistable",
+        "Proofs.Ai.Modularity.LevelLowering",
+        "Proofs.Ai.Modularity.Ribet",
+        "Proofs.Ai.Modularity.Lifting",
+        "Proofs.Ai.Modularity.Semistable",
+        "Proofs.Ai.Langlands.TraceFormula",
+        "Proofs.Ai.NumberTheory.AutomorphicL",
+    ],
+    inductives: &[],
+    definitions: LANGLANDS_INTERFACE_DEFINITIONS,
+    theorems: LANGLANDS_INTERFACE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -23452,6 +23479,465 @@ const NUMBER_THEORY_AUTOMORPHIC_L_THEOREMS: &[TheoremArtifact] = &[
             ") => fun (semistable_modularity_compatibility_law : ",
             automorphic_l_semistable_compatibility_law_type!(),
             ") => semistable_modularity_compatibility_law)"
+        ),
+    },
+];
+
+macro_rules! langlands_interface_params {
+    ($($body:expr),+ $(,)?) => {
+        automorphic_l_params!(
+            "forall (TraceGroup : Type), forall (TestFunction : Type), ",
+            "forall (Distribution : Type), ",
+            "forall (TraceFormula : TraceGroup -> Prop), ",
+            "forall (ArthurSelbergTraceFormula : TraceGroup -> Prop), ",
+            "forall (GeometricSide : TraceGroup -> TestFunction -> Distribution -> Prop), ",
+            "forall (SpectralSide : TraceGroup -> TestFunction -> Distribution -> Prop), ",
+            "forall (OrbitalIntegral : TraceGroup -> TestFunction -> Prop), ",
+            "forall (EndoscopicDatum : TraceGroup -> Prop), ",
+            "forall (EndoscopicTransfer : TraceGroup -> Prop), ",
+            "forall (FundamentalLemma : TraceGroup -> Prop), ",
+            "forall (NgoStyleFundamentalLemmaReference : TraceGroup -> Prop), ",
+            "forall (StableTraceFormula : TraceGroup -> Prop), ",
+            "forall (AnalyticTraceAssumptions : TraceGroup -> Prop), ",
+            "forall (GeometricTraceAssumptions : TraceGroup -> Prop), ",
+            "forall (trace_formula_data : ",
+            trace_formula_data_app!(),
+            "), forall (automorphic_l_data : ",
+            automorphic_l_data_app!(),
+            "), forall (LocalField : Type), forall (GlobalField : Type), ",
+            "forall (LocalGaloisRepresentation : LocalField -> Family -> Prop), ",
+            "forall (GlobalGaloisRepresentation : GlobalField -> Family -> Prop), ",
+            "forall (WeilDeligneRepresentation : LocalField -> Family -> Prop), ",
+            "forall (LocalLanglandsCorrespondence : LocalField -> Family -> Family -> Prop), ",
+            "forall (GlobalLanglandsCorrespondence : GlobalField -> Family -> Family -> Prop), ",
+            "forall (LanglandsFunctoriality : Family -> Family -> Prop), ",
+            "forall (ConjecturalFunctorialityL0 : Family -> Family -> Prop), ",
+            "forall (JacquetLanglandsTransfer : Family -> Family -> Prop), ",
+            "forall (BaseChange : GlobalField -> GlobalField -> Family -> Family -> Prop), ",
+            "forall (SatoTateStatement : Family -> Prop), ",
+            "forall (PotentialAutomorphy : Family -> Prop), ",
+            "forall (ConditionalAssumptions : Family -> Prop), ",
+            "forall (PromotableSubtheorem : Family -> Prop), ",
+            "forall (DependencyGraphEdge : Family -> Family -> Prop), ",
+            "forall (ConjecturalStatementMarkedL0 : Family -> Prop), ",
+            "forall (NoBroadLanglandsDerivedCertificate : Family -> Prop), ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! langlands_interface_abs {
+    ($($body:expr),+ $(,)?) => {
+        automorphic_l_abs!(
+            "fun TraceGroup => fun TestFunction => fun Distribution => ",
+            "fun TraceFormula => fun ArthurSelbergTraceFormula => ",
+            "fun GeometricSide => fun SpectralSide => fun OrbitalIntegral => ",
+            "fun EndoscopicDatum => fun EndoscopicTransfer => fun FundamentalLemma => ",
+            "fun NgoStyleFundamentalLemmaReference => fun StableTraceFormula => ",
+            "fun AnalyticTraceAssumptions => fun GeometricTraceAssumptions => ",
+            "fun trace_formula_data => fun automorphic_l_data => ",
+            "fun LocalField => fun GlobalField => ",
+            "fun LocalGaloisRepresentation => fun GlobalGaloisRepresentation => ",
+            "fun WeilDeligneRepresentation => fun LocalLanglandsCorrespondence => ",
+            "fun GlobalLanglandsCorrespondence => fun LanglandsFunctoriality => ",
+            "fun ConjecturalFunctorialityL0 => fun JacquetLanglandsTransfer => ",
+            "fun BaseChange => fun SatoTateStatement => fun PotentialAutomorphy => ",
+            "fun ConditionalAssumptions => fun PromotableSubtheorem => ",
+            "fun DependencyGraphEdge => fun ConjecturalStatementMarkedL0 => ",
+            "fun NoBroadLanglandsDerivedCertificate => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! langlands_interface_data_app {
+    () => {
+        "@LanglandsInterfaceData Family Complex Coeff Prime LFunction CoefficientField InCoefficientField coefficient_field LocalFactor LocalFactorData EulerProduct EulerProductData AnalyticDomain Normalization AnalyticContinuation FunctionalEquation NoConjecturalL2 HasseWeilSource HasseWeilLFunction AutomorphicSource AutomorphicLFunction HeckeCharacter HeckeLocalFactorNormalized HeckeEulerProductCompatible HeckeAutomorphicNormalization HeckeLFunction AutomorphicRepresentation CuspidalRepresentation AutomorphicAnalyticAssumptions RankinSelbergProduct RankinSelbergAnalyticSurface LanglandsShahidiNormalization ConverseTheoremHypotheses TraceFormulaAssumptions TraceFormulaMap SemistableModularityCompatibility TraceGroup TestFunction Distribution TraceFormula ArthurSelbergTraceFormula GeometricSide SpectralSide OrbitalIntegral EndoscopicDatum EndoscopicTransfer FundamentalLemma NgoStyleFundamentalLemmaReference StableTraceFormula AnalyticTraceAssumptions GeometricTraceAssumptions trace_formula_data automorphic_l_data LocalField GlobalField LocalGaloisRepresentation GlobalGaloisRepresentation WeilDeligneRepresentation LocalLanglandsCorrespondence GlobalLanglandsCorrespondence LanglandsFunctoriality ConjecturalFunctorialityL0 JacquetLanglandsTransfer BaseChange SatoTateStatement PotentialAutomorphy ConditionalAssumptions PromotableSubtheorem DependencyGraphEdge ConjecturalStatementMarkedL0 NoBroadLanglandsDerivedCertificate"
+    };
+}
+
+macro_rules! langlands_local_correspondence_law_type {
+    () => {
+        "forall (local_field : LocalField), forall (rho : Family), forall (pi : Family), LocalGaloisRepresentation local_field rho -> WeilDeligneRepresentation local_field rho -> AutomorphicRepresentation pi -> LocalLanglandsCorrespondence local_field rho pi"
+    };
+}
+
+macro_rules! langlands_global_correspondence_law_type {
+    () => {
+        "forall (global_field : GlobalField), forall (rho : Family), forall (pi : Family), GlobalGaloisRepresentation global_field rho -> AutomorphicRepresentation pi -> AutomorphicLFunction pi -> GlobalLanglandsCorrespondence global_field rho pi"
+    };
+}
+
+macro_rules! langlands_jacquet_law_type {
+    () => {
+        "forall (source : Family), forall (target : Family), AutomorphicRepresentation source -> AutomorphicRepresentation target -> JacquetLanglandsTransfer source target"
+    };
+}
+
+macro_rules! langlands_base_change_law_type {
+    () => {
+        "forall (source_field : GlobalField), forall (target_field : GlobalField), forall (pi : Family), forall (base_changed_pi : Family), AutomorphicRepresentation pi -> AutomorphicRepresentation base_changed_pi -> BaseChange source_field target_field pi base_changed_pi"
+    };
+}
+
+macro_rules! langlands_functoriality_l0_law_type {
+    () => {
+        "forall (source : Family), forall (target : Family), AutomorphicRepresentation source -> AutomorphicRepresentation target -> ConjecturalFunctorialityL0 source target -> ConditionalAssumptions source -> ConditionalAssumptions target -> LanglandsFunctoriality source target"
+    };
+}
+
+macro_rules! langlands_sato_tate_law_type {
+    () => {
+        "forall (pi : Family), AutomorphicRepresentation pi -> PotentialAutomorphy pi -> ConditionalAssumptions pi -> SatoTateStatement pi"
+    };
+}
+
+macro_rules! langlands_potential_automorphy_law_type {
+    () => {
+        "forall (global_field : GlobalField), forall (rho : Family), forall (pi : Family), GlobalGaloisRepresentation global_field rho -> GlobalLanglandsCorrespondence global_field rho pi -> ConditionalAssumptions rho -> PotentialAutomorphy rho"
+    };
+}
+
+macro_rules! langlands_promotable_subtheorem_law_type {
+    () => {
+        "forall (pi : Family), AutomorphicRepresentation pi -> TraceFormulaMap pi -> PromotableSubtheorem pi"
+    };
+}
+
+macro_rules! langlands_dependency_graph_law_type {
+    () => {
+        "forall (source : Family), forall (target : Family), PromotableSubtheorem source -> PromotableSubtheorem target -> DependencyGraphEdge source target"
+    };
+}
+
+macro_rules! langlands_conjectural_l0_marker_law_type {
+    () => {
+        "forall (source : Family), forall (target : Family), ConjecturalFunctorialityL0 source target -> ConjecturalStatementMarkedL0 source"
+    };
+}
+
+macro_rules! langlands_no_broad_derived_certificate_law_type {
+    () => {
+        "forall (family : Family), ConjecturalStatementMarkedL0 family -> NoBroadLanglandsDerivedCertificate family"
+    };
+}
+
+macro_rules! langlands_interface_mk_type {
+    ($target:expr) => {
+        concat!(
+            "forall (trace_formula_data_out : ",
+            trace_formula_data_app!(),
+            "), forall (automorphic_l_data_out : ",
+            automorphic_l_data_app!(),
+            "), forall (local_correspondence_law : ",
+            langlands_local_correspondence_law_type!(),
+            "), forall (global_correspondence_law : ",
+            langlands_global_correspondence_law_type!(),
+            "), forall (jacquet_langlands_law : ",
+            langlands_jacquet_law_type!(),
+            "), forall (base_change_law : ",
+            langlands_base_change_law_type!(),
+            "), forall (functoriality_l0_law : ",
+            langlands_functoriality_l0_law_type!(),
+            "), forall (sato_tate_law : ",
+            langlands_sato_tate_law_type!(),
+            "), forall (potential_automorphy_law : ",
+            langlands_potential_automorphy_law_type!(),
+            "), forall (promotable_subtheorem_law : ",
+            langlands_promotable_subtheorem_law_type!(),
+            "), forall (dependency_graph_law : ",
+            langlands_dependency_graph_law_type!(),
+            "), forall (conjectural_l0_marker_law : ",
+            langlands_conjectural_l0_marker_law_type!(),
+            "), forall (no_broad_derived_certificate_law : ",
+            langlands_no_broad_derived_certificate_law_type!(),
+            "), ",
+            $target
+        )
+    };
+}
+
+macro_rules! langlands_interface_projection_proof {
+    ($target:expr, $selected:expr) => {
+        langlands_interface_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (trace_formula_data_out : ",
+            trace_formula_data_app!(),
+            ") => fun (automorphic_l_data_out : ",
+            automorphic_l_data_app!(),
+            ") => fun (local_correspondence_law : ",
+            langlands_local_correspondence_law_type!(),
+            ") => fun (global_correspondence_law : ",
+            langlands_global_correspondence_law_type!(),
+            ") => fun (jacquet_langlands_law : ",
+            langlands_jacquet_law_type!(),
+            ") => fun (base_change_law : ",
+            langlands_base_change_law_type!(),
+            ") => fun (functoriality_l0_law : ",
+            langlands_functoriality_l0_law_type!(),
+            ") => fun (sato_tate_law : ",
+            langlands_sato_tate_law_type!(),
+            ") => fun (potential_automorphy_law : ",
+            langlands_potential_automorphy_law_type!(),
+            ") => fun (promotable_subtheorem_law : ",
+            langlands_promotable_subtheorem_law_type!(),
+            ") => fun (dependency_graph_law : ",
+            langlands_dependency_graph_law_type!(),
+            ") => fun (conjectural_l0_marker_law : ",
+            langlands_conjectural_l0_marker_law_type!(),
+            ") => fun (no_broad_derived_certificate_law : ",
+            langlands_no_broad_derived_certificate_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const LANGLANDS_INTERFACE_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "LanglandsInterfaceData",
+    universe_params: &[],
+    ty: langlands_interface_params!("Prop"),
+    value: langlands_interface_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        langlands_interface_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const LANGLANDS_INTERFACE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "langlands_interface_data_intro",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (trace_formula_data_out : ",
+            trace_formula_data_app!(),
+            "), forall (automorphic_l_data_out : ",
+            automorphic_l_data_app!(),
+            "), forall (local_correspondence_law : ",
+            langlands_local_correspondence_law_type!(),
+            "), forall (global_correspondence_law : ",
+            langlands_global_correspondence_law_type!(),
+            "), forall (jacquet_langlands_law : ",
+            langlands_jacquet_law_type!(),
+            "), forall (base_change_law : ",
+            langlands_base_change_law_type!(),
+            "), forall (functoriality_l0_law : ",
+            langlands_functoriality_l0_law_type!(),
+            "), forall (sato_tate_law : ",
+            langlands_sato_tate_law_type!(),
+            "), forall (potential_automorphy_law : ",
+            langlands_potential_automorphy_law_type!(),
+            "), forall (promotable_subtheorem_law : ",
+            langlands_promotable_subtheorem_law_type!(),
+            "), forall (dependency_graph_law : ",
+            langlands_dependency_graph_law_type!(),
+            "), forall (conjectural_l0_marker_law : ",
+            langlands_conjectural_l0_marker_law_type!(),
+            "), forall (no_broad_derived_certificate_law : ",
+            langlands_no_broad_derived_certificate_law_type!(),
+            "), ",
+            langlands_interface_data_app!()
+        ),
+        proof: langlands_interface_abs!(
+            "fun trace_formula_data_out => fun automorphic_l_data_out => ",
+            "fun local_correspondence_law => fun global_correspondence_law => ",
+            "fun jacquet_langlands_law => fun base_change_law => ",
+            "fun functoriality_l0_law => fun sato_tate_law => ",
+            "fun potential_automorphy_law => fun promotable_subtheorem_law => ",
+            "fun dependency_graph_law => fun conjectural_l0_marker_law => ",
+            "fun no_broad_derived_certificate_law => fun (Q : Prop) => ",
+            "fun (mk : ",
+            langlands_interface_mk_type!("Q"),
+            ") => mk trace_formula_data_out automorphic_l_data_out ",
+            "local_correspondence_law global_correspondence_law ",
+            "jacquet_langlands_law base_change_law functoriality_l0_law ",
+            "sato_tate_law potential_automorphy_law promotable_subtheorem_law ",
+            "dependency_graph_law conjectural_l0_marker_law ",
+            "no_broad_derived_certificate_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_trace_formula_data",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            trace_formula_data_app!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            trace_formula_data_app!(),
+            "trace_formula_data_out"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_automorphic_l_data",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            automorphic_l_data_app!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            automorphic_l_data_app!(),
+            "automorphic_l_data_out"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_local_correspondence_statement_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_local_correspondence_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_local_correspondence_law_type!(),
+            "local_correspondence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_global_correspondence_statement_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_global_correspondence_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_global_correspondence_law_type!(),
+            "global_correspondence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "jacquet_langlands_transfer_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_jacquet_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_jacquet_law_type!(),
+            "jacquet_langlands_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_base_change_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_base_change_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_base_change_law_type!(),
+            "base_change_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_functoriality_l0_conditional_boundary",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_functoriality_l0_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_functoriality_l0_law_type!(),
+            "functoriality_l0_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "sato_tate_conditional_statement_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_sato_tate_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_sato_tate_law_type!(),
+            "sato_tate_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "potential_automorphy_conditional_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_potential_automorphy_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_potential_automorphy_law_type!(),
+            "potential_automorphy_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_promotable_subtheorem_boundary",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_promotable_subtheorem_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_promotable_subtheorem_law_type!(),
+            "promotable_subtheorem_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_dependency_graph_edge_surface",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_dependency_graph_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_dependency_graph_law_type!(),
+            "dependency_graph_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_conjectural_statements_marked_l0",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_conjectural_l0_marker_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_conjectural_l0_marker_law_type!(),
+            "conjectural_l0_marker_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_no_broad_derived_certificate_boundary",
+        universe_params: &[],
+        statement: langlands_interface_params!(
+            "forall (data : ",
+            langlands_interface_data_app!(),
+            "), ",
+            langlands_no_broad_derived_certificate_law_type!()
+        ),
+        proof: langlands_interface_projection_proof!(
+            langlands_no_broad_derived_certificate_law_type!(),
+            "no_broad_derived_certificate_law"
         ),
     },
 ];
@@ -55542,6 +56028,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == MODULARITY_SEMISTABLE_MODULE.module
         || config.module == LANGLANDS_TRACE_FORMULA_MODULE.module
         || config.module == NUMBER_THEORY_AUTOMORPHIC_L_MODULE.module
+        || config.module == LANGLANDS_INTERFACE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

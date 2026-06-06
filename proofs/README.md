@@ -258,6 +258,11 @@ Current bundles:
   automorphic representation, cuspidal representation, Rankin-Selberg, Langlands-Shahidi
   normalization, converse theorem, explicit trace-formula prerequisite map, `L1` analytic
   continuation boundary, and semistable modularity compatibility surfaces.
+- `Proofs/Ai/Langlands/Interface/`: certificate-backed Langlands interface graph downstream of
+  `AutomorphicL` and `TraceFormula`, preserving local and global correspondence statement
+  surfaces, Jacquet-Langlands transfer, base change, conditional `L0` functoriality, Sato-Tate,
+  potential automorphy, promotable-subtheorem dependency edges, and explicit
+  `NoBroadLanglandsDerivedCertificate` boundaries.
 - `Proofs/Ai/NumberTheory/Sieve/`: certificate-backed sieve-theory interface preserving Brun
   sieve, Selberg sieve, large sieve, fundamental lemma, Brun theorem, twin-prime reciprocal
   convergence, Chen theorem, GPY, Zhang, Maynard-Tao, parity-problem limitations, explicit
