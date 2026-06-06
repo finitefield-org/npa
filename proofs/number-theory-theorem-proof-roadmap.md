@@ -1199,6 +1199,10 @@ semantics.
     `FiniteFieldApplications`, `Character`, and `GaussSum`, with explicit field-size, degree,
     character, and nonvanishing hypotheses for Gauss/Jacobi sums, Hasse-Davenport,
     Stickelberger, Chevalley-Warning, Ax-Katz, Weil `L1`, and Lang-Weil `L1` interfaces.
+  - `NT-T69` adds `Proofs.Ai.NumberTheory.Combinatorial` downstream of
+    `FiniteFieldApplications` and `Additive`, with explicit ambient structures, field-size,
+    degree, and nonvanishing hypotheses for Ramsey-style, additive-combinatorics, polynomial
+    method, and combinatorial Nullstellensatz interfaces.
 - Theorem order:
   1. import or alias the field-theory finite-field law package, Frobenius,
      cardinality, and root-characterization results;

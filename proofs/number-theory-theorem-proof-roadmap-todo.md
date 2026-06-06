@@ -1812,7 +1812,7 @@ later in the file.
 
 ### NT-T69 Add Polynomial Method And Combinatorial Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T67`, `NT-T30`
 - Areas: `Proofs/Ai/NumberTheory/Combinatorial/`
 - Tasks:
@@ -1832,6 +1832,14 @@ later in the file.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Combinatorial`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Combinatorial`
   - `rg -n "Combinatorial|Nullstellensatz|Ramsey|Davenport constant|polynomial method" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+- Completion notes:
+  - Added `Proofs.Ai.NumberTheory.Combinatorial` downstream of
+    `FiniteFieldApplications` and `Additive`.
+  - Recorded pigeonhole/Ramsey/Schur/Rado, van der Waerden polynomial-method,
+    Erdos-Ginzburg-Ziv/Olson/Davenport constant, finite-field combinatorial
+    Nullstellensatz, and finite-field ownership boundary theorem cards.
+  - Kept ambient structures, field-size, degree, and nonvanishing hypotheses
+    explicit while reusing the NT-T67 finite-field application route.
 
 ### NT-T70 Package And Promote Stable Number-Theory Closure Batches
 

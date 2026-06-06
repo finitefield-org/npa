@@ -238,6 +238,11 @@ Current bundles:
   finite-field Gauss and Jacobi sum, Hasse-Davenport, Stickelberger, Chevalley-Warning, Ax-Katz,
   Weil `L1` estimate, and Lang-Weil `L1` prerequisite surfaces with explicit field-size, degree,
   character, and nonvanishing hypotheses.
+- `Proofs/Ai/NumberTheory/Combinatorial/`: certificate-backed combinatorial number-theory
+  interface downstream of `FiniteFieldApplications` and `Additive`, preserving pigeonhole,
+  Ramsey, Schur, Rado, van der Waerden, Erdos-Ginzburg-Ziv, Olson, Davenport constant, finite
+  field polynomial method, and combinatorial Nullstellensatz surfaces with explicit ambient
+  structures, field-size, degree, and nonvanishing hypotheses.
 - `Proofs/Ai/NumberTheory/QuadraticResidue/`: certificate-backed quadratic residue and
   nonresidue interface downstream of prime, congruence, modular unit-group, and primitive-root
   surfaces, preserving explicit odd prime hypotheses and nonzero residue count statements.
