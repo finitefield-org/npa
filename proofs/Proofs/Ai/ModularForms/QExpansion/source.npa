@@ -1,0 +1,28 @@
+import Std.Logic.Eq
+
+def QExpansionEqArgs.{u, v} :
+  forall (F : Sort u), forall (CoeffType : Sort v), forall (coeff : F -> Nat -> CoeffType), forall (f : F), forall (g : F), Prop :=
+  fun F => fun CoeffType => fun coeff => fun f => fun g =>
+  forall (P : Prop), forall (mk : forall (coeff_eq : forall (n : Nat), @Eq.{v} CoeffType (coeff f n) (coeff g n)), P), P
+
+theorem q_expansion_eq_symm.{u, v} :
+  forall (F : Sort u), forall (CoeffType : Sort v), forall (coeff : F -> Nat -> CoeffType), forall (f : F), forall (g : F),
+  @QExpansionEqArgs.{u, v} F CoeffType coeff f g -> @QExpansionEqArgs.{u, v} F CoeffType coeff g f :=
+  fun F => fun CoeffType => fun coeff => fun f => fun g => fun h =>
+  fun P => fun mk =>
+    h P (fun (coeff_eq : forall (n : Nat), @Eq.{v} CoeffType (coeff f n) (coeff g n)) =>
+      mk (fun (n : Nat) => @eq_symm.{v} CoeffType (coeff f n) (coeff g n) (coeff_eq n))
+    )
+
+theorem q_expansion_eq_trans.{u, v} :
+  forall (F : Sort u), forall (CoeffType : Sort v), forall (coeff : F -> Nat -> CoeffType), forall (f : F), forall (g : F), forall (h_func : F),
+  @QExpansionEqArgs.{u, v} F CoeffType coeff f g ->
+  @QExpansionEqArgs.{u, v} F CoeffType coeff g h_func ->
+  @QExpansionEqArgs.{u, v} F CoeffType coeff f h_func :=
+  fun F => fun CoeffType => fun coeff => fun f => fun g => fun h_func => fun h1 => fun h2 =>
+  fun P => fun mk =>
+    h1 P (fun (coeff_eq1 : forall (n : Nat), @Eq.{v} CoeffType (coeff f n) (coeff g n)) =>
+      h2 P (fun (coeff_eq2 : forall (n : Nat), @Eq.{v} CoeffType (coeff g n) (coeff h_func n)) =>
+        mk (fun (n : Nat) => @eq_trans.{v} CoeffType (coeff f n) (coeff g n) (coeff h_func n) (coeff_eq1 n) (coeff_eq2 n))
+      )
+    )
