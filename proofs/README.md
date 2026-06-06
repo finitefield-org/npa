@@ -178,6 +178,12 @@ Current bundles:
   downstream of `phi` and the Fermat/Euler/Wilson surface, preserving a separate
   `CarmichaelLambda` definition, unit-group exponent theorem, divisibility into `EulerPhi`, and
   boundaries excluding duplicated `phi` and RSA security claims.
+- `Proofs/Ai/NumberTheory/Algorithm/`: certificate-backed algorithmic number theory correctness
+  foundation preserving named Euclid, extended Euclid, constructive CRT, and repeated-squaring
+  function/relation interfaces, correctness chains from descent/remainder, Bezout, CRT residue
+  checks, and repeated-squaring invariants, complexity separated behind cost-model interfaces,
+  correctness separated from mathematical existence, and no trusted external solver/runtime
+  oracle boundary.
 - `Proofs/Ai/NumberTheory/PrimalityTest/`: certificate-backed early primality-test interface
   downstream of prime/composite predicates, Fermat/Euler/Wilson, and Carmichael surfaces,
   preserving pseudoprime, Carmichael-number, Korselt criterion, Fermat-test, and Miller-Rabin

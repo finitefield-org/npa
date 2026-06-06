@@ -182,6 +182,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PHI_MODULE,
     &NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE,
     &NUMBER_THEORY_CARMICHAEL_MODULE,
+    &NUMBER_THEORY_ALGORITHM_MODULE,
     &NUMBER_THEORY_PRIMALITY_TEST_MODULE,
     &NUMBER_THEORY_RSA_MODULE,
     &NUMBER_THEORY_PRIMITIVE_ROOT_MODULE,
@@ -2015,6 +2016,26 @@ const NUMBER_THEORY_CARMICHAEL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CARMICHAEL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ALGORITHM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Algorithm",
+    source_path: "Proofs/Ai/NumberTheory/Algorithm/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Algorithm/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Algorithm/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Algorithm/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.NumberTheory.EuclideanAlgorithm",
+        "Proofs.Ai.NumberTheory.ChineseRemainder",
+        "Proofs.Ai.NumberTheory.FermatEulerWilson",
+        "Proofs.Ai.NumberTheory.Carmichael",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_ALGORITHM_DEFINITIONS,
+    theorems: NUMBER_THEORY_ALGORITHM_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -17845,6 +17866,543 @@ const NUMBER_THEORY_CARMICHAEL_THEOREMS: &[TheoremArtifact] = &[
             "fun RsaSecurityClaimPackage => fun NoDuplicationOrSecurityBoundary => ",
             "fun boundary_law => fun carmichael => fun phi => fun rsa_correctness => ",
             "fun rsa_security => boundary_law carmichael phi rsa_correctness rsa_security"
+        ),
+    },
+];
+
+macro_rules! algorithm_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (Int : Type), ",
+            "forall (Nat : Type), ",
+            "forall (AlgorithmName : Type), ",
+            "forall (CostModel : Type), ",
+            "forall (ExternalSolverOracle : Type), ",
+            "forall (EuclidAlgorithmToken : AlgorithmName), ",
+            "forall (ExtendedEuclidAlgorithmToken : AlgorithmName), ",
+            "forall (ConstructiveCRTAlgorithmToken : AlgorithmName), ",
+            "forall (RepeatedSquaringAlgorithmToken : AlgorithmName), ",
+            "forall (EuclidFunction : forall (a : Int), forall (b : Int), Int), ",
+            "forall (ExtendedEuclidOutput : forall (a : Int), forall (b : Int), Type), ",
+            "forall (ExtendedEuclidFunction : forall (a : Int), forall (b : Int), ExtendedEuclidOutput a b), ",
+            "forall (ConstructiveCRTFunction : forall (left_modulus : Int), forall (right_modulus : Int), Int), ",
+            "forall (PowerFunction : forall (base : Int), forall (exponent : Nat), Int), ",
+            "forall (RepeatedSquaringFunction : forall (base : Int), forall (exponent : Nat), Int), ",
+            "forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), ",
+            "forall (EuclidDescentEvidence : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (EuclidRemainderInvariant : forall (a : Int), forall (b : Int), Prop), ",
+            "forall (EuclidCorrectness : forall (algorithm : AlgorithmName), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), ",
+            "forall (ExtendedEuclidCorrectness : forall (algorithm : AlgorithmName), forall (a : Int), forall (b : Int), Prop), ",
+            "forall (PairwiseCoprimeModuli : forall (left_modulus : Int), forall (right_modulus : Int), Prop), ",
+            "forall (ResidueSystem : forall (left_modulus : Int), forall (right_modulus : Int), Prop), ",
+            "forall (ConstructiveCRTResidueChecks : forall (left_modulus : Int), forall (right_modulus : Int), forall (solution : Int), Prop), ",
+            "forall (ConstructiveCRTCorrectness : forall (algorithm : AlgorithmName), forall (left_modulus : Int), forall (right_modulus : Int), Prop), ",
+            "forall (RepeatedSquaringInvariant : forall (base : Int), forall (exponent : Nat), Prop), ",
+            "forall (RepeatedSquaringResultMatchesPower : forall (base : Int), forall (exponent : Nat), Prop), ",
+            "forall (RepeatedSquaringCorrectness : forall (algorithm : AlgorithmName), forall (base : Int), forall (exponent : Nat), Prop), ",
+            "forall (AlgorithmCorrectness : AlgorithmName -> Prop), ",
+            "forall (ComplexityInterface : AlgorithmName -> CostModel -> Prop), ",
+            "forall (CostModelAvailable : CostModel -> Prop), ",
+            "forall (CorrectnessSeparateFromComplexity : AlgorithmName -> CostModel -> Prop), ",
+            "forall (CorrectnessSeparateFromMathematicalExistence : AlgorithmName -> Prop), ",
+            "forall (NoTrustedExternalSolver : AlgorithmName -> ExternalSolverOracle -> Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! algorithm_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun Int => fun Nat => fun AlgorithmName => fun CostModel => ",
+            "fun ExternalSolverOracle => fun EuclidAlgorithmToken => ",
+            "fun ExtendedEuclidAlgorithmToken => fun ConstructiveCRTAlgorithmToken => ",
+            "fun RepeatedSquaringAlgorithmToken => fun EuclidFunction => ",
+            "fun ExtendedEuclidOutput => fun ExtendedEuclidFunction => ",
+            "fun ConstructiveCRTFunction => fun PowerFunction => fun RepeatedSquaringFunction => ",
+            "fun GcdEvidence => fun EuclidDescentEvidence => fun EuclidRemainderInvariant => ",
+            "fun EuclidCorrectness => fun BezoutIdentity => fun ExtendedEuclidCorrectness => ",
+            "fun PairwiseCoprimeModuli => fun ResidueSystem => fun ConstructiveCRTResidueChecks => ",
+            "fun ConstructiveCRTCorrectness => fun RepeatedSquaringInvariant => ",
+            "fun RepeatedSquaringResultMatchesPower => fun RepeatedSquaringCorrectness => ",
+            "fun AlgorithmCorrectness => fun ComplexityInterface => fun CostModelAvailable => ",
+            "fun CorrectnessSeparateFromComplexity => ",
+            "fun CorrectnessSeparateFromMathematicalExistence => fun NoTrustedExternalSolver => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! algorithm_data_app {
+    () => {
+        concat!(
+            "@AlgorithmData Int Nat AlgorithmName CostModel ExternalSolverOracle ",
+            "EuclidAlgorithmToken ExtendedEuclidAlgorithmToken ConstructiveCRTAlgorithmToken ",
+            "RepeatedSquaringAlgorithmToken EuclidFunction ExtendedEuclidOutput ",
+            "ExtendedEuclidFunction ConstructiveCRTFunction PowerFunction RepeatedSquaringFunction ",
+            "GcdEvidence EuclidDescentEvidence EuclidRemainderInvariant EuclidCorrectness ",
+            "BezoutIdentity ExtendedEuclidCorrectness PairwiseCoprimeModuli ResidueSystem ",
+            "ConstructiveCRTResidueChecks ConstructiveCRTCorrectness RepeatedSquaringInvariant ",
+            "RepeatedSquaringResultMatchesPower RepeatedSquaringCorrectness AlgorithmCorrectness ",
+            "ComplexityInterface CostModelAvailable CorrectnessSeparateFromComplexity ",
+            "CorrectnessSeparateFromMathematicalExistence NoTrustedExternalSolver"
+        )
+    };
+}
+
+macro_rules! euclid_gcd_evidence_law_type {
+    () => {
+        "forall (a : Int), forall (b : Int), EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> GcdEvidence a b (EuclidFunction a b)"
+    };
+}
+
+macro_rules! euclid_correctness_law_type {
+    () => {
+        "forall (a : Int), forall (b : Int), GcdEvidence a b (EuclidFunction a b) -> EuclidCorrectness EuclidAlgorithmToken a b"
+    };
+}
+
+macro_rules! extended_euclid_bezout_law_type {
+    () => {
+        "forall (a : Int), forall (b : Int), ExtendedEuclidOutput a b -> BezoutIdentity a b (EuclidFunction a b)"
+    };
+}
+
+macro_rules! extended_euclid_correctness_law_type {
+    () => {
+        "forall (a : Int), forall (b : Int), GcdEvidence a b (EuclidFunction a b) -> BezoutIdentity a b (EuclidFunction a b) -> ExtendedEuclidCorrectness ExtendedEuclidAlgorithmToken a b"
+    };
+}
+
+macro_rules! constructive_crt_residue_check_law_type {
+    () => {
+        "forall (left_modulus : Int), forall (right_modulus : Int), PairwiseCoprimeModuli left_modulus right_modulus -> ResidueSystem left_modulus right_modulus -> ConstructiveCRTResidueChecks left_modulus right_modulus (ConstructiveCRTFunction left_modulus right_modulus)"
+    };
+}
+
+macro_rules! constructive_crt_correctness_law_type {
+    () => {
+        "forall (left_modulus : Int), forall (right_modulus : Int), PairwiseCoprimeModuli left_modulus right_modulus -> ConstructiveCRTResidueChecks left_modulus right_modulus (ConstructiveCRTFunction left_modulus right_modulus) -> ConstructiveCRTCorrectness ConstructiveCRTAlgorithmToken left_modulus right_modulus"
+    };
+}
+
+macro_rules! repeated_squaring_invariant_law_type {
+    () => {
+        "forall (base : Int), forall (exponent : Nat), RepeatedSquaringInvariant base exponent"
+    };
+}
+
+macro_rules! repeated_squaring_matches_power_law_type {
+    () => {
+        "forall (base : Int), forall (exponent : Nat), RepeatedSquaringInvariant base exponent -> RepeatedSquaringResultMatchesPower base exponent"
+    };
+}
+
+macro_rules! repeated_squaring_correctness_law_type {
+    () => {
+        "forall (base : Int), forall (exponent : Nat), RepeatedSquaringResultMatchesPower base exponent -> RepeatedSquaringCorrectness RepeatedSquaringAlgorithmToken base exponent"
+    };
+}
+
+macro_rules! algorithm_correctness_from_euclid_law_type {
+    () => {
+        "forall (a : Int), forall (b : Int), EuclidCorrectness EuclidAlgorithmToken a b -> AlgorithmCorrectness EuclidAlgorithmToken"
+    };
+}
+
+macro_rules! algorithm_correctness_from_repeated_squaring_law_type {
+    () => {
+        "forall (base : Int), forall (exponent : Nat), RepeatedSquaringCorrectness RepeatedSquaringAlgorithmToken base exponent -> AlgorithmCorrectness RepeatedSquaringAlgorithmToken"
+    };
+}
+
+macro_rules! complexity_interface_law_type {
+    () => {
+        "forall (algorithm : AlgorithmName), forall (cost_model : CostModel), CostModelAvailable cost_model -> ComplexityInterface algorithm cost_model"
+    };
+}
+
+macro_rules! complexity_separation_law_type {
+    () => {
+        "forall (algorithm : AlgorithmName), forall (cost_model : CostModel), AlgorithmCorrectness algorithm -> ComplexityInterface algorithm cost_model -> CorrectnessSeparateFromComplexity algorithm cost_model"
+    };
+}
+
+macro_rules! mathematical_existence_separation_law_type {
+    () => {
+        "forall (algorithm : AlgorithmName), AlgorithmCorrectness algorithm -> CorrectnessSeparateFromMathematicalExistence algorithm"
+    };
+}
+
+macro_rules! no_external_solver_law_type {
+    () => {
+        "forall (algorithm : AlgorithmName), forall (oracle : ExternalSolverOracle), AlgorithmCorrectness algorithm -> NoTrustedExternalSolver algorithm oracle"
+    };
+}
+
+macro_rules! algorithm_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (euclid_gcd_evidence_law : ",
+            euclid_gcd_evidence_law_type!(),
+            "), forall (euclid_correctness_law : ",
+            euclid_correctness_law_type!(),
+            "), forall (extended_euclid_bezout_law : ",
+            extended_euclid_bezout_law_type!(),
+            "), forall (extended_euclid_correctness_law : ",
+            extended_euclid_correctness_law_type!(),
+            "), forall (constructive_crt_residue_check_law : ",
+            constructive_crt_residue_check_law_type!(),
+            "), forall (constructive_crt_correctness_law : ",
+            constructive_crt_correctness_law_type!(),
+            "), forall (repeated_squaring_invariant_law : ",
+            repeated_squaring_invariant_law_type!(),
+            "), forall (repeated_squaring_matches_power_law : ",
+            repeated_squaring_matches_power_law_type!(),
+            "), forall (repeated_squaring_correctness_law : ",
+            repeated_squaring_correctness_law_type!(),
+            "), forall (algorithm_correctness_from_euclid_law : ",
+            algorithm_correctness_from_euclid_law_type!(),
+            "), forall (algorithm_correctness_from_repeated_squaring_law : ",
+            algorithm_correctness_from_repeated_squaring_law_type!(),
+            "), forall (complexity_interface_law : ",
+            complexity_interface_law_type!(),
+            "), forall (complexity_separation_law : ",
+            complexity_separation_law_type!(),
+            "), forall (mathematical_existence_separation_law : ",
+            mathematical_existence_separation_law_type!(),
+            "), forall (no_external_solver_law : ",
+            no_external_solver_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! algorithm_with_laws {
+    ($result:expr, $body:expr) => {
+        algorithm_abs!(
+            "fun data => data (",
+            $result,
+            ") (fun (euclid_gcd_evidence_law : ",
+            euclid_gcd_evidence_law_type!(),
+            ") => fun (euclid_correctness_law : ",
+            euclid_correctness_law_type!(),
+            ") => fun (extended_euclid_bezout_law : ",
+            extended_euclid_bezout_law_type!(),
+            ") => fun (extended_euclid_correctness_law : ",
+            extended_euclid_correctness_law_type!(),
+            ") => fun (constructive_crt_residue_check_law : ",
+            constructive_crt_residue_check_law_type!(),
+            ") => fun (constructive_crt_correctness_law : ",
+            constructive_crt_correctness_law_type!(),
+            ") => fun (repeated_squaring_invariant_law : ",
+            repeated_squaring_invariant_law_type!(),
+            ") => fun (repeated_squaring_matches_power_law : ",
+            repeated_squaring_matches_power_law_type!(),
+            ") => fun (repeated_squaring_correctness_law : ",
+            repeated_squaring_correctness_law_type!(),
+            ") => fun (algorithm_correctness_from_euclid_law : ",
+            algorithm_correctness_from_euclid_law_type!(),
+            ") => fun (algorithm_correctness_from_repeated_squaring_law : ",
+            algorithm_correctness_from_repeated_squaring_law_type!(),
+            ") => fun (complexity_interface_law : ",
+            complexity_interface_law_type!(),
+            ") => fun (complexity_separation_law : ",
+            complexity_separation_law_type!(),
+            ") => fun (mathematical_existence_separation_law : ",
+            mathematical_existence_separation_law_type!(),
+            ") => fun (no_external_solver_law : ",
+            no_external_solver_law_type!(),
+            ") => ",
+            $body,
+            ")"
+        )
+    };
+}
+
+macro_rules! euclid_gcd_term {
+    ($a:expr, $b:expr, $descent:expr, $remainder:expr) => {
+        concat!(
+            "(euclid_gcd_evidence_law ",
+            $a,
+            " ",
+            $b,
+            " ",
+            $descent,
+            " ",
+            $remainder,
+            ")"
+        )
+    };
+}
+
+macro_rules! euclid_correctness_term {
+    ($a:expr, $b:expr, $descent:expr, $remainder:expr) => {
+        concat!(
+            "(euclid_correctness_law ",
+            $a,
+            " ",
+            $b,
+            " ",
+            euclid_gcd_term!($a, $b, $descent, $remainder),
+            ")"
+        )
+    };
+}
+
+macro_rules! repeated_squaring_match_term {
+    ($base:expr, $exponent:expr) => {
+        concat!(
+            "(repeated_squaring_matches_power_law ",
+            $base,
+            " ",
+            $exponent,
+            " ",
+            "(repeated_squaring_invariant_law ",
+            $base,
+            " ",
+            $exponent,
+            "))"
+        )
+    };
+}
+
+macro_rules! repeated_squaring_correctness_term {
+    ($base:expr, $exponent:expr) => {
+        concat!(
+            "(repeated_squaring_correctness_law ",
+            $base,
+            " ",
+            $exponent,
+            " ",
+            repeated_squaring_match_term!($base, $exponent),
+            ")"
+        )
+    };
+}
+
+const NUMBER_THEORY_ALGORITHM_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "AlgorithmData",
+    universe_params: &[],
+    ty: algorithm_params!("Prop"),
+    value: algorithm_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        algorithm_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_ALGORITHM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "algorithm_data_intro",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (euclid_gcd_evidence_law : ",
+            euclid_gcd_evidence_law_type!(),
+            "), forall (euclid_correctness_law : ",
+            euclid_correctness_law_type!(),
+            "), forall (extended_euclid_bezout_law : ",
+            extended_euclid_bezout_law_type!(),
+            "), forall (extended_euclid_correctness_law : ",
+            extended_euclid_correctness_law_type!(),
+            "), forall (constructive_crt_residue_check_law : ",
+            constructive_crt_residue_check_law_type!(),
+            "), forall (constructive_crt_correctness_law : ",
+            constructive_crt_correctness_law_type!(),
+            "), forall (repeated_squaring_invariant_law : ",
+            repeated_squaring_invariant_law_type!(),
+            "), forall (repeated_squaring_matches_power_law : ",
+            repeated_squaring_matches_power_law_type!(),
+            "), forall (repeated_squaring_correctness_law : ",
+            repeated_squaring_correctness_law_type!(),
+            "), forall (algorithm_correctness_from_euclid_law : ",
+            algorithm_correctness_from_euclid_law_type!(),
+            "), forall (algorithm_correctness_from_repeated_squaring_law : ",
+            algorithm_correctness_from_repeated_squaring_law_type!(),
+            "), forall (complexity_interface_law : ",
+            complexity_interface_law_type!(),
+            "), forall (complexity_separation_law : ",
+            complexity_separation_law_type!(),
+            "), forall (mathematical_existence_separation_law : ",
+            mathematical_existence_separation_law_type!(),
+            "), forall (no_external_solver_law : ",
+            no_external_solver_law_type!(),
+            "), ",
+            algorithm_data_app!()
+        ),
+        proof: algorithm_abs!(
+            "fun euclid_gcd_evidence_law => fun euclid_correctness_law => ",
+            "fun extended_euclid_bezout_law => fun extended_euclid_correctness_law => ",
+            "fun constructive_crt_residue_check_law => fun constructive_crt_correctness_law => ",
+            "fun repeated_squaring_invariant_law => fun repeated_squaring_matches_power_law => ",
+            "fun repeated_squaring_correctness_law => fun algorithm_correctness_from_euclid_law => ",
+            "fun algorithm_correctness_from_repeated_squaring_law => fun complexity_interface_law => ",
+            "fun complexity_separation_law => fun mathematical_existence_separation_law => ",
+            "fun no_external_solver_law => fun (Q : Prop) => fun (mk : ",
+            algorithm_mk_type!("Q"),
+            ") => mk euclid_gcd_evidence_law euclid_correctness_law ",
+            "extended_euclid_bezout_law extended_euclid_correctness_law ",
+            "constructive_crt_residue_check_law constructive_crt_correctness_law ",
+            "repeated_squaring_invariant_law repeated_squaring_matches_power_law ",
+            "repeated_squaring_correctness_law algorithm_correctness_from_euclid_law ",
+            "algorithm_correctness_from_repeated_squaring_law complexity_interface_law ",
+            "complexity_separation_law mathematical_existence_separation_law ",
+            "no_external_solver_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "euclid_algorithm_correctness_from_named_descent_and_remainder",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (a : Int), forall (b : Int), ",
+            "EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> ",
+            "EuclidCorrectness EuclidAlgorithmToken a b"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (a : Int), forall (b : Int), EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> EuclidCorrectness EuclidAlgorithmToken a b",
+            concat!(
+                "fun (a : Int) => fun (b : Int) => ",
+                "fun (descent : EuclidDescentEvidence a b) => ",
+                "fun (remainder_invariant : EuclidRemainderInvariant a b) => ",
+                euclid_correctness_term!("a", "b", "descent", "remainder_invariant")
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "extended_euclid_correctness_from_gcd_and_bezout_chain",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (a : Int), forall (b : Int), ",
+            "EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> ",
+            "ExtendedEuclidCorrectness ExtendedEuclidAlgorithmToken a b"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (a : Int), forall (b : Int), EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> ExtendedEuclidCorrectness ExtendedEuclidAlgorithmToken a b",
+            concat!(
+                "fun (a : Int) => fun (b : Int) => ",
+                "fun (descent : EuclidDescentEvidence a b) => ",
+                "fun (remainder_invariant : EuclidRemainderInvariant a b) => ",
+                "extended_euclid_correctness_law a b ",
+                euclid_gcd_term!("a", "b", "descent", "remainder_invariant"),
+                " ",
+                "(extended_euclid_bezout_law a b (ExtendedEuclidFunction a b))"
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "constructive_crt_correctness_from_residue_checks",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (left_modulus : Int), forall (right_modulus : Int), ",
+            "PairwiseCoprimeModuli left_modulus right_modulus -> ",
+            "ResidueSystem left_modulus right_modulus -> ",
+            "ConstructiveCRTCorrectness ConstructiveCRTAlgorithmToken left_modulus right_modulus"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (left_modulus : Int), forall (right_modulus : Int), PairwiseCoprimeModuli left_modulus right_modulus -> ResidueSystem left_modulus right_modulus -> ConstructiveCRTCorrectness ConstructiveCRTAlgorithmToken left_modulus right_modulus",
+            concat!(
+                "fun (left_modulus : Int) => fun (right_modulus : Int) => ",
+                "fun (coprime_moduli : PairwiseCoprimeModuli left_modulus right_modulus) => ",
+                "fun (residue_system : ResidueSystem left_modulus right_modulus) => ",
+                "constructive_crt_correctness_law left_modulus right_modulus coprime_moduli ",
+                "(constructive_crt_residue_check_law left_modulus right_modulus ",
+                "coprime_moduli residue_system)"
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "repeated_squaring_correctness_from_invariant_chain",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (base : Int), forall (exponent : Nat), ",
+            "RepeatedSquaringCorrectness RepeatedSquaringAlgorithmToken base exponent"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (base : Int), forall (exponent : Nat), RepeatedSquaringCorrectness RepeatedSquaringAlgorithmToken base exponent",
+            concat!(
+                "fun (base : Int) => fun (exponent : Nat) => ",
+                repeated_squaring_correctness_term!("base", "exponent")
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "algorithm_complexity_requires_cost_model_after_correctness",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (a : Int), forall (b : Int), forall (cost_model : CostModel), ",
+            "EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> ",
+            "CostModelAvailable cost_model -> ",
+            "CorrectnessSeparateFromComplexity EuclidAlgorithmToken cost_model"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (a : Int), forall (b : Int), forall (cost_model : CostModel), EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> CostModelAvailable cost_model -> CorrectnessSeparateFromComplexity EuclidAlgorithmToken cost_model",
+            concat!(
+                "fun (a : Int) => fun (b : Int) => fun (cost_model : CostModel) => ",
+                "fun (descent : EuclidDescentEvidence a b) => ",
+                "fun (remainder_invariant : EuclidRemainderInvariant a b) => ",
+                "fun (cost_model_available : CostModelAvailable cost_model) => ",
+                "complexity_separation_law EuclidAlgorithmToken cost_model ",
+                "(algorithm_correctness_from_euclid_law a b ",
+                euclid_correctness_term!("a", "b", "descent", "remainder_invariant"),
+                ") ",
+                "(complexity_interface_law EuclidAlgorithmToken cost_model cost_model_available)"
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "algorithm_correctness_separated_from_mathematical_existence",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (a : Int), forall (b : Int), ",
+            "EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> ",
+            "CorrectnessSeparateFromMathematicalExistence EuclidAlgorithmToken"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (a : Int), forall (b : Int), EuclidDescentEvidence a b -> EuclidRemainderInvariant a b -> CorrectnessSeparateFromMathematicalExistence EuclidAlgorithmToken",
+            concat!(
+                "fun (a : Int) => fun (b : Int) => ",
+                "fun (descent : EuclidDescentEvidence a b) => ",
+                "fun (remainder_invariant : EuclidRemainderInvariant a b) => ",
+                "mathematical_existence_separation_law EuclidAlgorithmToken ",
+                "(algorithm_correctness_from_euclid_law a b ",
+                euclid_correctness_term!("a", "b", "descent", "remainder_invariant"),
+                ")"
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "external_solver_or_runtime_oracle_not_trusted",
+        universe_params: &[],
+        statement: algorithm_params!(
+            "forall (data : ",
+            algorithm_data_app!(),
+            "), forall (oracle : ExternalSolverOracle), forall (base : Int), ",
+            "forall (exponent : Nat), ",
+            "NoTrustedExternalSolver RepeatedSquaringAlgorithmToken oracle"
+        ),
+        proof: algorithm_with_laws!(
+            "forall (oracle : ExternalSolverOracle), forall (base : Int), forall (exponent : Nat), NoTrustedExternalSolver RepeatedSquaringAlgorithmToken oracle",
+            concat!(
+                "fun (oracle : ExternalSolverOracle) => fun (base : Int) => ",
+                "fun (exponent : Nat) => no_external_solver_law RepeatedSquaringAlgorithmToken oracle ",
+                "(algorithm_correctness_from_repeated_squaring_law base exponent ",
+                repeated_squaring_correctness_term!("base", "exponent"),
+                ")"
+            )
         ),
     },
 ];
@@ -61840,6 +62398,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PHI_MODULE.module
         || config.module == NUMBER_THEORY_FERMAT_EULER_WILSON_MODULE.module
         || config.module == NUMBER_THEORY_CARMICHAEL_MODULE.module
+        || config.module == NUMBER_THEORY_ALGORITHM_MODULE.module
         || config.module == NUMBER_THEORY_PRIMALITY_TEST_MODULE.module
         || config.module == NUMBER_THEORY_RSA_MODULE.module
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module

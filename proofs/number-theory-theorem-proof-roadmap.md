@@ -1130,6 +1130,13 @@ semantics.
 ## NT-22 Computational Number Theory And Cryptography
 
 - Status: planned.
+- Progress:
+  - `NT-T64` added certificate-backed `Proofs.Ai.NumberTheory.Algorithm`,
+    naming Euclid, extended Euclid, constructive CRT, and repeated-squaring
+    algorithm tokens/functions, composing descent/remainder, Bezout, CRT
+    residue checks, and repeated-squaring invariants into correctness, and
+    recording cost-model, mathematical-existence, and external-solver/oracle
+    boundaries.
 - Depends on: `NT-04`, `NT-05`, `NT-16`, finite-field and algorithmic
   correctness APIs.
 - Target modules:
