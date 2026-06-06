@@ -473,22 +473,33 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T13 Prove Degree Sum And Handshaking Lemmas
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T12`, `CG-T04`
 - Areas: `Proofs.Ai.Graph.Basic`, `Proofs.Ai.Graph.Incidence`
 - Tasks:
-  - Add incidence counting theorem surface.
-  - Prove degree sum formula and handshaking lemma for finite simple graphs.
-  - Add even-number-of-odd-degree-vertices target.
+  - Done: Added `Proofs.Ai.Graph.Incidence` with an explicit incidence
+    counting theorem surface over vertices, edge carriers, and endpoint
+    occurrences.
+  - Done: Added certificate-backed degree-sum and handshaking theorem targets
+    for finite simple graphs.
+  - Done: Added the even-number-of-odd-degree-vertices parity target.
 - Deliverables:
-  - First derived graph counting certificates.
+  - Delivered: first derived graph counting certificates in
+    `Proofs.Ai.Graph.Incidence`.
 - Acceptance criteria:
-  - Finite vertex and edge hypotheses are explicit.
-  - The proof reuses finite counting rules rather than private graph-specific
-    cardinal arithmetic.
+  - Satisfied: finite vertex, finite edge-carrier, and finite endpoint
+    occurrence hypotheses are explicit evidence slots.
+  - Satisfied: degree-sum derivation uses `finite_fiber_counting_statement` and
+    `finite_fiber_cardinality_statement` from
+    `Proofs.Ai.Combinatorics.Counting.Basic` rather than private
+    graph-specific cardinal arithmetic.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Incidence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Incidence --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Incidence`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
 
 ### CG-T14 Add Walk, Path, Cycle, And Connectivity APIs
 

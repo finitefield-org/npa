@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Incidence",
+  "source": "Proofs/Ai/Graph/Incidence/source.npa",
+  "certificate": "Proofs/Ai/Graph/Incidence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7cadec3d84f4a54063dd4580983bcd03f96150c5858bb4ad1a7e032886f77ec2",
+  "certificate_file_sha256": "sha256:41c7c9be3e79ce7dbcc2c781fb1ce2c0f9c132da5913b76b8fd567cf6e07a121",
+  "export_hash": "sha256:4692d17d93f4a2d9edc56d78cdd0a414c84212968f6bee9799e8aadb4b32e004",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:fda2fe3d7e17893d8093fce27596aa68ab43cb7ac51dcb297eb786fe1c271d2d",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphIncidenceCountingPackage", "kind": "def" },
+    { "name": "graph_incidence_counting_package_intro", "kind": "theorem" },
+    { "name": "graph_incidence_finite_fiber_counting_statement", "kind": "theorem" },
+    { "name": "graph_incidence_vertex_finite_statement", "kind": "theorem" },
+    { "name": "graph_incidence_total_fiber_sum_statement", "kind": "theorem" },
+    { "name": "graph_degree_sum_formula_statement", "kind": "theorem" },
+    { "name": "graph_handshaking_lemma_statement", "kind": "theorem" },
+    { "name": "graph_even_odd_degree_vertices_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

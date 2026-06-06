@@ -109,6 +109,11 @@ Current bundles:
   vertex carriers and edge predicates. Symmetry, loop policy, adjacency, incidence, neighborhood,
   degree, subgraph, induced subgraph, complement, homomorphism, directed-boundary, and multigraph
   boundary assumptions are explicit evidence slots rather than kernel primitives.
+- `Proofs/Ai/Graph/Incidence/`: certificate-backed incidence-counting, degree-sum,
+  handshaking, and odd-degree parity packages for finite simple graphs. Vertex, edge-carrier,
+  endpoint-occurrence, orientation, loop, and finite-fiber counting assumptions are explicit
+  evidence slots, and the degree-sum target consumes finite-fiber counting evidence rather than
+  private graph-specific cardinal arithmetic.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
