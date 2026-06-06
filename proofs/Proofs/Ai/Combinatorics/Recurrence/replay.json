@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Recurrence",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteRecurrenceStatementPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun State => fun sequence => fun nextIndex => fun StepRelation => fun InitialConditionEvidence => fun FiniteIndexEvidence => fun StepLawEvidence => fun UniquenessEvidence => forall (P : Prop), forall (mk : forall (initial_condition_law : InitialConditionEvidence), forall (finite_index_law : FiniteIndexEvidence), forall (step_law : StepLawEvidence), forall (uniqueness_law : UniquenessEvidence), P), P"
+    },
+    {
+      "declaration": "InfiniteRecurrenceStatementPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun State => fun sequence => fun successor => fun StepRelation => fun InitialConditionEvidence => fun StepLawEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => forall (P : Prop), forall (mk : forall (initial_condition_law : InitialConditionEvidence), forall (step_law : StepLawEvidence), forall (uniqueness_law : UniquenessEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P), P"
+    },
+    {
+      "declaration": "FirstOrderRecurrenceSolutionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun State => fun sequence => fun successor => fun stepFunction => fun InitialConditionEvidence => fun StepEquationEvidence => fun ExistenceEvidence => fun UniquenessEvidence => forall (P : Prop), forall (mk : forall (initial_condition_law : InitialConditionEvidence), forall (step_equation_law : StepEquationEvidence), forall (existence_law : ExistenceEvidence), forall (uniqueness_law : UniquenessEvidence), P), P"
+    },
+    {
+      "declaration": "LinearRecurrenceSolutionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Scalar => fun State => fun solution => fun coefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => forall (P : Prop), forall (mk : forall (initial_conditions_law : InitialConditionsEvidence), forall (linear_step_law : LinearStepEvidence), forall (algebra_dependency_law : AlgebraDependencyEvidence), forall (uniqueness_law : UniquenessEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P), P"
+    },
+    {
+      "declaration": "finite_recurrence_statement_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun nextIndex => fun StepRelation => fun InitialConditionEvidence => fun initial_condition_law => fun FiniteIndexEvidence => fun finite_index_law => fun StepLawEvidence => fun step_law => fun UniquenessEvidence => fun uniqueness_law => fun (P : Prop) => fun (mk : forall (initial_condition_law : InitialConditionEvidence), forall (finite_index_law : FiniteIndexEvidence), forall (step_law : StepLawEvidence), forall (uniqueness_law : UniquenessEvidence), P) => mk initial_condition_law finite_index_law step_law uniqueness_law"
+    },
+    {
+      "declaration": "finite_recurrence_initial_condition_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun nextIndex => fun StepRelation => fun InitialConditionEvidence => fun FiniteIndexEvidence => fun StepLawEvidence => fun UniquenessEvidence => fun recurrence_args => recurrence_args InitialConditionEvidence (fun (initial_condition_law : InitialConditionEvidence) => fun (finite_index_law : FiniteIndexEvidence) => fun (step_law : StepLawEvidence) => fun (uniqueness_law : UniquenessEvidence) => initial_condition_law)"
+    },
+    {
+      "declaration": "finite_recurrence_uniqueness_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun nextIndex => fun StepRelation => fun InitialConditionEvidence => fun FiniteIndexEvidence => fun StepLawEvidence => fun UniquenessEvidence => fun recurrence_args => recurrence_args UniquenessEvidence (fun (initial_condition_law : InitialConditionEvidence) => fun (finite_index_law : FiniteIndexEvidence) => fun (step_law : StepLawEvidence) => fun (uniqueness_law : UniquenessEvidence) => uniqueness_law)"
+    },
+    {
+      "declaration": "infinite_recurrence_statement_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun successor => fun StepRelation => fun InitialConditionEvidence => fun initial_condition_law => fun StepLawEvidence => fun step_law => fun UniquenessEvidence => fun uniqueness_law => fun NoAnalyticConvergenceEvidence => fun no_analytic_convergence_law => fun (P : Prop) => fun (mk : forall (initial_condition_law : InitialConditionEvidence), forall (step_law : StepLawEvidence), forall (uniqueness_law : UniquenessEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P) => mk initial_condition_law step_law uniqueness_law no_analytic_convergence_law"
+    },
+    {
+      "declaration": "infinite_recurrence_formal_only_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun successor => fun StepRelation => fun InitialConditionEvidence => fun StepLawEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun recurrence_args => recurrence_args NoAnalyticConvergenceEvidence (fun (initial_condition_law : InitialConditionEvidence) => fun (step_law : StepLawEvidence) => fun (uniqueness_law : UniquenessEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => no_analytic_convergence_law)"
+    },
+    {
+      "declaration": "first_order_recurrence_solution_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun successor => fun stepFunction => fun InitialConditionEvidence => fun initial_condition_law => fun StepEquationEvidence => fun step_equation_law => fun ExistenceEvidence => fun existence_law => fun UniquenessEvidence => fun uniqueness_law => fun (P : Prop) => fun (mk : forall (initial_condition_law : InitialConditionEvidence), forall (step_equation_law : StepEquationEvidence), forall (existence_law : ExistenceEvidence), forall (uniqueness_law : UniquenessEvidence), P) => mk initial_condition_law step_equation_law existence_law uniqueness_law"
+    },
+    {
+      "declaration": "first_order_recurrence_solution_unique_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun State => fun sequence => fun successor => fun stepFunction => fun InitialConditionEvidence => fun StepEquationEvidence => fun ExistenceEvidence => fun UniquenessEvidence => fun solution_args => solution_args UniquenessEvidence (fun (initial_condition_law : InitialConditionEvidence) => fun (step_equation_law : StepEquationEvidence) => fun (existence_law : ExistenceEvidence) => fun (uniqueness_law : UniquenessEvidence) => uniqueness_law)"
+    },
+    {
+      "declaration": "linear_recurrence_solution_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Scalar => fun State => fun solution => fun coefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun initial_conditions_law => fun LinearStepEvidence => fun linear_step_law => fun AlgebraDependencyEvidence => fun algebra_dependency_law => fun UniquenessEvidence => fun uniqueness_law => fun NoAnalyticConvergenceEvidence => fun no_analytic_convergence_law => fun (P : Prop) => fun (mk : forall (initial_conditions_law : InitialConditionsEvidence), forall (linear_step_law : LinearStepEvidence), forall (algebra_dependency_law : AlgebraDependencyEvidence), forall (uniqueness_law : UniquenessEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P) => mk initial_conditions_law linear_step_law algebra_dependency_law uniqueness_law no_analytic_convergence_law"
+    },
+    {
+      "declaration": "linear_recurrence_algebra_dependency_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Scalar => fun State => fun solution => fun coefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun solution_args => solution_args AlgebraDependencyEvidence (fun (initial_conditions_law : InitialConditionsEvidence) => fun (linear_step_law : LinearStepEvidence) => fun (algebra_dependency_law : AlgebraDependencyEvidence) => fun (uniqueness_law : UniquenessEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => algebra_dependency_law)"
+    },
+    {
+      "declaration": "linear_recurrence_no_analytic_convergence_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Scalar => fun State => fun solution => fun coefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun solution_args => solution_args NoAnalyticConvergenceEvidence (fun (initial_conditions_law : InitialConditionsEvidence) => fun (linear_step_law : LinearStepEvidence) => fun (algebra_dependency_law : AlgebraDependencyEvidence) => fun (uniqueness_law : UniquenessEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => no_analytic_convergence_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Combinatorics/Recurrence/certificate.npcert"
+  }
+}

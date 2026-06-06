@@ -97,6 +97,10 @@ Current bundles:
   bridge interfaces. Covering and packing evidence stays explicit, Bonferroni probability aliases
   consume combinatorial bounds rather than proving them, and set-system/hypergraph ownership stays
   separated.
+- `Proofs/Ai/Combinatorics/Recurrence/`: certificate-backed finite recurrence, infinite
+  recurrence, first-order solution, and linear recurrence evidence packages. Initial conditions,
+  step laws, existence, uniqueness, algebra dependencies, and the absence of analytic convergence
+  imports are explicit proof-corpus evidence slots.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

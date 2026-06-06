@@ -385,20 +385,29 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T10 Add Recurrence Statement Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T06`
 - Areas: `Proofs.Ai.Combinatorics.Recurrence`
 - Tasks:
-  - Add finite and infinite sequence statement surfaces for recurrences.
-  - Add first-order and linear recurrence solution evidence packages.
-  - Record blocked dependencies on algebra or analysis where needed.
+  - Add finite and infinite sequence statement surfaces for recurrences. Done in
+    `Proofs.Ai.Combinatorics.Recurrence`.
+  - Add first-order and linear recurrence solution evidence packages. Done with
+    explicit initial-condition, step, existence, and uniqueness evidence slots.
+  - Record blocked dependencies on algebra or analysis where needed. Done by
+    keeping algebra and analytic convergence as named evidence, not imports.
 - Deliverables:
   - Recurrence theorem interface module.
 - Acceptance criteria:
   - Recurrence solution interfaces name initial conditions and uniqueness
-    evidence.
+    evidence. Satisfied by finite, first-order, and linear recurrence packages.
   - Analytic convergence is not imported into purely formal recurrence tasks.
+    Satisfied by `NoAnalyticConvergenceEvidence` projections and an import-free
+    recurrence module.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Recurrence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Recurrence --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `rg -n "Recurrence|initial conditions|GeneratingFunction" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 
