@@ -134,6 +134,11 @@ Current bundles:
   witnesses use an explicit finite `MatchEdge` carrier, matched-vertex predicates, endpoint
   evidence, matching-size evidence, and matched-vertex-count evidence, while alternating and
   augmenting paths consume explicit `WalkDataPackage` witnesses.
+- `Proofs/Ai/Graph/Matching/Hall/`: certificate-backed Hall theorem interface package over
+  bipartite matching and finite set-system evidence. It records Hall condition,
+  neighborhood-size, explicit representative, system-of-distinct-representatives, transversal,
+  same-primary-theorem-card, and no-claimed-`L2`-Hall-proof evidence slots without assuming a
+  hidden Hall theorem proof.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

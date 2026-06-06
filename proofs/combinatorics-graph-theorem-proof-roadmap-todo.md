@@ -597,20 +597,33 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T17 Add Hall Theorem Interface And Derived Pieces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T16`, `CG-T09`
 - Areas: `Proofs.Ai.Graph.Matching.Hall`
 - Tasks:
-  - Add Hall condition and neighborhood-size statement surface.
-  - Prove small derived projections from explicit Hall matching evidence.
-  - Add theorem targets for system of distinct representatives and transversal
-    aliases.
+  - Done: Added `HallTheoremInterfacePackage` over bipartite matching and
+    finite set-system evidence.
+  - Done: Added Hall condition and neighborhood-size theorem surfaces.
+  - Done: Added derived theorem targets for Hall matching evidence, system of
+    distinct representatives, transversal aliases, and their shared primary
+    theorem card.
 - Deliverables:
-  - Hall theorem interface module with reusable projections.
+  - Delivered: Hall theorem interface module with reusable projections in
+    `Proofs.Ai.Graph.Matching.Hall`.
 - Acceptance criteria:
-  - Hall theorem is not assumed by a module that claims an `L2` proof of Hall.
-  - SDR aliases point to the same primary theorem card.
+  - Satisfied: the module records `NoL2HallProofClaimEvidence` and exposes
+    `hall_not_l2_proof_boundary_statement`; it is an interface package, not a
+    claimed `L2` proof of Hall.
+  - Satisfied: `sdr_transversal_same_primary_card_statement` ties the system of
+    distinct representatives and transversal aliases to the same
+    `HallPrimaryTheoremCardEvidence`.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Matching.Hall`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Hall --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Hall`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `rg -n "Hall|distinct representatives|transversal" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 
