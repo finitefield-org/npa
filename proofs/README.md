@@ -163,6 +163,10 @@ Current bundles:
   over coloring and complement graph evidence. It records clique/independent-set cardinality and
   number evidence, complement simple-graph preservation, complement bridges, and clique and
   independence lower-bound aliases.
+- `Proofs/Ai/Graph/Coloring/Advanced/`: certificate-backed advanced coloring interface package.
+  It records Brooks-theorem prerequisites and bound evidence, list-coloring evidence, perfect-graph
+  `L1` boundary evidence, chromatic-polynomial construction/evaluation evidence, and explicit
+  polynomial/generating-function and algebraic/enumerative cross-link prerequisites.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

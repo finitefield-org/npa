@@ -729,22 +729,37 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T21 Add Advanced Coloring Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T20`
 - Areas: `Proofs.Ai.Graph.Coloring.Advanced`
 - Tasks:
-  - Add Brooks theorem, list coloring, perfect graph, and chromatic polynomial
-    interfaces.
-  - Record prerequisites and split long-term structural theorem dependencies.
-  - Add cross-links to algebraic and enumerative tasks.
+  - Done: Added Brooks theorem, list coloring, perfect graph, and chromatic
+    polynomial interfaces in `AdvancedColoringInterfacePackage`.
+  - Done: Recorded prerequisites and split the perfect graph target through
+    `PerfectGraphL1BoundaryEvidence`.
+  - Done: Added algebraic and enumerative cross-links through
+    `PolynomialPrerequisiteEvidence`, `GeneratingFunctionPrerequisiteEvidence`,
+    and `AlgebraicEnumerativeCrossLinkEvidence`.
 - Deliverables:
-  - Advanced coloring interface module.
+  - Delivered: Advanced coloring interface module.
 - Acceptance criteria:
-  - Perfect graph theorem remains `L1` until structural prerequisites exist.
-  - Chromatic polynomial depends on polynomial/generating-function
-    prerequisites explicitly.
+  - Satisfied: Perfect graph theorem remains `L1` via
+    `perfect_graph_l1_boundary_statement` and
+    `perfect_graph_theorem_l1_target_statement`.
+  - Satisfied: Chromatic polynomial imports binomial/generating-function
+    prerequisites directly and exposes `PolynomialPrerequisiteEvidence`,
+    `GeneratingFunctionPrerequisiteEvidence`,
+    `ChromaticPolynomialConstructionEvidence`, and
+    `ChromaticPolynomialEnumerativeBridgeEvidence`.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Coloring.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring.Advanced --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring.Advanced`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `rg -n "Brooks|perfect graph|chromatic polynomial|list coloring" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `rg -n "BrooksPrerequisiteEvidence|PerfectGraphL1BoundaryEvidence|PolynomialPrerequisiteEvidence|GeneratingFunctionPrerequisiteEvidence|ChromaticPolynomialEnumerativeBridgeEvidence" proofs/Proofs/Ai/Graph proofs/combinatorics-graph-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
 ### CG-T22 Add Planar Graph Embedding Interface
