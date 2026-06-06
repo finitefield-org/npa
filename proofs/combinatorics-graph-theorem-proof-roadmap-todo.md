@@ -563,22 +563,37 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T16 Add Bipartite Graph And Matching APIs
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T12`, `CG-T14`
 - Areas: `Proofs.Ai.Graph.Bipartite`, `Proofs.Ai.Graph.Matching`
 - Tasks:
-  - Define bipartite graph, left/right parts, matching, perfect matching,
-    alternating path, and augmenting path.
-  - Add matching size and matched-vertex predicates.
-  - Record bridges to flow and Konig tasks.
+  - Done: Added `BipartiteGraphPackage` with left/right predicates,
+    disjointness, vertex-partition, edge-crossing, and no-leak evidence in
+    `Proofs.Ai.Graph.Bipartite`.
+  - Done: Added `MatchingWitnessPackage`, `BipartiteMatchingPackage`, and
+    `AlternatingAugmentingPathPackage` in `Proofs.Ai.Graph.Matching`.
+  - Done: Added matching-size, matched-vertex-count, perfect-matching,
+    alternating-path, augmenting-path, flow-bridge, and Konig-bridge theorem
+    targets.
 - Deliverables:
-  - Bipartite and matching foundation modules.
+  - Delivered: bipartite and matching foundation modules in
+    `Proofs.Ai.Graph.Bipartite` and `Proofs.Ai.Graph.Matching`.
 - Acceptance criteria:
-  - Matching witnesses are explicit finite structures.
-  - Bipartition assumptions do not leak into non-bipartite graph modules.
+  - Satisfied: matching witnesses use an explicit `MatchEdge` carrier plus
+    `MatchEdgeFiniteEvidence`, `MatchedVertexFiniteEvidence`, endpoint soundness,
+    matching-size evidence, and matched-vertex-count evidence.
+  - Satisfied: bipartition assumptions are isolated in
+    `Proofs.Ai.Graph.Bipartite` and consumed by `Proofs.Ai.Graph.Matching`;
+    existing non-bipartite graph modules were not given bipartition parameters.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Matching`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Bipartite Proofs.Ai.Graph.Matching`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Bipartite --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Bipartite`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
 
 ### CG-T17 Add Hall Theorem Interface And Derived Pieces
 

@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Matching",
+  "source": "Proofs/Ai/Graph/Matching/source.npa",
+  "certificate": "Proofs/Ai/Graph/Matching/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:15a21c05f880274a53b458f23333a5bb1f066b85c4d4dd64b267761e3775a905",
+  "certificate_file_sha256": "sha256:c5f14f7e63134628b4b72af88560a15fa33d0fea0eada7c6d334fb86ce16a158",
+  "export_hash": "sha256:b0aa047275152bf4d84af59cb2dff79785c000c5069ffc02f3bb702d79f5bdc4",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:48e784d329ea7a8c5f7ccc7d0fa19ddfd333e988d73665944d0b292cbfe80e37",
+  "imports": ["Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Bipartite", "Proofs.Ai.Graph.Walk"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatchingWitnessPackage", "kind": "def" },
+    { "name": "BipartiteMatchingPackage", "kind": "def" },
+    { "name": "AlternatingAugmentingPathPackage", "kind": "def" },
+    { "name": "matching_witness_package_intro", "kind": "theorem" },
+    { "name": "matching_size_statement", "kind": "theorem" },
+    { "name": "matched_vertex_count_statement", "kind": "theorem" },
+    { "name": "bipartite_matching_package_intro", "kind": "theorem" },
+    { "name": "perfect_matching_statement", "kind": "theorem" },
+    { "name": "alternating_augmenting_path_package_intro", "kind": "theorem" },
+    { "name": "alternating_path_statement", "kind": "theorem" },
+    { "name": "augmenting_path_statement", "kind": "theorem" },
+    { "name": "augmenting_path_increases_matching_statement", "kind": "theorem" },
+    { "name": "matching_flow_bridge_statement", "kind": "theorem" },
+    { "name": "matching_konig_bridge_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

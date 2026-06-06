@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Graph.Bipartite",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "BipartiteGraphPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun LeftPart => fun RightPart => fun LeftRightDisjointEvidence => fun VertexPartitionEvidence => fun EdgeCrossesPartsEvidence => fun NoBipartitionLeakEvidence => forall (P : Prop), forall (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (left_right_disjoint_law : LeftRightDisjointEvidence), forall (vertex_partition_law : VertexPartitionEvidence), forall (edge_crosses_parts_law : EdgeCrossesPartsEvidence), forall (no_bipartition_leak_law : NoBipartitionLeakEvidence), P), P"
+    },
+    {
+      "declaration": "bipartite_graph_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun LeftPart => fun RightPart => fun LeftRightDisjointEvidence => fun VertexPartitionEvidence => fun EdgeCrossesPartsEvidence => fun NoBipartitionLeakEvidence => fun left_right_disjoint_law => fun vertex_partition_law => fun edge_crosses_parts_law => fun no_bipartition_leak_law => fun (P : Prop) => fun (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (left_right_disjoint_law : LeftRightDisjointEvidence), forall (vertex_partition_law : VertexPartitionEvidence), forall (edge_crosses_parts_law : EdgeCrossesPartsEvidence), forall (no_bipartition_leak_law : NoBipartitionLeakEvidence), P) => mk graph_args left_right_disjoint_law vertex_partition_law edge_crosses_parts_law no_bipartition_leak_law"
+    },
+    {
+      "declaration": "bipartite_edge_crosses_parts_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun LeftPart => fun RightPart => fun LeftRightDisjointEvidence => fun VertexPartitionEvidence => fun EdgeCrossesPartsEvidence => fun NoBipartitionLeakEvidence => fun bipartite_args => fun derive_crossing => bipartite_args (EdgeCrossesPartsEvidence) (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (left_right_disjoint_law : LeftRightDisjointEvidence) => fun (vertex_partition_law : VertexPartitionEvidence) => fun (edge_crosses_parts_law : EdgeCrossesPartsEvidence) => fun (no_bipartition_leak_law : NoBipartitionLeakEvidence) => derive_crossing graph_law left_right_disjoint_law vertex_partition_law)"
+    },
+    {
+      "declaration": "bipartition_no_leak_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun LeftPart => fun RightPart => fun LeftRightDisjointEvidence => fun VertexPartitionEvidence => fun EdgeCrossesPartsEvidence => fun NoBipartitionLeakEvidence => fun bipartite_args => fun derive_no_leak => bipartite_args (NoBipartitionLeakEvidence) (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (left_right_disjoint_law : LeftRightDisjointEvidence) => fun (vertex_partition_law : VertexPartitionEvidence) => fun (edge_crosses_parts_law : EdgeCrossesPartsEvidence) => fun (no_bipartition_leak_law : NoBipartitionLeakEvidence) => derive_no_leak graph_law left_right_disjoint_law vertex_partition_law edge_crosses_parts_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Graph/Bipartite/certificate.npcert"
+  }
+}

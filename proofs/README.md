@@ -125,6 +125,15 @@ Current bundles:
   edge-count formula, and spanning-tree existence packages. The spanning-tree layer records
   construction and vertex-coverage evidence explicitly, and the edge-count target reuses graph
   incidence finite-fiber counting evidence rather than private tree-specific cardinal arithmetic.
+- `Proofs/Ai/Graph/Bipartite/`: certificate-backed bipartite graph package with explicit
+  left/right vertex-part predicates, disjointness, partition, edge-crossing, and no-leak evidence
+  slots. Bipartition assumptions stay in this graph-owned module and are not added to the
+  non-bipartite graph foundations.
+- `Proofs/Ai/Graph/Matching/`: certificate-backed matching witness, bipartite matching,
+  perfect-matching, alternating-path, augmenting-path, and flow/Konig bridge packages. Matching
+  witnesses use an explicit finite `MatchEdge` carrier, matched-vertex predicates, endpoint
+  evidence, matching-size evidence, and matched-vertex-count evidence, while alternating and
+  augmenting paths consume explicit `WalkDataPackage` witnesses.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
