@@ -975,6 +975,14 @@ semantics.
     Mordell/Faltings and Siegel rational/integral-point statement surfaces,
     explicit rational/integral-point hypotheses, finite-field core reuse, and
     separation from etale cohomology construction interfaces.
+  - `NT-T57` added certificate-backed
+    `Proofs.Ai.ArithmeticGeometry.Schemes`,
+    `Proofs.Ai.ArithmeticGeometry.EtaleCohomology`, and
+    `Proofs.Ai.ArithmeticGeometry.WeilConjectures`, preserving scheme,
+    fiber-product, Zariski-topology, flatness, base-change, Kummer exact
+    sequence, etale-cohomology finiteness, Grothendieck/Lefschetz trace
+    formula, Weil conjectures, and Deligne theorem surfaces while keeping
+    cohomology assumptions and scheme/etale dependencies explicit.
 - Depends on: existing `Proofs.Ai.AlgebraicGeometry.*` modules, `NT-13`,
   `NT-16`, `NT-18`, scheme and cohomology foundations.
 - Target modules:

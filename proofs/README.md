@@ -371,6 +371,19 @@ Current bundles:
   Hasse-Weil bound and zeta-function surfaces, Mordell/Faltings and Siegel
   rational/integral-point statements with explicit hypotheses, finite-field
   core reuse, and separation from etale cohomology construction interfaces.
+- `Proofs/Ai/ArithmeticGeometry/Schemes/`: certificate-backed scheme interface
+  preserving scheme-structure, fiber-product, Zariski-topology, flatness,
+  base-change, and explicit algebraic-geometry/rational-point dependency
+  surfaces.
+- `Proofs/Ai/ArithmeticGeometry/EtaleCohomology/`: certificate-backed etale
+  cohomology interface preserving explicit scheme dependencies, visible
+  cohomology assumptions, etale covers, Kummer exact sequence, proper and smooth
+  base-change, and etale finiteness surfaces.
+- `Proofs/Ai/ArithmeticGeometry/WeilConjectures/`: certificate-backed Weil
+  conjectures interface preserving etale-cohomology dependencies,
+  Grothendieck/Lefschetz trace formula surfaces, Weil conjectures, Deligne
+  theorem surfaces, interface-level status, and the non-generic finite-field
+  axiom boundary for Deligne.
 - `Proofs/Ai/ModularForms/Basic/`: certificate-backed modular-form basic data
   interface preserving `ModularForm`, `CuspForm`, explicit complex-analytic
   domain assumptions, and reusable `weight`/`level` transformation and cusp

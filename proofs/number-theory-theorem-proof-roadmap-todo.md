@@ -1517,7 +1517,7 @@ later in the file.
 
 ### NT-T57 Add Schemes, Etale Cohomology, And Weil Conjectures Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T56`, existing algebraic-geometry modules
 - Areas: `Proofs/Ai/ArithmeticGeometry/Schemes/`, `Proofs/Ai/ArithmeticGeometry/EtaleCohomology/`, `Proofs/Ai/ArithmeticGeometry/WeilConjectures/`
 - Tasks:

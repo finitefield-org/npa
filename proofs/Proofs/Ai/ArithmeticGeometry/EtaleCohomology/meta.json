@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ArithmeticGeometry.EtaleCohomology",
+  "source": "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/source.npa",
+  "certificate": "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1b16ae637818db6f72ec6523b17aa2ced9023e48f1fccc5ffd4724fb8b7d349e",
+  "certificate_file_sha256": "sha256:65ac9a9f8ee9c28db5803a119227c0c87003b9cb5ef9a4d01f1aac8f65635d2a",
+  "export_hash": "sha256:76cc1c7cdfb8ddaf619d82a9834348ee8aa1429f2c8873da57561e2546cccb36",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:d14f52b7a3693274ed341eff9e8d29f295c45853f4dfe832396c40f205cd0a70",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes", "Proofs.Ai.ArithmeticGeometry.Schemes", "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology"],
+  "axioms": [],
+  "declarations": [
+    { "name": "EtaleCohomologyData", "kind": "def" },
+    { "name": "etale_cohomology_data_intro", "kind": "theorem" },
+    { "name": "etale_scheme_dependency_explicit", "kind": "theorem" },
+    { "name": "etale_cohomology_assumptions_visible", "kind": "theorem" },
+    { "name": "etale_cover_surface", "kind": "theorem" },
+    { "name": "etale_cohomology_surface", "kind": "theorem" },
+    { "name": "kummer_exact_sequence_surface", "kind": "theorem" },
+    { "name": "proper_base_change_surface", "kind": "theorem" },
+    { "name": "smooth_base_change_surface", "kind": "theorem" },
+    { "name": "etale_cohomology_finiteness_surface", "kind": "theorem" },
+    { "name": "cohomology_foundations_visible", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

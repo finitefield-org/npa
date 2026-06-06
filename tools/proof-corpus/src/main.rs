@@ -266,6 +266,9 @@ const MODULES: &[&ModuleArtifact] = &[
     &TOR_EXT_MODULE,
     &COTANGENT_COMPLEX_MODULE,
     &ARITHMETIC_GEOMETRY_RATIONAL_POINTS_MODULE,
+    &ARITHMETIC_GEOMETRY_SCHEMES_MODULE,
+    &ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_MODULE,
+    &ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
     &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
@@ -3538,6 +3541,62 @@ const ARITHMETIC_GEOMETRY_RATIONAL_POINTS_MODULE: ModuleArtifact = ModuleArtifac
     inductives: &[],
     definitions: ARITHMETIC_GEOMETRY_RATIONAL_POINTS_DEFINITIONS,
     theorems: ARITHMETIC_GEOMETRY_RATIONAL_POINTS_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ARITHMETIC_GEOMETRY_SCHEMES_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ArithmeticGeometry.Schemes",
+    source_path: "Proofs/Ai/ArithmeticGeometry/Schemes/source.npa",
+    certificate_path: "Proofs/Ai/ArithmeticGeometry/Schemes/certificate.npcert",
+    meta_path: "Proofs/Ai/ArithmeticGeometry/Schemes/meta.json",
+    replay_path: "Proofs/Ai/ArithmeticGeometry/Schemes/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+        "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+    ],
+    inductives: &[],
+    definitions: ARITHMETIC_GEOMETRY_SCHEMES_DEFINITIONS,
+    theorems: ARITHMETIC_GEOMETRY_SCHEMES_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ArithmeticGeometry.EtaleCohomology",
+    source_path: "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/source.npa",
+    certificate_path: "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/certificate.npcert",
+    meta_path: "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/meta.json",
+    replay_path: "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+        "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+        "Proofs.Ai.ArithmeticGeometry.Schemes",
+        "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+    ],
+    inductives: &[],
+    definitions: ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_DEFINITIONS,
+    theorems: ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ArithmeticGeometry.WeilConjectures",
+    source_path: "Proofs/Ai/ArithmeticGeometry/WeilConjectures/source.npa",
+    certificate_path: "Proofs/Ai/ArithmeticGeometry/WeilConjectures/certificate.npcert",
+    meta_path: "Proofs/Ai/ArithmeticGeometry/WeilConjectures/meta.json",
+    replay_path: "Proofs/Ai/ArithmeticGeometry/WeilConjectures/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+        "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+        "Proofs.Ai.ArithmeticGeometry.Schemes",
+        "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+        "Proofs.Ai.ArithmeticGeometry.EtaleCohomology",
+    ],
+    inductives: &[],
+    definitions: ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_DEFINITIONS,
+    theorems: ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -46647,6 +46706,929 @@ const ARITHMETIC_GEOMETRY_RATIONAL_POINTS_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+macro_rules! scheme_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (BaseRing : Type), ",
+            "forall (Scheme : Type), ",
+            "forall (Morphism : forall (source : Scheme), forall (target : Scheme), Type), ",
+            "forall (FiberProduct : forall (left : Scheme), forall (right : Scheme), forall (base : Scheme), Prop), ",
+            "forall (ZariskiTopology : forall (scheme : Scheme), Prop), ",
+            "forall (FlatMorphism : forall (source : Scheme), forall (target : Scheme), forall (morphism : Morphism source target), Prop), ",
+            "forall (BaseChangeSurface : forall (source : Scheme), forall (target : Scheme), forall (base : Scheme), forall (morphism : Morphism source target), Prop), ",
+            "forall (SchemeStructure : forall (scheme : Scheme), Prop), ",
+            "forall (AlgebraicGeometryDependency : Prop), ",
+            "forall (RationalPointsDependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! scheme_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun BaseRing => fun Scheme => fun Morphism => fun FiberProduct => ",
+            "fun ZariskiTopology => fun FlatMorphism => fun BaseChangeSurface => ",
+            "fun SchemeStructure => fun AlgebraicGeometryDependency => ",
+            "fun RationalPointsDependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! scheme_data_app {
+    () => {
+        concat!(
+            "@SchemeInterfaceData BaseRing Scheme Morphism FiberProduct ",
+            "ZariskiTopology FlatMorphism BaseChangeSurface SchemeStructure ",
+            "AlgebraicGeometryDependency RationalPointsDependency"
+        )
+    };
+}
+
+macro_rules! scheme_structure_law_type {
+    () => {
+        "forall (scheme : Scheme), SchemeStructure scheme"
+    };
+}
+
+macro_rules! scheme_fiber_product_law_type {
+    () => {
+        concat!(
+            "forall (left : Scheme), forall (right : Scheme), forall (base : Scheme), ",
+            "forall (left_structure : SchemeStructure left), ",
+            "forall (right_structure : SchemeStructure right), ",
+            "forall (base_structure : SchemeStructure base), FiberProduct left right base"
+        )
+    };
+}
+
+macro_rules! scheme_zariski_topology_law_type {
+    () => {
+        concat!(
+            "forall (scheme : Scheme), forall (structure : SchemeStructure scheme), ",
+            "ZariskiTopology scheme"
+        )
+    };
+}
+
+macro_rules! scheme_flatness_law_type {
+    () => {
+        concat!(
+            "forall (source : Scheme), forall (target : Scheme), ",
+            "forall (morphism : Morphism source target), ",
+            "FlatMorphism source target morphism"
+        )
+    };
+}
+
+macro_rules! scheme_base_change_law_type {
+    () => {
+        concat!(
+            "forall (source : Scheme), forall (target : Scheme), forall (base : Scheme), ",
+            "forall (morphism : Morphism source target), ",
+            "forall (flatness : FlatMorphism source target morphism), ",
+            "forall (base_structure : SchemeStructure base), ",
+            "BaseChangeSurface source target base morphism"
+        )
+    };
+}
+
+macro_rules! scheme_algebraic_geometry_dependency_law_type {
+    () => {
+        "AlgebraicGeometryDependency"
+    };
+}
+
+macro_rules! scheme_rational_points_dependency_law_type {
+    () => {
+        "RationalPointsDependency"
+    };
+}
+
+macro_rules! scheme_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (scheme_structure_law : ",
+            scheme_structure_law_type!(),
+            "), forall (fiber_product_law : ",
+            scheme_fiber_product_law_type!(),
+            "), forall (zariski_topology_law : ",
+            scheme_zariski_topology_law_type!(),
+            "), forall (flatness_law : ",
+            scheme_flatness_law_type!(),
+            "), forall (base_change_law : ",
+            scheme_base_change_law_type!(),
+            "), forall (algebraic_geometry_dependency_law : ",
+            scheme_algebraic_geometry_dependency_law_type!(),
+            "), forall (rational_points_dependency_law : ",
+            scheme_rational_points_dependency_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! scheme_projection_proof {
+    ($target:expr, $selected:expr) => {
+        scheme_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (scheme_structure_law : ",
+            scheme_structure_law_type!(),
+            ") => fun (fiber_product_law : ",
+            scheme_fiber_product_law_type!(),
+            ") => fun (zariski_topology_law : ",
+            scheme_zariski_topology_law_type!(),
+            ") => fun (flatness_law : ",
+            scheme_flatness_law_type!(),
+            ") => fun (base_change_law : ",
+            scheme_base_change_law_type!(),
+            ") => fun (algebraic_geometry_dependency_law : ",
+            scheme_algebraic_geometry_dependency_law_type!(),
+            ") => fun (rational_points_dependency_law : ",
+            scheme_rational_points_dependency_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const ARITHMETIC_GEOMETRY_SCHEMES_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "SchemeInterfaceData",
+    universe_params: &[],
+    ty: scheme_params!("Prop"),
+    value: scheme_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        scheme_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const ARITHMETIC_GEOMETRY_SCHEMES_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "scheme_interface_data_intro",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (scheme_structure_law : ",
+            scheme_structure_law_type!(),
+            "), forall (fiber_product_law : ",
+            scheme_fiber_product_law_type!(),
+            "), forall (zariski_topology_law : ",
+            scheme_zariski_topology_law_type!(),
+            "), forall (flatness_law : ",
+            scheme_flatness_law_type!(),
+            "), forall (base_change_law : ",
+            scheme_base_change_law_type!(),
+            "), forall (algebraic_geometry_dependency_law : ",
+            scheme_algebraic_geometry_dependency_law_type!(),
+            "), forall (rational_points_dependency_law : ",
+            scheme_rational_points_dependency_law_type!(),
+            "), ",
+            scheme_data_app!()
+        ),
+        proof: scheme_abs!(
+            "fun scheme_structure_law => fun fiber_product_law => ",
+            "fun zariski_topology_law => fun flatness_law => fun base_change_law => ",
+            "fun algebraic_geometry_dependency_law => ",
+            "fun rational_points_dependency_law => fun (Q : Prop) => fun (mk : ",
+            scheme_mk_type!("Q"),
+            ") => mk scheme_structure_law fiber_product_law zariski_topology_law ",
+            "flatness_law base_change_law algebraic_geometry_dependency_law ",
+            "rational_points_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "scheme_structure_surface",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_structure_law_type!()
+        ),
+        proof: scheme_projection_proof!(scheme_structure_law_type!(), "scheme_structure_law"),
+    },
+    TheoremArtifact {
+        name: "fiber_product_surface",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_fiber_product_law_type!()
+        ),
+        proof: scheme_projection_proof!(scheme_fiber_product_law_type!(), "fiber_product_law"),
+    },
+    TheoremArtifact {
+        name: "zariski_topology_surface",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_zariski_topology_law_type!()
+        ),
+        proof: scheme_projection_proof!(
+            scheme_zariski_topology_law_type!(),
+            "zariski_topology_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "flatness_surface",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_flatness_law_type!()
+        ),
+        proof: scheme_projection_proof!(scheme_flatness_law_type!(), "flatness_law"),
+    },
+    TheoremArtifact {
+        name: "scheme_base_change_surface",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_base_change_law_type!()
+        ),
+        proof: scheme_projection_proof!(scheme_base_change_law_type!(), "base_change_law"),
+    },
+    TheoremArtifact {
+        name: "scheme_algebraic_geometry_dependency_explicit",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_algebraic_geometry_dependency_law_type!()
+        ),
+        proof: scheme_projection_proof!(
+            scheme_algebraic_geometry_dependency_law_type!(),
+            "algebraic_geometry_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "scheme_rational_points_dependency_explicit",
+        universe_params: &[],
+        statement: scheme_params!(
+            "forall (data : ",
+            scheme_data_app!(),
+            "), ",
+            scheme_rational_points_dependency_law_type!()
+        ),
+        proof: scheme_projection_proof!(
+            scheme_rational_points_dependency_law_type!(),
+            "rational_points_dependency_law"
+        ),
+    },
+];
+
+macro_rules! etale_params {
+    ($($result:expr),+ $(,)?) => {
+        scheme_params!(
+            "forall (scheme_data : ",
+            scheme_data_app!(),
+            "), ",
+            "forall (EtaleCover : forall (scheme : Scheme), Prop), ",
+            "forall (EtaleCohomology : forall (scheme : Scheme), Prop), ",
+            "forall (KummerExactSequence : forall (scheme : Scheme), Prop), ",
+            "forall (ProperBaseChange : forall (source : Scheme), forall (target : Scheme), forall (base : Scheme), forall (morphism : Morphism source target), Prop), ",
+            "forall (SmoothBaseChange : forall (source : Scheme), forall (target : Scheme), forall (base : Scheme), forall (morphism : Morphism source target), Prop), ",
+            "forall (EtaleFiniteness : forall (scheme : Scheme), Prop), ",
+            "forall (EtaleAssumptions : forall (scheme : Scheme), Prop), ",
+            "forall (CohomologyFoundationVisible : forall (scheme : Scheme), Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! etale_abs {
+    ($($body:expr),+ $(,)?) => {
+        scheme_abs!(
+            "fun scheme_data => fun EtaleCover => fun EtaleCohomology => ",
+            "fun KummerExactSequence => fun ProperBaseChange => ",
+            "fun SmoothBaseChange => fun EtaleFiniteness => fun EtaleAssumptions => ",
+            "fun CohomologyFoundationVisible => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! etale_data_app {
+    () => {
+        concat!(
+            "@EtaleCohomologyData BaseRing Scheme Morphism FiberProduct ",
+            "ZariskiTopology FlatMorphism BaseChangeSurface SchemeStructure ",
+            "AlgebraicGeometryDependency RationalPointsDependency scheme_data ",
+            "EtaleCover EtaleCohomology KummerExactSequence ProperBaseChange ",
+            "SmoothBaseChange EtaleFiniteness EtaleAssumptions ",
+            "CohomologyFoundationVisible"
+        )
+    };
+}
+
+macro_rules! etale_scheme_dependency_law_type {
+    () => {
+        scheme_data_app!()
+    };
+}
+
+macro_rules! etale_assumptions_law_type {
+    () => {
+        "forall (scheme : Scheme), EtaleAssumptions scheme"
+    };
+}
+
+macro_rules! etale_cover_law_type {
+    () => {
+        concat!(
+            "forall (scheme : Scheme), ",
+            "forall (assumptions : EtaleAssumptions scheme), EtaleCover scheme"
+        )
+    };
+}
+
+macro_rules! etale_cohomology_law_type {
+    () => {
+        concat!(
+            "forall (scheme : Scheme), ",
+            "forall (assumptions : EtaleAssumptions scheme), EtaleCohomology scheme"
+        )
+    };
+}
+
+macro_rules! kummer_exact_sequence_law_type {
+    () => {
+        concat!(
+            "forall (scheme : Scheme), ",
+            "forall (assumptions : EtaleAssumptions scheme), KummerExactSequence scheme"
+        )
+    };
+}
+
+macro_rules! proper_base_change_law_type {
+    () => {
+        concat!(
+            "forall (source : Scheme), forall (target : Scheme), forall (base : Scheme), ",
+            "forall (morphism : Morphism source target), ",
+            "forall (source_assumptions : EtaleAssumptions source), ",
+            "forall (target_assumptions : EtaleAssumptions target), ",
+            "forall (base_assumptions : EtaleAssumptions base), ",
+            "ProperBaseChange source target base morphism"
+        )
+    };
+}
+
+macro_rules! smooth_base_change_law_type {
+    () => {
+        concat!(
+            "forall (source : Scheme), forall (target : Scheme), forall (base : Scheme), ",
+            "forall (morphism : Morphism source target), ",
+            "forall (source_assumptions : EtaleAssumptions source), ",
+            "forall (target_assumptions : EtaleAssumptions target), ",
+            "forall (base_assumptions : EtaleAssumptions base), ",
+            "SmoothBaseChange source target base morphism"
+        )
+    };
+}
+
+macro_rules! etale_finiteness_law_type {
+    () => {
+        concat!(
+            "forall (scheme : Scheme), ",
+            "forall (assumptions : EtaleAssumptions scheme), EtaleFiniteness scheme"
+        )
+    };
+}
+
+macro_rules! cohomology_foundation_visible_law_type {
+    () => {
+        concat!(
+            "forall (scheme : Scheme), ",
+            "forall (assumptions : EtaleAssumptions scheme), ",
+            "CohomologyFoundationVisible scheme"
+        )
+    };
+}
+
+macro_rules! etale_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (scheme_dependency_law : ",
+            etale_scheme_dependency_law_type!(),
+            "), forall (etale_assumptions_law : ",
+            etale_assumptions_law_type!(),
+            "), forall (etale_cover_law : ",
+            etale_cover_law_type!(),
+            "), forall (etale_cohomology_law : ",
+            etale_cohomology_law_type!(),
+            "), forall (kummer_exact_sequence_law : ",
+            kummer_exact_sequence_law_type!(),
+            "), forall (proper_base_change_law : ",
+            proper_base_change_law_type!(),
+            "), forall (smooth_base_change_law : ",
+            smooth_base_change_law_type!(),
+            "), forall (etale_finiteness_law : ",
+            etale_finiteness_law_type!(),
+            "), forall (cohomology_foundation_visible_law : ",
+            cohomology_foundation_visible_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! etale_projection_proof {
+    ($target:expr, $selected:expr) => {
+        etale_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (scheme_dependency_law : ",
+            etale_scheme_dependency_law_type!(),
+            ") => fun (etale_assumptions_law : ",
+            etale_assumptions_law_type!(),
+            ") => fun (etale_cover_law : ",
+            etale_cover_law_type!(),
+            ") => fun (etale_cohomology_law : ",
+            etale_cohomology_law_type!(),
+            ") => fun (kummer_exact_sequence_law : ",
+            kummer_exact_sequence_law_type!(),
+            ") => fun (proper_base_change_law : ",
+            proper_base_change_law_type!(),
+            ") => fun (smooth_base_change_law : ",
+            smooth_base_change_law_type!(),
+            ") => fun (etale_finiteness_law : ",
+            etale_finiteness_law_type!(),
+            ") => fun (cohomology_foundation_visible_law : ",
+            cohomology_foundation_visible_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "EtaleCohomologyData",
+        universe_params: &[],
+        ty: etale_params!("Prop"),
+        value: etale_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            etale_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "etale_cohomology_data_intro",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (scheme_dependency_law : ",
+            etale_scheme_dependency_law_type!(),
+            "), forall (etale_assumptions_law : ",
+            etale_assumptions_law_type!(),
+            "), forall (etale_cover_law : ",
+            etale_cover_law_type!(),
+            "), forall (etale_cohomology_law : ",
+            etale_cohomology_law_type!(),
+            "), forall (kummer_exact_sequence_law : ",
+            kummer_exact_sequence_law_type!(),
+            "), forall (proper_base_change_law : ",
+            proper_base_change_law_type!(),
+            "), forall (smooth_base_change_law : ",
+            smooth_base_change_law_type!(),
+            "), forall (etale_finiteness_law : ",
+            etale_finiteness_law_type!(),
+            "), forall (cohomology_foundation_visible_law : ",
+            cohomology_foundation_visible_law_type!(),
+            "), ",
+            etale_data_app!()
+        ),
+        proof: etale_abs!(
+            "fun scheme_dependency_law => fun etale_assumptions_law => ",
+            "fun etale_cover_law => fun etale_cohomology_law => ",
+            "fun kummer_exact_sequence_law => fun proper_base_change_law => ",
+            "fun smooth_base_change_law => fun etale_finiteness_law => ",
+            "fun cohomology_foundation_visible_law => fun (Q : Prop) => fun (mk : ",
+            etale_mk_type!("Q"),
+            ") => mk scheme_dependency_law etale_assumptions_law etale_cover_law ",
+            "etale_cohomology_law kummer_exact_sequence_law proper_base_change_law ",
+            "smooth_base_change_law etale_finiteness_law ",
+            "cohomology_foundation_visible_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "etale_scheme_dependency_explicit",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            etale_scheme_dependency_law_type!()
+        ),
+        proof: etale_projection_proof!(
+            etale_scheme_dependency_law_type!(),
+            "scheme_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "etale_cohomology_assumptions_visible",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            etale_assumptions_law_type!()
+        ),
+        proof: etale_projection_proof!(etale_assumptions_law_type!(), "etale_assumptions_law"),
+    },
+    TheoremArtifact {
+        name: "etale_cover_surface",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            etale_cover_law_type!()
+        ),
+        proof: etale_projection_proof!(etale_cover_law_type!(), "etale_cover_law"),
+    },
+    TheoremArtifact {
+        name: "etale_cohomology_surface",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            etale_cohomology_law_type!()
+        ),
+        proof: etale_projection_proof!(etale_cohomology_law_type!(), "etale_cohomology_law"),
+    },
+    TheoremArtifact {
+        name: "kummer_exact_sequence_surface",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            kummer_exact_sequence_law_type!()
+        ),
+        proof: etale_projection_proof!(
+            kummer_exact_sequence_law_type!(),
+            "kummer_exact_sequence_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "proper_base_change_surface",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            proper_base_change_law_type!()
+        ),
+        proof: etale_projection_proof!(proper_base_change_law_type!(), "proper_base_change_law"),
+    },
+    TheoremArtifact {
+        name: "smooth_base_change_surface",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            smooth_base_change_law_type!()
+        ),
+        proof: etale_projection_proof!(smooth_base_change_law_type!(), "smooth_base_change_law"),
+    },
+    TheoremArtifact {
+        name: "etale_cohomology_finiteness_surface",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            etale_finiteness_law_type!()
+        ),
+        proof: etale_projection_proof!(etale_finiteness_law_type!(), "etale_finiteness_law"),
+    },
+    TheoremArtifact {
+        name: "cohomology_foundations_visible",
+        universe_params: &[],
+        statement: etale_params!(
+            "forall (data : ",
+            etale_data_app!(),
+            "), ",
+            cohomology_foundation_visible_law_type!()
+        ),
+        proof: etale_projection_proof!(
+            cohomology_foundation_visible_law_type!(),
+            "cohomology_foundation_visible_law"
+        ),
+    },
+];
+
+macro_rules! weil_params {
+    ($($result:expr),+ $(,)?) => {
+        etale_params!(
+            "forall (etale_data : ",
+            etale_data_app!(),
+            "), ",
+            "forall (Variety : Type), ",
+            "forall (VarietyToScheme : forall (variety : Variety), Scheme), ",
+            "forall (GrothendieckTraceFormula : forall (variety : Variety), Prop), ",
+            "forall (LefschetzTraceFormula : forall (variety : Variety), Prop), ",
+            "forall (WeilConjecturesStatement : forall (variety : Variety), Prop), ",
+            "forall (DeligneTheoremSurface : forall (variety : Variety), Prop), ",
+            "forall (WeilConjecturesInterfaceLevel : forall (variety : Variety), Prop), ",
+            "forall (DeligneNotGenericFiniteFieldAxiom : forall (variety : Variety), Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! weil_abs {
+    ($($body:expr),+ $(,)?) => {
+        etale_abs!(
+            "fun etale_data => fun Variety => fun VarietyToScheme => ",
+            "fun GrothendieckTraceFormula => fun LefschetzTraceFormula => ",
+            "fun WeilConjecturesStatement => fun DeligneTheoremSurface => ",
+            "fun WeilConjecturesInterfaceLevel => ",
+            "fun DeligneNotGenericFiniteFieldAxiom => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! weil_data_app {
+    () => {
+        concat!(
+            "@WeilConjecturesData BaseRing Scheme Morphism FiberProduct ",
+            "ZariskiTopology FlatMorphism BaseChangeSurface SchemeStructure ",
+            "AlgebraicGeometryDependency RationalPointsDependency scheme_data ",
+            "EtaleCover EtaleCohomology KummerExactSequence ProperBaseChange ",
+            "SmoothBaseChange EtaleFiniteness EtaleAssumptions ",
+            "CohomologyFoundationVisible etale_data Variety VarietyToScheme ",
+            "GrothendieckTraceFormula LefschetzTraceFormula ",
+            "WeilConjecturesStatement DeligneTheoremSurface ",
+            "WeilConjecturesInterfaceLevel DeligneNotGenericFiniteFieldAxiom"
+        )
+    };
+}
+
+macro_rules! weil_etale_dependency_law_type {
+    () => {
+        etale_data_app!()
+    };
+}
+
+macro_rules! grothendieck_trace_formula_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (assumptions : EtaleAssumptions (VarietyToScheme variety)), ",
+            "GrothendieckTraceFormula variety"
+        )
+    };
+}
+
+macro_rules! lefschetz_trace_formula_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (assumptions : EtaleAssumptions (VarietyToScheme variety)), ",
+            "LefschetzTraceFormula variety"
+        )
+    };
+}
+
+macro_rules! weil_conjectures_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (assumptions : EtaleAssumptions (VarietyToScheme variety)), ",
+            "WeilConjecturesStatement variety"
+        )
+    };
+}
+
+macro_rules! deligne_theorem_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (assumptions : EtaleAssumptions (VarietyToScheme variety)), ",
+            "DeligneTheoremSurface variety"
+        )
+    };
+}
+
+macro_rules! weil_interface_level_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (statement : WeilConjecturesStatement variety), ",
+            "WeilConjecturesInterfaceLevel variety"
+        )
+    };
+}
+
+macro_rules! deligne_not_generic_axiom_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (deligne_surface : DeligneTheoremSurface variety), ",
+            "DeligneNotGenericFiniteFieldAxiom variety"
+        )
+    };
+}
+
+macro_rules! weil_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (etale_dependency_law : ",
+            weil_etale_dependency_law_type!(),
+            "), forall (grothendieck_trace_formula_law : ",
+            grothendieck_trace_formula_law_type!(),
+            "), forall (lefschetz_trace_formula_law : ",
+            lefschetz_trace_formula_law_type!(),
+            "), forall (weil_conjectures_law : ",
+            weil_conjectures_law_type!(),
+            "), forall (deligne_theorem_law : ",
+            deligne_theorem_law_type!(),
+            "), forall (weil_interface_level_law : ",
+            weil_interface_level_law_type!(),
+            "), forall (deligne_not_generic_axiom_law : ",
+            deligne_not_generic_axiom_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! weil_projection_proof {
+    ($target:expr, $selected:expr) => {
+        weil_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (etale_dependency_law : ",
+            weil_etale_dependency_law_type!(),
+            ") => fun (grothendieck_trace_formula_law : ",
+            grothendieck_trace_formula_law_type!(),
+            ") => fun (lefschetz_trace_formula_law : ",
+            lefschetz_trace_formula_law_type!(),
+            ") => fun (weil_conjectures_law : ",
+            weil_conjectures_law_type!(),
+            ") => fun (deligne_theorem_law : ",
+            deligne_theorem_law_type!(),
+            ") => fun (weil_interface_level_law : ",
+            weil_interface_level_law_type!(),
+            ") => fun (deligne_not_generic_axiom_law : ",
+            deligne_not_generic_axiom_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "WeilConjecturesData",
+        universe_params: &[],
+        ty: weil_params!("Prop"),
+        value: weil_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            weil_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "weil_conjectures_data_intro",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (etale_dependency_law : ",
+            weil_etale_dependency_law_type!(),
+            "), forall (grothendieck_trace_formula_law : ",
+            grothendieck_trace_formula_law_type!(),
+            "), forall (lefschetz_trace_formula_law : ",
+            lefschetz_trace_formula_law_type!(),
+            "), forall (weil_conjectures_law : ",
+            weil_conjectures_law_type!(),
+            "), forall (deligne_theorem_law : ",
+            deligne_theorem_law_type!(),
+            "), forall (weil_interface_level_law : ",
+            weil_interface_level_law_type!(),
+            "), forall (deligne_not_generic_axiom_law : ",
+            deligne_not_generic_axiom_law_type!(),
+            "), ",
+            weil_data_app!()
+        ),
+        proof: weil_abs!(
+            "fun etale_dependency_law => fun grothendieck_trace_formula_law => ",
+            "fun lefschetz_trace_formula_law => fun weil_conjectures_law => ",
+            "fun deligne_theorem_law => fun weil_interface_level_law => ",
+            "fun deligne_not_generic_axiom_law => fun (Q : Prop) => fun (mk : ",
+            weil_mk_type!("Q"),
+            ") => mk etale_dependency_law grothendieck_trace_formula_law ",
+            "lefschetz_trace_formula_law weil_conjectures_law deligne_theorem_law ",
+            "weil_interface_level_law deligne_not_generic_axiom_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "weil_conjectures_etale_dependency_explicit",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            weil_etale_dependency_law_type!()
+        ),
+        proof: weil_projection_proof!(weil_etale_dependency_law_type!(), "etale_dependency_law"),
+    },
+    TheoremArtifact {
+        name: "grothendieck_trace_formula_surface",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            grothendieck_trace_formula_law_type!()
+        ),
+        proof: weil_projection_proof!(
+            grothendieck_trace_formula_law_type!(),
+            "grothendieck_trace_formula_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "lefschetz_trace_formula_surface",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            lefschetz_trace_formula_law_type!()
+        ),
+        proof: weil_projection_proof!(
+            lefschetz_trace_formula_law_type!(),
+            "lefschetz_trace_formula_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "weil_conjectures_interface_surface",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            weil_conjectures_law_type!()
+        ),
+        proof: weil_projection_proof!(weil_conjectures_law_type!(), "weil_conjectures_law"),
+    },
+    TheoremArtifact {
+        name: "deligne_theorem_surface",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            deligne_theorem_law_type!()
+        ),
+        proof: weil_projection_proof!(deligne_theorem_law_type!(), "deligne_theorem_law"),
+    },
+    TheoremArtifact {
+        name: "weil_conjectures_remain_interface_level",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            weil_interface_level_law_type!()
+        ),
+        proof: weil_projection_proof!(weil_interface_level_law_type!(), "weil_interface_level_law"),
+    },
+    TheoremArtifact {
+        name: "deligne_theorem_not_generic_finite_field_axiom",
+        universe_params: &[],
+        statement: weil_params!(
+            "forall (data : ",
+            weil_data_app!(),
+            "), ",
+            deligne_not_generic_axiom_law_type!()
+        ),
+        proof: weil_projection_proof!(
+            deligne_not_generic_axiom_law_type!(),
+            "deligne_not_generic_axiom_law"
+        ),
+    },
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "le",
@@ -56497,6 +57479,9 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_AUTOMORPHIC_L_MODULE.module
         || config.module == LANGLANDS_INTERFACE_MODULE.module
         || config.module == ARITHMETIC_GEOMETRY_RATIONAL_POINTS_MODULE.module
+        || config.module == ARITHMETIC_GEOMETRY_SCHEMES_MODULE.module
+        || config.module == ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_MODULE.module
+        || config.module == ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }
