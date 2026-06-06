@@ -1,0 +1,107 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Combinatorics.GeneratingFunction",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OrdinaryGeneratingFunctionLawPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun ordinarySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun OrdinaryGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => forall (P : Prop), forall (mk : forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (ordinary_generating_function_law : OrdinaryGeneratingFunctionEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P), P"
+    },
+    {
+      "declaration": "ExponentialGeneratingFunctionLawPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun factorialWeight => fun exponentialSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun FactorialWeightEvidence => fun AlgebraDependencyEvidence => fun CoefficientExtractionEvidence => fun ExponentialGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => forall (P : Prop), forall (mk : forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (factorial_weight_law : FactorialWeightEvidence), forall (algebra_dependency_law : AlgebraDependencyEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (exponential_generating_function_law : ExponentialGeneratingFunctionEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P), P"
+    },
+    {
+      "declaration": "FormalPowerSeriesConvolutionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Coefficient => fun Series => fun leftCoefficient => fun rightCoefficient => fun productCoefficient => fun leftSeries => fun rightSeries => fun productSeries => fun multiplySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun ConvolutionIdentityEvidence => fun NoAnalyticConvergenceEvidence => forall (P : Prop), forall (mk : forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (convolution_identity_law : ConvolutionIdentityEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P), P"
+    },
+    {
+      "declaration": "GeneratingFunctionRecurrenceBridgePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Coefficient => fun State => fun Series => fun solution => fun recurrenceCoefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun recurrence_args => fun generatingSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun GeneratingFunctionEquationEvidence => fun RecurrenceGeneratingFunctionBridgeEvidence => forall (P : Prop), forall (mk : forall (recurrence_law : @LinearRecurrenceSolutionPredicate.{i,c,u} Index Coefficient State solution recurrenceCoefficient combine aggregate InitialConditionsEvidence LinearStepEvidence AlgebraDependencyEvidence UniquenessEvidence NoAnalyticConvergenceEvidence), forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (generating_function_equation_law : GeneratingFunctionEquationEvidence), forall (bridge_law : RecurrenceGeneratingFunctionBridgeEvidence), P), P"
+    },
+    {
+      "declaration": "ordinary_generating_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun ordinarySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun formal_power_series_law => fun CoefficientExtractionEvidence => fun coefficient_extraction_law => fun OrdinaryGeneratingFunctionEvidence => fun ordinary_generating_function_law => fun NoAnalyticConvergenceEvidence => fun no_analytic_convergence_law => fun (P : Prop) => fun (mk : forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (ordinary_generating_function_law : OrdinaryGeneratingFunctionEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P) => mk formal_power_series_law coefficient_extraction_law ordinary_generating_function_law no_analytic_convergence_law"
+    },
+    {
+      "declaration": "ordinary_generating_function_coefficient_extraction_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun ordinarySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun OrdinaryGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => fun ordinary_args => ordinary_args CoefficientExtractionEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (ordinary_generating_function_law : OrdinaryGeneratingFunctionEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => coefficient_extraction_law)"
+    },
+    {
+      "declaration": "ordinary_generating_function_formal_power_series_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun ordinarySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun OrdinaryGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => fun ordinary_args => ordinary_args FormalPowerSeriesAlgebraEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (ordinary_generating_function_law : OrdinaryGeneratingFunctionEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => formal_power_series_law)"
+    },
+    {
+      "declaration": "ordinary_generating_function_no_analytic_convergence_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun ordinarySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun OrdinaryGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => fun ordinary_args => ordinary_args NoAnalyticConvergenceEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (ordinary_generating_function_law : OrdinaryGeneratingFunctionEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => no_analytic_convergence_law)"
+    },
+    {
+      "declaration": "exponential_generating_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun factorialWeight => fun exponentialSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun formal_power_series_law => fun FactorialWeightEvidence => fun factorial_weight_law => fun AlgebraDependencyEvidence => fun algebra_dependency_law => fun CoefficientExtractionEvidence => fun coefficient_extraction_law => fun ExponentialGeneratingFunctionEvidence => fun exponential_generating_function_law => fun NoAnalyticConvergenceEvidence => fun no_analytic_convergence_law => fun (P : Prop) => fun (mk : forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (factorial_weight_law : FactorialWeightEvidence), forall (algebra_dependency_law : AlgebraDependencyEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (exponential_generating_function_law : ExponentialGeneratingFunctionEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P) => mk formal_power_series_law factorial_weight_law algebra_dependency_law coefficient_extraction_law exponential_generating_function_law no_analytic_convergence_law"
+    },
+    {
+      "declaration": "exponential_generating_function_factorial_weight_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun factorialWeight => fun exponentialSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun FactorialWeightEvidence => fun AlgebraDependencyEvidence => fun CoefficientExtractionEvidence => fun ExponentialGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => fun exponential_args => exponential_args FactorialWeightEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (factorial_weight_law : FactorialWeightEvidence) => fun (algebra_dependency_law : AlgebraDependencyEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (exponential_generating_function_law : ExponentialGeneratingFunctionEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => factorial_weight_law)"
+    },
+    {
+      "declaration": "exponential_generating_function_algebra_dependency_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun factorialWeight => fun exponentialSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun FactorialWeightEvidence => fun AlgebraDependencyEvidence => fun CoefficientExtractionEvidence => fun ExponentialGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => fun exponential_args => exponential_args AlgebraDependencyEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (factorial_weight_law : FactorialWeightEvidence) => fun (algebra_dependency_law : AlgebraDependencyEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (exponential_generating_function_law : ExponentialGeneratingFunctionEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => algebra_dependency_law)"
+    },
+    {
+      "declaration": "exponential_generating_function_no_analytic_convergence_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun coefficient => fun factorialWeight => fun exponentialSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun FactorialWeightEvidence => fun AlgebraDependencyEvidence => fun CoefficientExtractionEvidence => fun ExponentialGeneratingFunctionEvidence => fun NoAnalyticConvergenceEvidence => fun exponential_args => exponential_args NoAnalyticConvergenceEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (factorial_weight_law : FactorialWeightEvidence) => fun (algebra_dependency_law : AlgebraDependencyEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (exponential_generating_function_law : ExponentialGeneratingFunctionEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => no_analytic_convergence_law)"
+    },
+    {
+      "declaration": "formal_power_series_convolution_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun leftCoefficient => fun rightCoefficient => fun productCoefficient => fun leftSeries => fun rightSeries => fun productSeries => fun multiplySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun formal_power_series_law => fun CoefficientExtractionEvidence => fun coefficient_extraction_law => fun ConvolutionIdentityEvidence => fun convolution_identity_law => fun NoAnalyticConvergenceEvidence => fun no_analytic_convergence_law => fun (P : Prop) => fun (mk : forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (convolution_identity_law : ConvolutionIdentityEvidence), forall (no_analytic_convergence_law : NoAnalyticConvergenceEvidence), P) => mk formal_power_series_law coefficient_extraction_law convolution_identity_law no_analytic_convergence_law"
+    },
+    {
+      "declaration": "formal_power_series_convolution_identity_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun leftCoefficient => fun rightCoefficient => fun productCoefficient => fun leftSeries => fun rightSeries => fun productSeries => fun multiplySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun ConvolutionIdentityEvidence => fun NoAnalyticConvergenceEvidence => fun convolution_args => convolution_args ConvolutionIdentityEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (convolution_identity_law : ConvolutionIdentityEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => convolution_identity_law)"
+    },
+    {
+      "declaration": "formal_power_series_convolution_derived_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun Series => fun leftCoefficient => fun rightCoefficient => fun productCoefficient => fun leftSeries => fun rightSeries => fun productSeries => fun multiplySeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun ConvolutionIdentityEvidence => fun NoAnalyticConvergenceEvidence => fun convolution_args => fun DerivedConvolutionEvidence => fun derive => convolution_args DerivedConvolutionEvidence (fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (convolution_identity_law : ConvolutionIdentityEvidence) => fun (no_analytic_convergence_law : NoAnalyticConvergenceEvidence) => derive formal_power_series_law coefficient_extraction_law convolution_identity_law)"
+    },
+    {
+      "declaration": "generating_function_recurrence_bridge_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun State => fun Series => fun solution => fun recurrenceCoefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun recurrence_args => fun generatingSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun formal_power_series_law => fun CoefficientExtractionEvidence => fun coefficient_extraction_law => fun GeneratingFunctionEquationEvidence => fun generating_function_equation_law => fun RecurrenceGeneratingFunctionBridgeEvidence => fun bridge_law => fun (P : Prop) => fun (mk : forall (recurrence_law : @LinearRecurrenceSolutionPredicate.{i,c,u} Index Coefficient State solution recurrenceCoefficient combine aggregate InitialConditionsEvidence LinearStepEvidence AlgebraDependencyEvidence UniquenessEvidence NoAnalyticConvergenceEvidence), forall (formal_power_series_law : FormalPowerSeriesAlgebraEvidence), forall (coefficient_extraction_law : CoefficientExtractionEvidence), forall (generating_function_equation_law : GeneratingFunctionEquationEvidence), forall (bridge_law : RecurrenceGeneratingFunctionBridgeEvidence), P) => mk recurrence_args formal_power_series_law coefficient_extraction_law generating_function_equation_law bridge_law"
+    },
+    {
+      "declaration": "generating_function_recurrence_bridge_recurrence_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun State => fun Series => fun solution => fun recurrenceCoefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun recurrence_args => fun generatingSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun GeneratingFunctionEquationEvidence => fun RecurrenceGeneratingFunctionBridgeEvidence => fun bridge_args => bridge_args (@LinearRecurrenceSolutionPredicate.{i,c,u} Index Coefficient State solution recurrenceCoefficient combine aggregate InitialConditionsEvidence LinearStepEvidence AlgebraDependencyEvidence UniquenessEvidence NoAnalyticConvergenceEvidence) (fun (recurrence_law : @LinearRecurrenceSolutionPredicate.{i,c,u} Index Coefficient State solution recurrenceCoefficient combine aggregate InitialConditionsEvidence LinearStepEvidence AlgebraDependencyEvidence UniquenessEvidence NoAnalyticConvergenceEvidence) => fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (generating_function_equation_law : GeneratingFunctionEquationEvidence) => fun (bridge_law : RecurrenceGeneratingFunctionBridgeEvidence) => recurrence_law)"
+    },
+    {
+      "declaration": "generating_function_recurrence_equation_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun State => fun Series => fun solution => fun recurrenceCoefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun recurrence_args => fun generatingSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun GeneratingFunctionEquationEvidence => fun RecurrenceGeneratingFunctionBridgeEvidence => fun bridge_args => bridge_args GeneratingFunctionEquationEvidence (fun (recurrence_law : @LinearRecurrenceSolutionPredicate.{i,c,u} Index Coefficient State solution recurrenceCoefficient combine aggregate InitialConditionsEvidence LinearStepEvidence AlgebraDependencyEvidence UniquenessEvidence NoAnalyticConvergenceEvidence) => fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (generating_function_equation_law : GeneratingFunctionEquationEvidence) => fun (bridge_law : RecurrenceGeneratingFunctionBridgeEvidence) => generating_function_equation_law)"
+    },
+    {
+      "declaration": "generating_function_recurrence_formal_power_series_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Coefficient => fun State => fun Series => fun solution => fun recurrenceCoefficient => fun combine => fun aggregate => fun InitialConditionsEvidence => fun LinearStepEvidence => fun AlgebraDependencyEvidence => fun UniquenessEvidence => fun NoAnalyticConvergenceEvidence => fun recurrence_args => fun generatingSeries => fun coefficientAt => fun FormalPowerSeriesAlgebraEvidence => fun CoefficientExtractionEvidence => fun GeneratingFunctionEquationEvidence => fun RecurrenceGeneratingFunctionBridgeEvidence => fun bridge_args => bridge_args FormalPowerSeriesAlgebraEvidence (fun (recurrence_law : @LinearRecurrenceSolutionPredicate.{i,c,u} Index Coefficient State solution recurrenceCoefficient combine aggregate InitialConditionsEvidence LinearStepEvidence AlgebraDependencyEvidence UniquenessEvidence NoAnalyticConvergenceEvidence) => fun (formal_power_series_law : FormalPowerSeriesAlgebraEvidence) => fun (coefficient_extraction_law : CoefficientExtractionEvidence) => fun (generating_function_equation_law : GeneratingFunctionEquationEvidence) => fun (bridge_law : RecurrenceGeneratingFunctionBridgeEvidence) => formal_power_series_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Combinatorics/GeneratingFunction/certificate.npcert"
+  }
+}

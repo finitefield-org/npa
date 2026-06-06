@@ -101,6 +101,10 @@ Current bundles:
   recurrence, first-order solution, and linear recurrence evidence packages. Initial conditions,
   step laws, existence, uniqueness, algebra dependencies, and the absence of analytic convergence
   imports are explicit proof-corpus evidence slots.
+- `Proofs/Ai/Combinatorics/GeneratingFunction/`: certificate-backed ordinary generating function,
+  exponential generating function, formal power-series convolution, and recurrence-to-generating
+  function bridge packages. Coefficient extraction, factorial weights, algebra dependencies,
+  convolution identities, and analytic-convergence boundaries are named evidence slots.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

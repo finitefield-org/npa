@@ -413,21 +413,33 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T11 Add Formal Generating Function Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T10`, algebra/polynomial prerequisites
 - Areas: `Proofs.Ai.Combinatorics.GeneratingFunction`
 - Tasks:
-  - Add ordinary and exponential generating-function law packages.
-  - Add coefficient extraction and convolution identity theorem surfaces.
-  - Split formal power series from analytic convergence statements.
+  - Add ordinary and exponential generating-function law packages. Done in
+    `Proofs.Ai.Combinatorics.GeneratingFunction`.
+  - Add coefficient extraction and convolution identity theorem surfaces. Done
+    with coefficient-extraction, convolution-identity, and derived-convolution
+    evidence projections.
+  - Split formal power series from analytic convergence statements. Done by
+    keeping analytic convergence as named `NoAnalyticConvergenceEvidence`
+    slots, with no analysis imports.
 - Deliverables:
   - Generating-function interface module.
 - Acceptance criteria:
-  - Formal power series are ordinary algebraic structures.
+  - Formal power series are ordinary algebraic structures. Satisfied by
+    ordinary, exponential, convolution, and recurrence-bridge packages carrying
+    `FormalPowerSeriesAlgebraEvidence`.
   - Analytic convergence dependencies are named and imported only when needed.
+    Satisfied by formal packages exposing `NoAnalyticConvergenceEvidence` while
+    importing only `Proofs.Ai.Combinatorics.Recurrence`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.GeneratingFunction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.GeneratingFunction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.GeneratingFunction --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
 
 ### CG-T12 Add Simple Graph Foundation
 
