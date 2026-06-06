@@ -661,20 +661,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T19 Add Max-Flow/Min-Cut And Konig Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T18`, `CG-T17`
 - Areas: `Proofs.Ai.Graph.Flow.MaxFlowMinCut`, `Proofs.Ai.Graph.Konig`
 - Tasks:
-  - Add max-flow/min-cut theorem interface.
-  - Add bipartite matching as a flow specialization interface.
-  - Add Konig theorem and vertex-cover bridge theorem targets.
+  - Done: Added a max-flow/min-cut theorem interface with
+    `AugmentingPathTracePackage` and `MaxFlowMinCutInterfacePackage` surfaces.
+  - Done: Added a bipartite matching as flow specialization interface in
+    `BipartiteMatchingFlowSpecializationPackage`.
+  - Done: Added Konig theorem and vertex-cover bridge theorem targets in
+    `KonigTheoremBridgePackage`.
 - Deliverables:
-  - Flow-to-matching bridge surfaces.
+  - Delivered: Flow-to-matching bridge surfaces.
 - Acceptance criteria:
-  - Algorithmic augmenting path evidence is represented as a proof-checkable
-    trace or explicit construction package.
-  - Konig theorem does not duplicate Hall theorem ownership.
+  - Satisfied: Algorithmic augmenting path evidence is represented by
+    `AugmentingPathTracePackage` together with `TraceCertificateEvidence`,
+    `AlgorithmicTraceEvidence`, and `ExplicitAugmentingConstructionEvidence`
+    slots.
+  - Satisfied: Konig theorem ownership names `HallPrimaryTheoremCardEvidence`
+    and `NoDuplicateHallOwnershipEvidence` as boundary evidence instead of
+    duplicating Hall theorem ownership.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Konig`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow.MaxFlowMinCut --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Konig --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow.MaxFlowMinCut`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Konig`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `rg -n "max-flow|min-cut|Konig|vertex cover" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 

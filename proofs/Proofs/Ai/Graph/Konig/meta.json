@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Konig",
+  "source": "Proofs/Ai/Graph/Konig/source.npa",
+  "certificate": "Proofs/Ai/Graph/Konig/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:51c1be2238366d18a67d0a811280e14ca0fcdd3992c281e8e4eb0c9eecdce00f",
+  "certificate_file_sha256": "sha256:c84fc45f86f692c2abdb1ff43f7872ce0a58c2327b0708945975a3a2c591f820",
+  "export_hash": "sha256:23b4df233690c79b4f53290d3613653fd43fee3418b842b7c100831ba6f6e0e1",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:3c78f1519329396658e6edea402341d13322363c72abb0366676968e0ac7d167",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Bipartite", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Matching", "Proofs.Ai.Graph.Matching.Hall", "Proofs.Ai.Graph.Cut", "Proofs.Ai.Graph.Flow", "Proofs.Ai.Graph.Flow.MaxFlowMinCut"],
+  "axioms": [],
+  "declarations": [
+    { "name": "BipartiteMatchingFlowSpecializationPackage", "kind": "def" },
+    { "name": "KonigTheoremBridgePackage", "kind": "def" },
+    { "name": "bipartite_matching_flow_specialization_intro", "kind": "theorem" },
+    { "name": "matching_as_flow_specialization_statement", "kind": "theorem" },
+    { "name": "flow_to_matching_bridge_statement", "kind": "theorem" },
+    { "name": "konig_theorem_bridge_package_intro", "kind": "theorem" },
+    { "name": "vertex_cover_bridge_statement", "kind": "theorem" },
+    { "name": "konig_theorem_statement", "kind": "theorem" },
+    { "name": "konig_hall_ownership_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

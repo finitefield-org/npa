@@ -147,6 +147,14 @@ Current bundles:
   keeps flow values in the same ordered algebra carrier as capacities, records feasibility,
   conservation, capacity bounds, flow value evidence, and explicit residual-capacity/residual-edge
   construction evidence.
+- `Proofs/Ai/Graph/Flow/MaxFlowMinCut/`: certificate-backed max-flow/min-cut interface over
+  `NetworkFlowPackage`. It records augmenting-path trace packages, no-augmenting-path evidence,
+  weak/strong duality, equality, optimal-cut, algorithmic trace, and explicit augmenting
+  construction evidence slots.
+- `Proofs/Ai/Graph/Konig/`: certificate-backed bipartite matching as flow specialization and
+  vertex-cover bridge package. It names matching-as-flow, flow-to-matching, maximum-matching,
+  minimum-vertex-cover, Konig equality, and Hall ownership-boundary evidence slots instead of
+  re-owning Hall theorem proof obligations.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
