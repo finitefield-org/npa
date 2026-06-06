@@ -73,6 +73,132 @@ theorems = ["imp_chain4", "imp_permute3", "imp_apply_twice", "imp_const3", "imp_
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Combinatorics.Finite"
+source = "Proofs/Ai/Combinatorics/Finite/source.npa"
+certificate = "Proofs/Ai/Combinatorics/Finite/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/Finite/meta.json"
+replay = "Proofs/Ai/Combinatorics/Finite/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f61bebf48d1ff2eaac96e97a9613ce5d62bb41d2157cf54daaac4c738e0d376f"
+certificate_file_sha256 = "sha256:428d86fb20fdcb6855e0ad197e34c3fed799a7c48b43494d144f7a7683829632"
+export_hash = "sha256:a3a63507e47f0c43cfcdde8f740567ace31252832a6ab9bf0e7e877743ddd4ed"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:89bd3405384acdbd7768db7cfb50fd90ced27e7fc1abaa2d3f0164ae3aff5728"
+imports = []
+definitions = ["FiniteFamilyLawArgs", "FiniteEnumerationLawArgs"]
+theorems = ["finite_family_law_intro", "finite_family_membership_statement", "finite_enumeration_law_intro", "finite_enumeration_no_duplicate_statement", "finite_enumeration_complete_statement", "finite_enumeration_sound_statement", "finite_enumeration_reusable_for_graph_vertex_and_edge_sets", "future_set_theory_finite_cardinality_bridge_point"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.Cardinality"
+source = "Proofs/Ai/Combinatorics/Cardinality/source.npa"
+certificate = "Proofs/Ai/Combinatorics/Cardinality/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/Cardinality/meta.json"
+replay = "Proofs/Ai/Combinatorics/Cardinality/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:af8b1e6a66d3d19772fd8d570c4f2daaa789789e63fea445a2051bea7b94e576"
+certificate_file_sha256 = "sha256:bdcf9a291fa4840666d277d22b4d8b19fba8f3b8b1e9797e93a0c6d1f5353d01"
+export_hash = "sha256:dec89ce0590e1b0485ba664e7575860420c79ed4d6ece1b62ad9c3e3d3190e7c"
+axiom_report_hash = "sha256:c719d1be9850d3cfc41fde0acfd7e6f6416da3180df18594cfb1c789cf73c02f"
+certificate_hash = "sha256:401db43d94e30b5d41063aeca13995b400ddc8d22f417d04dd03643a47b48a7c"
+imports = ["Proofs.Ai.Combinatorics.Finite"]
+definitions = ["InjectivePredicate", "SurjectivePredicate", "BijectionPredicate", "FiniteEquivalencePredicate", "FiniteImageCardinalityPredicate", "FiniteSubsetCardinalityPredicate"]
+theorems = ["injective_predicate_intro", "injective_statement", "surjective_predicate_intro", "surjective_statement", "bijection_predicate_intro", "bijection_injective_statement", "bijection_surjective_statement", "finite_equivalence_predicate_intro", "finite_equivalence_source_finite_statement", "finite_equivalence_target_finite_statement", "cardinality_invariant_under_explicit_bijection", "finite_image_cardinality_predicate_intro", "finite_image_cardinality_statement", "finite_subset_cardinality_predicate_intro", "finite_subset_inclusion_statement", "finite_subset_cardinality_statement"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.Counting.Basic"
+source = "Proofs/Ai/Combinatorics/Counting/Basic/source.npa"
+certificate = "Proofs/Ai/Combinatorics/Counting/Basic/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/Counting/Basic/meta.json"
+replay = "Proofs/Ai/Combinatorics/Counting/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:9c43747acd4693ab15053e15db71a62effbe675ab5ae2d14520b39183b443d9c"
+certificate_file_sha256 = "sha256:3dce3ead75e73be89639454da784874280968f2db7620c87961ab65a1832e5bf"
+export_hash = "sha256:f9d9c910dfda654c53c3f960c50985d1629e7b7afbf432637cd3759c6ca1c5d0"
+axiom_report_hash = "sha256:cfc4820ade7f2e616a457fae1ce09d44214041e2915049b51363509ef4e4a201"
+certificate_hash = "sha256:3251a008ef4376ded0270eff50794e6e88dddf64a9019a14c931f3fefb08240d"
+imports = ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality"]
+definitions = ["FiniteCardinalLePredicate", "FiniteCardinalLtPredicate", "InjectiveFiniteComparisonPredicate", "SurjectiveFiniteComparisonPredicate", "WeakPigeonholePredicate", "StrongPigeonholePredicate", "FiniteDisjointUnionCardinalityPredicate", "FiniteProductCardinalityPredicate", "FiniteFiberCountingPredicate"]
+theorems = ["finite_cardinal_le_predicate_intro", "finite_cardinal_le_statement", "finite_cardinal_lt_predicate_intro", "finite_cardinal_lt_statement", "finite_cardinal_lt_source_nonempty_statement", "finite_cardinal_lt_target_nonempty_statement", "injective_finite_comparison_predicate_intro", "injective_finite_cardinal_le_statement", "injective_finite_comparison_injective_statement", "injective_map_finite_comparison_predicate_intro", "injective_map_finite_cardinal_le_statement", "surjective_finite_comparison_predicate_intro", "surjective_finite_cardinal_ge_statement", "surjective_finite_comparison_surjective_statement", "surjective_map_finite_comparison_predicate_intro", "surjective_map_finite_cardinal_ge_statement", "weak_pigeonhole_predicate_intro", "weak_pigeonhole_collision_statement", "weak_pigeonhole_decidable_equality_requirement_statement", "weak_pigeonhole_source_nonempty_statement", "weak_pigeonhole_target_nonempty_statement", "strong_pigeonhole_predicate_intro", "strong_pigeonhole_overfull_fiber_statement", "strong_pigeonhole_decidable_equality_requirement_statement", "strong_pigeonhole_source_nonempty_statement", "strong_pigeonhole_target_nonempty_statement", "finite_disjoint_union_cardinality_predicate_intro", "finite_disjoint_union_cardinality_statement", "finite_disjoint_union_disjointness_statement", "finite_sum_rule_statement", "finite_product_cardinality_predicate_intro", "finite_product_cardinality_statement", "finite_product_rule_statement", "finite_product_pair_representation_statement", "finite_product_coordinate_evidence_statement", "finite_fiber_counting_predicate_intro", "finite_fiber_counting_statement", "finite_fiber_partition_statement", "finite_fiber_finite_statement", "finite_fiber_cardinality_statement"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.Permutation"
+source = "Proofs/Ai/Combinatorics/Permutation/source.npa"
+certificate = "Proofs/Ai/Combinatorics/Permutation/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/Permutation/meta.json"
+replay = "Proofs/Ai/Combinatorics/Permutation/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:ae77fa6dc7781edcd79f3c97999742c100a9ef809636a153f702863809da5e9f"
+certificate_file_sha256 = "sha256:92a5af8f1226a25774aba1c2bd29c3111d1b037a71e0dac5c9f242d243be549e"
+export_hash = "sha256:41ddfe0f804ea9c1a1fc6cfe0138c3330de57cdd14c1af208bff23d947c21fb6"
+axiom_report_hash = "sha256:c719d1be9850d3cfc41fde0acfd7e6f6416da3180df18594cfb1c789cf73c02f"
+certificate_hash = "sha256:ba73f6f4a037bf08ac8cf5c8b053aa134253f1fd074904d996dd2e5a716b1bd0"
+imports = ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic"]
+definitions = ["FactorialCountingPredicate", "FallingFactorialCountingPredicate", "FiniteFamilyPermutationPredicate", "PermutationCountingPredicate", "PartialPermutationCountingPredicate"]
+theorems = ["factorial_counting_predicate_intro", "factorial_counting_statement", "factorial_arithmetic_prerequisite_statement", "falling_factorial_counting_predicate_intro", "falling_factorial_counting_statement", "falling_factorial_bounds_prerequisite_statement", "falling_factorial_arithmetic_prerequisite_statement", "finite_family_permutation_predicate_intro", "finite_family_permutation_finite_statement", "finite_family_permutation_bijection_statement", "permutation_counting_predicate_intro", "permutation_counting_statement", "permutation_counting_factorial_arithmetic_prerequisite_statement", "permutation_objects_are_ordinary_structure_statement", "partial_permutation_counting_predicate_intro", "partial_permutation_counting_statement", "partial_permutation_falling_factorial_arithmetic_prerequisite_statement"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.Binomial"
+source = "Proofs/Ai/Combinatorics/Binomial/source.npa"
+certificate = "Proofs/Ai/Combinatorics/Binomial/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/Binomial/meta.json"
+replay = "Proofs/Ai/Combinatorics/Binomial/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d3b9b32cc164df7e000dbb18353bf1834ef6b1781a3a0f67ab3c966e9fc1ed06"
+certificate_file_sha256 = "sha256:dc41d058d7e1daff1c6f5c3df888a8fbacf2a93f3b29d685ac9d2f6c113d14fc"
+export_hash = "sha256:1cd5cd55752d01d1d19b5c534d8cdcdf444bc656004cf04c39401dbbbb6e9395"
+axiom_report_hash = "sha256:af02cf033b6058c5d3da7036790516fe23150484337fd5975580bfb267c40ed8"
+certificate_hash = "sha256:1693c4c88b3c05e456ecd35ecb5783b936762bc6464d265fe6461a6a84fd724f"
+imports = ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Permutation"]
+definitions = ["KSubsetPredicate", "CombinationCountingPredicate", "BinomialCoefficientPredicate", "VandermondeIdentityPredicate", "MultinomialCoefficientPredicate"]
+theorems = ["k_subset_predicate_intro", "k_subset_structure_statement", "k_subset_finite_statement", "k_subset_cardinality_evidence_statement", "combination_counting_predicate_intro", "combination_k_subset_cardinality_statement", "combination_counting_statement", "combination_falling_factorial_prerequisite_statement", "combination_factorial_prerequisite_statement", "combination_binomial_arithmetic_prerequisite_statement", "binomial_coefficient_predicate_intro", "binomial_arithmetic_carrier_statement", "binomial_symmetry_statement", "binomial_pascal_recurrence_statement", "binomial_pascal_index_prerequisite_statement", "binomial_subset_counting_statement", "vandermonde_identity_predicate_intro", "vandermonde_arithmetic_carrier_statement", "vandermonde_range_statement", "vandermonde_summation_assumption_statement", "vandermonde_identity_statement", "multinomial_coefficient_predicate_intro", "multinomial_partition_finite_statement", "multinomial_partition_size_statement", "multinomial_arithmetic_prerequisite_statement", "multinomial_counting_statement"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.InclusionExclusion"
+source = "Proofs/Ai/Combinatorics/InclusionExclusion/source.npa"
+certificate = "Proofs/Ai/Combinatorics/InclusionExclusion/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/InclusionExclusion/meta.json"
+replay = "Proofs/Ai/Combinatorics/InclusionExclusion/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:258e2cbd7b98d16de354a2f106409eba37cda1be0ee1b2097a30aff023283008"
+certificate_file_sha256 = "sha256:0ede174f71d8e421a9d634f12a5d20811bac9d094df34eae14cd7db3d8f53f88"
+export_hash = "sha256:960caa6a5c7a9c062ea3de981059a8074359bb24ca6bce333ef925113c8c939c"
+axiom_report_hash = "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3"
+certificate_hash = "sha256:9da2f39408c994d3e1a435441936a0e9ca92e8aff3a1e30711b9f637e11cd1be"
+imports = ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Binomial"]
+definitions = ["FiniteSetFamilyPredicate", "IntersectionIndexingPredicate", "AlternatingSignIndexPredicate", "PairwiseInclusionExclusionPrerequisites", "FiniteInclusionExclusionPrerequisites"]
+theorems = ["finite_set_family_predicate_intro", "finite_set_family_finite_statement", "finite_set_family_each_set_finite_statement", "intersection_indexing_predicate_intro", "intersection_definition_statement", "alternating_sign_index_predicate_intro", "alternating_sign_statement", "signed_term_statement", "pairwise_inclusion_exclusion_prerequisites_intro", "pairwise_inclusion_exclusion_statement", "pairwise_union_upper_bound_alias_statement", "finite_inclusion_exclusion_prerequisites_intro", "finite_inclusion_exclusion_statement", "finite_union_upper_bound_from_inclusion_exclusion_statement"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.SetSystem"
+source = "Proofs/Ai/Combinatorics/SetSystem/source.npa"
+certificate = "Proofs/Ai/Combinatorics/SetSystem/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/SetSystem/meta.json"
+replay = "Proofs/Ai/Combinatorics/SetSystem/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:cc394e92877cb710d7c673d18eb9569795097fd23125f048cb8eb9b4440565e3"
+certificate_file_sha256 = "sha256:95688c5db85a6acc3d7a0a5730e9d78ef513f2bfec0037b21630160055fc2441"
+export_hash = "sha256:28b2eb8ddf6414c993c7f6c8e49245ac55cdac80a295317bd5bacd7f5f613019"
+axiom_report_hash = "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3"
+certificate_hash = "sha256:c2bc78f77a46148c364b43026f8987b98c37d66ac5dbda8b63d26e806ec8dc46"
+imports = ["Proofs.Ai.Combinatorics.InclusionExclusion"]
+definitions = ["FiniteSetSystemPredicate", "CoveringPackingPredicate", "IntersectionFamilyPredicate"]
+theorems = ["finite_set_system_predicate_intro", "finite_set_system_family_statement", "finite_set_system_each_set_finite_statement", "finite_set_system_no_hypergraph_duplication_statement", "covering_packing_predicate_intro", "covering_subfamily_statement", "packing_subfamily_statement", "covering_number_bound_statement", "packing_number_bound_statement", "cover_packing_disjointness_statement", "intersection_family_predicate_intro", "intersection_family_pairwise_statement", "intersection_family_closure_statement", "bonferroni_union_upper_bound_statement", "probability_bonferroni_alias_boundary_statement", "hypergraph_bridge_from_set_system_statement"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.NumberTheory.Inventory"
 source = "Proofs/Ai/NumberTheory/Inventory/source.npa"
 certificate = "Proofs/Ai/NumberTheory/Inventory/certificate.npcert"
@@ -507,6 +633,42 @@ theorems = ["category_definition_intro", "functor_definition_intro", "functor_pr
 axioms = ["Eq.rec"]
 
 [[proof_modules]]
+module = "Proofs.Ai.Category.ModelCategory"
+source = "Proofs/Ai/Category/ModelCategory/source.npa"
+certificate = "Proofs/Ai/Category/ModelCategory/certificate.npcert"
+meta = "Proofs/Ai/Category/ModelCategory/meta.json"
+replay = "Proofs/Ai/Category/ModelCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4327d2411725d1a0b4bad403dbd4a9914d2d042bfdb6f2c40cc48d22af0cc2ed"
+certificate_file_sha256 = "sha256:f20f8e9ef7d499b4c5f0f7c19b0b4ef230774c65fb0891259d43fb6303f389f0"
+export_hash = "sha256:3e3258bc5e1e940c697498d3c50f8c249c94a4177513b3a667c05c279a3c8eea"
+axiom_report_hash = "sha256:55932adb6d068a32ac76b43afee2b808d61b89bb36b85b1805fe77d82a1028b3"
+certificate_hash = "sha256:531497823a48e12162c1a01d7288ed864afbde72a6afaf1fbf394d87c2b70a5c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
+definitions = ["ModelCategoryLawArgs"]
+theorems = ["model_category_definition_intro", "model_category_has_category_laws", "model_category_complete", "model_category_cocomplete", "model_category_cofibration_id", "model_category_fibration_id", "model_category_weak_equivalence_id", "model_category_weak_equivalence_comp", "model_category_weak_equivalence_two_of_three_left", "model_category_weak_equivalence_two_of_three_right", "model_category_trivial_cofibration_lifting", "model_category_trivial_fibration_lifting", "model_category_cofibration_trivial_fibration_factorization", "model_category_trivial_cofibration_fibration_factorization", "model_category", "model_categories"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Category.MonoidalModelCategory"
+source = "Proofs/Ai/Category/MonoidalModelCategory/source.npa"
+certificate = "Proofs/Ai/Category/MonoidalModelCategory/certificate.npcert"
+meta = "Proofs/Ai/Category/MonoidalModelCategory/meta.json"
+replay = "Proofs/Ai/Category/MonoidalModelCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:7bd2cce7296affadce0b5f6770459f4bb74930fb06493f0db063514c9f6ccc74"
+certificate_file_sha256 = "sha256:ac43f2745fe1b0be7d15a0d70c02da7f74ce5db262c5c2eac5c3d080ff0a083a"
+export_hash = "sha256:1f8b9cbda801c43a641a5a776ebda84c39af26602812fdd4a8ec7c3a6ddf50c9"
+axiom_report_hash = "sha256:b1c966ff112a4d21e88c23443f7594255da9b1129a7d1cbea048b57e695c9f2e"
+certificate_hash = "sha256:ae93a23208de70b956489546c70d9f9067cbf4c07b77cb859c68de10f670a4fb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical", "Proofs.Ai.Category.ModelCategory"]
+definitions = ["MonoidalModelCategoryLawArgs"]
+theorems = ["monoidal_model_category_definition_intro", "monoidal_model_category_has_model_category", "monoidal_model_category_tensor_id", "monoidal_model_category_tensor_comp", "monoidal_model_category_left_unit", "monoidal_model_category_right_unit", "monoidal_model_category_associativity", "monoidal_model_category_closed", "monoidal_model_category_pushout_product_cofibration", "monoidal_model_category_pushout_product_left_trivial", "monoidal_model_category_pushout_product_right_trivial", "monoidal_model_category_unit_replacement_weak_equivalence", "monoidal_model_category_unit_axiom", "monoidal_model_category", "monoidal_model_categories"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Category.Infinity.SimplicialSet"
 source = "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa"
 certificate = "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert"
@@ -522,6 +684,24 @@ certificate_hash = "sha256:2d8c116c1d54d6400e59e253e54e06d6626d754439a356c0b132c
 imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
 definitions = ["SimplexCategoryLawArgs", "SimplicialSetLawArgs", "KanComplexLawArgs", "QuasicategoryLawArgs", "HomotopyCategoryLawArgs", "InfinityYonedaLawArgs", "InfinityKanExtensionLawArgs", "PresentableInfinityCategoryLawArgs", "InfinityAdjointFunctorTheoremLawArgs", "PresheafInfinityCategoryLawArgs", "AccessibleLocalizationLawArgs", "LeftExactLocalizationLawArgs", "SheavesOfSpacesLawArgs", "HypercoverDescentLawArgs", "InfinityToposLawArgs", "TruncationConnectivityLawArgs", "PostnikovTowerLawArgs", "CohomologyInInfinityTopoiLawArgs", "MappingSpaceLawArgs", "JoyalModelStructureLawArgs", "CartesianFibrationLawArgs", "CoCartesianFibrationLawArgs", "StraighteningUnstraighteningLawArgs", "NerveConstructionLawArgs"]
 theorems = ["simplex_category_definition_intro", "simplex_category_has_category_laws", "simplicial_set_definition_intro", "simplicial_set_is_presheaf_on_simplex_category", "simplicial_set_restrict_identity", "simplicial_set_restrict_composition", "kan_complex_definition_intro", "kan_complex_is_simplicial_set", "kan_complex_horn_filler", "kan_complex", "quasicategory_definition_intro", "quasicategory_is_simplicial_set", "quasicategory_inner_horn_filler", "quasicategory", "homotopy_category_definition_intro", "homotopy_category_has_category_laws", "homotopy_category", "infinity_yoneda_definition_intro", "infinity_yoneda_lemma", "infinity_kan_extension_definition_intro", "infinity_left_kan_extension", "infinity_right_kan_extension", "infinity_kan_extension", "presentable_infinity_category_definition_intro", "presentable_infinity_category_accessible", "presentable_infinity_category_cocomplete", "presentable_infinity_category", "infinity_adjoint_functor_theorem_definition_intro", "infinity_adjoint_functor_theorem", "presheaf_infinity_category_definition_intro", "presheaf_infinity_category", "accessible_localization_definition_intro", "accessible_localization", "left_exact_localization_definition_intro", "left_exact_localization", "sheaves_of_spaces_definition_intro", "sheaves_of_spaces", "hypercover_descent_definition_intro", "hypercover_descent", "infinity_topos_definition_intro", "infinity_topos_definition", "infinity_giraud_theorem", "truncation_connectivity_definition_intro", "truncation_and_connectivity", "postnikov_tower_definition_intro", "postnikov_tower", "cohomology_in_infinity_topoi_definition_intro", "cohomology_in_infinity_topoi", "mapping_space_definition_intro", "mapping_space_is_simplicial_set", "mapping_space_is_kan_complex", "mapping_space", "joyal_model_structure_definition_intro", "joyal_model_structure_has_model_category_laws", "joyal_model_structure_cofibrations_are_monomorphisms", "joyal_model_structure_monomorphisms_are_cofibrations", "joyal_model_structure_fibrant_objects_are_quasicategories", "joyal_model_structure_quasicategories_are_fibrant", "joyal_model_structure_weak_equivalences_are_categorical", "joyal_model_structure_categorical_equivalences_are_weak", "joyal_model_structure", "cartesian_fibration_definition_intro", "cartesian_fibration_is_simplicial_map", "cartesian_fibration_is_inner_fibration", "cartesian_fibration_lift_exists", "cartesian_fibration_lift_stable", "cartesian_fibration", "cocartesian_fibration_definition_intro", "cocartesian_fibration_is_simplicial_map", "cocartesian_fibration_is_inner_fibration", "cocartesian_fibration_lift_exists", "cocartesian_fibration_lift_stable", "cocartesian_fibration", "straightening_unstraightening_definition_intro", "straightening_maps_cartesian_fibrations_to_functors", "unstraightening_maps_functors_to_cartesian_fibrations", "straightening_unstraightening_cartesian_unit", "straightening_unstraightening_cartesian_counit", "straightening_maps_cocartesian_fibrations_to_functors", "unstraightening_maps_functors_to_cocartesian_fibrations", "straightening_unstraightening_cocartesian_unit", "straightening_unstraightening_cocartesian_counit", "straightening_unstraightening", "nerve_construction_definition_intro", "nerve_construction_is_simplicial_set", "nerve_construction"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Category.Infinity.StableInfinityCategory"
+source = "Proofs/Ai/Category/Infinity/StableInfinityCategory/source.npa"
+certificate = "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert"
+meta = "Proofs/Ai/Category/Infinity/StableInfinityCategory/meta.json"
+replay = "Proofs/Ai/Category/Infinity/StableInfinityCategory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:32a6a11609dd884f3e247eb43462452965ce50edd8c85a4b40e7a7e542faeb32"
+certificate_file_sha256 = "sha256:529267fd93a934e0b64f9c59ad3aeb07925487f3a3e5c688187c3302c7a829c6"
+export_hash = "sha256:1067a63d8a26eceff0598c2f5a96c5f5c77da3e9939f8218cf6521f0bfc99ab3"
+axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+certificate_hash = "sha256:c5492d7bad9e71d53dd654b568e2512d974e73d4f783baac0428f0374126cb30"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Category.Classical"]
+definitions = ["StableInfinityCategoryLawArgs"]
+theorems = ["stable_infinity_category_definition_intro", "stable_infinity_category_has_category_laws", "stable_infinity_category_pointed", "stable_infinity_category_has_finite_limits", "stable_infinity_category_has_finite_colimits", "stable_infinity_category_pullback_squares_are_pushout", "stable_infinity_category_pushout_squares_are_pullback", "stable_infinity_category_suspension_loop_equivalence", "stable_infinity_category_fiber_cofiber_sequence", "stable_infinity_category_exact_triangles", "stable_infinity_category", "stable_infinity_categories"]
 axioms = []
 
 [[proof_modules]]
@@ -1301,6 +1481,1428 @@ theorems = ["carmichael_function_definition_separate_from_phi", "carmichael_expo
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Algorithm"
+source = "Proofs/Ai/NumberTheory/Algorithm/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Algorithm/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Algorithm/meta.json"
+replay = "Proofs/Ai/NumberTheory/Algorithm/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:52fc69d7a73eb4fabdd4309e66435bcc384bae8c571dba7338073eab44d3884b"
+certificate_file_sha256 = "sha256:267aaedf2d1e1c434970fec6a0e4dda32b046e9cea87d4c90850324e067e121c"
+export_hash = "sha256:3da02a1e3177a8bf4d5aae245bb1cf3242daf1596077923f64589f3de9250b26"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:aa0443b22229e3d93ad62e719904c64de98af1bd3b42ec9ac8399119c5f9b399"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.EuclideanAlgorithm", "Proofs.Ai.NumberTheory.ChineseRemainder", "Proofs.Ai.NumberTheory.FermatEulerWilson", "Proofs.Ai.NumberTheory.Carmichael"]
+definitions = ["AlgorithmData"]
+theorems = ["algorithm_data_intro", "euclid_algorithm_correctness_from_named_descent_and_remainder", "extended_euclid_correctness_from_gcd_and_bezout_chain", "constructive_crt_correctness_from_residue_checks", "repeated_squaring_correctness_from_invariant_chain", "algorithm_complexity_requires_cost_model_after_correctness", "algorithm_correctness_separated_from_mathematical_existence", "external_solver_or_runtime_oracle_not_trusted"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.PrimalityTest"
+source = "Proofs/Ai/NumberTheory/PrimalityTest/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PrimalityTest/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PrimalityTest/meta.json"
+replay = "Proofs/Ai/NumberTheory/PrimalityTest/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:c41f4ec693d9c08cb7c3902aa2c3058d3536e159444a748cf4557665b1d28592"
+certificate_file_sha256 = "sha256:247718d1dabce8b3bdc45d1df5c7c5e018b75e3d319ed5d1867ab3f28050399c"
+export_hash = "sha256:458cdaaba93deaebb8842691fd41a6652b747b74e0564bf2b57b90b585407ac1"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:daff4987c5090a37dafd0ad1b1d7f8f9ebc56f1988b4ab934f0179e1559eb08b"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.FermatEulerWilson", "Proofs.Ai.NumberTheory.Carmichael", "Proofs.Ai.NumberTheory.Algorithm"]
+definitions = []
+theorems = ["fermat_pseudoprime_surface_from_fermat_congruence", "carmichael_number_korselt_criterion_surface", "fermat_primality_test_accepts_prime_moduli", "miller_rabin_witness_rejects_composite_surface", "fermat_test_correctness_from_congruence_chain", "miller_rabin_probability_boundary_from_witness_chain", "aks_primality_correctness_from_polynomial_checks", "primality_complexity_interface_requires_cost_model", "primality_hardness_assumption_not_derived_from_test_correctness", "primality_tests_no_runtime_randomness_trusted_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.FactoringAlgorithm"
+source = "Proofs/Ai/NumberTheory/FactoringAlgorithm/source.npa"
+certificate = "Proofs/Ai/NumberTheory/FactoringAlgorithm/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/FactoringAlgorithm/meta.json"
+replay = "Proofs/Ai/NumberTheory/FactoringAlgorithm/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:fb6570e3a0748d9675c86989c7b4308a33298310e1e04242d9ff156f450a585b"
+certificate_file_sha256 = "sha256:aad4913663e011879c49a7d6fce9017e105bbb89c400ac7e9c4b3fc288801098"
+export_hash = "sha256:75c939681a3c5beab86aaa0feaad8bf8bd8ef2d8214cebf63c3ed56b520f8100"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:ce00a92ac784a8a8be390867ca6c35451fc730103e171b152396d29db44c5dac"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Algorithm", "Proofs.Ai.NumberTheory.PrimalityTest", "Proofs.Ai.NumberTheory.Factorization", "Proofs.Ai.NumberTheory.Sieve"]
+definitions = []
+theorems = ["pollard_rho_correctness_from_cycle_gcd_chain", "quadratic_sieve_correctness_from_relation_matrix_chain", "number_field_sieve_correctness_from_norm_relation_chain", "pollard_rho_probability_requires_randomness_assumption", "factoring_complexity_interface_requires_cost_model", "factoring_hardness_assumption_not_derived_from_algorithm_correctness"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Rsa"
+source = "Proofs/Ai/NumberTheory/Rsa/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Rsa/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Rsa/meta.json"
+replay = "Proofs/Ai/NumberTheory/Rsa/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:1b45c2cb3edaeaecd1386dc7347e7bec0d19d1b636ce3003403d0673d7b473ec"
+certificate_file_sha256 = "sha256:bc73902d39ba3d1bcc0fb07c8991aa634c96ac178879526263c8efac0db76a63"
+export_hash = "sha256:da5a2c2c6049b93fa7b7e2aa1e870916a44cfa12b88b2a1858f33002e891086d"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:223cd56a6c93edd8b8d4cb76c140a9c4d0b2bef2fb5ccc44333d90c801216314"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Carmichael", "Proofs.Ai.NumberTheory.PrimalityTest"]
+definitions = []
+theorems = ["rsa_modulus_factorization_and_coprimality_hypotheses", "rsa_correctness_from_carmichael_key_congruence", "rsa_key_congruence_uses_carmichael_lambda", "rsa_correctness_no_security_claim_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.FiniteFieldApplications"
+source = "Proofs/Ai/NumberTheory/FiniteFieldApplications/source.npa"
+certificate = "Proofs/Ai/NumberTheory/FiniteFieldApplications/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/FiniteFieldApplications/meta.json"
+replay = "Proofs/Ai/NumberTheory/FiniteFieldApplications/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e7a0733abd8928c845bcfc036d03d0ad94804bd6f512805febf6f6560e16da6b"
+certificate_file_sha256 = "sha256:a5b1c20fecdbc15e6039b222daf6a4f7f8611c1b446badccf6f3424cb135756c"
+export_hash = "sha256:a034ba9aefddb8af33672d8126be55f1c5a3c5d209cfbeb08e351a75c7ddd25b"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:3709e768b97d20b38378fc7dc162c6e7fb63fa74be1fe9a9b8dac02440bf5bc6"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractFiniteField"]
+definitions = []
+theorems = ["finite_field_core_frobenius_cardinality_root_application_chain", "finite_field_ownership_field_theory_route_for_applications", "finite_field_existence_uniqueness_cards_owned_by_field_theory", "finite_field_multiplicative_cyclicity_card_for_primitive_roots", "finite_field_subfield_classification_frobenius_card", "finite_field_gauss_sum_application_imports_finite_field_facts"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.PrimitiveRoot"
+source = "Proofs/Ai/NumberTheory/PrimitiveRoot/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PrimitiveRoot/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PrimitiveRoot/meta.json"
+replay = "Proofs/Ai/NumberTheory/PrimitiveRoot/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:6f93d0c863d840f69d66f90f4c303fe8da561daf9802895346f87398ea0e6e79"
+certificate_file_sha256 = "sha256:7d3050da7abd25d5d25586fae877c62437ce6856de217005b65f08c400eb4b8f"
+export_hash = "sha256:a54b0447b845742e22c5ea8f2d7b6c9bf6ec7aaf7422e424ba34b2beb1f4ea4e"
+axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
+certificate_hash = "sha256:d61ff1e8220e28db36577810e93fb53fb59aea15ab3b79424cf6e7cbaea38873"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.ChineseRemainder", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.FiniteFieldApplications"]
+definitions = []
+theorems = ["element_order_power_congruence_surface", "element_order_minimal_positive_power_surface", "primitive_root_definition_generator_surface", "residue_unit_group_generator_depends_on_modular_group_surface", "abstract_cyclic_group_generator_count_formula_surface", "primitive_root_exists_mod_odd_prime_surface", "primitive_root_exists_mod_prime_power_surface", "primitive_root_classification_chinese_remainder_route_surface", "primitive_root_classification_two_and_odd_prime_power_cases_surface", "primitive_root_classification_no_backward_unit_group_dependency_boundary", "primitive_root_no_existence_assumption_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Character"
+source = "Proofs/Ai/NumberTheory/Character/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Character/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Character/meta.json"
+replay = "Proofs/Ai/NumberTheory/Character/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f00ec40a828c7eb203d959bba5a2eac7f133449e97e5fb0ae771bded2c185657"
+certificate_file_sha256 = "sha256:99c1d7c2565c9d2bc23b45d024e767b7b4461905cf9aa0372cff77f1dcacfb50"
+export_hash = "sha256:700ac82e62030aa205d34d47f61aa8303c9677912108fa0f0b154ff5ee333976"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:742f40927d91a86310411a66df69569d627dd689fa1f9274d0a8ebb56c2b41b0"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.PrimitiveRoot"]
+definitions = []
+theorems = ["dirichlet_character_definition_surface", "dirichlet_character_group_interface_surface", "character_orthogonality_relation_surface", "character_orthogonality_no_analytic_l_function_boundary", "discrete_log_statement_surface", "discrete_log_algorithm_not_trusted_solver_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Cryptography.NumberTheory"
+source = "Proofs/Ai/Cryptography/NumberTheory/source.npa"
+certificate = "Proofs/Ai/Cryptography/NumberTheory/certificate.npcert"
+meta = "Proofs/Ai/Cryptography/NumberTheory/meta.json"
+replay = "Proofs/Ai/Cryptography/NumberTheory/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:474fa7cddb692a9371d4bbee45769814a344e1938a52d6ad0501d63eddcbff31"
+certificate_file_sha256 = "sha256:ce999acbaa72ca06443a1befa9552e79e07b1d71751ffb89f57867816e3624c4"
+export_hash = "sha256:36bd2ceb4107d3d20b89adf7129d4bd0e9980552908587da5805b5d6537f4cd6"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:d6334b8afddb9c65790a9925254c37715f88fa3679268916c4589a99418ab1ef"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Algorithm", "Proofs.Ai.NumberTheory.PrimalityTest", "Proofs.Ai.NumberTheory.FactoringAlgorithm", "Proofs.Ai.NumberTheory.Rsa", "Proofs.Ai.NumberTheory.Character"]
+definitions = []
+theorems = ["diffie_hellman_shared_secret_correctness_from_group_keygen_chain", "discrete_log_hardness_boundary_from_statement_and_algorithm_relation", "rsa_crypto_correctness_reuses_number_theory_roundtrip", "lll_reduction_correctness_from_lattice_basis_chain", "coppersmith_small_root_surface_from_lll_reduction", "number_theory_crypto_hardness_assumptions_not_l2_exports"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.GaussSum"
+source = "Proofs/Ai/NumberTheory/GaussSum/source.npa"
+certificate = "Proofs/Ai/NumberTheory/GaussSum/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/GaussSum/meta.json"
+replay = "Proofs/Ai/NumberTheory/GaussSum/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d1249e1902c8f7dce6dbe6f39fc8b3e879f8166786c4595b93023555c5b8d783"
+certificate_file_sha256 = "sha256:cdaddf16d53261c9fecf900c24cb2ccf5359a1ab74102530e008cce8b4eb6550"
+export_hash = "sha256:0eeaee22ba2e3fee8e6f2e43ccaef0f81e2aeef6221dba7dd55a3cce562cf2bb"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:eca3b9e76e4814edfae1169b6b06b13c892a94d6e2f9a44f0367ccedcf639444"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.FiniteFieldApplications"]
+definitions = []
+theorems = ["gauss_sum_definition_coefficient_ring_surface", "gauss_sum_basic_identity_surface", "gauss_sum_orthogonality_bridge_surface", "gauss_sum_no_analytic_l_function_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ExponentialSum"
+source = "Proofs/Ai/NumberTheory/ExponentialSum/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ExponentialSum/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ExponentialSum/meta.json"
+replay = "Proofs/Ai/NumberTheory/ExponentialSum/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:559fb5740322ebb8d212083a73d7839ec8d1a2cca41d0fd5342b514c94a1d314"
+certificate_file_sha256 = "sha256:b1dd40ff73e060c58756d18b3807c641701efd7cdae53085aea6fca35e422152"
+export_hash = "sha256:9ab59821ff15e8f44aadc6a08e9b1b60dbeeca5f5adfc5c97ff3664adf570fb8"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:c5bca9f34cd54ea1f9d18a2e6cce08ee5b921e205d4a34396d42d1b0e9834137"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.FiniteFieldApplications", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.GaussSum"]
+definitions = []
+theorems = ["ExponentialSum_gauss_sum_finite_field_character_chain", "HasseDavenport_jacobi_sum_dependency_chain", "Stickelberger_character_field_size_valuation_chain", "Chevalley_warning_field_size_degree_nonvanishing_surface", "AxKatz_degree_field_size_refinement_from_Chevalley", "Weil_ExponentialSum_estimate_L1_boundary", "LangWeil_L1_requires_algebraic_geometry_prerequisites", "ExponentialSum_no_finite_field_core_duplication_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.QuadraticResidue"
+source = "Proofs/Ai/NumberTheory/QuadraticResidue/source.npa"
+certificate = "Proofs/Ai/NumberTheory/QuadraticResidue/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/QuadraticResidue/meta.json"
+replay = "Proofs/Ai/NumberTheory/QuadraticResidue/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4ced7ade278929b6aa8596c115f921dd854d94e2d5b4efc1270582d911338941"
+certificate_file_sha256 = "sha256:6e937a19793d54688d02bd6d802c3a7340818be72ec76523e65e7dcae04c4a43"
+export_hash = "sha256:dc7d07d1016c05b3a64c56ca5c01e1b3d5e8c575c73c01ea95cd4b28c3f34e5c"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:32279a0e22e58018b87767c7e9b6976c5d81ae2be9791873c698769a8e5e9e78"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.Congruence", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.PrimitiveRoot"]
+definitions = []
+theorems = ["quadratic_residue_definition_surface", "quadratic_nonresidue_definition_surface", "quadratic_residue_count_odd_prime_surface", "quadratic_residue_cyclic_square_class_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Legendre"
+source = "Proofs/Ai/NumberTheory/Legendre/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Legendre/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Legendre/meta.json"
+replay = "Proofs/Ai/NumberTheory/Legendre/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0aaed0f57e502c13ad5b95e71eb24fd6306efeafa3edac098637d3de487b69c6"
+certificate_file_sha256 = "sha256:aeea915c39bf29556831c97a7853aa7ee6c58a5034dc3d9f91eef5d107783078"
+export_hash = "sha256:144f77f73cbf504b931776bd9a0090531c4f25c58eec9858a368bbc8d99412d3"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:5ca5e5ea99302ebdb8ed2259ff624231d3259a37595a542038e01e2e6f757807"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.QuadraticResidue"]
+definitions = []
+theorems = ["legendre_symbol_definition_surface", "legendre_symbol_multiplicativity_surface", "legendre_euler_criterion_finite_cyclic_group_surface", "legendre_quadratic_residue_count_odd_prime_surface", "legendre_jacobi_api_separation_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.QuadraticReciprocity"
+source = "Proofs/Ai/NumberTheory/QuadraticReciprocity/source.npa"
+certificate = "Proofs/Ai/NumberTheory/QuadraticReciprocity/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/QuadraticReciprocity/meta.json"
+replay = "Proofs/Ai/NumberTheory/QuadraticReciprocity/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:490fd304ce549f4d006b34604e6ac27e417b09bdd99497f53e3ae03c54688c1c"
+certificate_file_sha256 = "sha256:bc28c33fdaadef0054d526b44ad4a73d9cdf5e1b101e2b79b753d6cd9a0376f8"
+export_hash = "sha256:b1938a6a38107dff18a493fa81cc9a68dc5c50a949f60cea7e7b54df0918c3fa"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:b1ffb6a78854c85caeb8da86285378b4d58811239c76dd812521020ef136a749"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.QuadraticResidue", "Proofs.Ai.NumberTheory.Legendre"]
+definitions = []
+theorems = ["gauss_lemma_statement_surface", "supplementary_law_minus_one_surface", "supplementary_law_two_surface", "quadratic_reciprocity_distinct_odd_primes_surface", "quadratic_reciprocity_first_route_recorded_boundary", "quadratic_reciprocity_no_backward_primitive_character_dependency_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Jacobi"
+source = "Proofs/Ai/NumberTheory/Jacobi/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Jacobi/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Jacobi/meta.json"
+replay = "Proofs/Ai/NumberTheory/Jacobi/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4a694431f38129f28a8a2e8d759bde9e91888e0ca71cc7ef64b778295b4c85f7"
+certificate_file_sha256 = "sha256:4a26f27977f1d4c5b47ddf68c7154c38eb9c97c7a7b644851a7cc88cee71c4e4"
+export_hash = "sha256:6d71facf8a714f569a2c06d90e43715a1cf1198edf9f62d42ba7df4f24b7c380"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:3f3fb54987f4ddb582d7d4761401d354edc45d3f9fe367beb0b1d371d68190ec"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.PrimalityTest", "Proofs.Ai.NumberTheory.QuadraticResidue", "Proofs.Ai.NumberTheory.Legendre", "Proofs.Ai.NumberTheory.QuadraticReciprocity"]
+definitions = []
+theorems = ["jacobi_symbol_definition_surface", "jacobi_symbol_multiplicativity_surface", "jacobi_legendre_not_interchangeable_boundary", "jacobi_symbol_not_quadratic_residuosity_surface", "solovay_strassen_primality_test_interface_surface", "solovay_strassen_no_deterministic_security_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ArithmeticFunction"
+source = "Proofs/Ai/NumberTheory/ArithmeticFunction/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ArithmeticFunction/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ArithmeticFunction/meta.json"
+replay = "Proofs/Ai/NumberTheory/ArithmeticFunction/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:82ee620e06ccb35f0953b4b3ac36ee6a02526f051eaadc89ccd126f652827625"
+certificate_file_sha256 = "sha256:9d2eb8f1e0ac694c07489cea3dffa7aec80a98afe58299de758f9abc11ec7e4b"
+export_hash = "sha256:9761f32f066b8c61464cebe8d4b0ffc94c904236ab086c9eb631657e80bc3049"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:91de2eb542d0eb5ddf4c07272c29a77f2a0d5a0710c0d7536cc44bb1c176173d"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Factorization", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.Carmichael"]
+definitions = []
+theorems = ["arithmetic_function_family_definition_surface", "divisor_sum_finite_support_evidence_surface", "multiplicative_function_coprime_surface", "completely_multiplicative_function_surface", "divisor_count_formula_from_prime_factorization_surface", "divisor_sigma_formula_from_prime_factorization_surface", "mobius_liouville_von_mangoldt_factorization_surface", "euler_phi_carmichael_factorization_interfaces", "arithmetic_function_no_dirichlet_series_or_complex_analysis_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.DirichletConvolution"
+source = "Proofs/Ai/NumberTheory/DirichletConvolution/source.npa"
+certificate = "Proofs/Ai/NumberTheory/DirichletConvolution/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/DirichletConvolution/meta.json"
+replay = "Proofs/Ai/NumberTheory/DirichletConvolution/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:96e12e60bfaa2a76d6b49f908e24afef0feb4a3eaf8c9ba0cb98c639ec33d2b5"
+certificate_file_sha256 = "sha256:a6870f95a7dd170690326e4f3519bf05885ddee7a23cc87d4e0b7fdac985b24e"
+export_hash = "sha256:d158c4392e64c878b8914e9de6af9c521454e1d725f0222f66140b6604165bfe"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:349a70288d87760d121b84775ff446394a1aa4028b7667409bed3a28a0ec7241"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ArithmeticFunction"]
+definitions = []
+theorems = ["dirichlet_convolution_definition_surface", "dirichlet_convolution_associative_surface", "dirichlet_convolution_commutative_surface", "dirichlet_convolution_identity_surface", "dirichlet_convolution_inverse_interface_surface", "finite_divisor_sum_rearrangement_surface", "dirichlet_convolution_no_mobius_inversion_assumption_boundary", "dirichlet_convolution_no_infinite_series_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Mobius"
+source = "Proofs/Ai/NumberTheory/Mobius/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Mobius/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Mobius/meta.json"
+replay = "Proofs/Ai/NumberTheory/Mobius/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:06de857d3837bc3463fc0f74ed38b6ad09aaf6a706964e9f5ccc531359f0ea5f"
+certificate_file_sha256 = "sha256:4d2e3f944fd91f1f5056e99b82de7acaca3eb9f277d63ec278ea0c94f2811021"
+export_hash = "sha256:bad1cf0db0793f1ffa9691493590e79103e5a6228f1911d50ebdb558509e5169"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:fc74c22ece3f8e3da4f5400184833489e43c5ecd1c85b82412e5a370cfc6c7a0"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ArithmeticFunction", "Proofs.Ai.NumberTheory.DirichletConvolution"]
+definitions = []
+theorems = ["mobius_function_dirichlet_inverse_surface", "mobius_inversion_algebraic_surface", "generalized_mobius_inversion_algebraic_surface", "mobius_inversion_finite_support_requirement_surface", "mobius_inversion_no_analysis_dependency_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.EulerProduct"
+source = "Proofs/Ai/NumberTheory/EulerProduct/source.npa"
+certificate = "Proofs/Ai/NumberTheory/EulerProduct/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/EulerProduct/meta.json"
+replay = "Proofs/Ai/NumberTheory/EulerProduct/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e3dcab17285af2c34e0e8882ec98cc45dbe1e2d187b812c13bd6daf15ae8577f"
+certificate_file_sha256 = "sha256:a9e409261916229d941f471963d99474180d370791ff3b3b2a11c802f65ac18c"
+export_hash = "sha256:68b9a3ed896c637e1ac6c8080127798d6b8b1903811b12f094dbd97ea22bb568"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:ff9abc24606ece7e172d6591c8daf08c4918f83b48b6a0b621cf1dfa45d33913"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ArithmeticFunction", "Proofs.Ai.NumberTheory.DirichletConvolution", "Proofs.Ai.NumberTheory.Mobius"]
+definitions = []
+theorems = ["finite_euler_product_interface_surface", "multiplicative_dirichlet_series_euler_product_interface", "euler_product_convergence_prerequisites_deferred_boundary", "euler_product_zeta_and_dirichlet_l_milestone_interface", "finite_euler_product_separate_from_infinite_product_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ContinuedFraction"
+source = "Proofs/Ai/NumberTheory/ContinuedFraction/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ContinuedFraction/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ContinuedFraction/meta.json"
+replay = "Proofs/Ai/NumberTheory/ContinuedFraction/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d6a65e9c8b8da10feaef24c56e8ed708dc6dcedb2f396f492f40182d4342aff9"
+certificate_file_sha256 = "sha256:89f55506d8ba597f1ba90d9a05e5e191ce1eb72bc0983db0dac794358647080c"
+export_hash = "sha256:d040f0a2ec78305aa57e74e079549fa1327ccc011021d5bd93467f8418228e1c"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:6e10cf97dccb138ece43f3b88cd9e434a1a5d2ac5fd1ab0af90d20d00aadf1cb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.EuclideanDivision"]
+definitions = []
+theorems = ["finite_continued_fraction_interface_surface", "convergent_recurrence_relations_surface", "rational_finite_continued_fraction_expansion_from_euclidean_division", "normalized_finite_continued_fraction_uniqueness_surface", "final_partial_quotient_normalization_convention_explicit", "finite_continued_fraction_no_real_analysis_dependency_boundary", "infinite_continued_fraction_irrational_expansion_interface", "convergent_best_approximation_surface", "infinite_continued_fraction_real_analysis_prerequisites_explicit"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Pell"
+source = "Proofs/Ai/NumberTheory/Pell/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Pell/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Pell/meta.json"
+replay = "Proofs/Ai/NumberTheory/Pell/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:507d6fb4fec001520792c3b14617e308a6694dbf84f277dbc09b4636c2e33efc"
+certificate_file_sha256 = "sha256:ca03ed09489dc7f082e46db0dea7ea44104cda4f7110f147181aa4e2227fe14f"
+export_hash = "sha256:34a461872f7f963289590ea3de7da901a278718ff739ff6d7d370ff7871a0d7a"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:89c5bbe670dc34d615add19168e710f9625fcd0ae080ae0601545f8764bb4703"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ContinuedFraction"]
+definitions = []
+theorems = ["quadratic_irrational_periodic_continued_fraction_interface", "pell_equation_existence_interface_surface", "pell_solution_structure_interface_surface", "pell_fundamental_solution_generation_interface", "pell_real_analysis_prerequisites_explicit_boundary", "pell_interface_not_derived_certificate_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.DiophantineApproximation"
+source = "Proofs/Ai/NumberTheory/DiophantineApproximation/source.npa"
+certificate = "Proofs/Ai/NumberTheory/DiophantineApproximation/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/DiophantineApproximation/meta.json"
+replay = "Proofs/Ai/NumberTheory/DiophantineApproximation/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:146e0f6fd6259cc9f354f7b557f4c96c45e438f5be6369f1124e920e9df565c1"
+certificate_file_sha256 = "sha256:9afb619f4b1eac3b60ef4e2f1a10c432787593a4ec12aee90e831de81469bba6"
+export_hash = "sha256:6c4fbeba7f3514d58dbcd7d9bad309747a0583bdd4f0e0b9487b8dc634d9d0a0"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:2e610e88c61bd97f759862b3576ba039ab7ba4fce0cea01978ea7ef41f9773c2"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ContinuedFraction", "Proofs.Ai.NumberTheory.Pell"]
+definitions = []
+theorems = ["dirichlet_approximation_interface_surface", "simultaneous_dirichlet_approximation_interface_surface", "liouville_roth_schmidt_l1_interface_hierarchy", "khintchine_duffin_schaeffer_metric_measure_interface", "baker_lindemann_weierstrass_transcendence_interface", "geometry_of_numbers_minkowski_interface_surface", "metric_measure_algebraic_dependency_boundary", "advanced_diophantine_approximation_l1_interface_boundary", "transcendence_not_elementary_number_theory_dependency_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Diophantine"
+source = "Proofs/Ai/NumberTheory/Diophantine/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Diophantine/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Diophantine/meta.json"
+replay = "Proofs/Ai/NumberTheory/Diophantine/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:dced9cd0448ff90b1467bbc7cfc818174ecb34961ea8576965a43f5aa996dafd"
+certificate_file_sha256 = "sha256:7bcd6aac99f0f5e8da2063cade9f0c9b1983facca5c1824a1b33725a009d5719"
+export_hash = "sha256:891081612fe73a6e899d6172f16b1997c6f605dd0a4c5edcfbbf6e865d381b41"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:685d93e7e7689440d67ad28b63665a6ce97affe8023232ba73c957110537c6e9"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LinearDiophantine", "Proofs.Ai.NumberTheory.Prime"]
+definitions = []
+theorems = ["pythagorean_triple_definition_surface", "pythagorean_triple_classification_interface", "pythagorean_primitive_triple_formula_soundness", "pythagorean_triple_algebra_identity_reuse"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.SumsOfSquares"
+source = "Proofs/Ai/NumberTheory/SumsOfSquares/source.npa"
+certificate = "Proofs/Ai/NumberTheory/SumsOfSquares/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/SumsOfSquares/meta.json"
+replay = "Proofs/Ai/NumberTheory/SumsOfSquares/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:035b48bf5618265f2a349e5ec986e4d6d1cf9a6c997a1babca48e21c339645a7"
+certificate_file_sha256 = "sha256:682f1b9fce543c046e933854919cf09058e8226163da32eec89263e77048a121"
+export_hash = "sha256:fda3f571a917a31a010731ee9b713cca45dc90a61d9a3fc9e4737a0d14b768ad"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:7a4e48265a94dc81dee6f4bb3a2e81a464ded0c1271cdbf0cadd82a48ba3fc93"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.QuadraticResidue", "Proofs.Ai.NumberTheory.Legendre"]
+definitions = []
+theorems = ["fermat_two_square_theorem_statement_route", "fermat_two_square_theorem_quadratic_residue_dependency", "sums_of_squares_algebraic_identity_reuse", "lagrange_four_square_theorem_route", "legendre_three_square_theorem_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Waring"
+source = "Proofs/Ai/NumberTheory/Waring/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Waring/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Waring/meta.json"
+replay = "Proofs/Ai/NumberTheory/Waring/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:b1121bc581d32f68f4fbb29ab8594efc1b133f4cdf8c7fe2b6350d313427227b"
+certificate_file_sha256 = "sha256:7bd8223a0279e22d9ff2dd7030f8657f0191aebf87758bf672a0dd51dc4ffa1c"
+export_hash = "sha256:0e2a9069332a3dae59f3462e9e433fc2fc7f352031e9633df5aa02ce264b2730"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:98506c72b2d2e2e5e5ec273cb812efe484d7bc37ce5eeee37092bfcaa5931410"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.SumsOfSquares"]
+definitions = []
+theorems = ["waring_problem_existence_interface", "hilbert_waring_theorem_interface", "frobenius_coin_problem_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Additive"
+source = "Proofs/Ai/NumberTheory/Additive/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Additive/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Additive/meta.json"
+replay = "Proofs/Ai/NumberTheory/Additive/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:fb752be37729ee9fc6ba4c059120f7b941f697a70ef8579c62c88cc90ac2fec1"
+certificate_file_sha256 = "sha256:7024cc7bd5be12b17fcb0b8cee632dcf8d10980f37c1a467e9e1acb6324ccac0"
+export_hash = "sha256:2073c3c322b42204c9085a8639170ebff6fce3b41e54d7d9e34a49baab0f9d6c"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:074f237da86f9717c836c7300fa0e5b9de118a21585d76d1b951ba6626079f1e"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["cauchy_davenport_interface", "kneser_theorem_interface", "vosper_theorem_interface", "freiman_theorem_interface", "plunnecke_ruzsa_interface", "szemeredi_theorem_interface", "green_tao_theorem_interface", "van_der_waerden_interface", "hindman_theorem_interface", "erdos_ginzburg_ziv_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Combinatorial"
+source = "Proofs/Ai/NumberTheory/Combinatorial/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Combinatorial/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Combinatorial/meta.json"
+replay = "Proofs/Ai/NumberTheory/Combinatorial/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0f71932c11e1440dfce346f24b9be3c1d0176d8bc9915959bb8e35feaf423f57"
+certificate_file_sha256 = "sha256:6c52b1c1168c9d2e3d4124938693e303002e2e3821e2e91f7517d3bea4482eac"
+export_hash = "sha256:1ef797d85d1229acfb623da2ab8eb2686c3c5022f5c99e59abac3eaf52107d49"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:ee1f88bdbb17d021380db1edbc2195e69c10c6e2cbf3ba1efa835be406e5b1ae"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.FiniteFieldApplications", "Proofs.Ai.NumberTheory.Additive"]
+definitions = []
+theorems = ["pigeonhole_ramsey_schur_rado_chain", "van_der_waerden_polynomial_method_bridge", "erdos_ginzburg_ziv_olson_davenport_constant_chain", "finite_field_combinatorial_nullstellensatz_chain", "combinatorial_finite_field_application_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.DirichletSeries"
+source = "Proofs/Ai/NumberTheory/DirichletSeries/source.npa"
+certificate = "Proofs/Ai/NumberTheory/DirichletSeries/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/DirichletSeries/meta.json"
+replay = "Proofs/Ai/NumberTheory/DirichletSeries/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:953530d89014a9ce2c687ca5f7c6369484c70a006f2c0a731de17daf6c607e2d"
+certificate_file_sha256 = "sha256:d3c29bc0fcd7288314e963e84a6c3da2e1a88b8ff1e0c12170274643947157ec"
+export_hash = "sha256:b0015178af7370464fd23d31f1c6250707e66ed997ec8636a0d543f13c107e89"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:d8aa48431002b1dfde72de1be87744c58a0cd01a5b681ff0313033671ec7cb31"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["dirichlet_series_interface", "dirichlet_series_abscissa_interface", "euler_product_interface", "analytic_continuation_interface", "tauberian_theorem_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Zeta"
+source = "Proofs/Ai/NumberTheory/Zeta/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Zeta/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Zeta/meta.json"
+replay = "Proofs/Ai/NumberTheory/Zeta/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:eb9ae38017bfa85ab3cc1a5c16fc43b83a984ff5cd8dacfbf14b3fdcf8d4a473"
+certificate_file_sha256 = "sha256:8431a9b1693f1b54b9f0e8d9d88fa50c786c7bb7e4e22154b6c669dadd214347"
+export_hash = "sha256:282e08148d7ef4998677378058729b4393304d5dacb5d10db2d1c352ce11902f"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:204e3326e74c2717f91255e257463c33a1185f81714958019a7b93fe877f4595"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.DirichletSeries"]
+definitions = []
+theorems = ["riemann_zeta_euler_product_interface", "zeta_analytic_continuation_interface", "zeta_functional_equation_interface", "zeta_zero_free_region_interface", "riemann_von_mangoldt_interface", "zeta_explicit_formula_interface", "riemann_hypothesis_conditional_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.PrimeNumberTheorem"
+source = "Proofs/Ai/NumberTheory/PrimeNumberTheorem/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PrimeNumberTheorem/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PrimeNumberTheorem/meta.json"
+replay = "Proofs/Ai/NumberTheory/PrimeNumberTheorem/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:7c444aad50444afb46339fc60a896713b611f00eb53f71c326bb1d4b62ad129d"
+certificate_file_sha256 = "sha256:400f6b69a4e096c754f2397848366338670e1fc1656bd7d10550e0e9946b3481"
+export_hash = "sha256:4c078ab25106f541cf6d7f5defbec5e41629fbc116402344c0936cdfbde48c40"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:23cf454ae78c29306cfb3b2c2559ccc8ef590025d8fb86e7c2ef70c15694d2c5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Zeta"]
+definitions = []
+theorems = ["chebyshev_estimates_interface", "prime_number_theorem_interface", "zeta_zero_free_region_de_la_vallee_poussin_interface", "de_la_vallee_poussin_error_bound_interface", "bertrands_postulate_interface", "pnt_from_tauberian_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.DirichletL"
+source = "Proofs/Ai/NumberTheory/DirichletL/source.npa"
+certificate = "Proofs/Ai/NumberTheory/DirichletL/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/DirichletL/meta.json"
+replay = "Proofs/Ai/NumberTheory/DirichletL/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:1407f1a8831aca2447522afd4545384469633953b16015d6805b1d21b94e5ef6"
+certificate_file_sha256 = "sha256:ea6a422510bdef981e005d7163110c46a42c475385b6bdedb70cf385fbcb2561"
+export_hash = "sha256:f29793f350f08900b95b25f4e75b528dc868d1333ca505995b292c6c3e76d581"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:90aab3ba6b20a0d3aa0d64732bfa5053a2cb08c013d619948d1330ab402423a6"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.Zeta"]
+definitions = []
+theorems = ["dirichlet_l_function_definition_interface", "dirichlet_l_euler_product_interface", "dirichlet_l_analytic_continuation_interface", "dirichlet_l_functional_equation_interface", "dirichlet_l_nonvanishing_at_one_interface", "dirichlet_theorem_arithmetic_progression_interface", "arithmetic_progression_pnt_interface", "generalized_riemann_hypothesis_conditional_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.LFunction"
+source = "Proofs/Ai/NumberTheory/LFunction/source.npa"
+certificate = "Proofs/Ai/NumberTheory/LFunction/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/LFunction/meta.json"
+replay = "Proofs/Ai/NumberTheory/LFunction/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:513b59cef69b7d84fcbcbb35bce66e4e9470f5513688af1e89e17c2613c613a1"
+certificate_file_sha256 = "sha256:a8df9c36b0330b37911e760f633044cec79798d8fb453092c96798afcb7df369"
+export_hash = "sha256:cff79770ee359d2086b537a29951566e74154981ad16160ea4248d50dd0eeb1d"
+axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
+certificate_hash = "sha256:e1458a897791b9a6ed871db1d0399186c1969e94bcac5f6c5ec3872bc73f532a"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.EulerProduct", "Proofs.Ai.NumberTheory.DirichletSeries", "Proofs.Ai.NumberTheory.DirichletL"]
+definitions = ["LFunctionData"]
+theorems = ["l_function_data_intro", "l_function_coefficient_field_from_analytic_domain", "l_function_local_factor_surface", "l_function_euler_product_surface", "l_function_normalization_surface", "l_function_analytic_continuation_surface", "l_function_functional_equation_surface", "l_function_no_conjectural_L2_marker", "hasse_weil_l_function_surface", "automorphic_l_function_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Sieve"
+source = "Proofs/Ai/NumberTheory/Sieve/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Sieve/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Sieve/meta.json"
+replay = "Proofs/Ai/NumberTheory/Sieve/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:837975e24a87ca5987c6160652bb0aaf58df975fbc83b14fa61b45543cb25cd8"
+certificate_file_sha256 = "sha256:2b7db6203c1c0b7d04051e82e01de765c03ba97c0132a49c18aaece0a58dc78a"
+export_hash = "sha256:4dba3dca4625c28e8267b345493e6f3546d33727d55694e2cf03efd31a5c53e3"
+axiom_report_hash = "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699"
+certificate_hash = "sha256:c83809502ae7dc1e5ced44382cd8e779935555a31ee2941a07309cab1c8831a3"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["brun_sieve_interface", "selberg_sieve_interface", "large_sieve_interface", "fundamental_lemma_sieve_interface", "sieve_error_term_asymptotic_interface", "brun_theorem_interface", "twin_prime_reciprocal_convergence_interface", "chen_theorem_interface", "gpy_theorem_interface", "zhang_theorem_interface", "maynard_tao_theorem_interface", "sieve_analytic_dependency_surface", "sieve_no_unresolved_conjecture_boundary", "sieve_parity_problem_limitation_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.CircleMethod"
+source = "Proofs/Ai/NumberTheory/CircleMethod/source.npa"
+certificate = "Proofs/Ai/NumberTheory/CircleMethod/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/CircleMethod/meta.json"
+replay = "Proofs/Ai/NumberTheory/CircleMethod/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:bc3b7cdaa1f14601a6b08b9c41bf4cef746fb63bc2371f71283487662153ad7d"
+certificate_file_sha256 = "sha256:83dddf82898d784922363ea1eccdb4833d0912cc5bab7d6a761edbe814c68e47"
+export_hash = "sha256:5f6b9c8ef9ca077d9c995b9e92bb69dce894c673b41c8c903e0796e9af09f079"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:bb1caf0e34a66e14eaa8c6d9178e66bd89a12444c12b8e3e34afb99470220926"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["hardy_littlewood_circle_method_interface", "major_arc_contribution_interface", "minor_arc_contribution_interface", "circle_method_asymptotic_assumption_interface", "circle_method_harmonic_exponential_dependency_surface", "circle_method_conditional_analytic_prerequisite_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.AdditivePrime"
+source = "Proofs/Ai/NumberTheory/AdditivePrime/source.npa"
+certificate = "Proofs/Ai/NumberTheory/AdditivePrime/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/AdditivePrime/meta.json"
+replay = "Proofs/Ai/NumberTheory/AdditivePrime/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:a64adc3e5afa744d75d3cea53b4a6d6e7e8995d5aef9771ef908196005f306e0"
+certificate_file_sha256 = "sha256:9483e5e09a9cff05e3bfdcf585e9c8f60469ef01a31b52789f86959a15426b5e"
+export_hash = "sha256:411783961fe890a19b0ecf15607506ca6a929767acc44a7d21a9f6ae0d97869c"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:a269e7964b0331a9cccbe97c9474bd9fef40202e2a26039a53675caa5612f024"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["vinogradov_three_primes_theorem_interface", "weak_goldbach_conjecture_interface", "additive_prime_circle_method_dependency_surface", "weak_goldbach_no_elementary_additive_dependency_boundary", "additive_prime_conditional_analytic_prerequisite_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.AlgebraicInteger"
+source = "Proofs/Ai/NumberTheory/AlgebraicInteger/source.npa"
+certificate = "Proofs/Ai/NumberTheory/AlgebraicInteger/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/AlgebraicInteger/meta.json"
+replay = "Proofs/Ai/NumberTheory/AlgebraicInteger/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0a2748d71ce709882fc12ff28173c69166c959b570f7f47c23acfef5e53833a3"
+certificate_file_sha256 = "sha256:ad64494e09f44ab51734bf37f52be1a0aa2cf738016854a9865040bfd99af241"
+export_hash = "sha256:8f6a23c95782b9522b49803889533f59246d350ebb980a70c9cff42586277dd5"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:4ee8b27cf5e647c1e0ccfd8fb1fb94887d1154f5039f4e4c267ebe6be8791363"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["algebraic_integer_interface", "algebraic_integers_form_ring_interface", "algebraic_integer_ring_not_kernel_primitive_boundary", "rational_algebraic_integer_implies_integer_interface", "rational_algebraic_integer_embedding_coercion_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.NumberField"
+source = "Proofs/Ai/NumberTheory/NumberField/source.npa"
+certificate = "Proofs/Ai/NumberTheory/NumberField/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/NumberField/meta.json"
+replay = "Proofs/Ai/NumberTheory/NumberField/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:905650e9a4e6f7e26128db5d42453079797c62da1fce0a603c72076d60eac1e5"
+certificate_file_sha256 = "sha256:263fe8a8a14f44842cf46e91cf23db676184910882c0216f919a830c997252e1"
+export_hash = "sha256:989726605361083bf5ebedec51b0b08014081ae34a8593f2e3e25a87511c1d8c"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:6418394fdb7bde5194ef28a8a53cdf61b6020e59bdc6bda18c818219d2ed763f"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["number_field_interface", "number_field_field_theory_roadmap_dependency_surface", "ring_of_integers_interface", "algebraic_number_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.DedekindDomain"
+source = "Proofs/Ai/NumberTheory/DedekindDomain/source.npa"
+certificate = "Proofs/Ai/NumberTheory/DedekindDomain/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/DedekindDomain/meta.json"
+replay = "Proofs/Ai/NumberTheory/DedekindDomain/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:c99d0187d63c8eb21a7c9d7ecd8ec2166cb76c8b71952baca207003764fc2e59"
+certificate_file_sha256 = "sha256:3454700d8917edf089221e9569c24c6d835b41b7965b3121b8465e6882311afb"
+export_hash = "sha256:b9781df0cb27ae1c794bedbd13fadbbdc05730196427bb09716ed56ae6f1d35e"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:4c156b9e320d1163f968ef2e6c62516bda3c81ded2c3c747aba8c3b1d3b957bc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"]
+definitions = []
+theorems = ["norm_interface", "trace_interface", "discriminant_interface", "norm_trace_discriminant_field_extension_basis_surface", "integral_basis_interface", "dedekind_domain_interface", "ring_of_integers_dedekind_domain_surface", "dedekind_domain_no_ideal_factorization_definition_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ClassGroup"
+source = "Proofs/Ai/NumberTheory/ClassGroup/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ClassGroup/meta.json"
+replay = "Proofs/Ai/NumberTheory/ClassGroup/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2eda3b3257abbc5f14b649ef8e6c7f19fd50d6d56abc061eb2a5941a00751c05"
+certificate_file_sha256 = "sha256:3861b0185d73e5236b4e51b09c9be0b9aeb9175299c0444f27c8eef62bcb846f"
+export_hash = "sha256:be5820031f461e773f723ce9e0eb0473e6c21a38493427acffbbc3cf71e1b952"
+axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
+certificate_hash = "sha256:c4b059937e494af2329ef60ea7d8f672155c287e7d944823857821bafe18d78a"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.NumberTheory.DiophantineApproximation"]
+definitions = []
+theorems = ["ideal_factorization_interface", "ideal_factorization_uniqueness_interface", "fractional_ideal_group_interface", "class_group_interface", "class_group_quotient_requirement_surface", "class_number_finiteness_interface", "minkowski_bound_interface", "minkowski_geometry_of_numbers_dependency_surface", "dirichlet_unit_theorem_interface", "class_number_formula_interface", "analytic_class_number_formula_l1_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Valuation"
+source = "Proofs/Ai/NumberTheory/Valuation/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Valuation/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Valuation/meta.json"
+replay = "Proofs/Ai/NumberTheory/Valuation/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4c1bd785e03057b17bcdc55e572dbdd01c717bd031553aab7bc18cdc7d9e112a"
+certificate_file_sha256 = "sha256:1faeef36cdb00288e555c75268d92efb4d4d0ef3cb6a0a09afb7412ce2e4e99d"
+export_hash = "sha256:d0051ecb8303dc7f88efa2412426c1c6cc64ccc0d7d61aab3085182afa614ba8"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:e21df8bf55b6d6c5a5c5d1e715f51f47e9a0d3aa61e2f92bbe9c82bead33fbd2"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint"]
+definitions = []
+theorems = ["padic_valuation_interface", "padic_absolute_value_interface", "non_archimedean_metric_law_interface", "non_Archimedean_metric_from_valuation_surface", "p_adic_valuation_algebra_before_completion_boundary", "p_adic_completion_topology_dependency_surface", "no_local_field_for_basic_valuation_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Padic"
+source = "Proofs/Ai/NumberTheory/Padic/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Padic/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Padic/meta.json"
+replay = "Proofs/Ai/NumberTheory/Padic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:da77583336af805caee0aac0b5e21f195169c7660e31daabfd4ab7111a96e4f0"
+certificate_file_sha256 = "sha256:6213138f0714feb8cc9797ece840d18e98fefbcb724968703472681f630cdd8e"
+export_hash = "sha256:828b3cb3293ec9a726f734b9bf1ed14a79b3597c4079e3f2afe53a8a1fa40e65"
+axiom_report_hash = "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b"
+certificate_hash = "sha256:b2fbc29cfb3e18db320bad61d428fad3d1cc9233555f772324d118bfe3043ae7"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["padic_completion_interface", "padic_field_construction_interface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Hensel"
+source = "Proofs/Ai/NumberTheory/Hensel/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Hensel/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Hensel/meta.json"
+replay = "Proofs/Ai/NumberTheory/Hensel/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2892c30d3066490593c2b304929744ceaf6e5b0a02d164092be271610c1e35c0"
+certificate_file_sha256 = "sha256:e3d42ae2339a8d798de607bb76517a0777191af6b8e21565257458a985eaee63"
+export_hash = "sha256:127804ea875391297b9c71f5d6ddb0528dbbc7820e6eb356f2f81d3be4db6392"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:d58311c99d828957adcb8fb4ff4cd1073b7f1a9ba46b89a14a52be92dd6b023e"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Valuation", "Proofs.Ai.NumberTheory.Padic"]
+definitions = []
+theorems = ["hensel_lemma_interface", "hensel_named_hypotheses_surface", "hensel_not_generic_root_finder_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.LocalField"
+source = "Proofs/Ai/NumberTheory/LocalField/source.npa"
+certificate = "Proofs/Ai/NumberTheory/LocalField/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/LocalField/meta.json"
+replay = "Proofs/Ai/NumberTheory/LocalField/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e7585c7467264f30a4f96954e175c2579b958fe84d6198e495cab5ae6d352896"
+certificate_file_sha256 = "sha256:1b15fdad2a3524e548a0bc2bb431213df60070114f705510a722ed594833f5e3"
+export_hash = "sha256:89d301a3c8eab464f945bf50742c6363229b0c9f11e4c976a5e87eab8b230750"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:f62b385b1d192243b62b87fd9b571b49dd09e34fd4561fe33083032a9ca3c4ed"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Valuation", "Proofs.Ai.NumberTheory.Padic"]
+definitions = []
+theorems = ["ostrowski_theorem_interface", "dvr_interface", "complete_dvr_interface", "local_field_structure_interface", "unramified_extension_interface", "totally_ramified_extension_interface", "ostrowski_dvr_valuation_completion_dependency_surface", "local_field_interface_level_construction_boundary", "ramification_vocabulary_shared_with_galois_representation_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.PadicAnalysis"
+source = "Proofs/Ai/NumberTheory/PadicAnalysis/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PadicAnalysis/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PadicAnalysis/meta.json"
+replay = "Proofs/Ai/NumberTheory/PadicAnalysis/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:97f3955a07a8948c8c5ea28894f1f6b99d975fce4841b2292a6889b367cd4cff"
+certificate_file_sha256 = "sha256:926b961d9b384a56fb313f0e6a1479dc93747b66106f4730c197184f0ac8ced2"
+export_hash = "sha256:49c0cebd531d9b463e61128df6c1d76265e786d8d3e32946743bb806b11ba8a7"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:58049b31b3a5875dc7a038550032769cd068eeda0d0a76d5573850ebab101095"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.NumberTheory.Padic", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace"]
+definitions = []
+theorems = ["padic_exp_interface", "padic_log_interface", "newton_polygon_interface", "strassmann_theorem_interface", "weierstrass_preparation_interface", "mahler_expansion_interface", "padic_analytic_convergence_norm_series_dependency_surface", "padic_analytic_functions_not_trusted_primitives_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.PadicMeasure"
+source = "Proofs/Ai/NumberTheory/PadicMeasure/source.npa"
+certificate = "Proofs/Ai/NumberTheory/PadicMeasure/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/PadicMeasure/meta.json"
+replay = "Proofs/Ai/NumberTheory/PadicMeasure/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:c1e0b0c2bbe539c900fa298c7f4a90a4c957333389f1ed457295968c12c8edc1"
+certificate_file_sha256 = "sha256:f2c23bed54c60d74b33f463c311f189829507030737226808cd23029bd91e66d"
+export_hash = "sha256:6c8e5c0d61d07bf75502953090191bb16d1571052af367c2b0a8f538348b6b08"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:f7ecbf6dca68d3c1ae7c115cbbf568029d87e56832b3d119d3dcafac65c43431"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.PadicAnalysis"]
+definitions = []
+theorems = ["padic_measure_interface", "padic_integration_interface", "amice_transform_interface", "kubota_leopoldt_padic_l_function_interface", "padic_measure_theory_roadmap_dependency_surface", "padic_l_function_interpolation_assumptions_explicit_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ClassField.Local"
+source = "Proofs/Ai/NumberTheory/ClassField/Local/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ClassField/Local/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ClassField/Local/meta.json"
+replay = "Proofs/Ai/NumberTheory/ClassField/Local/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:82bf974b57407b25e002cbea552009ace01a702b04920e179bffb9134bd36d45"
+certificate_file_sha256 = "sha256:66bacb56739632fe68208d71ee655b8c9d736aa83b9f7ef7de7ade3439d94c3b"
+export_hash = "sha256:d11850e4b666e9b798eb5677ca41bd361806f12c1b9c7dbd4bf3177d6586d711"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:e4c3e867e33e8a5a100ef7157d4e96a64a7a7fab8844ff4946f5a3169bb8697a"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LocalField"]
+definitions = []
+theorems = ["artin_map_local_interface", "local_reciprocity_theorem_interface", "kronecker_weber_theorem_interface", "local_reciprocity_map_domain_codomain_normalization_functoriality_surface", "explicit_class_field_bridge_name_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ClassField.Global"
+source = "Proofs/Ai/NumberTheory/ClassField/Global/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ClassField/Global/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ClassField/Global/meta.json"
+replay = "Proofs/Ai/NumberTheory/ClassField/Global/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:76cd657849bb2b44c20a28427f3dae0828fca8e24560e31a26707ba30c2488f7"
+certificate_file_sha256 = "sha256:0691253dbdd78851c468444a7aada8cb7fa28fd3d951100564bda649b91179fa"
+export_hash = "sha256:d1ece854d2c7df758bf93e2657f42ef6229ac1824bbec4620caa86f489e40c20"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:e7a224febcae09a13452ca91f27cbf4ba807a421cc14ce772cd0bbbb686a4cab"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.ClassField.Local"]
+definitions = []
+theorems = ["idele_class_group_interface", "global_reciprocity_theorem_interface", "takagi_existence_theorem_interface", "hilbert_class_field_interface", "global_reciprocity_map_domain_codomain_normalization_functoriality_surface", "no_class_field_theorem_under_generic_algebra_name_boundary", "bridge_assumptions_rejected_by_final_promotion_gate_boundary", "local_global_reciprocity_separation_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ArtinL"
+source = "Proofs/Ai/NumberTheory/ArtinL/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ArtinL/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ArtinL/meta.json"
+replay = "Proofs/Ai/NumberTheory/ArtinL/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8b679d8df71008ce28b60305eadfce79060f640bcfc2ef7f628673c9a5b3306b"
+certificate_file_sha256 = "sha256:4af40aec0d248d5163c5b19424deb71de3f6df5c68c4971deef93ce403f6a313"
+export_hash = "sha256:19b248eea7d1fd7f8372c6579a6bf9421ec3cb6bc8b98b5b3a37cb20069e04d9"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:6fa87d7693f98d965835888e078ee953da6f4f05c83d8164d226f27226d2db04"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.ClassField.Global"]
+definitions = ["ArtinLData"]
+theorems = ["artin_l_data_intro", "artin_l_general_l_function_data", "artin_l_local_factor_surface", "artin_l_local_factor_normalization_surface", "artin_l_reciprocity_connection_to_class_field_theory", "artin_l_normalization_surface", "artin_l_matches_general_l_function_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.GaloisCohomology.Basic"
+source = "Proofs/Ai/GaloisCohomology/Basic/source.npa"
+certificate = "Proofs/Ai/GaloisCohomology/Basic/certificate.npcert"
+meta = "Proofs/Ai/GaloisCohomology/Basic/meta.json"
+replay = "Proofs/Ai/GaloisCohomology/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:af0bf34378c64364e732ee1dcccd0f0b9a04f13441ed80ec6047330d8b443652"
+certificate_file_sha256 = "sha256:7ddd42d52c3e9ca7d8ae9a47bd0be33f6198ac78cf5594016358207e4af65000"
+export_hash = "sha256:4196a3ae1dfb806375da35f0ecedf2a6cde12d7bc84648d366c0a1dd1e3ba832"
+axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
+certificate_hash = "sha256:7aa6b12993c91d75db6cfb16802e263934fdc09c0272f55910ff11b7a48062bc"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["hilbert_90_theorem_interface", "norm_residue_symbol_interface", "hasse_norm_theorem_interface", "grunwald_wang_theorem_interface", "brauer_group_interface", "tate_cohomology_interface", "hilbert_90_degree_one_cocycle_coboundary_surface", "norm_residue_symbol_local_global_context_surface", "brauer_group_degree_two_cohomology_surface", "tate_cohomology_degree_index_functoriality_surface", "galois_cohomology_interface_level_until_foundations_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.ClassField.Cohomology"
+source = "Proofs/Ai/NumberTheory/ClassField/Cohomology/source.npa"
+certificate = "Proofs/Ai/NumberTheory/ClassField/Cohomology/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/ClassField/Cohomology/meta.json"
+replay = "Proofs/Ai/NumberTheory/ClassField/Cohomology/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:7fcc4f0be8c9313a7ece407548dd44b9fe609ce273fa0e2c7db5b6e30db22d5a"
+certificate_file_sha256 = "sha256:9004c7a4418f83c763edd44ea6412fde0391feb22ccd5580dbd563afcb4603b4"
+export_hash = "sha256:96ee3657893674b566009eb0d86b993033b51e4161d33b66a9250b3d741b96f1"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:3abae1fd849a4dcb94fb4437bc126726d07191fb2c97295cc7e3db7e14356961"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.GaloisCohomology.Basic"]
+definitions = []
+theorems = ["class_field_cohomology_dependency_explicit_boundary", "class_field_reciprocity_cohomology_route_surface", "norm_residue_reciprocity_local_global_context_route_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Iwasawa.Basic"
+source = "Proofs/Ai/NumberTheory/Iwasawa/Basic/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Iwasawa/Basic/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Iwasawa/Basic/meta.json"
+replay = "Proofs/Ai/NumberTheory/Iwasawa/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:11c0630a7cbab9aeef6206498c8365a0cc3aeb15440af6392542d45f76e98287"
+certificate_file_sha256 = "sha256:14f790112ed0092ce6558d9554a04d16b5e0fcd95d08ea6635ec91807cdfccad"
+export_hash = "sha256:9d43f5221065b96d82b5fc54a5f5f6a721d3cdda2b51856603a3d19ad4751706"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:df30a83c00bc95530f2165beb0308108b2565c4e411da2afcb4c1a5fc5c99ec4"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Padic", "Proofs.Ai.NumberTheory.Valuation", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.ClassField.Local", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.GaloisCohomology.Basic", "Proofs.Ai.NumberTheory.ClassField.Cohomology"]
+definitions = ["IwasawaBasicData"]
+theorems = ["iwasawa_basic_data_intro", "iwasawa_padic_dependency_explicit", "iwasawa_galois_cohomology_dependency_explicit", "iwasawa_module_theory_dependency_explicit", "cyclotomic_zp_extension_surface", "iwasawa_algebra_surface", "iwasawa_module_theoretic_assumptions_explicit", "module_over_iwasawa_algebra_surface", "finitely_generated_torsion_module_structure_surface", "lambda_invariant_surface", "mu_invariant_surface", "nu_invariant_surface", "iwasawa_class_number_formula_surface", "iwasawa_class_number_formula_not_analytic_class_number_formula"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.Basic"
+source = "Proofs/Ai/EllipticCurve/Basic/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/Basic/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/Basic/meta.json"
+replay = "Proofs/Ai/EllipticCurve/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e309ca1339fd0e98e8d8e0cad0dc3a86003a1e6aa7e038540ae13801aa0fc9fa"
+certificate_file_sha256 = "sha256:de0d2642eee87194594e72ad588697400345f92bd8a87f92aefa06f167e574c5"
+export_hash = "sha256:787b7b08b0e8f72bd02cbb8e20f833c61cedf37b73dd80df3976191f0d10a7aa"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:121aaaff0488b1708b9b7ee2b5e3f130e438a0fdd5650902cd757ecf7a9bf51a"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["weierstrass_model_interface", "nonsingular_condition_interface", "weierstrass_field_polynomial_assumptions_surface", "nonsingular_discriminant_polynomial_surface", "elliptic_curve_api_general_route_independence_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.GroupLaw"
+source = "Proofs/Ai/EllipticCurve/GroupLaw/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/GroupLaw/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/GroupLaw/meta.json"
+replay = "Proofs/Ai/EllipticCurve/GroupLaw/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:49cf775e96498937070553f6b1272bfd71dab4c66bf34d118b5d360918f73fd6"
+certificate_file_sha256 = "sha256:ddf37368cfd7b01a497a1a57d4dc50dcebc76548c5f62fb44cf697ed091a2ec3"
+export_hash = "sha256:ae711754056ad09ce91ba016a346c18e8ea43ba4a1ef4b909648822fb64a632c"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:a582da99f8365caa218b9d0d7eb7e72cd3bb3d7156735d094984677a1148d427"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic"]
+definitions = []
+theorems = ["group_law_theorem_interface", "elliptic_point_group_operation_laws_surface", "group_law_independent_of_modularity_ribet_bridge_boundary", "group_law_general_api_reuse_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.Reduction"
+source = "Proofs/Ai/EllipticCurve/Reduction/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/Reduction/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/Reduction/meta.json"
+replay = "Proofs/Ai/EllipticCurve/Reduction/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2e33fd9c9aad73034863b3b3b4a8c2737de8803314cfee4056f63627c326ee02"
+certificate_file_sha256 = "sha256:c0388cd6dbb298482230ecead5f1434caca5eb11c0497f46778c7abb445efbb4"
+export_hash = "sha256:b0e09b89ec74c7026cc5f3ba0bd018af7af05b2d6f20b59cf7493cf359aee7b3"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:1d4f0ada4d465c7e3c1a1f35e54e63493327b9b1d0270d86201e9202f2adf730"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.NumberTheory.LocalField"]
+definitions = []
+theorems = ["elliptic_conductor_interface", "elliptic_reduction_type_interface", "elliptic_minimal_model_interface", "reduction_local_field_valuation_dependency_surface", "conductor_reduction_minimal_model_compatibility_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.Semistable"
+source = "Proofs/Ai/EllipticCurve/Semistable/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/Semistable/meta.json"
+replay = "Proofs/Ai/EllipticCurve/Semistable/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:324071dbd185459578588904c34302c69866a887fef60fa917af1be76c09eb3b"
+certificate_file_sha256 = "sha256:6a421e66b11bce27c54b9f85a934fa042bf2119c4d88a386c219a4c12fe28736"
+export_hash = "sha256:5b97bc312b9fb890a117863e3ab435ede69d38b00c01a88c392b386fd7de1a64"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:0e4308e41e4ea89040e037e29cf8137b4223c4a3de2c58578d172f5745dc2f45"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction"]
+definitions = []
+theorems = ["elliptic_semistable_interface", "semistability_general_elliptic_curve_predicate_boundary", "semistability_not_frey_specific_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.Height"
+source = "Proofs/Ai/EllipticCurve/Height/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/Height/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/Height/meta.json"
+replay = "Proofs/Ai/EllipticCurve/Height/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:73ff7b7f45d11d08059203470873ca1e8fdc125ee228390a7640a77f0ead8e5c"
+certificate_file_sha256 = "sha256:2825f4b069c75100aa5cfb69779a24e3a4cb58e4a745e3093c3d6f8a56a7e1e3"
+export_hash = "sha256:de4796a785384c5769858df8c15b091738df078cbb0c36611c7b1db8efa5f515"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:28c6a0039df0ced87d0a746cb57dc2d308fdf4d74e3c07f38aa90da8817e4a79"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic"]
+definitions = []
+theorems = ["elliptic_height_interface", "elliptic_neron_tate_height_interface", "height_field_and_positivity_hypotheses_surface", "neron_tate_height_field_positivity_pairing_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.FiniteField"
+source = "Proofs/Ai/EllipticCurve/FiniteField/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/FiniteField/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/FiniteField/meta.json"
+replay = "Proofs/Ai/EllipticCurve/FiniteField/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:5b1c4344e1f4ad4740ca6014f809b925dd812483235fa7ac107a2be3cf70e38d"
+certificate_file_sha256 = "sha256:bfb561f567505c24bbfb1eea4296064a578743c649c0d0ea7d1b1873cb8e61bc"
+export_hash = "sha256:bbbc8345ab7b3f56a8cf9d3b9fcd7865f7f3e5978389316770cb4f2fb84e5c6a"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:041b22e17ab4a1d46745c6ba4b5e9030c2a8acd79ab31a6f9f0b4a65eb236bc9"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractFiniteField", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw"]
+definitions = []
+theorems = ["finite_field_core_laws_imported_from_abstract_finite_field_boundary", "finite_field_point_count_interface", "hasse_theorem_interface", "weil_bound_interface", "finite_field_frobenius_trace_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.LFunction"
+source = "Proofs/Ai/EllipticCurve/LFunction/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/LFunction/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/LFunction/meta.json"
+replay = "Proofs/Ai/EllipticCurve/LFunction/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:80c7af70dfc367eb1a15e4cb6539b9c1dae160312626bf563663a5f7415dac95"
+certificate_file_sha256 = "sha256:ddbaff603e97628a174ca0741f9cd73209da7c6fee7b57a90ac47fd1c5eb68f1"
+export_hash = "sha256:b5dd36beca4176f5c68086975e71dd5c9bed9becb550f8aa7a6d783a96cec68d"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:fdd56f60eac908184ca736e4e7f0972cfa4793dc34bda87dfadbbf7648418fc5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.FiniteField"]
+definitions = []
+theorems = ["elliptic_curve_l_function_interface", "hasse_weil_l_function_interface", "modularity_link_points_to_nt_t52_boundary", "gross_zagier_statement_surface", "kolyvagin_statement_surface", "sato_tate_statement_surface", "bsd_conjectural_or_conditional_statement_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.GaloisRepresentation"
+source = "Proofs/Ai/EllipticCurve/GaloisRepresentation/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/GaloisRepresentation/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/GaloisRepresentation/meta.json"
+replay = "Proofs/Ai/EllipticCurve/GaloisRepresentation/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:fd48eae34d964a8fd2a4ec187775a74287e3aca7b0f60ec9dafe20d1d987c835"
+certificate_file_sha256 = "sha256:46576e8be933438d701cba2e1edcae0b6de396809b9db19f346dd7377e3d6294"
+export_hash = "sha256:eafbf909d5d5839bb908f6c4d61481d1e1e8dbaf06d231be62e34930016388f4"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:346bcbe6b41fd53ed43ae37260ed025ee3182d301be35ace5bda096576f3217c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw", "Proofs.Ai.EllipticCurve.Height"]
+definitions = []
+theorems = ["tate_module_interface", "weil_pairing_interface", "weil_pairing_nondegeneracy_without_crypto_boundary", "selmer_definition_shared_iwasawa_galois_representation_surface", "galois_representation_local_condition_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Cryptography.EllipticCurve"
+source = "Proofs/Ai/Cryptography/EllipticCurve/source.npa"
+certificate = "Proofs/Ai/Cryptography/EllipticCurve/certificate.npcert"
+meta = "Proofs/Ai/Cryptography/EllipticCurve/meta.json"
+replay = "Proofs/Ai/Cryptography/EllipticCurve/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:382966d3318481810437da076e83c2b15ef5752bb30a81fb4779777362babebc"
+certificate_file_sha256 = "sha256:06dc10b8d95ae5cf91e4a8c42ee96094a091f22ed469fcd9f68522331e1739f7"
+export_hash = "sha256:ea6cf730320b9b7bc2852f243d270bf2e9b3a60461764282114e61b5029abf42"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:f2454d85cfa8e7202eacc222841ec9a0606740be93e97616275bc0b5d777c2a7"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Cryptography.NumberTheory", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw", "Proofs.Ai.EllipticCurve.GaloisRepresentation"]
+definitions = []
+theorems = ["elliptic_curve_diffie_hellman_correctness_from_api_keygen_randomness", "ecdsa_verification_correctness_from_group_keygen_nonce_chain", "weil_pairing_bilinearity_reuses_elliptic_curve_api", "tate_pairing_correctness_reuses_weil_pairing_api", "elliptic_curve_hardness_assumptions_not_derived_from_correctness"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Frobenius"
+source = "Proofs/Ai/NumberTheory/Frobenius/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Frobenius/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Frobenius/meta.json"
+replay = "Proofs/Ai/NumberTheory/Frobenius/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0df9a2af76771966314e138d53c1c484725a83b3729ccec67bd56b8a05290829"
+certificate_file_sha256 = "sha256:9110eb552c3927110cc6887bc6241db8d1ae1d0e0d8a37ba6afa6cbc8661318b"
+export_hash = "sha256:1ac8b281cfcea7ba2ae5fb51e99e123d08006dbd06017b1f42c385998ed57fc7"
+axiom_report_hash = "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699"
+certificate_hash = "sha256:2f8f75562422402dc537f7c64e213fb283ba2b518cd52cc6e84b5beba4f19084"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.DedekindDomain", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.EllipticCurve.GaloisRepresentation"]
+definitions = ["FrobeniusData"]
+theorems = ["frobenius_data_intro", "frobenius_dedekind_domain_dependency_explicit", "frobenius_class_group_ideal_dependency_explicit", "frobenius_local_field_ramification_dependency_explicit", "frobenius_galois_representation_local_condition_dependency_explicit", "prime_ideal_decomposition_surface", "decomposition_group_surface", "inertia_group_surface", "frobenius_element_unramified_prime_ideal_surface", "frobenius_conjugacy_class_theorem_surface", "decomposition_inertia_reusable_by_local_conditions_surface", "frobenius_ramification_vocabulary_shared_surface", "frobenius_definition_layer_no_chebotarev_import_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Chebotarev"
+source = "Proofs/Ai/NumberTheory/Chebotarev/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Chebotarev/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Chebotarev/meta.json"
+replay = "Proofs/Ai/NumberTheory/Chebotarev/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f6fdb49c8100ff58b437133aed8511a48d0779aa1de2b1e30b1123eced5410b4"
+certificate_file_sha256 = "sha256:e53563341217e570e99334c0ee3a73ccfab21366d5345625ddd8dd56a0db91dd"
+export_hash = "sha256:74a26cd4fd55b38251c15aec7bf3312a7d55455016ac2e43c8ca2907855b8713"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:4a73633a57a207cd54b9a2fd42ef7d357acce358dc6cf9da000d1ec80ccc2b7c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Frobenius", "Proofs.Ai.NumberTheory.PrimeNumberTheorem", "Proofs.Ai.NumberTheory.DirichletL", "Proofs.Ai.NumberTheory.PrimeInfinitude"]
+definitions = ["ChebotarevData"]
+theorems = ["chebotarev_data_intro", "chebotarev_frobenius_nt_t61_dependency_explicit", "chebotarev_analytic_density_dependency_explicit", "chebotarev_prime_infinitude_independence_dependency_explicit", "chebotarev_factorization_independence_dependency_explicit", "chebotarev_dirichlet_l_non_duplication_dependency_explicit", "chebotarev_density_measure_analytic_assumptions_explicit", "chebotarev_density_theorem_surface", "frobenius_density_theorem_surface", "dirichlet_theorem_from_chebotarev_alias_surface", "dirichlet_theorem_from_chebotarev_later_card_surface", "chebotarev_no_duplicate_dirichlet_l_proof_boundary", "chebotarev_not_used_by_elementary_prime_infinitude", "chebotarev_not_used_by_fundamental_theorem_arithmetic"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.GaloisRepresentation.Basic"
+source = "Proofs/Ai/GaloisRepresentation/Basic/source.npa"
+certificate = "Proofs/Ai/GaloisRepresentation/Basic/certificate.npcert"
+meta = "Proofs/Ai/GaloisRepresentation/Basic/meta.json"
+replay = "Proofs/Ai/GaloisRepresentation/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:79d92154a7c5d6bf575331209eaeee9e5d5a83bdc763cafd8f2184b387f10f42"
+certificate_file_sha256 = "sha256:3509b272f936e681de104fb589fd1737f2f2f76d95ed674d3efec12ef7a3e342"
+export_hash = "sha256:e7c0b27ac9d462b834edbe356e3f4d2bbff4e0ba6252d7ec26c72dbf5c6af187"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:9b8293dedde67c263a0d037dd2101b148e8d597ef7481ec6f18099337fac3ddf"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.GaloisRepresentation"]
+definitions = ["GaloisRepresentationBasicData"]
+theorems = ["galois_representation_basic_data_intro", "ladic_representation_from_galois_representation_data", "cyclotomic_character_from_ladic_coefficient", "tate_module_representation_from_basic_data", "elliptic_curve_and_modular_form_share_galois_representation_api"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.GaloisRepresentation.Ramification"
+source = "Proofs/Ai/GaloisRepresentation/Ramification/source.npa"
+certificate = "Proofs/Ai/GaloisRepresentation/Ramification/certificate.npcert"
+meta = "Proofs/Ai/GaloisRepresentation/Ramification/meta.json"
+replay = "Proofs/Ai/GaloisRepresentation/Ramification/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:1b90cfd2f98acd92499e630f8f878fe4d95ba5496d8aac233fa541b0a6bcf756"
+certificate_file_sha256 = "sha256:f05ab0f282b2e7a1af7eb439ca6921fc0bf4aed5bb1f2273794b372f7ce184fe"
+export_hash = "sha256:85d5bec61ea7bb6d497012adb6527d32aab7722c9cb28e694885f7b8ae3660c0"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:40915b808351c5a2f64f63d5a6b80555fda9015bd59bcf438b770309d5fe9ce5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.GaloisRepresentation.Basic", "Proofs.Ai.NumberTheory.Frobenius"]
+definitions = ["GaloisRepresentationRamificationData"]
+theorems = ["galois_representation_ramification_data_intro", "ramified_at_from_inertia_action", "frobenius_compatible_at_unramified_place", "ramification_vocabulary_reusable_by_local_conditions"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.GaloisRepresentation.LocalCondition"
+source = "Proofs/Ai/GaloisRepresentation/LocalCondition/source.npa"
+certificate = "Proofs/Ai/GaloisRepresentation/LocalCondition/certificate.npcert"
+meta = "Proofs/Ai/GaloisRepresentation/LocalCondition/meta.json"
+replay = "Proofs/Ai/GaloisRepresentation/LocalCondition/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:227c8b15799efd609787bd22b862f509a8babc697cb49bf9a1efd78a3b526050"
+certificate_file_sha256 = "sha256:75d0f8d6dfa745fafba0b6528fdbe3d9c56c1a5be05c47a7625e9b585c2479e5"
+export_hash = "sha256:db8361f80a5c244d2a977744e43d507a486f766e329585798a95ecddba26a9f0"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:37822733f8ffa0759dabcddc6a57d4898d18e9fcf514bb65a2b8de8fac56819b"
+imports = ["Std.Logic.Eq", "Proofs.Ai.GaloisRepresentation.Basic", "Proofs.Ai.GaloisRepresentation.Ramification", "Proofs.Ai.EllipticCurve.GaloisRepresentation"]
+definitions = ["GaloisRepresentationLocalConditionData"]
+theorems = ["galois_representation_local_condition_data_intro", "fontaine_laffaille_comparison_theorem_chain", "local_condition_from_fontaine_laffaille_ramification", "reusable_local_condition_from_fontaine_laffaille", "elliptic_curve_and_modular_form_share_local_condition_api", "taylor_wiles_remains_interface_until_modularity_prerequisites", "potential_modularity_remains_interface_until_prerequisites"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EllipticCurve.MordellWeil"
+source = "Proofs/Ai/EllipticCurve/MordellWeil/source.npa"
+certificate = "Proofs/Ai/EllipticCurve/MordellWeil/certificate.npcert"
+meta = "Proofs/Ai/EllipticCurve/MordellWeil/meta.json"
+replay = "Proofs/Ai/EllipticCurve/MordellWeil/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:a25c21852a464b3ee4b68d70e9a90de04f4bb5a045c0570f149a6f45ea5d3461"
+certificate_file_sha256 = "sha256:3273eb9ef9549aeff0ec71c6544eccddf19861936fd64e3cf8a182a61bf0dbbf"
+export_hash = "sha256:fd864f3d72d8e3207205be63ee60700d1c7152e593fe0b57994ac054a01fa0a8"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:68cfde998fe638ba7f766b02d5c26db28f37a47def81ede52bab907b7f96e8b6"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw", "Proofs.Ai.EllipticCurve.Height", "Proofs.Ai.EllipticCurve.GaloisRepresentation"]
+definitions = []
+theorems = ["elliptic_torsion_subgroup_interface", "nagell_lutz_theorem_interface", "weak_mordell_weil_interface", "mordell_weil_theorem_interface", "selmer_group_interface", "tate_shafarevich_group_statement_surface", "mordell_weil_interface_level_until_height_descent_boundary"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture"
+source = "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/meta.json"
+replay = "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:a606cdb55c39cbd5516a65402527ba5c5f5cdb34ebf870f48e4a10d91a70b117"
+certificate_file_sha256 = "sha256:5a77da706789947f36d5a0edc83ce4167cba6dcaef9706f1b325a85edc4ba2a7"
+export_hash = "sha256:842042231818250cdd9429661da5d18f58d61299286363bfc3d72fc0fa43a294"
+axiom_report_hash = "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07"
+certificate_hash = "sha256:38f70395887df9f1313c0d1072bc790956759b6247a27eb46594f99d22bcf048"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Iwasawa.Basic", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.NumberTheory.LFunction"]
+definitions = ["IwasawaMainConjectureData"]
+theorems = ["iwasawa_main_conjecture_data_intro", "iwasawa_main_iwasawa_basic_dependency_explicit", "iwasawa_main_padic_measure_nt_t42_dependency_explicit", "iwasawa_main_l_function_nt_t53_dependency_explicit", "kubota_leopoldt_padic_l_function_reuses_nt_t42_surface", "kubota_leopoldt_interpolation_formula_surface", "iwasawa_main_conjecture_exact_assumptions_conditional_surface", "iwasawa_main_conjecture_conditional_form_surface", "mazur_wiles_theorem_surface", "ferrero_washington_theorem_surface", "mu_equals_zero_theorem_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.Iwasawa.EulerSystem"
+source = "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/source.npa"
+certificate = "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/meta.json"
+replay = "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:46f6722834de0aab599c53d886de11878a07a0c20d74e16d3f64687acba86a68"
+certificate_file_sha256 = "sha256:da7d2527023265b8d4b82f13501dc6b2a39be7d2b96a57b1d868bbeb07f134e7"
+export_hash = "sha256:324307c5edc904f7c25ef38a00dcca92ee6c636ef61feefc81dedc6f5dc32360"
+axiom_report_hash = "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699"
+certificate_hash = "sha256:e81236a39d63d5a4e02cadac501c62b1a854d296949477a13b69a368a91d27e5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Iwasawa.Basic", "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.EllipticCurve.GaloisRepresentation", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.EllipticCurve.LFunction"]
+definitions = ["IwasawaEulerSystemData"]
+theorems = ["iwasawa_euler_system_data_intro", "euler_system_iwasawa_main_conjecture_dependency_explicit", "euler_system_elliptic_curve_selmer_dependency_explicit", "euler_system_padic_l_function_dependency_explicit", "euler_system_norm_relations_surface", "kato_euler_system_surface", "rubin_euler_system_surface", "coates_wiles_theorem_surface", "plus_minus_selmer_groups_shared_with_elliptic_curve_modules", "gross_koblitz_formula_surface", "euler_system_bounds_selmer_surface", "euler_system_main_conjecture_link_surface", "skinner_urban_theorem_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ModularForms.Basic"
+source = "Proofs/Ai/ModularForms/Basic/source.npa"
+certificate = "Proofs/Ai/ModularForms/Basic/certificate.npcert"
+meta = "Proofs/Ai/ModularForms/Basic/meta.json"
+replay = "Proofs/Ai/ModularForms/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:757a4f69f2f202ef4424c43d5633592ccec12c87b09bbe561f50fc7a8e0d76fd"
+certificate_file_sha256 = "sha256:92581e310a590a1b69f99d0a1e7ba2fe8edb75504c86809717b3b1d1d213087b"
+export_hash = "sha256:ed705458fb2dcb52e81b87ab6b7e8b81d82eee2d2f3bf002ce1a76a44e4ef3da"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:bcbc036aec2e4f5fcaa2888afc8e2d459a72905bd8537233944c6757122f2240"
+imports = ["Std.Logic.Eq"]
+definitions = ["ModularFormBasicData"]
+theorems = ["modular_form_basic_data_intro", "modular_form_complex_analytic_domain", "modular_form_weight_level_transformation", "cusp_form_weight_level_condition"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ModularForms.QExpansion"
+source = "Proofs/Ai/ModularForms/QExpansion/source.npa"
+certificate = "Proofs/Ai/ModularForms/QExpansion/certificate.npcert"
+meta = "Proofs/Ai/ModularForms/QExpansion/meta.json"
+replay = "Proofs/Ai/ModularForms/QExpansion/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e6a7779c436cbb4dd326b6d452f71d5922d0469e77ad5320c746b8abcbb16620"
+certificate_file_sha256 = "sha256:674be3ec040d5a9edc060af0dc2204b48c379abd3627de4ec91487cf2c1272c9"
+export_hash = "sha256:7048d479fc24b40c3714ea8f4ed50101e000c83f711db2535df2d6dfc7ef37db"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:fd662e5ca1758a74d73499f83e93a707d4ddeef7ca2a9eda8c524d4cb7e34684"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic"]
+definitions = ["QExpansionPrinciple", "QExpansionData"]
+theorems = ["q_expansion_data_intro", "q_expansion_basic_data", "q_expansion_principle_from_data", "q_expansion_principle_apply", "eisenstein_series_self_q_expansion_identity", "q_expansion_coefficient_self_identity"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ModularForms.Hecke"
+source = "Proofs/Ai/ModularForms/Hecke/source.npa"
+certificate = "Proofs/Ai/ModularForms/Hecke/certificate.npcert"
+meta = "Proofs/Ai/ModularForms/Hecke/meta.json"
+replay = "Proofs/Ai/ModularForms/Hecke/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:68cbbde187179f8d7caf38158b41c77244d8cb269ab1180b95327ed79f201d00"
+certificate_file_sha256 = "sha256:d5ec34c311b4e706d1de84460b6ba8f6a15830bbe5821cf460abd8c6bd298882"
+export_hash = "sha256:19be36c304d1e79bcec528a317d391cf7d104c312ff202fd9e60105b87565b6f"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:ba126f2d0da22e4adc42d637527bc7294284673b76df3fed874fa9025d479a27"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion"]
+definitions = ["HeckeOperatorData"]
+theorems = ["hecke_operator_data_intro", "hecke_eigenform_operator_equation", "hecke_coefficient_field_contains_fourier_coefficients", "hecke_fourier_coefficient_multiplicativity_for_eigenforms", "petersson_inner_product_symmetry_surface", "trace_formula_analytic_geometric_prerequisites_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.HeckeL"
+source = "Proofs/Ai/NumberTheory/HeckeL/source.npa"
+certificate = "Proofs/Ai/NumberTheory/HeckeL/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/HeckeL/meta.json"
+replay = "Proofs/Ai/NumberTheory/HeckeL/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d3b89c12297f477e74a7871c854a91b46df0cf2cd2948faf074717618f7f0258"
+certificate_file_sha256 = "sha256:7155aa870596927bc79fca57ff283e8e0f0c6dd3559671cdc2ce30dfb89241ba"
+export_hash = "sha256:54b2420723d0abd2078e7574ce2dbbb09e044be9bbc34df05a3e7eca280609f5"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:f7a6173890d0aa7af5ad73931d3d7f925a7aa1e8fc73c6459ba6bd7c3df5c1f7"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion", "Proofs.Ai.ModularForms.Hecke"]
+definitions = ["HeckeLData"]
+theorems = ["hecke_l_data_intro", "hecke_l_general_l_function_data", "hecke_l_local_factor_surface", "hecke_l_euler_product_surface", "hecke_l_automorphic_l_function_surface", "hecke_l_automorphic_normalization_surface", "hecke_l_matches_general_l_function_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ModularForms.ModularCurve"
+source = "Proofs/Ai/ModularForms/ModularCurve/source.npa"
+certificate = "Proofs/Ai/ModularForms/ModularCurve/certificate.npcert"
+meta = "Proofs/Ai/ModularForms/ModularCurve/meta.json"
+replay = "Proofs/Ai/ModularForms/ModularCurve/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:ecc6f88c0788a605164285ccc114ed85532a23c506a2681c1d71a1852713126d"
+certificate_file_sha256 = "sha256:469294e1114c3f6ae850a93b8d5ad21cec11c2d5523d2453f78430ef7342fe01"
+export_hash = "sha256:bd6de9206061de7b77c9447fedad1fe0f513581351fbf08936e28c04252487f0"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:8c12d0c892ee236f6e4a3e096f0967a25a7562f954d8b3abd28a649d7283e2ed"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion", "Proofs.Ai.ModularForms.Hecke"]
+definitions = ["ModularCurveData"]
+theorems = ["modular_curve_data_intro", "modular_curve_hecke_package_dependency", "modular_curve_construction_evidence_explicit", "modular_curve_jacobian_construction_surface", "eichler_shimura_interface_surface", "modular_curve_analytic_geometric_prerequisites"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Modularity.LevelLowering"
+source = "Proofs/Ai/Modularity/LevelLowering/source.npa"
+certificate = "Proofs/Ai/Modularity/LevelLowering/certificate.npcert"
+meta = "Proofs/Ai/Modularity/LevelLowering/meta.json"
+replay = "Proofs/Ai/Modularity/LevelLowering/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:b365e321d694557642611c23a2220d4b2abad8e5204c7dfa65991730c2070eb9"
+certificate_file_sha256 = "sha256:78b9fc868d3c6eba24c287082e673e15aded7a13394ad7bf62ffb46053a3d2c3"
+export_hash = "sha256:3a63c76831bcfc3d75d8ecd765e8a979f58914e35aae7c0e3bfde0188634b8b2"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:a5773bfb0f324fedbeec96eb03378f2b963dcf3e62b5109f595625c78e6618c1"
+imports = ["Std.Logic.Eq"]
+definitions = ["LevelLoweringData"]
+theorems = ["level_lowering_data_intro", "level_lowering_conductor_newform_dependency_map_surface", "level_lowering_conclusion_from_dependency_map", "level_lowering_non_frey_representation_reuse"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Modularity.Ribet"
+source = "Proofs/Ai/Modularity/Ribet/source.npa"
+certificate = "Proofs/Ai/Modularity/Ribet/certificate.npcert"
+meta = "Proofs/Ai/Modularity/Ribet/meta.json"
+replay = "Proofs/Ai/Modularity/Ribet/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:9693d03afec98483987ce884205014f0d8f63c07068738c99b71d08ea4c2a7f8"
+certificate_file_sha256 = "sha256:6bded5bef8749ba79299cbd65009c1e0e385308d66373a9051dfce03244549f3"
+export_hash = "sha256:efb6f3d0917ee0d30842135daf84bda0856974c98f6e342dd6a1173ddd3ba265"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:567610cff87e02cdc7ea4e8dfb29aef60077e32ff52bd9d76bde4fd7947703fc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Modularity.LevelLowering"]
+definitions = ["RibetBridgeData"]
+theorems = ["ribet_bridge_axiom_data_intro", "ribet_level_lowering_general_package_surface", "ribet_hecke_package_input_surface", "ribet_modular_curve_package_input_surface", "ribet_level_lowering_statement_surface", "ribet_bridge_axiom_not_completed_proof_boundary", "ribet_high_trust_import_blocked_for_bridge_variants"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Modularity.Lifting"
+source = "Proofs/Ai/Modularity/Lifting/source.npa"
+certificate = "Proofs/Ai/Modularity/Lifting/certificate.npcert"
+meta = "Proofs/Ai/Modularity/Lifting/meta.json"
+replay = "Proofs/Ai/Modularity/Lifting/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:6234ef6606a5de7148400f82c4ca054e37ca4455b85bee972c61ce7d7f842517"
+certificate_file_sha256 = "sha256:e1bef5b7d2b0dd7157b9144df3e53134871b6cb17e7dd4f06634461521a7624e"
+export_hash = "sha256:5e62919d338e088b317f2630febbbb0cb28e8a5e0d2eff4055cc9495908144f7"
+axiom_report_hash = "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839"
+certificate_hash = "sha256:56129a56d5f8abc5e34b41a6762317cbe52e6bd53ff5cc5431d242531934d5ce"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Modularity.LevelLowering"]
+definitions = ["ModularityLiftingData"]
+theorems = ["modularity_lifting_data_intro", "deformation_functor_ring_surface", "hecke_deformation_comparison_surface", "R_eq_T_from_hecke_deformation_comparison", "minimal_modularity_lifting_surface", "nonminimal_modularity_lifting_deep_assumptions_named", "modularity_lifting_non_frey_reuse_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Modularity.Semistable"
+source = "Proofs/Ai/Modularity/Semistable/source.npa"
+certificate = "Proofs/Ai/Modularity/Semistable/certificate.npcert"
+meta = "Proofs/Ai/Modularity/Semistable/meta.json"
+replay = "Proofs/Ai/Modularity/Semistable/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2e2af19434ae0df63bfc0cbaad8ae740191d60581a617622f9da4379a8a5adc1"
+certificate_file_sha256 = "sha256:03ec31a0d5cc4a38e8bd49e50ad9960ce4f6d97c055e7792d66f19cb835425c2"
+export_hash = "sha256:f06f75b0f42b1057efb7ceb682ddde052846e6ac036a01715d49ac902d7d59fa"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:d8490c9c76a381b33256af1d29113dbcf484729a16d89f4061e712419f0743f2"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting"]
+definitions = ["SemistableModularityData"]
+theorems = ["semistable_modularity_data_intro", "semistable_modularity_lifting_input_surface", "semistable_reusable_assumptions_surface", "semistable_modularity_conclusion_surface", "semistable_modularity_route_surface", "semistable_modularity_no_BridgeAxiom_dependency"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Langlands.TraceFormula"
+source = "Proofs/Ai/Langlands/TraceFormula/source.npa"
+certificate = "Proofs/Ai/Langlands/TraceFormula/certificate.npcert"
+meta = "Proofs/Ai/Langlands/TraceFormula/meta.json"
+replay = "Proofs/Ai/Langlands/TraceFormula/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:c266aff6da67f3be4b1507b79fcc875f6df9b8a8bdbdb1af94019591dc965fc4"
+certificate_file_sha256 = "sha256:b85867e7fc1e83f87ebf0c7d3b676430aa66bfd88956b05251d3390deaaeed4a"
+export_hash = "sha256:1af7fa665aa1123a160bc356732d75ee45a65c84587a72a9d254c10a8ace19fd"
+axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
+certificate_hash = "sha256:e1246187e9652dd6b95ff4f3037600338e7b22951ddc7a6a8e8c66a73c144b17"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion", "Proofs.Ai.ModularForms.Hecke"]
+definitions = ["TraceFormulaData"]
+theorems = ["trace_formula_data_intro", "trace_formula_explicit_analytic_geometric_assumptions", "arthur_selberg_trace_formula_surface", "trace_formula_geometric_side_surface", "trace_formula_spectral_side_surface", "orbital_integral_trace_formula_surface", "endoscopic_transfer_surface", "fundamental_lemma_statement_surface", "ngo_style_fundamental_lemma_reference_surface", "stable_trace_formula_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.NumberTheory.AutomorphicL"
+source = "Proofs/Ai/NumberTheory/AutomorphicL/source.npa"
+certificate = "Proofs/Ai/NumberTheory/AutomorphicL/certificate.npcert"
+meta = "Proofs/Ai/NumberTheory/AutomorphicL/meta.json"
+replay = "Proofs/Ai/NumberTheory/AutomorphicL/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:56ecb5b75a92d5076d36194aa1a41b6f5a486e97889b068f908f516d2033c508"
+certificate_file_sha256 = "sha256:ac8fb8b399b490a4353e87134f51b8c96ae1096f43ccba3a5ec37881e3e32e61"
+export_hash = "sha256:8d0084159fda42faa0e72648f0e26f39e8853f19462ef87ba2fc1afa14758b34"
+axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+certificate_hash = "sha256:27efacf9115bbb24302f5e6f05f62a7d59fd37dacc7220c77914c5558ae48b9b"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.HeckeL", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable", "Proofs.Ai.Langlands.TraceFormula"]
+definitions = ["AutomorphicLData"]
+theorems = ["automorphic_l_data_intro", "automorphic_l_general_l_function_data", "automorphic_l_hecke_l_data", "cuspidal_representation_is_automorphic_surface", "automorphic_representation_l_function_surface", "rankin_selberg_product_surface", "rankin_selberg_analytic_surface", "langlands_shahidi_normalization_surface", "converse_theorem_surface", "automorphic_l_trace_formula_prerequisites_map", "automorphic_l_analytic_continuation_l1_boundary", "automorphic_l_semistable_modularity_compatibility_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Langlands.Interface"
+source = "Proofs/Ai/Langlands/Interface/source.npa"
+certificate = "Proofs/Ai/Langlands/Interface/certificate.npcert"
+meta = "Proofs/Ai/Langlands/Interface/meta.json"
+replay = "Proofs/Ai/Langlands/Interface/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:288663f753a76745541248042e96380aa7f8a72cb7ebd3ea7a7191307cb85dfe"
+certificate_file_sha256 = "sha256:d6e129e1615c23c85d1eb991ba410df24ffa636d557f050ca8125cddc52ea667"
+export_hash = "sha256:1a8ff781fa5f9a45a17208403fc01b0b826bfdf54d37c23c89da26b28b546016"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:d2c89258c1c421bd5dda5cf5094a18a4af7873aae18ab4f267f3427a9670c3f3"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.HeckeL", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable", "Proofs.Ai.Langlands.TraceFormula", "Proofs.Ai.NumberTheory.AutomorphicL"]
+definitions = ["LanglandsInterfaceData"]
+theorems = ["langlands_interface_data_intro", "langlands_trace_formula_data", "langlands_automorphic_l_data", "langlands_local_correspondence_statement_surface", "langlands_global_correspondence_statement_surface", "jacquet_langlands_transfer_surface", "langlands_base_change_surface", "langlands_functoriality_l0_conditional_boundary", "sato_tate_conditional_statement_surface", "potential_automorphy_conditional_surface", "langlands_promotable_subtheorem_boundary", "langlands_dependency_graph_edge_surface", "langlands_conjectural_statements_marked_l0", "langlands_no_broad_derived_certificate_boundary"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractFieldIntegralDomain"
 source = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractFieldIntegralDomain/certificate.npcert"
@@ -1334,6 +2936,24 @@ certificate_hash = "sha256:6aa91e33804e3cb9d48ab8f5d6df00ed4008516e5fb6f0422b1d6
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing"]
 definitions = ["HbtFalse", "HbtNot", "IdealLawArgs", "FiniteIdealGeneratingSet", "FinitelyGeneratedIdeal", "NoetherianRingArgs", "PolynomialExtensionLawArgs", "HilbertBasisConstructionArgs", "HilbertBasisTheorem"]
 theorems = ["ideal_law_args_intro", "finite_ideal_generating_set_intro", "finitely_generated_ideal_intro", "noetherian_ring_args_intro", "noetherian_ring_laws", "noetherian_ideal_finitely_generated", "polynomial_extension_law_args_intro", "polynomial_extension_ring_laws", "hilbert_basis_construction_args_intro", "hilbert_basis_ideal_finitely_generated", "hilbert_basis_polynomial_noetherian", "hilbert_basis_theorem"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Combinatorics.Binomial.Algebra"
+source = "Proofs/Ai/Combinatorics/Binomial/Algebra/source.npa"
+certificate = "Proofs/Ai/Combinatorics/Binomial/Algebra/certificate.npcert"
+meta = "Proofs/Ai/Combinatorics/Binomial/Algebra/meta.json"
+replay = "Proofs/Ai/Combinatorics/Binomial/Algebra/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:205220b0553925ee1d13569e9d6bcc69a058feab12f1af96c7776f8d8b116b42"
+certificate_file_sha256 = "sha256:acb37f383db6f1f68af81a0b6908ad778144f3dcd9ac9aa8d3793fd7fcf49d4b"
+export_hash = "sha256:f0e7a6761a679ed8cdd0d093b1f30b1894e4261748dfee2e05a8a4bf4b80b485"
+axiom_report_hash = "sha256:4ce54129453ca5f2cc9726d9e809e739b6640402d7515115c64b8169ae6c93a6"
+certificate_hash = "sha256:4c795073807d72141cde35c04ebb6a798c99e43ca2089cde9c2152e6870851db"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Binomial", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem"]
+definitions = ["BinomialAlgebraRingPackage", "PolynomialPowerSeriesDependencyPredicate", "BinomialTheoremSurfacePredicate", "AlgebraicVandermondeIdentityPredicate", "AlgebraicMultinomialTheoremPredicate"]
+theorems = ["binomial_algebra_ring_package_intro", "binomial_algebra_ring_law_package_statement", "binomial_algebra_semiring_projection_statement", "polynomial_power_series_dependency_intro", "polynomial_dependency_statement", "formal_power_series_dependency_statement", "polynomial_power_series_bridge_statement", "binomial_theorem_surface_intro", "binomial_theorem_polynomial_dependency_statement", "binomial_theorem_statement", "algebraic_vandermonde_identity_intro", "algebraic_vandermonde_counting_bridge_statement", "algebraic_vandermonde_identity_statement", "algebraic_multinomial_theorem_intro", "algebraic_multinomial_counting_bridge_statement", "algebraic_multinomial_theorem_statement"]
 axioms = []
 
 [[proof_modules]]
@@ -1524,14 +3144,14 @@ meta = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/meta.json"
 replay = "Proofs/Ai/AlgebraicGeometry/DerivedAffineSchemes/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
-source_sha256 = "sha256:d3f39392a3a7b721172d3462469884b5511e73927541ac539d39dbc8f13490e5"
-certificate_file_sha256 = "sha256:d1116e82875455f07d0257d3e3230d864db96f189733f920395e5716a4af16a3"
-export_hash = "sha256:71d36383b4094ce0474de73d54bd5f221bb2af4764a32e7453756cb41fce1fa2"
-axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
-certificate_hash = "sha256:fddae1ef941a35bbf46d0b787fc2d40a8adf2c35a02c53b42b9758fa65d1d038"
+source_sha256 = "sha256:1850c803b016bb80318bd0a5bbcb5f1ae55f8a1b82cdf51913a9190b2cca4dd1"
+certificate_file_sha256 = "sha256:6fb958710ca401f692a0366d81929616c23914c482afccbff68bb7f7e059c874"
+export_hash = "sha256:65728c48c8479648b70e24854aa5912abdb39073496bc0e4cdd8706a3560a0ca"
+axiom_report_hash = "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49"
+certificate_hash = "sha256:12421242722b72cdf17caad5996307c98819ffe5d3c73b1aeb19d23d9a068765"
 imports = []
 definitions = ["DerivedAffineSchemeLawArgs"]
-theorems = ["affine_schemes_definition_intro", "affine_schemes"]
+theorems = ["affine_schemes_definition_intro", "affine_schemes", "derived_affine_schemes"]
 axioms = []
 
 [[proof_modules]]
@@ -1543,10 +3163,10 @@ replay = "Proofs/Ai/AlgebraicGeometry/QuasiCoherentSheaves/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
 source_sha256 = "sha256:f9a483b9a4341bb37c0577480eeaba3edcd430f44adc9ecc9894b62e01b4f8bd"
-certificate_file_sha256 = "sha256:7cb5cdfef4b91816837cf90ee0d91b3f1c8ede3afb7c0e18186d225a1ad06710"
+certificate_file_sha256 = "sha256:01d4ba619d64f0f9bbff0484923933e48a11caa3869c56351e6a2b14669fd4cf"
 export_hash = "sha256:151d37d1f323c7d6f8b60c6d5120be39dfbc1f900b1b32c8578066cc12e01d8c"
 axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
-certificate_hash = "sha256:fa7d05fc37c7a7fb3105f049039471d27477ac2a38f8762a2ea0f88fd6014849"
+certificate_hash = "sha256:5b5ce5036916cee9d273ab71d4d51830ae07fc59c1b80b3aa2f5187e4bd2d263"
 imports = ["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"]
 definitions = ["QuasiCoherentSheafLawArgs"]
 theorems = ["quasi_coherent_sheaves_definition_intro", "quasi_coherent_sheaves"]
@@ -1561,10 +3181,10 @@ replay = "Proofs/Ai/AlgebraicGeometry/EtaleSmoothFlatTopology/replay.json"
 producer_profile = "human-surface-explicit-term"
 trusted_status = "verified_by_certificate"
 source_sha256 = "sha256:6e82bf7b52763d796389e47cd1cc4df64af8fa407a740341a3728c9a48ef1e5f"
-certificate_file_sha256 = "sha256:13c3e35e5f7560556f2cd4fa40b99861695b9201e74b4d0f77d0faa3f3386a15"
+certificate_file_sha256 = "sha256:b3a86b5de97cb0cfe82babd36103587895f08994b22dac7040eb0af4a5d0cee7"
 export_hash = "sha256:d703624de3ede7adf563775b6e2400c2172b690eb53560ccc4ad6df02afa6057"
 axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
-certificate_hash = "sha256:4968dc2adf8849376b456aab63770efc503078bb3f2fe534180e350f1dea34a4"
+certificate_hash = "sha256:687900b45e08a0924b9f107cef766e7eb870a47b73796e749d41e438bde64d9e"
 imports = ["Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"]
 definitions = ["EtaleSmoothFlatTopologyLawArgs"]
 theorems = ["etale_smooth_flat_topology_definition_intro", "etale_topology", "smooth_topology", "flat_topology", "etale_smooth_flat_topology"]
@@ -1625,6 +3245,132 @@ theorems = ["cotangent_complex_definition_intro", "cotangent_complex_derived_cat
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.AlgebraicGeometry.SimplicialCommutativeRingCdga"
+source = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/source.npa"
+certificate = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/certificate.npcert"
+meta = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/meta.json"
+replay = "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:bcb121576042e7f9e28def82219e0a76188502f5a4091f5d1b31b5483c247a91"
+certificate_file_sha256 = "sha256:41b57fa252c6dca1191985cfb695a983d3dfe1643da1e9c82052b14c8a45e9cd"
+export_hash = "sha256:1542a36b59dbe51e499c1636dced5a048b23b489d106b85c79db035aad58a832"
+axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+certificate_hash = "sha256:7ecea78da0e0ce71e0f53174e8f628785a78cbd84fe618900d5c86856b8e0ac0"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Category.Classical"]
+definitions = ["SimplicialCommutativeRingLawArgs", "CdgaLawArgs", "SimplicialCommutativeRingCdgaComparisonLawArgs"]
+theorems = ["simplicial_commutative_ring_definition_intro", "simplicial_commutative_ring_simplicial_set", "simplicial_commutative_ring_restrict_identity", "simplicial_commutative_ring_restrict_composition", "simplicial_commutative_ring_level_commutative_ring", "simplicial_commutative_ring_restrict_preserves_zero", "simplicial_commutative_ring_restrict_preserves_one", "simplicial_commutative_ring_restrict_preserves_add", "simplicial_commutative_ring_restrict_preserves_neg", "simplicial_commutative_ring_restrict_preserves_sub", "simplicial_commutative_ring_restrict_preserves_mul", "simplicial_commutative_rings", "cdga_definition_intro", "cdga_underlying_commutative_ring", "cdga_graded_commutative", "cdga_differential_preserves_add", "cdga_differential_leibniz", "cdga_differential_squares_zero", "cdga", "simplicial_commutative_ring_cdga_comparison_definition_intro", "simplicial_commutative_ring_cdga_comparison_normalization_monoidal", "simplicial_commutative_ring_cdga_comparison_dold_kan_equivalence", "simplicial_commutative_rings_cdga"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ArithmeticGeometry.RationalPoints"
+source = "Proofs/Ai/ArithmeticGeometry/RationalPoints/source.npa"
+certificate = "Proofs/Ai/ArithmeticGeometry/RationalPoints/certificate.npcert"
+meta = "Proofs/Ai/ArithmeticGeometry/RationalPoints/meta.json"
+replay = "Proofs/Ai/ArithmeticGeometry/RationalPoints/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f38f71fe847061bbd30ab869c1607d7d429a9389bbd065a280a5bb240fe2f47d"
+certificate_file_sha256 = "sha256:a7965b1de7157471a59277acba2add22c2349db72b82f7f5ca9e923664bed9d6"
+export_hash = "sha256:e4754bc2efa4992e363aaf267d86b9291c1941b950bb46b16cb9b65cb8fac606"
+axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+certificate_hash = "sha256:75092aa075fbddcdc247caaa8cc9dbc69972a32ef7ec231f68ecb72cf66873d7"
+imports = ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.EllipticCurve.FiniteField", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"]
+definitions = ["RationalPointsData"]
+theorems = ["rational_points_data_intro", "curve_genus_surface", "curve_divisor_surface", "riemann_roch_curve_surface", "hasse_weil_bound_curve_surface", "hasse_weil_zeta_function_finite_field_core_surface", "mordell_faltings_l1_statement_surface", "siegel_integral_points_explicit_hypotheses_surface", "rational_integral_point_hypotheses_explicit", "finite_field_zeta_reuses_abstract_finite_field_core", "faltings_results_marked_l1_boundary", "rational_points_separated_from_etale_cohomology"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ArithmeticGeometry.Schemes"
+source = "Proofs/Ai/ArithmeticGeometry/Schemes/source.npa"
+certificate = "Proofs/Ai/ArithmeticGeometry/Schemes/certificate.npcert"
+meta = "Proofs/Ai/ArithmeticGeometry/Schemes/meta.json"
+replay = "Proofs/Ai/ArithmeticGeometry/Schemes/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:265fd69e167c1c8648ae9fa03fb4a375aa6154261853279ba8f8a60883713c40"
+certificate_file_sha256 = "sha256:673b74744bd021fa2f58749e0363dec336077c511ce3596cb97e343c4ea646ff"
+export_hash = "sha256:fb60baa4de4ba3af54f506b99e2bb6f3569cc50d9f629c0d41006c37f760bd54"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:9213b91d75f09499979c55158dbc901af6ee853c36513ac9d6ac093570441060"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"]
+definitions = ["SchemeInterfaceData"]
+theorems = ["scheme_interface_data_intro", "scheme_structure_surface", "fiber_product_surface", "zariski_topology_surface", "flatness_surface", "scheme_base_change_surface", "scheme_algebraic_geometry_dependency_explicit", "scheme_rational_points_dependency_explicit"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ArithmeticGeometry.EtaleCohomology"
+source = "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/source.npa"
+certificate = "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/certificate.npcert"
+meta = "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/meta.json"
+replay = "Proofs/Ai/ArithmeticGeometry/EtaleCohomology/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:1b16ae637818db6f72ec6523b17aa2ced9023e48f1fccc5ffd4724fb8b7d349e"
+certificate_file_sha256 = "sha256:28e9d0603ce322fe239895039a86b605fc56ad7541300e30453c9e004e05fa72"
+export_hash = "sha256:76cc1c7cdfb8ddaf619d82a9834348ee8aa1429f2c8873da57561e2546cccb36"
+axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
+certificate_hash = "sha256:7f76bf3572abd9785773f306c26b136c8d66a7616778efd39659e846e578cc54"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes", "Proofs.Ai.ArithmeticGeometry.Schemes", "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology"]
+definitions = ["EtaleCohomologyData"]
+theorems = ["etale_cohomology_data_intro", "etale_scheme_dependency_explicit", "etale_cohomology_assumptions_visible", "etale_cover_surface", "etale_cohomology_surface", "kummer_exact_sequence_surface", "proper_base_change_surface", "smooth_base_change_surface", "etale_cohomology_finiteness_surface", "cohomology_foundations_visible"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ArithmeticGeometry.WeilConjectures"
+source = "Proofs/Ai/ArithmeticGeometry/WeilConjectures/source.npa"
+certificate = "Proofs/Ai/ArithmeticGeometry/WeilConjectures/certificate.npcert"
+meta = "Proofs/Ai/ArithmeticGeometry/WeilConjectures/meta.json"
+replay = "Proofs/Ai/ArithmeticGeometry/WeilConjectures/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4a4a77d4ba71f790ed123880c1b432a453e421f68e5df95654f95c3b19baa823"
+certificate_file_sha256 = "sha256:1fcd0b66f12e6e21d27b2783b9cbee640784a63b40089162e997e66be2499480"
+export_hash = "sha256:53662ea66eede6e9d207761b3301880ccd9ebbe50037bb4e24f230bd284cae95"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:5a3d42598beb434f1eb8f9f2cfc2bfd8cd8d318d7822f259ff07a3345ad6614c"
+imports = ["Std.Logic.Eq", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes", "Proofs.Ai.ArithmeticGeometry.Schemes", "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology", "Proofs.Ai.ArithmeticGeometry.EtaleCohomology"]
+definitions = ["WeilConjecturesData"]
+theorems = ["weil_conjectures_data_intro", "weil_conjectures_etale_dependency_explicit", "grothendieck_trace_formula_surface", "lefschetz_trace_formula_surface", "weil_conjectures_interface_surface", "deligne_theorem_surface", "weil_conjectures_remain_interface_level", "deligne_theorem_not_generic_finite_field_axiom"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ArithmeticGeometry.PadicHodge"
+source = "Proofs/Ai/ArithmeticGeometry/PadicHodge/source.npa"
+certificate = "Proofs/Ai/ArithmeticGeometry/PadicHodge/certificate.npcert"
+meta = "Proofs/Ai/ArithmeticGeometry/PadicHodge/meta.json"
+replay = "Proofs/Ai/ArithmeticGeometry/PadicHodge/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:39009aee29ef888bfcf598685f1d4165928b8d508b0839457cc127e639ee28fc"
+certificate_file_sha256 = "sha256:7087aaa20ee84e128f4d548e6413f4a0bbab86e057b1c03996b994a06bb7df9e"
+export_hash = "sha256:459bdc68bf7a1403c0d395a121355ce0aa1593c5bf8aa427035c5d7216805cef"
+axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+certificate_hash = "sha256:d7d4b6563de58bb884f50ff25a1ce079f3dc11a71d5de7de8d1bca7659dd9354"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.NumberTheory.Padic", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.NumberTheory.PadicAnalysis", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw", "Proofs.Ai.EllipticCurve.Height", "Proofs.Ai.EllipticCurve.GaloisRepresentation", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes", "Proofs.Ai.ArithmeticGeometry.Schemes", "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology", "Proofs.Ai.ArithmeticGeometry.EtaleCohomology", "Proofs.Ai.ArithmeticGeometry.WeilConjectures"]
+definitions = ["PadicHodgeComparisonData"]
+theorems = ["padic_hodge_comparison_data_intro", "padic_hodge_weil_conjectures_dependency_explicit", "padic_hodge_reuses_padic_analysis", "padic_hodge_reuses_galois_representation_api", "period_ring_assumptions_explicit", "representation_hypotheses_explicit", "ladic_representation_surface", "padic_hodge_comparison_requires_period_ring_assumptions", "neron_model_surface", "neron_ogg_shafarevich_surface", "chabauty_coleman_surface", "ladic_representation_reuses_galois_api_surface"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.ArithmeticGeometry.SpecialPoints"
+source = "Proofs/Ai/ArithmeticGeometry/SpecialPoints/source.npa"
+certificate = "Proofs/Ai/ArithmeticGeometry/SpecialPoints/certificate.npcert"
+meta = "Proofs/Ai/ArithmeticGeometry/SpecialPoints/meta.json"
+replay = "Proofs/Ai/ArithmeticGeometry/SpecialPoints/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:ecfd4fd3be2c57dfbde8e0792799298cab208f478cc18ed5b29ad74aa5373525"
+certificate_file_sha256 = "sha256:8f233bf60e33222bcd96905e70475667ab9e383420d5132ab190f5c5d2d77fe3"
+export_hash = "sha256:5b1c40b0f346736eda5daf83ed2b901c02fb2cfd529be160533db454da23c820"
+axiom_report_hash = "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36"
+certificate_hash = "sha256:e5bd6ba0b5d188646b79ddddc77aa478742f1306800b12363ccc3e678c1f0212"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.NumberTheory.Padic", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.NumberTheory.PadicAnalysis", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw", "Proofs.Ai.EllipticCurve.Height", "Proofs.Ai.EllipticCurve.GaloisRepresentation", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes", "Proofs.Ai.ArithmeticGeometry.Schemes", "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology", "Proofs.Ai.ArithmeticGeometry.EtaleCohomology", "Proofs.Ai.ArithmeticGeometry.WeilConjectures", "Proofs.Ai.ArithmeticGeometry.PadicHodge"]
+definitions = ["SpecialPointsStatementMapData"]
+theorems = ["special_points_statement_map_data_intro", "special_points_padic_hodge_dependency_explicit", "special_point_statement_map_surface", "special_point_status_labeled", "manin_mumford_statement_surface", "mordell_lang_statement_surface", "bogomolov_statement_surface", "andre_oort_statement_conjectural_status_surface"]
+axioms = []
+
+[[proof_modules]]
 module = "Proofs.Ai.Algebra.AbstractOrderedField"
 source = "Proofs/Ai/Algebra/AbstractOrderedField/source.npa"
 certificate = "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert"
@@ -1658,6 +3404,24 @@ certificate_hash = "sha256:543bfbc91fd968253eec57742e43980803b28f341d9e6aacbf88e
 imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField"]
 definitions = ["OrderedFieldFieldBridgeArgs"]
 theorems = ["ordered_field_field_laws", "ordered_field_nonzero_of_positive", "ordered_field_inv_positive", "ordered_field_div_positive", "ordered_field_mul_pos", "ordered_field_sq_pos_of_nonzero"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Real.Basic"
+source = "Proofs/Ai/Analysis/Real/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Real/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Real/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Real/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:98770051b126d087bd78dcee80d14e22c5ac96eee452bd29ed77346e6c89696a"
+certificate_file_sha256 = "sha256:f5835d40f783e936840333df843d2e24429b3a6b13d25b1890b9a51190475d02"
+export_hash = "sha256:f9974144cc2ba5d39e55e52c8e2641a50024c8164bc55c1faff604db044dbaef"
+axiom_report_hash = "sha256:3abd9e97baa525d711d168a8c590d47ada282e4ac4f2ad6e88a7407f927f8bcf"
+certificate_hash = "sha256:b64358b6542d860c1e687413554ffd314a5205008791ded22d36240999353067"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge"]
+definitions = ["ClosedInterval", "OpenInterval", "UpperBound", "LowerBound", "BoundedAbove", "BoundedBelow", "NonemptySet", "SupremumEvidence", "InfimumEvidence", "IntervalLawArgs", "OrderCompletenessLawArgs", "ArchimedeanLawArgs", "CompleteOrderedFieldArgs", "AbstractRealFoundation"]
+theorems = ["closed_interval_intro", "closed_interval_elim", "open_interval_intro", "open_interval_elim", "upper_bound_apply", "lower_bound_apply", "bounded_above_intro", "bounded_below_intro", "nonempty_set_intro", "supremum_evidence_intro", "supremum_upper_bound", "supremum_least", "infimum_evidence_intro", "infimum_lower_bound", "infimum_greatest", "interval_law_args_intro", "order_completeness_law_args_intro", "supremum_exists_from_completeness", "infimum_exists_from_completeness", "archimedean_law_args_intro", "archimedean_upper", "complete_ordered_field_args_intro", "complete_ordered_field_ordered_laws", "complete_ordered_field_bridge", "complete_ordered_field_interval_laws", "complete_ordered_field_order_completeness", "complete_ordered_field_archimedean_laws", "abstract_real_foundation"]
 axioms = []
 
 [[proof_modules]]
@@ -1712,6 +3476,204 @@ certificate_hash = "sha256:2630b7fa0d19f9b235ac3c3a3bac6a70611d9b47fd861586c003d
 imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Std.Logic.Eq"]
 definitions = ["vsub", "linear_comb2", "linear_comb3", "VectorSpaceLawArgs"]
 theorems = ["vec_sub_def", "vec_add_assoc", "vec_add_comm", "vec_add_zero", "vec_zero_add", "vec_neg_add_cancel", "vec_add_neg_cancel", "sub_sub_sub_cancel", "vec_sub_self", "vec_sub_zero", "vec_add_left_cancel", "smul_add", "add_smul", "one_smul", "mul_smul", "zero_smul", "smul_zero", "neg_smul", "smul_neg", "vec_sub_eq_add_neg", "sub_add_sub_cancel_left", "linear_comb2_ext", "linear_comb3_ext"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.VectorSpace.Basic"
+source = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/VectorSpace/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f3c5fd3b1ecb66f0ef8edf2d85edb29c521ca9362eecb577ce02bd0811056e27"
+certificate_file_sha256 = "sha256:bfac869a99641f0911d702b8e8e8c8b4d2cda9c3957021d1b159c428a2d1b668"
+export_hash = "sha256:b12a46ef70f2cb332948ab1d4e612a61e2cf16f1cbae5aacdbb03b454161604b"
+axiom_report_hash = "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb"
+certificate_hash = "sha256:4f778a99da3104303f058563c7503d63ed888e1a4146aa541b7038e1d8474aa5"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace"]
+definitions = ["LinearAlgebraVectorSpaceLawArgs"]
+theorems = ["linear_algebra_vector_space_from_abstract_space", "abstract_space_from_linear_algebra_vector_space"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Subspace.Basic"
+source = "Proofs/Ai/LinearAlgebra/Subspace/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Subspace/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Subspace/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Subspace/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:ef5255fd73b9a8a9a20605b2cf9990cabdcb035a9413cb2e6f591357f3110c22"
+certificate_file_sha256 = "sha256:be79234cdb4648d2c969604acd0aa9a664f0de1039f05e9996aab93de5148bc6"
+export_hash = "sha256:4951bd0aa3ac5e03b7df05cafb6dd27967b8f4246787cced077aeaa9de744e8b"
+axiom_report_hash = "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699"
+certificate_hash = "sha256:8cf6e1362992829da8aff47e9c929bfee25a49003b44b1e6a917d8a7075d384d"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic"]
+definitions = ["Subspace", "SubspaceIntersection", "SubspaceSum", "SubspaceSumArgs"]
+theorems = ["subspace_criterion", "subspace_zero_mem", "subspace_add_mem", "subspace_smul_mem", "subspace_intersection_intro", "subspace_intersection_left_mem", "subspace_intersection_right_mem", "subspace_intersection_is_subspace", "subspace_sum_intro", "subspace_sum_from_evidence"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Basis.Dimension"
+source = "Proofs/Ai/LinearAlgebra/Basis/Dimension/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Basis/Dimension/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Basis/Dimension/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:89e8ca7767100101c2dc6cfb5c0e6d043027d0aa934821862a0db28a699f7555"
+certificate_file_sha256 = "sha256:da7bdc6f3f10e3fd2875251e86ab1e10bb540ad62c08410143bf52949b495fc8"
+export_hash = "sha256:18062c32082941e67e3953650be4860f5d5592b9b4cb5f6e48df14767dc4f71b"
+axiom_report_hash = "sha256:c80adca130b0ae3aaffee3a8b42c4e6fbe1c78b860571b24c54a96159a221002"
+certificate_hash = "sha256:d3b8a3c454e473cb9d9ccad585448e930f90d5d2e6b8eea98b4d87ff36ca2cb1"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"]
+definitions = ["CoordinateRepresentation", "LinearIndependent", "Spanning", "CoordinateUnique", "Basis", "SteinitzExchangeResult", "BasisExtensionResult", "GeneratingSetReductionResult", "FiniteDimensionCertificate", "FiniteBasisCardinalityAgreement"]
+theorems = ["coordinate_representation_intro", "coordinate_representation_eq", "linear_independent_intro", "linear_independent_coeff_zero", "spanning_intro", "spanning_has_coordinates", "coordinate_unique_intro", "coordinate_unique_coeff_eq", "basis_intro", "basis_linear_independent", "basis_spanning", "basis_coordinate_unique", "basis_coordinates_exist", "basis_coordinate_eq", "steinitz_exchange_result_intro", "steinitz_exchange", "basis_extension_result_intro", "basis_extension_theorem", "generating_set_reduction_result_intro", "generating_set_reduction_theorem", "finite_dimension_certificate_intro", "finite_dimension_basis", "finite_bases_cardinality_agreement_intro", "finite_bases_cardinality_eq", "dimension_theorem"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.LinearMap.Basic"
+source = "Proofs/Ai/LinearAlgebra/LinearMap/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/LinearMap/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/LinearMap/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/LinearMap/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4cbc70c1dbe5779ee214ff0a83150d3c9be71ef1c9178f424a8651d7ba74169e"
+certificate_file_sha256 = "sha256:195f05adc7847fc13df7e38546b5ef2d825096ac7c560a644960c3ef6d05ec28"
+export_hash = "sha256:142d8203656074c825452d65793f6f69860669b7b7bfa80d379c745d4b83f404"
+axiom_report_hash = "sha256:deef51821adbcd05393977f7b1a88217773a502a98cbd7b526e681be546ce7ad"
+certificate_hash = "sha256:5a98d58d63d433f28f51dcc3df14ad757b9b58952a474af84bdcc7cf86503bdb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension"]
+definitions = ["LinearMap", "LinearMapKernel", "LinearMapImage", "LinearMapKernelZero", "LinearMapInjective", "LinearMapSubspaceEvidence", "LinearMapInjectiveKernelCriterion", "LinearMapNullityCertificate", "LinearMapRankCertificate", "LinearMapRankNullityFormula", "LinearMapRankNullityEvidence"]
+theorems = ["linear_map_intro", "linear_map_zero", "linear_map_add", "linear_map_neg", "linear_map_smul", "linear_map_kernel_intro", "linear_map_kernel_eq_zero", "linear_map_kernel_zero_mem", "linear_map_image_intro", "linear_map_image_elim", "linear_map_image_zero_mem", "linear_map_subspace_evidence_intro", "linear_map_kernel_is_subspace", "linear_map_image_is_subspace", "linear_map_injective_kernel_criterion_intro", "linear_map_injective_of_kernel_zero", "linear_map_kernel_zero_of_injective", "linear_map_kernel_zero_of_injective_criterion", "linear_map_nullity_certificate_intro", "linear_map_rank_certificate_intro", "linear_map_rank_nullity_formula_intro", "linear_map_rank_nullity_evidence_intro", "linear_map_rank_nullity"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Basic"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:40ae0beab7cda8f974f6e1722ac9dbd5b512bcc3d66552d662c84510964fa040"
+certificate_file_sha256 = "sha256:41ec1d746fcc9a1205c409bd1d972881ff6382341723727877329f699c77bbc6"
+export_hash = "sha256:c51eb2d5d58db376c70c8219013bec5c5ad16d33c5f99ca6f3603bc54c072888"
+axiom_report_hash = "sha256:55932adb6d068a32ac76b43afee2b808d61b89bb36b85b1805fe77d82a1028b3"
+certificate_hash = "sha256:9f4bebc967e5fde57e57f89b4a10101c10321849e6a907d6d8913363b354f296"
+imports = ["Std.Logic.Eq"]
+definitions = ["Matrix", "MatrixEq", "MatrixAdd", "MatrixTranspose", "MatrixProductEvidence", "SquareMatrixMulLawArgs"]
+theorems = ["matrix_intro", "matrix_eq_intro", "matrix_eq_apply", "matrix_add_entry", "matrix_transpose_entry", "matrix_product_evidence_intro", "matrix_product_eq", "square_matrix_mul_law_args_intro", "square_matrix_mul_assoc", "square_matrix_left_unit", "square_matrix_right_unit"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Representation"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Representation/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Representation/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Representation/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Representation/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4ad3aaf71b365420dfea28777da66b387fce2a204219c4d60a378e62ec0cbd53"
+certificate_file_sha256 = "sha256:980c7876073541e1675fb1dc1478517a7913117dc83a88797a1af70bc89c6213"
+export_hash = "sha256:205f7651314cf0104ff67e31cbe643c732e2e7dc63c4a479f811453dedaa0ea9"
+axiom_report_hash = "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526"
+certificate_hash = "sha256:0959271f1b9976115fdc2277f85c2fc8cd48698d5064d265d05289950d414a36"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic"]
+definitions = ["LinearMapMatrixRepresentation", "MatrixRepresentationCompositionEvidence"]
+theorems = ["linear_map_matrix_representation_intro", "linear_map_matrix_representation_column", "matrix_representation_composition_evidence_intro", "matrix_representation_composition_product", "linear_map_composition_corresponds_to_matrix_product"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Systems.Basic"
+source = "Proofs/Ai/LinearAlgebra/Systems/Basic/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Systems/Basic/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Systems/Basic/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Systems/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:62f65a111f494a2a24ce96c5b9cf5fce420e6039ac33a89743465ad7a006f947"
+certificate_file_sha256 = "sha256:8a21594746d68810f6ef5caf35f45107e5e07d52d37d853b7be48122c54cc9d5"
+export_hash = "sha256:2ee4700e088c1d363e86a90ec9376a51ac475eff6ba0b44ad21c752dd6729d38"
+axiom_report_hash = "sha256:6fb10daa6bb059bfea6535d1d96e9ae73c2da1aee15921bf824480bbeee32550"
+certificate_hash = "sha256:15fadcbbe416aa5129d681ae286f0481e166a46e81043274a98b54557a3e4e3f"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic"]
+definitions = ["HomogeneousSolutionSet", "NonhomogeneousSolutionSet", "HomogeneousSolutionSpaceEvidence", "NonhomogeneousSolutionTranslateEvidence"]
+theorems = ["homogeneous_solution_intro", "homogeneous_solution_eq_zero", "homogeneous_solution_to_kernel", "kernel_to_homogeneous_solution", "nonhomogeneous_solution_intro", "nonhomogeneous_solution_eq_rhs", "homogeneous_solution_space_evidence_intro", "homogeneous_solution_space_kernel_subspace", "homogeneous_solution_set_is_kernel_subspace", "nonhomogeneous_solution_translate_intro", "nonhomogeneous_solution_particular", "nonhomogeneous_solution_to_homogeneous_offset", "homogeneous_offset_to_nonhomogeneous_solution", "nonhomogeneous_solution_set_is_translate"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Elimination"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Elimination/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:6b506dc6a186df75c197996f756aa00511fe9168bf5653e162a8b0cadb27a4f7"
+certificate_file_sha256 = "sha256:73f808829ea67a6193c552e45c6eda01510c9b0e0bf762d4644b6696a8c8fa19"
+export_hash = "sha256:9f66571fd23a314422142928b23bcf4fab948669397d2cb4667ccfc69cfb188b"
+axiom_report_hash = "sha256:6d14a3d02748965eba554beb8d48d3bfcbd201a68c65df3c0fd2edf58cc167fc"
+certificate_hash = "sha256:46ec0b86e655b8d5d37652c253647488493de44cdc40d6522c9af1f5c0517bdc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Systems.Basic"]
+definitions = ["MatrixSystemSolutionSet", "EchelonForm", "ReducedRowEchelonForm", "RowOperationPreservesSolutions", "RowReductionTraceEvidence", "GaussianEliminationCorrectnessEvidence", "RrefUniquenessEvidence"]
+theorems = ["matrix_system_solution_intro", "matrix_system_solution_eq_rhs", "echelon_form_intro", "reduced_row_echelon_form_intro", "row_operation_preserves_solutions_intro", "row_operation_preserves_solutions_forward", "row_operation_preserves_solutions_backward", "row_reduction_trace_evidence_intro", "row_reduction_trace_preserves_solution_set", "gaussian_elimination_correctness_evidence_intro", "gaussian_elimination_trace_evidence", "gaussian_elimination_echelon_form", "gaussian_elimination_preserves_solution_set", "gaussian_elimination_correctness", "rref_uniqueness_evidence_intro", "rref_unique_matrix", "rref_unique_rhs", "rref_uniqueness_route"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Determinant"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Determinant/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:8388484869a315e32f15f6f195728fd38b6c4446d1e259e2860e1544ca2daca0"
+certificate_file_sha256 = "sha256:995a8de398b605e1d330e9c494641afbade88b953f109a88185dfad9648501bf"
+export_hash = "sha256:d0d416d83280d97bab0bb9a2c6f159ce49584ff1560db535cbf4c52efa0e3025"
+axiom_report_hash = "sha256:4ce54129453ca5f2cc9726d9e809e739b6640402d7515115c64b8169ae6c93a6"
+certificate_hash = "sha256:3ec8f7dd297be64c1d8a1d1a7a8ef39e4ba11da6464b94d39468aabda89a7c75"
+imports = ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Basic"]
+definitions = ["DeterminantIdentityNormalized", "DeterminantTransposeInvariant", "DeterminantBasicProperties", "DeterminantProductDerivationEvidence"]
+theorems = ["determinant_identity_normalized_intro", "determinant_identity_normalized_eq", "determinant_transpose_invariant_intro", "determinant_transpose", "determinant_basic_properties_intro", "determinant_basic_identity_normalized", "determinant_basic_identity_eq", "determinant_basic_transpose", "determinant_basic_transpose_eq", "determinant_basic_multilinear", "determinant_basic_alternating", "determinant_product_derivation_evidence_intro", "determinant_product_basic_properties", "determinant_product_matrix_mul_laws", "determinant_product_from_derivation", "determinant_product_theorem", "determinant_product"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Adjugate"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Adjugate/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:71ebb72e46e9223e79a4c9d7d92706a34ad8f07dbe3e6dceb508f3b410986eae"
+certificate_file_sha256 = "sha256:9cf13b797a4b9b5c4f4c8a691b519a0c59277bfbb25850449271cc6610c98253"
+export_hash = "sha256:5a3e0bc1414a24b3266aee700579810ec9924f490dfb0250619075807494031b"
+axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+certificate_hash = "sha256:4c1a55ecf995071f27dda871b8ea15d7b07a459c8ff577c223b7f614b375c9d4"
+imports = ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Elimination"]
+definitions = ["AdjugateFormulaEvidence", "MatrixInverseEvidence", "MatrixInvertible", "AdjugateInverseEvidence", "DeterminantInvertibilityEquivalenceEvidence", "CramerFormulaEvidence"]
+theorems = ["adjugate_formula_evidence_intro", "adjugate_left_formula", "adjugate_right_formula", "adjugate_scaled_identity_one", "matrix_inverse_evidence_intro", "matrix_inverse_left", "matrix_inverse_right", "matrix_invertible_intro", "adjugate_inverse_evidence_intro", "adjugate_inverse_matrix_inverse", "adjugate_inverse", "determinant_invertibility_equiv_intro", "matrix_invertible_to_det_unit", "det_unit_to_matrix_invertible", "determinant_invertibility_equivalence", "cramer_formula_evidence_intro", "cramer_solution", "cramer_coordinate_formula", "cramer_invertible_matrix", "cramer_formula"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.LinearAlgebra.Matrix.Rank"
+source = "Proofs/Ai/LinearAlgebra/Matrix/Rank/source.npa"
+certificate = "Proofs/Ai/LinearAlgebra/Matrix/Rank/certificate.npcert"
+meta = "Proofs/Ai/LinearAlgebra/Matrix/Rank/meta.json"
+replay = "Proofs/Ai/LinearAlgebra/Matrix/Rank/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0984ea30ee00ed1f4c06496b01e68ecefd045099eda58055457eb03b0b0a94dc"
+certificate_file_sha256 = "sha256:53fdf1bf9964b7ee125c95bf0f249a6973b6b94b975f85eb699d6dc667bf7c81"
+export_hash = "sha256:6c69274ce76220642bc22b7dcd2403d5c7f4e238939b59ea6bcae121b6a65c42"
+axiom_report_hash = "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1"
+certificate_hash = "sha256:24502cf7a89e4b45421948060cd3433d5ca511926ed75fc8556225254b444d0b"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Representation"]
+definitions = ["MatrixRowRankCertificate", "MatrixColumnRankCertificate", "RowColumnRankEqualityEvidence", "MatrixRankCertificate", "MatrixRankNullityAliasEvidence", "RankNormalFormEvidence"]
+theorems = ["matrix_row_rank_certificate_intro", "matrix_column_rank_certificate_intro", "row_column_rank_equality_intro", "row_column_rank_equality_row", "row_column_rank_equality_column", "row_rank_eq_column_rank", "row_rank_equals_column_rank", "matrix_rank_certificate_intro", "matrix_rank_row_certificate", "matrix_rank_column_certificate", "matrix_rank_row_eq_column", "matrix_rank_nullity_alias_intro", "matrix_rank_aliases_rank_nullity", "rank_normal_form_evidence_intro", "rank_normal_form_rank_certificate", "rank_normal_form_matrix", "rank_normal_form_preserves_rank", "rank_normal_form_row_rank_eq_column_rank", "matrix_rank_normal_form", "rank_normal_form_route"]
 axioms = []
 
 [[proof_modules]]
@@ -1784,6 +3746,132 @@ certificate_hash = "sha256:bebfe83d397757e2ce3e6764f72286449f329c304ff1176c382e4
 imports = ["Std.Logic.Eq", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace"]
 definitions = ["CauchySeq", "ConvergesTo", "CompleteMetricArgs", "SelfMapOn", "ContractiveOn", "FixedPoint", "FixedPointStability", "FixedPointEvidence", "FixedPointResult", "BanachFixedPointArgs"]
 theorems = ["cauchy_seq_intro", "cauchy_seq_apply", "converges_to_intro", "converges_to_apply", "complete_metric_limit_from_args", "self_map_on_apply", "contractive_on_apply", "fixed_point_def", "fixed_point_stability_apply", "fixed_point_evidence_intro", "fixed_point_evidence_elim", "fixed_point_mem_from_evidence", "fixed_point_eq_from_evidence", "fixed_point_unique_from_evidence", "fixed_point_stability_from_evidence", "fixed_point_result_intro", "fixed_point_result_elim", "banach_fixed_point_from_args"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Sequence.Basic"
+source = "Proofs/Ai/Analysis/Sequence/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Sequence/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Sequence/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Sequence/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:c87bd877a2457da62bb484b58f818d53999ea02744db9611fc5d692749609bfd"
+certificate_file_sha256 = "sha256:35fa25fd2edf547fcb77f0920f5da0dfe83afd298ce5f264c7eaa4c4593f65cb"
+export_hash = "sha256:e38bcf2a1d01d42ca122cc99df87f8e8cb046ccd1de9fba544a8c70a19502a6e"
+axiom_report_hash = "sha256:7db5cf419a94af177892849d7ccf6e16a0f19f9935578d079aa8373853a564d8"
+certificate_hash = "sha256:e9952d441839619641a8bd5a689d8f25bef4704cc767c3c21d651b2e6640dddc"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint"]
+definitions = ["SequenceValue", "Eventually", "Subsequence", "SequenceConvergesTo", "SequenceLimit", "BoundedSequenceBy", "BoundedSequence", "SequenceBoundedAbove", "SequenceBoundedBelow", "SequenceMonotoneIncreasing", "SequenceMonotoneDecreasing", "SequenceMonotoneCompletenessEvidence", "SequenceSqueezeBounds", "SequenceSqueezeConvergenceEvidence", "NestedIntervalLowerEndpointSet", "NestedClosedIntervals", "ShrinkingIntervalLength", "NestedIntervalPoint", "NestedIntervalCompletenessEvidence", "SequenceLimitUniquenessEvidence", "FixedPointConvergesToAlias", "FixedPointCauchySeqAlias", "SequenceCauchySeq", "SequenceConvergenceChoice", "SequenceCauchyCompletenessEvidence"]
+theorems = ["sequence_value_intro", "sequence_value_elim", "eventually_intro", "eventually_elim", "subsequence_intro", "subsequence_term", "sequence_converges_to_intro", "sequence_converges_to_small", "sequence_limit_def", "bounded_sequence_by_intro", "bounded_sequence_by_lower", "bounded_sequence_by_upper", "bounded_sequence_intro", "bounded_sequence_elim", "sequence_bounded_above_intro", "sequence_bounded_above_elim", "sequence_bounded_below_intro", "sequence_bounded_below_elim", "sequence_bounded_above_from_bounds", "sequence_bounded_below_from_bounds", "sequence_monotone_increasing_intro", "sequence_monotone_increasing_apply", "sequence_monotone_decreasing_intro", "sequence_monotone_decreasing_apply", "sequence_squeeze_bounds_intro", "sequence_squeeze_lower_bound", "sequence_squeeze_upper_bound", "sequence_squeeze_convergence_evidence_intro", "sequence_squeeze_converges", "squeeze_theorem", "nested_interval_lower_endpoint_set_intro", "nested_interval_lower_endpoint_set_elim", "nested_closed_intervals_intro", "nested_closed_intervals_nonempty", "nested_closed_intervals_contains", "shrinking_interval_length_intro", "shrinking_interval_length_value", "shrinking_interval_length_converges", "nested_interval_point_intro", "nested_interval_point_elim", "nested_interval_completeness_evidence_intro", "nested_interval_point_from_completeness", "interval_nesting_theorem", "sequence_limit_uniqueness_intro", "sequence_limit_uniqueness_left", "sequence_limit_uniqueness_right", "sequence_limit_unique", "limit_unique", "fixed_point_converges_to_alias_intro", "fixed_point_converges_to_alias_project", "fixed_point_cauchy_seq_alias_intro", "fixed_point_cauchy_seq_alias_project", "sequence_cauchy_seq_intro", "sequence_cauchy_seq_small", "sequence_convergence_choice_intro", "sequence_convergence_choice_elim", "sequence_monotone_completeness_evidence_intro", "sequence_monotone_converges_from_completeness", "monotone_convergence_theorem", "sequence_cauchy_completeness_evidence_intro", "sequence_cauchy_completeness_ordered_field", "sequence_cauchy_completeness_metric", "sequence_cauchy_to_fixed_point_cauchy", "sequence_fixed_point_converges_to_sequence", "sequence_cauchy_converges_from_completeness", "sequence_cauchy_convergence_criterion", "cauchy_convergence_criterion"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Continuity.Basic"
+source = "Proofs/Ai/Analysis/Continuity/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Continuity/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Continuity/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Continuity/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d9d0e01b16113dfb5d9cbb0a6a5b81dea6d6469f499fb6e747ec7f6286ba05ce"
+certificate_file_sha256 = "sha256:934f86bf18864146f96ea155a67b2bbd52b8177e7caee2d11c53edd94760a480"
+export_hash = "sha256:b8b6daec2ac2e2159cadc3122d124903c710849e974c8752ee5bdd772adb2d27"
+axiom_report_hash = "sha256:3abd9e97baa525d711d168a8c590d47ada282e4ac4f2ad6e88a7407f927f8bcf"
+certificate_hash = "sha256:4e02539325b6e0f4eeb6244e677182178cf3d2a0a35f88ce4fc61b96703623c2"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"]
+definitions = ["FunctionPointwiseLimit", "ContinuousAt", "ContinuousOn", "UniformContinuous", "NeighborhoodLimitBridge", "LocalEqualityContinuityEvidence", "ContinuityRestrictionEvidence", "ContinuousCompositionEvidence", "ContinuousOnCompositionEvidence", "UniformContinuityRestrictionEvidence", "SequentialPointwiseLimitBridge"]
+theorems = ["function_pointwise_limit_intro", "function_pointwise_limit_apply", "continuous_at_intro", "continuous_at_limit", "continuous_on_intro", "continuous_on_apply", "uniform_continuous_intro", "uniform_continuous_apply", "neighborhood_limit_bridge_intro", "neighborhood_limit_bridge_apply", "pointwise_limit_from_neighborhood_bridge", "local_equality_continuity_evidence_intro", "local_equality_continuity_evidence_apply", "continuous_at_of_local_eq", "continuity_restriction_evidence_intro", "continuity_restriction_evidence_apply", "continuous_on_restrict", "continuous_at_restrict", "continuous_composition_evidence_intro", "continuous_composition_evidence_apply", "continuous_at_comp", "continuous_comp", "continuous_on_composition_evidence_intro", "continuous_on_composition_evidence_apply", "continuous_on_comp", "uniform_continuity_restriction_evidence_intro", "uniform_continuity_restriction_evidence_apply", "uniform_continuous_on_restrict", "sequential_pointwise_limit_bridge_intro", "sequential_pointwise_limit_bridge_apply", "pointwise_limit_of_sequential_bridge"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Sequence.Compactness"
+source = "Proofs/Ai/Analysis/Sequence/Compactness/source.npa"
+certificate = "Proofs/Ai/Analysis/Sequence/Compactness/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Sequence/Compactness/meta.json"
+replay = "Proofs/Ai/Analysis/Sequence/Compactness/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d11b08c524933ec943ea6e60c7265bf21bf3510004a6d10acb4ecc5d63999fc4"
+certificate_file_sha256 = "sha256:58861949ad91fc63e56acdbf8d9b94d0e6c58ee89beb36af6d3cad8e388c2024"
+export_hash = "sha256:ce946d68c62bc28894fe3f958d1680b2f7f71494eaca73749dab7609f3f9e069"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:d281fb9c096dd185108c4f1db63bcb5be7acddc90f51c6d16e68448e963b3f03"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"]
+definitions = ["SubsequenceExtractionEvidence", "ConvergentSubsequenceEvidence", "BolzanoWeierstrassChoice", "BolzanoWeierstrassCompletenessEvidence"]
+theorems = ["subsequence_extraction_evidence_intro", "subsequence_extraction_evidence_subsequence", "convergent_subsequence_evidence_intro", "convergent_subsequence_evidence_extraction", "convergent_subsequence_evidence_converges", "bolzano_weierstrass_choice_intro", "bolzano_weierstrass_choice_elim", "bolzano_weierstrass_completeness_evidence_intro", "bounded_sequence_compactness_from_interval_nesting", "bolzano_weierstrass_from_completeness", "bolzano_weierstrass_theorem"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Continuity.Interval"
+source = "Proofs/Ai/Analysis/Continuity/Interval/source.npa"
+certificate = "Proofs/Ai/Analysis/Continuity/Interval/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Continuity/Interval/meta.json"
+replay = "Proofs/Ai/Analysis/Continuity/Interval/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:f904d108d2ff3b3e4294600231cca6a2a415f4e89f62f17e755849012dbe03fb"
+certificate_file_sha256 = "sha256:b902cb95177a0f5972202b91071af713c02abfa358dc9b53b3c58cb0e2b02b3e"
+export_hash = "sha256:1dea2f5e52adf9aca17a326abc77d5b9560f1d4f0c3df8e51527704b4eb3ca0d"
+axiom_report_hash = "sha256:f67364f86bc26b13961e076cc86cc1128c5dc5f03705b802b274d3b3b2089988"
+certificate_hash = "sha256:fbb6ec0b58da8deadfb48413ebc57dc94267759a1381be44126730f7a2c689f8"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness"]
+definitions = ["IntervalEndpointOrder", "IntervalMembership", "IntervalImageWitness", "IntervalImageSet", "IntervalMaximumAttained", "IntervalMinimumAttained", "IntervalMaximumChoice", "IntervalMinimumChoice", "ExtremeValueConclusion", "IntervalContinuousOn", "IntervalUniformContinuous", "SignChangeAtEndpoints", "IntermediateValueHypothesis", "IntermediateValueEvidence", "ExtremeValueEvidence", "CompactIntervalUniformContinuityEvidence"]
+theorems = ["interval_endpoint_order_intro", "interval_endpoint_order_apply", "interval_membership_intro", "interval_membership_closed_interval", "interval_image_witness_intro", "interval_image_witness_elim", "interval_image_set_intro", "interval_image_set_elim", "interval_image_witness_to_image_set", "interval_image_set_to_witness", "interval_maximum_attained_intro", "interval_maximum_attained_elim", "interval_minimum_attained_intro", "interval_minimum_attained_elim", "interval_maximum_choice_intro", "interval_maximum_choice_elim", "interval_minimum_choice_intro", "interval_minimum_choice_elim", "interval_continuous_on_intro", "interval_continuous_on_apply", "interval_uniform_continuous_intro", "interval_uniform_continuous_apply", "extreme_value_evidence_intro", "extreme_value_evidence_maximum", "extreme_value_evidence_minimum", "extreme_value_conclusion_intro", "extreme_value_conclusion_elim", "extreme_value_theorem", "extreme_value_maximum", "extreme_value_minimum", "compact_interval_uniform_continuity_evidence_intro", "compact_interval_uniform_continuity_evidence_apply", "uniform_continuity_on_compact_interval", "sign_change_at_endpoints_intro", "sign_change_at_endpoints_elim", "intermediate_value_hypothesis_intro", "intermediate_value_hypothesis_elim", "intermediate_value_evidence_intro", "intermediate_value_evidence_apply", "intermediate_value_from_compactness", "intermediate_value_theorem", "intermediate_value_hypothesis_of_sign_change", "bolzano_theorem"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Calculus.OneVariable"
+source = "Proofs/Ai/Analysis/Calculus/OneVariable/source.npa"
+certificate = "Proofs/Ai/Analysis/Calculus/OneVariable/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Calculus/OneVariable/meta.json"
+replay = "Proofs/Ai/Analysis/Calculus/OneVariable/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e4c6e3f74fa847b701e37a4ca310bfe12439cfe67e2d593e5a3f826f232c94b7"
+certificate_file_sha256 = "sha256:d223e25d873ab5e19874243dd9b03ba90b6f956e2b4600cd05d19f73fe2bbda2"
+export_hash = "sha256:9ae0decbbe0b7adebb537aa2a7dcfc8d7b0fe1e9b16b8209b338127deb7a054e"
+axiom_report_hash = "sha256:c1bf30575cdfd332deaa042b630415f8816200141133fa2a6727308f4c32bdb4"
+certificate_hash = "sha256:69bf22ecf93d247245cab7fc7f744432f9b05b1666d40d2ec1f1fccf4bf0d4cb"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness", "Proofs.Ai.Analysis.Continuity.Interval"]
+definitions = ["OneVariableSlopeMap", "OneVariableDerivativeValue", "OneVariableDerivativeAt", "OneVariableDifferentiableAt", "OneVariableDifferentiableOnInterval", "OneVariableDerivativeZeroAt", "OneVariableCriticalPoint", "OneVariableLocalMaximumAt", "OneVariableLocalMinimumAt", "OneVariableLocalExtremumAt", "InteriorPointOfInterval", "OneVariableIntervalCriticalPoint"]
+theorems = ["one_variable_slope_map_def", "one_variable_derivative_value_def", "one_variable_derivative_at_from_frechet", "one_variable_derivative_at_to_frechet", "one_variable_derivative_at_intro", "one_variable_derivative_linear_from_at", "one_variable_derivative_bound_from_at", "one_variable_derivative_remainder_from_at", "one_variable_differentiable_at_intro", "one_variable_differentiable_at_elim", "one_variable_differentiable_at_to_frechet", "one_variable_differentiable_at_from_frechet", "one_variable_differentiable_on_interval_intro", "one_variable_differentiable_on_interval_apply", "one_variable_derivative_zero_at_intro", "one_variable_derivative_zero_at_elim", "one_variable_derivative_at_from_zero", "one_variable_derivative_value_zero_from_zero", "one_variable_critical_point_intro", "one_variable_critical_point_elim", "one_variable_local_maximum_to_interval", "one_variable_local_minimum_to_interval", "one_variable_local_extremum_intro_max", "one_variable_local_extremum_intro_min", "one_variable_local_extremum_elim", "interior_point_of_interval_intro", "interior_point_of_interval_elim", "one_variable_interval_critical_point_intro", "one_variable_interval_critical_point_elim"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Series.Basic"
+source = "Proofs/Ai/Analysis/Series/Basic/source.npa"
+certificate = "Proofs/Ai/Analysis/Series/Basic/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Series/Basic/meta.json"
+replay = "Proofs/Ai/Analysis/Series/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2d9f9af58ababf53b3daecd45a81bbb0abd625e056d2cf5e5faeb7e312311732"
+certificate_file_sha256 = "sha256:44c8653aca4b463165308f9894249cc81d7b58720fc7fa566e48911fa4dc4d85"
+export_hash = "sha256:3f26243f4112c1c9601126d417c2ae87ae1f9123ccb8e9139ec0edbf0a898840"
+axiom_report_hash = "sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12"
+certificate_hash = "sha256:421b8194238a52294ce541831f50b64583c63e118b3ec025ecf56044dac3542e"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"]
+definitions = ["SeriesPartialSums", "SeriesConvergesTo", "SeriesConverges", "SeriesAbsoluteTerms", "SeriesAbsolutelyConverges", "SeriesTail", "SeriesCauchy"]
+theorems = ["series_partial_sums_intro", "series_partial_sums_project", "series_converges_to_intro", "series_converges_to_partial_sums", "series_converges_to_sequence_converges", "series_convergence_is_partial_sum_sequence_convergence", "series_converges_intro", "series_converges_elim", "series_absolute_terms_intro", "series_absolute_terms_project", "series_absolutely_converges_intro", "series_absolutely_converges_terms", "series_absolutely_converges_series", "series_tail_intro", "series_tail_project", "series_cauchy_intro", "series_cauchy_partial_sums", "series_cauchy_sequence_cauchy", "series_cauchy_converges_from_sequence_criterion", "series_cauchy_convergence_criterion", "cauchy_series_criterion"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Analysis.Series.Criteria"
+source = "Proofs/Ai/Analysis/Series/Criteria/source.npa"
+certificate = "Proofs/Ai/Analysis/Series/Criteria/certificate.npcert"
+meta = "Proofs/Ai/Analysis/Series/Criteria/meta.json"
+replay = "Proofs/Ai/Analysis/Series/Criteria/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:d84ec6ac0cbc324f1a0e90cb45362fb599ad258e1c653bed6670d5cecae02067"
+certificate_file_sha256 = "sha256:5e9fddc0fdc126077ec45fb86086f0e7732452cce1d6544bb1f3350903d98ef7"
+export_hash = "sha256:9e1ab95ffb7ed49f6bb4d7cf78ab7e3c62e042a2b66d6151639e2000775d757b"
+axiom_report_hash = "sha256:790847b5e96c0b69bbe213d7a92fc9600c64859cb4081d66393a33857680d3cf"
+certificate_hash = "sha256:c317971796f35820cf312e9e9d43dc707b83ecb9681f61b44313976e6eb3b096"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Series.Basic"]
+definitions = ["SeriesNonnegativeTerms", "SeriesTermwiseDomination", "SeriesAbsoluteValueTerms", "AbsoluteConvergenceCauchyEvidence", "SeriesComparisonCauchyEvidence", "SeriesAbsoluteComparisonEvidence", "SeriesRatioTestHypothesis", "SeriesRootTestHypothesis", "SeriesRatioTestEvidence", "SeriesRootTestEvidence"]
+theorems = ["series_nonnegative_terms_intro", "series_nonnegative_terms_project", "series_termwise_domination_intro", "series_termwise_domination_project", "series_absolute_value_terms_intro", "series_absolute_value_terms_absolute_terms", "series_absolute_value_terms_nonnegative", "absolute_convergence_cauchy_evidence_intro", "absolute_convergence_cauchy_evidence_apply", "absolute_convergence_implies_cauchy", "absolute_convergence_implies_convergence", "absolute_convergent_series_converges", "series_comparison_cauchy_evidence_intro", "series_comparison_cauchy_evidence_apply", "series_absolute_comparison_evidence_intro", "series_absolute_comparison_evidence_apply", "comparison_test_nonnegative", "nonnegative_series_comparison_test", "comparison_test_absolutely_dominated", "absolutely_dominated_series_comparison_test", "series_ratio_test_hypothesis_intro", "series_ratio_test_hypothesis_steps", "series_ratio_test_hypothesis_limit", "series_root_test_hypothesis_intro", "series_root_test_hypothesis_terms", "series_root_test_hypothesis_limit", "series_ratio_test_evidence_intro", "series_ratio_test_evidence_apply", "series_root_test_evidence_intro", "series_root_test_evidence_apply", "d_alembert_ratio_test", "ratio_test", "cauchy_root_test", "root_test"]
 axioms = []
 
 [[proof_modules]]

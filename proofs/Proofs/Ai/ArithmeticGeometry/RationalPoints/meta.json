@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:f38f71fe847061bbd30ab869c1607d7d429a9389bbd065a280a5bb240fe2f47d",
-  "certificate_file_sha256": "sha256:be3783bca3d45172682976d0463e42de59cba0c2a308837e7dc0f9a9f3293da6",
+  "certificate_file_sha256": "sha256:a7965b1de7157471a59277acba2add22c2349db72b82f7f5ca9e923664bed9d6",
   "export_hash": "sha256:e4754bc2efa4992e363aaf267d86b9291c1941b950bb46b16cb9b65cb8fac606",
   "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
-  "certificate_hash": "sha256:813ce5e09d74b3f0b0076147c6311826041713d532da0a483d5973d20d0088e1",
+  "certificate_hash": "sha256:75092aa075fbddcdc247caaa8cc9dbc69972a32ef7ec231f68ecb72cf66873d7",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.EllipticCurve.FiniteField", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
   "axioms": [],
   "declarations": [

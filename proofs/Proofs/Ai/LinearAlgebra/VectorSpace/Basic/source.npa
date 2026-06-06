@@ -1,0 +1,14 @@
+import Std.Logic.Eq
+import Proofs.Ai.Vector.AbstractSpace
+
+def LinearAlgebraVectorSpaceLawArgs.{u,v} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (Vector : Sort v), forall (vzero : Vector), forall (vadd : forall (x : Vector), forall (y : Vector), Vector), forall (vneg : forall (x : Vector), Vector), forall (smul : forall (a : Scalar), forall (x : Vector), Vector), Prop :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul
+
+theorem linear_algebra_vector_space_from_abstract_space.{u,v} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (Vector : Sort v), forall (vzero : Vector), forall (vadd : forall (x : Vector), forall (y : Vector), Vector), forall (vneg : forall (x : Vector), Vector), forall (smul : forall (a : Scalar), forall (x : Vector), Vector), forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => vector_args
+
+theorem abstract_space_from_linear_algebra_vector_space.{u,v} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (Vector : Sort v), forall (vzero : Vector), forall (vadd : forall (x : Vector), forall (y : Vector), Vector), forall (vneg : forall (x : Vector), Vector), forall (smul : forall (a : Scalar), forall (x : Vector), Vector), forall (vector_args : @LinearAlgebraVectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => vector_args

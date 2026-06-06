@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Sequence.Compactness",
+  "source": "Proofs/Ai/Analysis/Sequence/Compactness/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Sequence/Compactness/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d11b08c524933ec943ea6e60c7265bf21bf3510004a6d10acb4ecc5d63999fc4",
+  "certificate_file_sha256": "sha256:58861949ad91fc63e56acdbf8d9b94d0e6c58ee89beb36af6d3cad8e388c2024",
+  "export_hash": "sha256:ce946d68c62bc28894fe3f958d1680b2f7f71494eaca73749dab7609f3f9e069",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:d281fb9c096dd185108c4f1db63bcb5be7acddc90f51c6d16e68448e963b3f03",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SubsequenceExtractionEvidence", "kind": "def" },
+    { "name": "ConvergentSubsequenceEvidence", "kind": "def" },
+    { "name": "BolzanoWeierstrassChoice", "kind": "def" },
+    { "name": "BolzanoWeierstrassCompletenessEvidence", "kind": "def" },
+    { "name": "subsequence_extraction_evidence_intro", "kind": "theorem" },
+    { "name": "subsequence_extraction_evidence_subsequence", "kind": "theorem" },
+    { "name": "convergent_subsequence_evidence_intro", "kind": "theorem" },
+    { "name": "convergent_subsequence_evidence_extraction", "kind": "theorem" },
+    { "name": "convergent_subsequence_evidence_converges", "kind": "theorem" },
+    { "name": "bolzano_weierstrass_choice_intro", "kind": "theorem" },
+    { "name": "bolzano_weierstrass_choice_elim", "kind": "theorem" },
+    { "name": "bolzano_weierstrass_completeness_evidence_intro", "kind": "theorem" },
+    { "name": "bounded_sequence_compactness_from_interval_nesting", "kind": "theorem" },
+    { "name": "bolzano_weierstrass_from_completeness", "kind": "theorem" },
+    { "name": "bolzano_weierstrass_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

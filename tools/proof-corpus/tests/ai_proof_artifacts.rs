@@ -24,6 +24,7 @@ struct VerifiedCorpusImports<'a> {
     eq: &'a VerifiedModule,
     eq_reasoning: &'a VerifiedModule,
     classical_category: &'a VerifiedModule,
+    model_category: &'a VerifiedModule,
     nat: &'a VerifiedModule,
     ring: &'a VerifiedModule,
     square: &'a VerifiedModule,
@@ -654,6 +655,64 @@ const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
     "adjunction_left_adjoint_preserved_colimit_cocone_law",
     "left_adjoint_preserves_colimits",
     "opposite_category_laws",
+];
+
+const MODEL_CATEGORY_DEFINITIONS: &[&str] = &["ModelCategoryLawArgs"];
+
+const MODEL_CATEGORY_THEOREMS: &[&str] = &[
+    "model_category_definition_intro",
+    "model_category_has_category_laws",
+    "model_category_complete",
+    "model_category_cocomplete",
+    "model_category_cofibration_id",
+    "model_category_fibration_id",
+    "model_category_weak_equivalence_id",
+    "model_category_weak_equivalence_comp",
+    "model_category_weak_equivalence_two_of_three_left",
+    "model_category_weak_equivalence_two_of_three_right",
+    "model_category_trivial_cofibration_lifting",
+    "model_category_trivial_fibration_lifting",
+    "model_category_cofibration_trivial_fibration_factorization",
+    "model_category_trivial_cofibration_fibration_factorization",
+    "model_category",
+    "model_categories",
+];
+
+const MONOIDAL_MODEL_CATEGORY_DEFINITIONS: &[&str] = &["MonoidalModelCategoryLawArgs"];
+
+const MONOIDAL_MODEL_CATEGORY_THEOREMS: &[&str] = &[
+    "monoidal_model_category_definition_intro",
+    "monoidal_model_category_has_model_category",
+    "monoidal_model_category_tensor_id",
+    "monoidal_model_category_tensor_comp",
+    "monoidal_model_category_left_unit",
+    "monoidal_model_category_right_unit",
+    "monoidal_model_category_associativity",
+    "monoidal_model_category_closed",
+    "monoidal_model_category_pushout_product_cofibration",
+    "monoidal_model_category_pushout_product_left_trivial",
+    "monoidal_model_category_pushout_product_right_trivial",
+    "monoidal_model_category_unit_replacement_weak_equivalence",
+    "monoidal_model_category_unit_axiom",
+    "monoidal_model_category",
+    "monoidal_model_categories",
+];
+
+const STABLE_INFINITY_CATEGORY_DEFINITIONS: &[&str] = &["StableInfinityCategoryLawArgs"];
+
+const STABLE_INFINITY_CATEGORY_THEOREMS: &[&str] = &[
+    "stable_infinity_category_definition_intro",
+    "stable_infinity_category_has_category_laws",
+    "stable_infinity_category_pointed",
+    "stable_infinity_category_has_finite_limits",
+    "stable_infinity_category_has_finite_colimits",
+    "stable_infinity_category_pullback_squares_are_pushout",
+    "stable_infinity_category_pushout_squares_are_pullback",
+    "stable_infinity_category_suspension_loop_equivalence",
+    "stable_infinity_category_fiber_cofiber_sequence",
+    "stable_infinity_category_exact_triangles",
+    "stable_infinity_category",
+    "stable_infinity_categories",
 ];
 
 const INFINITY_SIMPLICIAL_SET_DEFINITIONS: &[&str] = &[
@@ -1323,8 +1382,11 @@ const ABSTRACT_KRULL_THEOREM_THEOREMS: &[&str] = &[
 
 const DERIVED_AFFINE_SCHEMES_DEFINITIONS: &[&str] = &["DerivedAffineSchemeLawArgs"];
 
-const DERIVED_AFFINE_SCHEMES_THEOREMS: &[&str] =
-    &["affine_schemes_definition_intro", "affine_schemes"];
+const DERIVED_AFFINE_SCHEMES_THEOREMS: &[&str] = &[
+    "affine_schemes_definition_intro",
+    "affine_schemes",
+    "derived_affine_schemes",
+];
 
 const QUASI_COHERENT_SHEAVES_DEFINITIONS: &[&str] = &["QuasiCoherentSheafLawArgs"];
 
@@ -1375,6 +1437,38 @@ const COTANGENT_COMPLEX_THEOREMS: &[&str] = &[
     "cotangent_complex_base_change",
     "cotangent_complex_smooth_etale_vanishing",
     "cotangent_complex",
+];
+
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_DEFINITIONS: &[&str] = &[
+    "SimplicialCommutativeRingLawArgs",
+    "CdgaLawArgs",
+    "SimplicialCommutativeRingCdgaComparisonLawArgs",
+];
+
+const SIMPLICIAL_COMMUTATIVE_RING_CDGA_THEOREMS: &[&str] = &[
+    "simplicial_commutative_ring_definition_intro",
+    "simplicial_commutative_ring_simplicial_set",
+    "simplicial_commutative_ring_restrict_identity",
+    "simplicial_commutative_ring_restrict_composition",
+    "simplicial_commutative_ring_level_commutative_ring",
+    "simplicial_commutative_ring_restrict_preserves_zero",
+    "simplicial_commutative_ring_restrict_preserves_one",
+    "simplicial_commutative_ring_restrict_preserves_add",
+    "simplicial_commutative_ring_restrict_preserves_neg",
+    "simplicial_commutative_ring_restrict_preserves_sub",
+    "simplicial_commutative_ring_restrict_preserves_mul",
+    "simplicial_commutative_rings",
+    "cdga_definition_intro",
+    "cdga_underlying_commutative_ring",
+    "cdga_graded_commutative",
+    "cdga_differential_preserves_add",
+    "cdga_differential_leibniz",
+    "cdga_differential_squares_zero",
+    "cdga",
+    "simplicial_commutative_ring_cdga_comparison_definition_intro",
+    "simplicial_commutative_ring_cdga_comparison_normalization_monoidal",
+    "simplicial_commutative_ring_cdga_comparison_dold_kan_equivalence",
+    "simplicial_commutative_rings_cdga",
 ];
 
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[&str] = &[
@@ -2195,6 +2289,34 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
+        module: "Proofs.Ai.Category.ModelCategory",
+        source: "Proofs/Ai/Category/ModelCategory/source.npa",
+        certificate: "Proofs/Ai/Category/ModelCategory/certificate.npcert",
+        meta: "Proofs/Ai/Category/ModelCategory/meta.json",
+        replay: "Proofs/Ai/Category/ModelCategory/replay.json",
+        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: MODEL_CATEGORY_DEFINITIONS,
+        theorems: MODEL_CATEGORY_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.MonoidalModelCategory",
+        source: "Proofs/Ai/Category/MonoidalModelCategory/source.npa",
+        certificate: "Proofs/Ai/Category/MonoidalModelCategory/certificate.npcert",
+        meta: "Proofs/Ai/Category/MonoidalModelCategory/meta.json",
+        replay: "Proofs/Ai/Category/MonoidalModelCategory/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Classical",
+            "Proofs.Ai.Category.ModelCategory",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: MONOIDAL_MODEL_CATEGORY_DEFINITIONS,
+        theorems: MONOIDAL_MODEL_CATEGORY_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Category.Infinity.SimplicialSet",
         source: "Proofs/Ai/Category/Infinity/SimplicialSet/source.npa",
         certificate: "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert",
@@ -2204,6 +2326,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: INFINITY_SIMPLICIAL_SET_DEFINITIONS,
         theorems: INFINITY_SIMPLICIAL_SET_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Infinity.StableInfinityCategory",
+        source: "Proofs/Ai/Category/Infinity/StableInfinityCategory/source.npa",
+        certificate: "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert",
+        meta: "Proofs/Ai/Category/Infinity/StableInfinityCategory/meta.json",
+        replay: "Proofs/Ai/Category/Infinity/StableInfinityCategory/replay.json",
+        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: STABLE_INFINITY_CATEGORY_DEFINITIONS,
+        theorems: STABLE_INFINITY_CATEGORY_THEOREMS,
         axioms: &[],
     },
     ExpectedModule {
@@ -2866,6 +3000,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &[],
     },
     ExpectedModule {
+        module: "Proofs.Ai.AlgebraicGeometry.SimplicialCommutativeRingCdga",
+        source: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/source.npa",
+        certificate: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/certificate.npcert",
+        meta: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/meta.json",
+        replay: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Category.Classical",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: SIMPLICIAL_COMMUTATIVE_RING_CDGA_DEFINITIONS,
+        theorems: SIMPLICIAL_COMMUTATIVE_RING_CDGA_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
         module: "Proofs.Ai.Algebra.AbstractOrderedField",
         source: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
         certificate: "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert",
@@ -3277,6 +3427,8 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let eq_reasoning_import = verified_eq_reasoning_import_module(&root, &eq_import);
     let classical_category_import =
         verified_classical_category_import_module(&root, &eq_import, &eq_reasoning_import);
+    let model_category_import =
+        verified_model_category_import_module(&root, &eq_import, &classical_category_import);
     let ring_import = verified_ring_import_module(&root, &eq_import);
     let square_import = verified_square_import_module(&root, &eq_import, &ring_import);
     let ordered_field_import =
@@ -3666,6 +3818,7 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         eq: &eq_import,
         eq_reasoning: &eq_reasoning_import,
         classical_category: &classical_category_import,
+        model_category: &model_category_import,
         nat: &nat_import,
         ring: &ring_import,
         square: &square_import,
@@ -3847,6 +4000,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Category.Classical" => {
                 session.register_verified_module(verified_imports.classical_category.clone())
+            }
+            "Proofs.Ai.Category.ModelCategory" => {
+                session.register_verified_module(verified_imports.model_category.clone())
             }
             "Std.Nat.Basic" => session.register_verified_module(verified_imports.nat.clone()),
             "Proofs.Ai.Algebra.Ring" => {
@@ -4037,6 +4193,19 @@ fn verified_classical_category_import_module(
     session.register_verified_module(eq_reasoning_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("Classical category corpus certificate should verify for downstream imports")
+}
+
+fn verified_model_category_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    classical_category_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Category/ModelCategory/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(classical_category_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("ModelCategory corpus certificate should verify for downstream imports")
 }
 
 fn verified_abstract_group_import_module(

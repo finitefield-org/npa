@@ -1,0 +1,137 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Elimination",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MatrixSystemSolutionSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun entries => fun rhs => fun solution => forall (i : Row), @Eq.{u} Scalar (matrix_eval entries solution i) (rhs i)"
+    },
+    {
+      "declaration": "EchelonForm",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun form_law => form_law"
+    },
+    {
+      "declaration": "ReducedRowEchelonForm",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun form_law => form_law"
+    },
+    {
+      "declaration": "RowOperationPreservesSolutions",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => forall (P : Prop), forall (mk : forall (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), forall (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), P), P"
+    },
+    {
+      "declaration": "RowReductionTraceEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => forall (P : Prop), forall (mk : forall (trace_valid_evidence : trace_valid), forall (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), P), P"
+    },
+    {
+      "declaration": "GaussianEliminationCorrectnessEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun echelon_law => forall (P : Prop), forall (mk : forall (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid), forall (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law), P), P"
+    },
+    {
+      "declaration": "RrefUniquenessEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun left_rref_law => fun right_rref_law => forall (P : Prop), forall (mk : forall (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law), forall (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law), forall (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), forall (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries), forall (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)), P), P"
+    },
+    {
+      "declaration": "matrix_system_solution_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun entries => fun rhs => fun solution => fun h => h"
+    },
+    {
+      "declaration": "matrix_system_solution_eq_rhs",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun entries => fun rhs => fun solution => fun h => fun i => h i"
+    },
+    {
+      "declaration": "echelon_form_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun form_law => fun h => h"
+    },
+    {
+      "declaration": "reduced_row_echelon_form_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun entries => fun form_law => fun h => h"
+    },
+    {
+      "declaration": "row_operation_preserves_solutions_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun forward => fun backward => fun (P : Prop) => fun (mk : forall (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), forall (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), P) => mk forward backward"
+    },
+    {
+      "declaration": "row_operation_preserves_solutions_forward",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun preserves => fun solution => fun h => preserves (@MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution) (fun (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution) => fun (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution) => forward solution h)"
+    },
+    {
+      "declaration": "row_operation_preserves_solutions_backward",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun preserves => fun solution => fun h => preserves (@MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution) (fun (forward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution) => fun (backward : forall (solution : forall (j : Col), Scalar), forall (h : @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval target_entries target_rhs solution), @MatrixSystemSolutionSet.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs solution) => backward solution h)"
+    },
+    {
+      "declaration": "row_reduction_trace_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun trace_valid_evidence => fun preserves_solution_set => fun (P : Prop) => fun (mk : forall (trace_valid_evidence : trace_valid), forall (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), P) => mk trace_valid_evidence preserves_solution_set"
+    },
+    {
+      "declaration": "row_reduction_trace_preserves_solution_set",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun trace_evidence => trace_evidence (@RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) (fun (trace_valid_evidence : trace_valid) => fun (preserves_solution_set : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) => preserves_solution_set)"
+    },
+    {
+      "declaration": "gaussian_elimination_correctness_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun echelon_law => fun trace_evidence => fun echelon_form => fun (P : Prop) => fun (mk : forall (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid), forall (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law), P) => mk trace_evidence echelon_form"
+    },
+    {
+      "declaration": "gaussian_elimination_trace_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun echelon_law => fun evidence => evidence (@RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid) (fun (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid) => fun (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law) => trace_evidence)"
+    },
+    {
+      "declaration": "gaussian_elimination_echelon_form",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun echelon_law => fun evidence => evidence (@EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law) (fun (trace_evidence : @RowReductionTraceEvidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid) => fun (echelon_form : @EchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries echelon_law) => echelon_form)"
+    },
+    {
+      "declaration": "gaussian_elimination_preserves_solution_set",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun echelon_law => fun evidence => @row_reduction_trace_preserves_solution_set.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid (@gaussian_elimination_trace_evidence.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law evidence)"
+    },
+    {
+      "declaration": "gaussian_elimination_correctness",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun Trace => fun trace => fun trace_valid => fun echelon_law => fun evidence => @gaussian_elimination_preserves_solution_set.{u,v,w,x} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs Trace trace trace_valid echelon_law evidence"
+    },
+    {
+      "declaration": "rref_uniqueness_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun left_rref_law => fun right_rref_law => fun left_rref => fun right_rref => fun same_solution_sets => fun unique_matrix => fun unique_rhs => fun (P : Prop) => fun (mk : forall (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law), forall (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law), forall (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs), forall (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries), forall (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)), P) => mk left_rref right_rref same_solution_sets unique_matrix unique_rhs"
+    },
+    {
+      "declaration": "rref_unique_matrix",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun left_rref_law => fun right_rref_law => fun evidence => evidence (@MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries) (fun (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law) => fun (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law) => fun (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) => fun (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries) => fun (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)) => unique_matrix)"
+    },
+    {
+      "declaration": "rref_unique_rhs",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun left_rref_law => fun right_rref_law => fun evidence => fun i => evidence (@Eq.{u} Scalar (source_rhs i) (target_rhs i)) (fun (left_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries left_rref_law) => fun (right_rref : @ReducedRowEchelonForm.{u,v,w} Scalar zero one add neg sub mul Row Col target_entries right_rref_law) => fun (same_solution_sets : @RowOperationPreservesSolutions.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs) => fun (unique_matrix : @MatrixEq.{u,v,w} Scalar zero one add neg sub mul Row Col source_entries target_entries) => fun (unique_rhs : forall (i : Row), @Eq.{u} Scalar (source_rhs i) (target_rhs i)) => unique_rhs i)"
+    },
+    {
+      "declaration": "rref_uniqueness_route",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Row => fun Col => fun matrix_eval => fun source_entries => fun source_rhs => fun target_entries => fun target_rhs => fun left_rref_law => fun right_rref_law => fun evidence => @rref_unique_matrix.{u,v,w} Scalar zero one add neg sub mul Row Col matrix_eval source_entries source_rhs target_entries target_rhs left_rref_law right_rref_law evidence"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Matrix/Elimination/certificate.npcert"
+  }
+}

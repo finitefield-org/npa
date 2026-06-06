@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Subspace.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Subspace",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => forall (P : Prop), forall (mk : forall (zero_mem : carrier vzero), forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)), forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)), P), P"
+    },
+    {
+      "declaration": "SubspaceIntersection",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vector => fun left => fun right => fun x => forall (P : Prop), forall (mk : forall (left_mem : left x), forall (right_mem : right x), P), P"
+    },
+    {
+      "declaration": "SubspaceSum",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vector => fun vadd => fun left => fun right => fun x => forall (P : Prop), forall (mk : forall (y : Vector), forall (z : Vector), forall (left_mem : left y), forall (right_mem : right z), forall (sum_eq : @Eq.{v} Vector x (vadd y z)), P), P"
+    },
+    {
+      "declaration": "SubspaceSumArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun left => fun right => fun sum => forall (P : Prop), forall (mk : forall (left_in : forall (x : Vector), forall (hx : left x), sum x), forall (right_in : forall (x : Vector), forall (hx : right x), sum x), forall (pair_mem : forall (x : Vector), forall (y : Vector), forall (hx : left x), forall (hy : right y), sum (vadd x y)), forall (zero_mem : sum vzero), forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : sum x), forall (hy : sum y), sum (vadd x y)), forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : sum x), sum (smul a x)), P), P"
+    },
+    {
+      "declaration": "subspace_criterion",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => fun carrier => fun zero_mem => fun add_mem => fun smul_mem => fun (P : Prop) => fun (mk : forall (zero_mem : carrier vzero), forall (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)), forall (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)), P) => mk zero_mem add_mem smul_mem"
+    },
+    {
+      "declaration": "subspace_zero_mem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => fun subspace_args => subspace_args (carrier vzero) (fun (zero_mem : carrier vzero) => fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)) => fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)) => zero_mem)"
+    },
+    {
+      "declaration": "subspace_add_mem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => fun subspace_args => fun x => fun y => fun hx => fun hy => subspace_args (carrier (vadd x y)) (fun (zero_mem : carrier vzero) => fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)) => fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)) => add_mem x y hx hy)"
+    },
+    {
+      "declaration": "subspace_smul_mem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun carrier => fun subspace_args => fun a => fun x => fun hx => subspace_args (carrier (smul a x)) (fun (zero_mem : carrier vzero) => fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : carrier x), forall (hy : carrier y), carrier (vadd x y)) => fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : carrier x), carrier (smul a x)) => smul_mem a x hx)"
+    },
+    {
+      "declaration": "subspace_intersection_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vector => fun left => fun right => fun x => fun left_mem => fun right_mem => fun (P : Prop) => fun (mk : forall (left_mem : left x), forall (right_mem : right x), P) => mk left_mem right_mem"
+    },
+    {
+      "declaration": "subspace_intersection_left_mem",
+      "source_kind": "explicit_term",
+      "term": "fun Vector => fun left => fun right => fun x => fun h => h (left x) (fun (left_mem : left x) => fun (right_mem : right x) => left_mem)"
+    },
+    {
+      "declaration": "subspace_intersection_right_mem",
+      "source_kind": "explicit_term",
+      "term": "fun Vector => fun left => fun right => fun x => fun h => h (right x) (fun (left_mem : left x) => fun (right_mem : right x) => right_mem)"
+    },
+    {
+      "declaration": "subspace_intersection_is_subspace",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => fun left => fun right => fun left_subspace => fun right_subspace => @subspace_criterion.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul vector_args (@SubspaceIntersection.{v} Vector left right) (@subspace_intersection_intro.{v} Vector left right vzero (@subspace_zero_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left left_subspace) (@subspace_zero_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right right_subspace)) (fun (x : Vector) => fun (y : Vector) => fun (hx : @SubspaceIntersection.{v} Vector left right x) => fun (hy : @SubspaceIntersection.{v} Vector left right y) => hx (@SubspaceIntersection.{v} Vector left right (vadd x y)) (fun (left_x : left x) => fun (right_x : right x) => hy (@SubspaceIntersection.{v} Vector left right (vadd x y)) (fun (left_y : left y) => fun (right_y : right y) => @subspace_intersection_intro.{v} Vector left right (vadd x y) (@subspace_add_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left left_subspace x y left_x left_y) (@subspace_add_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right right_subspace x y right_x right_y)))) (fun (a : Scalar) => fun (x : Vector) => fun (hx : @SubspaceIntersection.{v} Vector left right x) => hx (@SubspaceIntersection.{v} Vector left right (smul a x)) (fun (left_x : left x) => fun (right_x : right x) => @subspace_intersection_intro.{v} Vector left right (smul a x) (@subspace_smul_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul left left_subspace a x left_x) (@subspace_smul_mem.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul right right_subspace a x right_x)))"
+    },
+    {
+      "declaration": "subspace_sum_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vector => fun vadd => fun left => fun right => fun x => fun y => fun left_mem => fun right_mem => fun (P : Prop) => fun (mk : forall (left_w : Vector), forall (right_w : Vector), forall (left_mem : left left_w), forall (right_mem : right right_w), forall (sum_eq : @Eq.{v} Vector (vadd x y) (vadd left_w right_w)), P) => mk x y left_mem right_mem (@Eq.refl.{v} Vector (vadd x y))"
+    },
+    {
+      "declaration": "subspace_sum_from_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun vector_args => fun left => fun right => fun sum => fun sum_args => sum_args (@Subspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul sum) (fun (left_in : forall (x : Vector), forall (hx : left x), sum x) => fun (right_in : forall (x : Vector), forall (hx : right x), sum x) => fun (pair_mem : forall (x : Vector), forall (y : Vector), forall (hx : left x), forall (hy : right y), sum (vadd x y)) => fun (zero_mem : sum vzero) => fun (add_mem : forall (x : Vector), forall (y : Vector), forall (hx : sum x), forall (hy : sum y), sum (vadd x y)) => fun (smul_mem : forall (a : Scalar), forall (x : Vector), forall (hx : sum x), sum (smul a x)) => @subspace_criterion.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul vector_args sum zero_mem add_mem smul_mem)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Subspace/Basic/certificate.npcert"
+  }
+}

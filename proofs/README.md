@@ -27,6 +27,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractMetricTopology/`: predicate-level metric ball, neighborhood, local
   membership, local predicate, local equality, and local uniqueness API for the inverse/implicit
   function route.
+- `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
+  carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
+  evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
 - `Proofs/Ai/Analysis/AbstractNormedSpace/`: explicit-law normed-space distance, product
   operation, product norm, projection/pairing, and product norm estimate API for the
   inverse/implicit function route.
@@ -36,9 +39,16 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractDerivative/`: Frechet derivative, differentiability, derivative
   uniqueness, calculus-rule evidence, pairing/projection, composition, and partial-derivative API
   for the inverse/implicit function route.
+- `Proofs/Ai/Analysis/Calculus/OneVariable/`: scalar-domain derivative bridge from Frechet
+  derivatives, derivative-value/zero vocabulary, interval differentiability, extrema, interior,
+  and critical-point packages for Fermat/Rolle/MVT layers.
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
+- `Proofs/Ai/Analysis/Sequence/Basic/`: abstract scalar sequence vocabulary over
+  `Analysis.Real.Basic`, with convergence, eventuality, subsequence, boundedness, limit-uniqueness
+  evidence, monotone convergence evidence, and bridges to `AbstractFixedPoint` `ConvergesTo` and
+  `CauchySeq`.
 - `Proofs/Ai/Analysis/AbstractInverseFunction/`: residual/Newton-map definitions, local inverse
   evidence/result packaging, uniqueness/differentiability projections, and quantitative inverse
   function theorem API for the implicit-function route.
@@ -2375,6 +2385,334 @@ The field-theory route through `AbstractField`, `AbstractFieldHom`,
 complete as verified corpus staging. Public `npa-mathlib` materialization is deferred to a separate
 closure audit that checks import closure size, axiom policy, statement stability, and compatibility
 alias requirements.
+
+#### `Proofs.Ai.Analysis.Sequence.Basic`
+
+This module is the first sequence-convergence layer over `Proofs.Ai.Analysis.Real.Basic`. It stays
+abstract over the scalar carrier, complete ordered-field evidence, sequence index type, sequence
+function, and the small-radius `NearLimit` predicate. It imports `AbstractFixedPoint` only to expose
+checked aliases for the existing `ConvergesTo` and `CauchySeq` surfaces; the fixed-point module is
+not modified.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SequenceValue` | Church-encoded evidence that a scalar appears as some term of the sequence |
+| `Eventually` | eventual predicate package over the explicit sequence index carrier |
+| `Subsequence` | subsequence selector and term-equality predicate |
+| `SequenceConvergesTo` | positive-radius convergence predicate using the supplied `NearLimit` relation |
+| `SequenceLimit` | public limit vocabulary alias for `SequenceConvergesTo` |
+| `BoundedSequenceBy` | lower/upper bound package for all sequence terms |
+| `BoundedSequence` | existential-style bounded sequence package hiding the chosen bounds |
+| `SequenceBoundedAbove`, `SequenceBoundedBelow` | one-sided boundedness packages for monotone and compactness routes |
+| `SequenceMonotoneIncreasing`, `SequenceMonotoneDecreasing` | monotonicity predicates over an explicit index preorder relation |
+| `SequenceMonotoneCompletenessEvidence` | explicit package connecting a value set, one-sided boundedness, supremum evidence, and sequence convergence |
+| `SequenceSqueezeBounds` | lower/current/upper pointwise bound package for squeeze arguments |
+| `SequenceSqueezeConvergenceEvidence` | explicit package containing side-sequence convergence and the squeeze bridge to the middle sequence |
+| `NestedIntervalLowerEndpointSet` | lower-endpoint value set used by the interval-nesting completeness route |
+| `NestedClosedIntervals` | nested closed-interval package over an explicit index preorder |
+| `ShrinkingIntervalLength` | explicit interval-length sequence with convergence to zero |
+| `NestedIntervalPoint` | existential-style package for a point contained in every closed interval |
+| `NestedIntervalCompletenessEvidence` | explicit package connecting lower endpoint bounds, supremum evidence, shrinking lengths, and an intersection point |
+| `SequenceLimitUniquenessEvidence` | local evidence package containing two convergence witnesses and their equality conclusion |
+| `FixedPointConvergesToAlias` | bridge alias to `AbstractFixedPoint.ConvergesTo` on the scalar-as-vector instance |
+| `FixedPointCauchySeqAlias` | bridge alias to `AbstractFixedPoint.CauchySeq` on the scalar-as-vector instance |
+| `SequenceCauchySeq` | positive-radius Cauchy predicate over the explicit sequence and scalar order |
+| `SequenceConvergenceChoice` | Church-encoded choice of a sequence limit and convergence witness |
+| `SequenceCauchyCompletenessEvidence` | explicit package combining `CompleteOrderedFieldArgs`, fixed-point metric completeness, and bridges back to sequence convergence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `sequence_value_intro`, `sequence_value_elim` | introduce and eliminate sequence-value evidence |
+| `eventually_intro`, `eventually_elim` | package and unpack eventual predicates |
+| `subsequence_intro`, `subsequence_term` | build a subsequence witness and project term equality |
+| `sequence_converges_to_intro`, `sequence_converges_to_small` | build convergence from positive-radius smallness and project the smallness condition |
+| `sequence_limit_def` | definitional equality between `SequenceLimit` and `SequenceConvergesTo` |
+| `bounded_sequence_by_intro`, `bounded_sequence_by_lower`, `bounded_sequence_by_upper` | build explicit bounds and project lower/upper inequalities |
+| `bounded_sequence_intro`, `bounded_sequence_elim` | hide and recover explicit bound witnesses |
+| `sequence_bounded_above_intro`, `sequence_bounded_above_elim` | build and eliminate one-sided upper-bounded sequence evidence |
+| `sequence_bounded_below_intro`, `sequence_bounded_below_elim` | build and eliminate one-sided lower-bounded sequence evidence |
+| `sequence_bounded_above_from_bounds`, `sequence_bounded_below_from_bounds` | derive one-sided boundedness from a two-sided `BoundedSequenceBy` package |
+| `sequence_monotone_increasing_intro`, `sequence_monotone_increasing_apply` | build and apply monotone-increasing sequence evidence |
+| `sequence_monotone_decreasing_intro`, `sequence_monotone_decreasing_apply` | build and apply monotone-decreasing sequence evidence |
+| `sequence_squeeze_bounds_intro`, `sequence_squeeze_lower_bound`, `sequence_squeeze_upper_bound` | build squeeze bounds and project the lower/upper pointwise inequalities |
+| `sequence_squeeze_convergence_evidence_intro` | package side-sequence convergence and the squeeze bridge |
+| `sequence_squeeze_converges`, `squeeze_theorem` | derive convergence of the middle sequence from explicit squeeze evidence |
+| `nested_interval_lower_endpoint_set_intro`, `nested_interval_lower_endpoint_set_elim` | introduce and eliminate lower-endpoint set membership |
+| `nested_closed_intervals_intro`, `nested_closed_intervals_nonempty`, `nested_closed_intervals_contains` | package nested closed intervals and project nonemptiness/nesting |
+| `shrinking_interval_length_intro`, `shrinking_interval_length_value`, `shrinking_interval_length_converges` | package interval lengths and project their defining equality/convergence |
+| `nested_interval_point_intro`, `nested_interval_point_elim` | package and eliminate a point lying in all closed intervals |
+| `nested_interval_completeness_evidence_intro` | package the lower-endpoint nonempty/bounded-above bridges and supremum-to-point bridge |
+| `nested_interval_point_from_completeness`, `interval_nesting_theorem` | derive an all-interval point by extracting order completeness and choosing a supremum |
+| `sequence_limit_uniqueness_intro` | package local uniqueness evidence from two convergence witnesses and an equality proof |
+| `sequence_limit_uniqueness_left`, `sequence_limit_uniqueness_right` | recover the two convergence witnesses from uniqueness evidence |
+| `sequence_limit_unique`, `limit_unique` | derive equality of limits from local uniqueness evidence |
+| `fixed_point_converges_to_alias_intro`, `fixed_point_converges_to_alias_project` | bridge to and from `AbstractFixedPoint.ConvergesTo` |
+| `fixed_point_cauchy_seq_alias_intro`, `fixed_point_cauchy_seq_alias_project` | bridge to and from `AbstractFixedPoint.CauchySeq` |
+| `sequence_cauchy_seq_intro`, `sequence_cauchy_seq_small` | build Cauchy evidence from positive-radius smallness and project the smallness condition |
+| `sequence_convergence_choice_intro`, `sequence_convergence_choice_elim` | package and eliminate the chosen limit/convergence witness |
+| `sequence_cauchy_completeness_evidence_intro` | packages ordered-field completeness, fixed-point metric completeness, and Cauchy/convergence bridge maps |
+| `sequence_cauchy_completeness_ordered_field`, `sequence_cauchy_completeness_metric` | project the ordered-field and metric-completeness witnesses from the explicit evidence package |
+| `sequence_cauchy_to_fixed_point_cauchy` | converts sequence Cauchy evidence to the fixed-point `CauchySeq` witness through the package bridge |
+| `sequence_fixed_point_converges_to_sequence` | converts fixed-point `ConvergesTo` evidence back to `SequenceConvergesTo` |
+| `sequence_cauchy_converges_from_completeness` | derives a sequence convergence choice from Cauchy evidence via `CompleteMetricArgs` |
+| `sequence_cauchy_convergence_criterion`, `cauchy_convergence_criterion` | stable aliases for later series imports |
+| `sequence_monotone_completeness_evidence_intro` | packages the value-set nonempty/bounded-above bridges and supremum-to-limit convergence bridge |
+| `sequence_monotone_converges_from_completeness` | derives a sequence convergence choice by extracting order completeness and choosing a supremum |
+| `monotone_convergence_theorem` | stable alias for the sequence monotone convergence theorem |
+
+The module has an empty axiom report. Limit uniqueness is not a global law package field: the
+checked `sequence_limit_unique` theorem extracts equality from an explicit local evidence package.
+The Cauchy criterion is likewise derived through `SequenceCauchyCompletenessEvidence`: the package
+must expose the `CompleteOrderedFieldArgs` already in the module context plus a fixed-point
+`CompleteMetricArgs` witness and bridge maps, and the checked theorem calls the fixed-point
+completeness eliminator rather than assuming the final sequence-convergence choice directly.
+The monotone convergence theorem similarly calls `supremum_exists_from_completeness` after
+extracting order completeness from `CompleteOrderedFieldArgs`; the theorem takes a separate
+`ValueSet` and bridge evidence package instead of assuming supremum existence as a theorem input.
+The squeeze theorem is also evidence-driven: `SequenceSqueezeBounds` stores the two pointwise
+inequality families, while `SequenceSqueezeConvergenceEvidence` stores convergence of the lower and
+upper sequences plus the explicit bridge that turns those bounds into convergence of the middle
+sequence.
+The interval nesting theorem uses the real `ClosedInterval` API directly. `NestedClosedIntervals`
+stores explicit closed-interval nonemptiness and containment maps, `ShrinkingIntervalLength` stores
+the length sequence and its convergence to zero, and `nested_interval_point_from_completeness`
+chooses a supremum of the lower-endpoint set through `supremum_exists_from_completeness` before
+applying the explicit supremum-to-intersection bridge.
+
+#### `Proofs.Ai.Analysis.Continuity.Basic`
+
+This module is the first function-limit and continuity layer over
+`Proofs.Ai.Analysis.Sequence.Basic`, `Proofs.Ai.Analysis.AbstractMetricTopology`, and
+`Proofs.Ai.Analysis.Real.Basic`. It keeps limit semantics abstract through explicit
+`ApproachesAt`, neighborhood, local-equality, restriction, composition, uniform-continuity, and
+sequential bridge packages. It does not import derivative, integration, or interval-continuity
+modules.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FunctionPointwiseLimit` | pointwise function-limit predicate supplied by an explicit `ApproachesAt` relation |
+| `ContinuousAt` | continuity at a point as a pointwise limit to the function value |
+| `ContinuousOn` | continuity over a set via `AbstractMetricTopology.LocalPred` |
+| `UniformContinuous` | set-indexed uniform-continuity statement shape over an explicit relation |
+| `NeighborhoodLimitBridge` | bridge from local neighborhood evidence and local image containment to pointwise limit evidence |
+| `LocalEqualityContinuityEvidence` | law package transporting continuity across `AbstractMetricTopology.LocalEq` on a neighborhood |
+| `ContinuityRestrictionEvidence` | law package restricting continuity from a larger local predicate to a smaller one |
+| `ContinuousCompositionEvidence`, `ContinuousOnCompositionEvidence` | pointwise and setwise continuity-composition bridge packages |
+| `UniformContinuityRestrictionEvidence` | law package restricting uniform continuity to a smaller local predicate |
+| `SequentialPointwiseLimitBridge` | bridge from sequence convergence of inputs and images to scalar pointwise limit evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `function_pointwise_limit_intro`, `function_pointwise_limit_apply` | introduce and project pointwise function-limit evidence |
+| `continuous_at_intro`, `continuous_at_limit` | build and project continuity-at-a-point evidence |
+| `continuous_on_intro`, `continuous_on_apply` | package and apply setwise continuity through `LocalPred` |
+| `uniform_continuous_intro`, `uniform_continuous_apply` | introduce and project the fixed uniform-continuity statement shape |
+| `neighborhood_limit_bridge_intro`, `neighborhood_limit_bridge_apply`, `pointwise_limit_from_neighborhood_bridge` | package and apply neighborhood-limit bridges |
+| `local_equality_continuity_evidence_intro`, `local_equality_continuity_evidence_apply`, `continuous_at_of_local_eq` | transport continuity across local equality |
+| `continuity_restriction_evidence_intro`, `continuity_restriction_evidence_apply`, `continuous_on_restrict`, `continuous_at_restrict` | restrict continuity to smaller local predicates |
+| `continuous_composition_evidence_intro`, `continuous_composition_evidence_apply`, `continuous_at_comp`, `continuous_comp` | prove pointwise continuity composition from explicit bridge evidence |
+| `continuous_on_composition_evidence_intro`, `continuous_on_composition_evidence_apply`, `continuous_on_comp` | prove setwise continuity composition from explicit bridge evidence |
+| `uniform_continuity_restriction_evidence_intro`, `uniform_continuity_restriction_evidence_apply`, `uniform_continuous_on_restrict` | restrict uniform continuity |
+| `sequential_pointwise_limit_bridge_intro`, `sequential_pointwise_limit_bridge_apply`, `pointwise_limit_of_sequential_bridge` | connect sequence convergence evidence to scalar pointwise limits |
+
+The module has an empty axiom report. All metric, neighborhood, and continuity semantics remain
+explicit caller-supplied relations or bridge packages, so later interval-continuity and
+one-variable calculus modules can refine the concrete predicates without changing this checked
+foundation.
+
+#### `Proofs.Ai.Analysis.Sequence.Compactness`
+
+This module is the bounded-sequence compactness layer over
+`Proofs.Ai.Analysis.Sequence.Basic`. It keeps the subsequence carrier, selector, extracted
+sequence, and extracted convergence predicate explicit, and derives Bolzano-Weierstrass through
+the existing interval-nesting theorem rather than introducing a primitive compactness axiom. Its
+direct imports are the sequence and real-analysis foundations only; it does not import series or
+integration modules.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SubsequenceExtractionEvidence` | Church-encoded package containing the imported `Subsequence` witness for a selector and extracted sequence |
+| `ConvergentSubsequenceEvidence` | package combining extraction evidence with convergence of the extracted sequence under its own smallness predicate |
+| `BolzanoWeierstrassChoice` | existential-style choice of a convergent subsequence and limit |
+| `BolzanoWeierstrassCompletenessEvidence` | explicit bounded-sequence-to-nested-interval route plus a bridge from the interval point to a convergent-subsequence choice |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `subsequence_extraction_evidence_intro`, `subsequence_extraction_evidence_subsequence` | package and recover subsequence extraction witnesses |
+| `convergent_subsequence_evidence_intro` | package extraction and convergence witnesses for an extracted sequence |
+| `convergent_subsequence_evidence_extraction`, `convergent_subsequence_evidence_converges` | project the extraction and convergence witnesses |
+| `bolzano_weierstrass_choice_intro`, `bolzano_weierstrass_choice_elim` | package and eliminate the convergent-subsequence choice |
+| `bolzano_weierstrass_completeness_evidence_intro` | package the bounded-sequence interval route and subsequence bridge |
+| `bounded_sequence_compactness_from_interval_nesting` | derives a convergent-subsequence choice by calling `interval_nesting_theorem` |
+| `bolzano_weierstrass_from_completeness`, `bolzano_weierstrass_theorem` | stable aliases for bounded-sequence Bolzano-Weierstrass imports |
+
+The module has an empty axiom report. The compactness proof path requires explicit evidence that
+boundedness supplies nested closed intervals, shrinking lengths, and interval-completeness data;
+the checked theorem then calls `interval_nesting_theorem` and passes its intersection point to the
+subsequence bridge.
+
+#### `Proofs.Ai.Analysis.Continuity.Interval`
+
+This module is the compactness-backed interval-continuity layer over
+`Proofs.Ai.Analysis.Continuity.Basic`, `Proofs.Ai.Analysis.Sequence.Compactness`, and
+`Proofs.Ai.Analysis.Real.Basic`. It keeps endpoint order, closed-interval membership, endpoint
+sign data, interval images, and interval extrema as explicit checked packages. The intermediate
+value theorem is driven by an `IntermediateValueEvidence` package that carries a certified
+`BolzanoWeierstrassCompletenessEvidence` route plus the bridge from that compactness route to an
+interval-image witness. Bolzano's zero theorem is a target-zero specialization of IVT, not a
+separate proof infrastructure. The extreme value theorem is interval-specific and requires
+explicit compactness, endpoint-order, image-boundedness, and extrema-bridge evidence. The compact
+interval uniform-continuity theorem is also interval-specific and requires an explicit
+compactness-route bridge into the existing `Continuity.Basic.UniformContinuous` shape. Neither
+path introduces a general compact-space theorem.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `IntervalEndpointOrder` | endpoint-order predicate for closed scalar intervals |
+| `IntervalMembership` | interval membership vocabulary reusing `ClosedInterval` from `Real.Basic` |
+| `IntervalImageWitness` | Church-encoded witness that a target value lies in the image of an interval |
+| `IntervalImageSet` | image-value predicate for applying ordered-field set evidence to interval images |
+| `IntervalMaximumAttained`, `IntervalMinimumAttained` | packages for attained interval extrema with point membership and pointwise bounds |
+| `IntervalMaximumChoice`, `IntervalMinimumChoice` | Church-encoded choice of an attained maximum or minimum point |
+| `ExtremeValueConclusion` | package containing both maximum and minimum choices |
+| `IntervalContinuousOn` | scalar continuity over the interval via `Continuity.Basic.ContinuousOn` |
+| `IntervalUniformContinuous` | scalar uniform continuity over the interval via `Continuity.Basic.UniformContinuous` |
+| `SignChangeAtEndpoints` | endpoint package for the zero-target Bolzano hypothesis |
+| `IntermediateValueHypothesis` | endpoint and bracketing package for a target value |
+| `IntermediateValueEvidence` | compactness route plus bridge from interval continuity and bracketing to an image witness |
+| `ExtremeValueEvidence` | compactness route, endpoint order, image boundedness, and extrema bridges for closed intervals |
+| `CompactIntervalUniformContinuityEvidence` | compactness route, endpoint order, and bridge from interval continuity to interval uniform continuity |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `interval_endpoint_order_intro`, `interval_endpoint_order_apply` | introduce and project endpoint-order evidence |
+| `interval_membership_intro`, `interval_membership_closed_interval` | move between the local interval vocabulary and `ClosedInterval` |
+| `interval_image_witness_intro`, `interval_image_witness_elim` | introduce and eliminate interval-image witnesses |
+| `interval_image_set_intro`, `interval_image_set_elim` | introduce and eliminate interval image-set values |
+| `interval_image_witness_to_image_set`, `interval_image_set_to_witness` | convert between interval-image witnesses and image-set predicates |
+| `interval_maximum_attained_intro`, `interval_maximum_attained_elim` | package and eliminate attained maximum evidence |
+| `interval_minimum_attained_intro`, `interval_minimum_attained_elim` | package and eliminate attained minimum evidence |
+| `interval_maximum_choice_intro`, `interval_maximum_choice_elim` | package and eliminate a maximum-point choice |
+| `interval_minimum_choice_intro`, `interval_minimum_choice_elim` | package and eliminate a minimum-point choice |
+| `interval_continuous_on_intro`, `interval_continuous_on_apply` | bridge interval continuity to `ContinuousOn` over the closed interval predicate |
+| `interval_uniform_continuous_intro`, `interval_uniform_continuous_apply` | bridge interval uniform continuity to `UniformContinuous` over the closed interval predicate |
+| `extreme_value_evidence_intro`, `extreme_value_evidence_maximum`, `extreme_value_evidence_minimum` | package compactness-backed extrema evidence and project each extrema choice |
+| `extreme_value_conclusion_intro`, `extreme_value_conclusion_elim` | package and eliminate the paired extreme-value conclusion |
+| `extreme_value_theorem`, `extreme_value_maximum`, `extreme_value_minimum` | derive interval extrema from explicit compactness and continuity evidence |
+| `compact_interval_uniform_continuity_evidence_intro`, `compact_interval_uniform_continuity_evidence_apply` | package compactness-backed uniform-continuity evidence and apply its bridge |
+| `uniform_continuity_on_compact_interval` | derive interval uniform continuity from explicit compactness and interval-continuity evidence |
+| `sign_change_at_endpoints_intro`, `sign_change_at_endpoints_elim` | package and eliminate Bolzano endpoint hypotheses |
+| `intermediate_value_hypothesis_intro`, `intermediate_value_hypothesis_elim` | package and eliminate IVT endpoint bracketing hypotheses |
+| `intermediate_value_evidence_intro`, `intermediate_value_evidence_apply` | package and apply the compactness-backed IVT bridge |
+| `intermediate_value_from_compactness`, `intermediate_value_theorem` | derive the interval-image witness from compactness, continuity, and bracketing |
+| `intermediate_value_hypothesis_of_sign_change`, `bolzano_theorem` | convert sign-change data to the zero-target IVT hypothesis and prove Bolzano as an IVT corollary |
+
+The module has an empty axiom report. It does not import derivative or integration modules.
+
+#### `Proofs.Ai.Analysis.Series.Basic`
+
+This module is the first series-convergence layer over `Proofs.Ai.Analysis.Sequence.Basic`.
+It keeps the partial-sum construction abstract as an explicit relation between a term sequence
+and its partial-sum sequence. Series convergence is therefore not a separate limit theory: the
+checked API reduces it to `SequenceConvergesTo` for the partial sums. The module imports sequence
+and real-analysis foundations, but does not import continuity, compactness criteria, or integration
+modules.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SeriesPartialSums` | abstract relation witnessing that a sequence is the partial-sum sequence of the ambient term sequence |
+| `SeriesConvergesTo` | packages partial-sum evidence and convergence of that partial-sum sequence to a limit |
+| `SeriesConverges` | existential-style choice of a series limit |
+| `SeriesAbsoluteTerms` | abstract relation assigning absolute-value terms without adding a primitive absolute-value function |
+| `SeriesAbsolutelyConverges` | convergence of the series formed from explicit absolute-value terms |
+| `SeriesTail` | abstract tail relation from a starting index to a tail term sequence |
+| `SeriesCauchy` | packages partial-sum evidence and Cauchy evidence for the partial-sum sequence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `series_partial_sums_intro`, `series_partial_sums_project` | introduce and project partial-sum evidence |
+| `series_converges_to_intro` | builds series convergence-to evidence from partial-sum evidence and sequence convergence |
+| `series_converges_to_partial_sums`, `series_converges_to_sequence_converges` | project the partial-sum and sequence-convergence witnesses |
+| `series_convergence_is_partial_sum_sequence_convergence` | stable reduction theorem from series convergence to sequence convergence of partial sums |
+| `series_converges_intro`, `series_converges_elim` | package and eliminate the chosen series limit |
+| `series_absolute_terms_intro`, `series_absolute_terms_project` | package and project absolute-term evidence |
+| `series_absolutely_converges_intro`, `series_absolutely_converges_terms`, `series_absolutely_converges_series` | package and project absolute convergence |
+| `series_tail_intro`, `series_tail_project` | package and project tail evidence |
+| `series_cauchy_intro`, `series_cauchy_partial_sums`, `series_cauchy_sequence_cauchy` | package and project the series Cauchy criterion hypotheses |
+| `series_cauchy_converges_from_sequence_criterion` | derives series convergence by applying `sequence_cauchy_converges_from_completeness` to partial sums |
+| `series_cauchy_convergence_criterion`, `cauchy_series_criterion` | stable aliases for later series criteria modules |
+
+The module has an empty axiom report. Absolute values, finite sums, and tails remain explicit
+relations supplied by callers, so later comparison-test modules can choose concrete law packages
+without changing the core convergence statements.
+
+#### `Proofs.Ai.Analysis.Series.Criteria`
+
+This module adds the first certificate-backed series criteria layer on top of
+`Proofs.Ai.Analysis.Series.Basic`. It keeps absolute values and order assumptions explicit:
+there is no primitive absolute-value function and no typeclass search.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SeriesNonnegativeTerms` | explicit nonnegativity evidence for a term sequence |
+| `SeriesTermwiseDomination` | explicit pointwise domination relation between two term sequences |
+| `SeriesAbsoluteValueTerms` | packages absolute-term evidence with nonnegativity evidence |
+| `AbsoluteConvergenceCauchyEvidence` | law package turning absolute convergence evidence into Cauchy evidence for the original partial sums |
+| `SeriesComparisonCauchyEvidence` | law package turning explicit nonnegative comparison hypotheses into Cauchy evidence |
+| `SeriesAbsoluteComparisonEvidence` | law package turning absolute domination by a convergent majorant into absolute convergence evidence |
+| `SeriesRatioTestHypothesis` | packages explicit ratio-step evidence with a below-one ratio-limit hypothesis |
+| `SeriesRootTestHypothesis` | packages explicit nth-root/root-term evidence with a below-one root-limit hypothesis |
+| `SeriesRatioTestEvidence` | law package turning ratio-test hypotheses into absolute convergence evidence |
+| `SeriesRootTestEvidence` | law package turning root-test hypotheses into absolute convergence evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `series_nonnegative_terms_intro`, `series_nonnegative_terms_project` | introduce and project nonnegative-term evidence |
+| `series_termwise_domination_intro`, `series_termwise_domination_project` | introduce and project pointwise domination evidence |
+| `series_absolute_value_terms_intro`, `series_absolute_value_terms_absolute_terms`, `series_absolute_value_terms_nonnegative` | package and project explicit absolute-value evidence |
+| `absolute_convergence_cauchy_evidence_intro`, `absolute_convergence_cauchy_evidence_apply` | package and apply the absolute-convergence-to-Cauchy bridge |
+| `absolute_convergence_implies_cauchy` | derives the original series Cauchy criterion from absolute convergence via the explicit bridge |
+| `absolute_convergence_implies_convergence` | proves ANQ-009 by applying `cauchy_series_criterion` to the Cauchy evidence obtained from absolute convergence |
+| `absolute_convergent_series_converges` | stable alias for downstream criteria modules |
+| `series_comparison_cauchy_evidence_intro`, `series_comparison_cauchy_evidence_apply` | package and apply the explicit nonnegative comparison-to-Cauchy bridge |
+| `series_absolute_comparison_evidence_intro`, `series_absolute_comparison_evidence_apply` | package and apply the absolute-domination-to-absolute-convergence bridge |
+| `comparison_test_nonnegative`, `nonnegative_series_comparison_test` | prove ANQ-010 nonnegative comparison by applying `cauchy_series_criterion` to packaged comparison Cauchy evidence |
+| `comparison_test_absolutely_dominated`, `absolutely_dominated_series_comparison_test` | prove ANQ-010 absolute domination comparison via the ANQ-009 absolute-convergence theorem |
+| `series_ratio_test_hypothesis_intro`, `series_ratio_test_hypothesis_steps`, `series_ratio_test_hypothesis_limit` | package and project explicit ratio-test limit hypotheses |
+| `series_root_test_hypothesis_intro`, `series_root_test_hypothesis_terms`, `series_root_test_hypothesis_limit` | package and project explicit root-test limit hypotheses |
+| `series_ratio_test_evidence_intro`, `series_ratio_test_evidence_apply` | package and apply the ratio-test-to-absolute-convergence bridge |
+| `series_root_test_evidence_intro`, `series_root_test_evidence_apply` | package and apply the root-test-to-absolute-convergence bridge |
+| `d_alembert_ratio_test`, `ratio_test` | prove ANQ-011 ratio-test convergence via the ANQ-009 absolute-convergence theorem |
+| `cauchy_root_test`, `root_test` | prove ANQ-011 root-test convergence via the ANQ-009 absolute-convergence theorem |
+
+The module has an empty axiom report and imports `Series.Basic`, sequence, real, normed-space,
+and algebra foundations only. ANQ-009 through ANQ-011 keep all order, absolute-value,
+comparison, ratio-limit, exponent, and root assumptions in explicit law packages; no primitive
+exponentiation or nth-root operation is added to the criteria layer.
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

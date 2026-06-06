@@ -430,9 +430,12 @@ fn build_local_modules(
         }
 
         if std::env::var_os("NPA_SKIP_PACKAGE_BUILD_HASH_CHECKS").is_none() {
-            if let Some(diagnostic) =
-                check_generated_manifest_hashes(module_index, module, &certificate, &generated_bytes)
-            {
+            if let Some(diagnostic) = check_generated_manifest_hashes(
+                module_index,
+                module,
+                &certificate,
+                &generated_bytes,
+            ) {
                 return Some(diagnostic);
             }
         }

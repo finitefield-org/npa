@@ -154,7 +154,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T00 Build Theorem Card Inventory
 
-- Status: Pending
+- Status: Complete
 - Depends on: None
 - Inputs:
   - `proofs/analysis-theorem-proof-roadmap.md`
@@ -190,7 +190,11 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T01 Fix Real And Complete Ordered Field Statement Shape
 
-- Status: Pending
+- Status: `ANQ-001` complete. `Proofs.Ai.Analysis.Real.Basic` now keeps the
+  first real-analysis foundation fully abstract over a `Scalar`, with
+  `CompleteOrderedFieldArgs` packaging ordered-field laws, field bridge laws,
+  interval laws, order completeness, and Archimedean evidence. No named `Real`
+  carrier or completeness primitive was added to the kernel.
 - Depends on: ANA-T00
 - Inputs:
   - `proofs/analysis-theorem-proof-roadmap.md` section `ANA-01`
@@ -224,15 +228,22 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Real.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Real.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
 - Notes:
-  - If no source module is added, replace the build commands with documented
-    review plus `git diff --check` and keep the milestone at statement audit
-    level.
+  - Downstream sequence, series, and continuity modules should import this
+    abstract complete ordered-field evidence rather than assuming a trusted
+    real-number primitive.
 
 ### ANA-T02 Add Sequence Convergence Core
 
-- Status: Pending
+- Status: `ANQ-002` complete. `Proofs.Ai.Analysis.Sequence.Basic` now defines
+  the reusable sequence, subsequence, limit, eventuality, boundedness, and
+  limit-uniqueness vocabulary over the abstract complete ordered-field
+  foundation from `ANA-T01`. It also exposes checked aliases to the existing
+  `AbstractFixedPoint` `ConvergesTo` and `CauchySeq` concepts without changing
+  that module.
 - Depends on: ANA-T01
 - Inputs:
   - `Proofs.Ai.Analysis.Real.Basic`
@@ -261,10 +272,24 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
+- Notes:
+  - The checked `sequence_limit_unique` theorem derives equality from explicit
+    local `SequenceLimitUniquenessEvidence`; uniqueness is not installed as a
+    trusted kernel primitive or module-level law package.
+  - Later series, compactness, and continuity modules should import
+    `Proofs.Ai.Analysis.Sequence.Basic` rather than redefining convergence
+    vocabulary.
 
 ### ANA-T03 Add Cauchy And Completeness Sequence Theorems
 
-- Status: Pending
+- Status: `ANQ-003` complete. `Proofs.Ai.Analysis.Sequence.Basic` now includes
+  `SequenceCauchySeq`, `SequenceConvergenceChoice`, and
+  `SequenceCauchyCompletenessEvidence`, plus checked theorem names for deriving
+  sequence convergence from Cauchy evidence through explicit fixed-point metric
+  completeness bridges.
 - Depends on: ANA-T02
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -293,10 +318,30 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_cauchy_converges_from_completeness /tmp/anq003-sequence-cauchy-converges-replay.json`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
+- Notes:
+  - `sequence_cauchy_converges_from_completeness` calls the fixed-point
+    `CompleteMetricArgs` eliminator obtained from explicit
+    `SequenceCauchyCompletenessEvidence`; the final sequence convergence choice
+    is not a renamed assumption.
+  - Stable downstream import names are
+    `sequence_cauchy_convergence_criterion` and
+    `cauchy_convergence_criterion`.
 
 ### ANA-T04 Add Monotone, Squeeze, And Interval-Nesting Theorems
 
-- Status: Pending
+- Status: `ANQ-004` complete for monotone convergence; `ANQ-005` complete for
+  squeeze; `ANQ-006` complete for interval nesting.
+  `Proofs.Ai.Analysis.Sequence.Basic` now defines one-sided boundedness,
+  monotone increasing/decreasing predicates, explicit monotone-completeness
+  evidence, explicit squeeze-bounds/convergence evidence, and explicit nested
+  closed-interval/length evidence, with checked theorem names deriving monotone
+  convergence through the real-order supremum route, deriving middle-sequence
+  convergence through squeeze evidence, and deriving interval nesting through
+  a lower-endpoint supremum route.
 - Depends on: ANA-T03
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -306,14 +351,15 @@ guessing. The split must preserve the dependency order in this document.
   - `Proofs/Ai/Analysis/Sequence/Monotone/` if split
   - `Proofs/Ai/Analysis/Real/Basic/`
 - Tasks:
-  - Define monotone sequence, bounded-above/bounded-below sequence, squeeze
-    hypotheses, nested closed intervals, and shrinking interval length.
+  - Define monotone sequence and bounded-above/bounded-below sequence evidence.
   - Prove monotone convergence theorem for sequences.
+  - Define squeeze hypotheses, nested closed intervals, and shrinking interval
+    length.
   - Prove squeeze theorem.
   - Prove interval nesting theorem from completeness.
 - Deliverables:
-  - Certificates for monotone convergence, squeeze theorem, and interval
-    nesting.
+  - Certificate-backed monotone convergence theorem for sequences.
+  - Certificates for squeeze theorem and interval nesting.
   - Imports ready for continuity and compactness milestones.
 - Acceptance criteria:
   - Nested intervals use explicit closed interval and length hypotheses.
@@ -325,10 +371,34 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_monotone_converges_from_completeness /tmp/anq004-sequence-monotone-converges-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_squeeze_converges /tmp/anq005-sequence-squeeze-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::nested_interval_point_from_completeness /tmp/anq006-nested-interval-replay.json`
+  - `./scripts/check-fast.sh`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
+- Notes:
+  - `sequence_monotone_converges_from_completeness` extracts
+    `OrderCompletenessLawArgs` from the ambient `CompleteOrderedFieldArgs` and
+    calls `supremum_exists_from_completeness` for the supplied value set. The
+    final convergence choice is produced from the returned supremum evidence by
+    `SequenceMonotoneCompletenessEvidence`; supremum existence is not assumed as
+    a separate theorem input.
+  - Stable downstream import names for monotone convergence are
+    `sequence_monotone_converges_from_completeness` and
+    `monotone_convergence_theorem`.
+  - Stable downstream import names for squeeze are `sequence_squeeze_converges`
+    and `squeeze_theorem`.
+  - Stable downstream import names for interval nesting are
+    `nested_interval_point_from_completeness` and `interval_nesting_theorem`.
 
 ### ANA-T05 Add Bolzano-Weierstrass And Sequence Compactness
 
-- Status: Pending
+- Status: `ANQ-007` complete. `Proofs.Ai.Analysis.Sequence.Compactness`
+  now defines subsequence extraction evidence, convergent-subsequence
+  evidence, a bounded-sequence compactness choice package, and
+  Bolzano-Weierstrass theorem aliases derived through the interval-nesting
+  route.
 - Depends on: ANA-T04
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -352,12 +422,20 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Compactness`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Compactness`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Compactness::bolzano_weierstrass_from_completeness /tmp/anq007-bolzano-weierstrass-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Stable downstream import names are
+  `bounded_sequence_compactness_from_interval_nesting`,
+  `bolzano_weierstrass_from_completeness`, and
+  `bolzano_weierstrass_theorem`.
 
 ### ANA-T06 Add Series Basics And Cauchy Criterion
 
-- Status: Pending
+- Status: `ANQ-008` complete. `Proofs.Ai.Analysis.Series.Basic`
+  now defines abstract partial-sum evidence, series convergence,
+  absolute-convergence evidence, tails, and a series Cauchy criterion that
+  reuses the sequence Cauchy convergence theorem on the partial-sum sequence.
 - Depends on: ANA-T03
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -381,11 +459,19 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Basic`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Basic::series_cauchy_converges_from_sequence_criterion /tmp/anq008-series-cauchy-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Stable downstream import names are
+  `series_convergence_is_partial_sum_sequence_convergence`,
+  `series_cauchy_convergence_criterion`, and `cauchy_series_criterion`.
 
 ### ANA-T07 Add Absolute Convergence And Comparison Tests
 
-- Status: Pending
+- Status: `ANQ-009` and `ANQ-010` complete. `Proofs.Ai.Analysis.Series.Criteria`
+  now defines nonnegative-term evidence, pointwise domination evidence,
+  absolute-value term evidence, explicit absolute-convergence-to-Cauchy evidence,
+  and comparison evidence packages used to prove nonnegative and absolutely
+  dominated comparison tests via the `Series.Basic` Cauchy criterion.
 - Depends on: ANA-T06
 - Inputs:
   - `Proofs.Ai.Analysis.Series.Basic`
@@ -408,11 +494,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::absolute_convergence_implies_convergence /tmp/anq009-absolute-convergence-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::comparison_test_nonnegative /tmp/anq010-nonnegative-comparison-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::comparison_test_absolutely_dominated /tmp/anq010-absolute-comparison-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### ANA-T08 Add Ratio And Root Tests
 
-- Status: Pending
+- Status: `ANQ-011` complete. `Proofs.Ai.Analysis.Series.Criteria` now packages
+  explicit ratio-step, ratio-limit, root-term, and root-limit hypotheses and
+  proves d'Alembert ratio and Cauchy root tests by reducing them to the
+  ANQ-009 absolute-convergence theorem through explicit law evidence.
 - Depends on: ANA-T07
 - Inputs:
   - `Proofs.Ai.Analysis.Series.Criteria`
@@ -437,6 +529,8 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::d_alembert_ratio_test /tmp/anq011-ratio-test-replay.json`
+  - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::cauchy_root_test /tmp/anq011-root-test-replay.json`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### ANA-T09 Add Alternating, Dirichlet, Abel, And Rearrangement Planning Split
@@ -475,7 +569,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T10 Add Function Limits And Continuity Core
 
-- Status: Pending
+- Status: Complete (ANQ-012)
 - Depends on: ANA-T05
 - Inputs:
   - `Proofs.Ai.Analysis.Sequence.Basic`
@@ -502,10 +596,17 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Continuity.Basic` with certificate-backed pointwise limits,
+    continuity-at, continuity-on, uniform-continuity, neighborhood bridge, local-equality bridge,
+    restriction, composition, setwise composition, and sequential bridge theorem targets.
+  - The module imports `Sequence.Basic`, `AbstractMetricTopology`, and `Real.Basic`, and does not
+    import derivative or integration modules.
+  - The generated axiom report is empty.
 
 ### ANA-T11 Add Bolzano And Intermediate Value Theorems
 
-- Status: Pending
+- Status: Complete (ANQ-013)
 - Depends on: ANA-T10
 - Inputs:
   - `Proofs.Ai.Analysis.Continuity.Basic`
@@ -531,10 +632,22 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Interval`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Continuity.Interval` with endpoint-order, interval-membership,
+    sign-change, interval-image, interval-continuity, IVT-hypothesis, and compactness-backed
+    IVT-evidence packages.
+  - `intermediate_value_theorem` is derived by applying explicit `IntermediateValueEvidence`,
+    whose bridge receives a certified `BolzanoWeierstrassCompletenessEvidence` route from the
+    sequence compactness layer.
+  - `bolzano_theorem` is represented as the zero-target specialization of IVT via
+    `intermediate_value_hypothesis_of_sign_change`; no duplicate theorem aliases were added.
+  - The module imports continuity, sequence compactness, metric topology, and real-analysis
+    foundations, and does not import derivative or integration modules.
+  - The generated axiom report is empty.
 
 ### ANA-T12 Add Extreme Value And Uniform Continuity On Compact Intervals
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T11
 - Inputs:
   - `Proofs.Ai.Analysis.Continuity.Interval`
@@ -543,9 +656,9 @@ guessing. The split must preserve the dependency order in this document.
   - `Proofs/Ai/Analysis/Continuity/Interval/`
   - `Proofs/Ai/Topology/Metric/Compact/` if compactness generalization is split
 - Tasks:
-  - Define maximum/minimum attainment and compact interval evidence.
-  - Prove extreme value theorem for closed intervals.
-  - Prove uniform continuity theorem on closed intervals.
+  - Define maximum/minimum attainment and compact interval evidence. (ANQ-014 done)
+  - Prove extreme value theorem for closed intervals. (ANQ-014 done)
+  - Prove uniform continuity theorem on closed intervals. (ANQ-015 done)
   - Leave the general compact-space form to the topology track.
 - Deliverables:
   - Certificate-backed extrema and uniform-continuity theorem targets.
@@ -559,6 +672,18 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completion notes:
+  - ANQ-014 adds interval-specific image-set, maximum/minimum-attainment,
+    extrema-choice, and `ExtremeValueEvidence` packages to
+    `Proofs.Ai.Analysis.Continuity.Interval`.
+  - `extreme_value_theorem`, `extreme_value_maximum`, and
+    `extreme_value_minimum` derive extrema only from explicit compactness,
+    endpoint-order, image-boundedness, and interval-continuity evidence.
+  - ANQ-015 adds `IntervalUniformContinuous`,
+    `CompactIntervalUniformContinuityEvidence`, and
+    `uniform_continuity_on_compact_interval`, deriving interval uniform
+    continuity only from explicit compactness-route, endpoint-order,
+    interval-continuity, and caller-supplied uniform bridge evidence.
 
 ### ANA-T13 Add One-Dimensional Derivative Bridge
 
@@ -588,6 +713,15 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Calculus.OneVariable` as a certificate-backed
+    scalar specialization of `FrechetDerivativeAt`, with no separate derivative
+    primitive.
+  - Added derivative-value, derivative-zero, differentiability-on-interval,
+    local-extremum, interior-point, and critical-point packages for the Fermat,
+    Rolle, and MVT layers.
+  - Added bridge lemmas in both directions between one-variable derivative
+    statements and the existing Frechet derivative/differentiability packages.
 
 ### ANA-T14 Add Fermat, Rolle, And Mean Value Theorem
 

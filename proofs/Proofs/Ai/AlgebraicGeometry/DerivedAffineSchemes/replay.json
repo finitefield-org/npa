@@ -18,6 +18,11 @@
       "declaration": "affine_schemes",
       "source_kind": "explicit_term",
       "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => affine_scheme_args (forall (A : DerivedRing), IsAffineScheme (Spec A)) (fun (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)) => spec_affine_law)"
+    },
+    {
+      "declaration": "derived_affine_schemes",
+      "source_kind": "explicit_term",
+      "term": "fun DerivedRing => fun DerivedStack => fun Spec => fun IsAffineScheme => fun affine_scheme_args => affine_scheme_args (forall (A : DerivedRing), IsAffineScheme (Spec A)) (fun (spec_affine_law : forall (A : DerivedRing), IsAffineScheme (Spec A)) => spec_affine_law)"
     }
   ],
   "acceptance": {

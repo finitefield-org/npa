@@ -57,6 +57,14 @@ npa-mathlib/npa-package.toml
 npa/proofs/npa-package.toml
 ```
 
+Before selecting or rewriting public module names, declaration names, paths, or
+compatibility aliases, read `npa-mathlib/docs/namespace-policy.md` and treat it
+as the source of truth for the public naming policy. Use it to resolve
+`Proofs.Ai.*` corpus names into `Mathlib.*` / `Std.*` public names, stability
+expectations, path layout, and already released modules. If a generated promote
+plan, corpus seed name, or prior draft audit conflicts with the namespace
+policy, follow the namespace policy and record the naming decision in the audit.
+
 If the route is ambiguous and cannot be inferred from local docs, ask one short
 question before editing.
 

@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:1407f1a8831aca2447522afd4545384469633953b16015d6805b1d21b94e5ef6",
-  "certificate_file_sha256": "sha256:d0e8d994563f01599e107757cdd48383dceaece03faccd2aba8fe89fbd0781c3",
+  "certificate_file_sha256": "sha256:ea6a422510bdef981e005d7163110c46a42c475385b6bdedb70cf385fbcb2561",
   "export_hash": "sha256:f29793f350f08900b95b25f4e75b528dc868d1333ca505995b292c6c3e76d581",
   "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:276ae222d82fc3a9c04856a7628dea00e87b461e927596b063c9b57dab1f1908",
+  "certificate_hash": "sha256:90aab3ba6b20a0d3aa0d64732bfa5053a2cb08c013d619948d1330ab402423a6",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.Zeta"],
   "axioms": [],
   "declarations": [

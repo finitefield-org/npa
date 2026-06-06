@@ -1,0 +1,222 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Continuity.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FunctionPointwiseLimit",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun ApproachesAt => ApproachesAt f point limit"
+    },
+    {
+      "declaration": "ContinuousAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun ApproachesAt => @FunctionPointwiseLimit.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f point (f point) ApproachesAt"
+    },
+    {
+      "declaration": "ContinuousOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun set => fun f => fun ApproachesAt => @LocalPred.{d} Domain set (fun (x : Domain) => @ContinuousAt.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f x ApproachesAt)"
+    },
+    {
+      "declaration": "UniformContinuous",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun set => fun f => fun UniformRel => UniformRel set f"
+    },
+    {
+      "declaration": "NeighborhoodLimitBridge",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => forall (source_neighborhood : @Neighborhood.{d} Domain point source_domain), forall (target_neighborhood : @Neighborhood.{c} Codomain limit target_domain), forall (maps_source_to_target : @LocalPred.{d} Domain source_domain (fun (x : Domain) => target_domain (f x))), @FunctionPointwiseLimit.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f point limit ApproachesAt"
+    },
+    {
+      "declaration": "LocalEqualityContinuityEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => forall (local_eq : @LocalEq.{d,c} Domain Codomain neighborhood f g), forall (point_neighborhood : @Neighborhood.{d} Domain point neighborhood), forall (left_continuous : @ContinuousAt.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f point ApproachesF), @ContinuousAt.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain g point ApproachesG"
+    },
+    {
+      "declaration": "ContinuityRestrictionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => forall (subset : @LocalPred.{d} Domain smaller larger), forall (continuous_large : @ContinuousOn.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger f LargerApproaches), @ContinuousOn.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain smaller f SmallerApproaches"
+    },
+    {
+      "declaration": "ContinuousCompositionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => forall (f_continuous : @ContinuousAt.{m,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid f point ApproachesF), forall (g_continuous : @ContinuousAt.{c,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Mid Codomain g (f point) ApproachesG), @ContinuousAt.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain (fun (x : Domain) => g (f x)) point ApproachesComp"
+    },
+    {
+      "declaration": "ContinuousOnCompositionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => forall (local_image : @LocalPred.{d} Domain source_set (fun (x : Domain) => image_set (f x))), forall (f_continuous : @ContinuousOn.{m,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid source_set f ApproachesF), forall (g_continuous : @ContinuousOn.{c,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Mid Codomain image_set g ApproachesG), @ContinuousOn.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain source_set (fun (x : Domain) => g (f x)) ApproachesComp"
+    },
+    {
+      "declaration": "UniformContinuityRestrictionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => forall (subset : @LocalPred.{d} Domain smaller larger), forall (uniform_large : @UniformContinuous.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger f LargerUniform), @UniformContinuous.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain smaller f SmallerUniform"
+    },
+    {
+      "declaration": "SequentialPointwiseLimitBridge",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun f => fun point => fun limit => fun ApproachesAt => forall (domain_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit point), forall (image_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex (fun (k : SequenceIndex) => f (seq k)) NearLimit limit), @FunctionPointwiseLimit.{u,u,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Scalar Scalar f point limit ApproachesAt"
+    },
+    {
+      "declaration": "function_pointwise_limit_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun ApproachesAt => fun h => h"
+    },
+    {
+      "declaration": "function_pointwise_limit_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun ApproachesAt => fun limit_evidence => limit_evidence"
+    },
+    {
+      "declaration": "continuous_at_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun ApproachesAt => fun limit_evidence => limit_evidence"
+    },
+    {
+      "declaration": "continuous_at_limit",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun ApproachesAt => fun continuous => continuous"
+    },
+    {
+      "declaration": "continuous_on_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun set => fun f => fun ApproachesAt => fun continuous_points => continuous_points"
+    },
+    {
+      "declaration": "continuous_on_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun set => fun f => fun ApproachesAt => fun continuous => fun x => fun hx => continuous x hx"
+    },
+    {
+      "declaration": "uniform_continuous_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun set => fun f => fun UniformRel => fun uniform => uniform"
+    },
+    {
+      "declaration": "uniform_continuous_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun set => fun f => fun UniformRel => fun uniform => uniform"
+    },
+    {
+      "declaration": "neighborhood_limit_bridge_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => fun bridge => bridge"
+    },
+    {
+      "declaration": "neighborhood_limit_bridge_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => fun bridge => fun source_neighborhood => fun target_neighborhood => fun maps_source_to_target => bridge source_neighborhood target_neighborhood maps_source_to_target"
+    },
+    {
+      "declaration": "pointwise_limit_from_neighborhood_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun point => fun limit => fun source_domain => fun target_domain => fun ApproachesAt => fun bridge => fun source_neighborhood => fun target_neighborhood => fun maps_source_to_target => @neighborhood_limit_bridge_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f point limit source_domain target_domain ApproachesAt bridge source_neighborhood target_neighborhood maps_source_to_target"
+    },
+    {
+      "declaration": "local_equality_continuity_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => fun bridge => bridge"
+    },
+    {
+      "declaration": "local_equality_continuity_evidence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => fun evidence => fun local_eq => fun point_neighborhood => fun left_continuous => evidence local_eq point_neighborhood left_continuous"
+    },
+    {
+      "declaration": "continuous_at_of_local_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun f => fun g => fun point => fun neighborhood => fun ApproachesF => fun ApproachesG => fun evidence => fun local_eq => fun point_neighborhood => fun left_continuous => @local_equality_continuity_evidence_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain f g point neighborhood ApproachesF ApproachesG evidence local_eq point_neighborhood left_continuous"
+    },
+    {
+      "declaration": "continuity_restriction_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun bridge => bridge"
+    },
+    {
+      "declaration": "continuity_restriction_evidence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun evidence => fun subset => fun continuous_large => evidence subset continuous_large"
+    },
+    {
+      "declaration": "continuous_on_restrict",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun evidence => fun subset => fun continuous_large => @continuity_restriction_evidence_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger smaller f LargerApproaches SmallerApproaches evidence subset continuous_large"
+    },
+    {
+      "declaration": "continuous_at_restrict",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerApproaches => fun SmallerApproaches => fun evidence => fun subset => fun continuous_large => fun point => fun hpoint => @continuous_on_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain smaller f SmallerApproaches (@continuous_on_restrict.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger smaller f LargerApproaches SmallerApproaches evidence subset continuous_large) point hpoint"
+    },
+    {
+      "declaration": "continuous_composition_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun bridge => bridge"
+    },
+    {
+      "declaration": "continuous_composition_evidence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun f_continuous => fun g_continuous => evidence f_continuous g_continuous"
+    },
+    {
+      "declaration": "continuous_at_comp",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun f_continuous => fun g_continuous => @continuous_composition_evidence_apply.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain f g point ApproachesF ApproachesG ApproachesComp evidence f_continuous g_continuous"
+    },
+    {
+      "declaration": "continuous_comp",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun f => fun g => fun point => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun f_continuous => fun g_continuous => @continuous_at_comp.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain f g point ApproachesF ApproachesG ApproachesComp evidence f_continuous g_continuous"
+    },
+    {
+      "declaration": "continuous_on_composition_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun bridge => bridge"
+    },
+    {
+      "declaration": "continuous_on_composition_evidence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun local_image => fun f_continuous => fun g_continuous => evidence local_image f_continuous g_continuous"
+    },
+    {
+      "declaration": "continuous_on_comp",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Mid => fun Codomain => fun source_set => fun image_set => fun f => fun g => fun ApproachesF => fun ApproachesG => fun ApproachesComp => fun evidence => fun local_image => fun f_continuous => fun g_continuous => @continuous_on_composition_evidence_apply.{c,d,m,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Mid Codomain source_set image_set f g ApproachesF ApproachesG ApproachesComp evidence local_image f_continuous g_continuous"
+    },
+    {
+      "declaration": "uniform_continuity_restriction_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => fun bridge => bridge"
+    },
+    {
+      "declaration": "uniform_continuity_restriction_evidence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => fun evidence => fun subset => fun uniform_large => evidence subset uniform_large"
+    },
+    {
+      "declaration": "uniform_continuous_on_restrict",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun Domain => fun Codomain => fun larger => fun smaller => fun f => fun LargerUniform => fun SmallerUniform => fun evidence => fun subset => fun uniform_large => @uniform_continuity_restriction_evidence_apply.{c,d,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args Domain Codomain larger smaller f LargerUniform SmallerUniform evidence subset uniform_large"
+    },
+    {
+      "declaration": "sequential_pointwise_limit_bridge_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun f => fun point => fun limit => fun ApproachesAt => fun bridge => bridge"
+    },
+    {
+      "declaration": "sequential_pointwise_limit_bridge_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun f => fun point => fun limit => fun ApproachesAt => fun bridge => fun domain_converges => fun image_converges => bridge domain_converges image_converges"
+    },
+    {
+      "declaration": "pointwise_limit_of_sequential_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun f => fun point => fun limit => fun ApproachesAt => fun bridge => fun domain_converges => fun image_converges => @sequential_pointwise_limit_bridge_apply.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit f point limit ApproachesAt bridge domain_converges image_converges"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Continuity/Basic/certificate.npcert"
+  }
+}
