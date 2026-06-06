@@ -968,6 +968,13 @@ semantics.
 ## NT-19 Arithmetic Geometry
 
 - Status: planned.
+- Progress:
+  - `NT-T56` added certificate-backed
+    `Proofs.Ai.ArithmeticGeometry.RationalPoints`, preserving curve genus,
+    divisor, Riemann-Roch, Hasse-Weil bound and zeta-function surfaces,
+    Mordell/Faltings and Siegel rational/integral-point statement surfaces,
+    explicit rational/integral-point hypotheses, finite-field core reuse, and
+    separation from etale cohomology construction interfaces.
 - Depends on: existing `Proofs.Ai.AlgebraicGeometry.*` modules, `NT-13`,
   `NT-16`, `NT-18`, scheme and cohomology foundations.
 - Target modules:

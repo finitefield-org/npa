@@ -265,6 +265,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &DERIVED_CATEGORY_MODULE,
     &TOR_EXT_MODULE,
     &COTANGENT_COMPLEX_MODULE,
+    &ARITHMETIC_GEOMETRY_RATIONAL_POINTS_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
     &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
@@ -3517,6 +3518,26 @@ const COTANGENT_COMPLEX_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: COTANGENT_COMPLEX_DEFINITIONS,
     theorems: COTANGENT_COMPLEX_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ARITHMETIC_GEOMETRY_RATIONAL_POINTS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+    source_path: "Proofs/Ai/ArithmeticGeometry/RationalPoints/source.npa",
+    certificate_path: "Proofs/Ai/ArithmeticGeometry/RationalPoints/certificate.npcert",
+    meta_path: "Proofs/Ai/ArithmeticGeometry/RationalPoints/meta.json",
+    replay_path: "Proofs/Ai/ArithmeticGeometry/RationalPoints/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.ClassGroup",
+        "Proofs.Ai.NumberTheory.LFunction",
+        "Proofs.Ai.EllipticCurve.FiniteField",
+        "Proofs.Ai.EllipticCurve.MordellWeil",
+        "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+    ],
+    inductives: &[],
+    definitions: ARITHMETIC_GEOMETRY_RATIONAL_POINTS_DEFINITIONS,
+    theorems: ARITHMETIC_GEOMETRY_RATIONAL_POINTS_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -46180,6 +46201,452 @@ const COTANGENT_COMPLEX_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+macro_rules! rational_points_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (BaseField : Type), ",
+            "forall (Curve : Type), ",
+            "forall (Divisor : forall (curve : Curve), Type), ",
+            "forall (RationalPointSet : forall (curve : Curve), Type), ",
+            "forall (IntegralPointSet : forall (curve : Curve), Type), ",
+            "forall (IsDivisor : forall (curve : Curve), forall (divisor : Divisor curve), Prop), ",
+            "forall (Genus : forall (curve : Curve), Prop), ",
+            "forall (RiemannRochSpace : forall (curve : Curve), forall (divisor : Divisor curve), Type), ",
+            "forall (RiemannRochTheorem : forall (curve : Curve), forall (divisor : Divisor curve), forall (space : RiemannRochSpace curve divisor), Prop), ",
+            "forall (HasseWeilZeta : forall (curve : Curve), forall (field : BaseField), Prop), ",
+            "forall (HasseWeilBound : forall (curve : Curve), forall (field : BaseField), Prop), ",
+            "forall (MordellStatement : forall (curve : Curve), Prop), ",
+            "forall (FaltingsStatement : forall (curve : Curve), Prop), ",
+            "forall (SiegelStatement : forall (curve : Curve), Prop), ",
+            "forall (RationalPointHypotheses : forall (curve : Curve), forall (rational_points : RationalPointSet curve), Prop), ",
+            "forall (IntegralPointHypotheses : forall (curve : Curve), forall (integral_points : IntegralPointSet curve), Prop), ",
+            "forall (FiniteFieldCore : Type), ",
+            "forall (FiniteFieldCoreOwnership : forall (core : FiniteFieldCore), Prop), ",
+            "forall (FiniteFieldZetaUsesCore : forall (curve : Curve), forall (field : BaseField), forall (core : FiniteFieldCore), Prop), ",
+            "forall (RationalIntegralHypothesesExplicit : forall (curve : Curve), Prop), ",
+            "forall (FaltingsLevelL1 : forall (curve : Curve), Prop), ",
+            "forall (EtaleCohomologyConstruction : Type), ",
+            "forall (RationalPointPackage : Type), ",
+            "forall (SeparatedFromEtaleCohomology : forall (package : RationalPointPackage), forall (etale : EtaleCohomologyConstruction), Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! rational_points_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun BaseField => fun Curve => fun Divisor => fun RationalPointSet => ",
+            "fun IntegralPointSet => fun IsDivisor => fun Genus => ",
+            "fun RiemannRochSpace => fun RiemannRochTheorem => ",
+            "fun HasseWeilZeta => fun HasseWeilBound => fun MordellStatement => ",
+            "fun FaltingsStatement => fun SiegelStatement => ",
+            "fun RationalPointHypotheses => fun IntegralPointHypotheses => ",
+            "fun FiniteFieldCore => fun FiniteFieldCoreOwnership => ",
+            "fun FiniteFieldZetaUsesCore => ",
+            "fun RationalIntegralHypothesesExplicit => fun FaltingsLevelL1 => ",
+            "fun EtaleCohomologyConstruction => fun RationalPointPackage => ",
+            "fun SeparatedFromEtaleCohomology => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! rational_points_data_app {
+    () => {
+        concat!(
+            "@RationalPointsData BaseField Curve Divisor RationalPointSet ",
+            "IntegralPointSet IsDivisor Genus RiemannRochSpace ",
+            "RiemannRochTheorem HasseWeilZeta HasseWeilBound MordellStatement ",
+            "FaltingsStatement SiegelStatement RationalPointHypotheses ",
+            "IntegralPointHypotheses FiniteFieldCore FiniteFieldCoreOwnership ",
+            "FiniteFieldZetaUsesCore RationalIntegralHypothesesExplicit ",
+            "FaltingsLevelL1 EtaleCohomologyConstruction RationalPointPackage ",
+            "SeparatedFromEtaleCohomology"
+        )
+    };
+}
+
+macro_rules! rational_points_genus_law_type {
+    () => {
+        "forall (curve : Curve), Genus curve"
+    };
+}
+
+macro_rules! rational_points_divisor_law_type {
+    () => {
+        "forall (curve : Curve), forall (divisor : Divisor curve), IsDivisor curve divisor"
+    };
+}
+
+macro_rules! rational_points_riemann_roch_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (divisor : Divisor curve), ",
+            "forall (is_divisor : IsDivisor curve divisor), ",
+            "forall (space : RiemannRochSpace curve divisor), ",
+            "RiemannRochTheorem curve divisor space"
+        )
+    };
+}
+
+macro_rules! rational_points_hasse_weil_bound_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (field : BaseField), ",
+            "forall (core : FiniteFieldCore), ",
+            "forall (core_ownership : FiniteFieldCoreOwnership core), ",
+            "HasseWeilBound curve field"
+        )
+    };
+}
+
+macro_rules! rational_points_hasse_weil_zeta_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (field : BaseField), ",
+            "forall (core : FiniteFieldCore), ",
+            "forall (core_ownership : FiniteFieldCoreOwnership core), ",
+            "HasseWeilZeta curve field"
+        )
+    };
+}
+
+macro_rules! rational_points_mordell_faltings_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (rational_points : RationalPointSet curve), ",
+            "forall (rational_hypotheses : RationalPointHypotheses curve rational_points), ",
+            "forall (mordell_statement : MordellStatement curve), ",
+            "FaltingsStatement curve"
+        )
+    };
+}
+
+macro_rules! rational_points_siegel_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (integral_points : IntegralPointSet curve), ",
+            "forall (integral_hypotheses : IntegralPointHypotheses curve integral_points), ",
+            "SiegelStatement curve"
+        )
+    };
+}
+
+macro_rules! rational_points_explicit_hypotheses_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (rational_points : RationalPointSet curve), ",
+            "forall (integral_points : IntegralPointSet curve), ",
+            "forall (rational_hypotheses : RationalPointHypotheses curve rational_points), ",
+            "forall (integral_hypotheses : IntegralPointHypotheses curve integral_points), ",
+            "RationalIntegralHypothesesExplicit curve"
+        )
+    };
+}
+
+macro_rules! rational_points_finite_field_core_reuse_law_type {
+    () => {
+        concat!(
+            "forall (curve : Curve), forall (field : BaseField), ",
+            "forall (core : FiniteFieldCore), ",
+            "forall (core_ownership : FiniteFieldCoreOwnership core), ",
+            "FiniteFieldZetaUsesCore curve field core"
+        )
+    };
+}
+
+macro_rules! rational_points_faltings_l1_boundary_law_type {
+    () => {
+        "forall (curve : Curve), forall (faltings_statement : FaltingsStatement curve), FaltingsLevelL1 curve"
+    };
+}
+
+macro_rules! rational_points_etale_separation_law_type {
+    () => {
+        concat!(
+            "forall (package : RationalPointPackage), ",
+            "forall (etale : EtaleCohomologyConstruction), ",
+            "SeparatedFromEtaleCohomology package etale"
+        )
+    };
+}
+
+macro_rules! rational_points_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (genus_law : ",
+            rational_points_genus_law_type!(),
+            "), forall (divisor_law : ",
+            rational_points_divisor_law_type!(),
+            "), forall (riemann_roch_law : ",
+            rational_points_riemann_roch_law_type!(),
+            "), forall (hasse_weil_bound_law : ",
+            rational_points_hasse_weil_bound_law_type!(),
+            "), forall (hasse_weil_zeta_law : ",
+            rational_points_hasse_weil_zeta_law_type!(),
+            "), forall (mordell_faltings_law : ",
+            rational_points_mordell_faltings_law_type!(),
+            "), forall (siegel_integral_points_law : ",
+            rational_points_siegel_law_type!(),
+            "), forall (explicit_hypotheses_law : ",
+            rational_points_explicit_hypotheses_law_type!(),
+            "), forall (finite_field_core_reuse_law : ",
+            rational_points_finite_field_core_reuse_law_type!(),
+            "), forall (faltings_l1_boundary_law : ",
+            rational_points_faltings_l1_boundary_law_type!(),
+            "), forall (etale_separation_law : ",
+            rational_points_etale_separation_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! rational_points_projection_proof {
+    ($target:expr, $selected:expr) => {
+        rational_points_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (genus_law : ",
+            rational_points_genus_law_type!(),
+            ") => fun (divisor_law : ",
+            rational_points_divisor_law_type!(),
+            ") => fun (riemann_roch_law : ",
+            rational_points_riemann_roch_law_type!(),
+            ") => fun (hasse_weil_bound_law : ",
+            rational_points_hasse_weil_bound_law_type!(),
+            ") => fun (hasse_weil_zeta_law : ",
+            rational_points_hasse_weil_zeta_law_type!(),
+            ") => fun (mordell_faltings_law : ",
+            rational_points_mordell_faltings_law_type!(),
+            ") => fun (siegel_integral_points_law : ",
+            rational_points_siegel_law_type!(),
+            ") => fun (explicit_hypotheses_law : ",
+            rational_points_explicit_hypotheses_law_type!(),
+            ") => fun (finite_field_core_reuse_law : ",
+            rational_points_finite_field_core_reuse_law_type!(),
+            ") => fun (faltings_l1_boundary_law : ",
+            rational_points_faltings_l1_boundary_law_type!(),
+            ") => fun (etale_separation_law : ",
+            rational_points_etale_separation_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const ARITHMETIC_GEOMETRY_RATIONAL_POINTS_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "RationalPointsData",
+        universe_params: &[],
+        ty: rational_points_params!("Prop"),
+        value: rational_points_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            rational_points_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const ARITHMETIC_GEOMETRY_RATIONAL_POINTS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "rational_points_data_intro",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (genus_law : ",
+            rational_points_genus_law_type!(),
+            "), forall (divisor_law : ",
+            rational_points_divisor_law_type!(),
+            "), forall (riemann_roch_law : ",
+            rational_points_riemann_roch_law_type!(),
+            "), forall (hasse_weil_bound_law : ",
+            rational_points_hasse_weil_bound_law_type!(),
+            "), forall (hasse_weil_zeta_law : ",
+            rational_points_hasse_weil_zeta_law_type!(),
+            "), forall (mordell_faltings_law : ",
+            rational_points_mordell_faltings_law_type!(),
+            "), forall (siegel_integral_points_law : ",
+            rational_points_siegel_law_type!(),
+            "), forall (explicit_hypotheses_law : ",
+            rational_points_explicit_hypotheses_law_type!(),
+            "), forall (finite_field_core_reuse_law : ",
+            rational_points_finite_field_core_reuse_law_type!(),
+            "), forall (faltings_l1_boundary_law : ",
+            rational_points_faltings_l1_boundary_law_type!(),
+            "), forall (etale_separation_law : ",
+            rational_points_etale_separation_law_type!(),
+            "), ",
+            rational_points_data_app!()
+        ),
+        proof: rational_points_abs!(
+            "fun genus_law => fun divisor_law => fun riemann_roch_law => ",
+            "fun hasse_weil_bound_law => fun hasse_weil_zeta_law => ",
+            "fun mordell_faltings_law => fun siegel_integral_points_law => ",
+            "fun explicit_hypotheses_law => fun finite_field_core_reuse_law => ",
+            "fun faltings_l1_boundary_law => fun etale_separation_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            rational_points_mk_type!("Q"),
+            ") => mk genus_law divisor_law riemann_roch_law ",
+            "hasse_weil_bound_law hasse_weil_zeta_law mordell_faltings_law ",
+            "siegel_integral_points_law explicit_hypotheses_law ",
+            "finite_field_core_reuse_law faltings_l1_boundary_law ",
+            "etale_separation_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "curve_genus_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_genus_law_type!()
+        ),
+        proof: rational_points_projection_proof!(rational_points_genus_law_type!(), "genus_law"),
+    },
+    TheoremArtifact {
+        name: "curve_divisor_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_divisor_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_divisor_law_type!(),
+            "divisor_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "riemann_roch_curve_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_riemann_roch_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_riemann_roch_law_type!(),
+            "riemann_roch_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "hasse_weil_bound_curve_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_hasse_weil_bound_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_hasse_weil_bound_law_type!(),
+            "hasse_weil_bound_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "hasse_weil_zeta_function_finite_field_core_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_hasse_weil_zeta_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_hasse_weil_zeta_law_type!(),
+            "hasse_weil_zeta_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "mordell_faltings_l1_statement_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_mordell_faltings_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_mordell_faltings_law_type!(),
+            "mordell_faltings_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "siegel_integral_points_explicit_hypotheses_surface",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_siegel_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_siegel_law_type!(),
+            "siegel_integral_points_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "rational_integral_point_hypotheses_explicit",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_explicit_hypotheses_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_explicit_hypotheses_law_type!(),
+            "explicit_hypotheses_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_field_zeta_reuses_abstract_finite_field_core",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_finite_field_core_reuse_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_finite_field_core_reuse_law_type!(),
+            "finite_field_core_reuse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "faltings_results_marked_l1_boundary",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_faltings_l1_boundary_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_faltings_l1_boundary_law_type!(),
+            "faltings_l1_boundary_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "rational_points_separated_from_etale_cohomology",
+        universe_params: &[],
+        statement: rational_points_params!(
+            "forall (data : ",
+            rational_points_data_app!(),
+            "), ",
+            rational_points_etale_separation_law_type!()
+        ),
+        proof: rational_points_projection_proof!(
+            rational_points_etale_separation_law_type!(),
+            "etale_separation_law"
+        ),
+    },
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "le",
@@ -56029,6 +56496,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == LANGLANDS_TRACE_FORMULA_MODULE.module
         || config.module == NUMBER_THEORY_AUTOMORPHIC_L_MODULE.module
         || config.module == LANGLANDS_INTERFACE_MODULE.module
+        || config.module == ARITHMETIC_GEOMETRY_RATIONAL_POINTS_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

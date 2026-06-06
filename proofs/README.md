@@ -366,6 +366,11 @@ Current bundles:
   Selmer group, and Tate-Shafarevich group statement surfaces while keeping the
   Mordell-Weil theorem interface-level until height and descent prerequisites
   are derived.
+- `Proofs/Ai/ArithmeticGeometry/RationalPoints/`: certificate-backed
+  RationalPoints interface preserving curve genus, divisor, Riemann-Roch,
+  Hasse-Weil bound and zeta-function surfaces, Mordell/Faltings and Siegel
+  rational/integral-point statements with explicit hypotheses, finite-field
+  core reuse, and separation from etale cohomology construction interfaces.
 - `Proofs/Ai/ModularForms/Basic/`: certificate-backed modular-form basic data
   interface preserving `ModularForm`, `CuspForm`, explicit complex-analytic
   domain assumptions, and reusable `weight`/`level` transformation and cusp

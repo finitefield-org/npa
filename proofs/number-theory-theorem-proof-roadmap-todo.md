@@ -1495,7 +1495,7 @@ later in the file.
 
 ### NT-T56 Add Arithmetic Geometry Curve And Rational-Point Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T39`, `NT-T48`, existing `Proofs.Ai.AlgebraicGeometry.*`
 - Areas: `Proofs/Ai/ArithmeticGeometry/RationalPoints/`
 - Tasks:
