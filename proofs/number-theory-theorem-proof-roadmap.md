@@ -926,12 +926,18 @@ semantics.
     defining coefficient-field, local-factor, Euler-product, analytic-domain,
     normalization, analytic-continuation, functional-equation, Artin
     reciprocity, Hasse-Weil, automorphic, and no-conjectural-`L2` surfaces.
+  - `NT-T54` added certificate-backed `Proofs.Ai.Langlands.TraceFormula` and
+    `Proofs.Ai.NumberTheory.AutomorphicL`, preserving explicit trace formula
+    assumptions, Arthur-Selberg, endoscopic transfer, Fundamental lemma,
+    Rankin-Selberg, Langlands-Shahidi, converse theorem, and `L1` analytic
+    continuation boundary surfaces.
 - Depends on: `NT-11`, `NT-15`, `NT-17`, Galois representations, automorphic
   representation interfaces, and trace formula prerequisites.
 - Target modules:
   - `Proofs.Ai.NumberTheory.LFunction`
   - `Proofs.Ai.NumberTheory.ArtinL`
   - `Proofs.Ai.NumberTheory.HeckeL`
+  - `Proofs.Ai.Langlands.TraceFormula`
   - `Proofs.Ai.NumberTheory.AutomorphicL`
   - `Proofs.Ai.Langlands.Interface`
 - Theorem order:

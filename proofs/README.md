@@ -248,6 +248,16 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/HeckeL/`: certificate-backed `HeckeL` interface downstream of
   general `LFunction` and Hecke modular-form data, preserving Hecke character, local factor,
   Euler product, automorphic `L`-function, and automorphic normalization surfaces.
+- `Proofs/Ai/Langlands/TraceFormula/`: certificate-backed `TraceFormula` interface map
+  preserving explicit analytic and geometric trace assumptions, Arthur-Selberg trace formula,
+  geometric and spectral side surfaces, orbital integral, endoscopic transfer, Fundamental lemma,
+  Ngo-style reference, and stable trace formula surfaces without hiding assumptions behind a
+  generic Langlands theorem.
+- `Proofs/Ai/NumberTheory/AutomorphicL/`: certificate-backed `AutomorphicL` interface
+  downstream of general `LFunction`, `HeckeL`, semistable modularity, and `TraceFormula`, preserving
+  automorphic representation, cuspidal representation, Rankin-Selberg, Langlands-Shahidi
+  normalization, converse theorem, explicit trace-formula prerequisite map, `L1` analytic
+  continuation boundary, and semistable modularity compatibility surfaces.
 - `Proofs/Ai/NumberTheory/Sieve/`: certificate-backed sieve-theory interface preserving Brun
   sieve, Selberg sieve, large sieve, fundamental lemma, Brun theorem, twin-prime reciprocal
   convergence, Chen theorem, GPY, Zhang, Maynard-Tao, parity-problem limitations, explicit

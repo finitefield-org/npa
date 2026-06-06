@@ -1446,7 +1446,7 @@ later in the file.
 
 ### NT-T54 Add Automorphic L-Functions And Trace Formula Surfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T53`, `NT-T52`
 - Areas: `Proofs/Ai/NumberTheory/AutomorphicL/`, `Proofs/Ai/Langlands/TraceFormula/`
 - Tasks:

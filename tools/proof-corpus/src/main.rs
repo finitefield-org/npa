@@ -243,6 +243,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &MODULARITY_RIBET_MODULE,
     &MODULARITY_LIFTING_MODULE,
     &MODULARITY_SEMISTABLE_MODULE,
+    &LANGLANDS_TRACE_FORMULA_MODULE,
+    &NUMBER_THEORY_AUTOMORPHIC_L_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -3001,6 +3003,49 @@ const MODULARITY_SEMISTABLE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: MODULARITY_SEMISTABLE_DEFINITIONS,
     theorems: MODULARITY_SEMISTABLE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const LANGLANDS_TRACE_FORMULA_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Langlands.TraceFormula",
+    source_path: "Proofs/Ai/Langlands/TraceFormula/source.npa",
+    certificate_path: "Proofs/Ai/Langlands/TraceFormula/certificate.npcert",
+    meta_path: "Proofs/Ai/Langlands/TraceFormula/meta.json",
+    replay_path: "Proofs/Ai/Langlands/TraceFormula/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.ModularForms.Basic",
+        "Proofs.Ai.ModularForms.QExpansion",
+        "Proofs.Ai.ModularForms.Hecke",
+    ],
+    inductives: &[],
+    definitions: LANGLANDS_TRACE_FORMULA_DEFINITIONS,
+    theorems: LANGLANDS_TRACE_FORMULA_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_AUTOMORPHIC_L_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.AutomorphicL",
+    source_path: "Proofs/Ai/NumberTheory/AutomorphicL/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/AutomorphicL/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/AutomorphicL/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/AutomorphicL/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.LFunction",
+        "Proofs.Ai.NumberTheory.HeckeL",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.Reduction",
+        "Proofs.Ai.EllipticCurve.Semistable",
+        "Proofs.Ai.Modularity.LevelLowering",
+        "Proofs.Ai.Modularity.Ribet",
+        "Proofs.Ai.Modularity.Lifting",
+        "Proofs.Ai.Modularity.Semistable",
+        "Proofs.Ai.Langlands.TraceFormula",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_AUTOMORPHIC_L_DEFINITIONS,
+    theorems: NUMBER_THEORY_AUTOMORPHIC_L_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -22345,6 +22390,1068 @@ const NUMBER_THEORY_HECKE_L_THEOREMS: &[TheoremArtifact] = &[
             ") => fun (hecke_l_matches_general_law : ",
             hecke_l_matches_general_law_type!(),
             ") => hecke_l_matches_general_law)"
+        ),
+    },
+];
+
+macro_rules! trace_formula_params {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "forall (TraceGroup : Type), forall (TestFunction : Type), ",
+            "forall (Distribution : Type), ",
+            "forall (TraceFormula : TraceGroup -> Prop), ",
+            "forall (ArthurSelbergTraceFormula : TraceGroup -> Prop), ",
+            "forall (GeometricSide : TraceGroup -> TestFunction -> Distribution -> Prop), ",
+            "forall (SpectralSide : TraceGroup -> TestFunction -> Distribution -> Prop), ",
+            "forall (OrbitalIntegral : TraceGroup -> TestFunction -> Prop), ",
+            "forall (EndoscopicDatum : TraceGroup -> Prop), ",
+            "forall (EndoscopicTransfer : TraceGroup -> Prop), ",
+            "forall (FundamentalLemma : TraceGroup -> Prop), ",
+            "forall (NgoStyleFundamentalLemmaReference : TraceGroup -> Prop), ",
+            "forall (StableTraceFormula : TraceGroup -> Prop), ",
+            "forall (AnalyticTraceAssumptions : TraceGroup -> Prop), ",
+            "forall (GeometricTraceAssumptions : TraceGroup -> Prop), ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! trace_formula_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun TraceGroup => fun TestFunction => fun Distribution => ",
+            "fun TraceFormula => fun ArthurSelbergTraceFormula => ",
+            "fun GeometricSide => fun SpectralSide => fun OrbitalIntegral => ",
+            "fun EndoscopicDatum => fun EndoscopicTransfer => fun FundamentalLemma => ",
+            "fun NgoStyleFundamentalLemmaReference => fun StableTraceFormula => ",
+            "fun AnalyticTraceAssumptions => fun GeometricTraceAssumptions => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! trace_formula_data_app {
+    () => {
+        "@TraceFormulaData TraceGroup TestFunction Distribution TraceFormula ArthurSelbergTraceFormula GeometricSide SpectralSide OrbitalIntegral EndoscopicDatum EndoscopicTransfer FundamentalLemma NgoStyleFundamentalLemmaReference StableTraceFormula AnalyticTraceAssumptions GeometricTraceAssumptions"
+    };
+}
+
+macro_rules! trace_formula_explicit_assumptions_law_type {
+    () => {
+        "forall (group : TraceGroup), AnalyticTraceAssumptions group -> GeometricTraceAssumptions group -> TraceFormula group"
+    };
+}
+
+macro_rules! trace_formula_arthur_selberg_law_type {
+    () => {
+        "forall (group : TraceGroup), AnalyticTraceAssumptions group -> GeometricTraceAssumptions group -> ArthurSelbergTraceFormula group"
+    };
+}
+
+macro_rules! trace_formula_geometric_side_law_type {
+    () => {
+        "forall (group : TraceGroup), forall (test : TestFunction), forall (distribution : Distribution), GeometricTraceAssumptions group -> GeometricSide group test distribution"
+    };
+}
+
+macro_rules! trace_formula_spectral_side_law_type {
+    () => {
+        "forall (group : TraceGroup), forall (test : TestFunction), forall (distribution : Distribution), AnalyticTraceAssumptions group -> SpectralSide group test distribution"
+    };
+}
+
+macro_rules! trace_formula_orbital_integral_law_type {
+    () => {
+        "forall (group : TraceGroup), forall (test : TestFunction), GeometricTraceAssumptions group -> OrbitalIntegral group test"
+    };
+}
+
+macro_rules! trace_formula_endoscopic_transfer_law_type {
+    () => {
+        "forall (group : TraceGroup), EndoscopicDatum group -> EndoscopicTransfer group"
+    };
+}
+
+macro_rules! trace_formula_fundamental_lemma_law_type {
+    () => {
+        "forall (group : TraceGroup), EndoscopicDatum group -> GeometricTraceAssumptions group -> FundamentalLemma group"
+    };
+}
+
+macro_rules! trace_formula_ngo_reference_law_type {
+    () => {
+        "forall (group : TraceGroup), FundamentalLemma group -> NgoStyleFundamentalLemmaReference group"
+    };
+}
+
+macro_rules! trace_formula_stabilization_law_type {
+    () => {
+        "forall (group : TraceGroup), EndoscopicTransfer group -> FundamentalLemma group -> StableTraceFormula group"
+    };
+}
+
+macro_rules! trace_formula_mk_type {
+    ($target:expr) => {
+        concat!(
+            "forall (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            "), forall (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            "), forall (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            "), forall (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            "), forall (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            "), forall (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            "), forall (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            "), forall (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            "), forall (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            "), ",
+            $target
+        )
+    };
+}
+
+const LANGLANDS_TRACE_FORMULA_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "TraceFormulaData",
+    universe_params: &[],
+    ty: trace_formula_params!("Prop"),
+    value: trace_formula_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        trace_formula_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const LANGLANDS_TRACE_FORMULA_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "trace_formula_data_intro",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            "), forall (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            "), forall (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            "), forall (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            "), forall (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            "), forall (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            "), forall (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            "), forall (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            "), forall (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            "), ",
+            trace_formula_data_app!()
+        ),
+        proof: trace_formula_abs!(
+            "fun trace_formula_explicit_assumptions_law => ",
+            "fun arthur_selberg_trace_formula_law => fun geometric_side_law => ",
+            "fun spectral_side_law => fun orbital_integral_law => ",
+            "fun endoscopic_transfer_law => fun fundamental_lemma_law => ",
+            "fun ngo_reference_law => fun stabilization_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            trace_formula_mk_type!("Q"),
+            ") => mk trace_formula_explicit_assumptions_law ",
+            "arthur_selberg_trace_formula_law geometric_side_law ",
+            "spectral_side_law orbital_integral_law endoscopic_transfer_law ",
+            "fundamental_lemma_law ngo_reference_law stabilization_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "trace_formula_explicit_analytic_geometric_assumptions",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_explicit_assumptions_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => trace_formula_explicit_assumptions_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "arthur_selberg_trace_formula_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_arthur_selberg_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_arthur_selberg_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => arthur_selberg_trace_formula_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "trace_formula_geometric_side_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_geometric_side_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_geometric_side_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => geometric_side_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "trace_formula_spectral_side_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_spectral_side_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_spectral_side_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => spectral_side_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "orbital_integral_trace_formula_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_orbital_integral_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_orbital_integral_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => orbital_integral_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "endoscopic_transfer_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_endoscopic_transfer_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => endoscopic_transfer_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "fundamental_lemma_statement_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_fundamental_lemma_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => fundamental_lemma_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ngo_style_fundamental_lemma_reference_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_ngo_reference_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_ngo_reference_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => ngo_reference_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "stable_trace_formula_surface",
+        universe_params: &[],
+        statement: trace_formula_params!(
+            "forall (data : ",
+            trace_formula_data_app!(),
+            "), ",
+            trace_formula_stabilization_law_type!()
+        ),
+        proof: trace_formula_abs!(
+            "fun data => data (",
+            trace_formula_stabilization_law_type!(),
+            ") (fun (trace_formula_explicit_assumptions_law : ",
+            trace_formula_explicit_assumptions_law_type!(),
+            ") => fun (arthur_selberg_trace_formula_law : ",
+            trace_formula_arthur_selberg_law_type!(),
+            ") => fun (geometric_side_law : ",
+            trace_formula_geometric_side_law_type!(),
+            ") => fun (spectral_side_law : ",
+            trace_formula_spectral_side_law_type!(),
+            ") => fun (orbital_integral_law : ",
+            trace_formula_orbital_integral_law_type!(),
+            ") => fun (endoscopic_transfer_law : ",
+            trace_formula_endoscopic_transfer_law_type!(),
+            ") => fun (fundamental_lemma_law : ",
+            trace_formula_fundamental_lemma_law_type!(),
+            ") => fun (ngo_reference_law : ",
+            trace_formula_ngo_reference_law_type!(),
+            ") => fun (stabilization_law : ",
+            trace_formula_stabilization_law_type!(),
+            ") => stabilization_law)"
+        ),
+    },
+];
+
+macro_rules! automorphic_l_params {
+    ($($body:expr),+ $(,)?) => {
+        hecke_l_params!(
+            "forall (AutomorphicRepresentation : Family -> Prop), ",
+            "forall (CuspidalRepresentation : Family -> Prop), ",
+            "forall (AutomorphicAnalyticAssumptions : Family -> Prop), ",
+            "forall (RankinSelbergProduct : Family -> Family -> Prop), ",
+            "forall (RankinSelbergAnalyticSurface : Family -> Family -> Complex -> Prop), ",
+            "forall (LanglandsShahidiNormalization : Family -> Prop), ",
+            "forall (ConverseTheoremHypotheses : Family -> Prop), ",
+            "forall (TraceFormulaAssumptions : Family -> Prop), ",
+            "forall (TraceFormulaMap : Family -> Prop), ",
+            "forall (SemistableModularityCompatibility : Family -> Prop), ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! automorphic_l_abs {
+    ($($body:expr),+ $(,)?) => {
+        hecke_l_abs!(
+            "fun AutomorphicRepresentation => fun CuspidalRepresentation => ",
+            "fun AutomorphicAnalyticAssumptions => fun RankinSelbergProduct => ",
+            "fun RankinSelbergAnalyticSurface => ",
+            "fun LanglandsShahidiNormalization => fun ConverseTheoremHypotheses => ",
+            "fun TraceFormulaAssumptions => fun TraceFormulaMap => ",
+            "fun SemistableModularityCompatibility => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! automorphic_l_data_app {
+    () => {
+        "@AutomorphicLData Family Complex Coeff Prime LFunction CoefficientField InCoefficientField coefficient_field LocalFactor LocalFactorData EulerProduct EulerProductData AnalyticDomain Normalization AnalyticContinuation FunctionalEquation NoConjecturalL2 HasseWeilSource HasseWeilLFunction AutomorphicSource AutomorphicLFunction HeckeCharacter HeckeLocalFactorNormalized HeckeEulerProductCompatible HeckeAutomorphicNormalization HeckeLFunction AutomorphicRepresentation CuspidalRepresentation AutomorphicAnalyticAssumptions RankinSelbergProduct RankinSelbergAnalyticSurface LanglandsShahidiNormalization ConverseTheoremHypotheses TraceFormulaAssumptions TraceFormulaMap SemistableModularityCompatibility"
+    };
+}
+
+macro_rules! automorphic_l_cuspidal_law_type {
+    () => {
+        "forall (pi : Family), CuspidalRepresentation pi -> AutomorphicRepresentation pi"
+    };
+}
+
+macro_rules! automorphic_l_function_law_type {
+    () => {
+        "forall (pi : Family), AutomorphicRepresentation pi -> AutomorphicLFunction pi"
+    };
+}
+
+macro_rules! automorphic_l_rankin_selberg_product_law_type {
+    () => {
+        "forall (pi : Family), forall (sigma : Family), AutomorphicRepresentation pi -> AutomorphicRepresentation sigma -> RankinSelbergProduct pi sigma"
+    };
+}
+
+macro_rules! automorphic_l_rankin_selberg_analytic_law_type {
+    () => {
+        "forall (pi : Family), forall (sigma : Family), forall (s : Complex), RankinSelbergProduct pi sigma -> AutomorphicAnalyticAssumptions pi -> AutomorphicAnalyticAssumptions sigma -> RankinSelbergAnalyticSurface pi sigma s"
+    };
+}
+
+macro_rules! automorphic_l_shahidi_normalization_law_type {
+    () => {
+        "forall (pi : Family), AutomorphicRepresentation pi -> LanglandsShahidiNormalization pi"
+    };
+}
+
+macro_rules! automorphic_l_converse_theorem_law_type {
+    () => {
+        "forall (pi : Family), ConverseTheoremHypotheses pi -> AutomorphicRepresentation pi"
+    };
+}
+
+macro_rules! automorphic_l_trace_formula_map_law_type {
+    () => {
+        "forall (pi : Family), AutomorphicRepresentation pi -> TraceFormulaAssumptions pi -> TraceFormulaMap pi"
+    };
+}
+
+macro_rules! automorphic_l_analytic_continuation_l1_law_type {
+    () => {
+        "forall (pi : Family), AutomorphicRepresentation pi -> AutomorphicAnalyticAssumptions pi -> AnalyticContinuation pi (LFunction pi)"
+    };
+}
+
+macro_rules! automorphic_l_semistable_compatibility_law_type {
+    () => {
+        "forall (pi : Family), SemistableModularityCompatibility pi -> AutomorphicRepresentation pi"
+    };
+}
+
+macro_rules! automorphic_l_mk_type {
+    ($target:expr) => {
+        concat!(
+            "forall (general_l_function_data : ",
+            l_function_data_app!(),
+            "), forall (hecke_l_data : ",
+            hecke_l_data_app!(),
+            "), forall (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            "), forall (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            "), forall (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            "), forall (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            "), forall (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            "), forall (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            "), forall (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            "), forall (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            "), forall (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            "), ",
+            $target
+        )
+    };
+}
+
+const NUMBER_THEORY_AUTOMORPHIC_L_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "AutomorphicLData",
+    universe_params: &[],
+    ty: automorphic_l_params!("Prop"),
+    value: automorphic_l_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        automorphic_l_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_AUTOMORPHIC_L_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "automorphic_l_data_intro",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (general_l_function_data : ",
+            l_function_data_app!(),
+            "), forall (hecke_l_data : ",
+            hecke_l_data_app!(),
+            "), forall (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            "), forall (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            "), forall (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            "), forall (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            "), forall (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            "), forall (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            "), forall (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            "), forall (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            "), forall (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            "), ",
+            automorphic_l_data_app!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun general_l_function_data => fun hecke_l_data => ",
+            "fun cuspidal_representation_law => fun automorphic_l_function_law => ",
+            "fun rankin_selberg_product_law => fun rankin_selberg_analytic_law => ",
+            "fun langlands_shahidi_normalization_law => fun converse_theorem_law => ",
+            "fun trace_formula_map_law => fun analytic_continuation_l1_law => ",
+            "fun semistable_modularity_compatibility_law => fun (Q : Prop) => ",
+            "fun (mk : ",
+            automorphic_l_mk_type!("Q"),
+            ") => mk general_l_function_data hecke_l_data cuspidal_representation_law ",
+            "automorphic_l_function_law rankin_selberg_product_law ",
+            "rankin_selberg_analytic_law langlands_shahidi_normalization_law ",
+            "converse_theorem_law trace_formula_map_law analytic_continuation_l1_law ",
+            "semistable_modularity_compatibility_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_l_general_l_function_data",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            l_function_data_app!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            l_function_data_app!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => general_l_function_data)"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_l_hecke_l_data",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            hecke_l_data_app!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            hecke_l_data_app!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => hecke_l_data)"
+        ),
+    },
+    TheoremArtifact {
+        name: "cuspidal_representation_is_automorphic_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_cuspidal_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_cuspidal_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => cuspidal_representation_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_representation_l_function_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_function_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_function_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => automorphic_l_function_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rankin_selberg_product_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_rankin_selberg_product_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => rankin_selberg_product_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "rankin_selberg_analytic_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_rankin_selberg_analytic_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => rankin_selberg_analytic_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "langlands_shahidi_normalization_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_shahidi_normalization_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => langlands_shahidi_normalization_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "converse_theorem_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_converse_theorem_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_converse_theorem_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => converse_theorem_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_l_trace_formula_prerequisites_map",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_trace_formula_map_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => trace_formula_map_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_l_analytic_continuation_l1_boundary",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_analytic_continuation_l1_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => analytic_continuation_l1_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_l_semistable_modularity_compatibility_surface",
+        universe_params: &[],
+        statement: automorphic_l_params!(
+            "forall (data : ",
+            automorphic_l_data_app!(),
+            "), ",
+            automorphic_l_semistable_compatibility_law_type!()
+        ),
+        proof: automorphic_l_abs!(
+            "fun data => data (",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_l_data : ",
+            hecke_l_data_app!(),
+            ") => fun (cuspidal_representation_law : ",
+            automorphic_l_cuspidal_law_type!(),
+            ") => fun (automorphic_l_function_law : ",
+            automorphic_l_function_law_type!(),
+            ") => fun (rankin_selberg_product_law : ",
+            automorphic_l_rankin_selberg_product_law_type!(),
+            ") => fun (rankin_selberg_analytic_law : ",
+            automorphic_l_rankin_selberg_analytic_law_type!(),
+            ") => fun (langlands_shahidi_normalization_law : ",
+            automorphic_l_shahidi_normalization_law_type!(),
+            ") => fun (converse_theorem_law : ",
+            automorphic_l_converse_theorem_law_type!(),
+            ") => fun (trace_formula_map_law : ",
+            automorphic_l_trace_formula_map_law_type!(),
+            ") => fun (analytic_continuation_l1_law : ",
+            automorphic_l_analytic_continuation_l1_law_type!(),
+            ") => fun (semistable_modularity_compatibility_law : ",
+            automorphic_l_semistable_compatibility_law_type!(),
+            ") => semistable_modularity_compatibility_law)"
         ),
     },
 ];
@@ -54433,6 +55540,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == MODULARITY_RIBET_MODULE.module
         || config.module == MODULARITY_LIFTING_MODULE.module
         || config.module == MODULARITY_SEMISTABLE_MODULE.module
+        || config.module == LANGLANDS_TRACE_FORMULA_MODULE.module
+        || config.module == NUMBER_THEORY_AUTOMORPHIC_L_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

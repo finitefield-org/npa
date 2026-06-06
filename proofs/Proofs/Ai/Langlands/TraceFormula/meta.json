@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Langlands.TraceFormula",
+  "source": "Proofs/Ai/Langlands/TraceFormula/source.npa",
+  "certificate": "Proofs/Ai/Langlands/TraceFormula/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c266aff6da67f3be4b1507b79fcc875f6df9b8a8bdbdb1af94019591dc965fc4",
+  "certificate_file_sha256": "sha256:b85867e7fc1e83f87ebf0c7d3b676430aa66bfd88956b05251d3390deaaeed4a",
+  "export_hash": "sha256:1af7fa665aa1123a160bc356732d75ee45a65c84587a72a9d254c10a8ace19fd",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:e1246187e9652dd6b95ff4f3037600338e7b22951ddc7a6a8e8c66a73c144b17",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion", "Proofs.Ai.ModularForms.Hecke"],
+  "axioms": [],
+  "declarations": [
+    { "name": "TraceFormulaData", "kind": "def" },
+    { "name": "trace_formula_data_intro", "kind": "theorem" },
+    { "name": "trace_formula_explicit_analytic_geometric_assumptions", "kind": "theorem" },
+    { "name": "arthur_selberg_trace_formula_surface", "kind": "theorem" },
+    { "name": "trace_formula_geometric_side_surface", "kind": "theorem" },
+    { "name": "trace_formula_spectral_side_surface", "kind": "theorem" },
+    { "name": "orbital_integral_trace_formula_surface", "kind": "theorem" },
+    { "name": "endoscopic_transfer_surface", "kind": "theorem" },
+    { "name": "fundamental_lemma_statement_surface", "kind": "theorem" },
+    { "name": "ngo_style_fundamental_lemma_reference_surface", "kind": "theorem" },
+    { "name": "stable_trace_formula_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
