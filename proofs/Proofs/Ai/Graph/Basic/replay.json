@@ -1,0 +1,172 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Graph.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SimpleGraphLawPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => forall (P : Prop), forall (mk : forall (edge_symmetry_law : EdgeSymmetryEvidence), forall (loop_policy_law : LoopPolicyEvidence), forall (directed_graph_separation_law : DirectedGraphSeparationEvidence), forall (no_parallel_edge_multiplicity_law : NoParallelEdgeMultiplicityEvidence), P), P"
+    },
+    {
+      "declaration": "AdjacencyIncidencePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => forall (P : Prop), forall (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (adjacency_definition_law : AdjacencyDefinitionEvidence), forall (incidence_definition_law : IncidenceDefinitionEvidence), forall (adjacency_symmetry_law : AdjacencySymmetryEvidence), P), P"
+    },
+    {
+      "declaration": "NeighborhoodDegreePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun DegreeCarrier => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => fun adjacency_args => fun Neighborhood => fun degree => fun NeighborhoodDefinitionEvidence => fun FiniteNeighborhoodEvidence => fun DegreeCountingEvidence => forall (P : Prop), forall (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (adjacency_law : @AdjacencyIncidencePackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence graph_args Adjacent Incident AdjacencyDefinitionEvidence IncidenceDefinitionEvidence AdjacencySymmetryEvidence), forall (neighborhood_definition_law : NeighborhoodDefinitionEvidence), forall (finite_neighborhood_law : FiniteNeighborhoodEvidence), forall (degree_counting_law : DegreeCountingEvidence), P), P"
+    },
+    {
+      "declaration": "SubgraphPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun SubVertex => fun SubEdge => fun SubvertexEvidence => fun SubedgeSoundEvidence => fun SubgraphSimpleEvidence => forall (P : Prop), forall (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (subvertex_law : SubvertexEvidence), forall (subedge_sound_law : SubedgeSoundEvidence), forall (subgraph_simple_law : SubgraphSimpleEvidence), P), P"
+    },
+    {
+      "declaration": "InducedSubgraphPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun SubVertex => fun InducedEdge => fun SubvertexEvidence => fun InducedEdgeDefinitionEvidence => fun NoExtraEdgeEvidence => fun InducedSubgraphSimpleEvidence => forall (P : Prop), forall (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (subvertex_law : SubvertexEvidence), forall (induced_edge_definition_law : InducedEdgeDefinitionEvidence), forall (no_extra_edge_law : NoExtraEdgeEvidence), forall (induced_subgraph_simple_law : InducedSubgraphSimpleEvidence), P), P"
+    },
+    {
+      "declaration": "ComplementGraphPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun ComplementEdge => fun ComplementEdgeDefinitionEvidence => fun ComplementSimpleEvidence => fun ComplementLoopPolicyEvidence => forall (P : Prop), forall (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (complement_edge_definition_law : ComplementEdgeDefinitionEvidence), forall (complement_simple_law : ComplementSimpleEvidence), forall (complement_loop_policy_law : ComplementLoopPolicyEvidence), P), P"
+    },
+    {
+      "declaration": "GraphHomomorphismPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceVertex => fun TargetVertex => fun sourceEdge => fun targetEdge => fun SourceEdgeSymmetryEvidence => fun SourceLoopPolicyEvidence => fun SourceDirectedGraphSeparationEvidence => fun SourceNoParallelEdgeMultiplicityEvidence => fun source_graph_args => fun TargetEdgeSymmetryEvidence => fun TargetLoopPolicyEvidence => fun TargetDirectedGraphSeparationEvidence => fun TargetNoParallelEdgeMultiplicityEvidence => fun target_graph_args => fun vertexMap => fun VertexMapWellScopedEvidence => fun EdgePreservationEvidence => fun NoMultigraphDataEvidence => forall (P : Prop), forall (mk : forall (source_graph_law : @SimpleGraphLawPackage.{s} SourceVertex sourceEdge SourceEdgeSymmetryEvidence SourceLoopPolicyEvidence SourceDirectedGraphSeparationEvidence SourceNoParallelEdgeMultiplicityEvidence), forall (target_graph_law : @SimpleGraphLawPackage.{t} TargetVertex targetEdge TargetEdgeSymmetryEvidence TargetLoopPolicyEvidence TargetDirectedGraphSeparationEvidence TargetNoParallelEdgeMultiplicityEvidence), forall (vertex_map_well_scoped_law : VertexMapWellScopedEvidence), forall (edge_preservation_law : EdgePreservationEvidence), forall (no_multigraph_data_law : NoMultigraphDataEvidence), P), P"
+    },
+    {
+      "declaration": "DirectedGraphBoundaryPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun directedEdge => fun DirectedEdgeEvidence => fun DirectedLoopPolicyEvidence => fun SimpleGraphSeparationEvidence => forall (P : Prop), forall (mk : forall (directed_edge_law : DirectedEdgeEvidence), forall (directed_loop_policy_law : DirectedLoopPolicyEvidence), forall (simple_graph_separation_law : SimpleGraphSeparationEvidence), P), P"
+    },
+    {
+      "declaration": "MultigraphBoundaryPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Vertex => fun Edge => fun source => fun target => fun EdgeCarrierEvidence => fun EndpointEvidence => fun MultiplicityEvidence => fun SimpleGraphSeparationEvidence => forall (P : Prop), forall (mk : forall (edge_carrier_law : EdgeCarrierEvidence), forall (endpoint_law : EndpointEvidence), forall (multiplicity_law : MultiplicityEvidence), forall (simple_graph_separation_law : SimpleGraphSeparationEvidence), P), P"
+    },
+    {
+      "declaration": "simple_graph_law_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun edge_symmetry_law => fun LoopPolicyEvidence => fun loop_policy_law => fun DirectedGraphSeparationEvidence => fun directed_graph_separation_law => fun NoParallelEdgeMultiplicityEvidence => fun no_parallel_edge_multiplicity_law => fun (P : Prop) => fun (mk : forall (edge_symmetry_law : EdgeSymmetryEvidence), forall (loop_policy_law : LoopPolicyEvidence), forall (directed_graph_separation_law : DirectedGraphSeparationEvidence), forall (no_parallel_edge_multiplicity_law : NoParallelEdgeMultiplicityEvidence), P) => mk edge_symmetry_law loop_policy_law directed_graph_separation_law no_parallel_edge_multiplicity_law"
+    },
+    {
+      "declaration": "simple_graph_symmetry_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => graph_args EdgeSymmetryEvidence (fun (edge_symmetry_law : EdgeSymmetryEvidence) => fun (loop_policy_law : LoopPolicyEvidence) => fun (directed_graph_separation_law : DirectedGraphSeparationEvidence) => fun (no_parallel_edge_multiplicity_law : NoParallelEdgeMultiplicityEvidence) => edge_symmetry_law)"
+    },
+    {
+      "declaration": "simple_graph_loop_policy_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => graph_args LoopPolicyEvidence (fun (edge_symmetry_law : EdgeSymmetryEvidence) => fun (loop_policy_law : LoopPolicyEvidence) => fun (directed_graph_separation_law : DirectedGraphSeparationEvidence) => fun (no_parallel_edge_multiplicity_law : NoParallelEdgeMultiplicityEvidence) => loop_policy_law)"
+    },
+    {
+      "declaration": "simple_graph_no_directed_edge_data_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => graph_args DirectedGraphSeparationEvidence (fun (edge_symmetry_law : EdgeSymmetryEvidence) => fun (loop_policy_law : LoopPolicyEvidence) => fun (directed_graph_separation_law : DirectedGraphSeparationEvidence) => fun (no_parallel_edge_multiplicity_law : NoParallelEdgeMultiplicityEvidence) => directed_graph_separation_law)"
+    },
+    {
+      "declaration": "simple_graph_no_multigraph_edge_multiplicity_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => graph_args NoParallelEdgeMultiplicityEvidence (fun (edge_symmetry_law : EdgeSymmetryEvidence) => fun (loop_policy_law : LoopPolicyEvidence) => fun (directed_graph_separation_law : DirectedGraphSeparationEvidence) => fun (no_parallel_edge_multiplicity_law : NoParallelEdgeMultiplicityEvidence) => no_parallel_edge_multiplicity_law)"
+    },
+    {
+      "declaration": "adjacency_incidence_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun adjacency_definition_law => fun IncidenceDefinitionEvidence => fun incidence_definition_law => fun AdjacencySymmetryEvidence => fun adjacency_symmetry_law => fun (P : Prop) => fun (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (adjacency_definition_law : AdjacencyDefinitionEvidence), forall (incidence_definition_law : IncidenceDefinitionEvidence), forall (adjacency_symmetry_law : AdjacencySymmetryEvidence), P) => mk graph_args adjacency_definition_law incidence_definition_law adjacency_symmetry_law"
+    },
+    {
+      "declaration": "graph_adjacency_definition_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => fun adjacency_args => adjacency_args AdjacencyDefinitionEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (adjacency_definition_law : AdjacencyDefinitionEvidence) => fun (incidence_definition_law : IncidenceDefinitionEvidence) => fun (adjacency_symmetry_law : AdjacencySymmetryEvidence) => adjacency_definition_law)"
+    },
+    {
+      "declaration": "graph_incidence_definition_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => fun adjacency_args => adjacency_args IncidenceDefinitionEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (adjacency_definition_law : AdjacencyDefinitionEvidence) => fun (incidence_definition_law : IncidenceDefinitionEvidence) => fun (adjacency_symmetry_law : AdjacencySymmetryEvidence) => incidence_definition_law)"
+    },
+    {
+      "declaration": "neighborhood_degree_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun DegreeCarrier => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => fun adjacency_args => fun Neighborhood => fun degree => fun NeighborhoodDefinitionEvidence => fun neighborhood_definition_law => fun FiniteNeighborhoodEvidence => fun finite_neighborhood_law => fun DegreeCountingEvidence => fun degree_counting_law => fun (P : Prop) => fun (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (adjacency_law : @AdjacencyIncidencePackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence graph_args Adjacent Incident AdjacencyDefinitionEvidence IncidenceDefinitionEvidence AdjacencySymmetryEvidence), forall (neighborhood_definition_law : NeighborhoodDefinitionEvidence), forall (finite_neighborhood_law : FiniteNeighborhoodEvidence), forall (degree_counting_law : DegreeCountingEvidence), P) => mk graph_args adjacency_args neighborhood_definition_law finite_neighborhood_law degree_counting_law"
+    },
+    {
+      "declaration": "graph_neighborhood_definition_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun DegreeCarrier => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => fun adjacency_args => fun Neighborhood => fun degree => fun NeighborhoodDefinitionEvidence => fun FiniteNeighborhoodEvidence => fun DegreeCountingEvidence => fun degree_args => degree_args NeighborhoodDefinitionEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (adjacency_law : @AdjacencyIncidencePackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence graph_args Adjacent Incident AdjacencyDefinitionEvidence IncidenceDefinitionEvidence AdjacencySymmetryEvidence) => fun (neighborhood_definition_law : NeighborhoodDefinitionEvidence) => fun (finite_neighborhood_law : FiniteNeighborhoodEvidence) => fun (degree_counting_law : DegreeCountingEvidence) => neighborhood_definition_law)"
+    },
+    {
+      "declaration": "graph_degree_counting_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun DegreeCarrier => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun Adjacent => fun Incident => fun AdjacencyDefinitionEvidence => fun IncidenceDefinitionEvidence => fun AdjacencySymmetryEvidence => fun adjacency_args => fun Neighborhood => fun degree => fun NeighborhoodDefinitionEvidence => fun FiniteNeighborhoodEvidence => fun DegreeCountingEvidence => fun degree_args => degree_args DegreeCountingEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (adjacency_law : @AdjacencyIncidencePackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence graph_args Adjacent Incident AdjacencyDefinitionEvidence IncidenceDefinitionEvidence AdjacencySymmetryEvidence) => fun (neighborhood_definition_law : NeighborhoodDefinitionEvidence) => fun (finite_neighborhood_law : FiniteNeighborhoodEvidence) => fun (degree_counting_law : DegreeCountingEvidence) => degree_counting_law)"
+    },
+    {
+      "declaration": "subgraph_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun SubVertex => fun SubEdge => fun SubvertexEvidence => fun subvertex_law => fun SubedgeSoundEvidence => fun subedge_sound_law => fun SubgraphSimpleEvidence => fun subgraph_simple_law => fun (P : Prop) => fun (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (subvertex_law : SubvertexEvidence), forall (subedge_sound_law : SubedgeSoundEvidence), forall (subgraph_simple_law : SubgraphSimpleEvidence), P) => mk graph_args subvertex_law subedge_sound_law subgraph_simple_law"
+    },
+    {
+      "declaration": "subgraph_edge_sound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun SubVertex => fun SubEdge => fun SubvertexEvidence => fun SubedgeSoundEvidence => fun SubgraphSimpleEvidence => fun subgraph_args => subgraph_args SubedgeSoundEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (subvertex_law : SubvertexEvidence) => fun (subedge_sound_law : SubedgeSoundEvidence) => fun (subgraph_simple_law : SubgraphSimpleEvidence) => subedge_sound_law)"
+    },
+    {
+      "declaration": "induced_subgraph_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun SubVertex => fun InducedEdge => fun SubvertexEvidence => fun subvertex_law => fun InducedEdgeDefinitionEvidence => fun induced_edge_definition_law => fun NoExtraEdgeEvidence => fun no_extra_edge_law => fun InducedSubgraphSimpleEvidence => fun induced_subgraph_simple_law => fun (P : Prop) => fun (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (subvertex_law : SubvertexEvidence), forall (induced_edge_definition_law : InducedEdgeDefinitionEvidence), forall (no_extra_edge_law : NoExtraEdgeEvidence), forall (induced_subgraph_simple_law : InducedSubgraphSimpleEvidence), P) => mk graph_args subvertex_law induced_edge_definition_law no_extra_edge_law induced_subgraph_simple_law"
+    },
+    {
+      "declaration": "induced_subgraph_edge_definition_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun SubVertex => fun InducedEdge => fun SubvertexEvidence => fun InducedEdgeDefinitionEvidence => fun NoExtraEdgeEvidence => fun InducedSubgraphSimpleEvidence => fun induced_args => induced_args InducedEdgeDefinitionEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (subvertex_law : SubvertexEvidence) => fun (induced_edge_definition_law : InducedEdgeDefinitionEvidence) => fun (no_extra_edge_law : NoExtraEdgeEvidence) => fun (induced_subgraph_simple_law : InducedSubgraphSimpleEvidence) => induced_edge_definition_law)"
+    },
+    {
+      "declaration": "complement_graph_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun ComplementEdge => fun ComplementEdgeDefinitionEvidence => fun complement_edge_definition_law => fun ComplementSimpleEvidence => fun complement_simple_law => fun ComplementLoopPolicyEvidence => fun complement_loop_policy_law => fun (P : Prop) => fun (mk : forall (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence), forall (complement_edge_definition_law : ComplementEdgeDefinitionEvidence), forall (complement_simple_law : ComplementSimpleEvidence), forall (complement_loop_policy_law : ComplementLoopPolicyEvidence), P) => mk graph_args complement_edge_definition_law complement_simple_law complement_loop_policy_law"
+    },
+    {
+      "declaration": "complement_graph_simple_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun edge => fun EdgeSymmetryEvidence => fun LoopPolicyEvidence => fun DirectedGraphSeparationEvidence => fun NoParallelEdgeMultiplicityEvidence => fun graph_args => fun ComplementEdge => fun ComplementEdgeDefinitionEvidence => fun ComplementSimpleEvidence => fun ComplementLoopPolicyEvidence => fun complement_args => complement_args ComplementSimpleEvidence (fun (graph_law : @SimpleGraphLawPackage.{v} Vertex edge EdgeSymmetryEvidence LoopPolicyEvidence DirectedGraphSeparationEvidence NoParallelEdgeMultiplicityEvidence) => fun (complement_edge_definition_law : ComplementEdgeDefinitionEvidence) => fun (complement_simple_law : ComplementSimpleEvidence) => fun (complement_loop_policy_law : ComplementLoopPolicyEvidence) => complement_simple_law)"
+    },
+    {
+      "declaration": "graph_homomorphism_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceVertex => fun TargetVertex => fun sourceEdge => fun targetEdge => fun SourceEdgeSymmetryEvidence => fun SourceLoopPolicyEvidence => fun SourceDirectedGraphSeparationEvidence => fun SourceNoParallelEdgeMultiplicityEvidence => fun source_graph_args => fun TargetEdgeSymmetryEvidence => fun TargetLoopPolicyEvidence => fun TargetDirectedGraphSeparationEvidence => fun TargetNoParallelEdgeMultiplicityEvidence => fun target_graph_args => fun vertexMap => fun VertexMapWellScopedEvidence => fun vertex_map_well_scoped_law => fun EdgePreservationEvidence => fun edge_preservation_law => fun NoMultigraphDataEvidence => fun no_multigraph_data_law => fun (P : Prop) => fun (mk : forall (source_graph_law : @SimpleGraphLawPackage.{s} SourceVertex sourceEdge SourceEdgeSymmetryEvidence SourceLoopPolicyEvidence SourceDirectedGraphSeparationEvidence SourceNoParallelEdgeMultiplicityEvidence), forall (target_graph_law : @SimpleGraphLawPackage.{t} TargetVertex targetEdge TargetEdgeSymmetryEvidence TargetLoopPolicyEvidence TargetDirectedGraphSeparationEvidence TargetNoParallelEdgeMultiplicityEvidence), forall (vertex_map_well_scoped_law : VertexMapWellScopedEvidence), forall (edge_preservation_law : EdgePreservationEvidence), forall (no_multigraph_data_law : NoMultigraphDataEvidence), P) => mk source_graph_args target_graph_args vertex_map_well_scoped_law edge_preservation_law no_multigraph_data_law"
+    },
+    {
+      "declaration": "graph_homomorphism_edge_preservation_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceVertex => fun TargetVertex => fun sourceEdge => fun targetEdge => fun SourceEdgeSymmetryEvidence => fun SourceLoopPolicyEvidence => fun SourceDirectedGraphSeparationEvidence => fun SourceNoParallelEdgeMultiplicityEvidence => fun source_graph_args => fun TargetEdgeSymmetryEvidence => fun TargetLoopPolicyEvidence => fun TargetDirectedGraphSeparationEvidence => fun TargetNoParallelEdgeMultiplicityEvidence => fun target_graph_args => fun vertexMap => fun VertexMapWellScopedEvidence => fun EdgePreservationEvidence => fun NoMultigraphDataEvidence => fun hom_args => hom_args EdgePreservationEvidence (fun (source_graph_law : @SimpleGraphLawPackage.{s} SourceVertex sourceEdge SourceEdgeSymmetryEvidence SourceLoopPolicyEvidence SourceDirectedGraphSeparationEvidence SourceNoParallelEdgeMultiplicityEvidence) => fun (target_graph_law : @SimpleGraphLawPackage.{t} TargetVertex targetEdge TargetEdgeSymmetryEvidence TargetLoopPolicyEvidence TargetDirectedGraphSeparationEvidence TargetNoParallelEdgeMultiplicityEvidence) => fun (vertex_map_well_scoped_law : VertexMapWellScopedEvidence) => fun (edge_preservation_law : EdgePreservationEvidence) => fun (no_multigraph_data_law : NoMultigraphDataEvidence) => edge_preservation_law)"
+    },
+    {
+      "declaration": "directed_graph_boundary_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun directedEdge => fun DirectedEdgeEvidence => fun directed_edge_law => fun DirectedLoopPolicyEvidence => fun directed_loop_policy_law => fun SimpleGraphSeparationEvidence => fun simple_graph_separation_law => fun (P : Prop) => fun (mk : forall (directed_edge_law : DirectedEdgeEvidence), forall (directed_loop_policy_law : DirectedLoopPolicyEvidence), forall (simple_graph_separation_law : SimpleGraphSeparationEvidence), P) => mk directed_edge_law directed_loop_policy_law simple_graph_separation_law"
+    },
+    {
+      "declaration": "directed_graph_boundary_separation_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun directedEdge => fun DirectedEdgeEvidence => fun DirectedLoopPolicyEvidence => fun SimpleGraphSeparationEvidence => fun directed_args => directed_args SimpleGraphSeparationEvidence (fun (directed_edge_law : DirectedEdgeEvidence) => fun (directed_loop_policy_law : DirectedLoopPolicyEvidence) => fun (simple_graph_separation_law : SimpleGraphSeparationEvidence) => simple_graph_separation_law)"
+    },
+    {
+      "declaration": "multigraph_boundary_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun Edge => fun source => fun target => fun EdgeCarrierEvidence => fun edge_carrier_law => fun EndpointEvidence => fun endpoint_law => fun MultiplicityEvidence => fun multiplicity_law => fun SimpleGraphSeparationEvidence => fun simple_graph_separation_law => fun (P : Prop) => fun (mk : forall (edge_carrier_law : EdgeCarrierEvidence), forall (endpoint_law : EndpointEvidence), forall (multiplicity_law : MultiplicityEvidence), forall (simple_graph_separation_law : SimpleGraphSeparationEvidence), P) => mk edge_carrier_law endpoint_law multiplicity_law simple_graph_separation_law"
+    },
+    {
+      "declaration": "multigraph_multiplicity_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Vertex => fun Edge => fun source => fun target => fun EdgeCarrierEvidence => fun EndpointEvidence => fun MultiplicityEvidence => fun SimpleGraphSeparationEvidence => fun multigraph_args => multigraph_args MultiplicityEvidence (fun (edge_carrier_law : EdgeCarrierEvidence) => fun (endpoint_law : EndpointEvidence) => fun (multiplicity_law : MultiplicityEvidence) => fun (simple_graph_separation_law : SimpleGraphSeparationEvidence) => multiplicity_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Graph/Basic/certificate.npcert"
+  }
+}

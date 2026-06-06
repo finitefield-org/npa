@@ -105,6 +105,10 @@ Current bundles:
   exponential generating function, formal power-series convolution, and recurrence-to-generating
   function bridge packages. Coefficient extraction, factorial weights, algebra dependencies,
   convolution identities, and analytic-convergence boundaries are named evidence slots.
+- `Proofs/Ai/Graph/Basic/`: certificate-backed simple-graph foundation packages over ordinary
+  vertex carriers and edge predicates. Symmetry, loop policy, adjacency, incidence, neighborhood,
+  degree, subgraph, induced subgraph, complement, homomorphism, directed-boundary, and multigraph
+  boundary assumptions are explicit evidence slots rather than kernel primitives.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

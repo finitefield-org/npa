@@ -66,8 +66,8 @@ high-trust closure.
 ## Current Implementation Facts
 
 - The proof corpus now has a checked `Proofs.Ai.Combinatorics.*` foundation
-  tree through `Proofs.Ai.Combinatorics.SetSystem`. There is not yet a checked
-  `Proofs.Ai.Graph.*` proof tree in the proof corpus.
+  tree through `Proofs.Ai.Combinatorics.SetSystem` and the first checked
+  graph-owned foundation module, `Proofs.Ai.Graph.Basic`.
 - Existing reusable modules include `Proofs.Ai.Basic`, `Proofs.Ai.Prop`,
   `Proofs.Ai.Logic.Iff`, `Proofs.Ai.Eq`, `Proofs.Ai.EqReasoning`,
   `Proofs.Ai.Nat`, algebra modules under `Proofs.Ai.Algebra.*`, vector and
@@ -443,25 +443,33 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T12 Add Simple Graph Foundation
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`
 - Areas: `Proofs.Ai.Graph.Basic`, `tools/proof-corpus/src/main.rs`,
   `proofs/README.md`
 - Tasks:
   - Define simple graph law package over a vertex carrier and edge predicate.
+    Done in `Proofs.Ai.Graph.Basic`.
   - Add adjacency, incidence, neighborhood, degree, subgraph, induced subgraph,
-    and complement statement names.
-  - Keep directed graph and multigraph assumptions in separate interfaces.
+    and complement statement names. Done with separate graph law packages and
+    certificate-backed projection statements.
+  - Keep directed graph and multigraph assumptions in separate interfaces. Done
+    with explicit directed-boundary and multigraph-boundary packages.
 - Deliverables:
-  - First graph foundation module or documented insertion plan if source work is
-    blocked.
+  - First graph foundation module.
 - Acceptance criteria:
   - Simple graph assumptions state symmetry and loop policy explicitly.
+    Satisfied by `EdgeSymmetryEvidence` and `LoopPolicyEvidence` projections.
   - Graph definitions are ordinary proof-corpus structures, not kernel
-    primitives.
+    primitives. Satisfied by Church-encoded proof-corpus packages with no
+    kernel or checker changes.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Basic`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
 
 ### CG-T13 Prove Degree Sum And Handshaking Lemmas
 
