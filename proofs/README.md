@@ -359,6 +359,16 @@ Current bundles:
   Jacobian, and Eichler-Shimura interface preserving explicit construction
   evidence, analytic prerequisites, and geometric prerequisites downstream of
   the Hecke package.
+- `Proofs/Ai/Modularity/LevelLowering/`: certificate-backed reusable
+  level-lowering terminology for general Galois-representation interfaces,
+  preserving conductor, residual irreducibility, ramification, newform,
+  excluded-case, lowered-level, and dependency-map evidence without making the
+  surface Frey-specific.
+- `Proofs/Ai/Modularity/Ribet/`: certificate-backed Ribet level-lowering
+  interface surface that remains explicitly bridge-backed. `BridgeAxiom`
+  namespace evidence, not-completed-proof evidence, and high-trust import
+  blocking evidence are named slots so downstream high-trust routes cannot
+  silently consume bridge-backed variants.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

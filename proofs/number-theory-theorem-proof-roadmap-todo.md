@@ -1375,7 +1375,7 @@ later in the file.
 
 ### NT-T51 Add Ribet And Level-Lowering Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T50`, `NT-T63`, `NT-T47`
 - Areas: `Proofs/Ai/Modularity/Ribet/`, `Proofs/Ai/Modularity/LevelLowering/`
 - Tasks:

@@ -236,6 +236,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &MODULAR_FORMS_Q_EXPANSION_MODULE,
     &MODULAR_FORMS_HECKE_MODULE,
     &MODULAR_FORMS_MODULAR_CURVE_MODULE,
+    &MODULARITY_LEVEL_LOWERING_MODULE,
+    &MODULARITY_RIBET_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2882,6 +2884,32 @@ const MODULAR_FORMS_MODULAR_CURVE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: MODULAR_FORMS_MODULAR_CURVE_DEFINITIONS,
     theorems: MODULAR_FORMS_MODULAR_CURVE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MODULARITY_LEVEL_LOWERING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Modularity.LevelLowering",
+    source_path: "Proofs/Ai/Modularity/LevelLowering/source.npa",
+    certificate_path: "Proofs/Ai/Modularity/LevelLowering/certificate.npcert",
+    meta_path: "Proofs/Ai/Modularity/LevelLowering/meta.json",
+    replay_path: "Proofs/Ai/Modularity/LevelLowering/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: MODULARITY_LEVEL_LOWERING_DEFINITIONS,
+    theorems: MODULARITY_LEVEL_LOWERING_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MODULARITY_RIBET_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Modularity.Ribet",
+    source_path: "Proofs/Ai/Modularity/Ribet/source.npa",
+    certificate_path: "Proofs/Ai/Modularity/Ribet/certificate.npcert",
+    meta_path: "Proofs/Ai/Modularity/Ribet/meta.json",
+    replay_path: "Proofs/Ai/Modularity/Ribet/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Modularity.LevelLowering"],
+    inductives: &[],
+    definitions: MODULARITY_RIBET_DEFINITIONS,
+    theorems: MODULARITY_RIBET_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -23531,6 +23559,445 @@ const MODULAR_FORMS_MODULAR_CURVE_THEOREMS: &[TheoremArtifact] = &[
             "fun (construction_law : forall (curve : ModularCurve), ConstructionEvidence curve) => ",
             "fun (jacobian_law : forall (curve : ModularCurve), forall (jacobian : Jacobian), JacobianConstruction curve jacobian) => ",
             "fun (eichler_shimura_law : forall (curve : ModularCurve), forall (jacobian : Jacobian), EichlerShimuraInterface curve jacobian) => analytic_prerequisites)"
+        ),
+    },
+];
+
+macro_rules! level_lowering_params {
+    ($($tail:tt)+) => {
+        concat!(
+            "forall (Representation : Type), forall (Level : Type), ",
+            "forall (Conductor : Representation -> Level -> Prop), ",
+            "forall (ResidualIrreducible : Representation -> Prop), ",
+            "forall (RamificationControlled : Representation -> Level -> Prop), ",
+            "forall (NewformAtLevel : Representation -> Level -> Prop), ",
+            "forall (ExcludedCase : Representation -> Prop), ",
+            "forall (LoweredLevel : Representation -> Level -> Level -> Prop), ",
+            "forall (LevelLoweringConclusion : Representation -> Level -> Level -> Prop), ",
+            "forall (GeneralRepresentationTerminology : Representation -> Prop), ",
+            "forall (NonFreyRepresentation : Representation -> Prop), ",
+            "forall (DependencyMap : Representation -> Level -> Level -> Prop), ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! level_lowering_abs {
+    ($($body:tt)+) => {
+        concat!(
+            "fun Representation => fun Level => fun Conductor => ",
+            "fun ResidualIrreducible => fun RamificationControlled => ",
+            "fun NewformAtLevel => fun ExcludedCase => fun LoweredLevel => ",
+            "fun LevelLoweringConclusion => fun GeneralRepresentationTerminology => ",
+            "fun NonFreyRepresentation => fun DependencyMap => ",
+            $($body)+
+        )
+    };
+}
+
+macro_rules! level_lowering_data_app {
+    () => {
+        "@LevelLoweringData Representation Level Conductor ResidualIrreducible RamificationControlled NewformAtLevel ExcludedCase LoweredLevel LevelLoweringConclusion GeneralRepresentationTerminology NonFreyRepresentation DependencyMap"
+    };
+}
+
+macro_rules! level_lowering_dependency_map_law_type {
+    () => {
+        "forall (representation : Representation), forall (original_level : Level), forall (lowered_level : Level), Conductor representation original_level -> ResidualIrreducible representation -> RamificationControlled representation original_level -> NewformAtLevel representation original_level -> ExcludedCase representation -> LoweredLevel representation original_level lowered_level -> DependencyMap representation original_level lowered_level"
+    };
+}
+
+macro_rules! level_lowering_conclusion_law_type {
+    () => {
+        "forall (representation : Representation), forall (original_level : Level), forall (lowered_level : Level), DependencyMap representation original_level lowered_level -> LevelLoweringConclusion representation original_level lowered_level"
+    };
+}
+
+macro_rules! level_lowering_non_frey_law_type {
+    () => {
+        "forall (representation : Representation), NonFreyRepresentation representation -> GeneralRepresentationTerminology representation"
+    };
+}
+
+macro_rules! level_lowering_mk_type {
+    () => {
+        concat!(
+            "forall (dependency_map_law : ",
+            level_lowering_dependency_map_law_type!(),
+            "), ",
+            "forall (level_lowering_law : ",
+            level_lowering_conclusion_law_type!(),
+            "), ",
+            "forall (non_frey_reuse_law : ",
+            level_lowering_non_frey_law_type!(),
+            "), Q"
+        )
+    };
+}
+
+const MODULARITY_LEVEL_LOWERING_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "LevelLoweringData",
+    universe_params: &[],
+    ty: level_lowering_params!("Prop"),
+    value: level_lowering_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        level_lowering_mk_type!(),
+        "), Q"
+    ),
+}];
+
+const MODULARITY_LEVEL_LOWERING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "level_lowering_data_intro",
+        universe_params: &[],
+        statement: level_lowering_params!(
+            "forall (dependency_map_law : ",
+            level_lowering_dependency_map_law_type!(),
+            "), ",
+            "forall (level_lowering_law : ",
+            level_lowering_conclusion_law_type!(),
+            "), ",
+            "forall (non_frey_reuse_law : ",
+            level_lowering_non_frey_law_type!(),
+            "), ",
+            level_lowering_data_app!()
+        ),
+        proof: level_lowering_abs!(
+            "fun dependency_map_law => fun level_lowering_law => ",
+            "fun non_frey_reuse_law => fun (Q : Prop) => ",
+            "fun (mk : ",
+            level_lowering_mk_type!(),
+            ") => mk dependency_map_law level_lowering_law non_frey_reuse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "level_lowering_conductor_newform_dependency_map_surface",
+        universe_params: &[],
+        statement: level_lowering_params!(
+            "forall (data : ",
+            level_lowering_data_app!(),
+            "), ",
+            level_lowering_dependency_map_law_type!()
+        ),
+        proof: level_lowering_abs!(
+            "fun data => data (",
+            level_lowering_dependency_map_law_type!(),
+            ") (fun (dependency_map_law : ",
+            level_lowering_dependency_map_law_type!(),
+            ") => fun (level_lowering_law : ",
+            level_lowering_conclusion_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            level_lowering_non_frey_law_type!(),
+            ") => dependency_map_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "level_lowering_conclusion_from_dependency_map",
+        universe_params: &[],
+        statement: level_lowering_params!(
+            "forall (data : ",
+            level_lowering_data_app!(),
+            "), ",
+            level_lowering_conclusion_law_type!()
+        ),
+        proof: level_lowering_abs!(
+            "fun data => data (",
+            level_lowering_conclusion_law_type!(),
+            ") (fun (dependency_map_law : ",
+            level_lowering_dependency_map_law_type!(),
+            ") => fun (level_lowering_law : ",
+            level_lowering_conclusion_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            level_lowering_non_frey_law_type!(),
+            ") => level_lowering_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "level_lowering_non_frey_representation_reuse",
+        universe_params: &[],
+        statement: level_lowering_params!(
+            "forall (data : ",
+            level_lowering_data_app!(),
+            "), ",
+            level_lowering_non_frey_law_type!()
+        ),
+        proof: level_lowering_abs!(
+            "fun data => data (",
+            level_lowering_non_frey_law_type!(),
+            ") (fun (dependency_map_law : ",
+            level_lowering_dependency_map_law_type!(),
+            ") => fun (level_lowering_law : ",
+            level_lowering_conclusion_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            level_lowering_non_frey_law_type!(),
+            ") => non_frey_reuse_law)"
+        ),
+    },
+];
+
+macro_rules! ribet_params {
+    ($($tail:tt)+) => {
+        level_lowering_params!(
+            "forall (level_lowering_data : ",
+            level_lowering_data_app!(),
+            "), ",
+            "forall (HeckePackage : Prop), ",
+            "forall (ModularCurvePackage : Prop), ",
+            "forall (BridgeAxiomNamespace : Prop), ",
+            "forall (RibetStatementSurface : Representation -> Level -> Level -> Prop), ",
+            "forall (BridgeBackedNotCompletedProof : Representation -> Prop), ",
+            "forall (HighTrustRoute : Type), forall (BridgeBackedVariant : Type), ",
+            "forall (HighTrustRouteCertified : HighTrustRoute -> Prop), ",
+            "forall (BridgeBackedVariantMarked : BridgeBackedVariant -> Prop), ",
+            "forall (HighTrustImportBlocked : HighTrustRoute -> BridgeBackedVariant -> Prop), ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! ribet_abs {
+    ($($body:tt)+) => {
+        level_lowering_abs!(
+            "fun level_lowering_data => fun HeckePackage => ",
+            "fun ModularCurvePackage => fun BridgeAxiomNamespace => ",
+            "fun RibetStatementSurface => fun BridgeBackedNotCompletedProof => ",
+            "fun HighTrustRoute => fun BridgeBackedVariant => ",
+            "fun HighTrustRouteCertified => fun BridgeBackedVariantMarked => ",
+            "fun HighTrustImportBlocked => ",
+            $($body)+
+        )
+    };
+}
+
+macro_rules! ribet_data_app {
+    () => {
+        "@RibetBridgeData Representation Level Conductor ResidualIrreducible RamificationControlled NewformAtLevel ExcludedCase LoweredLevel LevelLoweringConclusion GeneralRepresentationTerminology NonFreyRepresentation DependencyMap level_lowering_data HeckePackage ModularCurvePackage BridgeAxiomNamespace RibetStatementSurface BridgeBackedNotCompletedProof HighTrustRoute BridgeBackedVariant HighTrustRouteCertified BridgeBackedVariantMarked HighTrustImportBlocked"
+    };
+}
+
+macro_rules! ribet_statement_law_type {
+    () => {
+        "forall (representation : Representation), forall (original_level : Level), forall (lowered_level : Level), LevelLoweringConclusion representation original_level lowered_level -> RibetStatementSurface representation original_level lowered_level"
+    };
+}
+
+macro_rules! ribet_bridge_not_completed_law_type {
+    () => {
+        "forall (representation : Representation), BridgeAxiomNamespace -> BridgeBackedNotCompletedProof representation"
+    };
+}
+
+macro_rules! ribet_high_trust_blocked_law_type {
+    () => {
+        "forall (route : HighTrustRoute), forall (variant : BridgeBackedVariant), HighTrustRouteCertified route -> BridgeBackedVariantMarked variant -> HighTrustImportBlocked route variant"
+    };
+}
+
+macro_rules! ribet_mk_type {
+    () => {
+        concat!(
+            "forall (level_lowering_out : ",
+            level_lowering_data_app!(),
+            "), ",
+            "forall (hecke_package_law : HeckePackage), ",
+            "forall (modular_curve_package_law : ModularCurvePackage), ",
+            "forall (bridge_axiom_namespace_law : BridgeAxiomNamespace), ",
+            "forall (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            "), ",
+            "forall (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            "), ",
+            "forall (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            "), Q"
+        )
+    };
+}
+
+const MODULARITY_RIBET_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "RibetBridgeData",
+    universe_params: &[],
+    ty: ribet_params!("Prop"),
+    value: ribet_abs!("forall (Q : Prop), forall (mk : ", ribet_mk_type!(), "), Q"),
+}];
+
+const MODULARITY_RIBET_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "ribet_bridge_axiom_data_intro",
+        universe_params: &[],
+        statement: ribet_params!(
+            "forall (hecke_package_law : HeckePackage), ",
+            "forall (modular_curve_package_law : ModularCurvePackage), ",
+            "forall (bridge_axiom_namespace_law : BridgeAxiomNamespace), ",
+            "forall (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            "), ",
+            "forall (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            "), ",
+            "forall (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            "), ",
+            ribet_data_app!()
+        ),
+        proof: ribet_abs!(
+            "fun hecke_package_law => fun modular_curve_package_law => ",
+            "fun bridge_axiom_namespace_law => fun ribet_statement_law => ",
+            "fun bridge_not_completed_law => fun high_trust_import_blocked_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            ribet_mk_type!(),
+            ") => mk level_lowering_data hecke_package_law modular_curve_package_law ",
+            "bridge_axiom_namespace_law ribet_statement_law bridge_not_completed_law ",
+            "high_trust_import_blocked_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "ribet_level_lowering_general_package_surface",
+        universe_params: &[],
+        statement: ribet_params!(
+            "forall (data : ",
+            ribet_data_app!(),
+            "), ",
+            level_lowering_data_app!()
+        ),
+        proof: ribet_abs!(
+            "fun data => data (",
+            level_lowering_data_app!(),
+            ") (fun (level_lowering_out : ",
+            level_lowering_data_app!(),
+            ") => fun (hecke_package_law : HeckePackage) => ",
+            "fun (modular_curve_package_law : ModularCurvePackage) => ",
+            "fun (bridge_axiom_namespace_law : BridgeAxiomNamespace) => ",
+            "fun (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            ") => fun (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            ") => fun (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            ") => level_lowering_out)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ribet_hecke_package_input_surface",
+        universe_params: &[],
+        statement: ribet_params!("forall (data : ", ribet_data_app!(), "), HeckePackage"),
+        proof: ribet_abs!(
+            "fun data => data HeckePackage ",
+            "(fun (level_lowering_out : ",
+            level_lowering_data_app!(),
+            ") => fun (hecke_package_law : HeckePackage) => ",
+            "fun (modular_curve_package_law : ModularCurvePackage) => ",
+            "fun (bridge_axiom_namespace_law : BridgeAxiomNamespace) => ",
+            "fun (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            ") => fun (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            ") => fun (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            ") => hecke_package_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ribet_modular_curve_package_input_surface",
+        universe_params: &[],
+        statement: ribet_params!(
+            "forall (data : ",
+            ribet_data_app!(),
+            "), ModularCurvePackage"
+        ),
+        proof: ribet_abs!(
+            "fun data => data ModularCurvePackage ",
+            "(fun (level_lowering_out : ",
+            level_lowering_data_app!(),
+            ") => fun (hecke_package_law : HeckePackage) => ",
+            "fun (modular_curve_package_law : ModularCurvePackage) => ",
+            "fun (bridge_axiom_namespace_law : BridgeAxiomNamespace) => ",
+            "fun (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            ") => fun (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            ") => fun (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            ") => modular_curve_package_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ribet_level_lowering_statement_surface",
+        universe_params: &[],
+        statement: ribet_params!(
+            "forall (data : ",
+            ribet_data_app!(),
+            "), ",
+            ribet_statement_law_type!()
+        ),
+        proof: ribet_abs!(
+            "fun data => data (",
+            ribet_statement_law_type!(),
+            ") (fun (level_lowering_out : ",
+            level_lowering_data_app!(),
+            ") => fun (hecke_package_law : HeckePackage) => ",
+            "fun (modular_curve_package_law : ModularCurvePackage) => ",
+            "fun (bridge_axiom_namespace_law : BridgeAxiomNamespace) => ",
+            "fun (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            ") => fun (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            ") => fun (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            ") => ribet_statement_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ribet_bridge_axiom_not_completed_proof_boundary",
+        universe_params: &[],
+        statement: ribet_params!(
+            "forall (data : ",
+            ribet_data_app!(),
+            "), ",
+            ribet_bridge_not_completed_law_type!()
+        ),
+        proof: ribet_abs!(
+            "fun data => data (",
+            ribet_bridge_not_completed_law_type!(),
+            ") (fun (level_lowering_out : ",
+            level_lowering_data_app!(),
+            ") => fun (hecke_package_law : HeckePackage) => ",
+            "fun (modular_curve_package_law : ModularCurvePackage) => ",
+            "fun (bridge_axiom_namespace_law : BridgeAxiomNamespace) => ",
+            "fun (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            ") => fun (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            ") => fun (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            ") => bridge_not_completed_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ribet_high_trust_import_blocked_for_bridge_variants",
+        universe_params: &[],
+        statement: ribet_params!(
+            "forall (data : ",
+            ribet_data_app!(),
+            "), ",
+            ribet_high_trust_blocked_law_type!()
+        ),
+        proof: ribet_abs!(
+            "fun data => data (",
+            ribet_high_trust_blocked_law_type!(),
+            ") (fun (level_lowering_out : ",
+            level_lowering_data_app!(),
+            ") => fun (hecke_package_law : HeckePackage) => ",
+            "fun (modular_curve_package_law : ModularCurvePackage) => ",
+            "fun (bridge_axiom_namespace_law : BridgeAxiomNamespace) => ",
+            "fun (ribet_statement_law : ",
+            ribet_statement_law_type!(),
+            ") => fun (bridge_not_completed_law : ",
+            ribet_bridge_not_completed_law_type!(),
+            ") => fun (high_trust_import_blocked_law : ",
+            ribet_high_trust_blocked_law_type!(),
+            ") => high_trust_import_blocked_law)"
         ),
     },
 ];
@@ -52203,6 +52670,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == MODULAR_FORMS_Q_EXPANSION_MODULE.module
         || config.module == MODULAR_FORMS_HECKE_MODULE.module
         || config.module == MODULAR_FORMS_MODULAR_CURVE_MODULE.module
+        || config.module == MODULARITY_LEVEL_LOWERING_MODULE.module
+        || config.module == MODULARITY_RIBET_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

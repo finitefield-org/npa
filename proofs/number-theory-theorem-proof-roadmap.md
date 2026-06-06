@@ -876,6 +876,12 @@ semantics.
     product, trace formula, modular curve, Jacobian, and Eichler-Shimura
     surfaces with analytic/geometric prerequisites and construction evidence
     explicit.
+  - `NT-T51` added certificate-backed
+    `Proofs.Ai.Modularity.LevelLowering` and
+    `Proofs.Ai.Modularity.Ribet` defining reusable conductor,
+    irreducibility, ramification, newform, excluded-case, dependency-map, Ribet
+    level-lowering, bridge-namespace, not-completed-proof, and high-trust
+    import-boundary surfaces.
 - Depends on: complex analysis, linear algebra, representation theory, algebraic
   geometry, and `NT-16`.
 - Target modules:
@@ -883,6 +889,7 @@ semantics.
   - `Proofs.Ai.ModularForms.Hecke`
   - `Proofs.Ai.ModularForms.QExpansion`
   - `Proofs.Ai.ModularForms.ModularCurve`
+  - `Proofs.Ai.Modularity.LevelLowering`
   - `Proofs.Ai.Modularity.Lifting`
   - `Proofs.Ai.Modularity.Ribet`
   - `Proofs.Ai.Modularity.Semistable`
