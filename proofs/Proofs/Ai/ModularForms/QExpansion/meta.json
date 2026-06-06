@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ModularForms.QExpansion",
+  "source": "Proofs/Ai/ModularForms/QExpansion/source.npa",
+  "certificate": "Proofs/Ai/ModularForms/QExpansion/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e6a7779c436cbb4dd326b6d452f71d5922d0469e77ad5320c746b8abcbb16620",
+  "certificate_file_sha256": "sha256:674be3ec040d5a9edc060af0dc2204b48c379abd3627de4ec91487cf2c1272c9",
+  "export_hash": "sha256:7048d479fc24b40c3714ea8f4ed50101e000c83f711db2535df2d6dfc7ef37db",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:fd662e5ca1758a74d73499f83e93a707d4ddeef7ca2a9eda8c524d4cb7e34684",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "QExpansionPrinciple", "kind": "def" },
+    { "name": "QExpansionData", "kind": "def" },
+    { "name": "q_expansion_data_intro", "kind": "theorem" },
+    { "name": "q_expansion_basic_data", "kind": "theorem" },
+    { "name": "q_expansion_principle_from_data", "kind": "theorem" },
+    { "name": "q_expansion_principle_apply", "kind": "theorem" },
+    { "name": "eisenstein_series_self_q_expansion_identity", "kind": "theorem" },
+    { "name": "q_expansion_coefficient_self_identity", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

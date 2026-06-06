@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PadicAnalysis",
+  "source": "Proofs/Ai/NumberTheory/PadicAnalysis/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PadicAnalysis/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:97f3955a07a8948c8c5ea28894f1f6b99d975fce4841b2292a6889b367cd4cff",
+  "certificate_file_sha256": "sha256:926b961d9b384a56fb313f0e6a1479dc93747b66106f4730c197184f0ac8ced2",
+  "export_hash": "sha256:49c0cebd531d9b463e61128df6c1d76265e786d8d3e32946743bb806b11ba8a7",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:58049b31b3a5875dc7a038550032769cd068eeda0d0a76d5573850ebab101095",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.NumberTheory.Padic", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace"],
+  "axioms": [],
+  "declarations": [
+    { "name": "padic_exp_interface", "kind": "theorem" },
+    { "name": "padic_log_interface", "kind": "theorem" },
+    { "name": "newton_polygon_interface", "kind": "theorem" },
+    { "name": "strassmann_theorem_interface", "kind": "theorem" },
+    { "name": "weierstrass_preparation_interface", "kind": "theorem" },
+    { "name": "mahler_expansion_interface", "kind": "theorem" },
+    { "name": "padic_analytic_convergence_norm_series_dependency_surface", "kind": "theorem" },
+    { "name": "padic_analytic_functions_not_trusted_primitives_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

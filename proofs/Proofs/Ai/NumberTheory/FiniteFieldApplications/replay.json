@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.FiniteFieldApplications",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "finite_field_core_frobenius_cardinality_root_application_chain",
+      "source_kind": "explicit_term",
+      "term": "fun AbstractFiniteFieldLawPackage => fun FrobeniusFact => fun CardinalityFact => fun RootCharacterizationFact => fun FiniteFieldNumberTheoryApplication => fun application_law => fun finite_field_core => fun cardinality => fun frobenius => fun root_characterization => application_law finite_field_core cardinality frobenius root_characterization"
+    },
+    {
+      "declaration": "finite_field_ownership_field_theory_route_for_applications",
+      "source_kind": "explicit_term",
+      "term": "fun AbstractFiniteFieldOwner => fun NumberTheoryApplicationNamespace => fun FieldTheoryRoadmapOwnership => fun NoNumberTheoryCoreRedefinition => fun OwnershipAgreement => fun ownership_law => fun owner => fun application_namespace => fun field_owner => fun no_redefinition => ownership_law owner application_namespace field_owner no_redefinition"
+    },
+    {
+      "declaration": "finite_field_existence_uniqueness_cards_owned_by_field_theory",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldLawPackage => fun FieldTheoryOwnershipEvidence => fun FiniteFieldExistenceCard => fun FiniteFieldUniquenessCard => fun FiniteFieldExistenceUniquenessCard => fun existence_law => fun uniqueness_law => fun card_law => fun finite_field_core => fun ownership => card_law finite_field_core ownership (existence_law finite_field_core ownership) (uniqueness_law finite_field_core ownership)"
+    },
+    {
+      "declaration": "finite_field_multiplicative_cyclicity_card_for_primitive_roots",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldLawPackage => fun FieldTheoryOwnershipEvidence => fun PrimitiveRootApplicationPackage => fun FiniteFieldMultiplicativeCyclicityCard => fun PrimitiveRootFiniteFieldApplication => fun primitive_root_law => fun primitive_root_package => fun finite_field_core => fun ownership => fun cyclicity => primitive_root_law primitive_root_package finite_field_core ownership cyclicity"
+    },
+    {
+      "declaration": "finite_field_subfield_classification_frobenius_card",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldLawPackage => fun FrobeniusPackage => fun SubfieldClassificationPackage => fun FieldTheoryOwnershipEvidence => fun FrobeniusApplicationCard => fun SubfieldClassificationCard => fun OwnedSubfieldFrobeniusApplication => fun application_law => fun finite_field_core => fun frobenius => fun subfields => fun ownership => fun frobenius_card => fun subfield_card => application_law finite_field_core frobenius subfields ownership frobenius_card subfield_card"
+    },
+    {
+      "declaration": "finite_field_gauss_sum_application_imports_finite_field_facts",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldLawPackage => fun FiniteFieldApplicationPackage => fun DirichletCharacterPackage => fun AdditiveCharacterPackage => fun GaussSumPackage => fun FiniteFieldApplicationImports => fun GaussSumFiniteFieldApplication => fun import_law => fun gauss_sum_law => fun gauss_sum => fun application_package => fun finite_field_core => fun characters => fun additive => gauss_sum_law gauss_sum application_package finite_field_core characters additive (import_law application_package finite_field_core)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/FiniteFieldApplications/certificate.npcert"
+  }
+}

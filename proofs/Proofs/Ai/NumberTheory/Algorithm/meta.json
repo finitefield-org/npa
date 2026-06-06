@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Algorithm",
+  "source": "Proofs/Ai/NumberTheory/Algorithm/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Algorithm/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:52fc69d7a73eb4fabdd4309e66435bcc384bae8c571dba7338073eab44d3884b",
+  "certificate_file_sha256": "sha256:267aaedf2d1e1c434970fec6a0e4dda32b046e9cea87d4c90850324e067e121c",
+  "export_hash": "sha256:3da02a1e3177a8bf4d5aae245bb1cf3242daf1596077923f64589f3de9250b26",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:aa0443b22229e3d93ad62e719904c64de98af1bd3b42ec9ac8399119c5f9b399",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.EuclideanAlgorithm", "Proofs.Ai.NumberTheory.ChineseRemainder", "Proofs.Ai.NumberTheory.FermatEulerWilson", "Proofs.Ai.NumberTheory.Carmichael"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlgorithmData", "kind": "def" },
+    { "name": "algorithm_data_intro", "kind": "theorem" },
+    { "name": "euclid_algorithm_correctness_from_named_descent_and_remainder", "kind": "theorem" },
+    { "name": "extended_euclid_correctness_from_gcd_and_bezout_chain", "kind": "theorem" },
+    { "name": "constructive_crt_correctness_from_residue_checks", "kind": "theorem" },
+    { "name": "repeated_squaring_correctness_from_invariant_chain", "kind": "theorem" },
+    { "name": "algorithm_complexity_requires_cost_model_after_correctness", "kind": "theorem" },
+    { "name": "algorithm_correctness_separated_from_mathematical_existence", "kind": "theorem" },
+    { "name": "external_solver_or_runtime_oracle_not_trusted", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

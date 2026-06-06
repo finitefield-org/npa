@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ExponentialSum",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ExponentialSum_gauss_sum_finite_field_character_chain",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun CharacterPackage => fun AdditiveCharacterPackage => fun MultiplicativeCharacterPackage => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun GaussSumPackage => fun ExponentialSumPackage => fun FiniteFieldImported => fun CharacterData => fun FieldSizeDegreeHypotheses => fun NonvanishingHypothesis => fun GaussSumConstruction => fun ExponentialSumInterface => fun finite_field_law => fun character_law => fun gauss_sum_law => fun exponential_sum_law => fun finite_field => fun field_size => fun degree => fun characters => fun additive => fun multiplicative => fun nonvanishing => fun gauss_sum => fun exponential_sum => fun size_degree => fun nonvanishing_hypothesis => exponential_sum_law finite_field field_size degree characters additive multiplicative nonvanishing gauss_sum exponential_sum (finite_field_law finite_field) size_degree (character_law characters additive multiplicative) nonvanishing_hypothesis (gauss_sum_law characters additive multiplicative gauss_sum (character_law characters additive multiplicative) nonvanishing nonvanishing_hypothesis)"
+    },
+    {
+      "declaration": "HasseDavenport_jacobi_sum_dependency_chain",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun CharacterPackage => fun GaussSumPackage => fun JacobiSumPackage => fun HasseDavenportPackage => fun NonvanishingEvidence => fun FiniteFieldImported => fun CharacterCompatibility => fun GaussSumInput => fun JacobiSumInput => fun NonvanishingHypothesis => fun HasseDavenportRelation => fun finite_field_law => fun character_law => fun gauss_sum_law => fun jacobi_sum_law => fun hasse_davenport_law => fun finite_field => fun characters => fun nonvanishing => fun gauss_sum => fun jacobi_sum => fun hasse_davenport => fun nonvanishing_hypothesis => hasse_davenport_law finite_field characters nonvanishing gauss_sum jacobi_sum hasse_davenport (finite_field_law finite_field) (character_law characters) nonvanishing_hypothesis (gauss_sum_law finite_field characters gauss_sum (finite_field_law finite_field) (character_law characters)) (jacobi_sum_law finite_field characters jacobi_sum (finite_field_law finite_field) (character_law characters))"
+    },
+    {
+      "declaration": "Stickelberger_character_field_size_valuation_chain",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun CharacterPackage => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun GaussSumPackage => fun StickelbergerValuationPackage => fun FiniteFieldImported => fun CharacterData => fun FieldSizeDegreeHypotheses => fun NonvanishingHypothesis => fun GaussSumInput => fun StickelbergerValuation => fun finite_field_law => fun character_law => fun gauss_sum_law => fun valuation_law => fun finite_field => fun field_size => fun degree => fun characters => fun nonvanishing => fun gauss_sum => fun valuation => fun size_degree => fun nonvanishing_hypothesis => valuation_law finite_field field_size degree characters nonvanishing gauss_sum valuation (finite_field_law finite_field) size_degree (character_law characters) nonvanishing_hypothesis (gauss_sum_law finite_field characters gauss_sum (finite_field_law finite_field) (character_law characters))"
+    },
+    {
+      "declaration": "Chevalley_warning_field_size_degree_nonvanishing_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun PolynomialFamily => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun ChevalleyWarningConclusion => fun FiniteFieldImported => fun FieldSizeDegreeHypotheses => fun PolynomialDegreeBound => fun PolynomialNonvanishingHypothesis => fun finite_field_law => fun degree_bound_law => fun chevalley_law => fun finite_field => fun polynomials => fun field_size => fun degree => fun nonvanishing => fun size_degree => fun nonvanishing_hypothesis => chevalley_law finite_field polynomials field_size degree nonvanishing (finite_field_law finite_field) size_degree (degree_bound_law polynomials degree) nonvanishing_hypothesis"
+    },
+    {
+      "declaration": "AxKatz_degree_field_size_refinement_from_Chevalley",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun PolynomialFamily => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun ChevalleyWarningConclusion => fun AxKatzRefinement => fun FieldSizeDegreeHypotheses => fun PolynomialNonvanishingHypothesis => fun ax_katz_law => fun finite_field => fun polynomials => fun field_size => fun degree => fun nonvanishing => fun size_degree => fun nonvanishing_hypothesis => fun chevalley_warning => ax_katz_law finite_field polynomials field_size degree nonvanishing size_degree nonvanishing_hypothesis chevalley_warning"
+    },
+    {
+      "declaration": "Weil_ExponentialSum_estimate_L1_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun CharacterPackage => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun ExponentialSumPackage => fun WeilEstimatePackage => fun FiniteFieldImported => fun CharacterData => fun FieldSizeDegreeHypotheses => fun NonvanishingHypothesis => fun ExponentialSumInput => fun WeilEstimateL1 => fun L1Boundary => fun estimate_law => fun finite_field => fun characters => fun field_size => fun degree => fun nonvanishing => fun exponential_sum => fun estimate => fun finite_field_imported => fun character_data => fun size_degree => fun nonvanishing_hypothesis => fun sum_input => fun l1_boundary => estimate_law finite_field characters field_size degree nonvanishing exponential_sum estimate finite_field_imported character_data size_degree nonvanishing_hypothesis sum_input l1_boundary"
+    },
+    {
+      "declaration": "LangWeil_L1_requires_algebraic_geometry_prerequisites",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun VarietyPackage => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun AlgebraicGeometryPrerequisite => fun FieldSizeDegreeHypotheses => fun NonvanishingHypothesis => fun LangWeilEstimateL1 => fun L1Boundary => fun lang_weil_law => fun finite_field => fun variety => fun field_size => fun degree => fun nonvanishing => fun size_degree => fun nonvanishing_hypothesis => fun ag_prerequisite => fun l1_boundary => lang_weil_law finite_field variety field_size degree nonvanishing size_degree nonvanishing_hypothesis ag_prerequisite l1_boundary"
+    },
+    {
+      "declaration": "ExponentialSum_no_finite_field_core_duplication_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun CharacterPackage => fun GaussSumPackage => fun ExponentialSumPackage => fun FiniteFieldApplicationImport => fun CharacterApiImport => fun GaussSumApiImport => fun NoFiniteFieldCoreDuplication => fun finite_field_law => fun character_law => fun gauss_sum_law => fun boundary_law => fun exponential_sum => fun finite_field => fun characters => fun gauss_sum => boundary_law exponential_sum finite_field characters gauss_sum (finite_field_law finite_field) (character_law characters) (gauss_sum_law gauss_sum)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ExponentialSum/certificate.npcert"
+  }
+}

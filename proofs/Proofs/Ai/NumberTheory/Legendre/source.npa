@@ -1,0 +1,26 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.NumberTheory.Prime
+import Proofs.Ai.NumberTheory.ModularGroup
+import Proofs.Ai.NumberTheory.PrimitiveRoot
+import Proofs.Ai.NumberTheory.QuadraticResidue
+
+theorem legendre_symbol_definition_surface :
+  forall (Int : Type), forall (Symbol : Type), forall (OddPrime : forall (p : Int), Prop), forall (QuadraticResidue : forall (p : Int), forall (a : Int), Prop), forall (QuadraticNonresidue : forall (p : Int), forall (a : Int), Prop), forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), forall (LegendreSymbolDefinition : forall (p : Int), forall (a : Int), forall (value : Symbol), Prop), forall (definition_law : forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), LegendreSymbolDefinition p a (LegendreSymbol p a)), forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), LegendreSymbolDefinition p a (LegendreSymbol p a) :=
+  fun Int => fun Symbol => fun OddPrime => fun QuadraticResidue => fun QuadraticNonresidue => fun LegendreSymbol => fun LegendreSymbolDefinition => fun definition_law => fun p => fun a => fun odd_prime => definition_law p a odd_prime
+
+theorem legendre_symbol_multiplicativity_surface :
+  forall (Int : Type), forall (OddPrime : forall (p : Int), Prop), forall (LegendreSymbolMultiplicative : forall (p : Int), forall (a : Int), forall (b : Int), Prop), forall (multiplicativity_law : forall (p : Int), forall (a : Int), forall (b : Int), forall (odd_prime : OddPrime p), LegendreSymbolMultiplicative p a b), forall (p : Int), forall (a : Int), forall (b : Int), forall (odd_prime : OddPrime p), LegendreSymbolMultiplicative p a b :=
+  fun Int => fun OddPrime => fun LegendreSymbolMultiplicative => fun multiplicativity_law => fun p => fun a => fun b => fun odd_prime => multiplicativity_law p a b odd_prime
+
+theorem legendre_euler_criterion_finite_cyclic_group_surface :
+  forall (Int : Type), forall (Symbol : Type), forall (OddPrime : forall (p : Int), Prop), forall (UnitModulo : forall (p : Int), forall (a : Int), Prop), forall (LegendreSymbol : forall (p : Int), forall (a : Int), Symbol), forall (FiniteCyclicUnitGroupFact : forall (p : Int), Prop), forall (EulerCriterionStatement : forall (p : Int), forall (a : Int), forall (value : Symbol), Prop), forall (euler_law : forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), EulerCriterionStatement p a (LegendreSymbol p a)), forall (p : Int), forall (a : Int), forall (odd_prime : OddPrime p), forall (unit_a : UnitModulo p a), forall (finite_cyclic_units : FiniteCyclicUnitGroupFact p), EulerCriterionStatement p a (LegendreSymbol p a) :=
+  fun Int => fun Symbol => fun OddPrime => fun UnitModulo => fun LegendreSymbol => fun FiniteCyclicUnitGroupFact => fun EulerCriterionStatement => fun euler_law => fun p => fun a => fun odd_prime => fun unit_a => fun finite_cyclic_units => euler_law p a odd_prime unit_a finite_cyclic_units
+
+theorem legendre_quadratic_residue_count_odd_prime_surface :
+  forall (Int : Type), forall (Nat : Type), forall (OddPrime : forall (p : Int), Prop), forall (QuadraticResidueCount : forall (p : Int), Nat), forall (LegendrePositiveClassCount : forall (p : Int), Nat), forall (CountCompatibility : forall (p : Int), Prop), forall (count_law : forall (p : Int), forall (odd_prime : OddPrime p), CountCompatibility p), forall (p : Int), forall (odd_prime : OddPrime p), CountCompatibility p :=
+  fun Int => fun Nat => fun OddPrime => fun QuadraticResidueCount => fun LegendrePositiveClassCount => fun CountCompatibility => fun count_law => fun p => fun odd_prime => count_law p odd_prime
+
+theorem legendre_jacobi_api_separation_boundary :
+  forall (LegendreSymbolPackage : Type), forall (JacobiSymbolPackage : Type), forall (OddPrimeDomainPackage : Type), forall (OddCompositeDomainPackage : Type), forall (NoApiConflationBoundary : forall (legendre : LegendreSymbolPackage), forall (jacobi : JacobiSymbolPackage), forall (odd_prime_domain : OddPrimeDomainPackage), forall (odd_composite_domain : OddCompositeDomainPackage), Prop), forall (boundary_law : forall (legendre : LegendreSymbolPackage), forall (jacobi : JacobiSymbolPackage), forall (odd_prime_domain : OddPrimeDomainPackage), forall (odd_composite_domain : OddCompositeDomainPackage), NoApiConflationBoundary legendre jacobi odd_prime_domain odd_composite_domain), forall (legendre : LegendreSymbolPackage), forall (jacobi : JacobiSymbolPackage), forall (odd_prime_domain : OddPrimeDomainPackage), forall (odd_composite_domain : OddCompositeDomainPackage), NoApiConflationBoundary legendre jacobi odd_prime_domain odd_composite_domain :=
+  fun LegendreSymbolPackage => fun JacobiSymbolPackage => fun OddPrimeDomainPackage => fun OddCompositeDomainPackage => fun NoApiConflationBoundary => fun boundary_law => fun legendre => fun jacobi => fun odd_prime_domain => fun odd_composite_domain => boundary_law legendre jacobi odd_prime_domain odd_composite_domain

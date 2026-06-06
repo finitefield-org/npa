@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DirichletConvolution",
+  "source": "Proofs/Ai/NumberTheory/DirichletConvolution/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/DirichletConvolution/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:96e12e60bfaa2a76d6b49f908e24afef0feb4a3eaf8c9ba0cb98c639ec33d2b5",
+  "certificate_file_sha256": "sha256:a6870f95a7dd170690326e4f3519bf05885ddee7a23cc87d4e0b7fdac985b24e",
+  "export_hash": "sha256:d158c4392e64c878b8914e9de6af9c521454e1d725f0222f66140b6604165bfe",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:349a70288d87760d121b84775ff446394a1aa4028b7667409bed3a28a0ec7241",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ArithmeticFunction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "dirichlet_convolution_definition_surface", "kind": "theorem" },
+    { "name": "dirichlet_convolution_associative_surface", "kind": "theorem" },
+    { "name": "dirichlet_convolution_commutative_surface", "kind": "theorem" },
+    { "name": "dirichlet_convolution_identity_surface", "kind": "theorem" },
+    { "name": "dirichlet_convolution_inverse_interface_surface", "kind": "theorem" },
+    { "name": "finite_divisor_sum_rearrangement_surface", "kind": "theorem" },
+    { "name": "dirichlet_convolution_no_mobius_inversion_assumption_boundary", "kind": "theorem" },
+    { "name": "dirichlet_convolution_no_infinite_series_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

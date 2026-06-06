@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PadicMeasure",
+  "source": "Proofs/Ai/NumberTheory/PadicMeasure/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PadicMeasure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c1e0b0c2bbe539c900fa298c7f4a90a4c957333389f1ed457295968c12c8edc1",
+  "certificate_file_sha256": "sha256:f2c23bed54c60d74b33f463c311f189829507030737226808cd23029bd91e66d",
+  "export_hash": "sha256:6c8e5c0d61d07bf75502953090191bb16d1571052af367c2b0a8f538348b6b08",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:f7ecbf6dca68d3c1ae7c115cbbf568029d87e56832b3d119d3dcafac65c43431",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.PadicAnalysis"],
+  "axioms": [],
+  "declarations": [
+    { "name": "padic_measure_interface", "kind": "theorem" },
+    { "name": "padic_integration_interface", "kind": "theorem" },
+    { "name": "amice_transform_interface", "kind": "theorem" },
+    { "name": "kubota_leopoldt_padic_l_function_interface", "kind": "theorem" },
+    { "name": "padic_measure_theory_roadmap_dependency_surface", "kind": "theorem" },
+    { "name": "padic_l_function_interpolation_assumptions_explicit_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

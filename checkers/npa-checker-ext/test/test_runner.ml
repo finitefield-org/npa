@@ -387,6 +387,8 @@ let make_name components =
   | None -> failwith "test fixture constructed an invalid name"
   | Some name -> name
 
+let make_unchecked_name components = components
+
 let one_byte code = String.make 1 (Char.chr code)
 
 let hash_bytes fill = String.make 32 (Char.chr fill)
@@ -701,6 +703,23 @@ let run_decoder_header_tests () =
     (String.length dotted_component_prefix + 3)
     (Ext_cert.read_header (Ext_bytes.of_string dotted_component));
 
+  let operator_component_prefix = empty_module_prefix ^ encode_uvar_int 1 ^ encode_uvar_int 1 in
+  let operator_component = operator_component_prefix ^ "+" in
+  assert_decode_error "operator name component" "noncanonical_encoding"
+    Ext_bytes.Invalid_name_component Ext_bytes.Header_module
+    (String.length operator_component_prefix)
+    (Ext_cert.read_header (Ext_bytes.of_string operator_component));
+
+  let prime_component = empty_module_prefix ^ encode_name [ "add_comm'" ] in
+  (match Ext_cert.read_header (Ext_bytes.of_string prime_component) with
+  | Error error ->
+      failwith
+        ("prime component: unexpected decode error "
+        ^ Ext_bytes.reason_code error.Ext_bytes.reason)
+  | Ok (header, _) ->
+      assert_equal "prime component name" "add_comm'"
+        (Ext_name.to_string header.Ext_cert.module_name));
+
   let name_table = encode_uvar_int 2 ^ encode_name [ "A" ] ^ encode_name [ "Std"; "Nat" ] in
   (match Ext_cert.read_name_table (Ext_bytes.of_string name_table) with
   | Error error ->
@@ -803,11 +822,11 @@ let run_decoder_tables_tests () =
        (Ext_bytes.of_string (encode_uvar_int 2 ^ encode_level_zero ^ encode_level_zero)));
   assert_decode_error "unresolved universe metavariable" "certificate_decode_error"
     Ext_bytes.Unresolved_metavariable Ext_bytes.Level_table 1
-    (Ext_level.read_table [ make_name [ "z?meta" ] ]
+    (Ext_level.read_table [ make_unchecked_name [ "z?meta" ] ]
        (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_level_param 0)));
   assert_decode_error "unresolved human universe metavariable" "certificate_decode_error"
     Ext_bytes.Unresolved_metavariable Ext_bytes.Level_table 1
-    (Ext_level.read_table [ make_name [ "__npa_internal_human_universe_meta#0" ] ]
+    (Ext_level.read_table [ make_unchecked_name [ "__npa_internal_human_universe_meta#0" ] ]
        (Ext_bytes.of_string (encode_uvar_int 1 ^ encode_level_param 0)));
 
   assert_decode_error "unknown term tag" "certificate_decode_error"
@@ -3491,7 +3510,7 @@ let run_type_declarations_tests () =
     "universe_inconsistency" "bad_universe_arity"
     (Ext_typecheck.check_declarations [ bad_arity_decl ]);
 
-  let meta_name = make_name [ "z?meta" ] in
+  let meta_name = make_unchecked_name [ "z?meta" ] in
   let unresolved_meta_decl =
     declaration_fixture Ext_cert.Axiom
       (Ext_cert.AxiomDecl

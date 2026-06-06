@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.FermatEulerWilson",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "fermat_little_theorem_from_finite_unit_group_order",
+      "source_kind": "explicit_term",
+      "term": "fun Unit => fun one => fun mul => fun inv => fun Int => fun modulus => fun base => fun PrimeModulus => fun CoprimeInt => fun FiniteUnitGroupOrderEvidence => fun FermatLittleCongruence => fun derivation_law => fun laws => fun finite_units => fun prime_modulus => fun coprime_base_modulus => derivation_law laws finite_units prime_modulus coprime_base_modulus"
+    },
+    {
+      "declaration": "euler_theorem_from_phi_unit_group_cardinality",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun EulerPhi => fun UnitModulo => fun UnitGroupCardinalityEvidence => fun EulerTheoremCongruence => fun euler_law => fun modulus => fun a => fun unit_a => fun cardinality => euler_law modulus a unit_a cardinality"
+    },
+    {
+      "declaration": "fermat_euler_combined_prime_modulus_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun EulerPhi => fun PrimeModulus => fun CoprimeInt => fun PrimePhiCompatibility => fun EulerTheoremCongruence => fun FermatLittleCongruence => fun combined_law => fun p => fun a => fun prime_p => fun coprime_ap => fun phi_prime => fun euler_step => combined_law p a prime_p coprime_ap phi_prime euler_step"
+    },
+    {
+      "declaration": "wilson_theorem_prime_modulus_exact_hypotheses",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pred => fun Factorial => fun NegOne => fun PrimeModulus => fun PositiveModulus => fun CongruentModulo => fun wilson_law => fun p => fun prime_p => fun positive_p => wilson_law p prime_p positive_p"
+    },
+    {
+      "declaration": "wilson_converse_exact_modulus_hypotheses",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pred => fun Factorial => fun NegOne => fun PrimeModulus => fun PositiveModulus => fun CongruentModulo => fun converse_law => fun p => fun positive_p => fun wilson_congruence => converse_law p positive_p wilson_congruence"
+    },
+    {
+      "declaration": "fermat_euler_wilson_no_modular_arithmetic_axiom_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FermatEulerWilsonPackage => fun FiniteUnitGroupOrderPackage => fun EulerPhiPackage => fun WilsonTheoremPackage => fun TheoremShapedModularArithmeticAxiom => fun NoAxiomBoundary => fun boundary_law => fun fermat_euler_wilson => fun finite_order => fun phi => fun wilson => fun modular_axiom => boundary_law fermat_euler_wilson finite_order phi wilson modular_axiom"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/FermatEulerWilson/certificate.npcert"
+  }
+}

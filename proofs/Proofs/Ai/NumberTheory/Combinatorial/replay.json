@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Combinatorial",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "pigeonhole_ramsey_schur_rado_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Ambient => fun Coloring => fun Nat => fun FiniteSet => fun Configuration => fun AmbientStructure => fun ColoringOnAmbient => fun PigeonholeWitness => fun RamseyWitness => fun SchurConfiguration => fun RadoConfiguration => fun pigeonhole_law => fun ramsey_law => fun schur_law => fun rado_law => fun ambient => fun coloring => fun finite_set => fun configuration => fun ambient_structure => fun coloring_on_ambient => rado_law coloring configuration (schur_law coloring finite_set configuration (ramsey_law coloring ambient finite_set coloring_on_ambient (pigeonhole_law ambient finite_set ambient_structure)))"
+    },
+    {
+      "declaration": "van_der_waerden_polynomial_method_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun AmbientStructurePackage => fun Coloring => fun Progression => fun PolynomialFamily => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun FiniteFieldImported => fun AmbientStructure => fun VanDerWaerdenSurface => fun PolynomialMethodInput => fun CombinatorialPolynomialConclusion => fun finite_field_law => fun van_der_waerden_law => fun polynomial_input_law => fun bridge_law => fun ambient => fun finite_field => fun coloring => fun progression => fun polynomial => fun field_size => fun degree => fun nonvanishing => fun ambient_structure => bridge_law ambient finite_field coloring progression polynomial field_size degree nonvanishing ambient_structure (finite_field_law finite_field) (van_der_waerden_law coloring progression) (polynomial_input_law finite_field polynomial field_size degree nonvanishing (finite_field_law finite_field))"
+    },
+    {
+      "declaration": "erdos_ginzburg_ziv_olson_davenport_constant_chain",
+      "source_kind": "explicit_term",
+      "term": "fun AmbientGroup => fun Sequence => fun Subsequence => fun DavenportConstantPackage => fun OlsonBoundPackage => fun AmbientGroupStructure => fun AdditiveCombinatoricsImport => fun SequenceInAmbient => fun OlsonZeroSumCriterion => fun DavenportConstantBound => fun ErdosGinzburgZivConclusion => fun additive_import_law => fun olson_law => fun davenport_law => fun egz_law => fun group => fun sequence => fun subsequence => fun constant => fun olson_bound => fun ambient_structure => fun sequence_in_ambient => egz_law group sequence subsequence constant olson_bound sequence_in_ambient (olson_law group sequence olson_bound (additive_import_law group ambient_structure) sequence_in_ambient) (davenport_law group sequence constant olson_bound (additive_import_law group ambient_structure) (olson_law group sequence olson_bound (additive_import_law group ambient_structure) sequence_in_ambient))"
+    },
+    {
+      "declaration": "finite_field_combinatorial_nullstellensatz_chain",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun AmbientStructurePackage => fun PolynomialFamily => fun CoefficientAssignment => fun FieldSize => fun Degree => fun NonvanishingEvidence => fun NullstellensatzCertificate => fun FiniteFieldImported => fun AmbientStructure => fun FieldSizeHypothesis => fun DegreeHypothesis => fun NonvanishingHypothesis => fun CombinatorialNullstellensatzCertificate => fun PolynomialMethodConclusion => fun finite_field_law => fun degree_law => fun nullstellensatz_law => fun polynomial_method_law => fun ambient => fun finite_field => fun polynomial => fun coefficients => fun field_size => fun degree => fun nonvanishing => fun certificate => fun ambient_structure => fun field_size_hypothesis => fun nonvanishing_hypothesis => polynomial_method_law ambient finite_field polynomial coefficients certificate ambient_structure (finite_field_law finite_field) (nullstellensatz_law finite_field polynomial coefficients field_size degree nonvanishing certificate (finite_field_law finite_field) field_size_hypothesis (degree_law polynomial degree) nonvanishing_hypothesis)"
+    },
+    {
+      "declaration": "combinatorial_finite_field_application_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldApplicationPackage => fun AdditiveCombinatoricsPackage => fun CombinatorialPackage => fun FiniteFieldApplicationImport => fun AdditiveCombinatoricsImport => fun CombinatorialInterface => fun NoFiniteFieldCoreDuplication => fun finite_field_law => fun additive_law => fun interface_law => fun boundary_law => fun combinatorial => fun finite_field => fun additive => boundary_law combinatorial finite_field additive (finite_field_law finite_field) (additive_law additive) (interface_law combinatorial finite_field additive (finite_field_law finite_field) (additive_law additive))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Combinatorial/certificate.npcert"
+  }
+}

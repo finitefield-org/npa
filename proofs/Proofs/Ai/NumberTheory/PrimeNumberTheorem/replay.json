@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimeNumberTheorem",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "chebyshev_estimates_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun ChebyshevTheta => fun ChebyshevPsi => fun Mul => fun Le => fun chebyshev_theta_bound_law => fun chebyshev_psi_bound_law => fun C => fun x => chebyshev_theta_bound_law C x"
+    },
+    {
+      "declaration": "prime_number_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun PrimeCount => fun AsymptoticEquivalent => fun XOverLogX => fun pnt_asymptotic_law => pnt_asymptotic_law"
+    },
+    {
+      "declaration": "zeta_zero_free_region_de_la_vallee_poussin_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ZetaZeroRelation => fun DeLaValleePoussinRegion => fun Not => fun zero_free_region_law => fun s => fun h => zero_free_region_law s h"
+    },
+    {
+      "declaration": "de_la_vallee_poussin_error_bound_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun PrimeCount => fun LogIntegral => fun DeLaValleePoussinErrorBound => fun de_la_vallee_poussin_law => fun x => de_la_vallee_poussin_law x"
+    },
+    {
+      "declaration": "bertrands_postulate_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun ExistsPrimeBetween => fun bertrands_postulate_law => fun n => bertrands_postulate_law n"
+    },
+    {
+      "declaration": "pnt_from_tauberian_interface",
+      "source_kind": "explicit_term",
+      "term": "fun IkeharaTauberianTheorem => fun PrimeNumberTheoremAsymptotic => fun pnt_from_ikehara_law => fun h => pnt_from_ikehara_law h"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PrimeNumberTheorem/certificate.npcert"
+  }
+}

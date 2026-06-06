@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+  "source": "Proofs/Ai/ArithmeticGeometry/RationalPoints/source.npa",
+  "certificate": "Proofs/Ai/ArithmeticGeometry/RationalPoints/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f38f71fe847061bbd30ab869c1607d7d429a9389bbd065a280a5bb240fe2f47d",
+  "certificate_file_sha256": "sha256:a7965b1de7157471a59277acba2add22c2349db72b82f7f5ca9e923664bed9d6",
+  "export_hash": "sha256:e4754bc2efa4992e363aaf267d86b9291c1941b950bb46b16cb9b65cb8fac606",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:75092aa075fbddcdc247caaa8cc9dbc69972a32ef7ec231f68ecb72cf66873d7",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.EllipticCurve.FiniteField", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RationalPointsData", "kind": "def" },
+    { "name": "rational_points_data_intro", "kind": "theorem" },
+    { "name": "curve_genus_surface", "kind": "theorem" },
+    { "name": "curve_divisor_surface", "kind": "theorem" },
+    { "name": "riemann_roch_curve_surface", "kind": "theorem" },
+    { "name": "hasse_weil_bound_curve_surface", "kind": "theorem" },
+    { "name": "hasse_weil_zeta_function_finite_field_core_surface", "kind": "theorem" },
+    { "name": "mordell_faltings_l1_statement_surface", "kind": "theorem" },
+    { "name": "siegel_integral_points_explicit_hypotheses_surface", "kind": "theorem" },
+    { "name": "rational_integral_point_hypotheses_explicit", "kind": "theorem" },
+    { "name": "finite_field_zeta_reuses_abstract_finite_field_core", "kind": "theorem" },
+    { "name": "faltings_results_marked_l1_boundary", "kind": "theorem" },
+    { "name": "rational_points_separated_from_etale_cohomology", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,25 @@
+import Proofs.Ai.NumberTheory.Inventory
+
+theorem integer_carrier_surface_preserves_evidence :
+  forall (Int : Type), forall (IntegerStructure : forall (x : Int), Prop), forall (x : Int), forall (evidence : IntegerStructure x), IntegerStructure x :=
+  fun Int => fun IntegerStructure => fun x => fun evidence => evidence
+
+theorem nat_int_translation_surface_preserves_evidence :
+  forall (NatCarrier : Type), forall (Int : Type), forall (toInt : forall (n : NatCarrier), Int), forall (TranslationEvidence : forall (n : NatCarrier), Prop), forall (n : NatCarrier), forall (evidence : TranslationEvidence n), TranslationEvidence n :=
+  fun NatCarrier => fun Int => fun toInt => fun TranslationEvidence => fun n => fun evidence => evidence
+
+theorem positive_surface_preserves_evidence :
+  forall (Int : Type), forall (Positive : forall (x : Int), Prop), forall (x : Int), forall (positive_evidence : Positive x), Positive x :=
+  fun Int => fun Positive => fun x => fun positive_evidence => positive_evidence
+
+theorem nonzero_surface_preserves_evidence :
+  forall (Int : Type), forall (Nonzero : forall (x : Int), Prop), forall (x : Int), forall (nonzero_evidence : Nonzero x), Nonzero x :=
+  fun Int => fun Nonzero => fun x => fun nonzero_evidence => nonzero_evidence
+
+theorem positivity_nonzero_joint_surface :
+  forall (Int : Type), forall (Positive : forall (x : Int), Prop), forall (Nonzero : forall (x : Int), Prop), forall (x : Int), forall (positive_evidence : Positive x), forall (nonzero_evidence : Nonzero x), Nonzero x :=
+  fun Int => fun Positive => fun Nonzero => fun x => fun positive_evidence => fun nonzero_evidence => nonzero_evidence
+
+theorem arithmetic_structure_is_ordinary_theorem_surface :
+  forall (ArithmeticSurface : Type), forall (OrdinaryTheoremTarget : forall (surface : ArithmeticSurface), Prop), forall (surface : ArithmeticSurface), forall (evidence : OrdinaryTheoremTarget surface), OrdinaryTheoremTarget surface :=
+  fun ArithmeticSurface => fun OrdinaryTheoremTarget => fun surface => fun evidence => evidence

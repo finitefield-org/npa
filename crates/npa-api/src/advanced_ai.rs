@@ -3567,7 +3567,7 @@ fn formalization_scratch_module(proof_root_hash: Hash) -> ModuleName {
         "NPA".to_owned(),
         "Advanced".to_owned(),
         "FormalizationScratch".to_owned(),
-        lowerhex_hash(proof_root_hash),
+        lowerhex_name_component(proof_root_hash),
     ])
 }
 
@@ -3584,6 +3584,10 @@ fn lowerhex_hash(hash: Hash) -> String {
         write!(&mut output, "{byte:02x}").expect("writing to string cannot fail");
     }
     output
+}
+
+fn lowerhex_name_component(hash: Hash) -> String {
+    format!("h{}", lowerhex_hash(hash))
 }
 
 fn formalization_machine_tactic_error_response(
@@ -9071,7 +9075,7 @@ fn advanced_ai_smt_scratch_module(candidate_hash: Hash) -> ModuleName {
         "NPA".to_owned(),
         "Advanced".to_owned(),
         "SmtScratch".to_owned(),
-        lowerhex_hash(candidate_hash),
+        lowerhex_name_component(candidate_hash),
     ])
 }
 

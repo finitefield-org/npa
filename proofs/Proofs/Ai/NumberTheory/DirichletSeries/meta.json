@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DirichletSeries",
+  "source": "Proofs/Ai/NumberTheory/DirichletSeries/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/DirichletSeries/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:953530d89014a9ce2c687ca5f7c6369484c70a006f2c0a731de17daf6c607e2d",
+  "certificate_file_sha256": "sha256:d3c29bc0fcd7288314e963e84a6c3da2e1a88b8ff1e0c12170274643947157ec",
+  "export_hash": "sha256:b0015178af7370464fd23d31f1c6250707e66ed997ec8636a0d543f13c107e89",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:d8aa48431002b1dfde72de1be87744c58a0cd01a5b681ff0313033671ec7cb31",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "dirichlet_series_interface", "kind": "theorem" },
+    { "name": "dirichlet_series_abscissa_interface", "kind": "theorem" },
+    { "name": "euler_product_interface", "kind": "theorem" },
+    { "name": "analytic_continuation_interface", "kind": "theorem" },
+    { "name": "tauberian_theorem_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

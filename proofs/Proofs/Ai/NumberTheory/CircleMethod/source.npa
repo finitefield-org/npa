@@ -1,0 +1,26 @@
+import Std.Logic.Eq
+
+theorem hardy_littlewood_circle_method_interface :
+  forall (Real : Type), forall (Complex : Type), forall (MajorArcs : Prop), forall (MinorArcs : Prop), forall (CircleMethodRelation : Prop), forall (circle_method_law : forall (maj : MajorArcs), forall (min : MinorArcs), CircleMethodRelation), forall (maj : MajorArcs), forall (min : MinorArcs), CircleMethodRelation :=
+  fun Real => fun Complex => fun MajorArcs => fun MinorArcs => fun CircleMethodRelation => fun circle_method_law => fun maj => fun min => circle_method_law maj min
+
+theorem major_arc_contribution_interface :
+  forall (MajorArcs : Prop), forall (MajorArcContribution : Prop), forall (major_arcs_law : forall (maj : MajorArcs), MajorArcContribution), forall (maj : MajorArcs), MajorArcContribution :=
+  fun MajorArcs => fun MajorArcContribution => fun major_arcs_law => fun maj => major_arcs_law maj
+
+theorem minor_arc_contribution_interface :
+  forall (MinorArcs : Prop), forall (MinorArcContribution : Prop), forall (minor_arcs_law : forall (min : MinorArcs), MinorArcContribution), forall (min : MinorArcs), MinorArcContribution :=
+  fun MinorArcs => fun MinorArcContribution => fun minor_arcs_law => fun min => minor_arcs_law min
+
+theorem circle_method_asymptotic_assumption_interface :
+  forall (Nat : Type), forall (Real : Type), forall (TargetCount : Nat -> Real), forall (MajorArcMainTerm : Nat -> Real), forall (MinorArcErrorTerm : Nat -> Real), forall (AsymptoticWithError : Real -> Real -> Real -> Prop), forall (asymptotic_law : forall (N : Nat), AsymptoticWithError (TargetCount N) (MajorArcMainTerm N) (MinorArcErrorTerm N)), forall (N : Nat), AsymptoticWithError (TargetCount N) (MajorArcMainTerm N) (MinorArcErrorTerm N) :=
+  fun Nat => fun Real => fun TargetCount => fun MajorArcMainTerm => fun MinorArcErrorTerm => fun AsymptoticWithError => fun asymptotic_law => fun N => asymptotic_law N
+
+theorem circle_method_harmonic_exponential_dependency_surface :
+  forall (CircleMethodResultPackage : Type), forall (HarmonicAnalysisPackage : Type), forall (ExponentialSumEstimatePackage : Type), forall (MajorArcInputPackage : Type), forall (MinorArcInputPackage : Type), forall (AnalyticDependency : CircleMethodResultPackage -> HarmonicAnalysisPackage -> ExponentialSumEstimatePackage -> MajorArcInputPackage -> MinorArcInputPackage -> Prop), forall (dependency_law : forall (result : CircleMethodResultPackage), forall (harmonic : HarmonicAnalysisPackage), forall (exponential : ExponentialSumEstimatePackage), forall (major_arc : MajorArcInputPackage), forall (minor_arc : MinorArcInputPackage), AnalyticDependency result harmonic exponential major_arc minor_arc), forall (result : CircleMethodResultPackage), forall (harmonic : HarmonicAnalysisPackage), forall (exponential : ExponentialSumEstimatePackage), forall (major_arc : MajorArcInputPackage), forall (minor_arc : MinorArcInputPackage), AnalyticDependency result harmonic exponential major_arc minor_arc :=
+  fun CircleMethodResultPackage => fun HarmonicAnalysisPackage => fun ExponentialSumEstimatePackage => fun MajorArcInputPackage => fun MinorArcInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun harmonic => fun exponential => fun major_arc => fun minor_arc => dependency_law result harmonic exponential major_arc minor_arc
+
+theorem circle_method_conditional_analytic_prerequisite_surface :
+  forall (CircleMethodResultPackage : Type), forall (AnalyticPrerequisitePackage : Type), forall (ConditionalOnAnalyticPrerequisites : CircleMethodResultPackage -> AnalyticPrerequisitePackage -> Prop), forall (conditional_law : forall (result : CircleMethodResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq), forall (result : CircleMethodResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq :=
+  fun CircleMethodResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq
+

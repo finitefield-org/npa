@@ -1,0 +1,4 @@
+interface:
+  display_name: "Find Promotable Closure"
+  short_description: "Find corpus closures ready for mathlib"
+  default_prompt: "Use $find-promotable-closure to find proof corpus closures that are not yet in npa-mathlib but look ready to promote."

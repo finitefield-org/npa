@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ClassGroup",
+  "source": "Proofs/Ai/NumberTheory/ClassGroup/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2eda3b3257abbc5f14b649ef8e6c7f19fd50d6d56abc061eb2a5941a00751c05",
+  "certificate_file_sha256": "sha256:3861b0185d73e5236b4e51b09c9be0b9aeb9175299c0444f27c8eef62bcb846f",
+  "export_hash": "sha256:be5820031f461e773f723ce9e0eb0473e6c21a38493427acffbbc3cf71e1b952",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:c4b059937e494af2329ef60ea7d8f672155c287e7d944823857821bafe18d78a",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.NumberTheory.DiophantineApproximation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ideal_factorization_interface", "kind": "theorem" },
+    { "name": "ideal_factorization_uniqueness_interface", "kind": "theorem" },
+    { "name": "fractional_ideal_group_interface", "kind": "theorem" },
+    { "name": "class_group_interface", "kind": "theorem" },
+    { "name": "class_group_quotient_requirement_surface", "kind": "theorem" },
+    { "name": "class_number_finiteness_interface", "kind": "theorem" },
+    { "name": "minkowski_bound_interface", "kind": "theorem" },
+    { "name": "minkowski_geometry_of_numbers_dependency_surface", "kind": "theorem" },
+    { "name": "dirichlet_unit_theorem_interface", "kind": "theorem" },
+    { "name": "class_number_formula_interface", "kind": "theorem" },
+    { "name": "analytic_class_number_formula_l1_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

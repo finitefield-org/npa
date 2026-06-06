@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Carmichael",
+  "source": "Proofs/Ai/NumberTheory/Carmichael/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Carmichael/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:98f01e29a27747ced57c1bbe4dd05b0fa5d34307c97c5bb566b19214123da262",
+  "certificate_file_sha256": "sha256:63265aa26734561bde3040dc70f3e140f85f77d14db0f8c3f4078a7567e9db44",
+  "export_hash": "sha256:ce34d0f939d81fd761f540197da60382fdea134946a0af6123756987a66ea2eb",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:685cd0a519e0a775505062333c2fcd894296016eab28f364e51fa73d451e52d7",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.FermatEulerWilson"],
+  "axioms": [],
+  "declarations": [
+    { "name": "carmichael_function_definition_separate_from_phi", "kind": "theorem" },
+    { "name": "carmichael_exponent_theorem_from_unit_group_exponent", "kind": "theorem" },
+    { "name": "carmichael_lambda_divides_euler_phi_from_lagrange", "kind": "theorem" },
+    { "name": "carmichael_exponent_theorem_specializes_euler_theorem", "kind": "theorem" },
+    { "name": "carmichael_no_phi_duplication_or_rsa_security_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

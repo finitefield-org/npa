@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.GaloisRepresentation.LocalCondition",
+  "source": "Proofs/Ai/GaloisRepresentation/LocalCondition/source.npa",
+  "certificate": "Proofs/Ai/GaloisRepresentation/LocalCondition/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:227c8b15799efd609787bd22b862f509a8babc697cb49bf9a1efd78a3b526050",
+  "certificate_file_sha256": "sha256:75d0f8d6dfa745fafba0b6528fdbe3d9c56c1a5be05c47a7625e9b585c2479e5",
+  "export_hash": "sha256:db8361f80a5c244d2a977744e43d507a486f766e329585798a95ecddba26a9f0",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:37822733f8ffa0759dabcddc6a57d4898d18e9fcf514bb65a2b8de8fac56819b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.GaloisRepresentation.Basic", "Proofs.Ai.GaloisRepresentation.Ramification", "Proofs.Ai.EllipticCurve.GaloisRepresentation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GaloisRepresentationLocalConditionData", "kind": "def" },
+    { "name": "galois_representation_local_condition_data_intro", "kind": "theorem" },
+    { "name": "fontaine_laffaille_comparison_theorem_chain", "kind": "theorem" },
+    { "name": "local_condition_from_fontaine_laffaille_ramification", "kind": "theorem" },
+    { "name": "reusable_local_condition_from_fontaine_laffaille", "kind": "theorem" },
+    { "name": "elliptic_curve_and_modular_form_share_local_condition_api", "kind": "theorem" },
+    { "name": "taylor_wiles_remains_interface_until_modularity_prerequisites", "kind": "theorem" },
+    { "name": "potential_modularity_remains_interface_until_prerequisites", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

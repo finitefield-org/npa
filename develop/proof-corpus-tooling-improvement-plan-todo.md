@@ -30,7 +30,7 @@ certificate-first な信頼境界を維持するための実装順を固定し�
   `--module`、`--changed-only`、`--write-ai-index`、`--write-replay`、`--shard`、
   `--failures-out`、`--verified-cache`、`--promote-plan`、`--promote-materialize` を持つ。
 - `--promote-materialize` は既定 dry-run で、`--apply` 指定時だけ target package files を書く。
-- `./scripts/check-corpus.sh` は互換 wrapper として full corpus gate を実行し、split gate scripts
+- `./scripts/check-corpus.sh` は互換 wrapper として軽量 authoring gate を実行し、split gate scripts
   は authoring / package / full の用途別に実装済み。
 - 現リポジトリ自身には active `.github/workflows` はなく、`ci-templates/github-actions/**` は
   external theorem package repositories 向けの copyable template である。
@@ -156,11 +156,11 @@ package artifact checks を改めて通す。
   - Compatibility wrapper behavior for existing `./scripts/check-corpus.sh`.
   - Documentation updates explaining when to use each gate.
 - Acceptance criteria:
-  - `check-corpus-authoring.sh` excludes package-wide CLI examples and is suitable for normal theorem authoring completion.
+  - `check-corpus-authoring.sh` runs changed-only source-free verification with the authoring cache and is suitable for normal theorem authoring completion.
   - `check-corpus-package.sh` retains package verifier, package CLI examples, publish-plan, index, and axiom-report coverage.
   - `check-corpus-full.sh` composes authoring and package gates.
-  - Existing `check-corpus.sh` remains valid and invokes the full gate during migration.
-  - Docs say that split scripts are implemented only after this milestone lands; before then, `check-corpus.sh` is the full gate.
+  - Existing `check-corpus.sh` remains valid and invokes the lightweight authoring gate.
+  - Docs reserve package/full gates for explicit promotion, release, high-trust, or compatibility boundaries.
 - Verification:
   - `bash -n scripts/check-corpus-authoring.sh scripts/check-corpus-package.sh scripts/check-corpus-full.sh scripts/check-corpus.sh`
   - `./scripts/check-corpus-authoring.sh`
@@ -242,10 +242,10 @@ package artifact checks を改めて通す。
   - Machine-readable output field such as `cache_status = "hit"` where JSON output exists or a deterministic text equivalent otherwise.
   - Read-through mode that verifies live and compares against cache for debugging.
 - Acceptance criteria:
-  - Default mode is `off` for corpus gates and release-like paths.
+  - Default mode is `off` for package/full corpus gates and release-like paths.
   - `authoring` mode may shorten local verification but clearly reports cached status.
   - `read-through` mode discards inconsistent cache entries and reports the live verifier result.
-  - `./scripts/check-corpus.sh` and split full gates do not enable authoring cache.
+  - `./scripts/check-corpus-authoring.sh` and `./scripts/check-corpus.sh` enable authoring cache; package/full gates do not.
 - Verification:
   - `cargo test -p npa-proof-corpus`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic --verified-cache authoring`
@@ -327,7 +327,7 @@ package artifact checks を改めて通す。
   - `./scripts/check-corpus-authoring.sh`
   - `./scripts/check-corpus-package.sh`
 - Notes:
-  - Full `./scripts/check-corpus.sh` or `./scripts/check-corpus-full.sh` should be run before final push if implementation touched proof corpus tooling or package verification.
+  - `./scripts/check-corpus-full.sh` should be run before promotion/release, or if implementation touched proof corpus package tooling or package verification.
   - Completed in `develop/proof-corpus-tooling-pct-08-measurement.md`.
   - This milestone changed documentation and repo-local skills only. It did not touch proof corpus tooling or package verification code, so the split authoring and package gates were run instead of the full compatibility wrapper.
   - The measured local small-module authoring loop is about 394 times faster than the PCT-00 full corpus gate. The package gate remains the long boundary gate and is documented as a PR / push / release / compatibility check.

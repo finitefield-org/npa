@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Chebotarev",
+  "source": "Proofs/Ai/NumberTheory/Chebotarev/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Chebotarev/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f6fdb49c8100ff58b437133aed8511a48d0779aa1de2b1e30b1123eced5410b4",
+  "certificate_file_sha256": "sha256:e53563341217e570e99334c0ee3a73ccfab21366d5345625ddd8dd56a0db91dd",
+  "export_hash": "sha256:74a26cd4fd55b38251c15aec7bf3312a7d55455016ac2e43c8ca2907855b8713",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:4a73633a57a207cd54b9a2fd42ef7d357acce358dc6cf9da000d1ec80ccc2b7c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Frobenius", "Proofs.Ai.NumberTheory.PrimeNumberTheorem", "Proofs.Ai.NumberTheory.DirichletL", "Proofs.Ai.NumberTheory.PrimeInfinitude"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ChebotarevData", "kind": "def" },
+    { "name": "chebotarev_data_intro", "kind": "theorem" },
+    { "name": "chebotarev_frobenius_nt_t61_dependency_explicit", "kind": "theorem" },
+    { "name": "chebotarev_analytic_density_dependency_explicit", "kind": "theorem" },
+    { "name": "chebotarev_prime_infinitude_independence_dependency_explicit", "kind": "theorem" },
+    { "name": "chebotarev_factorization_independence_dependency_explicit", "kind": "theorem" },
+    { "name": "chebotarev_dirichlet_l_non_duplication_dependency_explicit", "kind": "theorem" },
+    { "name": "chebotarev_density_measure_analytic_assumptions_explicit", "kind": "theorem" },
+    { "name": "chebotarev_density_theorem_surface", "kind": "theorem" },
+    { "name": "frobenius_density_theorem_surface", "kind": "theorem" },
+    { "name": "dirichlet_theorem_from_chebotarev_alias_surface", "kind": "theorem" },
+    { "name": "dirichlet_theorem_from_chebotarev_later_card_surface", "kind": "theorem" },
+    { "name": "chebotarev_no_duplicate_dirichlet_l_proof_boundary", "kind": "theorem" },
+    { "name": "chebotarev_not_used_by_elementary_prime_infinitude", "kind": "theorem" },
+    { "name": "chebotarev_not_used_by_fundamental_theorem_arithmetic", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

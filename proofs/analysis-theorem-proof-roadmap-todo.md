@@ -1020,13 +1020,16 @@ guessing. The split must preserve the dependency order in this document.
 - Status: Pending
 - Depends on: ANA-T17, ANA-T22
 - Inputs:
+  - detailed measure roadmap from `proofs/measure-theory-theorem-proof-roadmap.md`
   - topology foundation from ANA-T22
   - real and sequence foundations from ANA-T01 through ANA-T05
   - Riemann integration foundation from ANA-T16 through ANA-T17 for the
     roadmap's ANA-05 dependency and Riemann/Lebesgue disambiguation checks
 - Code or documentation areas:
   - `Proofs/Ai/Measure/Basic/`
-  - `Proofs/Ai/Measure/Construction/`
+  - `Proofs/Ai/Measure/Outer/`
+  - `Proofs/Ai/Measure/Caratheodory/`
+  - `Proofs/Ai/Measure/Extension/`
 - Tasks:
   - Define sigma algebras, measurable sets, measurable functions, measures,
     null sets, and almost-everywhere predicates.
@@ -1043,7 +1046,9 @@ guessing. The split must preserve the dependency order in this document.
   - Riemann integration is not silently identified with Lebesgue integration.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Construction`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Outer`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### ANA-T25 Add Lebesgue Convergence Theorem Chain
@@ -1052,7 +1057,9 @@ guessing. The split must preserve the dependency order in this document.
 - Depends on: ANA-T24
 - Inputs:
   - `Proofs.Ai.Measure.Basic`
-  - `Proofs.Ai.Measure.Construction`
+  - `Proofs.Ai.Measure.Outer`
+  - `Proofs.Ai.Measure.Caratheodory`
+  - `Proofs.Ai.Measure.Extension`
   - initial Lebesgue integral construction interface from ANA-T24
 - Code or documentation areas:
   - `Proofs/Ai/Measure/Integral/`

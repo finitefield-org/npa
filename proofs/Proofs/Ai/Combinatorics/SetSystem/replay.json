@@ -1,0 +1,107 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Combinatorics.SetSystem",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteSetSystemPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => forall (P : Prop), forall (mk : forall (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence), P), P"
+    },
+    {
+      "declaration": "CoveringPackingPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => forall (P : Prop), forall (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), forall (universe_covered_law : UniverseCoveredEvidence), forall (cover_subfamily_law : CoverSubfamilyEvidence), forall (packing_subfamily_law : PackingSubfamilyEvidence), forall (covering_number_law : CoveringNumberEvidence), forall (packing_number_law : PackingNumberEvidence), forall (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence), P), P"
+    },
+    {
+      "declaration": "IntersectionFamilyPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun PairwiseIntersectionEvidence => fun UniformIntersectionSizeEvidence => fun IntersectionClosureEvidence => forall (P : Prop), forall (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), forall (pairwise_intersection_law : PairwiseIntersectionEvidence), forall (uniform_intersection_size_law : UniformIntersectionSizeEvidence), forall (intersection_closure_law : IntersectionClosureEvidence), P), P"
+    },
+    {
+      "declaration": "finite_set_system_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun no_hypergraph_duplication_law => fun (P : Prop) => fun (mk : forall (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence), P) => mk family_args no_hypergraph_duplication_law"
+    },
+    {
+      "declaration": "finite_set_system_family_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => set_system_args (@FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) (fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => family_law)"
+    },
+    {
+      "declaration": "finite_set_system_each_set_finite_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => set_system_args (forall (family : FamilyIndex), EachSetFiniteEvidence family) (fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => family_law (forall (family : FamilyIndex), EachSetFiniteEvidence family) (fun (family_finite_law : FamilyFiniteEvidence) => fun (each_set_finite_law : forall (family : FamilyIndex), EachSetFiniteEvidence family) => fun (membership_sound_law : MembershipSoundEvidence) => each_set_finite_law))"
+    },
+    {
+      "declaration": "finite_set_system_no_hypergraph_duplication_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => set_system_args NoHypergraphDuplicationEvidence (fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => no_hypergraph_duplication_law)"
+    },
+    {
+      "declaration": "covering_packing_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun universe_covered_law => fun CoverSubfamilyEvidence => fun cover_subfamily_law => fun PackingSubfamilyEvidence => fun packing_subfamily_law => fun CoveringNumberEvidence => fun covering_number_law => fun PackingNumberEvidence => fun packing_number_law => fun CoverPackingDisjointnessEvidence => fun cover_packing_disjointness_law => fun (P : Prop) => fun (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), forall (universe_covered_law : UniverseCoveredEvidence), forall (cover_subfamily_law : CoverSubfamilyEvidence), forall (packing_subfamily_law : PackingSubfamilyEvidence), forall (covering_number_law : CoveringNumberEvidence), forall (packing_number_law : PackingNumberEvidence), forall (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence), P) => mk set_system_args universe_covered_law cover_subfamily_law packing_subfamily_law covering_number_law packing_number_law cover_packing_disjointness_law"
+    },
+    {
+      "declaration": "covering_subfamily_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => covering_args CoverSubfamilyEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => cover_subfamily_law)"
+    },
+    {
+      "declaration": "packing_subfamily_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => covering_args PackingSubfamilyEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => packing_subfamily_law)"
+    },
+    {
+      "declaration": "covering_number_bound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => covering_args CoveringNumberEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => covering_number_law)"
+    },
+    {
+      "declaration": "packing_number_bound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => covering_args PackingNumberEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => packing_number_law)"
+    },
+    {
+      "declaration": "cover_packing_disjointness_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => covering_args CoverPackingDisjointnessEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => cover_packing_disjointness_law)"
+    },
+    {
+      "declaration": "intersection_family_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun PairwiseIntersectionEvidence => fun pairwise_intersection_law => fun UniformIntersectionSizeEvidence => fun uniform_intersection_size_law => fun IntersectionClosureEvidence => fun intersection_closure_law => fun (P : Prop) => fun (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), forall (pairwise_intersection_law : PairwiseIntersectionEvidence), forall (uniform_intersection_size_law : UniformIntersectionSizeEvidence), forall (intersection_closure_law : IntersectionClosureEvidence), P) => mk set_system_args pairwise_intersection_law uniform_intersection_size_law intersection_closure_law"
+    },
+    {
+      "declaration": "intersection_family_pairwise_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun PairwiseIntersectionEvidence => fun UniformIntersectionSizeEvidence => fun IntersectionClosureEvidence => fun intersection_args => intersection_args PairwiseIntersectionEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (pairwise_intersection_law : PairwiseIntersectionEvidence) => fun (uniform_intersection_size_law : UniformIntersectionSizeEvidence) => fun (intersection_closure_law : IntersectionClosureEvidence) => pairwise_intersection_law)"
+    },
+    {
+      "declaration": "intersection_family_closure_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun PairwiseIntersectionEvidence => fun UniformIntersectionSizeEvidence => fun IntersectionClosureEvidence => fun intersection_args => intersection_args IntersectionClosureEvidence (fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => fun (pairwise_intersection_law : PairwiseIntersectionEvidence) => fun (uniform_intersection_size_law : UniformIntersectionSizeEvidence) => fun (intersection_closure_law : IntersectionClosureEvidence) => intersection_closure_law)"
+    },
+    {
+      "declaration": "bonferroni_union_upper_bound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun SubsetIndex => fun Item => fun SetMember => fun UnionMember => fun IntersectionMember => fun SubsetSelectsFamily => fun NatCarrier => fun subsetSize => fun signValue => fun signedTerm => fun totalAlternatingSum => fun unionSize => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun FiniteFamilyEvidence => fun IntersectionIndexingEvidence => fun AlternatingSignIndexEvidence => fun UnionFiniteEvidence => fun UnionDefinitionEvidence => fun SummationEvidence => fun InclusionExclusionArithmeticEvidence => fun UnionUpperBoundArithmeticEvidence => fun prereq_args => fun FiniteInclusionExclusionEvidence => fun inclusion_exclusion_law => fun BonferroniUnionUpperBoundEvidence => fun derive => prereq_args BonferroniUnionUpperBoundEvidence (fun (finite_family_law : FiniteFamilyEvidence) => fun (intersection_indexing_law : IntersectionIndexingEvidence) => fun (alternating_sign_index_law : AlternatingSignIndexEvidence) => fun (union_finite_law : UnionFiniteEvidence) => fun (union_definition_law : UnionDefinitionEvidence) => fun (summation_law : SummationEvidence) => fun (inclusion_exclusion_arithmetic_law : InclusionExclusionArithmeticEvidence) => fun (union_upper_bound_arithmetic_law : UnionUpperBoundArithmeticEvidence) => derive set_system_args inclusion_exclusion_law finite_family_law union_finite_law union_definition_law union_upper_bound_arithmetic_law)"
+    },
+    {
+      "declaration": "probability_bonferroni_alias_boundary_statement",
+      "source_kind": "explicit_term",
+      "term": "fun ProbabilityImportEvidence => fun BonferroniUnionUpperBoundEvidence => fun PrimaryCombinatorialProofEvidence => fun ProbabilityBonferroniAliasEvidence => fun probability_import_law => fun bonferroni_bound_law => fun primary_combinatorial_law => fun derive => derive probability_import_law bonferroni_bound_law primary_combinatorial_law"
+    },
+    {
+      "declaration": "hypergraph_bridge_from_set_system_statement",
+      "source_kind": "explicit_term",
+      "term": "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => fun NoHypergraphDuplicationEvidence => fun set_system_args => fun HypergraphBridgeEvidence => fun derive => set_system_args HypergraphBridgeEvidence (fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => derive set_system_args no_hypergraph_duplication_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Combinatorics/SetSystem/certificate.npcert"
+  }
+}

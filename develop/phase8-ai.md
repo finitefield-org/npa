@@ -408,7 +408,9 @@ Phase 8 JSON artifact 内で Phase 2 の `Name` / `ModuleName` / `AxiomName` を
 schema boundary では dotted UTF-8 string として表します。
 JSON decode 後の string を `.` で分割して Phase 2 `Name` component list に変換し、
 空 component、先頭 / 末尾の `.`, 連続する `.`, JSON decode 後の空 string を拒否します。
-Unicode normalization は行わず、JSON decode 後の UTF-8 byte sequence をそのまま canonical name bytes に使います。
+各 component は `[A-Za-z_][A-Za-z0-9_']*` に従います。`'` は ASCII apostrophe
+(`U+0027`) だけを許可し、Unicode prime-like 文字や operator 記号は拒否します。
+Unicode normalization は行いません。
 この規則は少なくとも次の Phase 8 artifact / selector field に適用します。
 
 ```text

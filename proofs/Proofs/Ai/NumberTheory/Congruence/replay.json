@@ -1,0 +1,77 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Congruence",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "congruent_modulo_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Sub => fun DividesInt => fun CongruentModulo => fun definition_law => fun modulus => fun a => fun b => fun divides_difference => definition_law modulus a b divides_difference"
+    },
+    {
+      "declaration": "congruent_modulo_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun ZeroInt => fun Sub => fun DividesInt => fun CongruentModulo => fun SubSelfZeroEvidence => fun reflexive_law => fun modulus => fun a => fun sub_self_zero => fun divides_zero => reflexive_law modulus a sub_self_zero divides_zero"
+    },
+    {
+      "declaration": "congruent_modulo_symmetric",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Sub => fun DividesInt => fun CongruentModulo => fun symmetry_law => fun modulus => fun a => fun b => fun ab => fun divides_ab => fun divides_ba => symmetry_law modulus a b ab divides_ab divides_ba"
+    },
+    {
+      "declaration": "congruent_modulo_transitive",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Sub => fun DividesInt => fun CongruentModulo => fun transitive_law => fun modulus => fun a => fun b => fun c => fun ab => fun bc => fun divides_ab => fun divides_bc => fun divides_ac => transitive_law modulus a b c ab bc divides_ab divides_bc divides_ac"
+    },
+    {
+      "declaration": "congruent_addition_preserves",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Add => fun Sub => fun DividesInt => fun CongruentModulo => fun addition_law => fun modulus => fun a => fun b => fun c => fun d => fun ab => fun cd => fun divides_ab => fun divides_cd => fun divides_sum => addition_law modulus a b c d ab cd divides_ab divides_cd divides_sum"
+    },
+    {
+      "declaration": "congruent_multiplication_preserves",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Mul => fun Sub => fun DividesInt => fun CongruentModulo => fun multiplication_law => fun modulus => fun a => fun b => fun c => fun d => fun ab => fun cd => fun divides_ab => fun divides_cd => fun divides_product => multiplication_law modulus a b c d ab cd divides_ab divides_cd divides_product"
+    },
+    {
+      "declaration": "congruent_negation_preserves",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Neg => fun Sub => fun DividesInt => fun CongruentModulo => fun negation_law => fun modulus => fun a => fun b => fun ab => fun divides_ab => fun divides_neg => negation_law modulus a b ab divides_ab divides_neg"
+    },
+    {
+      "declaration": "congruent_power_preserves_from_exponent_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Int => fun Pow => fun Sub => fun DividesInt => fun CongruentModulo => fun ExponentLawEvidence => fun power_law => fun modulus => fun a => fun b => fun exponent => fun ab => fun divides_ab => fun exponent_law => fun divides_power => power_law modulus a b exponent ab divides_ab exponent_law divides_power"
+    },
+    {
+      "declaration": "congruence_cancellation_with_coprime_factor",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OneInt => fun Mul => fun Sub => fun DividesInt => fun GcdEvidence => fun CoprimeInt => fun CongruentModulo => fun cancellation_law => fun modulus => fun factor => fun a => fun b => fun scaled_congruence => fun scaled_divisibility => fun gcd_one => fun coprime_factor_modulus => cancellation_law modulus factor a b scaled_congruence scaled_divisibility gcd_one coprime_factor_modulus"
+    },
+    {
+      "declaration": "congruence_division_with_gcd_condition",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Div => fun Mul => fun Sub => fun DividesInt => fun GcdEvidence => fun CoprimeInt => fun CongruentModulo => fun division_law => fun modulus => fun factor => fun a => fun b => fun g => fun divides_a => fun divides_b => fun gcd_factor_modulus => fun coprime_after_division => fun scaled_congruence => division_law modulus factor a b g divides_a divides_b gcd_factor_modulus coprime_after_division scaled_congruence"
+    },
+    {
+      "declaration": "linear_congruence_solution_condition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Mul => fun Sub => fun DividesInt => fun GcdEvidence => fun LinearCongruence => fun LinearCongruenceSolvable => fun solution_law => fun coefficient => fun constant => fun modulus => fun g => fun gcd_condition => fun gcd_divides_constant => solution_law coefficient constant modulus g gcd_condition gcd_divides_constant"
+    },
+    {
+      "declaration": "congruence_no_hidden_coprime_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun CongruencePackage => fun CancellationPackage => fun DivisionPackage => fun CoprimeEvidence => fun NoHiddenCoprimeBoundary => fun boundary_law => fun congruence => fun cancellation => fun division => fun coprime_evidence => boundary_law congruence cancellation division coprime_evidence"
+    },
+    {
+      "declaration": "congruence_powers_use_exponent_laws_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PowerCongruencePackage => fun ExponentLawPackage => fun SimplifierPrimitive => fun NoSimplifierPrimitiveBoundary => fun boundary_law => fun power_congruence => fun exponent_laws => fun simplifier => boundary_law power_congruence exponent_laws simplifier"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Congruence/certificate.npcert"
+  }
+}

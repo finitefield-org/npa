@@ -1,0 +1,67 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.GaloisCohomology.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "hilbert_90_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun G => fun H1 => fun h90_law => h90_law"
+    },
+    {
+      "declaration": "norm_residue_symbol_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun a => fun b => fun Symbol => fun sym_law => fun x => fun y => sym_law x y"
+    },
+    {
+      "declaration": "hasse_norm_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun IsLocalNorm => fun IsGlobalNorm => fun hasse_law => hasse_law"
+    },
+    {
+      "declaration": "grunwald_wang_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun IsLocalPower => fun IsGlobalPower => fun gw_law => gw_law"
+    },
+    {
+      "declaration": "brauer_group_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Br => fun br_law => fun x => br_law x"
+    },
+    {
+      "declaration": "tate_cohomology_interface",
+      "source_kind": "explicit_term",
+      "term": "fun G => fun A => fun Index => fun H => fun tate_law => fun n => fun x => tate_law n x"
+    },
+    {
+      "declaration": "hilbert_90_degree_one_cocycle_coboundary_surface",
+      "source_kind": "explicit_term",
+      "term": "fun GaloisGroup => fun Module => fun OneCocycle => fun Coboundary => fun Hilbert90 => fun h90_law => fun cocycle => fun coboundary => h90_law cocycle coboundary"
+    },
+    {
+      "declaration": "norm_residue_symbol_local_global_context_surface",
+      "source_kind": "explicit_term",
+      "term": "fun LocalContext => fun GlobalContext => fun SymbolInput => fun NormResidueNotation => fun context_law => fun local_context => fun global_context => fun input => context_law local_context global_context input"
+    },
+    {
+      "declaration": "brauer_group_degree_two_cohomology_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldContext => fun GaloisGroup => fun MultiplicativeModule => fun DegreeTwoCohomology => fun BrauerGroup => fun BrauerDegreeTwoComparison => fun comparison_law => fun field => fun h2_class => fun brauer_class => comparison_law field h2_class brauer_class"
+    },
+    {
+      "declaration": "tate_cohomology_degree_index_functoriality_surface",
+      "source_kind": "explicit_term",
+      "term": "fun GaloisGroup => fun Module => fun Degree => fun TateCohomology => fun Functoriality => fun tate_law => fun functoriality => fun degree => fun tate_class => tate_law functoriality degree tate_class"
+    },
+    {
+      "declaration": "galois_cohomology_interface_level_until_foundations_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun InterfaceTheorem => fun FoundationPackage => fun InterfaceOnlyUntilFoundation => fun boundary_law => fun theorem_surface => fun foundation => boundary_law theorem_surface foundation"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/GaloisCohomology/Basic/certificate.npcert"
+  }
+}

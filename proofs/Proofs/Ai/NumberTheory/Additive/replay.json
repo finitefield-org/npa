@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Additive",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "cauchy_davenport_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Subset => fun Card => fun Prime => fun Sumset => fun Min => fun Add => fun Sub => fun One => fun Le => fun cauchy_davenport_law => fun p => fun prime_p => fun A => fun B => cauchy_davenport_law p prime_p A B"
+    },
+    {
+      "declaration": "kneser_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Group => fun Nat => fun Subset => fun Subgroup => fun CardSubset => fun CardSubgroup => fun Stabilizer => fun Sumset => fun AddHelper => fun Add => fun Sub => fun Le => fun kneser_law => fun A => fun B => fun H => fun eq_stab => kneser_law A B H eq_stab"
+    },
+    {
+      "declaration": "vosper_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Subset => fun Card => fun Sumset => fun Add => fun Sub => fun Le => fun One => fun Two => fun VosperStructure => fun vosper_law => fun p => fun A => fun B => fun size_A => fun size_B => fun eq_sumset => fun bound_sumset => vosper_law p A B size_A size_B eq_sumset bound_sumset"
+    },
+    {
+      "declaration": "freiman_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Subset => fun Real => fun Card => fun Sumset => fun Mul => fun Le => fun FreimanBound => fun freiman_law => fun A => fun C => fun doubling_bound => freiman_law A C doubling_bound"
+    },
+    {
+      "declaration": "plunnecke_ruzsa_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Subset => fun Real => fun Card => fun Sumset => fun IteratedSumset => fun Mul => fun Pow => fun Le => fun plunnecke_ruzsa_law => fun A => fun B => fun K => fun sum_bound => plunnecke_ruzsa_law A B K sum_bound"
+    },
+    {
+      "declaration": "szemeredi_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Subset => fun Nat => fun PositiveDensity => fun HasArithmeticProgression => fun szemeredi_law => fun A => fun pos_density => fun k => szemeredi_law A pos_density k"
+    },
+    {
+      "declaration": "green_tao_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Subset => fun Nat => fun IsPrimeSubset => fun HasArithmeticProgression => fun green_tao_law => fun P => fun prime_set => fun k => green_tao_law P prime_set k"
+    },
+    {
+      "declaration": "van_der_waerden_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coloring => fun MonochromaticProgressionExists => fun van_der_waerden_law => fun c => fun k => van_der_waerden_law c k"
+    },
+    {
+      "declaration": "hindman_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Coloring => fun InfiniteSet => fun MonochromaticFiniteSums => fun hindman_law => fun hindman_property => fun c => hindman_property c"
+    },
+    {
+      "declaration": "erdos_ginzburg_ziv_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Group => fun Nat => fun Sequence => fun Length => fun SumsetZero => fun Add => fun Sub => fun Mul => fun Two => fun One => fun erdos_ginzburg_ziv_law => fun n => fun seq => fun eq_len => erdos_ginzburg_ziv_law n seq eq_len"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Additive/certificate.npcert"
+  }
+}

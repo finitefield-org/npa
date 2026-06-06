@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.GroupLaw",
+  "source": "Proofs/Ai/EllipticCurve/GroupLaw/source.npa",
+  "certificate": "Proofs/Ai/EllipticCurve/GroupLaw/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:49cf775e96498937070553f6b1272bfd71dab4c66bf34d118b5d360918f73fd6",
+  "certificate_file_sha256": "sha256:ddf37368cfd7b01a497a1a57d4dc50dcebc76548c5f62fb44cf697ed091a2ec3",
+  "export_hash": "sha256:ae711754056ad09ce91ba016a346c18e8ea43ba4a1ef4b909648822fb64a632c",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:a582da99f8365caa218b9d0d7eb7e72cd3bb3d7156735d094984677a1148d427",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "group_law_theorem_interface", "kind": "theorem" },
+    { "name": "elliptic_point_group_operation_laws_surface", "kind": "theorem" },
+    { "name": "group_law_independent_of_modularity_ribet_bridge_boundary", "kind": "theorem" },
+    { "name": "group_law_general_api_reuse_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

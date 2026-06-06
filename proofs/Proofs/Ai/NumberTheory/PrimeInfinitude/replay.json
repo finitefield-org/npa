@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimeInfinitude",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "prime_infinitude_from_factorization_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun FundamentalTheoremArithmetic => fun InfinitelyManyPrimes => fun factorization_to_infinitude_law => fun witness => fun fta => factorization_to_infinitude_law witness fta"
+    },
+    {
+      "declaration": "prime_infinitude_euclid_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun FinitePrimeList => fun EuclidProductWitness => fun PrimeOutsideList => fun euclid_law => fun list => fun p => fun outside => euclid_law list p outside"
+    },
+    {
+      "declaration": "euclid_prime_outside_finite_list_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun FinitePrimeList => fun PrimeNat => fun OutsideFiniteList => fun outside_law => fun list => fun p => fun prime_p => outside_law list p prime_p"
+    },
+    {
+      "declaration": "factorial_plus_one_prime_escape_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun FinitePrimeList => fun FactorialPlusOneWitness => fun PrimeEscape => fun escape_law => fun list => fun witness => escape_law list witness"
+    },
+    {
+      "declaration": "sqrt_bound_composite_prime_factor_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CompositeNat => fun PrimeFactorExists => fun SqrtBoundPrimeFactor => fun sqrt_bound_law => fun n => fun composite_n => fun factor_exists => sqrt_bound_law n composite_n factor_exists"
+    },
+    {
+      "declaration": "sqrt_bound_composite_factor_or_cofactor_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CompositeNat => fun FactorPairEvidence => fun SqrtBoundFactorOrCofactor => fun sqrt_bound_law => fun n => fun composite_n => fun factor_pair => sqrt_bound_law n composite_n factor_pair"
+    },
+    {
+      "declaration": "prime_infinitude_elementary_variant_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun InfinitelyManyPrimes => fun ElementaryPrimeInfinitude => fun elementary_law => fun infinitude => elementary_law infinitude"
+    },
+    {
+      "declaration": "prime_infinitude_no_analytic_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimeInfinitudePackage => fun AnalyticNumberTheory => fun ChebotarevTheorem => fun NoAnalyticDependency => fun boundary_law => fun prime_infinitude => fun analytic => fun chebotarev => boundary_law prime_infinitude analytic chebotarev"
+    },
+    {
+      "declaration": "prime_infinitude_no_chebotarev_or_pnt_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimeInfinitudePackage => fun ChebotarevTheorem => fun PrimeNumberTheorem => fun NoChebotarevOrPntBoundary => fun boundary_law => fun prime_infinitude => fun chebotarev => fun pnt => boundary_law prime_infinitude chebotarev pnt"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PrimeInfinitude/certificate.npcert"
+  }
+}

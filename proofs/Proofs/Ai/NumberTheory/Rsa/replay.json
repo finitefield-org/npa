@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Rsa",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "rsa_modulus_factorization_and_coprimality_hypotheses",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun RsaModulus => fun PrimeFactor => fun ProductEquation => fun DistinctFactors => fun CoprimeInt => fun RsaModulusHypotheses => fun hypotheses_law => fun p => fun q => fun n => fun prime_p => fun prime_q => fun product_n => fun distinct_pq => fun coprime_pq => hypotheses_law p q n prime_p prime_q product_n distinct_pq coprime_pq"
+    },
+    {
+      "declaration": "rsa_correctness_from_carmichael_key_congruence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun CarmichaelLambda => fun RsaModulusHypotheses => fun CoprimeInt => fun KeyCongruenceModuloLambda => fun CarmichaelExponentTheorem => fun RsaRoundTripCorrectness => fun correctness_law => fun p => fun q => fun n => fun e => fun d => fun message => fun modulus_hypotheses => fun message_coprime => fun key_congruence => fun carmichael_step => correctness_law p q n e d message modulus_hypotheses message_coprime key_congruence carmichael_step"
+    },
+    {
+      "declaration": "rsa_key_congruence_uses_carmichael_lambda",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun CarmichaelLambda => fun KeyCongruenceModuloLambda => fun RsaPrivateKeyValid => fun key_law => fun n => fun e => fun d => fun key_congruence => key_law n e d key_congruence"
+    },
+    {
+      "declaration": "rsa_correctness_no_security_claim_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun RsaCorrectnessPackage => fun RsaSecurityAssumptionPackage => fun RuntimeSolverPackage => fun RandomOracleOrRandomnessPackage => fun NoSecurityBoundary => fun boundary_law => fun correctness => fun security => fun runtime_solver => fun randomness => boundary_law correctness security runtime_solver randomness"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Rsa/certificate.npcert"
+  }
+}

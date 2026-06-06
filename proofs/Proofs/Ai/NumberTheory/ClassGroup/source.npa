@@ -1,0 +1,52 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.Algebra.AbstractGroupQuotient
+import Proofs.Ai.Algebra.AbstractGroupQuotientMul
+import Proofs.Ai.Algebra.AbstractGroupQuotientGroup
+import Proofs.Ai.NumberTheory.DiophantineApproximation
+
+theorem ideal_factorization_interface :
+  forall (Ideal : Type), forall (IsPrimeIdeal : Ideal -> Prop), forall (Factorization : Ideal -> Prop), forall (factor_law : forall (I : Ideal), Factorization I), forall (I : Ideal), Factorization I :=
+  fun Ideal => fun IsPrimeIdeal => fun Factorization => fun factor_law => fun I => factor_law I
+
+theorem ideal_factorization_uniqueness_interface :
+  forall (Ideal : Type), forall (UniqueFactorization : Ideal -> Prop), forall (uniq_law : forall (I : Ideal), UniqueFactorization I), forall (I : Ideal), UniqueFactorization I :=
+  fun Ideal => fun UniqueFactorization => fun uniq_law => fun I => uniq_law I
+
+theorem fractional_ideal_group_interface :
+  forall (FractionalIdeal : Type), forall (IsGroup : FractionalIdeal -> Prop), forall (group_law : forall (G : FractionalIdeal), IsGroup G), forall (G : FractionalIdeal), IsGroup G :=
+  fun FractionalIdeal => fun IsGroup => fun group_law => fun G => group_law G
+
+theorem class_group_interface :
+  forall (ClassGroup : Type), forall (IsAbelianGroup : ClassGroup -> Prop), forall (group_law : forall (G : ClassGroup), IsAbelianGroup G), forall (G : ClassGroup), IsAbelianGroup G :=
+  fun ClassGroup => fun IsAbelianGroup => fun group_law => fun G => group_law G
+
+theorem class_group_quotient_requirement_surface :
+  forall (FractionalIdealGroup : Type), forall (PrincipalIdealSubgroup : FractionalIdealGroup -> Prop), forall (ClassGroup : Type), forall (QuotientConstruction : FractionalIdealGroup -> (FractionalIdealGroup -> Prop) -> ClassGroup -> Prop), forall (quotient_law : forall (G : FractionalIdealGroup), forall (P : FractionalIdealGroup -> Prop), forall (C : ClassGroup), QuotientConstruction G P C), forall (G : FractionalIdealGroup), forall (P : FractionalIdealGroup -> Prop), forall (C : ClassGroup), QuotientConstruction G P C :=
+  fun FractionalIdealGroup => fun PrincipalIdealSubgroup => fun ClassGroup => fun QuotientConstruction => fun quotient_law => fun G => fun P => fun C => quotient_law G P C
+
+theorem class_number_finiteness_interface :
+  forall (ClassGroup : Type), forall (IsFinite : ClassGroup -> Prop), forall (finite_law : forall (G : ClassGroup), IsFinite G), forall (G : ClassGroup), IsFinite G :=
+  fun ClassGroup => fun IsFinite => fun finite_law => fun G => finite_law G
+
+theorem minkowski_bound_interface :
+  forall (K : Type), forall (MinkowskiBound : K -> Prop), forall (bound_law : forall (F : K), MinkowskiBound F), forall (F : K), MinkowskiBound F :=
+  fun K => fun MinkowskiBound => fun bound_law => fun F => bound_law F
+
+theorem minkowski_geometry_of_numbers_dependency_surface :
+  forall (NumberField : Type), forall (Lattice : Type), forall (ConvexBody : Type), forall (VolumeMeasure : Type), forall (GeometryOfNumbersPrerequisite : Type), forall (MinkowskiBound : NumberField -> Lattice -> ConvexBody -> VolumeMeasure -> Prop), forall (dependency_law : forall (K : NumberField), forall (lattice : Lattice), forall (body : ConvexBody), forall (volume : VolumeMeasure), forall (geometry_prereq : GeometryOfNumbersPrerequisite), MinkowskiBound K lattice body volume), forall (K : NumberField), forall (lattice : Lattice), forall (body : ConvexBody), forall (volume : VolumeMeasure), forall (geometry_prereq : GeometryOfNumbersPrerequisite), MinkowskiBound K lattice body volume :=
+  fun NumberField => fun Lattice => fun ConvexBody => fun VolumeMeasure => fun GeometryOfNumbersPrerequisite => fun MinkowskiBound => fun dependency_law => fun K => fun lattice => fun body => fun volume => fun geometry_prereq => dependency_law K lattice body volume geometry_prereq
+
+theorem dirichlet_unit_theorem_interface :
+  forall (K : Type), forall (UnitGroup : Type), forall (IsFinitelyGeneratedAbelianGroup : UnitGroup -> Prop), forall (unit_law : forall (U : UnitGroup), IsFinitelyGeneratedAbelianGroup U), forall (U : UnitGroup), IsFinitelyGeneratedAbelianGroup U :=
+  fun K => fun UnitGroup => fun IsFinitelyGeneratedAbelianGroup => fun unit_law => fun U => unit_law U
+
+theorem class_number_formula_interface :
+  forall (K : Type), forall (ClassNumberFormula : K -> Prop), forall (formula_law : forall (F : K), ClassNumberFormula F), forall (F : K), ClassNumberFormula F :=
+  fun K => fun ClassNumberFormula => fun formula_law => fun F => formula_law F
+
+theorem analytic_class_number_formula_l1_boundary :
+  forall (NumberField : Type), forall (AnalyticPrerequisite : Type), forall (ClassNumberFormula : NumberField -> Prop), forall (L1ClassNumberFormulaBoundary : NumberField -> (NumberField -> Prop) -> AnalyticPrerequisite -> Prop), forall (boundary_law : forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), L1ClassNumberFormulaBoundary K ClassNumberFormula analytic_prereq), forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), L1ClassNumberFormulaBoundary K ClassNumberFormula analytic_prereq :=
+  fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun L1ClassNumberFormulaBoundary => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq
+

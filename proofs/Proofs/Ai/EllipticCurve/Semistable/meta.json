@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.Semistable",
+  "source": "Proofs/Ai/EllipticCurve/Semistable/source.npa",
+  "certificate": "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:324071dbd185459578588904c34302c69866a887fef60fa917af1be76c09eb3b",
+  "certificate_file_sha256": "sha256:6a421e66b11bce27c54b9f85a934fa042bf2119c4d88a386c219a4c12fe28736",
+  "export_hash": "sha256:5b97bc312b9fb890a117863e3ab435ede69d38b00c01a88c392b386fd7de1a64",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:0e4308e41e4ea89040e037e29cf8137b4223c4a3de2c58578d172f5745dc2f45",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "elliptic_semistable_interface", "kind": "theorem" },
+    { "name": "semistability_general_elliptic_curve_predicate_boundary", "kind": "theorem" },
+    { "name": "semistability_not_frey_specific_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

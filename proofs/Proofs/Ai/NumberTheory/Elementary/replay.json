@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Elementary",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "integer_carrier_surface_preserves_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun IntegerStructure => fun x => fun evidence => evidence"
+    },
+    {
+      "declaration": "nat_int_translation_surface_preserves_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun toInt => fun TranslationEvidence => fun n => fun evidence => evidence"
+    },
+    {
+      "declaration": "positive_surface_preserves_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Positive => fun x => fun positive_evidence => positive_evidence"
+    },
+    {
+      "declaration": "nonzero_surface_preserves_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nonzero => fun x => fun nonzero_evidence => nonzero_evidence"
+    },
+    {
+      "declaration": "positivity_nonzero_joint_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Positive => fun Nonzero => fun x => fun positive_evidence => fun nonzero_evidence => nonzero_evidence"
+    },
+    {
+      "declaration": "arithmetic_structure_is_ordinary_theorem_surface",
+      "source_kind": "explicit_term",
+      "term": "fun ArithmeticSurface => fun OrdinaryTheoremTarget => fun surface => fun evidence => evidence"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Elementary/certificate.npcert"
+  }
+}

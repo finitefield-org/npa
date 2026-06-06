@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ArithmeticGeometry.WeilConjectures",
+  "source": "Proofs/Ai/ArithmeticGeometry/WeilConjectures/source.npa",
+  "certificate": "Proofs/Ai/ArithmeticGeometry/WeilConjectures/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4a4a77d4ba71f790ed123880c1b432a453e421f68e5df95654f95c3b19baa823",
+  "certificate_file_sha256": "sha256:1fcd0b66f12e6e21d27b2783b9cbee640784a63b40089162e997e66be2499480",
+  "export_hash": "sha256:53662ea66eede6e9d207761b3301880ccd9ebbe50037bb4e24f230bd284cae95",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:5a3d42598beb434f1eb8f9f2cfc2bfd8cd8d318d7822f259ff07a3345ad6614c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes", "Proofs.Ai.ArithmeticGeometry.Schemes", "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology", "Proofs.Ai.ArithmeticGeometry.EtaleCohomology"],
+  "axioms": [],
+  "declarations": [
+    { "name": "WeilConjecturesData", "kind": "def" },
+    { "name": "weil_conjectures_data_intro", "kind": "theorem" },
+    { "name": "weil_conjectures_etale_dependency_explicit", "kind": "theorem" },
+    { "name": "grothendieck_trace_formula_surface", "kind": "theorem" },
+    { "name": "lefschetz_trace_formula_surface", "kind": "theorem" },
+    { "name": "weil_conjectures_interface_surface", "kind": "theorem" },
+    { "name": "deligne_theorem_surface", "kind": "theorem" },
+    { "name": "weil_conjectures_remain_interface_level", "kind": "theorem" },
+    { "name": "deligne_theorem_not_generic_finite_field_axiom", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

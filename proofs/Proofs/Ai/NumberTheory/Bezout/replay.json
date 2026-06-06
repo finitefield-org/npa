@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Bezout",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "bezout_identity_from_extended_euclid_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun ExtendedEuclideanAlgorithmEvidence => fun BezoutIdentity => fun bezout_law => fun a => fun b => fun extended_euclid => bezout_law a b extended_euclid"
+    },
+    {
+      "declaration": "bezout_coefficients_linear_combination_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Gcd => fun LinearCombination => fun BezoutIdentity => fun coefficient_law => fun a => fun b => fun x => fun y => fun linear_combination => coefficient_law a b x y linear_combination"
+    },
+    {
+      "declaration": "gcd_linear_combination_characterization_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun GcdEvidence => fun BezoutIdentity => fun GcdLinearCombinationCharacterization => fun characterization_law => fun a => fun b => fun g => fun gcd_evidence => fun bezout_identity => characterization_law a b g gcd_evidence bezout_identity"
+    },
+    {
+      "declaration": "coprime_iff_linear_combination_int_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CoprimeInt => fun LinearCombinationEqualsOneInt => fun IffEvidence => fun iff_law => fun a => fun b => iff_law a b"
+    },
+    {
+      "declaration": "coprime_iff_linear_combination_nat_packaged",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun CoprimeNat => fun LinearCombinationEqualsOneNat => fun IffEvidence => fun iff_law => fun a => fun b => iff_law a b"
+    },
+    {
+      "declaration": "coprime_nat_int_translation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Int => fun ToInt => fun CoprimeNat => fun CoprimeInt => fun TranslationEvidence => fun translation_law => fun a => fun b => fun translation => fun coprime_nat => translation_law a b translation coprime_nat"
+    },
+    {
+      "declaration": "bezout_no_prime_factorization_or_crt_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun BezoutPackage => fun PrimeFactorization => fun ChineseRemainderTheorem => fun NoImportBoundary => fun boundary_law => fun bezout => fun prime_factorization => fun crt => boundary_law bezout prime_factorization crt"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Bezout/certificate.npcert"
+  }
+}

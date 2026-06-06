@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Valuation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "padic_valuation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Valuation => fun v_p => fun val_law => fun x => val_law x"
+    },
+    {
+      "declaration": "padic_absolute_value_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Real => fun AbsVal => fun abs_law => fun x => abs_law x"
+    },
+    {
+      "declaration": "non_archimedean_metric_law_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Real => fun AbsVal => fun NonArchimedean => fun x => fun y => NonArchimedean x y"
+    },
+    {
+      "declaration": "non_Archimedean_metric_from_valuation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun MetricValue => fun Valuation => fun p_adic_absolute_value => fun non_ArchimedeanMetric => fun metric_law => fun x => fun y => metric_law x y"
+    },
+    {
+      "declaration": "p_adic_valuation_algebra_before_completion_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ValuationAlgebraLawPackage => fun MetricCompletionPackage => fun AlgebraBeforeCompletion => fun boundary_law => fun valuation_laws => fun completion => boundary_law valuation_laws completion"
+    },
+    {
+      "declaration": "p_adic_completion_topology_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun PadicField => fun MetricTopologyPackage => fun MetricCompletionPackage => fun CompletionDependency => fun dependency_law => fun Qp => fun topology => fun completion => dependency_law Qp topology completion"
+    },
+    {
+      "declaration": "no_local_field_for_basic_valuation_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun BasicValuationPackage => fun LocalFieldTheoremPackage => fun NoLocalFieldDependency => fun boundary_law => fun valuation_package => fun local_field_theorem => boundary_law valuation_package local_field_theorem"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Valuation/certificate.npcert"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Pell",
+  "source": "Proofs/Ai/NumberTheory/Pell/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Pell/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:507d6fb4fec001520792c3b14617e308a6694dbf84f277dbc09b4636c2e33efc",
+  "certificate_file_sha256": "sha256:ca03ed09489dc7f082e46db0dea7ea44104cda4f7110f147181aa4e2227fe14f",
+  "export_hash": "sha256:34a461872f7f963289590ea3de7da901a278718ff739ff6d7d370ff7871a0d7a",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:89c5bbe670dc34d615add19168e710f9625fcd0ae080ae0601545f8764bb4703",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ContinuedFraction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "quadratic_irrational_periodic_continued_fraction_interface", "kind": "theorem" },
+    { "name": "pell_equation_existence_interface_surface", "kind": "theorem" },
+    { "name": "pell_solution_structure_interface_surface", "kind": "theorem" },
+    { "name": "pell_fundamental_solution_generation_interface", "kind": "theorem" },
+    { "name": "pell_real_analysis_prerequisites_explicit_boundary", "kind": "theorem" },
+    { "name": "pell_interface_not_derived_certificate_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

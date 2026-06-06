@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimalityTest",
+  "source": "Proofs/Ai/NumberTheory/PrimalityTest/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PrimalityTest/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c41f4ec693d9c08cb7c3902aa2c3058d3536e159444a748cf4557665b1d28592",
+  "certificate_file_sha256": "sha256:247718d1dabce8b3bdc45d1df5c7c5e018b75e3d319ed5d1867ab3f28050399c",
+  "export_hash": "sha256:458cdaaba93deaebb8842691fd41a6652b747b74e0564bf2b57b90b585407ac1",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:daff4987c5090a37dafd0ad1b1d7f8f9ebc56f1988b4ab934f0179e1559eb08b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.FermatEulerWilson", "Proofs.Ai.NumberTheory.Carmichael", "Proofs.Ai.NumberTheory.Algorithm"],
+  "axioms": [],
+  "declarations": [
+    { "name": "fermat_pseudoprime_surface_from_fermat_congruence", "kind": "theorem" },
+    { "name": "carmichael_number_korselt_criterion_surface", "kind": "theorem" },
+    { "name": "fermat_primality_test_accepts_prime_moduli", "kind": "theorem" },
+    { "name": "miller_rabin_witness_rejects_composite_surface", "kind": "theorem" },
+    { "name": "fermat_test_correctness_from_congruence_chain", "kind": "theorem" },
+    { "name": "miller_rabin_probability_boundary_from_witness_chain", "kind": "theorem" },
+    { "name": "aks_primality_correctness_from_polynomial_checks", "kind": "theorem" },
+    { "name": "primality_complexity_interface_requires_cost_model", "kind": "theorem" },
+    { "name": "primality_hardness_assumption_not_derived_from_test_correctness", "kind": "theorem" },
+    { "name": "primality_tests_no_runtime_randomness_trusted_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

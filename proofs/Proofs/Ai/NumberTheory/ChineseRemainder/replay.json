@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ChineseRemainder",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "linear_congruence_solution_count_from_gcd_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun GcdEvidence => fun DividesInt => fun LinearCongruenceSolvable => fun LinearCongruenceSolutionCount => fun count_law => fun coefficient => fun constant => fun modulus => fun g => fun count => fun gcd_condition => fun gcd_divides_constant => fun solvable => fun solution_count => count_law coefficient constant modulus g count gcd_condition gcd_divides_constant solvable solution_count"
+    },
+    {
+      "declaration": "crt_pairwise_coprime_residue_ring_specialization",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun ResidueRingPackage => fun PairwiseCoprimeModuli => fun ResidueSystem => fun ChineseRemainderSpecialization => fun specialization_law => fun left_modulus => fun right_modulus => fun coprime_moduli => fun residue_ring => fun system => specialization_law left_modulus right_modulus coprime_moduli residue_ring system"
+    },
+    {
+      "declaration": "crt_construction_exists_separated_from_uniqueness",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun ResidueSystem => fun CrtConstruction => fun CrtUniqueness => fun construction_law => fun modulus_product => fun system => construction_law modulus_product system"
+    },
+    {
+      "declaration": "crt_uniqueness_mod_product_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CongruentModulo => fun CrtSolution => fun CrtUniqueness => fun uniqueness_law => fun modulus_product => fun x => fun y => fun solution_x => fun solution_y => fun same_mod_product => uniqueness_law modulus_product x y solution_x solution_y same_mod_product"
+    },
+    {
+      "declaration": "crt_abstract_ring_chinese_remainder_import_surface",
+      "source_kind": "explicit_term",
+      "term": "fun AbstractRingChineseRemainderPackage => fun ResidueRingPackage => fun IntegerResidueRingSpecialization => fun import_law => fun abstract_crt => fun residue_ring => import_law abstract_crt residue_ring"
+    },
+    {
+      "declaration": "generalized_crt_compatible_system_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Index => fun ResidueSystem => fun CompatibleResidueSystem => fun GeneralizedChineseRemainder => fun generalized_law => fun system => fun compatibility => generalized_law system compatibility"
+    },
+    {
+      "declaration": "constructive_crt_witness_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun ResidueSystem => fun CrtWitness => fun CrtWitnessCorrect => fun construction_law => fun system => construction_law system"
+    },
+    {
+      "declaration": "garner_algorithmic_interface_marked_nonexecuted",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun GarnerInput => fun GarnerOutput => fun GarnerAlgorithmicInterface => fun NoExecutableGarnerFunctionVerified => fun garner_law => fun input => fun output => fun algorithmic_marker => garner_law input output algorithmic_marker"
+    },
+    {
+      "declaration": "chinese_remainder_no_duplicate_abstract_crt_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun ChineseRemainderPackage => fun AbstractRingChineseRemainderPackage => fun DuplicatedAbstractCrtImplementation => fun NoDuplicateAbstractCrtBoundary => fun boundary_law => fun number_theory_crt => fun abstract_crt => fun duplicate => boundary_law number_theory_crt abstract_crt duplicate"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/ChineseRemainder/certificate.npcert"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Mathlib In Corpus"
+  short_description: "Dogfood npa-mathlib from proofs"
+  default_prompt: "Use $use-mathlib-in-corpus to make a proof corpus module consume promoted npa-mathlib modules as hash-pinned imports."

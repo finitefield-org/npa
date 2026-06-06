@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractAlgebraicClosure",
+  "source": "Proofs/Ai/Algebra/AbstractAlgebraicClosure/source.npa",
+  "certificate": "Proofs/Ai/Algebra/AbstractAlgebraicClosure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:df497ca8c61fb1db8452b176447b235d1daa2d642ccc75768b95fbb6b69d3a5f",
+  "certificate_file_sha256": "sha256:6bae595a9be6b166a86ee34cf8504ffac94e31909c016f9c6232814ec55f0fc0",
+  "export_hash": "sha256:ca0fd2fc8cdf87f6645a41690a1f1c3a6dc8a63f21ba24eeed7323e62f72ddfd",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:54f86050fd8892d0abade85877c96346f484cdff638e5cfa2d3a64686ed8b92c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlgebraicClosureConstructionEvidence", "kind": "def" },
+    { "name": "AlgebraicClosureElement", "kind": "def" },
+    { "name": "AlgebraicClosurePolynomialHasRoot", "kind": "def" },
+    { "name": "AlgebraicClosureLawArgs", "kind": "def" },
+    { "name": "algebraic_closure_is_algebraic", "kind": "theorem" },
+    { "name": "algebraic_closure_polynomial_has_root", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

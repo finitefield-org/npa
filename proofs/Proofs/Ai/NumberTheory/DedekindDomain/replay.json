@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.DedekindDomain",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "norm_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun x => fun Norm => fun norm_law => norm_law x"
+    },
+    {
+      "declaration": "trace_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun L => fun x => fun Trace => fun trace_law => trace_law x"
+    },
+    {
+      "declaration": "discriminant_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Basis => fun Discriminant => fun b => fun disc_law => disc_law b"
+    },
+    {
+      "declaration": "norm_trace_discriminant_field_extension_basis_surface",
+      "source_kind": "explicit_term",
+      "term": "fun BaseField => fun NumberField => fun Basis => fun FieldExtensionEvidence => fun FiniteDimensionalVectorSpaceEvidence => fun NormTraceDiscriminantData => fun data_law => fun K => fun L => fun B => fun field_extension => fun finite_dimensional => data_law K L B field_extension finite_dimensional"
+    },
+    {
+      "declaration": "integral_basis_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ext => fun IntegralBasis => fun B => fun basis_law => basis_law"
+    },
+    {
+      "declaration": "dedekind_domain_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Ring => fun IsDedekindDomain => fun R => fun dedekind_law => dedekind_law"
+    },
+    {
+      "declaration": "ring_of_integers_dedekind_domain_surface",
+      "source_kind": "explicit_term",
+      "term": "fun NumberField => fun RingOfIntegers => fun IsRingOfIntegers => fun IsDedekindDomain => fun dedekind_law => fun K => fun O_K => fun ring_of_integers => dedekind_law K O_K ring_of_integers"
+    },
+    {
+      "declaration": "dedekind_domain_no_ideal_factorization_definition_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun DedekindDomainPackage => fun IdealFactorizationPackage => fun RingOfIntegersDefinitionPackage => fun NoFactorizationAsDefinition => fun boundary_law => fun dedekind_domain => fun ideal_factorization => fun ring_of_integers_definition => boundary_law dedekind_domain ideal_factorization ring_of_integers_definition"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/DedekindDomain/certificate.npcert"
+  }
+}

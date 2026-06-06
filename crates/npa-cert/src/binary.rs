@@ -1067,7 +1067,12 @@ impl<'a> Decoder<'a> {
             }
             components.push(component);
         }
-        Ok(Name(components))
+        let name = Name(components);
+        if name.is_canonical() {
+            Ok(name)
+        } else {
+            Err(CertError::NonCanonicalEncoding { object: "Name" })
+        }
     }
 
     fn string(&mut self) -> Result<String> {

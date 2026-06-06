@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.FactoringAlgorithm",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "pollard_rho_correctness_from_cycle_gcd_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun PollardRhoToken => fun CompositeModulus => fun PollardRhoCycleEvidence => fun GcdNontrivialDivisorEvidence => fun NontrivialFactorFound => fun FactorAlgorithmCorrect => fun cycle_gcd_law => fun factor_law => fun correctness_law => fun n => fun seed => fun composite_n => fun cycle => correctness_law n (factor_law n seed (cycle_gcd_law n seed composite_n cycle))"
+    },
+    {
+      "declaration": "quadratic_sieve_correctness_from_relation_matrix_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun QuadraticSieveToken => fun SmoothRelationSet => fun LinearDependencyCertificate => fun CongruenceOfSquares => fun NontrivialFactorFound => fun FactorAlgorithmCorrect => fun relation_law => fun factor_law => fun correctness_law => fun n => fun relations => fun dependency => correctness_law n (factor_law n (relation_law n relations dependency))"
+    },
+    {
+      "declaration": "number_field_sieve_correctness_from_norm_relation_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun NumberFieldSieveToken => fun AlgebraicNumberFieldData => fun NormRelationSet => fun SquareRootDependency => fun RationalAlgebraicCongruence => fun NontrivialFactorFound => fun FactorAlgorithmCorrect => fun norm_relation_law => fun factor_law => fun correctness_law => fun n => fun field_data => fun relations => fun dependency => correctness_law n (factor_law n (norm_relation_law n field_data relations dependency))"
+    },
+    {
+      "declaration": "pollard_rho_probability_requires_randomness_assumption",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun RandomnessSource => fun ProbabilityBound => fun PollardRhoToken => fun RandomnessAssumption => fun FailureProbabilityClaim => fun PollardRhoAttemptEvidence => fun PollardRhoProbabilityBoundary => fun attempt_law => fun probability_law => fun n => fun seed => fun randomness => fun bound => fun randomness_assumption => fun failure_claim => probability_law n seed randomness bound (attempt_law n seed randomness randomness_assumption) failure_claim"
+    },
+    {
+      "declaration": "factoring_complexity_interface_requires_cost_model",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun CostModel => fun QuadraticSieveToken => fun FactorEvidence => fun FactorAlgorithmCorrect => fun ComplexityInterface => fun CostModelAvailable => fun CorrectnessSeparateFromComplexity => fun correctness_law => fun complexity_law => fun separation_law => fun n => fun cost_model => fun evidence => fun available => separation_law n cost_model (correctness_law n evidence) (complexity_law cost_model available)"
+    },
+    {
+      "declaration": "factoring_hardness_assumption_not_derived_from_algorithm_correctness",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun HardnessAssumption => fun NumberFieldSieveToken => fun FactorEvidence => fun FactorAlgorithmCorrect => fun HardnessAssumptionNotDerived => fun correctness_law => fun hardness_boundary_law => fun n => fun hardness => fun evidence => hardness_boundary_law NumberFieldSieveToken n hardness (correctness_law n evidence)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/FactoringAlgorithm/certificate.npcert"
+  }
+}

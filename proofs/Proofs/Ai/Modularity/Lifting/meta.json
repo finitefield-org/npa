@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Modularity.Lifting",
+  "source": "Proofs/Ai/Modularity/Lifting/source.npa",
+  "certificate": "Proofs/Ai/Modularity/Lifting/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6234ef6606a5de7148400f82c4ca054e37ca4455b85bee972c61ce7d7f842517",
+  "certificate_file_sha256": "sha256:e1bef5b7d2b0dd7157b9144df3e53134871b6cb17e7dd4f06634461521a7624e",
+  "export_hash": "sha256:5e62919d338e088b317f2630febbbb0cb28e8a5e0d2eff4055cc9495908144f7",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:56129a56d5f8abc5e34b41a6762317cbe52e6bd53ff5cc5431d242531934d5ce",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Modularity.LevelLowering"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ModularityLiftingData", "kind": "def" },
+    { "name": "modularity_lifting_data_intro", "kind": "theorem" },
+    { "name": "deformation_functor_ring_surface", "kind": "theorem" },
+    { "name": "hecke_deformation_comparison_surface", "kind": "theorem" },
+    { "name": "R_eq_T_from_hecke_deformation_comparison", "kind": "theorem" },
+    { "name": "minimal_modularity_lifting_surface", "kind": "theorem" },
+    { "name": "nonminimal_modularity_lifting_deep_assumptions_named", "kind": "theorem" },
+    { "name": "modularity_lifting_non_frey_reuse_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

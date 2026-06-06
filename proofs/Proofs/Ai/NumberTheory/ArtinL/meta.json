@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ArtinL",
+  "source": "Proofs/Ai/NumberTheory/ArtinL/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ArtinL/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8b679d8df71008ce28b60305eadfce79060f640bcfc2ef7f628673c9a5b3306b",
+  "certificate_file_sha256": "sha256:4af40aec0d248d5163c5b19424deb71de3f6df5c68c4971deef93ce403f6a313",
+  "export_hash": "sha256:19b248eea7d1fd7f8372c6579a6bf9421ec3cb6bc8b98b5b3a37cb20069e04d9",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:6fa87d7693f98d965835888e078ee953da6f4f05c83d8164d226f27226d2db04",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.ClassField.Global"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ArtinLData", "kind": "def" },
+    { "name": "artin_l_data_intro", "kind": "theorem" },
+    { "name": "artin_l_general_l_function_data", "kind": "theorem" },
+    { "name": "artin_l_local_factor_surface", "kind": "theorem" },
+    { "name": "artin_l_local_factor_normalization_surface", "kind": "theorem" },
+    { "name": "artin_l_reciprocity_connection_to_class_field_theory", "kind": "theorem" },
+    { "name": "artin_l_normalization_surface", "kind": "theorem" },
+    { "name": "artin_l_matches_general_l_function_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

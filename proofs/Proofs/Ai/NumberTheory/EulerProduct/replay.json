@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.EulerProduct",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "finite_euler_product_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun PrimeNat => fun FinitePrimeSupport => fun EulerFactor => fun FiniteEulerProduct => fun EulerProductFiniteStatement => fun finite_product_law => fun bound => fun s => fun finite_primes => finite_product_law bound s finite_primes"
+    },
+    {
+      "declaration": "multiplicative_dirichlet_series_euler_product_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Coeff => fun ArithmeticFunction => fun MultiplicativeFunction => fun DirichletSeries => fun EulerProduct => fun EulerProductInterface => fun interface_law => fun f => fun s => fun function_f => fun multiplicative_f => interface_law f s function_f multiplicative_f"
+    },
+    {
+      "declaration": "euler_product_convergence_prerequisites_deferred_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun EulerProductInterfacePackage => fun DirichletSeriesPackage => fun AnalyticConvergencePrerequisite => fun ConvergenceTheoremClaim => fun ConvergenceDeferredBoundary => fun boundary_law => fun euler_product => fun dirichlet_series => fun analysis_prereq => fun convergence_claim => boundary_law euler_product dirichlet_series analysis_prereq convergence_claim"
+    },
+    {
+      "declaration": "euler_product_zeta_and_dirichlet_l_milestone_interface",
+      "source_kind": "explicit_term",
+      "term": "fun EulerProductInterfacePackage => fun ZetaMilestoneInput => fun DirichletLMilestoneInput => fun FeedsAnalyticMilestones => fun feed_law => fun euler_product => fun zeta => fun dirichlet_l => feed_law euler_product zeta dirichlet_l"
+    },
+    {
+      "declaration": "finite_euler_product_separate_from_infinite_product_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteEulerProductPackage => fun InfiniteEulerProductPackage => fun AnalyticConvergencePrerequisite => fun FiniteInfiniteProductBoundary => fun boundary_law => fun finite_product => fun infinite_product => fun analysis_prereq => boundary_law finite_product infinite_product analysis_prereq"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/EulerProduct/certificate.npcert"
+  }
+}

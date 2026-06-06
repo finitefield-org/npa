@@ -1,0 +1,23 @@
+import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Basic
+import Proofs.Ai.NumberTheory.LocalField
+
+theorem elliptic_conductor_interface :
+  forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (Conductor : Type), forall (conductor_law : Conductor -> Conductor), Conductor -> Conductor :=
+  fun F => fun LocalField => fun Valuation => fun Conductor => fun conductor_law => conductor_law
+
+theorem elliptic_reduction_type_interface :
+  forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (ReductionType : Type), forall (reduction_type_law : ReductionType -> ReductionType), ReductionType -> ReductionType :=
+  fun F => fun LocalField => fun Valuation => fun ReductionType => fun reduction_type_law => reduction_type_law
+
+theorem elliptic_minimal_model_interface :
+  forall (F : Type), forall (LocalField : Type), forall (Valuation : LocalField -> F), forall (MinimalModel : Type), forall (minimal_model_law : MinimalModel -> MinimalModel), MinimalModel -> MinimalModel :=
+  fun F => fun LocalField => fun Valuation => fun MinimalModel => fun minimal_model_law => minimal_model_law
+
+theorem reduction_local_field_valuation_dependency_surface :
+  forall (EllipticCurve : Type), forall (LocalField : Type), forall (ValueGroup : Type), forall (Valuation : LocalField -> ValueGroup), forall (ReductionData : EllipticCurve -> LocalField -> Type), forall (Dependency : forall (curve : EllipticCurve), forall (local_point : LocalField), ReductionData curve local_point -> Prop), forall (dependency_law : forall (curve : EllipticCurve), forall (local_point : LocalField), forall (reduction_data : ReductionData curve local_point), Dependency curve local_point reduction_data), forall (curve : EllipticCurve), forall (local_point : LocalField), forall (reduction_data : ReductionData curve local_point), Dependency curve local_point reduction_data :=
+  fun EllipticCurve => fun LocalField => fun ValueGroup => fun Valuation => fun ReductionData => fun Dependency => fun dependency_law => fun curve => fun local_point => fun reduction_data => dependency_law curve local_point reduction_data
+
+theorem conductor_reduction_minimal_model_compatibility_surface :
+  forall (FieldCarrier : Type), forall (LocalField : Type), forall (Valuation : LocalField -> FieldCarrier), forall (Conductor : Type), forall (ReductionType : Type), forall (MinimalModel : Type), forall (Compatibility : Conductor -> ReductionType -> MinimalModel -> Prop), forall (compatibility_law : forall (conductor : Conductor), forall (reduction_type : ReductionType), forall (minimal_model : MinimalModel), Compatibility conductor reduction_type minimal_model), forall (conductor : Conductor), forall (reduction_type : ReductionType), forall (minimal_model : MinimalModel), Compatibility conductor reduction_type minimal_model :=
+  fun FieldCarrier => fun LocalField => fun Valuation => fun Conductor => fun ReductionType => fun MinimalModel => fun Compatibility => fun compatibility_law => fun conductor => fun reduction_type => fun minimal_model => compatibility_law conductor reduction_type minimal_model

@@ -100,28 +100,45 @@ Rust kernel / 独立 checker が返す deterministic result だけです。
 
 `./scripts/check-fast.sh` は `npa-proof-corpus` と proof-corpus-backed package verifier / CLI fixture
 tests を除外して、format / clippy / workspace tests を実行します。
-proof corpus gate は次の条件に該当する変更だけで実行します。
+proof corpus は作業用 staging space であり、通常 authoring では package-wide な検査を
+hot path に入れません。
 
-- `proofs/**` または `tools/proof-corpus/**` の変更
+proof corpus theorem authoring の通常確認:
+
+```sh
+cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
+./scripts/check-corpus-authoring.sh
+```
+
+`./scripts/check-corpus.sh` は互換 wrapper として軽量 authoring gate を実行します。
+
+package/full corpus gate は次の条件に該当する場合だけ明示的に実行します。
+
+- `npa-mathlib` への promote 直前、または release / high-trust gate
+- `tools/proof-corpus/**` の package metadata / promotion / package lock / artifact 生成に関わる変更
+- `proofs/npa-package.toml`、`proofs/generated/package-lock.json`、axiom-report、theorem-index、
+  publish-plan など package generated artifacts に関わる変更
 - certificate の canonical encode / decode / hash / import / axiom report に関わる変更
 - kernel の core semantics、typecheck、reduction、universe、inductive に関わる変更
 - independent checker、package verifier、package lock、artifact validation に関わる変更
 - `.npcert` の生成・検査互換性に関わる変更
-- release / high-trust gate
 
 該当する場合は次を実行します。
 
 ```sh
-./scripts/check-corpus.sh
+./scripts/check-corpus-package.sh
+./scripts/check-corpus-full.sh
 ```
 
-proof corpus に定理を追加している間は、毎回 full corpus gate を回さず、対象 module だけを
+proof corpus に定理を追加している間は、毎回 package/full corpus gate を回さず、対象 module だけを
 再生成・検査します。
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ```
 
 `--build-module` は source から指定 module と import closure だけを再生成する authoring 用補助です。

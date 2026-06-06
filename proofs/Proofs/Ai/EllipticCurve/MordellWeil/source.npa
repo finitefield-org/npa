@@ -1,0 +1,33 @@
+import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Basic
+import Proofs.Ai.EllipticCurve.GroupLaw
+import Proofs.Ai.EllipticCurve.Height
+import Proofs.Ai.EllipticCurve.GaloisRepresentation
+
+theorem elliptic_torsion_subgroup_interface :
+  forall (FieldCarrier : Type), forall (Point : Type), forall (TorsionPoint : Point -> Prop), forall (torsion_law : forall (point : Point), TorsionPoint point -> TorsionPoint point), forall (point : Point), TorsionPoint point -> TorsionPoint point :=
+  fun FieldCarrier => fun Point => fun TorsionPoint => fun torsion_law => fun point => torsion_law point
+
+theorem nagell_lutz_theorem_interface :
+  forall (Point : Type), forall (IntegralPoint : Point -> Prop), forall (TorsionPoint : Point -> Prop), forall (NagellLutzConclusion : Point -> Prop), forall (nagell_lutz_law : forall (point : Point), IntegralPoint point -> TorsionPoint point -> NagellLutzConclusion point), forall (point : Point), IntegralPoint point -> TorsionPoint point -> NagellLutzConclusion point :=
+  fun Point => fun IntegralPoint => fun TorsionPoint => fun NagellLutzConclusion => fun nagell_lutz_law => fun point => nagell_lutz_law point
+
+theorem weak_mordell_weil_interface :
+  forall (FieldCarrier : Type), forall (Point : Type), forall (QuotientGroup : Type), forall (FiniteGenerationEvidence : QuotientGroup -> Prop), forall (weak_law : forall (quotient : QuotientGroup), FiniteGenerationEvidence quotient), forall (quotient : QuotientGroup), FiniteGenerationEvidence quotient :=
+  fun FieldCarrier => fun Point => fun QuotientGroup => fun FiniteGenerationEvidence => fun weak_law => fun quotient => weak_law quotient
+
+theorem mordell_weil_theorem_interface :
+  forall (NumberField : Type), forall (EllipticCurve : Type), forall (MordellWeilGroup : Type), forall (FinitelyGenerated : MordellWeilGroup -> Prop), forall (mordell_weil_law : forall (group : MordellWeilGroup), FinitelyGenerated group), forall (group : MordellWeilGroup), FinitelyGenerated group :=
+  fun NumberField => fun EllipticCurve => fun MordellWeilGroup => fun FinitelyGenerated => fun mordell_weil_law => fun group => mordell_weil_law group
+
+theorem selmer_group_interface :
+  forall (SelmerGroup : Type), forall (LocalCondition : SelmerGroup -> Prop), forall (GlobalCohomologyClass : SelmerGroup -> Prop), forall (selmer_law : forall (selmer_class : SelmerGroup), LocalCondition selmer_class -> GlobalCohomologyClass selmer_class), forall (selmer_class : SelmerGroup), LocalCondition selmer_class -> GlobalCohomologyClass selmer_class :=
+  fun SelmerGroup => fun LocalCondition => fun GlobalCohomologyClass => fun selmer_law => fun selmer_class => selmer_law selmer_class
+
+theorem tate_shafarevich_group_statement_surface :
+  forall (TateShafarevichGroup : Type), forall (LocallyTrivialClass : TateShafarevichGroup -> Prop), forall (GlobalClass : TateShafarevichGroup -> Prop), forall (sha_law : forall (sha_class : TateShafarevichGroup), LocallyTrivialClass sha_class -> GlobalClass sha_class), forall (sha_class : TateShafarevichGroup), LocallyTrivialClass sha_class -> GlobalClass sha_class :=
+  fun TateShafarevichGroup => fun LocallyTrivialClass => fun GlobalClass => fun sha_law => fun sha_class => sha_law sha_class
+
+theorem mordell_weil_interface_level_until_height_descent_boundary :
+  forall (MordellWeilInterface : Type), forall (HeightPrerequisite : Type), forall (DescentPrerequisite : Type), forall (InterfaceLevelUntilDerived : MordellWeilInterface -> HeightPrerequisite -> DescentPrerequisite -> Prop), forall (boundary_law : forall (mw_interface : MordellWeilInterface), forall (height_prereq : HeightPrerequisite), forall (descent_prereq : DescentPrerequisite), InterfaceLevelUntilDerived mw_interface height_prereq descent_prereq), forall (mw_interface : MordellWeilInterface), forall (height_prereq : HeightPrerequisite), forall (descent_prereq : DescentPrerequisite), InterfaceLevelUntilDerived mw_interface height_prereq descent_prereq :=
+  fun MordellWeilInterface => fun HeightPrerequisite => fun DescentPrerequisite => fun InterfaceLevelUntilDerived => fun boundary_law => fun mw_interface => fun height_prereq => fun descent_prereq => boundary_law mw_interface height_prereq descent_prereq

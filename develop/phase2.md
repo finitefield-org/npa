@@ -1472,6 +1472,17 @@ pub fn verify_module_cert(
 ) -> Result<VerifiedModule, CertError>;
 ```
 
+`Name` は certificate / kernel 境界で次の grammar に従います。
+
+```text
+DeclarationName = Component ("." Component)*
+Component       = [A-Za-z_][A-Za-z0-9_']*
+```
+
+`'` は ASCII apostrophe (`U+0027`) だけを許可し、Unicode prime-like 文字は canonical
+name ではありません。`+` や `*` などの operator 記号は表層 notation であり、
+trusted certificate の宣言名には入りません。
+
 `verify_module_cert` は decode、canonical encoding 検査、hash 再計算、
 import 解決、axiom policy、kernel check をまとめて行います。
 `decode_module_cert` は構文的 decode だけで、trusted module としては扱いません。

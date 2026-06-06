@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimitiveRoot",
+  "source": "Proofs/Ai/NumberTheory/PrimitiveRoot/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PrimitiveRoot/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6f93d0c863d840f69d66f90f4c303fe8da561daf9802895346f87398ea0e6e79",
+  "certificate_file_sha256": "sha256:7d3050da7abd25d5d25586fae877c62437ce6856de217005b65f08c400eb4b8f",
+  "export_hash": "sha256:a54b0447b845742e22c5ea8f2d7b6c9bf6ec7aaf7422e424ba34b2beb1f4ea4e",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:d61ff1e8220e28db36577810e93fb53fb59aea15ab3b79424cf6e7cbaea38873",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Prime", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.ChineseRemainder", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.FiniteFieldApplications"],
+  "axioms": [],
+  "declarations": [
+    { "name": "element_order_power_congruence_surface", "kind": "theorem" },
+    { "name": "element_order_minimal_positive_power_surface", "kind": "theorem" },
+    { "name": "primitive_root_definition_generator_surface", "kind": "theorem" },
+    { "name": "residue_unit_group_generator_depends_on_modular_group_surface", "kind": "theorem" },
+    { "name": "abstract_cyclic_group_generator_count_formula_surface", "kind": "theorem" },
+    { "name": "primitive_root_exists_mod_odd_prime_surface", "kind": "theorem" },
+    { "name": "primitive_root_exists_mod_prime_power_surface", "kind": "theorem" },
+    { "name": "primitive_root_classification_chinese_remainder_route_surface", "kind": "theorem" },
+    { "name": "primitive_root_classification_two_and_odd_prime_power_cases_surface", "kind": "theorem" },
+    { "name": "primitive_root_classification_no_backward_unit_group_dependency_boundary", "kind": "theorem" },
+    { "name": "primitive_root_no_existence_assumption_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

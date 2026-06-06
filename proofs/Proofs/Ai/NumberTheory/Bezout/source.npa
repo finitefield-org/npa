@@ -1,0 +1,29 @@
+import Proofs.Ai.NumberTheory.EuclideanAlgorithm
+
+theorem bezout_identity_from_extended_euclid_packaged :
+  forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (ExtendedEuclideanAlgorithmEvidence : forall (a : Int), forall (b : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (bezout_law : forall (a : Int), forall (b : Int), forall (extended_euclid : ExtendedEuclideanAlgorithmEvidence a b), BezoutIdentity a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (extended_euclid : ExtendedEuclideanAlgorithmEvidence a b), BezoutIdentity a b (Gcd a b) :=
+  fun Int => fun Gcd => fun ExtendedEuclideanAlgorithmEvidence => fun BezoutIdentity => fun bezout_law => fun a => fun b => fun extended_euclid => bezout_law a b extended_euclid
+
+theorem bezout_coefficients_linear_combination_packaged :
+  forall (Int : Type), forall (Gcd : forall (a : Int), forall (b : Int), Int), forall (LinearCombination : forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (value : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (coefficient_law : forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (linear_combination : LinearCombination a b x y (Gcd a b)), BezoutIdentity a b (Gcd a b)), forall (a : Int), forall (b : Int), forall (x : Int), forall (y : Int), forall (linear_combination : LinearCombination a b x y (Gcd a b)), BezoutIdentity a b (Gcd a b) :=
+  fun Int => fun Gcd => fun LinearCombination => fun BezoutIdentity => fun coefficient_law => fun a => fun b => fun x => fun y => fun linear_combination => coefficient_law a b x y linear_combination
+
+theorem gcd_linear_combination_characterization_packaged :
+  forall (Int : Type), forall (GcdEvidence : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (BezoutIdentity : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (GcdLinearCombinationCharacterization : forall (a : Int), forall (b : Int), forall (g : Int), Prop), forall (characterization_law : forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (bezout_identity : BezoutIdentity a b g), GcdLinearCombinationCharacterization a b g), forall (a : Int), forall (b : Int), forall (g : Int), forall (gcd_evidence : GcdEvidence a b g), forall (bezout_identity : BezoutIdentity a b g), GcdLinearCombinationCharacterization a b g :=
+  fun Int => fun GcdEvidence => fun BezoutIdentity => fun GcdLinearCombinationCharacterization => fun characterization_law => fun a => fun b => fun g => fun gcd_evidence => fun bezout_identity => characterization_law a b g gcd_evidence bezout_identity
+
+theorem coprime_iff_linear_combination_int_packaged :
+  forall (Int : Type), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (LinearCombinationEqualsOneInt : forall (a : Int), forall (b : Int), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (iff_law : forall (a : Int), forall (b : Int), IffEvidence (CoprimeInt a b) (LinearCombinationEqualsOneInt a b)), forall (a : Int), forall (b : Int), IffEvidence (CoprimeInt a b) (LinearCombinationEqualsOneInt a b) :=
+  fun Int => fun CoprimeInt => fun LinearCombinationEqualsOneInt => fun IffEvidence => fun iff_law => fun a => fun b => iff_law a b
+
+theorem coprime_iff_linear_combination_nat_packaged :
+  forall (Nat : Type), forall (CoprimeNat : forall (a : Nat), forall (b : Nat), Prop), forall (LinearCombinationEqualsOneNat : forall (a : Nat), forall (b : Nat), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (iff_law : forall (a : Nat), forall (b : Nat), IffEvidence (CoprimeNat a b) (LinearCombinationEqualsOneNat a b)), forall (a : Nat), forall (b : Nat), IffEvidence (CoprimeNat a b) (LinearCombinationEqualsOneNat a b) :=
+  fun Nat => fun CoprimeNat => fun LinearCombinationEqualsOneNat => fun IffEvidence => fun iff_law => fun a => fun b => iff_law a b
+
+theorem coprime_nat_int_translation_surface :
+  forall (Nat : Type), forall (Int : Type), forall (ToInt : forall (n : Nat), Int), forall (CoprimeNat : forall (a : Nat), forall (b : Nat), Prop), forall (CoprimeInt : forall (a : Int), forall (b : Int), Prop), forall (TranslationEvidence : forall (a : Nat), forall (b : Nat), Prop), forall (translation_law : forall (a : Nat), forall (b : Nat), forall (translation : TranslationEvidence a b), forall (coprime_nat : CoprimeNat a b), CoprimeInt (ToInt a) (ToInt b)), forall (a : Nat), forall (b : Nat), forall (translation : TranslationEvidence a b), forall (coprime_nat : CoprimeNat a b), CoprimeInt (ToInt a) (ToInt b) :=
+  fun Nat => fun Int => fun ToInt => fun CoprimeNat => fun CoprimeInt => fun TranslationEvidence => fun translation_law => fun a => fun b => fun translation => fun coprime_nat => translation_law a b translation coprime_nat
+
+theorem bezout_no_prime_factorization_or_crt_boundary :
+  forall (BezoutPackage : Type), forall (PrimeFactorization : Type), forall (ChineseRemainderTheorem : Type), forall (NoImportBoundary : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), Prop), forall (boundary_law : forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt), forall (bezout : BezoutPackage), forall (prime_factorization : PrimeFactorization), forall (crt : ChineseRemainderTheorem), NoImportBoundary bezout prime_factorization crt :=
+  fun BezoutPackage => fun PrimeFactorization => fun ChineseRemainderTheorem => fun NoImportBoundary => fun boundary_law => fun bezout => fun prime_factorization => fun crt => boundary_law bezout prime_factorization crt

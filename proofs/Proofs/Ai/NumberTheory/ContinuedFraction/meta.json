@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ContinuedFraction",
+  "source": "Proofs/Ai/NumberTheory/ContinuedFraction/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ContinuedFraction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d6a65e9c8b8da10feaef24c56e8ed708dc6dcedb2f396f492f40182d4342aff9",
+  "certificate_file_sha256": "sha256:89f55506d8ba597f1ba90d9a05e5e191ce1eb72bc0983db0dac794358647080c",
+  "export_hash": "sha256:d040f0a2ec78305aa57e74e079549fa1327ccc011021d5bd93467f8418228e1c",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:6e10cf97dccb138ece43f3b88cd9e434a1a5d2ac5fd1ab0af90d20d00aadf1cb",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.EuclideanDivision"],
+  "axioms": [],
+  "declarations": [
+    { "name": "finite_continued_fraction_interface_surface", "kind": "theorem" },
+    { "name": "convergent_recurrence_relations_surface", "kind": "theorem" },
+    { "name": "rational_finite_continued_fraction_expansion_from_euclidean_division", "kind": "theorem" },
+    { "name": "normalized_finite_continued_fraction_uniqueness_surface", "kind": "theorem" },
+    { "name": "final_partial_quotient_normalization_convention_explicit", "kind": "theorem" },
+    { "name": "finite_continued_fraction_no_real_analysis_dependency_boundary", "kind": "theorem" },
+    { "name": "infinite_continued_fraction_irrational_expansion_interface", "kind": "theorem" },
+    { "name": "convergent_best_approximation_surface", "kind": "theorem" },
+    { "name": "infinite_continued_fraction_real_analysis_prerequisites_explicit", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

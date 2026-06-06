@@ -64,15 +64,483 @@ Current bundles:
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
   `Std.Logic.Eq` and `Proofs.Ai.Algebra.Ring`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
-- `Proofs/Ai/NumberTheory/Flt/Statement/`: FLT statement-freeze module importing
-  `Std.Logic.Eq` and `Std.Nat.Basic`. It exports Prop-valued statement constants for
-  `fermat_last_theorem`, natural-number, positive-natural, and integer variants. Current
-  `Std.Nat.Basic` provides certified `Nat.zero` and `Nat.succ`; addition, exponentiation, and
-  order are explicit statement parameters until the reusable number-theory library materializes
-  them. This module has no `Flt.BridgeAxiom.*` dependency.
 - `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
+- `Proofs/Ai/Combinatorics/Finite/`: certificate-backed finite-family and finite-enumeration
+  law package preserving membership, no-duplicate, enumeration-complete, and enumeration-sound
+  evidence as ordinary proof-corpus structures, with graph vertex/edge finite-set reuse and a
+  named bridge point for future set-theory finite-cardinality modules.
+- `Proofs/Ai/Combinatorics/Cardinality/`: certificate-backed injection, surjection, bijection,
+  finite-equivalence, finite-image, and finite-subset cardinality transport interfaces built from
+  explicit finite-enumeration evidence. It does not add finite cardinality as a kernel primitive,
+  and it does not assume choice or quotient extensionality.
+- `Proofs/Ai/Combinatorics/Counting/Basic/`: certificate-backed finite comparison and
+  pigeonhole interface targets for injective and surjective counting routes, plus elementary
+  disjoint-union, product, sum-rule, product-rule, and finite-fiber counting packages. Finite,
+  nonempty, decidable-equality, disjointness, product-carrier, fiber, collision, and overfull-fiber
+  hypotheses are named evidence slots rather than hidden assumptions.
+- `Proofs/Ai/Combinatorics/Permutation/`: certificate-backed factorial, falling-factorial,
+  finite-family permutation, and permutation-counting interfaces. Permutations are ordinary
+  structure carriers with explicit index-bijection evidence, and factorial arithmetic requirements
+  are named evidence slots rather than hidden numeric normalization.
+- `Proofs/Ai/Combinatorics/Binomial/`: certificate-backed k-subset, combination-counting,
+  binomial coefficient, Vandermonde, and multinomial interfaces. Subset cardinality, arithmetic
+  carrier, Pascal recurrence, Vandermonde summation, and multinomial partition assumptions are
+  explicit evidence slots.
+- `Proofs/Ai/Combinatorics/Binomial/Algebra/`: certificate-backed algebraic binomial theorem,
+  Vandermonde, and multinomial theorem interfaces. Ring/semiring law packages, polynomial
+  extension dependencies, formal power series assumptions, and finite-counting-to-algebra bridge
+  evidence are explicit.
+- `Proofs/Ai/Combinatorics/SetSystem/`: certificate-backed finite set-system, covering,
+  packing, intersection-family, Bonferroni-bound, probability-alias boundary, and hypergraph
+  bridge interfaces. Covering and packing evidence stays explicit, Bonferroni probability aliases
+  consume combinatorial bounds rather than proving them, and set-system/hypergraph ownership stays
+  separated.
+- `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
+  entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
+  structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
+  named, conjectures are explicit, and derived targets require source-free certificate verdicts.
+- `Proofs/Ai/NumberTheory/Elementary/`: certificate-backed elementary number-theory interface
+  surface for explicit `Int` carriers, `Nat`-to-`Int` translation evidence, positivity, nonzero
+  evidence, and ordinary arithmetic theorem targets. These declarations are library interfaces,
+  not kernel primitive arithmetic.
+- `Proofs/Ai/NumberTheory/Divisibility/`: certificate-backed divisibility interface preserving
+  explicit `Divides`, sign-normalized divisibility, divisor, multiple, sign-rule, closure, and
+  `Nat`/`Int` translation law packages. It imports only the number-theory elementary interface
+  closure and does not import prime factorization, elliptic-curve, or modularity modules.
+- `Proofs/Ai/NumberTheory/EuclideanDivision/`: certificate-backed quotient/remainder interface
+  preserving explicit nonzero divisor hypotheses, remainder sign and bound law packages,
+  quotient and remainder uniqueness under those bounds, normalized Euclidean division, `Nat`/`Int`
+  translation, and the boundary between mathematical existence and algorithm extraction.
+- `Proofs/Ai/NumberTheory/Descent/`: certificate-backed finite-descent and minimization
+  interface for later gcd, continued-fraction, and Diophantine modules, with well-founded
+  measures and algorithm extraction kept as explicit law-package evidence.
+- `Proofs/Ai/NumberTheory/Gcd/`: certificate-backed gcd normal-form interface derived from
+  Euclidean-division or explicit law evidence, preserving divisor projections, greatest-common-
+  divisor characterization, normalized sign convention, symmetry, uniqueness, and congruence/
+  Diophantine reduction surfaces without assuming Bezout.
+- `Proofs/Ai/NumberTheory/Lcm/`: certificate-backed lcm normal-form interface over gcd evidence,
+  preserving multiple projections, least-common-multiple characterization, normalized sign
+  convention, uniqueness, the explicit `gcd_lcm` product formula hypothesis, and downstream
+  congruence/Diophantine reduction surfaces without assuming Bezout.
+- `Proofs/Ai/NumberTheory/EuclideanAlgorithm/`: certificate-backed Euclid algorithm interface
+  over gcd evidence, preserving descent termination evidence, remainder-step gcd preservation,
+  gcd correctness, extended Euclidean algorithm correctness, and the boundary separating
+  algorithmic correctness from runtime complexity.
+- `Proofs/Ai/NumberTheory/Bezout/`: certificate-backed Bezout interface downstream of the
+  Euclidean algorithm package, preserving Bezout identities, gcd linear-combination
+  characterization, explicit integer and natural coprimality variants, `Nat`/`Int` translation,
+  and the boundary excluding prime-factorization and CRT imports.
+- `Proofs/Ai/NumberTheory/LinearDiophantine/`: certificate-backed linear Diophantine equation
+  interface downstream of the gcd/Bezout closure, preserving the `a*x + b*y = c` surface,
+  solvability iff gcd-divisibility, particular solutions from Bezout evidence, general solution
+  formulas under gcd-divisibility hypotheses, zero-coefficient and sign-normalized edge-case
+  surfaces, and reusable normal forms without adding a hidden Diophantine solver.
+- `Proofs/Ai/NumberTheory/Prime/`: certificate-backed prime predicate interface over divisibility,
+  preserving natural-number and integer prime predicates, unit and associated predicates,
+  sign-normalized integer primes, `1`-is-not-prime targets, trivial-divisor characterizations,
+  `Nat`/`Int` translation, and the terminology boundary with UFD-local `PrimeElement`.
+- `Proofs/Ai/NumberTheory/Composite/`: certificate-backed composite predicate interface over the
+  prime package, preserving natural-number and integer composite predicates, nontrivial-divisor
+  projections, sign-normalized composite surfaces, `Nat`/`Int` translation, factor-extraction
+  input surfaces, and the boundary excluding unique factorization assumptions.
+- `Proofs/Ai/NumberTheory/UfdBridge/`: certificate-backed bridge from number-theory prime and
+  composite predicates to the abstract UFD prime-factorization API, preserving one-way imports
+  into `Proofs.Ai.Algebra.AbstractUfdPrimeFactorization`, Euclid/product-divisibility surfaces
+  derived from explicit Bezout/UFD evidence, and the boundary excluding FTA uniqueness assumptions.
+- `Proofs/Ai/NumberTheory/Factorization/`: certificate-backed prime-factor extraction package
+  downstream of `UfdBridge`, preserving composite prime-factor existence, integer extraction,
+  factorization-existence and erasure surfaces, Diophantine/arithmetic-function reuse inputs,
+  FTA existence/uniqueness and derived-package surfaces, finite-list and finite-multiset
+  evidence, divisor-count/divisor-sum/gcd/lcm formula surfaces, unit/sign normalization, and
+  the boundary excluding theorem-shaped FTA input axioms.
+- `Proofs/Ai/NumberTheory/PrimeInfinitude/`: certificate-backed prime-infinitude package
+  downstream of `Factorization`, preserving Euclid finite-list escape surfaces, factorial-plus-one
+  witnesses, elementary prime-infinitude variants, square-root bounds for composite prime factors,
+  and boundaries excluding analytic number theory, Chebotarev, and PNT dependencies.
+- `Proofs/Ai/NumberTheory/Congruence/`: certificate-backed congruence algebra package
+  downstream of divisibility, gcd, and Bezout evidence, preserving congruence modulo an integer,
+  equivalence-relation laws, addition, multiplication, negation, and power compatibility, plus
+  cancellation, division, and linear-congruence solvability surfaces whose `Divides`, `Gcd`, and
+  `Coprime` hypotheses remain explicit.
+- `Proofs/Ai/NumberTheory/ResidueRing/`: certificate-backed residue-ring interface downstream of
+  congruence algebra and the abstract ring package, preserving residue classes modulo `n`,
+  quotient/core-feature reports, well-defined operation descent, abstract ring law packaging, CRT
+  reuse surfaces, deterministic package reports, and boundaries excluding hidden CRT or Euler
+  theorem assumptions.
+- `Proofs/Ai/NumberTheory/ModularGroup/`: certificate-backed unit-group interface downstream of
+  residue rings and the abstract group package, preserving unit modulo `n`, reduced residue
+  classes, multiplication closure, inverses, group law packaging, `phi` reuse inputs, and boundaries
+  excluding Euler/Fermat theorem and CRT assumptions.
+- `Proofs/Ai/NumberTheory/ChineseRemainder/`: certificate-backed Chinese remainder interface
+  downstream of congruence, residue rings, and the abstract ring CRT package, preserving linear
+  congruence solution-count surfaces, pairwise-coprime residue-ring specialization, separated
+  construction and uniqueness claims, generalized compatible-system CRT, constructive witnesses,
+  Garner-style algorithmic interfaces, and the boundary excluding a duplicated abstract CRT
+  implementation.
+- `Proofs/Ai/NumberTheory/Phi/`: certificate-backed Euler phi and finite unit group order
+  interface downstream of modular unit groups and prime factorization, preserving `EulerPhi` as
+  finite unit group cardinality, reduced-residue cardinality evidence, Lagrange specialization for
+  finite unit groups, prime_factorization and prime-power formula surfaces, coprime
+  multiplicativity, and the boundary excluding analytic number theory dependencies.
+- `Proofs/Ai/NumberTheory/FermatEulerWilson/`: certificate-backed Fermat, Euler, and Wilson
+  theorem interface downstream of finite unit-group order, modular unit groups, `phi`, and prime
+  predicates. Fermat's little theorem is exposed as derived from finite unit-group order evidence,
+  Euler's theorem reuses `phi` cardinality evidence, Wilson theorem and converse keep prime and
+  modulus hypotheses explicit, and a boundary excludes theorem-shaped modular arithmetic axioms.
+- `Proofs/Ai/NumberTheory/Carmichael/`: certificate-backed Carmichael function interface
+  downstream of `phi` and the Fermat/Euler/Wilson surface, preserving a separate
+  `CarmichaelLambda` definition, unit-group exponent theorem, divisibility into `EulerPhi`, and
+  boundaries excluding duplicated `phi` and RSA security claims.
+- `Proofs/Ai/NumberTheory/Algorithm/`: certificate-backed algorithmic number theory correctness
+  foundation preserving named Euclid, extended Euclid, constructive CRT, and repeated-squaring
+  function/relation interfaces, correctness chains from descent/remainder, Bezout, CRT residue
+  checks, and repeated-squaring invariants, complexity separated behind cost-model interfaces,
+  correctness separated from mathematical existence, and no trusted external solver/runtime
+  oracle boundary.
+- `Proofs/Ai/NumberTheory/PrimalityTest/`: certificate-backed early primality-test interface
+  downstream of prime/composite predicates, Fermat/Euler/Wilson, and Carmichael surfaces,
+  preserving pseudoprime, Carmichael-number, Korselt criterion, Fermat-test, Miller-Rabin
+  witness/probability, and AKS polynomial-check theorem surfaces while separating correctness,
+  failure probability, complexity interfaces, runtime randomness, and security/hardness
+  assumptions from trusted kernel behavior.
+- `Proofs/Ai/NumberTheory/FactoringAlgorithm/`: certificate-backed factoring algorithm
+  statement surfaces downstream of algorithm correctness, primality tests, factorization, and
+  sieve theory, preserving Pollard rho cycle/gcd factor extraction, quadratic sieve relation
+  matrix extraction, number field sieve norm-relation extraction, probability claims requiring
+  randomness assumptions, complexity interfaces behind cost models, and hardness assumptions
+  as non-derived boundaries.
+- `Proofs/Ai/NumberTheory/Rsa/`: certificate-backed RSA correctness interface downstream of
+  Carmichael and primality-test surfaces, preserving modulus factorization, coprimality, and
+  key-congruence hypotheses, plus a boundary separating mathematical round-trip correctness from
+  runtime solvers, randomness, or security assumptions.
+- `Proofs/Ai/Cryptography/NumberTheory/`: certificate-backed cryptographic number theory
+  correctness interface downstream of algorithmic number theory, primality/factoring algorithms,
+  RSA, and discrete-log character surfaces, preserving Diffie-Hellman group/key-generation
+  correctness, discrete-log hardness boundaries, RSA round-trip reuse, LLL reduction correctness,
+  Coppersmith small-root extraction, and non-`L2` hardness export boundaries.
+- `Proofs/Ai/Cryptography/EllipticCurve/`: certificate-backed elliptic-curve cryptography
+  interface downstream of cryptographic number theory and elliptic-curve Basic/GroupLaw/
+  GaloisRepresentation APIs, preserving ECDH group/key-generation/randomness correctness, ECDSA
+  key-generation and nonce-randomness verification correctness, Weil and Tate pairing reuse of
+  elliptic-curve APIs, and hardness assumptions as non-derived boundaries.
+- `Proofs/Ai/NumberTheory/FiniteFieldApplications/`: certificate-backed finite-field
+  application namespace downstream of `Proofs.Ai.Algebra.AbstractFiniteField`, preserving
+  field-theory ownership of finite-field core laws while exposing number-theoretic application
+  cards for Frobenius, cardinality, root characterization, multiplicative cyclicity,
+  subfield classification, primitive roots, and Gauss sums.
+- `Proofs/Ai/NumberTheory/PrimitiveRoot/`: certificate-backed element-order and primitive-root
+  base interface downstream of abstract groups, modular unit groups, `phi`, and explicit
+  finite-field application facts, preserving `element_order` power-congruence and minimality
+  surfaces, primitive root definitions as residue-unit group generator evidence, an abstract
+  cyclic-group generator-count formula, odd prime and prime_power existence surfaces, a
+  ChineseRemainder-dependent classification route, and boundaries separating definitions from
+  primitive-root existence/classification assumptions and preventing backward dependency from
+  finite unit-group theorems.
+- `Proofs/Ai/NumberTheory/Character/`: certificate-backed Dirichlet character interface
+  downstream of modular unit groups, `phi`, and primitive roots, preserving
+  `DirichletCharacter` definition surfaces, finite character-group packaging, orthogonality
+  relations without analytic `L`-function dependencies, and `discrete_log` statement surfaces
+  that keep algorithms and runtime solvers outside trusted certificates.
+- `Proofs/Ai/NumberTheory/GaussSum/`: certificate-backed Gauss sum interface downstream of
+  `Character` and explicit finite-field application facts, preserving `GaussSum` definitions
+  over an explicit coefficient ring, multiplicative Dirichlet character data, additive character
+  data, basic identities, orthogonality bridges, and boundaries excluding analytic `L`-function
+  assumptions.
+- `Proofs/Ai/NumberTheory/ExponentialSum/`: certificate-backed finite-field exponential-sum
+  interface downstream of `FiniteFieldApplications`, `Character`, and `GaussSum`, preserving
+  finite-field Gauss and Jacobi sum, Hasse-Davenport, Stickelberger, Chevalley-Warning, Ax-Katz,
+  Weil `L1` estimate, and Lang-Weil `L1` prerequisite surfaces with explicit field-size, degree,
+  character, and nonvanishing hypotheses.
+- `Proofs/Ai/NumberTheory/Combinatorial/`: certificate-backed combinatorial number-theory
+  interface downstream of `FiniteFieldApplications` and `Additive`, preserving pigeonhole,
+  Ramsey, Schur, Rado, van der Waerden, Erdos-Ginzburg-Ziv, Olson, Davenport constant, finite
+  field polynomial method, and combinatorial Nullstellensatz surfaces with explicit ambient
+  structures, field-size, degree, and nonvanishing hypotheses.
+- `Proofs/Ai/NumberTheory/QuadraticResidue/`: certificate-backed quadratic residue and
+  nonresidue interface downstream of prime, congruence, modular unit-group, and primitive-root
+  surfaces, preserving explicit odd prime hypotheses and nonzero residue count statements.
+- `Proofs/Ai/NumberTheory/Legendre/`: certificate-backed Legendre symbol interface downstream
+  of `QuadraticResidue` and primitive-root cyclic-unit facts, preserving multiplicativity,
+  Euler criterion statement surfaces, count compatibility, and a boundary separating the
+  Legendre API from the later Jacobi symbol API.
+- `Proofs/Ai/NumberTheory/QuadraticReciprocity/`: certificate-backed quadratic reciprocity
+  route downstream of `Legendre`, preserving Gauss lemma surfaces, supplementary laws for
+  minus one and two, `quadratic_reciprocity` statements for distinct odd primes, and a boundary
+  preventing primitive-root, character, or Gauss-sum milestones from assuming reciprocity.
+- `Proofs/Ai/NumberTheory/Jacobi/`: certificate-backed Jacobi symbol and Solovay-Strassen
+  interface downstream of `QuadraticReciprocity` and primality-test surfaces, preserving Jacobi
+  multiplicativity, separation from actual quadratic residuosity, non-interchangeability with
+  Legendre symbols, and probabilistic randomness/soundness assumptions outside deterministic
+  security theorems.
+- `Proofs/Ai/NumberTheory/ArithmeticFunction/`: certificate-backed arithmetic-function
+  interface downstream of factorization, `phi`, and Carmichael surfaces, preserving divisor-count,
+  divisor-sigma, Euler `phi`, Mobius, Liouville, von_Mangoldt, and Carmichael function packages,
+  finite divisor-support evidence for divisor sums, coprimality hypotheses for multiplicative
+  functions, completely multiplicative function interfaces, and a boundary excluding Dirichlet
+  series or complex-analysis dependencies.
+- `Proofs/Ai/NumberTheory/DirichletConvolution/`: certificate-backed Dirichlet convolution
+  interface downstream of arithmetic-function surfaces, preserving algebraic convolution
+  definition, associativity, commutativity, identity, inverse interfaces, explicit finite divisor
+  sum rearrangement evidence, and boundaries excluding Mobius inversion, infinite series, or
+  complex-analysis assumptions.
+- `Proofs/Ai/NumberTheory/Mobius/`: certificate-backed Mobius inversion interface downstream of
+  Dirichlet convolution, preserving the Mobius function as a Dirichlet inverse, algebraic Mobius
+  inversion, generalized Mobius inversion, finite-support requirements, and boundaries excluding
+  analytic number theory or infinite-series dependencies.
+- `Proofs/Ai/NumberTheory/EulerProduct/`: certificate-backed algebraic EulerProduct interface
+  downstream of Mobius and Dirichlet convolution, preserving finite Euler products,
+  multiplicative Dirichlet series interfaces, zeta and Dirichlet `L` milestone inputs, and
+  explicit convergence prerequisites deferred to later analytic tasks.
+- `Proofs/Ai/NumberTheory/LFunction/`: certificate-backed general `LFunction` interface
+  preserving coefficient-field, local factor, Euler product, analytic-domain, normalization,
+  analytic-continuation, functional-equation, Hasse-Weil, automorphic, and no-conjectural-`L2`
+  surfaces as separate named fields.
+- `Proofs/Ai/NumberTheory/ArtinL/`: certificate-backed `ArtinL` interface downstream of
+  general `LFunction` and class field theory, preserving Artin representation, local factor
+  normalization, and class-field-reciprocity compatibility surfaces.
+- `Proofs/Ai/NumberTheory/HeckeL/`: certificate-backed `HeckeL` interface downstream of
+  general `LFunction` and Hecke modular-form data, preserving Hecke character, local factor,
+  Euler product, automorphic `L`-function, and automorphic normalization surfaces.
+- `Proofs/Ai/Langlands/TraceFormula/`: certificate-backed `TraceFormula` interface map
+  preserving explicit analytic and geometric trace assumptions, Arthur-Selberg trace formula,
+  geometric and spectral side surfaces, orbital integral, endoscopic transfer, Fundamental lemma,
+  Ngo-style reference, and stable trace formula surfaces without hiding assumptions behind a
+  generic Langlands theorem.
+- `Proofs/Ai/NumberTheory/AutomorphicL/`: certificate-backed `AutomorphicL` interface
+  downstream of general `LFunction`, `HeckeL`, semistable modularity, and `TraceFormula`, preserving
+  automorphic representation, cuspidal representation, Rankin-Selberg, Langlands-Shahidi
+  normalization, converse theorem, explicit trace-formula prerequisite map, `L1` analytic
+  continuation boundary, and semistable modularity compatibility surfaces.
+- `Proofs/Ai/Langlands/Interface/`: certificate-backed Langlands interface graph downstream of
+  `AutomorphicL` and `TraceFormula`, preserving local and global correspondence statement
+  surfaces, Jacquet-Langlands transfer, base change, conditional `L0` functoriality, Sato-Tate,
+  potential automorphy, promotable-subtheorem dependency edges, and explicit
+  `NoBroadLanglandsDerivedCertificate` boundaries.
+- `Proofs/Ai/NumberTheory/Sieve/`: certificate-backed sieve-theory interface preserving Brun
+  sieve, Selberg sieve, large sieve, fundamental lemma, Brun theorem, twin-prime reciprocal
+  convergence, Chen theorem, GPY, Zhang, Maynard-Tao, parity-problem limitations, explicit
+  `ErrorTerm` and asymptotic inputs, visible analytic dependencies, and a boundary excluding
+  derivation of unresolved conjectures from sieve surfaces.
+- `Proofs/Ai/NumberTheory/CircleMethod/`: certificate-backed Hardy-Littlewood CircleMethod
+  interface preserving major arc and minor arc contributions, named asymptotic assumptions,
+  harmonic-analysis and exponential-sum dependency surfaces, and conditional analytic
+  prerequisite boundaries.
+- `Proofs/Ai/NumberTheory/AdditivePrime/`: certificate-backed additive-prime interface
+  preserving Vinogradov three-primes and weak Goldbach theorem surfaces, explicit CircleMethod,
+  major arc, minor arc, and exponential-sum dependencies, and a boundary preventing elementary
+  additive theorem surfaces from depending on weak Goldbach.
+- `Proofs/Ai/NumberTheory/AlgebraicInteger/`: certificate-backed algebraic-integer interface
+  preserving algebraic integer definitions, algebraic integers as an explicitly packaged ring
+  structure rather than a kernel primitive, rational algebraic integer implies integer surfaces,
+  and explicit rational-to-extension embedding and coercion assumptions.
+- `Proofs/Ai/NumberTheory/NumberField/`: certificate-backed NumberField interface preserving
+  algebraic number, number field, and ring_of_integers surfaces, with field-extension
+  dependencies routed through `develop/proof-corpus-field-theory-roadmap.md`.
+- `Proofs/Ai/NumberTheory/DedekindDomain/`: certificate-backed number-field invariant
+  and DedekindDomain interface preserving Norm, Trace, Discriminant, integral basis,
+  ring-of-integers Dedekind-domain surfaces, explicit field-extension, basis, and
+  finite-dimensional vector-space dependencies, and a boundary excluding ideal
+  factorization as a definition.
+- `Proofs/Ai/NumberTheory/ClassGroup/`: certificate-backed ClassGroup interface
+  preserving ideal factorization, uniqueness, fractional ideal group, class number,
+  Dirichlet unit, and Minkowski surfaces, with explicit quotient construction,
+  geometry-of-numbers dependencies, and an L1 analytic class-number formula boundary.
+- `Proofs/Ai/NumberTheory/Valuation/`: certificate-backed Valuation and p_adic
+  metric interface preserving p-adic valuation, p-adic absolute value,
+  non_Archimedean metric, algebra-before-completion, topology/analysis completion
+  dependency, and no-local-field-dependency boundary surfaces.
+- `Proofs/Ai/NumberTheory/Padic/`: certificate-backed p-adic completion and
+  p-adic field construction interface for the NT-T40 local-field route.
+- `Proofs/Ai/NumberTheory/Hensel/`: certificate-backed Hensel interface
+  preserving named completeness, valuation, derivative, and lifting hypotheses,
+  with an explicit boundary excluding generic root-finder primitives.
+- `Proofs/Ai/NumberTheory/LocalField/`: certificate-backed LocalField interface
+  preserving Ostrowski, DVR, complete DVR, local-field structure, unramified,
+  and totally ramified surfaces, with valuation/completion dependencies,
+  interface-level construction boundaries, and shared Galois-representation
+  ramification vocabulary.
+- `Proofs/Ai/NumberTheory/PadicAnalysis/`: certificate-backed p-adic analysis
+  interface preserving p-adic exponential, logarithm, Newton polygon,
+  Strassmann, Weierstrass, Mahler, explicit norm/series convergence
+  dependencies, and a boundary excluding trusted analytic primitives.
+- `Proofs/Ai/NumberTheory/PadicMeasure/`: certificate-backed p-adic measure
+  interface preserving measure, integration, Amice transform, Kubota-Leopoldt
+  p-adic L-function, measure-theory-roadmap dependencies, and explicit
+  interpolation-assumption surfaces.
+- `Proofs/Ai/NumberTheory/ClassField/Local/`: certificate-backed local class-field
+  interface preserving Artin map, local reciprocity, Kronecker-Weber, explicit
+  reciprocity domain/codomain/normalization/functoriality data, and named bridge
+  assumptions.
+- `Proofs/Ai/NumberTheory/ClassField/Global/`: certificate-backed global class-field
+  interface preserving idele class group, global reciprocity, Takagi existence,
+  Hilbert class field, no-generic-algebra-import boundary, bridge rejection at
+  final promotion, and separated local/global reciprocity routes.
+- `Proofs/Ai/GaloisCohomology/Basic/`: certificate-backed Galois cohomology
+  interface preserving Hilbert 90, Norm residue local/global context, Hasse norm,
+  Grunwald-Wang, Brauer group degree-two cohomology, Tate cohomology degree
+  functoriality, and interface-level boundaries until foundations exist.
+- `Proofs/Ai/NumberTheory/ClassField/Cohomology/`: certificate-backed class-field
+  cohomology bridge preserving explicit Galois-cohomology dependencies,
+  reciprocity-route links, and Norm residue local/global context routing.
+- `Proofs/Ai/NumberTheory/Frobenius/`: certificate-backed Frobenius interface
+  preserving prime ideal decomposition, decomposition group, inertia group,
+  Frobenius element with explicit unramified and prime ideal hypotheses,
+  Frobenius conjugacy-class theorem, reusable local-condition terms, shared
+  ramification vocabulary, and a boundary excluding Chebotarev imports from
+  this definition layer.
+- `Proofs/Ai/NumberTheory/Chebotarev/`: certificate-backed Chebotarev interface
+  preserving Frobenius conjugacy-class dependency from `NT-T61`, explicit
+  density measure and analytic assumptions, Chebotarev density theorem,
+  Frobenius density theorem, Dirichlet theorem from Chebotarev as an alias or
+  later theorem-card route, no duplicate Dirichlet `L` proof boundary, and
+  elementary prime infinitude and FTA independence boundaries.
+- `Proofs/Ai/GaloisRepresentation/Basic/`: certificate-backed
+  GaloisRepresentation basic interface preserving reusable Galois
+  representation, l-adic representation, cyclotomic character, Tate module
+  representation, and shared elliptic-curve/modular-form representation APIs.
+- `Proofs/Ai/GaloisRepresentation/Ramification/`: certificate-backed
+  GaloisRepresentation ramification interface preserving local restriction,
+  inertia-driven ramification, unramified Frobenius compatibility, and
+  ramification vocabulary reusable by LocalCondition modules.
+- `Proofs/Ai/GaloisRepresentation/LocalCondition/`: certificate-backed
+  LocalCondition interface preserving Hodge-Tate, de Rham, crystalline,
+  semistable, Fontaine-Laffaille, and comparison theorem chains, reusable local
+  conditions, elliptic-curve and modular-form shared local-condition APIs, and
+  Taylor-Wiles and potential-modularity interface-only boundaries.
+- `Proofs/Ai/NumberTheory/Iwasawa/Basic/`: certificate-backed Iwasawa basic
+  interface preserving cyclotomic `Z_p` extension, Iwasawa algebra, explicit
+  module-theoretic assumptions over the Iwasawa algebra, finitely generated
+  torsion module structure, lambda, mu, and nu invariants, Iwasawa class-number
+  formula, p-adic and Galois-cohomology dependencies, and a boundary separating
+  the Iwasawa class-number formula from the analytic class-number formula.
+- `Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/`: certificate-backed
+  Iwasawa main conjecture interface preserving `NT-T59` dependency,
+  Kubota-Leopoldt p-adic `L`-function reuse of `NT-T42`, interpolation formula,
+  `NT-T53` L-function dependency, exact-assumption conditional main conjecture
+  forms, Mazur-Wiles, Ferrero-Washington, and `mu = 0` theorem surfaces.
+- `Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/`: certificate-backed Iwasawa
+  Euler-system interface preserving MainConjecture dependency, Euler-system
+  norm relations, Kato, Rubin, Coates-Wiles, Skinner-Urban, plus/minus Selmer
+  groups shared with elliptic-curve modules, Gross-Koblitz formula, Selmer
+  bounds, and Euler-system links back to Iwasawa main conjecture surfaces.
+- `Proofs/Ai/EllipticCurve/Basic/`: certificate-backed elliptic-curve interface
+  preserving Weierstrass models, nonsingularity, explicit field and polynomial
+  assumptions, discriminant/nonzero boundaries, and general API reuse outside
+  specialized final-theorem routes.
+- `Proofs/Ai/EllipticCurve/GroupLaw/`: certificate-backed elliptic-curve point
+  GroupLaw interface preserving point addition, identity, inverse, closure,
+  associativity, Basic dependency, and independence from modularity, Ribet, or
+  bridge-axiom packages.
+- `Proofs/Ai/EllipticCurve/Reduction/`: certificate-backed elliptic-curve
+  reduction interface preserving conductor, reduction type, minimal model,
+  explicit LocalField/valuation dependencies, and compatibility between
+  conductor, reduction type, and minimal model data.
+- `Proofs/Ai/EllipticCurve/Semistable/`: certificate-backed semistability
+  interface preserving semistability as a general elliptic-curve/local-field
+  predicate, reduction dependency, and an explicit non-Frey-specific boundary.
+- `Proofs/Ai/EllipticCurve/Height/`: certificate-backed height interface
+  preserving height and Neron-Tate height surfaces with named field hypotheses,
+  positivity hypotheses, nonnegativity predicates, and pairing context.
+- `Proofs/Ai/EllipticCurve/FiniteField/`: certificate-backed finite-field
+  elliptic-curve interface preserving point-count, Hasse theorem, Weil bound,
+  and Frobenius trace surfaces while importing finite-field core laws from
+  `Proofs.Ai.Algebra.AbstractFiniteField`.
+- `Proofs/Ai/EllipticCurve/LFunction/`: certificate-backed elliptic-curve
+  L-function interface preserving elliptic and Hasse-Weil L-function surfaces,
+  modularity links pointing to `NT-T52`, Gross-Zagier, Kolyvagin, Sato-Tate,
+  and BSD statement surfaces, with BSD explicitly conjectural or conditional
+  rather than a derived theorem.
+- `Proofs/Ai/EllipticCurve/GaloisRepresentation/`: certificate-backed
+  GaloisRepresentation interface preserving Tate module actions, Weil pairing
+  surfaces, Weil pairing nondegeneracy without cryptographic assumptions, shared
+  Selmer definitions for Iwasawa and Galois representation tasks, and local
+  condition vocabulary.
+- `Proofs/Ai/EllipticCurve/MordellWeil/`: certificate-backed Mordell-Weil
+  interface preserving torsion, Nagell-Lutz, weak Mordell-Weil, Mordell-Weil,
+  Selmer group, and Tate-Shafarevich group statement surfaces while keeping the
+  Mordell-Weil theorem interface-level until height and descent prerequisites
+  are derived.
+- `Proofs/Ai/ArithmeticGeometry/RationalPoints/`: certificate-backed
+  RationalPoints interface preserving curve genus, divisor, Riemann-Roch,
+  Hasse-Weil bound and zeta-function surfaces, Mordell/Faltings and Siegel
+  rational/integral-point statements with explicit hypotheses, finite-field
+  core reuse, and separation from etale cohomology construction interfaces.
+- `Proofs/Ai/ArithmeticGeometry/Schemes/`: certificate-backed scheme interface
+  preserving scheme-structure, fiber-product, Zariski-topology, flatness,
+  base-change, and explicit algebraic-geometry/rational-point dependency
+  surfaces.
+- `Proofs/Ai/ArithmeticGeometry/EtaleCohomology/`: certificate-backed etale
+  cohomology interface preserving explicit scheme dependencies, visible
+  cohomology assumptions, etale covers, Kummer exact sequence, proper and smooth
+  base-change, and etale finiteness surfaces.
+- `Proofs/Ai/ArithmeticGeometry/WeilConjectures/`: certificate-backed Weil
+  conjectures interface preserving etale-cohomology dependencies,
+  Grothendieck/Lefschetz trace formula surfaces, Weil conjectures, Deligne
+  theorem surfaces, interface-level status, and the non-generic finite-field
+  axiom boundary for Deligne.
+- `Proofs/Ai/ArithmeticGeometry/PadicHodge/`: certificate-backed p-adic Hodge
+  interface preserving Weil-conjectures dependencies, p-adic analysis reuse,
+  Galois-representation API reuse, explicit period-ring and representation
+  hypotheses, l-adic representation, Neron model, Neron-Ogg-Shafarevich,
+  Chabauty-Coleman, and p-adic Hodge comparison surfaces.
+- `Proofs/Ai/ArithmeticGeometry/SpecialPoints/`: certificate-backed
+  special-points statement map preserving PadicHodge dependencies, special
+  point map surfaces, status-label visibility, and Manin-Mumford,
+  Mordell-Lang, Bogomolov, and Andre-Oort status-labeled statement surfaces.
+- `Proofs/Ai/ModularForms/Basic/`: certificate-backed modular-form basic data
+  interface preserving `ModularForm`, `CuspForm`, explicit complex-analytic
+  domain assumptions, and reusable `weight`/`level` transformation and cusp
+  conditions outside final-theorem glue.
+- `Proofs/Ai/ModularForms/QExpansion/`: certificate-backed q-expansion interface
+  downstream of `Proofs.Ai.ModularForms.Basic`, preserving `q_expansion`
+  principle data, coefficient identity surfaces, and Eisenstein series
+  q-expansion identity surfaces while keeping q-expansion evidence separate
+  from later operator packages.
+- `Proofs/Ai/ModularForms/Hecke/`: certificate-backed Hecke operator,
+  eigenform, coefficient-field, Fourier-coefficient multiplicativity,
+  Petersson inner product, and trace formula interface preserving analytic and
+  geometric trace prerequisites as explicit evidence slots. The APIs remain
+  reusable modular-form surfaces rather than hidden Wiles assumptions.
+- `Proofs/Ai/ModularForms/ModularCurve/`: certificate-backed modular curve,
+  Jacobian, and Eichler-Shimura interface preserving explicit construction
+  evidence, analytic prerequisites, and geometric prerequisites downstream of
+  the Hecke package.
+- `Proofs/Ai/Modularity/LevelLowering/`: certificate-backed reusable
+  level-lowering terminology for general Galois-representation interfaces,
+  preserving conductor, residual irreducibility, ramification, newform,
+  excluded-case, lowered-level, and dependency-map evidence without making the
+  surface Frey-specific.
+- `Proofs/Ai/Modularity/Ribet/`: certificate-backed Ribet level-lowering
+  interface surface that remains explicitly bridge-backed. `BridgeAxiom`
+  namespace evidence, not-completed-proof evidence, and high-trust import
+  blocking evidence are named slots so downstream high-trust routes cannot
+  silently consume bridge-backed variants.
+- `Proofs/Ai/Modularity/Lifting/`: certificate-backed modularity-lifting
+  interface preserving deformation functor, deformation ring, Hecke algebra,
+  Hecke/deformation comparison, `R_eq_T`, minimal lifting, non-minimal lifting,
+  named deep-assumption, and non-Frey reuse surfaces.
+- `Proofs/Ai/Modularity/Semistable/`: certificate-backed semistable
+  modularity route preserving reusable semistability assumptions,
+  representation-of-curve evidence, lifting inputs, semistable modularity
+  conclusions, and an explicit `NoBridgeAxiomDependency` surface for the final
+  route.
+- `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
+  interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
+  dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite
+  ContinuedFraction interfaces for irrational inputs, best approximation surfaces, and explicit
+  real-analysis prerequisites.
+- `Proofs/Ai/NumberTheory/Pell/`: certificate-backed Pell interface downstream of continued
+  fractions, preserving quadratic irrational periodic interfaces, equation existence and
+  structure surfaces, positivity and nonsquare hypotheses, normalized-solution conventions, and
+  boundaries separating interface statements from derived certificates.
+- `Proofs/Ai/NumberTheory/DiophantineApproximation/`: certificate-backed
+  DiophantineApproximation interfaces downstream of Pell, preserving Dirichlet approximation,
+  simultaneous approximation, Liouville/Roth/Schmidt L1 interfaces, Khintchine and
+  Duffin-Schaeffer metric-measure prerequisites, Baker and Lindemann-Weierstrass transcendence
+  interfaces, geometry-of-numbers assumptions, and boundaries excluding elementary-number-theory
+  reliance on transcendence results.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
@@ -384,9 +852,21 @@ Planning documents:
   theorem route.
 - `inverse-implicit-function-proof-phases.md`: IIF0-IIF10 plan for the inverse-function and
   implicit-function theorem route.
-- `fermats-last-theorem-proof-phases.md`: FLT0-FLT8 plan for a certificate-first Fermat's Last
-  Theorem project, including bridge-axiom policy, elementary reduction, Frey/Ribet/modularity
-  layers, and final high-trust audit criteria.
+- `combinatorics-graph-theorem-proof-roadmap.md`: CG-00 through CG-23 plan for
+  combinatorics and graph-theory theorem families, from finite counting through
+  graph foundations, Ramsey theory, spectral graph theory, algorithms, and
+  promotion.
+- `combinatorics-graph-theorem-proof-roadmap-todo.md`: CG-T00 through CG-T46
+  implementation task breakdown for the combinatorics/graph roadmap.
+- `combinatorics-graph-theorem-cards.md`: CG-T00 theorem-card inventory,
+  duplicate-home map, finite/infinite boundary map, and target-level tags for
+  the combinatorics/graph roadmap. It is a planning sidecar, not proof evidence.
+- `number-theory-theorem-proof-roadmap.md`: NT-00 through NT-24 plan for number-theory theorem
+  families, from elementary arithmetic through promotion.
+- `number-theory-theorem-proof-roadmap-todo.md`: NT-T00 through NT-T70 implementation task
+  breakdown for the number-theory roadmap.
+- `number-theory-theorem-cards.md`: NT-T00 theorem-card inventory, duplicate-home map, and
+  conjecture-status map. It is a planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route
 
@@ -1336,49 +1816,6 @@ Theorem targets:
 | `or_inl`, `or_inr`, `or_elim` | disjunction introduction and elimination helpers |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-#### `Proofs.Ai.NumberTheory.Flt.Statement`
-
-Implemented definitions / API declarations:
-
-| Declaration | Purpose |
-| --- | --- |
-| `FltFalse` | FLT-local Church-encoded falsehood used to spell the contradiction target explicitly |
-| `FltNot` | negation abbreviation `P -> FltFalse`, used for nonzero hypotheses |
-| `FltNatTwo` | certified Nat numeral `2`, defined as `Nat.succ (Nat.succ Nat.zero)` |
-| `FltNatNe` | explicit natural-number inequality predicate, defined as negated `Eq` |
-| `FltNatEquation` | explicit equation shape `a^n + b^n = c^n` over parameterized `add` and `pow` |
-| `fermat_last_theorem` | public final natural-number statement constant parameterized by `add`, `pow`, and `lt` |
-| `fermat_last_theorem_nat` | compatibility alias for the public natural-number statement |
-| `fermat_last_theorem_positive_nat` | positive-natural statement alias through an explicit `toNat` embedding |
-| `fermat_last_theorem_int` | integer statement alias over an explicit integer carrier, zero, addition, and power operation |
-
-The statement module is the FLT-00 contract layer. It freezes names and surface shape only; it does
-not prove Fermat's Last Theorem and it does not introduce bridge axioms. The current `Std.Nat.Basic`
-fixture supplies the certified Nat carrier plus `Nat.zero` and `Nat.succ`. Because reusable
-addition, exponentiation, and order APIs are scheduled for later number-theory milestones, the
-statement constants take `add`, `pow`, and `lt` as explicit arguments rather than using notation,
-typeclass search, or hidden source sugar.
-
-Bridge policy and library growth policy are deliberately separated:
-
-- `Flt.BridgeAxiom.*` declarations are development-only interfaces for later smoke milestones and
-  must not be imported by this statement module.
-- Domain milestones that follow FLT-00 are incomplete if they only add hidden FLT glue; they must
-  contribute reusable number theory, algebra, elliptic-curve, modular-forms, Galois-representation,
-  or modularity theorem surfaces that can be used independently of the final FLT proof route.
-- Metadata files such as `manifest.toml`, `npa-package.toml`, generated theorem indexes, and axiom
-  reports make the surface discoverable, but proof acceptance remains canonical `.npcert` bytes
-  plus checker verdicts.
-
-Theorem targets:
-
-| Theorem | Shape / purpose |
-| --- | --- |
-| `fermat_last_theorem_shape` | reflexive check that the public statement expands to the frozen Nat form |
-| `fermat_last_theorem_nat_alias` | reflexive check that the Nat alias is the public statement |
-| `fermat_last_theorem_positive_nat_shape` | reflexive check of the positive-natural compatibility shape |
-| `fermat_last_theorem_int_shape` | reflexive check of the integer compatibility shape |
-
 #### `Proofs.Ai.Algebra.AbstractRing`
 
 Implemented definitions / API declarations, not proof targets:
@@ -1497,6 +1934,34 @@ Theorem targets:
 | `field_embedding_comp` | records composition as explicit `FieldEmbeddingLawArgs` evidence |
 | `field_iso_symm` | swaps forward and backward embedding evidence for a field isomorphism |
 | `field_iso_trans` | records transitivity as explicit composite isomorphism evidence |
+
+#### `Proofs.Ai.Algebra.AbstractFieldExtension`
+
+This module packages a field extension as explicit base-field laws, extension-field laws, and a
+base embedding. It reuses `FieldEmbeddingLawArgs` from `AbstractFieldHomKernelImage` instead of
+restating field homomorphism or injectivity laws.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldExtensionLawArgs` | packages `FieldLawArgs` for the base and extension fields plus the embedding evidence `K -> L` |
+| `FieldExtensionRestrictScalarsArgs` | packages explicit scalar-restriction compatibility `scaleK a x = scaleL (i a) x` |
+| `FieldExtensionTowerArgs` | packages explicit `K -> L`, `L -> M`, and composite `K -> M` extension evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_extension_base_embedding` | projects the base embedding as `FieldEmbeddingLawArgs` |
+| `field_extension_as_field` | projects the extension field's `FieldLawArgs` |
+| `field_extension_restrict_scalars` | projects scalar restriction compatibility from explicit evidence |
+| `field_extension_tower` | projects the supplied composite extension evidence for a tower |
+| `field_embedding_compose` | exposes embedding composition through the existing `field_embedding_comp` theorem |
+
+The module deliberately avoids polynomial quotient, finite-dimensional vector-space, and Galois
+machinery. Tower composition and scalar restriction remain explicit evidence, so later algebraic
+and finite-extension modules can import this layer without creating circular dependencies.
 
 #### `Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
 
@@ -1624,6 +2089,207 @@ The module's axiom policy is the existing package-allowed `Eq.rec`, inherited th
 equality and quotient/isomorphism route. The theorem statement for
 `quotient_by_maximal_ideal_is_field` intentionally exposes all quotient and maximality witnesses so
 the Krull and Nullstellensatz trusted boundaries remain unchanged.
+
+#### `Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
+
+This bridge is the polynomial-facing quotient layer over the abstract field/ideal stack. It keeps
+polynomial syntax, irreducibility, principal ideal generation, quotient construction, evaluation
+kernel exactness, and simple-extension comparison as explicit evidence packages.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `IrreduciblePolynomial` | packages abstract nonzero, nonunit, and factor-law evidence for a polynomial |
+| `PrincipalIdealGeneratedBy` | packages ideal laws plus generator membership and principal intro/elimination evidence |
+| `PolynomialFieldQuotientArgs` | packages irreducible-to-maximal and quotient-field laws for an abstract polynomial quotient |
+| `SimpleAlgebraicExtensionQuotientArgs` | packages minimal-polynomial kernel evidence and a quotient/extension field isomorphism |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `irreducible_polynomial_generates_maximal_ideal` | projects maximal-ideal evidence from an irreducible polynomial and its principal ideal package |
+| `quotient_by_irreducible_polynomial_is_field` | projects quotient field laws from irreducibility, principal generation, quotient ring laws, quotient hom evidence, and kernel exactness |
+| `polynomial_eval_kernel_contains_minimal_polynomial` | projects that the explicit evaluation-kernel predicate contains the minimal polynomial |
+| `simple_algebraic_extension_as_polynomial_quotient` | projects a field isomorphism from the polynomial quotient to the simple algebraic extension |
+
+The module imports the current `AbstractFieldIdeal` route for corpus staging, so promotion should
+audit the closure before making this public. The checked FT-09 certificate itself has no local
+axioms; source, replay, metadata, and AI theorem index entries remain non-trusted sidecars.
+
+#### `Proofs.Ai.Algebra.AbstractAlgebraicExtension`
+
+This module bridges field-extension evidence to the polynomial-quotient staging layer. It keeps
+algebraicity, minimal-polynomial data, degree-one base membership, and finite-extension output as
+explicit evidence packages.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `PolynomialDivides` | Church-encoded divisibility relation for abstract polynomials |
+| `MonicPolynomial` | named wrapper around an explicit monicity predicate |
+| `DegreeOnePolynomial` | named wrapper around an explicit degree-one predicate |
+| `BaseElementWitness` | packages a base element whose embedded image is the algebraic element |
+| `FiniteFieldExtensionEvidence` | package target for later finite-extension layers |
+| `AlgebraicElement` | packages a nonzero annihilating polynomial and evaluation-zero evidence |
+| `MinimalPolynomial` | packages monicity, annihilation, irreducibility, divisibility of all annihilators, degree-one base membership, and uniqueness evidence |
+| `FieldAdjoinAlgebraicElementArgs` | connects minimal-polynomial evidence to `SimpleAlgebraicExtensionQuotientArgs` and finite-extension evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `minimal_polynomial_divides_annihilating_polynomial` | projects that the minimal polynomial divides every annihilating polynomial |
+| `minimal_polynomial_irreducible` | projects irreducibility as `IrreduciblePolynomial` evidence |
+| `degree_one_algebraic_element_in_base` | projects base-element membership from explicit degree-one evidence |
+| `field_adjoin_algebraic_element_is_finite_extension` | projects finite-extension evidence from the adjoin/minimal-polynomial/quotient package |
+
+The module does not introduce an algebraic-closure existence axiom. Monicity, irreducibility,
+minimal-polynomial uniqueness, and finite-extension output remain explicit inputs or packaged
+evidence, so later finite-extension and splitting-field milestones can refine the statements
+without changing the trusted boundary.
+
+#### `Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
+
+This module packages finite field extensions on top of `FieldExtensionLawArgs` and the
+algebraic-extension staging layer. Extension degree is intentionally represented by Prop-level
+evidence in this corpus layer, not by concrete Nat computation, so the module avoids importing a
+large vector-space basis API before those statements stabilize.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `ExtensionDegreeEvidence` | named wrapper for explicit degree evidence |
+| `FiniteDimensionalVectorSpaceBridge` | named wrapper for the finite-dimensional vector-space bridge evidence |
+| `FiniteExtensionAlgebraicElement` | named wrapper for the predicate that an extension element is algebraic over the base |
+| `FiniteExtensionLawArgs` | packages field-extension evidence, finite-over-base evidence, degree evidence, vector-space bridge evidence, and the finite-implies-algebraic law |
+| `FiniteExtensionTowerDegreeArgs` | packages finite tower evidence and the supplied degree multiplication law |
+| `FiniteExtensionEmbeddingDegreeArgs` | packages finite extension embedding evidence and the supplied degree-preservation law |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `finite_extension_is_algebraic` | projects the per-element algebraicity law from a finite-extension package |
+| `extension_degree_tower` | projects the supplied degree law for a finite tower |
+| `finite_dimensional_vector_space_bridge` | projects the finite-dimensional vector-space bridge evidence |
+| `finite_extension_embedding_preserves_degree` | projects the supplied degree-preservation law for an embedding of finite extensions |
+
+The module keeps basis objects, concrete degree arithmetic, and finite-dimensional vector-space
+construction evidence outside the trusted core. Later finite-field and Galois-theory modules can
+replace the Prop-level evidence with more structured APIs once the import closure is measured.
+
+#### `Proofs.Ai.Algebra.AbstractFiniteField`
+
+This module adds a finite-field staging package on top of the existing field hom and finite
+extension layers. Characteristic, cardinality, Frobenius, power, and root-counting APIs are all
+explicit evidence fields; the module does not perform hidden runtime cardinality computation or
+polynomial root enumeration.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FiniteFieldCardinalityEvidence` | named wrapper for explicit field cardinality evidence |
+| `FieldCharacteristicPrimeOrZeroEvidence` | named wrapper for the general field characteristic alternative |
+| `FiniteFieldCharacteristicPrimeEvidence` | named wrapper for finite-field prime characteristic evidence |
+| `FiniteFieldRootOfCardPolynomial` | named wrapper for roots of the supplied `x^q - x` predicate |
+| `FiniteFieldLawArgs` | packages field laws, finite-extension evidence, characteristic evidence, Frobenius hom evidence, power law, and root predicate evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `field_characteristic_prime_or_zero` | projects the characteristic-prime-or-zero evidence |
+| `finite_field_characteristic_prime` | projects prime characteristic evidence for finite fields |
+| `frobenius_is_field_hom` | projects the Frobenius `FieldHomLawArgs` |
+| `finite_field_pow_card_eq_self` | projects the supplied `x^q = x` law |
+| `finite_field_roots_x_pow_q_minus_x` | projects the supplied root predicate evidence for every field element |
+
+Frobenius uses the existing `FieldHomLawArgs` route. Cardinality, power, and root facts are
+statement-level evidence in the checked certificate, while `source.npa`, replay, metadata, and the
+AI theorem index remain non-trusted sidecars.
+
+#### `Proofs.Ai.Algebra.AbstractSplittingField`
+
+This module adds a splitting-field staging package over the existing polynomial quotient,
+algebraic-extension, finite-extension, and field-isomorphism APIs. It does not construct a
+splitting field internally. Construction, root containment, generation by roots, and uniqueness up
+to field isomorphism are all explicit evidence supplied to the package and then projected by
+certificate-checked theorem targets.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `SplittingFieldConstructionEvidence` | named wrapper for explicit construction evidence |
+| `SplittingFieldRootEvidence` | named wrapper for the supplied root predicate of the staged polynomial |
+| `SplittingFieldRootContained` | named wrapper for root-containment evidence in the staged splitting field |
+| `SplittingFieldGeneratedByRootsEvidence` | named wrapper for generated-by-roots evidence |
+| `SplittingFieldLawArgs` | packages base field, polynomial extension, extension field, construction, root containment, and generation evidence |
+| `SplittingFieldUniquenessArgs` | packages the supplied `FieldIsoLawArgs` used for uniqueness up to field isomorphism |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `splitting_field_contains_all_roots` | projects the supplied all-roots containment law |
+| `splitting_field_generated_by_roots` | projects the generated-by-roots evidence |
+| `splitting_field_unique_up_to_field_iso` | projects the supplied `FieldIsoLawArgs` uniqueness witness |
+
+#### `Proofs.Ai.Algebra.AbstractAlgebraicClosure`
+
+This module adds an algebraic-closure staging package. It keeps closure construction,
+element algebraicity, and polynomial root existence as explicit evidence fields; no algebraic
+closure existence axiom or hidden root-finding procedure is added.
+
+Implemented definitions / API declarations:
+
+| Declaration | Purpose |
+| --- | --- |
+| `AlgebraicClosureConstructionEvidence` | named wrapper for explicit algebraic-closure construction evidence |
+| `AlgebraicClosureElement` | named wrapper for the supplied algebraic-over-base predicate |
+| `AlgebraicClosurePolynomialHasRoot` | named wrapper for the supplied polynomial root-existence predicate |
+| `AlgebraicClosureLawArgs` | packages base field, polynomial extension, closure field, field extension, construction, algebraicity, and root-existence evidence |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `algebraic_closure_is_algebraic` | projects the supplied per-element algebraicity evidence |
+| `algebraic_closure_polynomial_has_root` | projects the supplied polynomial root-existence evidence |
+
+The `HasRoot` predicate is intentionally abstract, so downstream modules can encode nonconstant or
+positive-degree side conditions there without changing the trusted certificate boundary.
+
+#### `Proofs.Ai.Algebra.AbstractGaloisStarter`
+
+Implemented definitions / API declarations, not construction-heavy proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `FieldAutomorphismGroupArgs` | packages an explicit automorphism group law, per-automorphism field isomorphism law, and base-fixing law |
+| `FixedFieldLawArgs` | packages an explicit fixed-field carrier, field law, embedding law, fixed predicate, and base-in-fixed evidence |
+| `GaloisExtensionArgs` | packages finite-extension, splitting-construction, automorphism-group, and fixed-field evidence for a staged Galois extension API |
+| `GaloisCorrespondenceBridgeArgs` | bridges to the existing group-correspondence order evidence without restating subgroup correspondence theory |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `automorphism_group_laws` | projects the automorphism group law from `FieldAutomorphismGroupArgs` |
+| `fixed_field_laws` | keeps the fixed-field evidence package available as an explicit theorem target |
+| `fixed_field_is_field` | projects the field law for the fixed-field carrier |
+| `galois_correspondence_order_bridge` | projects existing `CorrespondenceOrderEvidence` through the Galois bridge package |
+
+This module is corpus staging, not a promotion to public `npa-mathlib`. Its import closure brings
+field-extension, finite-extension, splitting-field, and group-correspondence modules together only at
+this layer, so earlier field-extension modules do not import group correspondence. Promotion requires
+a separate closure audit and an explicit decision about aliases, axiom policy, and package reports.
+The expected axiom report includes `Eq.rec`, matching the existing group-correspondence closure.
 
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 

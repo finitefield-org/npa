@@ -1,0 +1,15 @@
+import Std.Logic.Eq
+import Proofs.Ai.NumberTheory.ClassField.Global
+import Proofs.Ai.GaloisCohomology.Basic
+
+theorem class_field_cohomology_dependency_explicit_boundary :
+  forall (ClassFieldPackage : Type), forall (GaloisCohomologyPackage : Type), forall (DependencyDeclared : ClassFieldPackage -> GaloisCohomologyPackage -> Prop), forall (dependency_law : forall (class_field : ClassFieldPackage), forall (cohomology : GaloisCohomologyPackage), DependencyDeclared class_field cohomology), forall (class_field : ClassFieldPackage), forall (cohomology : GaloisCohomologyPackage), DependencyDeclared class_field cohomology :=
+  fun ClassFieldPackage => fun GaloisCohomologyPackage => fun DependencyDeclared => fun dependency_law => fun class_field => fun cohomology => dependency_law class_field cohomology
+
+theorem class_field_reciprocity_cohomology_route_surface :
+  forall (ReciprocityRoute : Type), forall (CohomologyTerm : Type), forall (RouteLinksTerm : ReciprocityRoute -> CohomologyTerm -> Prop), forall (route_law : forall (route : ReciprocityRoute), forall (term : CohomologyTerm), RouteLinksTerm route term), forall (route : ReciprocityRoute), forall (term : CohomologyTerm), RouteLinksTerm route term :=
+  fun ReciprocityRoute => fun CohomologyTerm => fun RouteLinksTerm => fun route_law => fun route => fun term => route_law route term
+
+theorem norm_residue_reciprocity_local_global_context_route_surface :
+  forall (LocalContext : Type), forall (GlobalContext : Type), forall (ReciprocityRoute : Type), forall (NormResidueSymbol : LocalContext -> GlobalContext -> ReciprocityRoute -> Prop), forall (symbol_law : forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (route : ReciprocityRoute), NormResidueSymbol local_context global_context route), forall (local_context : LocalContext), forall (global_context : GlobalContext), forall (route : ReciprocityRoute), NormResidueSymbol local_context global_context route :=
+  fun LocalContext => fun GlobalContext => fun ReciprocityRoute => fun NormResidueSymbol => fun symbol_law => fun local_context => fun global_context => fun route => symbol_law local_context global_context route

@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ArithmeticGeometry.Schemes",
+  "source": "Proofs/Ai/ArithmeticGeometry/Schemes/source.npa",
+  "certificate": "Proofs/Ai/ArithmeticGeometry/Schemes/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:265fd69e167c1c8648ae9fa03fb4a375aa6154261853279ba8f8a60883713c40",
+  "certificate_file_sha256": "sha256:673b74744bd021fa2f58749e0363dec336077c511ce3596cb97e343c4ea646ff",
+  "export_hash": "sha256:fb60baa4de4ba3af54f506b99e2bb6f3569cc50d9f629c0d41006c37f760bd54",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:9213b91d75f09499979c55158dbc901af6ee853c36513ac9d6ac093570441060",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.ArithmeticGeometry.RationalPoints", "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SchemeInterfaceData", "kind": "def" },
+    { "name": "scheme_interface_data_intro", "kind": "theorem" },
+    { "name": "scheme_structure_surface", "kind": "theorem" },
+    { "name": "fiber_product_surface", "kind": "theorem" },
+    { "name": "zariski_topology_surface", "kind": "theorem" },
+    { "name": "flatness_surface", "kind": "theorem" },
+    { "name": "scheme_base_change_surface", "kind": "theorem" },
+    { "name": "scheme_algebraic_geometry_dependency_explicit", "kind": "theorem" },
+    { "name": "scheme_rational_points_dependency_explicit", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

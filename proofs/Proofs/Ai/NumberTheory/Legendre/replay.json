@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Legendre",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "legendre_symbol_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Symbol => fun OddPrime => fun QuadraticResidue => fun QuadraticNonresidue => fun LegendreSymbol => fun LegendreSymbolDefinition => fun definition_law => fun p => fun a => fun odd_prime => definition_law p a odd_prime"
+    },
+    {
+      "declaration": "legendre_symbol_multiplicativity_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddPrime => fun LegendreSymbolMultiplicative => fun multiplicativity_law => fun p => fun a => fun b => fun odd_prime => multiplicativity_law p a b odd_prime"
+    },
+    {
+      "declaration": "legendre_euler_criterion_finite_cyclic_group_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Symbol => fun OddPrime => fun UnitModulo => fun LegendreSymbol => fun FiniteCyclicUnitGroupFact => fun EulerCriterionStatement => fun euler_law => fun p => fun a => fun odd_prime => fun unit_a => fun finite_cyclic_units => euler_law p a odd_prime unit_a finite_cyclic_units"
+    },
+    {
+      "declaration": "legendre_quadratic_residue_count_odd_prime_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun OddPrime => fun QuadraticResidueCount => fun LegendrePositiveClassCount => fun CountCompatibility => fun count_law => fun p => fun odd_prime => count_law p odd_prime"
+    },
+    {
+      "declaration": "legendre_jacobi_api_separation_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun LegendreSymbolPackage => fun JacobiSymbolPackage => fun OddPrimeDomainPackage => fun OddCompositeDomainPackage => fun NoApiConflationBoundary => fun boundary_law => fun legendre => fun jacobi => fun odd_prime_domain => fun odd_composite_domain => boundary_law legendre jacobi odd_prime_domain odd_composite_domain"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Legendre/certificate.npcert"
+  }
+}

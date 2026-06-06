@@ -1,0 +1,22 @@
+import Std.Logic.Eq
+
+theorem dirichlet_series_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Nat : Type), forall (IsDirichletSeries : (Nat -> Coeff) -> Complex -> Coeff -> Prop), forall (dirichlet_law : forall (a : Nat -> Coeff), forall (s : Complex), forall (sum : Coeff), IsDirichletSeries a s sum), forall (a : Nat -> Coeff), forall (s : Complex), forall (sum : Coeff), IsDirichletSeries a s sum :=
+  fun Complex => fun Coeff => fun Nat => fun IsDirichletSeries => fun dirichlet_law => fun a => fun s => fun sum => dirichlet_law a s sum
+
+theorem dirichlet_series_abscissa_interface :
+  forall (Real : Type), forall (Complex : Type), forall (Nat : Type), forall (Coeff : Type), forall (Re : Complex -> Real), forall (Lt : Real -> Real -> Prop), forall (DirichletSeriesStructure : (Nat -> Coeff) -> Complex -> Coeff), forall (Converges : (Complex -> Coeff) -> Prop), forall (AbscissaOfConvergence : (Nat -> Coeff) -> Real), forall (abscissa_law : forall (a : Nat -> Coeff), forall (s : Complex), Lt (AbscissaOfConvergence a) (Re s) -> Converges (DirichletSeriesStructure a)), forall (a : Nat -> Coeff), forall (s : Complex), Lt (AbscissaOfConvergence a) (Re s) -> Converges (DirichletSeriesStructure a) :=
+  fun Real => fun Complex => fun Nat => fun Coeff => fun Re => fun Lt => fun DirichletSeriesStructure => fun Converges => fun AbscissaOfConvergence => fun abscissa_law => fun a => fun s => abscissa_law a s
+
+theorem euler_product_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Nat : Type), forall (IsMultiplicative : (Nat -> Coeff) -> Prop), forall (DirichletSeriesStructure : (Nat -> Coeff) -> Complex -> Coeff), forall (EulerProductStructure : (Nat -> Coeff) -> Complex -> Coeff), forall (euler_product_law : forall (a : Nat -> Coeff), forall (is_mult : IsMultiplicative a), forall (s : Complex), @Eq.{1} Coeff (DirichletSeriesStructure a s) (EulerProductStructure a s)), forall (a : Nat -> Coeff), forall (is_mult : IsMultiplicative a), forall (s : Complex), @Eq.{1} Coeff (DirichletSeriesStructure a s) (EulerProductStructure a s) :=
+  fun Complex => fun Coeff => fun Nat => fun IsMultiplicative => fun DirichletSeriesStructure => fun EulerProductStructure => fun euler_product_law => fun a => fun is_mult => fun s => euler_product_law a is_mult s
+
+theorem analytic_continuation_interface :
+  forall (Complex : Type), forall (Coeff : Type), forall (Nat : Type), forall (Domain : Type), forall (DirichletSeriesStructure : (Nat -> Coeff) -> Complex -> Coeff), forall (AnalyticContinuation : (Nat -> Coeff) -> Domain -> (Complex -> Coeff) -> Prop), forall (continuation_law : forall (a : Nat -> Coeff), forall (D : Domain), forall (F : Complex -> Coeff), AnalyticContinuation a D F), forall (a : Nat -> Coeff), forall (D : Domain), forall (F : Complex -> Coeff), AnalyticContinuation a D F :=
+  fun Complex => fun Coeff => fun Nat => fun Domain => fun DirichletSeriesStructure => fun AnalyticContinuation => fun continuation_law => fun a => fun D => fun F => continuation_law a D F
+
+theorem tauberian_theorem_interface :
+  forall (Real : Type), forall (Complex : Type), forall (Nat : Type), forall (Coeff : Type), forall (FunctionBehaviorNearConvergence : (Complex -> Coeff) -> Prop), forall (AsymptoticCoefficientBehavior : (Nat -> Coeff) -> Prop), forall (tauberian_law : forall (F : Complex -> Coeff), forall (a : Nat -> Coeff), FunctionBehaviorNearConvergence F -> AsymptoticCoefficientBehavior a), forall (F : Complex -> Coeff), forall (a : Nat -> Coeff), FunctionBehaviorNearConvergence F -> AsymptoticCoefficientBehavior a :=
+  fun Real => fun Complex => fun Nat => fun Coeff => fun FunctionBehaviorNearConvergence => fun AsymptoticCoefficientBehavior => fun tauberian_law => fun F => fun a => tauberian_law F a
+

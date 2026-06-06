@@ -1,0 +1,41 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.Algebra.AbstractGroupImage
+import Proofs.Ai.Algebra.AbstractGroupQuotient
+import Proofs.Ai.Algebra.AbstractGroupQuotientMul
+import Proofs.Ai.Algebra.AbstractGroupQuotientGroup
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractField
+import Proofs.Ai.Algebra.AbstractRingFirstIsoBase
+import Proofs.Ai.Algebra.AbstractFieldHom
+import Proofs.Ai.Algebra.AbstractFieldHomKernelImage
+import Proofs.Ai.Algebra.AbstractFieldExtension
+import Proofs.Ai.Algebra.AbstractHilbertBasisTheorem
+import Proofs.Ai.Algebra.AbstractKrullTheorem
+import Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient
+import Proofs.Ai.Algebra.AbstractAlgebraicExtension
+import Proofs.Ai.Algebra.AbstractFiniteFieldExtension
+import Proofs.Ai.Algebra.AbstractFiniteField
+import Proofs.Ai.EllipticCurve.Basic
+import Proofs.Ai.EllipticCurve.GroupLaw
+
+theorem finite_field_core_laws_imported_from_abstract_finite_field_boundary :
+  forall (AbstractFiniteFieldCoreLaws : Type), forall (EllipticCurveFiniteFieldSurface : Type), forall (UsesAbstractFiniteFieldCoreLaws : EllipticCurveFiniteFieldSurface -> AbstractFiniteFieldCoreLaws -> Prop), forall (import_law : forall (surface : EllipticCurveFiniteFieldSurface), forall (core_laws : AbstractFiniteFieldCoreLaws), UsesAbstractFiniteFieldCoreLaws surface core_laws), forall (surface : EllipticCurveFiniteFieldSurface), forall (core_laws : AbstractFiniteFieldCoreLaws), UsesAbstractFiniteFieldCoreLaws surface core_laws :=
+  fun AbstractFiniteFieldCoreLaws => fun EllipticCurveFiniteFieldSurface => fun UsesAbstractFiniteFieldCoreLaws => fun import_law => fun surface => fun core_laws => import_law surface core_laws
+
+theorem finite_field_point_count_interface :
+  forall (FiniteFieldCarrier : Type), forall (EllipticCurve : Type), forall (PointCount : EllipticCurve -> FiniteFieldCarrier -> Type), forall (point_count_law : forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), PointCount curve finite_field), forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), PointCount curve finite_field :=
+  fun FiniteFieldCarrier => fun EllipticCurve => fun PointCount => fun point_count_law => fun curve => fun finite_field => point_count_law curve finite_field
+
+theorem hasse_theorem_interface :
+  forall (FiniteFieldCarrier : Type), forall (EllipticCurve : Type), forall (PointCount : Type), forall (HasseBound : EllipticCurve -> FiniteFieldCarrier -> PointCount -> Prop), forall (hasse_law : forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), forall (count : PointCount), HasseBound curve finite_field count), forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), forall (count : PointCount), HasseBound curve finite_field count :=
+  fun FiniteFieldCarrier => fun EllipticCurve => fun PointCount => fun HasseBound => fun hasse_law => fun curve => fun finite_field => fun count => hasse_law curve finite_field count
+
+theorem weil_bound_interface :
+  forall (FiniteFieldCarrier : Type), forall (FrobeniusTrace : Type), forall (WeilBound : FiniteFieldCarrier -> FrobeniusTrace -> Prop), forall (weil_bound_law : forall (finite_field : FiniteFieldCarrier), forall (trace : FrobeniusTrace), WeilBound finite_field trace), forall (finite_field : FiniteFieldCarrier), forall (trace : FrobeniusTrace), WeilBound finite_field trace :=
+  fun FiniteFieldCarrier => fun FrobeniusTrace => fun WeilBound => fun weil_bound_law => fun finite_field => fun trace => weil_bound_law finite_field trace
+
+theorem finite_field_frobenius_trace_surface :
+  forall (FiniteFieldCarrier : Type), forall (EllipticCurve : Type), forall (FrobeniusTrace : EllipticCurve -> FiniteFieldCarrier -> Type), forall (trace_law : forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), FrobeniusTrace curve finite_field), forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), FrobeniusTrace curve finite_field :=
+  fun FiniteFieldCarrier => fun EllipticCurve => fun FrobeniusTrace => fun trace_law => fun curve => fun finite_field => trace_law curve finite_field

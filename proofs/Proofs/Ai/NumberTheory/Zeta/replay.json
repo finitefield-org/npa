@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Zeta",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "riemann_zeta_euler_product_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Complex => fun Coeff => fun Re => fun Lt => fun One => fun ZetaStructure => fun IsZetaEulerProduct => fun euler_product_zeta_law => fun s => fun h => euler_product_zeta_law s h"
+    },
+    {
+      "declaration": "zeta_analytic_continuation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Domain => fun ZetaStructure => fun ZetaAnalyticContinuation => fun continuation_zeta_law => fun D => fun F => continuation_zeta_law D F"
+    },
+    {
+      "declaration": "zeta_functional_equation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun Coeff => fun Sub => fun One => fun XiFunction => fun xi_functional_equation_law => fun s => xi_functional_equation_law s"
+    },
+    {
+      "declaration": "zeta_zero_free_region_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun ZetaZeroRelation => fun ZeroFreeRegion => fun Not => fun zero_free_law => fun s => fun h => zero_free_law s h"
+    },
+    {
+      "declaration": "riemann_von_mangoldt_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Nat => fun NumberOfZerosUpToHeight => fun RiemannVonMangoldtBound => fun riemann_von_mangoldt_law => fun T => riemann_von_mangoldt_law T"
+    },
+    {
+      "declaration": "zeta_explicit_formula_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun PsiFunction => fun ExplicitFormulaBound => fun explicit_formula_law => fun x => explicit_formula_law x"
+    },
+    {
+      "declaration": "riemann_hypothesis_conditional_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun RiemannHypothesis => fun PntErrorBoundRH => fun riemann_hypothesis_conditional_law => fun rh => fun x => riemann_hypothesis_conditional_law rh x"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Zeta/certificate.npcert"
+  }
+}

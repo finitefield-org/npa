@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.QuadraticReciprocity",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "gauss_lemma_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Symbol => fun Odd => fun Prime => fun UnitModulo => fun LegendreSymbol => fun SignedResidueCount => fun GaussLemmaStatement => fun gauss_lemma_law => fun p => fun a => fun odd_p => fun prime_p => fun unit_a => fun signed_count => gauss_lemma_law p a odd_p prime_p unit_a signed_count"
+    },
+    {
+      "declaration": "supplementary_law_minus_one_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Symbol => fun Odd => fun Prime => fun LegendreSymbol => fun MinusOne => fun SupplementaryMinusOneLaw => fun supplementary_law => fun p => fun odd_p => fun prime_p => supplementary_law p odd_p prime_p"
+    },
+    {
+      "declaration": "supplementary_law_two_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Symbol => fun Odd => fun Prime => fun LegendreSymbol => fun Two => fun PrimeClassModEight => fun SupplementaryTwoLaw => fun supplementary_law => fun p => fun odd_p => fun prime_p => fun class_mod_eight => supplementary_law p odd_p prime_p class_mod_eight"
+    },
+    {
+      "declaration": "quadratic_reciprocity_distinct_odd_primes_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Odd => fun Prime => fun Distinct => fun QuadraticReciprocityLaw => fun reciprocity_law => fun p => fun q => fun odd_p => fun prime_p => fun odd_q => fun prime_q => fun distinct_pq => reciprocity_law p q odd_p prime_p odd_q prime_q distinct_pq"
+    },
+    {
+      "declaration": "quadratic_reciprocity_first_route_recorded_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun GaussLemmaPackage => fun SupplementaryLawPackage => fun QuadraticReciprocityPackage => fun AlternativeProofPackage => fun FirstRouteRecordedBoundary => fun boundary_law => fun gauss_lemma => fun supplementary => fun reciprocity => fun alternative => boundary_law gauss_lemma supplementary reciprocity alternative"
+    },
+    {
+      "declaration": "quadratic_reciprocity_no_backward_primitive_character_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimitiveRootPackage => fun CharacterPackage => fun GaussSumPackage => fun QuadraticReciprocityPackage => fun NoBackwardDependencyBoundary => fun boundary_law => fun primitive_root => fun characters => fun gauss_sum => fun reciprocity => boundary_law primitive_root characters gauss_sum reciprocity"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/QuadraticReciprocity/certificate.npcert"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.CircleMethod",
+  "source": "Proofs/Ai/NumberTheory/CircleMethod/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/CircleMethod/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bc3b7cdaa1f14601a6b08b9c41bf4cef746fb63bc2371f71283487662153ad7d",
+  "certificate_file_sha256": "sha256:83dddf82898d784922363ea1eccdb4833d0912cc5bab7d6a761edbe814c68e47",
+  "export_hash": "sha256:5f6b9c8ef9ca077d9c995b9e92bb69dce894c673b41c8c903e0796e9af09f079",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:bb1caf0e34a66e14eaa8c6d9178e66bd89a12444c12b8e3e34afb99470220926",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "hardy_littlewood_circle_method_interface", "kind": "theorem" },
+    { "name": "major_arc_contribution_interface", "kind": "theorem" },
+    { "name": "minor_arc_contribution_interface", "kind": "theorem" },
+    { "name": "circle_method_asymptotic_assumption_interface", "kind": "theorem" },
+    { "name": "circle_method_harmonic_exponential_dependency_surface", "kind": "theorem" },
+    { "name": "circle_method_conditional_analytic_prerequisite_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

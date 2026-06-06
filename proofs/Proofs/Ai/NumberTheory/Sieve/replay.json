@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Sieve",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "brun_sieve_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun Le => fun SievedCount => fun BrunSieveBound => fun brun_sieve_law => fun A => fun x => fun z => brun_sieve_law A x z"
+    },
+    {
+      "declaration": "selberg_sieve_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun Le => fun SievedCount => fun SelbergSieveBound => fun selberg_sieve_law => fun A => fun x => fun z => selberg_sieve_law A x z"
+    },
+    {
+      "declaration": "large_sieve_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun Le => fun LargeSieveSum => fun LargeSieveBound => fun large_sieve_law => fun a => fun N => large_sieve_law a N"
+    },
+    {
+      "declaration": "fundamental_lemma_sieve_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun Le => fun SievedCount => fun FundamentalLemmaApproximation => fun fundamental_lemma_law => fun A => fun x => fun u => fundamental_lemma_law A x u"
+    },
+    {
+      "declaration": "sieve_error_term_asymptotic_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun AsymptoticWithError => fun SievedCount => fun MainTerm => fun ErrorTerm => fun asymptotic_law => fun A => fun x => fun z => asymptotic_law A x z"
+    },
+    {
+      "declaration": "brun_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Int => fun Le => fun TwinPrimeCount => fun BrunTheoremBound => fun brun_theorem_law => fun x => brun_theorem_law x"
+    },
+    {
+      "declaration": "twin_prime_reciprocal_convergence_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun SumReciprocalsTwinPrimes => fun Converges => fun twin_prime_reciprocal_convergence_law => twin_prime_reciprocal_convergence_law"
+    },
+    {
+      "declaration": "chen_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun IsEven => fun SufficientlyLarge => fun ChenSumRepresentable => fun chen_theorem_law => fun n => fun even_n => fun large_n => chen_theorem_law n even_n large_n"
+    },
+    {
+      "declaration": "gpy_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Lt => fun InfPrimeGapsRatio => fun Zero => fun gpy_theorem_law => gpy_theorem_law"
+    },
+    {
+      "declaration": "zhang_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun InfinitelyManyPairsWithGap => fun BoundH => fun zhang_theorem_law => zhang_theorem_law"
+    },
+    {
+      "declaration": "maynard_tao_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun InfinitelyManyTuplesWithBoundedGap => fun m_param => fun BoundH => fun maynard_tao_theorem_law => maynard_tao_theorem_law"
+    },
+    {
+      "declaration": "sieve_analytic_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun SieveResultPackage => fun AnalyticEstimatePackage => fun DistributionHypothesisPackage => fun LargeSieveInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun analytic => fun distribution => fun large_sieve => dependency_law result analytic distribution large_sieve"
+    },
+    {
+      "declaration": "sieve_no_unresolved_conjecture_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun SieveResultPackage => fun UnresolvedConjecturePackage => fun NoUnresolvedConjectureDerivation => fun boundary_law => fun sieve_result => fun conjecture => boundary_law sieve_result conjecture"
+    },
+    {
+      "declaration": "sieve_parity_problem_limitation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun ParityLimitationProp => fun sieve_parity_problem_law => sieve_parity_problem_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Sieve/certificate.npcert"
+  }
+}

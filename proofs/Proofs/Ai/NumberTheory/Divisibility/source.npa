@@ -1,0 +1,41 @@
+import Proofs.Ai.NumberTheory.Elementary
+
+theorem divides_reflexivity_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (reflexive_law : forall (a : Int), Divides a a), forall (a : Int), Divides a a :=
+  fun Int => fun Divides => fun reflexive_law => fun a => reflexive_law a
+
+theorem divides_transitivity_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (transitive_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), forall (divides_bc : Divides b c), Divides a c), forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), forall (divides_bc : Divides b c), Divides a c :=
+  fun Int => fun Divides => fun transitive_law => fun a => fun b => fun c => fun divides_ab => fun divides_bc => transitive_law a b c divides_ab divides_bc
+
+theorem sign_normalized_divisibility_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (NormalizedDivides : forall (a : Int), forall (b : Int), Prop), forall (Nonnegative : forall (x : Int), Prop), forall (normalize_law : forall (a : Int), forall (b : Int), forall (nonnegative_b : Nonnegative b), forall (divides_ab : Divides a b), NormalizedDivides a b), forall (a : Int), forall (b : Int), forall (nonnegative_b : Nonnegative b), forall (divides_ab : Divides a b), NormalizedDivides a b :=
+  fun Int => fun Divides => fun NormalizedDivides => fun Nonnegative => fun normalize_law => fun a => fun b => fun nonnegative_b => fun divides_ab => normalize_law a b nonnegative_b divides_ab
+
+theorem normalized_divisibility_antisymmetry_packaged :
+  forall (Int : Type), forall (NormalizedDivides : forall (a : Int), forall (b : Int), Prop), forall (EquivalentInt : forall (a : Int), forall (b : Int), Prop), forall (antisymmetry_law : forall (a : Int), forall (b : Int), forall (divides_ab : NormalizedDivides a b), forall (divides_ba : NormalizedDivides b a), EquivalentInt a b), forall (a : Int), forall (b : Int), forall (divides_ab : NormalizedDivides a b), forall (divides_ba : NormalizedDivides b a), EquivalentInt a b :=
+  fun Int => fun NormalizedDivides => fun EquivalentInt => fun antisymmetry_law => fun a => fun b => fun divides_ab => fun divides_ba => antisymmetry_law a b divides_ab divides_ba
+
+theorem divides_sign_rule_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Neg : forall (x : Int), Int), forall (sign_law : forall (a : Int), forall (b : Int), forall (divides_ab : Divides a b), Divides (Neg a) (Neg b)), forall (a : Int), forall (b : Int), forall (divides_ab : Divides a b), Divides (Neg a) (Neg b) :=
+  fun Int => fun Divides => fun Neg => fun sign_law => fun a => fun b => fun divides_ab => sign_law a b divides_ab
+
+theorem divisor_from_divides_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Divisor : forall (d : Int), forall (n : Int), Prop), forall (divisor_law : forall (d : Int), forall (n : Int), forall (divides_dn : Divides d n), Divisor d n), forall (d : Int), forall (n : Int), forall (divides_dn : Divides d n), Divisor d n :=
+  fun Int => fun Divides => fun Divisor => fun divisor_law => fun d => fun n => fun divides_dn => divisor_law d n divides_dn
+
+theorem multiple_from_divides_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Multiple : forall (n : Int), forall (m : Int), Prop), forall (multiple_law : forall (n : Int), forall (m : Int), forall (divides_nm : Divides n m), Multiple n m), forall (n : Int), forall (m : Int), forall (divides_nm : Divides n m), Multiple n m :=
+  fun Int => fun Divides => fun Multiple => fun multiple_law => fun n => fun m => fun divides_nm => multiple_law n m divides_nm
+
+theorem divides_mul_right_closure_packaged :
+  forall (Int : Type), forall (Divides : forall (a : Int), forall (b : Int), Prop), forall (Mul : forall (a : Int), forall (b : Int), Int), forall (closure_law : forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), Divides a (Mul b c)), forall (a : Int), forall (b : Int), forall (c : Int), forall (divides_ab : Divides a b), Divides a (Mul b c) :=
+  fun Int => fun Divides => fun Mul => fun closure_law => fun a => fun b => fun c => fun divides_ab => closure_law a b c divides_ab
+
+theorem nat_int_divisibility_translation_packaged :
+  forall (NatCarrier : Type), forall (Int : Type), forall (toInt : forall (n : NatCarrier), Int), forall (NatDivides : forall (a : NatCarrier), forall (b : NatCarrier), Prop), forall (IntDivides : forall (a : Int), forall (b : Int), Prop), forall (PositiveNat : forall (n : NatCarrier), Prop), forall (translation_law : forall (a : NatCarrier), forall (b : NatCarrier), forall (positive_b : PositiveNat b), forall (nat_divides_ab : NatDivides a b), IntDivides (toInt a) (toInt b)), forall (a : NatCarrier), forall (b : NatCarrier), forall (positive_b : PositiveNat b), forall (nat_divides_ab : NatDivides a b), IntDivides (toInt a) (toInt b) :=
+  fun NatCarrier => fun Int => fun toInt => fun NatDivides => fun IntDivides => fun PositiveNat => fun translation_law => fun a => fun b => fun positive_b => fun nat_divides_ab => translation_law a b positive_b nat_divides_ab
+
+theorem divisibility_simplification_theorem_target :
+  forall (DivisibilitySimplification : Type), forall (OrdinaryTheoremTarget : forall (target : DivisibilitySimplification), Prop), forall (target : DivisibilitySimplification), forall (evidence : OrdinaryTheoremTarget target), OrdinaryTheoremTarget target :=
+  fun DivisibilitySimplification => fun OrdinaryTheoremTarget => fun target => fun evidence => evidence

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.GaussSum",
+  "source": "Proofs/Ai/NumberTheory/GaussSum/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/GaussSum/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d1249e1902c8f7dce6dbe6f39fc8b3e879f8166786c4595b93023555c5b8d783",
+  "certificate_file_sha256": "sha256:cdaddf16d53261c9fecf900c24cb2ccf5359a1ab74102530e008cce8b4eb6550",
+  "export_hash": "sha256:0eeaee22ba2e3fee8e6f2e43ccaef0f81e2aeef6221dba7dd55a3cce562cf2bb",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:eca3b9e76e4814edfae1169b6b06b13c892a94d6e2f9a44f0367ccedcf639444",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.FiniteFieldApplications"],
+  "axioms": [],
+  "declarations": [
+    { "name": "gauss_sum_definition_coefficient_ring_surface", "kind": "theorem" },
+    { "name": "gauss_sum_basic_identity_surface", "kind": "theorem" },
+    { "name": "gauss_sum_orthogonality_bridge_surface", "kind": "theorem" },
+    { "name": "gauss_sum_no_analytic_l_function_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

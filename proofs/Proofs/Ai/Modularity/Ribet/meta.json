@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Modularity.Ribet",
+  "source": "Proofs/Ai/Modularity/Ribet/source.npa",
+  "certificate": "Proofs/Ai/Modularity/Ribet/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9693d03afec98483987ce884205014f0d8f63c07068738c99b71d08ea4c2a7f8",
+  "certificate_file_sha256": "sha256:6bded5bef8749ba79299cbd65009c1e0e385308d66373a9051dfce03244549f3",
+  "export_hash": "sha256:efb6f3d0917ee0d30842135daf84bda0856974c98f6e342dd6a1173ddd3ba265",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:567610cff87e02cdc7ea4e8dfb29aef60077e32ff52bd9d76bde4fd7947703fc",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Modularity.LevelLowering"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RibetBridgeData", "kind": "def" },
+    { "name": "ribet_bridge_axiom_data_intro", "kind": "theorem" },
+    { "name": "ribet_level_lowering_general_package_surface", "kind": "theorem" },
+    { "name": "ribet_hecke_package_input_surface", "kind": "theorem" },
+    { "name": "ribet_modular_curve_package_input_surface", "kind": "theorem" },
+    { "name": "ribet_level_lowering_statement_surface", "kind": "theorem" },
+    { "name": "ribet_bridge_axiom_not_completed_proof_boundary", "kind": "theorem" },
+    { "name": "ribet_high_trust_import_blocked_for_bridge_variants", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

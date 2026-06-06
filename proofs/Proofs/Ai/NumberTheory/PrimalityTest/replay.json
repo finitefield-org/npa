@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimalityTest",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "fermat_pseudoprime_surface_from_fermat_congruence",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeModulus => fun CoprimeInt => fun FermatLittleCongruence => fun PseudoprimeToBase => fun pseudoprime_law => fun n => fun a => fun composite_n => fun coprime_an => fun fermat_congruence => pseudoprime_law n a composite_n coprime_an fermat_congruence"
+    },
+    {
+      "declaration": "carmichael_number_korselt_criterion_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CompositeModulus => fun SquareFree => fun PrimeDivisor => fun DividesPred => fun CarmichaelNumber => fun KorseltCriterion => fun korselt_law => fun n => fun composite_n => fun square_free_n => fun criterion => korselt_law n composite_n square_free_n criterion"
+    },
+    {
+      "declaration": "fermat_primality_test_accepts_prime_moduli",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun PrimeModulus => fun CoprimeInt => fun FermatLittleCongruence => fun FermatTestAccepts => fun soundness_law => fun p => fun a => fun prime_p => fun coprime_ap => fun fermat_step => soundness_law p a prime_p coprime_ap fermat_step"
+    },
+    {
+      "declaration": "miller_rabin_witness_rejects_composite_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun OddComposite => fun MillerRabinWitness => fun MillerRabinRejects => fun witness_law => fun n => fun a => fun odd_composite_n => fun witness => witness_law n a odd_composite_n witness"
+    },
+    {
+      "declaration": "fermat_test_correctness_from_congruence_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun FermatTestToken => fun PrimeModulus => fun CoprimeInt => fun FermatCongruence => fun FermatTestAccepts => fun PrimalityAlgorithmCorrect => fun accept_law => fun correctness_law => fun p => fun a => fun prime_p => fun coprime_ap => fun congruence => correctness_law p a (accept_law p a prime_p coprime_ap congruence)"
+    },
+    {
+      "declaration": "miller_rabin_probability_boundary_from_witness_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun RandomnessSource => fun ProbabilityBound => fun MillerRabinToken => fun OddComposite => fun MillerRabinWitness => fun MillerRabinRejects => fun RandomnessAssumption => fun FailureProbabilityClaim => fun MillerRabinProbabilityBoundary => fun witness_law => fun probability_boundary_law => fun n => fun a => fun randomness => fun bound => fun odd_composite_n => fun witness => fun randomness_assumption => fun failure_claim => probability_boundary_law n a randomness bound (witness_law n a odd_composite_n witness) randomness_assumption failure_claim"
+    },
+    {
+      "declaration": "aks_primality_correctness_from_polynomial_checks",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun AksTestToken => fun AksPolynomialIdentityChecks => fun AksTrialDivisionChecks => fun AksAccepts => fun PrimalityAlgorithmCorrect => fun accept_law => fun correctness_law => fun n => fun polynomial_checks => fun trial_checks => correctness_law n (accept_law n polynomial_checks trial_checks)"
+    },
+    {
+      "declaration": "primality_complexity_interface_requires_cost_model",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun CostModel => fun AksTestToken => fun AksCertificate => fun PrimalityAlgorithmCorrect => fun ComplexityInterface => fun CostModelAvailable => fun CorrectnessSeparateFromComplexity => fun correctness_law => fun complexity_law => fun separation_law => fun n => fun cost_model => fun certificate => fun available => separation_law cost_model (correctness_law n certificate) (complexity_law cost_model available)"
+    },
+    {
+      "declaration": "primality_hardness_assumption_not_derived_from_test_correctness",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun AlgorithmName => fun HardnessAssumption => fun AksTestToken => fun AksCertificate => fun PrimalityAlgorithmCorrect => fun HardnessAssumptionNotDerived => fun correctness_law => fun hardness_boundary_law => fun n => fun hardness => fun certificate => hardness_boundary_law AksTestToken hardness (correctness_law n certificate)"
+    },
+    {
+      "declaration": "primality_tests_no_runtime_randomness_trusted_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PrimalityTestPackage => fun MathematicalSoundnessPackage => fun RuntimeRandomnessSource => fun ProbabilisticSecurityClaim => fun TrustedBoundary => fun boundary_law => fun tests => fun soundness => fun randomness => fun security => boundary_law tests soundness randomness security"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/PrimalityTest/certificate.npcert"
+  }
+}

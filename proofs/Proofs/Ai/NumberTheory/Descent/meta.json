@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Descent",
+  "source": "Proofs/Ai/NumberTheory/Descent/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Descent/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:91f70f6e7ec3bf284335745632baa900db1f3e0843017dfdfb343a0868379941",
+  "certificate_file_sha256": "sha256:f275f32eeb8eba75922032e6b5260ce278b9a83fa793d34f579aafcba218a325",
+  "export_hash": "sha256:ca2319aefff23f3d63e06a49a86dc68c3b393d575e0658cd3d30f1e0b033d199",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:7f91e6c2311b41c44ee10596d85a5598b3396bb2a726532dec3f46962bdf1efc",
+  "imports": ["Proofs.Ai.NumberTheory.EuclideanDivision"],
+  "axioms": [],
+  "declarations": [
+    { "name": "finite_descent_step_packaged", "kind": "theorem" },
+    { "name": "well_founded_minimization_packaged", "kind": "theorem" },
+    { "name": "no_infinite_descent_contradiction_packaged", "kind": "theorem" },
+    { "name": "gcd_descent_measure_surface_packaged", "kind": "theorem" },
+    { "name": "continued_fraction_descent_surface_packaged", "kind": "theorem" },
+    { "name": "diophantine_descent_surface_packaged", "kind": "theorem" },
+    { "name": "descent_algorithm_boundary_packaged", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

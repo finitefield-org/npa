@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Combinatorial",
+  "source": "Proofs/Ai/NumberTheory/Combinatorial/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Combinatorial/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0f71932c11e1440dfce346f24b9be3c1d0176d8bc9915959bb8e35feaf423f57",
+  "certificate_file_sha256": "sha256:6c52b1c1168c9d2e3d4124938693e303002e2e3821e2e91f7517d3bea4482eac",
+  "export_hash": "sha256:1ef797d85d1229acfb623da2ab8eb2686c3c5022f5c99e59abac3eaf52107d49",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:ee1f88bdbb17d021380db1edbc2195e69c10c6e2cbf3ba1efa835be406e5b1ae",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.FiniteFieldApplications", "Proofs.Ai.NumberTheory.Additive"],
+  "axioms": [],
+  "declarations": [
+    { "name": "pigeonhole_ramsey_schur_rado_chain", "kind": "theorem" },
+    { "name": "van_der_waerden_polynomial_method_bridge", "kind": "theorem" },
+    { "name": "erdos_ginzburg_ziv_olson_davenport_constant_chain", "kind": "theorem" },
+    { "name": "finite_field_combinatorial_nullstellensatz_chain", "kind": "theorem" },
+    { "name": "combinatorial_finite_field_application_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

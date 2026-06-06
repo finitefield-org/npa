@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Pell",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "quadratic_irrational_periodic_continued_fraction_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun QuadraticIrrational => fun PeriodicContinuedFraction => fun RealAnalysisPrerequisite => fun periodicity_law => fun x => fun quadratic_irrational_x => fun analysis_prereq => periodicity_law x quadratic_irrational_x analysis_prereq"
+    },
+    {
+      "declaration": "pell_equation_existence_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Solution => fun Positive => fun Nonsquare => fun PellEquation => fun NormalizedSolution => fun PellExistence => fun existence_law => fun d => fun solution => fun positive_d => fun nonsquare_d => fun normalized_solution => fun pell_solution => existence_law d solution positive_d nonsquare_d normalized_solution pell_solution"
+    },
+    {
+      "declaration": "pell_solution_structure_interface_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Solution => fun Positive => fun Nonsquare => fun PellEquation => fun NormalizedSolution => fun SolutionComposition => fun PellSolutionStructure => fun structure_law => fun d => fun left => fun right => fun positive_d => fun nonsquare_d => fun left_solution => fun right_solution => fun left_normalized => fun right_normalized => structure_law d left right positive_d nonsquare_d left_solution right_solution left_normalized right_normalized"
+    },
+    {
+      "declaration": "pell_fundamental_solution_generation_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Solution => fun Positive => fun Nonsquare => fun FundamentalSolution => fun NormalizedSolution => fun GenerateSolution => fun PellSolutionFamily => fun generation_law => fun d => fun base => fun step => fun positive_d => fun nonsquare_d => fun fundamental => fun normalized_base => generation_law d base step positive_d nonsquare_d fundamental normalized_base"
+    },
+    {
+      "declaration": "pell_real_analysis_prerequisites_explicit_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PellInterface => fun PeriodicContinuedFractionInterface => fun RealAnalysisPrerequisite => fun PrerequisiteBoundary => fun boundary_law => fun pell => fun periodic_cf => fun analysis_prereq => boundary_law pell periodic_cf analysis_prereq"
+    },
+    {
+      "declaration": "pell_interface_not_derived_certificate_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun PellInterfaceStatement => fun DerivedPellCertificate => fun InterfaceCertificateBoundary => fun boundary_law => fun interface_statement => fun derived_certificate => boundary_law interface_statement derived_certificate"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Pell/certificate.npcert"
+  }
+}

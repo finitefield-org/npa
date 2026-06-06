@@ -1,0 +1,18 @@
+import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Basic
+
+theorem group_law_theorem_interface :
+  forall (F : Type), forall (Point : Type), forall (IsGroup : Prop), forall (group_law : IsGroup -> IsGroup), IsGroup -> IsGroup :=
+  fun F => fun Point => fun IsGroup => fun group_law => group_law
+
+theorem elliptic_point_group_operation_laws_surface :
+  forall (F : Type), forall (Point : Type), forall (AddPoint : Point -> Point -> Point), forall (ZeroPoint : Point), forall (NegPoint : Point -> Point), forall (OnCurve : Point -> Prop), forall (Closure : Prop), forall (Associativity : Prop), forall (Identity : Prop), forall (Inverse : Prop), forall (GroupLawEvidence : Prop), forall (group_law : Closure -> Associativity -> Identity -> Inverse -> GroupLawEvidence), Closure -> Associativity -> Identity -> Inverse -> GroupLawEvidence :=
+  fun F => fun Point => fun AddPoint => fun ZeroPoint => fun NegPoint => fun OnCurve => fun Closure => fun Associativity => fun Identity => fun Inverse => fun GroupLawEvidence => fun group_law => fun closure => fun associativity => fun identity => fun inverse => group_law closure associativity identity inverse
+
+theorem group_law_independent_of_modularity_ribet_bridge_boundary :
+  forall (EllipticGroupLawPackage : Type), forall (ModularityPackage : Type), forall (RibetPackage : Type), forall (BridgeAxiomPackage : Type), forall (NoDependency : EllipticGroupLawPackage -> ModularityPackage -> RibetPackage -> BridgeAxiomPackage -> Prop), forall (boundary_law : forall (group_law : EllipticGroupLawPackage), forall (modularity : ModularityPackage), forall (ribet : RibetPackage), forall (bridge_axiom : BridgeAxiomPackage), NoDependency group_law modularity ribet bridge_axiom), forall (group_law : EllipticGroupLawPackage), forall (modularity : ModularityPackage), forall (ribet : RibetPackage), forall (bridge_axiom : BridgeAxiomPackage), NoDependency group_law modularity ribet bridge_axiom :=
+  fun EllipticGroupLawPackage => fun ModularityPackage => fun RibetPackage => fun BridgeAxiomPackage => fun NoDependency => fun boundary_law => fun group_law => fun modularity => fun ribet => fun bridge_axiom => boundary_law group_law modularity ribet bridge_axiom
+
+theorem group_law_general_api_reuse_surface :
+  forall (EllipticCurveApi : Type), forall (SpecializedFreyModule : Type), forall (GeneralArithmeticGeometryContext : Type), forall (ReusableGroupLaw : EllipticCurveApi -> GeneralArithmeticGeometryContext -> Prop), forall (reuse_law : forall (api : EllipticCurveApi), forall (context : GeneralArithmeticGeometryContext), ReusableGroupLaw api context), forall (api : EllipticCurveApi), forall (context : GeneralArithmeticGeometryContext), ReusableGroupLaw api context :=
+  fun EllipticCurveApi => fun SpecializedFreyModule => fun GeneralArithmeticGeometryContext => fun ReusableGroupLaw => fun reuse_law => fun api => fun context => reuse_law api context

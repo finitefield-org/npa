@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.ExponentialSum",
+  "source": "Proofs/Ai/NumberTheory/ExponentialSum/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/ExponentialSum/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:559fb5740322ebb8d212083a73d7839ec8d1a2cca41d0fd5342b514c94a1d314",
+  "certificate_file_sha256": "sha256:b1dd40ff73e060c58756d18b3807c641701efd7cdae53085aea6fca35e422152",
+  "export_hash": "sha256:9ab59821ff15e8f44aadc6a08e9b1b60dbeeca5f5adfc5c97ff3664adf570fb8",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:c5bca9f34cd54ea1f9d18a2e6cce08ee5b921e205d4a34396d42d1b0e9834137",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.NumberTheory.FiniteFieldApplications", "Proofs.Ai.NumberTheory.PrimitiveRoot", "Proofs.Ai.NumberTheory.Character", "Proofs.Ai.NumberTheory.GaussSum"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ExponentialSum_gauss_sum_finite_field_character_chain", "kind": "theorem" },
+    { "name": "HasseDavenport_jacobi_sum_dependency_chain", "kind": "theorem" },
+    { "name": "Stickelberger_character_field_size_valuation_chain", "kind": "theorem" },
+    { "name": "Chevalley_warning_field_size_degree_nonvanishing_surface", "kind": "theorem" },
+    { "name": "AxKatz_degree_field_size_refinement_from_Chevalley", "kind": "theorem" },
+    { "name": "Weil_ExponentialSum_estimate_L1_boundary", "kind": "theorem" },
+    { "name": "LangWeil_L1_requires_algebraic_geometry_prerequisites", "kind": "theorem" },
+    { "name": "ExponentialSum_no_finite_field_core_duplication_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

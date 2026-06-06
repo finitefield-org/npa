@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.PrimeInfinitude",
+  "source": "Proofs/Ai/NumberTheory/PrimeInfinitude/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/PrimeInfinitude/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1d147c2a026584b1eda2f5e2ced9de7d3f32bd832e95480c1414c4421713d6b4",
+  "certificate_file_sha256": "sha256:a8bda2fd96751f83360db953612a351cbfc00272b18fc6fe8de784f8bafe7475",
+  "export_hash": "sha256:5585f08021ad55ccfca8f9506ec746c8df784531e644079a885130602f654597",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:46014e9a220b8848e5c9f01d3e8d1f1e821bc5c6e9413b502ea7bd5c6d7a38d9",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractUfdPrimeFactorization", "Proofs.Ai.NumberTheory.Composite", "Proofs.Ai.NumberTheory.Bezout", "Proofs.Ai.NumberTheory.UfdBridge", "Proofs.Ai.NumberTheory.Factorization"],
+  "axioms": [],
+  "declarations": [
+    { "name": "prime_infinitude_from_factorization_surface", "kind": "theorem" },
+    { "name": "prime_infinitude_euclid_packaged", "kind": "theorem" },
+    { "name": "euclid_prime_outside_finite_list_surface", "kind": "theorem" },
+    { "name": "factorial_plus_one_prime_escape_surface", "kind": "theorem" },
+    { "name": "sqrt_bound_composite_prime_factor_surface", "kind": "theorem" },
+    { "name": "sqrt_bound_composite_factor_or_cofactor_surface", "kind": "theorem" },
+    { "name": "prime_infinitude_elementary_variant_surface", "kind": "theorem" },
+    { "name": "prime_infinitude_no_analytic_dependency_boundary", "kind": "theorem" },
+    { "name": "prime_infinitude_no_chebotarev_or_pnt_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Cryptography.NumberTheory",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "diffie_hellman_shared_secret_correctness_from_group_keygen_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Group => fun Scalar => fun Point => fun RandomnessSource => fun GroupLawAssumption => fun KeyGenerationAssumption => fun PublicKeyRelation => fun SharedSecretRelation => fun SharedSecretAgreement => fun DiffieHellmanCorrect => fun public_key_law => fun shared_secret_law => fun agreement_law => fun correctness_law => fun group => fun alice_secret => fun bob_secret => fun randomness => fun alice_public => fun bob_public => fun alice_shared => fun bob_shared => fun group_law => fun alice_keygen => fun bob_keygen => correctness_law group alice_secret bob_secret randomness alice_public bob_public alice_shared bob_shared group_law alice_keygen bob_keygen (agreement_law group alice_secret bob_secret alice_public bob_public alice_shared bob_shared (shared_secret_law group alice_secret bob_secret bob_public alice_shared group_law (public_key_law group randomness bob_secret bob_public group_law bob_keygen)) (shared_secret_law group bob_secret alice_secret alice_public bob_shared group_law (public_key_law group randomness alice_secret alice_public group_law alice_keygen)))"
+    },
+    {
+      "declaration": "discrete_log_hardness_boundary_from_statement_and_algorithm_relation",
+      "source_kind": "explicit_term",
+      "term": "fun Group => fun Point => fun Scalar => fun HardnessAssumption => fun GroupLawAssumption => fun DiscreteLogStatement => fun DiscreteLogAlgorithmRelation => fun HardnessAssumptionNotDerived => fun statement_law => fun hardness_boundary_law => fun group => fun base => fun target => fun exponent => fun hardness => fun group_law => fun algorithm_relation => hardness_boundary_law group base target exponent hardness (statement_law group base target exponent group_law) algorithm_relation"
+    },
+    {
+      "declaration": "rsa_crypto_correctness_reuses_number_theory_roundtrip",
+      "source_kind": "explicit_term",
+      "term": "fun Modulus => fun PublicKey => fun PrivateKey => fun Message => fun RandomnessSource => fun RsaKeyGenerationAssumption => fun RsaNumberTheoryRoundTrip => fun RsaCryptographicCorrectness => fun roundtrip_law => fun crypto_correctness_law => fun modulus => fun public_key => fun private_key => fun message => fun randomness => fun keygen => crypto_correctness_law modulus public_key private_key message randomness keygen (roundtrip_law modulus public_key private_key message randomness keygen)"
+    },
+    {
+      "declaration": "lll_reduction_correctness_from_lattice_basis_chain",
+      "source_kind": "explicit_term",
+      "term": "fun Lattice => fun Basis => fun ReductionCertificate => fun CostModel => fun LatticeBasisAssumption => fun ReducedBasisCertificate => fun LllReductionCorrect => fun ComplexityInterface => fun basis_reduction_law => fun correctness_law => fun complexity_law => fun lattice => fun basis => fun certificate => fun cost_model => fun basis_assumption => correctness_law lattice basis certificate (basis_reduction_law lattice basis certificate basis_assumption)"
+    },
+    {
+      "declaration": "coppersmith_small_root_surface_from_lll_reduction",
+      "source_kind": "explicit_term",
+      "term": "fun Polynomial => fun Modulus => fun Root => fun Lattice => fun Basis => fun ReductionCertificate => fun CoppersmithSetup => fun LllReductionCorrect => fun SmallRootCertificate => fun CoppersmithConclusion => fun setup_law => fun small_root_law => fun conclusion_law => fun poly => fun modulus => fun root => fun lattice => fun basis => fun certificate => fun lll => conclusion_law poly modulus root (small_root_law poly modulus root lattice basis certificate (setup_law poly modulus root lattice basis) lll)"
+    },
+    {
+      "declaration": "number_theory_crypto_hardness_assumptions_not_l2_exports",
+      "source_kind": "explicit_term",
+      "term": "fun Protocol => fun HardnessAssumption => fun DerivedCertificateLevel => fun ProtocolCorrectness => fun CorrectnessStatement => fun HardnessAssumptionNotL2Export => fun correctness_statement_law => fun hardness_boundary_law => fun protocol => fun hardness => fun level => fun correctness => hardness_boundary_law protocol hardness level (correctness_statement_law protocol correctness)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Cryptography/NumberTheory/certificate.npcert"
+  }
+}

@@ -1,0 +1,10 @@
+import Std.Logic.Eq
+
+theorem padic_completion_interface :
+  forall (K : Type), forall (CompK : Type), forall (CompletionOf : K -> CompK), forall (comp_law : forall (x : K), @Eq.{1} CompK (CompletionOf x) (CompletionOf x)), forall (x : K), @Eq.{1} CompK (CompletionOf x) (CompletionOf x) :=
+  fun K => fun CompK => fun CompletionOf => fun comp_law => fun x => comp_law x
+
+theorem padic_field_construction_interface :
+  forall (Q : Type), forall (Qp : Type), forall (IsPadicField : Prop), forall (qp_law : IsPadicField -> IsPadicField), IsPadicField -> IsPadicField :=
+  fun Q => fun Qp => fun IsPadicField => fun qp_law => qp_law
+

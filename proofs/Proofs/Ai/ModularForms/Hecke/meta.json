@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ModularForms.Hecke",
+  "source": "Proofs/Ai/ModularForms/Hecke/source.npa",
+  "certificate": "Proofs/Ai/ModularForms/Hecke/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:68cbbde187179f8d7caf38158b41c77244d8cb269ab1180b95327ed79f201d00",
+  "certificate_file_sha256": "sha256:d5ec34c311b4e706d1de84460b6ba8f6a15830bbe5821cf460abd8c6bd298882",
+  "export_hash": "sha256:19be36c304d1e79bcec528a317d391cf7d104c312ff202fd9e60105b87565b6f",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:ba126f2d0da22e4adc42d637527bc7294284673b76df3fed874fa9025d479a27",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HeckeOperatorData", "kind": "def" },
+    { "name": "hecke_operator_data_intro", "kind": "theorem" },
+    { "name": "hecke_eigenform_operator_equation", "kind": "theorem" },
+    { "name": "hecke_coefficient_field_contains_fourier_coefficients", "kind": "theorem" },
+    { "name": "hecke_fourier_coefficient_multiplicativity_for_eigenforms", "kind": "theorem" },
+    { "name": "petersson_inner_product_symmetry_surface", "kind": "theorem" },
+    { "name": "trace_formula_analytic_geometric_prerequisites_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

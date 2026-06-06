@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Waring",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "waring_problem_existence_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Nat => fun Nonnegative => fun WaringRepresentable => fun waring_existence_law => fun k => fun n => fun nonneg_n => fun g => waring_existence_law k n nonneg_n g"
+    },
+    {
+      "declaration": "hilbert_waring_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun WaringBoundExists => fun hilbert_waring_law => fun k => hilbert_waring_law k"
+    },
+    {
+      "declaration": "frobenius_coin_problem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun CoinSet => fun GcdEqualsOne => fun NonnegativeCombination => fun FrobeniusNumber => fun coin_law => fun coins => fun gcd_one => fun target => fun above_frobenius => coin_law coins gcd_one target above_frobenius"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Waring/certificate.npcert"
+  }
+}

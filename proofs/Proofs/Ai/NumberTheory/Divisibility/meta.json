@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Divisibility",
+  "source": "Proofs/Ai/NumberTheory/Divisibility/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Divisibility/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:47b764561588aebd6aff93c07339d0d7433565f526227dd96aa16b8a020e41f2",
+  "certificate_file_sha256": "sha256:29fe6e8f0449445b19a61e638382a12ee928f48bf0e3116610ca1310e8b21962",
+  "export_hash": "sha256:ba4385582c059d21b127a5bceb4a3c8d91b90c80683e90a7f13b51854fbdf391",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:02bfd3da621ab93923668fd1d7cbe0512c630408a0dc720a863c53aa13b97351",
+  "imports": ["Proofs.Ai.NumberTheory.Elementary"],
+  "axioms": [],
+  "declarations": [
+    { "name": "divides_reflexivity_packaged", "kind": "theorem" },
+    { "name": "divides_transitivity_packaged", "kind": "theorem" },
+    { "name": "sign_normalized_divisibility_packaged", "kind": "theorem" },
+    { "name": "normalized_divisibility_antisymmetry_packaged", "kind": "theorem" },
+    { "name": "divides_sign_rule_packaged", "kind": "theorem" },
+    { "name": "divisor_from_divides_packaged", "kind": "theorem" },
+    { "name": "multiple_from_divides_packaged", "kind": "theorem" },
+    { "name": "divides_mul_right_closure_packaged", "kind": "theorem" },
+    { "name": "nat_int_divisibility_translation_packaged", "kind": "theorem" },
+    { "name": "divisibility_simplification_theorem_target", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

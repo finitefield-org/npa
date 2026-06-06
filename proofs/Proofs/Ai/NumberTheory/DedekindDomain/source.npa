@@ -1,0 +1,35 @@
+import Std.Logic.Eq
+import Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem
+
+theorem norm_interface :
+  forall (K : Type), forall (L : Type), forall (x : L), forall (Norm : L -> K), forall (norm_law : forall (a : L), @Eq.{1} K (Norm a) (Norm a)), @Eq.{1} K (Norm x) (Norm x) :=
+  fun K => fun L => fun x => fun Norm => fun norm_law => norm_law x
+
+theorem trace_interface :
+  forall (K : Type), forall (L : Type), forall (x : L), forall (Trace : L -> K), forall (trace_law : forall (a : L), @Eq.{1} K (Trace a) (Trace a)), @Eq.{1} K (Trace x) (Trace x) :=
+  fun K => fun L => fun x => fun Trace => fun trace_law => trace_law x
+
+theorem discriminant_interface :
+  forall (K : Type), forall (Basis : Type), forall (Discriminant : Basis -> K), forall (b : Basis), forall (disc_law : forall (x : Basis), @Eq.{1} K (Discriminant x) (Discriminant x)), @Eq.{1} K (Discriminant b) (Discriminant b) :=
+  fun K => fun Basis => fun Discriminant => fun b => fun disc_law => disc_law b
+
+theorem norm_trace_discriminant_field_extension_basis_surface :
+  forall (BaseField : Type), forall (NumberField : Type), forall (Basis : Type), forall (FieldExtensionEvidence : BaseField -> NumberField -> Prop), forall (FiniteDimensionalVectorSpaceEvidence : NumberField -> BaseField -> Basis -> Prop), forall (NormTraceDiscriminantData : NumberField -> Basis -> Prop), forall (data_law : forall (K : BaseField), forall (L : NumberField), forall (B : Basis), forall (field_extension : FieldExtensionEvidence K L), forall (finite_dimensional : FiniteDimensionalVectorSpaceEvidence L K B), NormTraceDiscriminantData L B), forall (K : BaseField), forall (L : NumberField), forall (B : Basis), forall (field_extension : FieldExtensionEvidence K L), forall (finite_dimensional : FiniteDimensionalVectorSpaceEvidence L K B), NormTraceDiscriminantData L B :=
+  fun BaseField => fun NumberField => fun Basis => fun FieldExtensionEvidence => fun FiniteDimensionalVectorSpaceEvidence => fun NormTraceDiscriminantData => fun data_law => fun K => fun L => fun B => fun field_extension => fun finite_dimensional => data_law K L B field_extension finite_dimensional
+
+theorem integral_basis_interface :
+  forall (Ext : Type), forall (IntegralBasis : Type -> Prop), forall (B : Type), forall (basis_law : IntegralBasis B -> IntegralBasis B), IntegralBasis B -> IntegralBasis B :=
+  fun Ext => fun IntegralBasis => fun B => fun basis_law => basis_law
+
+theorem dedekind_domain_interface :
+  forall (Ring : Type), forall (IsDedekindDomain : Ring -> Prop), forall (R : Ring), forall (dedekind_law : IsDedekindDomain R -> IsDedekindDomain R), IsDedekindDomain R -> IsDedekindDomain R :=
+  fun Ring => fun IsDedekindDomain => fun R => fun dedekind_law => dedekind_law
+
+theorem ring_of_integers_dedekind_domain_surface :
+  forall (NumberField : Type), forall (RingOfIntegers : Type), forall (IsRingOfIntegers : NumberField -> RingOfIntegers -> Prop), forall (IsDedekindDomain : RingOfIntegers -> Prop), forall (dedekind_law : forall (K : NumberField), forall (O_K : RingOfIntegers), forall (ring_of_integers : IsRingOfIntegers K O_K), IsDedekindDomain O_K), forall (K : NumberField), forall (O_K : RingOfIntegers), forall (ring_of_integers : IsRingOfIntegers K O_K), IsDedekindDomain O_K :=
+  fun NumberField => fun RingOfIntegers => fun IsRingOfIntegers => fun IsDedekindDomain => fun dedekind_law => fun K => fun O_K => fun ring_of_integers => dedekind_law K O_K ring_of_integers
+
+theorem dedekind_domain_no_ideal_factorization_definition_boundary :
+  forall (DedekindDomainPackage : Type), forall (IdealFactorizationPackage : Type), forall (RingOfIntegersDefinitionPackage : Type), forall (NoFactorizationAsDefinition : DedekindDomainPackage -> IdealFactorizationPackage -> RingOfIntegersDefinitionPackage -> Prop), forall (boundary_law : forall (dedekind_domain : DedekindDomainPackage), forall (ideal_factorization : IdealFactorizationPackage), forall (ring_of_integers_definition : RingOfIntegersDefinitionPackage), NoFactorizationAsDefinition dedekind_domain ideal_factorization ring_of_integers_definition), forall (dedekind_domain : DedekindDomainPackage), forall (ideal_factorization : IdealFactorizationPackage), forall (ring_of_integers_definition : RingOfIntegersDefinitionPackage), NoFactorizationAsDefinition dedekind_domain ideal_factorization ring_of_integers_definition :=
+  fun DedekindDomainPackage => fun IdealFactorizationPackage => fun RingOfIntegersDefinitionPackage => fun NoFactorizationAsDefinition => fun boundary_law => fun dedekind_domain => fun ideal_factorization => fun ring_of_integers_definition => boundary_law dedekind_domain ideal_factorization ring_of_integers_definition
+

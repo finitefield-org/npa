@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.CircleMethod",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "hardy_littlewood_circle_method_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Real => fun Complex => fun MajorArcs => fun MinorArcs => fun CircleMethodRelation => fun circle_method_law => fun maj => fun min => circle_method_law maj min"
+    },
+    {
+      "declaration": "major_arc_contribution_interface",
+      "source_kind": "explicit_term",
+      "term": "fun MajorArcs => fun MajorArcContribution => fun major_arcs_law => fun maj => major_arcs_law maj"
+    },
+    {
+      "declaration": "minor_arc_contribution_interface",
+      "source_kind": "explicit_term",
+      "term": "fun MinorArcs => fun MinorArcContribution => fun minor_arcs_law => fun min => minor_arcs_law min"
+    },
+    {
+      "declaration": "circle_method_asymptotic_assumption_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Nat => fun Real => fun TargetCount => fun MajorArcMainTerm => fun MinorArcErrorTerm => fun AsymptoticWithError => fun asymptotic_law => fun N => asymptotic_law N"
+    },
+    {
+      "declaration": "circle_method_harmonic_exponential_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun CircleMethodResultPackage => fun HarmonicAnalysisPackage => fun ExponentialSumEstimatePackage => fun MajorArcInputPackage => fun MinorArcInputPackage => fun AnalyticDependency => fun dependency_law => fun result => fun harmonic => fun exponential => fun major_arc => fun minor_arc => dependency_law result harmonic exponential major_arc minor_arc"
+    },
+    {
+      "declaration": "circle_method_conditional_analytic_prerequisite_surface",
+      "source_kind": "explicit_term",
+      "term": "fun CircleMethodResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/CircleMethod/certificate.npcert"
+  }
+}

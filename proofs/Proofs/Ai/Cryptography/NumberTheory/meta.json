@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Cryptography.NumberTheory",
+  "source": "Proofs/Ai/Cryptography/NumberTheory/source.npa",
+  "certificate": "Proofs/Ai/Cryptography/NumberTheory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:474fa7cddb692a9371d4bbee45769814a344e1938a52d6ad0501d63eddcbff31",
+  "certificate_file_sha256": "sha256:ce999acbaa72ca06443a1befa9552e79e07b1d71751ffb89f57867816e3624c4",
+  "export_hash": "sha256:36bd2ceb4107d3d20b89adf7129d4bd0e9980552908587da5805b5d6537f4cd6",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:d6334b8afddb9c65790a9925254c37715f88fa3679268916c4589a99418ab1ef",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.Algorithm", "Proofs.Ai.NumberTheory.PrimalityTest", "Proofs.Ai.NumberTheory.FactoringAlgorithm", "Proofs.Ai.NumberTheory.Rsa", "Proofs.Ai.NumberTheory.Character"],
+  "axioms": [],
+  "declarations": [
+    { "name": "diffie_hellman_shared_secret_correctness_from_group_keygen_chain", "kind": "theorem" },
+    { "name": "discrete_log_hardness_boundary_from_statement_and_algorithm_relation", "kind": "theorem" },
+    { "name": "rsa_crypto_correctness_reuses_number_theory_roundtrip", "kind": "theorem" },
+    { "name": "lll_reduction_correctness_from_lattice_basis_chain", "kind": "theorem" },
+    { "name": "coppersmith_small_root_surface_from_lll_reduction", "kind": "theorem" },
+    { "name": "number_theory_crypto_hardness_assumptions_not_l2_exports", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

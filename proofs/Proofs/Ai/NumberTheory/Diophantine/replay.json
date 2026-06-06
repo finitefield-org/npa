@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Diophantine",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "pythagorean_triple_definition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Mul => fun Add => fun PythagoreanTriple => fun definition_law => fun x => fun y => fun z => fun eq_pyth => definition_law x y z eq_pyth"
+    },
+    {
+      "declaration": "pythagorean_triple_classification_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Coprime => fun PythagoreanTriple => fun PrimitivePythagoreanTriple => fun EuclidFormulaParameters => fun classification_law => fun x => fun y => fun z => fun triple => fun primitive => fun coprime_xy => fun m => fun n => classification_law x y z triple primitive coprime_xy m n"
+    },
+    {
+      "declaration": "pythagorean_primitive_triple_formula_soundness",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Mul => fun Add => fun Sub => fun Two => fun PythagoreanTriple => fun soundness_law => fun m => fun n => soundness_law m n"
+    },
+    {
+      "declaration": "pythagorean_triple_algebra_identity_reuse",
+      "source_kind": "explicit_term",
+      "term": "fun AlgebraicIdentity => fun PythagoreanTripleClassification => fun ReuseBoundary => fun boundary_law => fun identity => fun classification => boundary_law identity classification"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Diophantine/certificate.npcert"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.FiniteField",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "finite_field_core_laws_imported_from_abstract_finite_field_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun AbstractFiniteFieldCoreLaws => fun EllipticCurveFiniteFieldSurface => fun UsesAbstractFiniteFieldCoreLaws => fun import_law => fun surface => fun core_laws => import_law surface core_laws"
+    },
+    {
+      "declaration": "finite_field_point_count_interface",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldCarrier => fun EllipticCurve => fun PointCount => fun point_count_law => fun curve => fun finite_field => point_count_law curve finite_field"
+    },
+    {
+      "declaration": "hasse_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldCarrier => fun EllipticCurve => fun PointCount => fun HasseBound => fun hasse_law => fun curve => fun finite_field => fun count => hasse_law curve finite_field count"
+    },
+    {
+      "declaration": "weil_bound_interface",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldCarrier => fun FrobeniusTrace => fun WeilBound => fun weil_bound_law => fun finite_field => fun trace => weil_bound_law finite_field trace"
+    },
+    {
+      "declaration": "finite_field_frobenius_trace_surface",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteFieldCarrier => fun EllipticCurve => fun FrobeniusTrace => fun trace_law => fun curve => fun finite_field => trace_law curve finite_field"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/FiniteField/certificate.npcert"
+  }
+}

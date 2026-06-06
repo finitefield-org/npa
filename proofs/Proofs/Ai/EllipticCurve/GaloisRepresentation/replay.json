@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "tate_module_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Prime => fun GaloisGroup => fun TateModule => fun TateAction => fun action_law => fun l => fun g => fun v => action_law l g v"
+    },
+    {
+      "declaration": "weil_pairing_interface",
+      "source_kind": "explicit_term",
+      "term": "fun TorsionPoint => fun RootOfUnity => fun WeilPairing => fun pairing_law => fun P => fun Q => pairing_law P Q"
+    },
+    {
+      "declaration": "weil_pairing_nondegeneracy_without_crypto_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun WeilPairingPackage => fun CryptographicAssumptionPackage => fun Nondegenerate => fun NoCryptoAssumption => fun boundary_law => fun pairing => fun crypto_assumptions => boundary_law pairing crypto_assumptions"
+    },
+    {
+      "declaration": "selmer_definition_shared_iwasawa_galois_representation_surface",
+      "source_kind": "explicit_term",
+      "term": "fun SelmerDefinition => fun IwasawaTask => fun GaloisRepresentationTask => fun SharedSelmerDefinition => fun shared_law => fun selmer => fun iwasawa_task => fun galois_task => shared_law selmer iwasawa_task galois_task"
+    },
+    {
+      "declaration": "galois_representation_local_condition_surface",
+      "source_kind": "explicit_term",
+      "term": "fun GaloisRepresentation => fun LocalCondition => fun SelmerDefinition => fun condition_law => fun rho => condition_law rho"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/GaloisRepresentation/certificate.npcert"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.LinearDiophantine",
+  "source": "Proofs/Ai/NumberTheory/LinearDiophantine/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/LinearDiophantine/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f7c8b525e7296e83629333988541501298c8a0b90558d990dd0ecaabdff41ba7",
+  "certificate_file_sha256": "sha256:5a21a67c416ebe71809c024ba33bd112012896f721e49f6048ba8c3c9716e5c9",
+  "export_hash": "sha256:f4e168373f2d4f41585cea92e7eb9c6af8e9d17800376e3ee1e86f850c2a5e56",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:21fee17237df8f3fe7e7d74d153c01c025e434d7443589c571b012dc9cee4549",
+  "imports": ["Proofs.Ai.NumberTheory.Bezout"],
+  "axioms": [],
+  "declarations": [
+    { "name": "linear_diophantine_ax_plus_by_eq_c_surface", "kind": "theorem" },
+    { "name": "linear_diophantine_solvable_if_gcd_divides_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_solution_implies_gcd_divides_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_solvability_iff_gcd_divides_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_particular_solution_from_bezout_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_general_solution_formula_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_zero_coefficient_edge_cases_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_sign_normal_form_packaged", "kind": "theorem" },
+    { "name": "linear_diophantine_reusable_normal_form_surface", "kind": "theorem" },
+    { "name": "linear_diophantine_depends_on_gcd_bezout_not_solver", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

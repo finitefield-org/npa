@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.AdditivePrime",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "vinogradov_three_primes_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun IsOdd => fun SufficientlyLarge => fun SumOfThreePrimes => fun vinogradov_law => fun n => fun odd_n => fun large_n => vinogradov_law n odd_n large_n"
+    },
+    {
+      "declaration": "weak_goldbach_conjecture_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun IsOdd => fun GreaterThanFive => fun SumOfThreePrimes => fun weak_goldbach_law => fun n => fun odd_n => fun gt5 => weak_goldbach_law n odd_n gt5"
+    },
+    {
+      "declaration": "additive_prime_circle_method_dependency_surface",
+      "source_kind": "explicit_term",
+      "term": "fun AdditivePrimeResultPackage => fun CircleMethodPackage => fun MajorArcEstimatePackage => fun MinorArcEstimatePackage => fun ExponentialSumEstimatePackage => fun AnalyticDependency => fun dependency_law => fun result => fun circle_method => fun major_arc => fun minor_arc => fun exponential_sum => dependency_law result circle_method major_arc minor_arc exponential_sum"
+    },
+    {
+      "declaration": "weak_goldbach_no_elementary_additive_dependency_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun WeakGoldbachPackage => fun ElementaryAdditiveTheoremPackage => fun NoWeakGoldbachDependency => fun boundary_law => fun elementary => fun weak_goldbach => boundary_law elementary weak_goldbach"
+    },
+    {
+      "declaration": "additive_prime_conditional_analytic_prerequisite_surface",
+      "source_kind": "explicit_term",
+      "term": "fun AdditivePrimeResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/AdditivePrime/certificate.npcert"
+  }
+}

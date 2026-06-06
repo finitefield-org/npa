@@ -3,8 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-# Package-wide proof corpus gate. This keeps package verifier coverage and the
-# CLI examples that are too heavy for normal theorem-authoring repair loops.
+# Package-wide proof corpus gate for npa-mathlib promotion readiness,
+# package-tooling changes, release handoff, and high-trust-adjacent checks.
+# This intentionally stays out of normal theorem-authoring repair loops.
 echo "[1/8] Proof corpus package audit tests"
 cargo test -p npa-proof-corpus --test manifest_package_audit
 

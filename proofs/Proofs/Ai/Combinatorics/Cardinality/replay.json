@@ -1,0 +1,122 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Cardinality",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "InjectivePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => forall (x : Source), forall (y : Source), forall (image_eq : TargetEquivalent (map x) (map y)), SourceEquivalent x y"
+    },
+    {
+      "declaration": "SurjectivePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => forall (y : Target), forall (target_member : TargetMember y), HasPreimage y"
+    },
+    {
+      "declaration": "BijectionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetMember => fun HasPreimage => forall (P : Prop), forall (mk : forall (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), forall (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), P), P"
+    },
+    {
+      "declaration": "FiniteEquivalencePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceIndex => fun TargetIndex => fun Source => fun Target => fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => forall (P : Prop), forall (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), forall (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), forall (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), forall (cardinality_eq_law : CardinalityEqual), P), P"
+    },
+    {
+      "declaration": "FiniteImageCardinalityPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceIndex => fun ImageIndex => fun Source => fun Image => fun sourceEnumerate => fun imageEnumerate => fun map => fun SourceMember => fun ImageMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun ImageNoDuplicate => fun ImageEnumerationComplete => fun ImageEnumerationSound => fun source_args => fun image_args => fun ImageCardinalityEvidence => forall (P : Prop), forall (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), forall (image_finite_law : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), forall (image_cardinality_law : ImageCardinalityEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteSubsetCardinalityPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun AmbientIndex => fun SubsetIndex => fun Item => fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => fun ambient_args => fun subset_args => fun SubsetIncluded => fun SubsetCardinalityEvidence => forall (P : Prop), forall (mk : forall (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), forall (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), forall (subset_inclusion_law : SubsetIncluded), forall (subset_cardinality_law : SubsetCardinalityEvidence), P), P"
+    },
+    {
+      "declaration": "injective_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun injective_law => injective_law"
+    },
+    {
+      "declaration": "injective_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun injective_args => fun x => fun y => fun image_eq => injective_args x y image_eq"
+    },
+    {
+      "declaration": "surjective_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => fun surjective_law => surjective_law"
+    },
+    {
+      "declaration": "surjective_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun TargetMember => fun HasPreimage => fun surjective_args => fun y => fun target_member => surjective_args y target_member"
+    },
+    {
+      "declaration": "bijection_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetMember => fun HasPreimage => fun injective_args => fun surjective_args => fun (P : Prop) => fun (mk : forall (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent), forall (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage), P) => mk injective_args surjective_args"
+    },
+    {
+      "declaration": "bijection_injective_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetMember => fun HasPreimage => fun bijection_args => bijection_args (@InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) (fun (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) => fun (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) => injective_law)"
+    },
+    {
+      "declaration": "bijection_surjective_statement",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Target => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetMember => fun HasPreimage => fun bijection_args => bijection_args (@SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) (fun (injective_law : @InjectivePredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent) => fun (surjective_law : @SurjectivePredicate.{u,v} Source Target map TargetMember HasPreimage) => surjective_law)"
+    },
+    {
+      "declaration": "finite_equivalence_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceIndex => fun TargetIndex => fun Source => fun Target => fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun cardinality_eq_law => fun (P : Prop) => fun (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), forall (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound), forall (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage), forall (cardinality_eq_law : CardinalityEqual), P) => mk source_args target_args bijection_args cardinality_eq_law"
+    },
+    {
+      "declaration": "finite_equivalence_source_finite_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceIndex => fun TargetIndex => fun Source => fun Target => fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun equivalence_args => equivalence_args (@FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) (fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => fun (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) => fun (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage) => fun (cardinality_eq_law : CardinalityEqual) => source_finite_law)"
+    },
+    {
+      "declaration": "finite_equivalence_target_finite_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceIndex => fun TargetIndex => fun Source => fun Target => fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun equivalence_args => equivalence_args (@FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) (fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => fun (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) => fun (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage) => fun (cardinality_eq_law : CardinalityEqual) => target_finite_law)"
+    },
+    {
+      "declaration": "cardinality_invariant_under_explicit_bijection",
+      "source_kind": "explicit_term",
+      "term": "fun SourceIndex => fun TargetIndex => fun Source => fun Target => fun sourceEnumerate => fun targetEnumerate => fun SourceMember => fun TargetMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun TargetNoDuplicate => fun TargetEnumerationComplete => fun TargetEnumerationSound => fun map => fun SourceEquivalent => fun TargetEquivalent => fun TargetHasPreimage => fun source_args => fun target_args => fun bijection_args => fun CardinalityEqual => fun equivalence_args => equivalence_args CardinalityEqual (fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => fun (target_finite_law : @FiniteEnumerationLawArgs.{j,v} TargetIndex Target targetEnumerate TargetMember TargetNoDuplicate TargetEnumerationComplete TargetEnumerationSound) => fun (bijection_law : @BijectionPredicate.{u,v} Source Target map SourceEquivalent TargetEquivalent TargetMember TargetHasPreimage) => fun (cardinality_eq_law : CardinalityEqual) => cardinality_eq_law)"
+    },
+    {
+      "declaration": "finite_image_cardinality_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceIndex => fun ImageIndex => fun Source => fun Image => fun sourceEnumerate => fun imageEnumerate => fun map => fun SourceMember => fun ImageMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun ImageNoDuplicate => fun ImageEnumerationComplete => fun ImageEnumerationSound => fun source_args => fun image_args => fun ImageCardinalityEvidence => fun image_cardinality_law => fun (P : Prop) => fun (mk : forall (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound), forall (image_finite_law : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound), forall (image_cardinality_law : ImageCardinalityEvidence), P) => mk source_args image_args image_cardinality_law"
+    },
+    {
+      "declaration": "finite_image_cardinality_statement",
+      "source_kind": "explicit_term",
+      "term": "fun SourceIndex => fun ImageIndex => fun Source => fun Image => fun sourceEnumerate => fun imageEnumerate => fun map => fun SourceMember => fun ImageMember => fun SourceNoDuplicate => fun SourceEnumerationComplete => fun SourceEnumerationSound => fun ImageNoDuplicate => fun ImageEnumerationComplete => fun ImageEnumerationSound => fun source_args => fun image_args => fun ImageCardinalityEvidence => fun image_args_package => image_args_package ImageCardinalityEvidence (fun (source_finite_law : @FiniteEnumerationLawArgs.{i,u} SourceIndex Source sourceEnumerate SourceMember SourceNoDuplicate SourceEnumerationComplete SourceEnumerationSound) => fun (image_finite_law : @FiniteEnumerationLawArgs.{j,v} ImageIndex Image imageEnumerate ImageMember ImageNoDuplicate ImageEnumerationComplete ImageEnumerationSound) => fun (image_cardinality_law : ImageCardinalityEvidence) => image_cardinality_law)"
+    },
+    {
+      "declaration": "finite_subset_cardinality_predicate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun AmbientIndex => fun SubsetIndex => fun Item => fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => fun ambient_args => fun subset_args => fun SubsetIncluded => fun subset_inclusion_law => fun SubsetCardinalityEvidence => fun subset_cardinality_law => fun (P : Prop) => fun (mk : forall (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound), forall (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound), forall (subset_inclusion_law : SubsetIncluded), forall (subset_cardinality_law : SubsetCardinalityEvidence), P) => mk ambient_args subset_args subset_inclusion_law subset_cardinality_law"
+    },
+    {
+      "declaration": "finite_subset_inclusion_statement",
+      "source_kind": "explicit_term",
+      "term": "fun AmbientIndex => fun SubsetIndex => fun Item => fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => fun ambient_args => fun subset_args => fun SubsetIncluded => fun SubsetCardinalityEvidence => fun subset_args_package => subset_args_package SubsetIncluded (fun (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound) => fun (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound) => fun (subset_inclusion_law : SubsetIncluded) => fun (subset_cardinality_law : SubsetCardinalityEvidence) => subset_inclusion_law)"
+    },
+    {
+      "declaration": "finite_subset_cardinality_statement",
+      "source_kind": "explicit_term",
+      "term": "fun AmbientIndex => fun SubsetIndex => fun Item => fun ambientEnumerate => fun subsetEnumerate => fun AmbientMember => fun SubsetMember => fun AmbientNoDuplicate => fun AmbientEnumerationComplete => fun AmbientEnumerationSound => fun SubsetNoDuplicate => fun SubsetEnumerationComplete => fun SubsetEnumerationSound => fun ambient_args => fun subset_args => fun SubsetIncluded => fun SubsetCardinalityEvidence => fun subset_args_package => subset_args_package SubsetCardinalityEvidence (fun (ambient_finite_law : @FiniteEnumerationLawArgs.{i,u} AmbientIndex Item ambientEnumerate AmbientMember AmbientNoDuplicate AmbientEnumerationComplete AmbientEnumerationSound) => fun (subset_finite_law : @FiniteEnumerationLawArgs.{j,u} SubsetIndex Item subsetEnumerate SubsetMember SubsetNoDuplicate SubsetEnumerationComplete SubsetEnumerationSound) => fun (subset_inclusion_law : SubsetIncluded) => fun (subset_cardinality_law : SubsetCardinalityEvidence) => subset_cardinality_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Combinatorics/Cardinality/certificate.npcert"
+  }
+}

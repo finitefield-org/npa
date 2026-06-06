@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Congruence",
+  "source": "Proofs/Ai/NumberTheory/Congruence/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Congruence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2e8091bf919dfbcb69771311da60cb742851d8bebc5a211bc459cd5e5ed59048",
+  "certificate_file_sha256": "sha256:2a240f5e154a369e1534b3e80bb4b5327d707d0208bd983d9c1b0d319944477c",
+  "export_hash": "sha256:5e4d717b8651d166c2cdddcb978372b4e6a53c397458256d17aa7ef82e43ccbd",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:ac00bedd16c4cd5b062198ba7fdf65081a97bf1bea46757ec9f4855661f01628",
+  "imports": ["Proofs.Ai.NumberTheory.Divisibility", "Proofs.Ai.NumberTheory.Gcd", "Proofs.Ai.NumberTheory.Bezout"],
+  "axioms": [],
+  "declarations": [
+    { "name": "congruent_modulo_definition_surface", "kind": "theorem" },
+    { "name": "congruent_modulo_reflexive", "kind": "theorem" },
+    { "name": "congruent_modulo_symmetric", "kind": "theorem" },
+    { "name": "congruent_modulo_transitive", "kind": "theorem" },
+    { "name": "congruent_addition_preserves", "kind": "theorem" },
+    { "name": "congruent_multiplication_preserves", "kind": "theorem" },
+    { "name": "congruent_negation_preserves", "kind": "theorem" },
+    { "name": "congruent_power_preserves_from_exponent_laws", "kind": "theorem" },
+    { "name": "congruence_cancellation_with_coprime_factor", "kind": "theorem" },
+    { "name": "congruence_division_with_gcd_condition", "kind": "theorem" },
+    { "name": "linear_congruence_solution_condition_surface", "kind": "theorem" },
+    { "name": "congruence_no_hidden_coprime_boundary", "kind": "theorem" },
+    { "name": "congruence_powers_use_exponent_laws_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

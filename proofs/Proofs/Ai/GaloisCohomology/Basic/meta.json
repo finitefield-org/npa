@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.GaloisCohomology.Basic",
+  "source": "Proofs/Ai/GaloisCohomology/Basic/source.npa",
+  "certificate": "Proofs/Ai/GaloisCohomology/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:af0bf34378c64364e732ee1dcccd0f0b9a04f13441ed80ec6047330d8b443652",
+  "certificate_file_sha256": "sha256:7ddd42d52c3e9ca7d8ae9a47bd0be33f6198ac78cf5594016358207e4af65000",
+  "export_hash": "sha256:4196a3ae1dfb806375da35f0ecedf2a6cde12d7bc84648d366c0a1dd1e3ba832",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:7aa6b12993c91d75db6cfb16802e263934fdc09c0272f55910ff11b7a48062bc",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "hilbert_90_theorem_interface", "kind": "theorem" },
+    { "name": "norm_residue_symbol_interface", "kind": "theorem" },
+    { "name": "hasse_norm_theorem_interface", "kind": "theorem" },
+    { "name": "grunwald_wang_theorem_interface", "kind": "theorem" },
+    { "name": "brauer_group_interface", "kind": "theorem" },
+    { "name": "tate_cohomology_interface", "kind": "theorem" },
+    { "name": "hilbert_90_degree_one_cocycle_coboundary_surface", "kind": "theorem" },
+    { "name": "norm_residue_symbol_local_global_context_surface", "kind": "theorem" },
+    { "name": "brauer_group_degree_two_cohomology_surface", "kind": "theorem" },
+    { "name": "tate_cohomology_degree_index_functoriality_surface", "kind": "theorem" },
+    { "name": "galois_cohomology_interface_level_until_foundations_boundary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

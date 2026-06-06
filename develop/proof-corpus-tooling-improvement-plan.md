@@ -13,7 +13,8 @@ compatibility の確認は明示的な gate に寄せます。
 
 この計画の対象:
 
-- 複数 module を batch build して、manifest / package metadata / index 更新を最後にまとめる。
+- 複数 module を batch build して、authoring index 更新を最後にまとめる。公開用 package
+  metadata は promote / release handoff で明示的に生成する。
 - corpus authoring が読む `npa-mathlib` / external package の verified certificate cache を
   process 間で再利用する。
 - corpus authoring 用の gate から package-wide CLI examples を外し、daily / PR gate 側へ寄せる。
@@ -43,9 +44,10 @@ package artifact checks を cache なし、または cache を証明根拠にし
 
 ### 3.1 背景
 
-現在の `--build-module MODULE` は指定 module と import closure を rebuild し、そのたびに
-`manifest.toml`、`npa-package.toml`、`generated/package-lock.json`、AI theorem index を更新します。
-複数 module を連続で追加する場合、metadata 更新が重複し、下流依存の rebuild 順も手作業になります。
+`--build-module MODULE` は指定 module と import closure を rebuild します。通常 authoring では
+公開用 `manifest.toml`、`npa-package.toml`、`generated/package-lock.json` は更新せず、
+module artifacts と AI theorem index だけを更新します。複数 module を連続で追加する場合、
+下流依存の rebuild 順が手作業になりやすいため、batch build を使います。
 
 ### 3.2 CLI 仕様
 
@@ -65,9 +67,12 @@ cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-bat
 --build-modules-file <PATH>
   1 行 1 module の batch spec を読む。空行と # comment は無視する。
 
---metadata-once
-  batch build の既定動作。module artifacts をすべて生成した後で、manifest / package /
+--package-metadata
+  promote / release handoff 用。module artifacts をすべて生成した後で、manifest / package /
   package lock / AI index を 1 回だけ更新する。
+
+--metadata-once
+  `--package-metadata` の互換 alias。
 
 --failures-out <PATH>
   失敗 module / declaration / diagnostic を JSON sidecar として出す。
@@ -82,12 +87,13 @@ cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-bat
 3. closure を topological order に並べる。
 4. すでに hash が一致する module は build を skip できる。
 5. dirty / changed / explicitly requested module を build する。
-6. すべて成功した場合だけ、manifest / package metadata / lock / AI index をまとめて更新する。
-7. 一部失敗した場合は、成功 module の certificate は残してよいが、package-wide metadata は更新しない。
+6. すべて成功した場合だけ、AI index を更新する。
+7. `--package-metadata` が指定された場合だけ、manifest / package metadata / lock をまとめて更新する。
+8. 一部失敗した場合は、成功 module の certificate は残してよいが、metadata は更新しない。
 
 ### 3.4 完了条件
 
-- `--build-modules A B` が `--build-module A` と `--build-module B` の連続実行より metadata 更新回数を減らす。
+- `--build-modules A B` が `--build-module A` と `--build-module B` の連続実行より rebuild 手順を減らす。
 - batch 内の共有 import closure は 1 回だけ build / verify される。
 - 失敗時に stale package metadata を書かない。
 - `--build-module` の既存挙動が壊れない。
@@ -185,7 +191,7 @@ verified Proofs.Ai.X cache_status = "stale" cache_mode = "read-through"
 
 ### 5.1 背景
 
-`check-corpus.sh` には package-wide CLI examples が含まれ、authoring 直後の feedback loop には重いです。
+以前の `check-corpus.sh` には package-wide CLI examples が含まれ、authoring 直後の feedback loop には重すぎました。
 これらは package CLI の end-to-end 回帰として重要ですが、個々の theorem authoring の毎回確認には
 過剰です。
 
@@ -203,20 +209,22 @@ PCT-03 で追加された gate:
 
 ```text
 check-corpus-authoring.sh
-  proof corpus crate tests、対象 module / changed-only、manifest/package metadata の軽い整合性。
-  package-wide CLI examples は含めない。
+  changed proof corpus modules の source-free 検査だけを authoring cache 付きで実行する。
+  package-wide CLI examples、axiom-report、index、publish-plan は含めない。
 
 check-corpus-package.sh
   package verifier、package CLI examples、publish-plan、index、axiom-report の package-wide 回帰。
-  PR / daily で実行する。
+  npa-mathlib promotion、package tooling、release/high-trust 境界で実行する。
 
 check-corpus-full.sh
-  authoring + package をまとめた high-trust 手前の full gate。
+  authoring + package をまとめた promotion / release / high-trust 手前の full gate。
 ```
 
-既存の `./scripts/check-corpus.sh` は互換性のため残し、`check-corpus-full.sh` を呼ぶ alias とします。
+既存の `./scripts/check-corpus.sh` は互換性のため残し、軽量
+`check-corpus-authoring.sh` を呼ぶ alias とします。重い gate は
+`check-corpus-package.sh` / `check-corpus-full.sh` を明示的に呼びます。
 script 分割前の古い案内では `./scripts/check-corpus.sh` が full corpus gate でしたが、
-PCT-03 以降の AGENTS.md / CONTRIBUTING.md / README.md は split gate 名を案内します。
+現在の AGENTS.md / CONTRIBUTING.md / README.md は staging corpus の通常 authoring を軽量 gate に寄せます。
 
 ### 5.3 完了条件
 
@@ -321,10 +329,11 @@ PCT-00 baseline の full corpus gate は 1059.81s でした。PCT-08 では clea
 authoring loop、つまり `--build-module Proofs.Ai.Basic`、selected module source-free verification、
 `--changed-only` の合計が 2.69s でした。これは baseline full gate より約 394 倍短いです。
 
-`./scripts/check-corpus-authoring.sh` は 115.21s で通り、package-wide CLI examples を含まない
-theorem batch boundary 用 gate として使います。`./scripts/check-corpus-package.sh` は 1122.39s で通り、
+PCT-08 時点の `./scripts/check-corpus-authoring.sh` は 115.21s で通りました。現在の authoring gate は
+さらに changed-only source-free 検査へ絞り、proof corpus staging の通常 batch boundary 用 gate として使います。
+`./scripts/check-corpus-package.sh` は 1122.39s で通り、
 package verifier、package CLI examples、axiom-report、index、publish-plan の回帰を含むため、
-PR / push readiness / release handoff / compatibility changes の境界に寄せます。
+npa-mathlib promotion / release handoff / compatibility changes の境界に寄せます。
 
 cache、promotion plan、promotion dry-run、theorem index、replay、metadata、CI status、timing log は
 すべて未信頼 sidecar です。これらは作業効率や audit の入力には使えますが、証明受理の根拠にはしません。

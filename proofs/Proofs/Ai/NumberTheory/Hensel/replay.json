@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Hensel",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "hensel_lemma_interface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Valuation => fun IsComplete => fun Poly => fun Derivative => fun Eval => fun f => fun a => fun hensel_law => hensel_law"
+    },
+    {
+      "declaration": "hensel_named_hypotheses_surface",
+      "source_kind": "explicit_term",
+      "term": "fun K => fun Poly => fun CompletenessHypothesis => fun ValuationHypothesis => fun DerivativeHypothesis => fun LiftingHypothesis => fun HenselConclusion => fun hensel_law => hensel_law"
+    },
+    {
+      "declaration": "hensel_not_generic_root_finder_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun HenselLemmaPackage => fun GenericRootFinderPrimitive => fun CompletenessValuationDerivativeLiftingBoundary => fun boundary_law => fun hensel => fun root_finder => boundary_law hensel root_finder"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/NumberTheory/Hensel/certificate.npcert"
+  }
+}
