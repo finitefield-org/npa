@@ -792,21 +792,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T23 Add Kuratowski, Minor, And Surface Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T22`, topology route
 - Areas: `Proofs.Ai.Graph.Minor`, `Proofs.Ai.Graph.Topological`
 - Tasks:
-  - Add graph minor, subdivision, contraction, and topological-minor statement
+  - [x] Add graph minor, subdivision, contraction, and topological-minor statement
     surfaces.
-  - Add Kuratowski theorem and graph minor theorem interfaces.
-  - Add surface embedding and genus interfaces.
+  - [x] Add Kuratowski theorem and graph minor theorem interfaces.
+  - [x] Add surface embedding and genus interfaces.
 - Deliverables:
-  - Long-term graph-minor and topological graph interface module.
+  - `Proofs.Ai.Graph.Minor` records branch sets, contraction/deletion,
+    subdivision, homeomorphic expansion, minor model, and topological-minor
+    evidence.
+  - `Proofs.Ai.Graph.Topological` records Kuratowski and graph-minor theorem
+    interfaces over planar, embedding, and minor packages.
+  - Surface embedding and genus interfaces explicitly point to topology
+    roadmap dependencies `TOP-21`, `TOP-23`, and `TOP-T45`.
 - Acceptance criteria:
-  - Structural graph theorem interfaces are not counted as derived `L2`
+  - [x] Structural graph theorem interfaces are not counted as derived `L2`
     theorems.
-  - Surface topology dependencies point to topology roadmap milestones.
+  - [x] Surface topology dependencies point to topology roadmap milestones.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Topological`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological --verified-cache authoring`
   - `rg -n "Kuratowski|graph minor|surface|genus" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/topology-theorem-proof-roadmap*.md`
   - `git diff --check`
 
