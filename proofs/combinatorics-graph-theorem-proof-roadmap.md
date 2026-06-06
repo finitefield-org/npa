@@ -47,10 +47,12 @@ on them.
 
 ## Existing Baseline
 
-The current proof corpus does not yet expose a dedicated checked
-`Proofs.Ai.Combinatorics.*` or `Proofs.Ai.Graph.*` tree. It does, however,
-provide reusable foundation modules and neighboring roadmaps that this route
-must import rather than duplicate.
+The current proof corpus exposes a checked `Proofs.Ai.Combinatorics.*`
+foundation slice through finite families, cardinality, counting, permutation,
+binomial, inclusion-exclusion, and set-system modules. It does not yet expose a
+checked `Proofs.Ai.Graph.*` tree. The route also provides reusable foundation
+modules and neighboring roadmaps that later graph and advanced combinatorics
+tasks must import rather than duplicate.
 
 | Corpus module or roadmap | Existing role |
 | --- | --- |

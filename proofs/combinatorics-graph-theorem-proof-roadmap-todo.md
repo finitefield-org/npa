@@ -65,7 +65,8 @@ high-trust closure.
 
 ## Current Implementation Facts
 
-- There is not yet a checked `Proofs.Ai.Combinatorics.*` or
+- The proof corpus now has a checked `Proofs.Ai.Combinatorics.*` foundation
+  tree through `Proofs.Ai.Combinatorics.SetSystem`. There is not yet a checked
   `Proofs.Ai.Graph.*` proof tree in the proof corpus.
 - Existing reusable modules include `Proofs.Ai.Basic`, `Proofs.Ai.Prop`,
   `Proofs.Ai.Logic.Iff`, `Proofs.Ai.Eq`, `Proofs.Ai.EqReasoning`,
@@ -361,7 +362,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T09 Add Set-System Bounds And Covering Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T08`
 - Areas: `Proofs.Ai.Combinatorics.SetSystem`
 - Tasks:
@@ -376,7 +377,11 @@ guessing. The split must preserve the dependency order in this document.
   - Covering and packing definitions do not duplicate hypergraph definitions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.SetSystem`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.SetSystem --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "SetSystem|Bonferroni|covering|packing|hypergraph" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/SetSystem/source.npa`
+  - `git diff --check`
 
 ### CG-T10 Add Recurrence Statement Interfaces
 

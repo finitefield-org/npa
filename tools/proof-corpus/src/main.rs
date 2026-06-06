@@ -114,6 +114,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &COMBINATORICS_PERMUTATION_MODULE,
     &COMBINATORICS_BINOMIAL_MODULE,
     &COMBINATORICS_INCLUSION_EXCLUSION_MODULE,
+    &COMBINATORICS_SET_SYSTEM_MODULE,
     &NUMBER_THEORY_INVENTORY_MODULE,
     &NUMBER_THEORY_ELEMENTARY_MODULE,
     &NUMBER_THEORY_DIVISIBILITY_MODULE,
@@ -667,6 +668,19 @@ const COMBINATORICS_INCLUSION_EXCLUSION_MODULE: ModuleArtifact = ModuleArtifact 
     inductives: &[],
     definitions: COMBINATORICS_INCLUSION_EXCLUSION_DEFINITIONS,
     theorems: COMBINATORICS_INCLUSION_EXCLUSION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const COMBINATORICS_SET_SYSTEM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Combinatorics.SetSystem",
+    source_path: "Proofs/Ai/Combinatorics/SetSystem/source.npa",
+    certificate_path: "Proofs/Ai/Combinatorics/SetSystem/certificate.npcert",
+    meta_path: "Proofs/Ai/Combinatorics/SetSystem/meta.json",
+    replay_path: "Proofs/Ai/Combinatorics/SetSystem/replay.json",
+    imports: &["Proofs.Ai.Combinatorics.InclusionExclusion"],
+    inductives: &[],
+    definitions: COMBINATORICS_SET_SYSTEM_DEFINITIONS,
+    theorems: COMBINATORICS_SET_SYSTEM_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -15445,6 +15459,535 @@ const COMBINATORICS_INCLUSION_EXCLUSION_THEOREMS: &[TheoremArtifact] = &[
             "fun (inclusion_exclusion_arithmetic_law : InclusionExclusionArithmeticEvidence) => ",
             "fun (union_upper_bound_arithmetic_law : UnionUpperBoundArithmeticEvidence) => ",
             "derive finite_family_law union_finite_law union_definition_law inclusion_exclusion_law union_upper_bound_arithmetic_law)"
+        ),
+    },
+];
+
+const COMBINATORICS_SET_SYSTEM_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "FiniteSetSystemPredicate",
+        universe_params: &["f", "u"],
+        ty: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => forall (P : Prop), ",
+            "forall (mk : forall (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "CoveringPackingPredicate",
+        universe_params: &["f", "u"],
+        ty: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), ",
+            "forall (CoverSubfamilyEvidence : Prop), ",
+            "forall (PackingSubfamilyEvidence : Prop), ",
+            "forall (CoveringNumberEvidence : Prop), ",
+            "forall (PackingNumberEvidence : Prop), ",
+            "forall (CoverPackingDisjointnessEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "fun UniverseCoveredEvidence => fun CoverSubfamilyEvidence => ",
+            "fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => ",
+            "fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => ",
+            "forall (P : Prop), ",
+            "forall (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (universe_covered_law : UniverseCoveredEvidence), ",
+            "forall (cover_subfamily_law : CoverSubfamilyEvidence), ",
+            "forall (packing_subfamily_law : PackingSubfamilyEvidence), ",
+            "forall (covering_number_law : CoveringNumberEvidence), ",
+            "forall (packing_number_law : PackingNumberEvidence), ",
+            "forall (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence), P), P"
+        ),
+    },
+    DefinitionArtifact {
+        name: "IntersectionFamilyPredicate",
+        universe_params: &["f", "u"],
+        ty: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (PairwiseIntersectionEvidence : Prop), ",
+            "forall (UniformIntersectionSizeEvidence : Prop), ",
+            "forall (IntersectionClosureEvidence : Prop), Prop"
+        ),
+        value: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "fun PairwiseIntersectionEvidence => fun UniformIntersectionSizeEvidence => ",
+            "fun IntersectionClosureEvidence => forall (P : Prop), ",
+            "forall (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (pairwise_intersection_law : PairwiseIntersectionEvidence), ",
+            "forall (uniform_intersection_size_law : UniformIntersectionSizeEvidence), ",
+            "forall (intersection_closure_law : IntersectionClosureEvidence), P), P"
+        ),
+    },
+];
+
+const COMBINATORICS_SET_SYSTEM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_set_system_predicate_intro",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence), ",
+            "@FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun no_hypergraph_duplication_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence), P) => ",
+            "mk family_args no_hypergraph_duplication_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_set_system_family_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "@FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "set_system_args (@FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) ",
+            "(fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => ",
+            "fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => family_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_set_system_each_set_finite_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (family : FamilyIndex), EachSetFiniteEvidence family"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "set_system_args (forall (family : FamilyIndex), EachSetFiniteEvidence family) ",
+            "(fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => ",
+            "fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => ",
+            "family_law (forall (family : FamilyIndex), EachSetFiniteEvidence family) ",
+            "(fun (family_finite_law : FamilyFiniteEvidence) => ",
+            "fun (each_set_finite_law : forall (family : FamilyIndex), EachSetFiniteEvidence family) => ",
+            "fun (membership_sound_law : MembershipSoundEvidence) => each_set_finite_law))"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_set_system_no_hypergraph_duplication_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), ",
+            "forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "NoHypergraphDuplicationEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "set_system_args NoHypergraphDuplicationEvidence ",
+            "(fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => ",
+            "fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => no_hypergraph_duplication_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "covering_packing_predicate_intro",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), forall (universe_covered_law : UniverseCoveredEvidence), ",
+            "forall (CoverSubfamilyEvidence : Prop), forall (cover_subfamily_law : CoverSubfamilyEvidence), ",
+            "forall (PackingSubfamilyEvidence : Prop), forall (packing_subfamily_law : PackingSubfamilyEvidence), ",
+            "forall (CoveringNumberEvidence : Prop), forall (covering_number_law : CoveringNumberEvidence), ",
+            "forall (PackingNumberEvidence : Prop), forall (packing_number_law : PackingNumberEvidence), ",
+            "forall (CoverPackingDisjointnessEvidence : Prop), forall (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence), ",
+            "@CoveringPackingPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args UniverseCoveredEvidence CoverSubfamilyEvidence PackingSubfamilyEvidence CoveringNumberEvidence PackingNumberEvidence CoverPackingDisjointnessEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => ",
+            "fun FamilyFiniteEvidence => fun EachSetFiniteEvidence => ",
+            "fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "fun UniverseCoveredEvidence => fun universe_covered_law => ",
+            "fun CoverSubfamilyEvidence => fun cover_subfamily_law => ",
+            "fun PackingSubfamilyEvidence => fun packing_subfamily_law => ",
+            "fun CoveringNumberEvidence => fun covering_number_law => ",
+            "fun PackingNumberEvidence => fun packing_number_law => ",
+            "fun CoverPackingDisjointnessEvidence => fun cover_packing_disjointness_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (universe_covered_law : UniverseCoveredEvidence), ",
+            "forall (cover_subfamily_law : CoverSubfamilyEvidence), ",
+            "forall (packing_subfamily_law : PackingSubfamilyEvidence), ",
+            "forall (covering_number_law : CoveringNumberEvidence), ",
+            "forall (packing_number_law : PackingNumberEvidence), ",
+            "forall (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence), P) => ",
+            "mk set_system_args universe_covered_law cover_subfamily_law packing_subfamily_law covering_number_law packing_number_law cover_packing_disjointness_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "covering_subfamily_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), forall (CoverSubfamilyEvidence : Prop), forall (PackingSubfamilyEvidence : Prop), forall (CoveringNumberEvidence : Prop), forall (PackingNumberEvidence : Prop), forall (CoverPackingDisjointnessEvidence : Prop), ",
+            "forall (covering_args : @CoveringPackingPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args UniverseCoveredEvidence CoverSubfamilyEvidence PackingSubfamilyEvidence CoveringNumberEvidence PackingNumberEvidence CoverPackingDisjointnessEvidence), CoverSubfamilyEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => ",
+            "fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => ",
+            "fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => ",
+            "covering_args CoverSubfamilyEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => ",
+            "fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => ",
+            "fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => cover_subfamily_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "packing_subfamily_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), forall (CoverSubfamilyEvidence : Prop), forall (PackingSubfamilyEvidence : Prop), forall (CoveringNumberEvidence : Prop), forall (PackingNumberEvidence : Prop), forall (CoverPackingDisjointnessEvidence : Prop), ",
+            "forall (covering_args : @CoveringPackingPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args UniverseCoveredEvidence CoverSubfamilyEvidence PackingSubfamilyEvidence CoveringNumberEvidence PackingNumberEvidence CoverPackingDisjointnessEvidence), PackingSubfamilyEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => ",
+            "fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => ",
+            "fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => ",
+            "covering_args PackingSubfamilyEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => ",
+            "fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => ",
+            "fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => packing_subfamily_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "covering_number_bound_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), forall (CoverSubfamilyEvidence : Prop), forall (PackingSubfamilyEvidence : Prop), forall (CoveringNumberEvidence : Prop), forall (PackingNumberEvidence : Prop), forall (CoverPackingDisjointnessEvidence : Prop), ",
+            "forall (covering_args : @CoveringPackingPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args UniverseCoveredEvidence CoverSubfamilyEvidence PackingSubfamilyEvidence CoveringNumberEvidence PackingNumberEvidence CoverPackingDisjointnessEvidence), CoveringNumberEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => ",
+            "fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => ",
+            "fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => ",
+            "covering_args CoveringNumberEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => ",
+            "fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => ",
+            "fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => covering_number_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "packing_number_bound_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), forall (CoverSubfamilyEvidence : Prop), forall (PackingSubfamilyEvidence : Prop), forall (CoveringNumberEvidence : Prop), forall (PackingNumberEvidence : Prop), forall (CoverPackingDisjointnessEvidence : Prop), ",
+            "forall (covering_args : @CoveringPackingPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args UniverseCoveredEvidence CoverSubfamilyEvidence PackingSubfamilyEvidence CoveringNumberEvidence PackingNumberEvidence CoverPackingDisjointnessEvidence), PackingNumberEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => ",
+            "fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => ",
+            "fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => ",
+            "covering_args PackingNumberEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => ",
+            "fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => ",
+            "fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => packing_number_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "cover_packing_disjointness_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (UniverseCoveredEvidence : Prop), forall (CoverSubfamilyEvidence : Prop), forall (PackingSubfamilyEvidence : Prop), forall (CoveringNumberEvidence : Prop), forall (PackingNumberEvidence : Prop), forall (CoverPackingDisjointnessEvidence : Prop), ",
+            "forall (covering_args : @CoveringPackingPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args UniverseCoveredEvidence CoverSubfamilyEvidence PackingSubfamilyEvidence CoveringNumberEvidence PackingNumberEvidence CoverPackingDisjointnessEvidence), CoverPackingDisjointnessEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun UniverseCoveredEvidence => ",
+            "fun CoverSubfamilyEvidence => fun PackingSubfamilyEvidence => fun CoveringNumberEvidence => ",
+            "fun PackingNumberEvidence => fun CoverPackingDisjointnessEvidence => fun covering_args => ",
+            "covering_args CoverPackingDisjointnessEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (universe_covered_law : UniverseCoveredEvidence) => fun (cover_subfamily_law : CoverSubfamilyEvidence) => ",
+            "fun (packing_subfamily_law : PackingSubfamilyEvidence) => fun (covering_number_law : CoveringNumberEvidence) => ",
+            "fun (packing_number_law : PackingNumberEvidence) => fun (cover_packing_disjointness_law : CoverPackingDisjointnessEvidence) => cover_packing_disjointness_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "intersection_family_predicate_intro",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), ",
+            "forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (PairwiseIntersectionEvidence : Prop), forall (pairwise_intersection_law : PairwiseIntersectionEvidence), ",
+            "forall (UniformIntersectionSizeEvidence : Prop), forall (uniform_intersection_size_law : UniformIntersectionSizeEvidence), ",
+            "forall (IntersectionClosureEvidence : Prop), forall (intersection_closure_law : IntersectionClosureEvidence), ",
+            "@IntersectionFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args PairwiseIntersectionEvidence UniformIntersectionSizeEvidence IntersectionClosureEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "fun PairwiseIntersectionEvidence => fun pairwise_intersection_law => ",
+            "fun UniformIntersectionSizeEvidence => fun uniform_intersection_size_law => ",
+            "fun IntersectionClosureEvidence => fun intersection_closure_law => ",
+            "fun (P : Prop) => ",
+            "fun (mk : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (pairwise_intersection_law : PairwiseIntersectionEvidence), ",
+            "forall (uniform_intersection_size_law : UniformIntersectionSizeEvidence), ",
+            "forall (intersection_closure_law : IntersectionClosureEvidence), P) => ",
+            "mk set_system_args pairwise_intersection_law uniform_intersection_size_law intersection_closure_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "intersection_family_pairwise_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (PairwiseIntersectionEvidence : Prop), forall (UniformIntersectionSizeEvidence : Prop), forall (IntersectionClosureEvidence : Prop), ",
+            "forall (intersection_args : @IntersectionFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args PairwiseIntersectionEvidence UniformIntersectionSizeEvidence IntersectionClosureEvidence), PairwiseIntersectionEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun PairwiseIntersectionEvidence => ",
+            "fun UniformIntersectionSizeEvidence => fun IntersectionClosureEvidence => fun intersection_args => ",
+            "intersection_args PairwiseIntersectionEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (pairwise_intersection_law : PairwiseIntersectionEvidence) => ",
+            "fun (uniform_intersection_size_law : UniformIntersectionSizeEvidence) => ",
+            "fun (intersection_closure_law : IntersectionClosureEvidence) => pairwise_intersection_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "intersection_family_closure_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (PairwiseIntersectionEvidence : Prop), forall (UniformIntersectionSizeEvidence : Prop), forall (IntersectionClosureEvidence : Prop), ",
+            "forall (intersection_args : @IntersectionFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence set_system_args PairwiseIntersectionEvidence UniformIntersectionSizeEvidence IntersectionClosureEvidence), IntersectionClosureEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => fun PairwiseIntersectionEvidence => ",
+            "fun UniformIntersectionSizeEvidence => fun IntersectionClosureEvidence => fun intersection_args => ",
+            "intersection_args IntersectionClosureEvidence ",
+            "(fun (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence) => ",
+            "fun (pairwise_intersection_law : PairwiseIntersectionEvidence) => ",
+            "fun (uniform_intersection_size_law : UniformIntersectionSizeEvidence) => ",
+            "fun (intersection_closure_law : IntersectionClosureEvidence) => intersection_closure_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "bonferroni_union_upper_bound_statement",
+        universe_params: &["f", "s", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (SubsetIndex : Sort s), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (UnionMember : forall (item : Item), Prop), ",
+            "forall (IntersectionMember : forall (subset : SubsetIndex), forall (item : Item), Prop), ",
+            "forall (SubsetSelectsFamily : forall (subset : SubsetIndex), forall (family : FamilyIndex), Prop), ",
+            "forall (NatCarrier : Type), forall (subsetSize : forall (subset : SubsetIndex), NatCarrier), ",
+            "forall (signValue : forall (subset : SubsetIndex), NatCarrier), forall (signedTerm : forall (subset : SubsetIndex), NatCarrier), ",
+            "forall (totalAlternatingSum : NatCarrier), forall (unionSize : NatCarrier), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (FiniteFamilyEvidence : Prop), forall (IntersectionIndexingEvidence : Prop), forall (AlternatingSignIndexEvidence : Prop), ",
+            "forall (UnionFiniteEvidence : Prop), forall (UnionDefinitionEvidence : Prop), forall (SummationEvidence : Prop), ",
+            "forall (InclusionExclusionArithmeticEvidence : Prop), forall (UnionUpperBoundArithmeticEvidence : Prop), ",
+            "forall (prereq_args : @FiniteInclusionExclusionPrerequisites.{f,s,u} FamilyIndex SubsetIndex Item SetMember UnionMember IntersectionMember SubsetSelectsFamily NatCarrier subsetSize signValue signedTerm totalAlternatingSum unionSize FiniteFamilyEvidence IntersectionIndexingEvidence AlternatingSignIndexEvidence UnionFiniteEvidence UnionDefinitionEvidence SummationEvidence InclusionExclusionArithmeticEvidence UnionUpperBoundArithmeticEvidence), ",
+            "forall (FiniteInclusionExclusionEvidence : Prop), forall (inclusion_exclusion_law : FiniteInclusionExclusionEvidence), ",
+            "forall (BonferroniUnionUpperBoundEvidence : Prop), ",
+            "forall (derive : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), forall (inclusion_exclusion_law : FiniteInclusionExclusionEvidence), forall (finite_family_law : FiniteFamilyEvidence), forall (union_finite_law : UnionFiniteEvidence), forall (union_definition_law : UnionDefinitionEvidence), forall (union_upper_bound_arithmetic_law : UnionUpperBoundArithmeticEvidence), BonferroniUnionUpperBoundEvidence), ",
+            "BonferroniUnionUpperBoundEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun SubsetIndex => fun Item => fun SetMember => ",
+            "fun UnionMember => fun IntersectionMember => fun SubsetSelectsFamily => ",
+            "fun NatCarrier => fun subsetSize => fun signValue => fun signedTerm => ",
+            "fun totalAlternatingSum => fun unionSize => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "fun FiniteFamilyEvidence => fun IntersectionIndexingEvidence => ",
+            "fun AlternatingSignIndexEvidence => fun UnionFiniteEvidence => ",
+            "fun UnionDefinitionEvidence => fun SummationEvidence => ",
+            "fun InclusionExclusionArithmeticEvidence => fun UnionUpperBoundArithmeticEvidence => ",
+            "fun prereq_args => fun FiniteInclusionExclusionEvidence => fun inclusion_exclusion_law => ",
+            "fun BonferroniUnionUpperBoundEvidence => fun derive => ",
+            "prereq_args BonferroniUnionUpperBoundEvidence ",
+            "(fun (finite_family_law : FiniteFamilyEvidence) => ",
+            "fun (intersection_indexing_law : IntersectionIndexingEvidence) => ",
+            "fun (alternating_sign_index_law : AlternatingSignIndexEvidence) => ",
+            "fun (union_finite_law : UnionFiniteEvidence) => ",
+            "fun (union_definition_law : UnionDefinitionEvidence) => ",
+            "fun (summation_law : SummationEvidence) => ",
+            "fun (inclusion_exclusion_arithmetic_law : InclusionExclusionArithmeticEvidence) => ",
+            "fun (union_upper_bound_arithmetic_law : UnionUpperBoundArithmeticEvidence) => ",
+            "derive set_system_args inclusion_exclusion_law finite_family_law union_finite_law union_definition_law union_upper_bound_arithmetic_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "probability_bonferroni_alias_boundary_statement",
+        universe_params: &[],
+        statement: concat!(
+            "forall (ProbabilityImportEvidence : Prop), ",
+            "forall (BonferroniUnionUpperBoundEvidence : Prop), ",
+            "forall (PrimaryCombinatorialProofEvidence : Prop), ",
+            "forall (ProbabilityBonferroniAliasEvidence : Prop), ",
+            "forall (probability_import_law : ProbabilityImportEvidence), ",
+            "forall (bonferroni_bound_law : BonferroniUnionUpperBoundEvidence), ",
+            "forall (primary_combinatorial_law : PrimaryCombinatorialProofEvidence), ",
+            "forall (derive : forall (probability_import_law : ProbabilityImportEvidence), forall (bonferroni_bound_law : BonferroniUnionUpperBoundEvidence), forall (primary_combinatorial_law : PrimaryCombinatorialProofEvidence), ProbabilityBonferroniAliasEvidence), ",
+            "ProbabilityBonferroniAliasEvidence"
+        ),
+        proof: concat!(
+            "fun ProbabilityImportEvidence => fun BonferroniUnionUpperBoundEvidence => ",
+            "fun PrimaryCombinatorialProofEvidence => fun ProbabilityBonferroniAliasEvidence => ",
+            "fun probability_import_law => fun bonferroni_bound_law => ",
+            "fun primary_combinatorial_law => fun derive => ",
+            "derive probability_import_law bonferroni_bound_law primary_combinatorial_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "hypergraph_bridge_from_set_system_statement",
+        universe_params: &["f", "u"],
+        statement: concat!(
+            "forall (FamilyIndex : Sort f), forall (Item : Sort u), ",
+            "forall (SetMember : forall (family : FamilyIndex), forall (item : Item), Prop), ",
+            "forall (FamilyFiniteEvidence : Prop), forall (EachSetFiniteEvidence : forall (family : FamilyIndex), Prop), forall (MembershipSoundEvidence : Prop), ",
+            "forall (family_args : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence), ",
+            "forall (NoHypergraphDuplicationEvidence : Prop), ",
+            "forall (set_system_args : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), ",
+            "forall (HypergraphBridgeEvidence : Prop), ",
+            "forall (derive : forall (set_system_law : @FiniteSetSystemPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence family_args NoHypergraphDuplicationEvidence), forall (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence), HypergraphBridgeEvidence), ",
+            "HypergraphBridgeEvidence"
+        ),
+        proof: concat!(
+            "fun FamilyIndex => fun Item => fun SetMember => fun FamilyFiniteEvidence => ",
+            "fun EachSetFiniteEvidence => fun MembershipSoundEvidence => fun family_args => ",
+            "fun NoHypergraphDuplicationEvidence => fun set_system_args => ",
+            "fun HypergraphBridgeEvidence => fun derive => ",
+            "set_system_args HypergraphBridgeEvidence ",
+            "(fun (family_law : @FiniteSetFamilyPredicate.{f,u} FamilyIndex Item SetMember FamilyFiniteEvidence EachSetFiniteEvidence MembershipSoundEvidence) => ",
+            "fun (no_hypergraph_duplication_law : NoHypergraphDuplicationEvidence) => ",
+            "derive set_system_args no_hypergraph_duplication_law)"
         ),
     },
 ];
@@ -64231,6 +64774,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == COMBINATORICS_PERMUTATION_MODULE.module
         || config.module == COMBINATORICS_BINOMIAL_MODULE.module
         || config.module == COMBINATORICS_INCLUSION_EXCLUSION_MODULE.module
+        || config.module == COMBINATORICS_SET_SYSTEM_MODULE.module
         || config.module == COMBINATORICS_BINOMIAL_ALGEBRA_MODULE.module
         || config.module == NUMBER_THEORY_CHARACTER_MODULE.module
         || config.module == CRYPTOGRAPHY_NUMBER_THEORY_MODULE.module

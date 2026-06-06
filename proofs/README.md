@@ -82,6 +82,11 @@ Current bundles:
   Vandermonde, and multinomial theorem interfaces. Ring/semiring law packages, polynomial
   extension dependencies, formal power series assumptions, and finite-counting-to-algebra bridge
   evidence are explicit.
+- `Proofs/Ai/Combinatorics/SetSystem/`: certificate-backed finite set-system, covering,
+  packing, intersection-family, Bonferroni-bound, probability-alias boundary, and hypergraph
+  bridge interfaces. Covering and packing evidence stays explicit, Bonferroni probability aliases
+  consume combinatorial bounds rather than proving them, and set-system/hypergraph ownership stays
+  separated.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
