@@ -1353,7 +1353,7 @@ later in the file.
 
 ### NT-T50 Add Hecke Operators, Eigenforms, And Modular Curves
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T49`
 - Areas: `Proofs/Ai/ModularForms/Hecke/`, `Proofs/Ai/ModularForms/ModularCurve/`
 - Tasks:

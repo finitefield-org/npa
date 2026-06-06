@@ -350,6 +350,15 @@ Current bundles:
   principle data, coefficient identity surfaces, and Eisenstein series
   q-expansion identity surfaces while keeping q-expansion evidence separate
   from later operator packages.
+- `Proofs/Ai/ModularForms/Hecke/`: certificate-backed Hecke operator,
+  eigenform, coefficient-field, Fourier-coefficient multiplicativity,
+  Petersson inner product, and trace formula interface preserving analytic and
+  geometric trace prerequisites as explicit evidence slots. The APIs remain
+  reusable modular-form surfaces rather than hidden Wiles assumptions.
+- `Proofs/Ai/ModularForms/ModularCurve/`: certificate-backed modular curve,
+  Jacobian, and Eichler-Shimura interface preserving explicit construction
+  evidence, analytic prerequisites, and geometric prerequisites downstream of
+  the Hecke package.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

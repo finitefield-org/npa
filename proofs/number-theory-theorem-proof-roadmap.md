@@ -870,6 +870,12 @@ semantics.
     cusp-form, explicit complex-analytic domain, `weight`/`level`,
     `q_expansion`, Eisenstein series, coefficient, and q-expansion principle
     surfaces outside final-theorem glue.
+  - `NT-T50` added certificate-backed `Proofs.Ai.ModularForms.Hecke` and
+    `Proofs.Ai.ModularForms.ModularCurve` defining Hecke operator, eigenform,
+    coefficient-field, Fourier-coefficient multiplicativity, Petersson inner
+    product, trace formula, modular curve, Jacobian, and Eichler-Shimura
+    surfaces with analytic/geometric prerequisites and construction evidence
+    explicit.
 - Depends on: complex analysis, linear algebra, representation theory, algebraic
   geometry, and `NT-16`.
 - Target modules:
