@@ -811,6 +811,15 @@ semantics.
     valuation dependencies, conductor/reduction/minimal-model compatibility,
     semistability as a general non-Frey-specific elliptic-curve predicate, and
     named field/positivity hypotheses for height and Neron-Tate height.
+  - `NT-T47` added certificate-backed
+    `Proofs.Ai.EllipticCurve.GaloisRepresentation` and
+    `Proofs.Ai.EllipticCurve.MordellWeil` defining L1 interfaces for Tate
+    module actions, Weil pairing surfaces, Selmer sharing across Iwasawa and
+    Galois representation tasks, torsion, Nagell-Lutz, weak Mordell-Weil,
+    Mordell-Weil, Selmer group, and Tate-Shafarevich group statement surfaces,
+    with explicit Weil pairing nondegeneracy boundaries that do not require
+    cryptographic assumptions and an interface-level Mordell-Weil boundary
+    until height/descent prerequisites are derived.
 
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
   and finite fields.

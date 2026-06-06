@@ -228,6 +228,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_REDUCTION_MODULE,
     &ELLIPTIC_CURVE_SEMISTABLE_MODULE,
     &ELLIPTIC_CURVE_HEIGHT_MODULE,
+    &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
+    &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2724,6 +2726,43 @@ const ELLIPTIC_CURVE_HEIGHT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_HEIGHT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+    source_path: "Proofs/Ai/EllipticCurve/GaloisRepresentation/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/GaloisRepresentation/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/GaloisRepresentation/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/GaloisRepresentation/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.GroupLaw",
+        "Proofs.Ai.EllipticCurve.Height",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_GALOIS_REPRESENTATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_MORDELL_WEIL_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.MordellWeil",
+    source_path: "Proofs/Ai/EllipticCurve/MordellWeil/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/MordellWeil/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/MordellWeil/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/MordellWeil/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.GroupLaw",
+        "Proofs.Ai.EllipticCurve.Height",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_MORDELL_WEIL_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -22365,6 +22404,84 @@ const ELLIPTIC_CURVE_HEIGHT_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &[],
         statement: "forall (FieldCarrier : Type), forall (Point : Type), forall (NeronTateHeight : Point -> FieldCarrier), forall (Pairing : Point -> Point -> FieldCarrier), forall (Nonnegative : FieldCarrier -> Prop), forall (FieldHypotheses : Prop), forall (PositivityHypotheses : Prop), forall (neron_law : forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)), forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)",
         proof: "fun FieldCarrier => fun Point => fun NeronTateHeight => fun Pairing => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun neron_law => fun field_hypotheses => fun positivity_hypotheses => fun point => neron_law field_hypotheses positivity_hypotheses point",
+    },
+];
+
+const ELLIPTIC_CURVE_GALOIS_REPRESENTATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "tate_module_interface",
+        universe_params: &[],
+        statement: "forall (Prime : Type), forall (GaloisGroup : Type), forall (TateModule : Prime -> Type), forall (TateAction : forall (l : Prime), GaloisGroup -> TateModule l -> TateModule l), forall (action_law : forall (l : Prime), forall (g : GaloisGroup), forall (v : TateModule l), TateModule l), forall (l : Prime), forall (g : GaloisGroup), forall (v : TateModule l), TateModule l",
+        proof: "fun Prime => fun GaloisGroup => fun TateModule => fun TateAction => fun action_law => fun l => fun g => fun v => action_law l g v",
+    },
+    TheoremArtifact {
+        name: "weil_pairing_interface",
+        universe_params: &[],
+        statement: "forall (TorsionPoint : Type), forall (RootOfUnity : Type), forall (WeilPairing : TorsionPoint -> TorsionPoint -> RootOfUnity), forall (pairing_law : forall (P : TorsionPoint), forall (Q : TorsionPoint), RootOfUnity), forall (P : TorsionPoint), forall (Q : TorsionPoint), RootOfUnity",
+        proof: "fun TorsionPoint => fun RootOfUnity => fun WeilPairing => fun pairing_law => fun P => fun Q => pairing_law P Q",
+    },
+    TheoremArtifact {
+        name: "weil_pairing_nondegeneracy_without_crypto_boundary",
+        universe_params: &[],
+        statement: "forall (WeilPairingPackage : Type), forall (CryptographicAssumptionPackage : Type), forall (Nondegenerate : WeilPairingPackage -> Prop), forall (NoCryptoAssumption : WeilPairingPackage -> CryptographicAssumptionPackage -> Prop), forall (boundary_law : forall (pairing : WeilPairingPackage), forall (crypto_assumptions : CryptographicAssumptionPackage), NoCryptoAssumption pairing crypto_assumptions), forall (pairing : WeilPairingPackage), forall (crypto_assumptions : CryptographicAssumptionPackage), NoCryptoAssumption pairing crypto_assumptions",
+        proof: "fun WeilPairingPackage => fun CryptographicAssumptionPackage => fun Nondegenerate => fun NoCryptoAssumption => fun boundary_law => fun pairing => fun crypto_assumptions => boundary_law pairing crypto_assumptions",
+    },
+    TheoremArtifact {
+        name: "selmer_definition_shared_iwasawa_galois_representation_surface",
+        universe_params: &[],
+        statement: "forall (SelmerDefinition : Type), forall (IwasawaTask : Type), forall (GaloisRepresentationTask : Type), forall (SharedSelmerDefinition : SelmerDefinition -> IwasawaTask -> GaloisRepresentationTask -> Prop), forall (shared_law : forall (selmer : SelmerDefinition), forall (iwasawa_task : IwasawaTask), forall (galois_task : GaloisRepresentationTask), SharedSelmerDefinition selmer iwasawa_task galois_task), forall (selmer : SelmerDefinition), forall (iwasawa_task : IwasawaTask), forall (galois_task : GaloisRepresentationTask), SharedSelmerDefinition selmer iwasawa_task galois_task",
+        proof: "fun SelmerDefinition => fun IwasawaTask => fun GaloisRepresentationTask => fun SharedSelmerDefinition => fun shared_law => fun selmer => fun iwasawa_task => fun galois_task => shared_law selmer iwasawa_task galois_task",
+    },
+    TheoremArtifact {
+        name: "galois_representation_local_condition_surface",
+        universe_params: &[],
+        statement: "forall (GaloisRepresentation : Type), forall (LocalCondition : GaloisRepresentation -> Prop), forall (SelmerDefinition : GaloisRepresentation -> Prop), forall (condition_law : forall (rho : GaloisRepresentation), LocalCondition rho -> SelmerDefinition rho), forall (rho : GaloisRepresentation), LocalCondition rho -> SelmerDefinition rho",
+        proof: "fun GaloisRepresentation => fun LocalCondition => fun SelmerDefinition => fun condition_law => fun rho => condition_law rho",
+    },
+];
+
+const ELLIPTIC_CURVE_MORDELL_WEIL_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "elliptic_torsion_subgroup_interface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (Point : Type), forall (TorsionPoint : Point -> Prop), forall (torsion_law : forall (point : Point), TorsionPoint point -> TorsionPoint point), forall (point : Point), TorsionPoint point -> TorsionPoint point",
+        proof: "fun FieldCarrier => fun Point => fun TorsionPoint => fun torsion_law => fun point => torsion_law point",
+    },
+    TheoremArtifact {
+        name: "nagell_lutz_theorem_interface",
+        universe_params: &[],
+        statement: "forall (Point : Type), forall (IntegralPoint : Point -> Prop), forall (TorsionPoint : Point -> Prop), forall (NagellLutzConclusion : Point -> Prop), forall (nagell_lutz_law : forall (point : Point), IntegralPoint point -> TorsionPoint point -> NagellLutzConclusion point), forall (point : Point), IntegralPoint point -> TorsionPoint point -> NagellLutzConclusion point",
+        proof: "fun Point => fun IntegralPoint => fun TorsionPoint => fun NagellLutzConclusion => fun nagell_lutz_law => fun point => nagell_lutz_law point",
+    },
+    TheoremArtifact {
+        name: "weak_mordell_weil_interface",
+        universe_params: &[],
+        statement: "forall (FieldCarrier : Type), forall (Point : Type), forall (QuotientGroup : Type), forall (FiniteGenerationEvidence : QuotientGroup -> Prop), forall (weak_law : forall (quotient : QuotientGroup), FiniteGenerationEvidence quotient), forall (quotient : QuotientGroup), FiniteGenerationEvidence quotient",
+        proof: "fun FieldCarrier => fun Point => fun QuotientGroup => fun FiniteGenerationEvidence => fun weak_law => fun quotient => weak_law quotient",
+    },
+    TheoremArtifact {
+        name: "mordell_weil_theorem_interface",
+        universe_params: &[],
+        statement: "forall (NumberField : Type), forall (EllipticCurve : Type), forall (MordellWeilGroup : Type), forall (FinitelyGenerated : MordellWeilGroup -> Prop), forall (mordell_weil_law : forall (group : MordellWeilGroup), FinitelyGenerated group), forall (group : MordellWeilGroup), FinitelyGenerated group",
+        proof: "fun NumberField => fun EllipticCurve => fun MordellWeilGroup => fun FinitelyGenerated => fun mordell_weil_law => fun group => mordell_weil_law group",
+    },
+    TheoremArtifact {
+        name: "selmer_group_interface",
+        universe_params: &[],
+        statement: "forall (SelmerGroup : Type), forall (LocalCondition : SelmerGroup -> Prop), forall (GlobalCohomologyClass : SelmerGroup -> Prop), forall (selmer_law : forall (selmer_class : SelmerGroup), LocalCondition selmer_class -> GlobalCohomologyClass selmer_class), forall (selmer_class : SelmerGroup), LocalCondition selmer_class -> GlobalCohomologyClass selmer_class",
+        proof: "fun SelmerGroup => fun LocalCondition => fun GlobalCohomologyClass => fun selmer_law => fun selmer_class => selmer_law selmer_class",
+    },
+    TheoremArtifact {
+        name: "tate_shafarevich_group_statement_surface",
+        universe_params: &[],
+        statement: "forall (TateShafarevichGroup : Type), forall (LocallyTrivialClass : TateShafarevichGroup -> Prop), forall (GlobalClass : TateShafarevichGroup -> Prop), forall (sha_law : forall (sha_class : TateShafarevichGroup), LocallyTrivialClass sha_class -> GlobalClass sha_class), forall (sha_class : TateShafarevichGroup), LocallyTrivialClass sha_class -> GlobalClass sha_class",
+        proof: "fun TateShafarevichGroup => fun LocallyTrivialClass => fun GlobalClass => fun sha_law => fun sha_class => sha_law sha_class",
+    },
+    TheoremArtifact {
+        name: "mordell_weil_interface_level_until_height_descent_boundary",
+        universe_params: &[],
+        statement: "forall (MordellWeilInterface : Type), forall (HeightPrerequisite : Type), forall (DescentPrerequisite : Type), forall (InterfaceLevelUntilDerived : MordellWeilInterface -> HeightPrerequisite -> DescentPrerequisite -> Prop), forall (boundary_law : forall (mw_interface : MordellWeilInterface), forall (height_prereq : HeightPrerequisite), forall (descent_prereq : DescentPrerequisite), InterfaceLevelUntilDerived mw_interface height_prereq descent_prereq), forall (mw_interface : MordellWeilInterface), forall (height_prereq : HeightPrerequisite), forall (descent_prereq : DescentPrerequisite), InterfaceLevelUntilDerived mw_interface height_prereq descent_prereq",
+        proof: "fun MordellWeilInterface => fun HeightPrerequisite => fun DescentPrerequisite => fun InterfaceLevelUntilDerived => fun boundary_law => fun mw_interface => fun height_prereq => fun descent_prereq => boundary_law mw_interface height_prereq descent_prereq",
     },
 ];
 
@@ -51026,6 +51143,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ELLIPTIC_CURVE_REDUCTION_MODULE.module
         || config.module == ELLIPTIC_CURVE_SEMISTABLE_MODULE.module
         || config.module == ELLIPTIC_CURVE_HEIGHT_MODULE.module
+        || config.module == ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE.module
+        || config.module == ELLIPTIC_CURVE_MORDELL_WEIL_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

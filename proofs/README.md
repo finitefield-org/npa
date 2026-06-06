@@ -322,6 +322,16 @@ Current bundles:
 - `Proofs/Ai/EllipticCurve/Height/`: certificate-backed height interface
   preserving height and Neron-Tate height surfaces with named field hypotheses,
   positivity hypotheses, nonnegativity predicates, and pairing context.
+- `Proofs/Ai/EllipticCurve/GaloisRepresentation/`: certificate-backed
+  GaloisRepresentation interface preserving Tate module actions, Weil pairing
+  surfaces, Weil pairing nondegeneracy without cryptographic assumptions, shared
+  Selmer definitions for Iwasawa and Galois representation tasks, and local
+  condition vocabulary.
+- `Proofs/Ai/EllipticCurve/MordellWeil/`: certificate-backed Mordell-Weil
+  interface preserving torsion, Nagell-Lutz, weak Mordell-Weil, Mordell-Weil,
+  Selmer group, and Tate-Shafarevich group statement surfaces while keeping the
+  Mordell-Weil theorem interface-level until height and descent prerequisites
+  are derived.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

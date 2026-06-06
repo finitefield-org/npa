@@ -1,0 +1,24 @@
+import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Basic
+import Proofs.Ai.EllipticCurve.GroupLaw
+import Proofs.Ai.EllipticCurve.Height
+
+theorem tate_module_interface :
+  forall (Prime : Type), forall (GaloisGroup : Type), forall (TateModule : Prime -> Type), forall (TateAction : forall (l : Prime), GaloisGroup -> TateModule l -> TateModule l), forall (action_law : forall (l : Prime), forall (g : GaloisGroup), forall (v : TateModule l), TateModule l), forall (l : Prime), forall (g : GaloisGroup), forall (v : TateModule l), TateModule l :=
+  fun Prime => fun GaloisGroup => fun TateModule => fun TateAction => fun action_law => fun l => fun g => fun v => action_law l g v
+
+theorem weil_pairing_interface :
+  forall (TorsionPoint : Type), forall (RootOfUnity : Type), forall (WeilPairing : TorsionPoint -> TorsionPoint -> RootOfUnity), forall (pairing_law : forall (P : TorsionPoint), forall (Q : TorsionPoint), RootOfUnity), forall (P : TorsionPoint), forall (Q : TorsionPoint), RootOfUnity :=
+  fun TorsionPoint => fun RootOfUnity => fun WeilPairing => fun pairing_law => fun P => fun Q => pairing_law P Q
+
+theorem weil_pairing_nondegeneracy_without_crypto_boundary :
+  forall (WeilPairingPackage : Type), forall (CryptographicAssumptionPackage : Type), forall (Nondegenerate : WeilPairingPackage -> Prop), forall (NoCryptoAssumption : WeilPairingPackage -> CryptographicAssumptionPackage -> Prop), forall (boundary_law : forall (pairing : WeilPairingPackage), forall (crypto_assumptions : CryptographicAssumptionPackage), NoCryptoAssumption pairing crypto_assumptions), forall (pairing : WeilPairingPackage), forall (crypto_assumptions : CryptographicAssumptionPackage), NoCryptoAssumption pairing crypto_assumptions :=
+  fun WeilPairingPackage => fun CryptographicAssumptionPackage => fun Nondegenerate => fun NoCryptoAssumption => fun boundary_law => fun pairing => fun crypto_assumptions => boundary_law pairing crypto_assumptions
+
+theorem selmer_definition_shared_iwasawa_galois_representation_surface :
+  forall (SelmerDefinition : Type), forall (IwasawaTask : Type), forall (GaloisRepresentationTask : Type), forall (SharedSelmerDefinition : SelmerDefinition -> IwasawaTask -> GaloisRepresentationTask -> Prop), forall (shared_law : forall (selmer : SelmerDefinition), forall (iwasawa_task : IwasawaTask), forall (galois_task : GaloisRepresentationTask), SharedSelmerDefinition selmer iwasawa_task galois_task), forall (selmer : SelmerDefinition), forall (iwasawa_task : IwasawaTask), forall (galois_task : GaloisRepresentationTask), SharedSelmerDefinition selmer iwasawa_task galois_task :=
+  fun SelmerDefinition => fun IwasawaTask => fun GaloisRepresentationTask => fun SharedSelmerDefinition => fun shared_law => fun selmer => fun iwasawa_task => fun galois_task => shared_law selmer iwasawa_task galois_task
+
+theorem galois_representation_local_condition_surface :
+  forall (GaloisRepresentation : Type), forall (LocalCondition : GaloisRepresentation -> Prop), forall (SelmerDefinition : GaloisRepresentation -> Prop), forall (condition_law : forall (rho : GaloisRepresentation), LocalCondition rho -> SelmerDefinition rho), forall (rho : GaloisRepresentation), LocalCondition rho -> SelmerDefinition rho :=
+  fun GaloisRepresentation => fun LocalCondition => fun SelmerDefinition => fun condition_law => fun rho => condition_law rho

@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.MordellWeil",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "elliptic_torsion_subgroup_interface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun Point => fun TorsionPoint => fun torsion_law => fun point => torsion_law point"
+    },
+    {
+      "declaration": "nagell_lutz_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Point => fun IntegralPoint => fun TorsionPoint => fun NagellLutzConclusion => fun nagell_lutz_law => fun point => nagell_lutz_law point"
+    },
+    {
+      "declaration": "weak_mordell_weil_interface",
+      "source_kind": "explicit_term",
+      "term": "fun FieldCarrier => fun Point => fun QuotientGroup => fun FiniteGenerationEvidence => fun weak_law => fun quotient => weak_law quotient"
+    },
+    {
+      "declaration": "mordell_weil_theorem_interface",
+      "source_kind": "explicit_term",
+      "term": "fun NumberField => fun EllipticCurve => fun MordellWeilGroup => fun FinitelyGenerated => fun mordell_weil_law => fun group => mordell_weil_law group"
+    },
+    {
+      "declaration": "selmer_group_interface",
+      "source_kind": "explicit_term",
+      "term": "fun SelmerGroup => fun LocalCondition => fun GlobalCohomologyClass => fun selmer_law => fun selmer_class => selmer_law selmer_class"
+    },
+    {
+      "declaration": "tate_shafarevich_group_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun TateShafarevichGroup => fun LocallyTrivialClass => fun GlobalClass => fun sha_law => fun sha_class => sha_law sha_class"
+    },
+    {
+      "declaration": "mordell_weil_interface_level_until_height_descent_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun MordellWeilInterface => fun HeightPrerequisite => fun DescentPrerequisite => fun InterfaceLevelUntilDerived => fun boundary_law => fun mw_interface => fun height_prereq => fun descent_prereq => boundary_law mw_interface height_prereq descent_prereq"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/MordellWeil/certificate.npcert"
+  }
+}

@@ -1288,7 +1288,7 @@ later in the file.
 
 ### NT-T47 Add Mordell-Weil, Selmer, Tate Module, And Pairing Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T46`, `NT-T21`
 - Areas: `Proofs/Ai/EllipticCurve/MordellWeil/`, `Proofs/Ai/EllipticCurve/GaloisRepresentation/`
 - Tasks:
