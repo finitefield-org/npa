@@ -629,22 +629,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T18 Add Network Flow And Cut Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T16`, ordered algebra prerequisites
 - Areas: `Proofs.Ai.Graph.Flow`, `Proofs.Ai.Graph.Cut`
 - Tasks:
-  - Define network, source, sink, capacity, feasible flow, residual graph, and
-    cut.
-  - Add flow conservation and cut-capacity statement surfaces.
-  - Keep capacity arithmetic and order assumptions explicit.
+  - Done: Defined network cut evidence with source, sink, capacity,
+    cut-side, cut-edge, and cut-capacity surfaces in `Proofs.Ai.Graph.Cut`.
+  - Done: Defined feasible network flow evidence with flow, conservation,
+    capacity bounds, flow value, residual capacity, residual edge, and residual
+    construction surfaces in `Proofs.Ai.Graph.Flow`.
+  - Done: Kept capacity arithmetic and order assumptions explicit through
+    `OrderedFieldLawArgs` and ordinary algebra/order evidence slots.
 - Deliverables:
-  - Flow/cut interface modules.
+  - Delivered: Flow/cut interface modules.
 - Acceptance criteria:
-  - Flow values live in ordinary algebra/order structures.
-  - Residual graph construction evidence is explicit.
+  - Satisfied: flow and capacity values share the `Scalar` carrier and
+    `OrderedFieldLawArgs`; `flow_values_use_ordered_algebra_statement` exposes
+    the ordinary algebra/order boundary.
+  - Satisfied: residual graph construction evidence is explicit through
+    `ResidualCapacityDefinitionEvidence`, `ResidualCapacityNonnegativeEvidence`,
+    `ResidualEdgeSoundEvidence`, and `residual_graph_construction_statement`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Flow`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `rg -n "NetworkFlowPackage|NetworkCutPackage|residual graph|cut-capacity|OrderedFieldLawArgs" proofs/Proofs/Ai/Graph proofs/combinatorics-graph-theorem-proof-roadmap-todo.md`
+  - `git diff --check`
 
 ### CG-T19 Add Max-Flow/Min-Cut And Konig Interfaces
 

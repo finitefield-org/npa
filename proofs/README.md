@@ -139,6 +139,14 @@ Current bundles:
   neighborhood-size, explicit representative, system-of-distinct-representatives, transversal,
   same-primary-theorem-card, and no-claimed-`L2`-Hall-proof evidence slots without assuming a
   hidden Hall theorem proof.
+- `Proofs/Ai/Graph/Cut/`: certificate-backed network cut package over ordinary ordered-field
+  capacity values and simple graph evidence. It records source/sink cut-side evidence,
+  edge-crossing evidence, capacity nonnegativity, cut-capacity evidence, and explicit order
+  assumptions for cut-capacity statements.
+- `Proofs/Ai/Graph/Flow/`: certificate-backed network flow package over the cut interface. It
+  keeps flow values in the same ordered algebra carrier as capacities, records feasibility,
+  conservation, capacity bounds, flow value evidence, and explicit residual-capacity/residual-edge
+  construction evidence.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
