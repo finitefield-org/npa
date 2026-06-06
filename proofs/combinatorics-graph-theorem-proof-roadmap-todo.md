@@ -764,23 +764,31 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T22 Add Planar Graph Embedding Interface
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T12`, topology prerequisites
 - Areas: `Proofs.Ai.Graph.Planar`, `Proofs.Ai.Graph.Embedding`
 - Tasks:
-  - Define planar embedding, faces, face incidence, and planar graph statement
+  - [x] Define planar embedding, faces, face incidence, and planar graph statement
     surfaces.
-  - Add Euler formula interface and planar edge-bound theorem targets.
-  - Record topology dependencies for embedding evidence.
+  - [x] Add Euler formula interface and planar edge-bound theorem targets.
+  - [x] Record topology dependencies for embedding evidence.
 - Deliverables:
-  - Planar graph interface module.
+  - `Proofs.Ai.Graph.Embedding` records explicit surface topology,
+    vertex/edge embedding, no-crossing, face boundary/incidence, face
+    partition, and face topology compatibility evidence.
+  - `Proofs.Ai.Graph.Planar` records planar embedding evidence, Euler formula
+    evidence, planar edge-bound evidence, finite counting prerequisites, and
+    named topology route evidence over the embedding package.
 - Acceptance criteria:
-  - Embedding evidence is explicit and not hidden in a planar predicate.
-  - Topological assumptions are imported from topology modules or named as
+  - [x] Embedding evidence is explicit and not hidden in a planar predicate.
+  - [x] Topological assumptions are imported from topology modules or named as
     interface dependencies.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Planar`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Embedding`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Embedding --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar --verified-cache authoring`
 
 ### CG-T23 Add Kuratowski, Minor, And Surface Interfaces
 

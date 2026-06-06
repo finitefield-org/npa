@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Planar",
+  "source": "Proofs/Ai/Graph/Planar/source.npa",
+  "certificate": "Proofs/Ai/Graph/Planar/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0fb615367c06832a69bd43384632939dc412bbea44e39fc672480dcfabe61651",
+  "certificate_file_sha256": "sha256:d1268a62c466bb12fe98a107af34219c698ccae9996a4498fe0c311762ba4790",
+  "export_hash": "sha256:76310b7551b9b150cb8939183a6cfaf0ee286fdbbca87ba61225f5c755613042",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:48698d98fdfdac422336b89e31a5858807270ab37651de6cc973c43035e47b03",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Embedding"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PlanarGraphInterfacePackage", "kind": "def" },
+    { "name": "planar_graph_interface_package_intro", "kind": "theorem" },
+    { "name": "planar_embedding_statement", "kind": "theorem" },
+    { "name": "embedding_topology_dependency_statement", "kind": "theorem" },
+    { "name": "planar_face_incidence_statement", "kind": "theorem" },
+    { "name": "euler_formula_statement", "kind": "theorem" },
+    { "name": "planar_edge_bound_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

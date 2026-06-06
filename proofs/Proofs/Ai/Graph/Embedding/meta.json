@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Embedding",
+  "source": "Proofs/Ai/Graph/Embedding/source.npa",
+  "certificate": "Proofs/Ai/Graph/Embedding/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:928e6754d13d5ce540ce5e2c10bc9ecbc78736979ca261363f07ee3a4d9c3216",
+  "certificate_file_sha256": "sha256:83bd8c3aa6172c344fb20e340237dd61c67e793804feb7b5ca6a9135049b3444",
+  "export_hash": "sha256:2419ba5dc084471537b0d37169ce970c4c7ad0eb2ff59b7b8f580a106a438faa",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:e388d5c4227f47b144e75b8139db2c592e3aeff7d1cd2cf56ad9dc9c52bdf114",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphEmbeddingPackage", "kind": "def" },
+    { "name": "graph_embedding_package_intro", "kind": "theorem" },
+    { "name": "embedding_explicit_data_statement", "kind": "theorem" },
+    { "name": "face_incidence_boundary_statement", "kind": "theorem" },
+    { "name": "topology_dependency_statement", "kind": "theorem" },
+    { "name": "no_crossing_embedding_statement", "kind": "theorem" },
+    { "name": "embedding_face_topology_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
