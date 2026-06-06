@@ -920,6 +920,12 @@ semantics.
 ## NT-18 L-functions And Langlands Interfaces
 
 - Status: planned.
+- Progress:
+  - `NT-T53` added certificate-backed `Proofs.Ai.NumberTheory.LFunction`,
+    `Proofs.Ai.NumberTheory.ArtinL`, and `Proofs.Ai.NumberTheory.HeckeL`
+    defining coefficient-field, local-factor, Euler-product, analytic-domain,
+    normalization, analytic-continuation, functional-equation, Artin
+    reciprocity, Hasse-Weil, automorphic, and no-conjectural-`L2` surfaces.
 - Depends on: `NT-11`, `NT-15`, `NT-17`, Galois representations, automorphic
   representation interfaces, and trace formula prerequisites.
 - Target modules:

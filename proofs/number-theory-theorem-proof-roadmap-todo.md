@@ -1421,7 +1421,7 @@ later in the file.
 
 ### NT-T53 Add General L-Function Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T31`, `NT-T43`, `NT-T50`
 - Areas: `Proofs/Ai/NumberTheory/LFunction/`, `Proofs/Ai/NumberTheory/ArtinL/`, `Proofs/Ai/NumberTheory/HeckeL/`
 - Tasks:

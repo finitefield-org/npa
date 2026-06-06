@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.LFunction",
+  "source": "Proofs/Ai/NumberTheory/LFunction/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/LFunction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:513b59cef69b7d84fcbcbb35bce66e4e9470f5513688af1e89e17c2613c613a1",
+  "certificate_file_sha256": "sha256:50221a8e95a2f2446be511cf7a8bdeeba31177a4bc2ae1235c73dff0d386be2d",
+  "export_hash": "sha256:cff79770ee359d2086b537a29951566e74154981ad16160ea4248d50dd0eeb1d",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:1993921ed8ac4591aca59cdea163ccca69092853148f43adac744590d466c293",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.EulerProduct", "Proofs.Ai.NumberTheory.DirichletSeries", "Proofs.Ai.NumberTheory.DirichletL"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LFunctionData", "kind": "def" },
+    { "name": "l_function_data_intro", "kind": "theorem" },
+    { "name": "l_function_coefficient_field_from_analytic_domain", "kind": "theorem" },
+    { "name": "l_function_local_factor_surface", "kind": "theorem" },
+    { "name": "l_function_euler_product_surface", "kind": "theorem" },
+    { "name": "l_function_normalization_surface", "kind": "theorem" },
+    { "name": "l_function_analytic_continuation_surface", "kind": "theorem" },
+    { "name": "l_function_functional_equation_surface", "kind": "theorem" },
+    { "name": "l_function_no_conjectural_L2_marker", "kind": "theorem" },
+    { "name": "hasse_weil_l_function_surface", "kind": "theorem" },
+    { "name": "automorphic_l_function_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

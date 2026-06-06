@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.HeckeL",
+  "source": "Proofs/Ai/NumberTheory/HeckeL/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/HeckeL/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d3b89c12297f477e74a7871c854a91b46df0cf2cd2948faf074717618f7f0258",
+  "certificate_file_sha256": "sha256:cc8356597fee6978635bd5acbc87310fe8ff310588655a16a37cdcabe58ac815",
+  "export_hash": "sha256:54b2420723d0abd2078e7574ce2dbbb09e044be9bbc34df05a3e7eca280609f5",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:6d3a2ee58d0f179db60188db1c92550b45ea5ecc7c78a7fe41d1428933cf8f2e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion", "Proofs.Ai.ModularForms.Hecke"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HeckeLData", "kind": "def" },
+    { "name": "hecke_l_data_intro", "kind": "theorem" },
+    { "name": "hecke_l_general_l_function_data", "kind": "theorem" },
+    { "name": "hecke_l_local_factor_surface", "kind": "theorem" },
+    { "name": "hecke_l_euler_product_surface", "kind": "theorem" },
+    { "name": "hecke_l_automorphic_l_function_surface", "kind": "theorem" },
+    { "name": "hecke_l_automorphic_normalization_surface", "kind": "theorem" },
+    { "name": "hecke_l_matches_general_l_function_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

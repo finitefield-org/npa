@@ -206,6 +206,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_ZETA_MODULE,
     &NUMBER_THEORY_PRIME_NUMBER_THEOREM_MODULE,
     &NUMBER_THEORY_DIRICHLET_L_MODULE,
+    &NUMBER_THEORY_L_FUNCTION_MODULE,
     &NUMBER_THEORY_SIEVE_MODULE,
     &NUMBER_THEORY_CIRCLE_METHOD_MODULE,
     &NUMBER_THEORY_ADDITIVE_PRIME_MODULE,
@@ -221,6 +222,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PADIC_MEASURE_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_LOCAL_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE,
+    &NUMBER_THEORY_ARTIN_L_MODULE,
     &GALOIS_COHOMOLOGY_BASIC_MODULE,
     &NUMBER_THEORY_CLASS_FIELD_COHOMOLOGY_MODULE,
     &ELLIPTIC_CURVE_BASIC_MODULE,
@@ -235,6 +237,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &MODULAR_FORMS_BASIC_MODULE,
     &MODULAR_FORMS_Q_EXPANSION_MODULE,
     &MODULAR_FORMS_HECKE_MODULE,
+    &NUMBER_THEORY_HECKE_L_MODULE,
     &MODULAR_FORMS_MODULAR_CURVE_MODULE,
     &MODULARITY_LEVEL_LOWERING_MODULE,
     &MODULARITY_RIBET_MODULE,
@@ -2404,6 +2407,24 @@ const NUMBER_THEORY_DIRICHLET_L_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const NUMBER_THEORY_L_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.LFunction",
+    source_path: "Proofs/Ai/NumberTheory/LFunction/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/LFunction/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/LFunction/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/LFunction/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.EulerProduct",
+        "Proofs.Ai.NumberTheory.DirichletSeries",
+        "Proofs.Ai.NumberTheory.DirichletL",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_L_FUNCTION_DEFINITIONS,
+    theorems: NUMBER_THEORY_L_FUNCTION_THEOREMS,
+    expected_axioms: &[],
+};
+
 const NUMBER_THEORY_SIEVE_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.NumberTheory.Sieve",
     source_path: "Proofs/Ai/NumberTheory/Sieve/source.npa",
@@ -2633,6 +2654,23 @@ const NUMBER_THEORY_CLASS_FIELD_GLOBAL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: NUMBER_THEORY_CLASS_FIELD_GLOBAL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_ARTIN_L_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.ArtinL",
+    source_path: "Proofs/Ai/NumberTheory/ArtinL/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/ArtinL/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/ArtinL/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/ArtinL/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.LFunction",
+        "Proofs.Ai.NumberTheory.ClassField.Global",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_ARTIN_L_DEFINITIONS,
+    theorems: NUMBER_THEORY_ARTIN_L_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -2868,6 +2906,25 @@ const MODULAR_FORMS_HECKE_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: MODULAR_FORMS_HECKE_DEFINITIONS,
     theorems: MODULAR_FORMS_HECKE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_HECKE_L_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.HeckeL",
+    source_path: "Proofs/Ai/NumberTheory/HeckeL/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/HeckeL/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/HeckeL/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/HeckeL/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.LFunction",
+        "Proofs.Ai.ModularForms.Basic",
+        "Proofs.Ai.ModularForms.QExpansion",
+        "Proofs.Ai.ModularForms.Hecke",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_HECKE_L_DEFINITIONS,
+    theorems: NUMBER_THEORY_HECKE_L_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -21190,6 +21247,1104 @@ const NUMBER_THEORY_DIRICHLET_L_THEOREMS: &[TheoremArtifact] = &[
         ),
         proof: concat!(
             "fun GeneralizedRiemannHypothesis => fun ConsequenceProp => fun grh_conditional_law => fun h => grh_conditional_law h"
+        ),
+    },
+];
+
+macro_rules! l_function_params {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "forall (Family : Type), forall (Complex : Type), forall (Coeff : Type), ",
+            "forall (Prime : Type), ",
+            "forall (LFunction : Family -> Complex -> Coeff), ",
+            "forall (CoefficientField : Type), ",
+            "forall (InCoefficientField : Coeff -> CoefficientField -> Prop), ",
+            "forall (coefficient_field : CoefficientField), ",
+            "forall (LocalFactor : Family -> Prime -> Complex -> Coeff), ",
+            "forall (LocalFactorData : Family -> Prime -> Prop), ",
+            "forall (EulerProduct : Family -> Complex -> Coeff), ",
+            "forall (EulerProductData : Family -> Complex -> Prop), ",
+            "forall (AnalyticDomain : Family -> Complex -> Prop), ",
+            "forall (Normalization : Family -> Prop), ",
+            "forall (AnalyticContinuation : Family -> (Complex -> Coeff) -> Prop), ",
+            "forall (FunctionalEquation : Family -> Prop), ",
+            "forall (NoConjecturalL2 : Family -> Prop), ",
+            "forall (HasseWeilSource : Family -> Prop), ",
+            "forall (HasseWeilLFunction : Family -> Prop), ",
+            "forall (AutomorphicSource : Family -> Prop), ",
+            "forall (AutomorphicLFunction : Family -> Prop), ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! l_function_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun Family => fun Complex => fun Coeff => fun Prime => ",
+            "fun LFunction => fun CoefficientField => fun InCoefficientField => ",
+            "fun coefficient_field => fun LocalFactor => fun LocalFactorData => ",
+            "fun EulerProduct => fun EulerProductData => fun AnalyticDomain => ",
+            "fun Normalization => fun AnalyticContinuation => fun FunctionalEquation => ",
+            "fun NoConjecturalL2 => fun HasseWeilSource => fun HasseWeilLFunction => ",
+            "fun AutomorphicSource => fun AutomorphicLFunction => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! l_function_data_app {
+    () => {
+        "@LFunctionData Family Complex Coeff Prime LFunction CoefficientField InCoefficientField coefficient_field LocalFactor LocalFactorData EulerProduct EulerProductData AnalyticDomain Normalization AnalyticContinuation FunctionalEquation NoConjecturalL2 HasseWeilSource HasseWeilLFunction AutomorphicSource AutomorphicLFunction"
+    };
+}
+
+macro_rules! l_function_coefficient_field_law_type {
+    () => {
+        "forall (family : Family), forall (s : Complex), AnalyticDomain family s -> InCoefficientField (LFunction family s) coefficient_field"
+    };
+}
+
+macro_rules! l_function_local_factor_law_type {
+    () => {
+        "forall (family : Family), forall (prime : Prime), LocalFactorData family prime"
+    };
+}
+
+macro_rules! l_function_euler_product_law_type {
+    () => {
+        "forall (family : Family), forall (s : Complex), AnalyticDomain family s -> EulerProductData family s"
+    };
+}
+
+macro_rules! l_function_normalization_law_type {
+    () => {
+        "forall (family : Family), Normalization family"
+    };
+}
+
+macro_rules! l_function_analytic_continuation_law_type {
+    () => {
+        "forall (family : Family), forall (F : Complex -> Coeff), AnalyticContinuation family F"
+    };
+}
+
+macro_rules! l_function_functional_equation_law_type {
+    () => {
+        "forall (family : Family), FunctionalEquation family"
+    };
+}
+
+macro_rules! l_function_no_conjectural_l2_law_type {
+    () => {
+        "forall (family : Family), NoConjecturalL2 family"
+    };
+}
+
+macro_rules! l_function_hasse_weil_law_type {
+    () => {
+        "forall (family : Family), HasseWeilSource family -> HasseWeilLFunction family"
+    };
+}
+
+macro_rules! l_function_automorphic_law_type {
+    () => {
+        "forall (family : Family), AutomorphicSource family -> AutomorphicLFunction family"
+    };
+}
+
+macro_rules! l_function_mk_type {
+    ($target:expr) => {
+        concat!(
+            "forall (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            "), forall (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            "), forall (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            "), forall (normalization_law : ",
+            l_function_normalization_law_type!(),
+            "), forall (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            "), forall (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            "), forall (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            "), forall (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            "), forall (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            "), ",
+            $target
+        )
+    };
+}
+
+const NUMBER_THEORY_L_FUNCTION_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "LFunctionData",
+    universe_params: &[],
+    ty: l_function_params!("Prop"),
+    value: l_function_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        l_function_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_L_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "l_function_data_intro",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            "), forall (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            "), forall (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            "), forall (normalization_law : ",
+            l_function_normalization_law_type!(),
+            "), forall (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            "), forall (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            "), forall (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            "), forall (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            "), forall (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            "), ",
+            l_function_data_app!()
+        ),
+        proof: l_function_abs!(
+            "fun coefficient_field_law => fun local_factor_law => ",
+            "fun euler_product_law => fun normalization_law => ",
+            "fun analytic_continuation_law => fun functional_equation_law => ",
+            "fun no_conjectural_l2_law => fun hasse_weil_law => ",
+            "fun automorphic_law => fun (Q : Prop) => fun (mk : ",
+            l_function_mk_type!("Q"),
+            ") => mk coefficient_field_law local_factor_law euler_product_law ",
+            "normalization_law analytic_continuation_law functional_equation_law ",
+            "no_conjectural_l2_law hasse_weil_law automorphic_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_coefficient_field_from_analytic_domain",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_coefficient_field_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_coefficient_field_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => coefficient_field_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_local_factor_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_local_factor_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_local_factor_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => local_factor_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_euler_product_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_euler_product_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_euler_product_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => euler_product_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_normalization_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_normalization_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_normalization_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => normalization_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_analytic_continuation_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_analytic_continuation_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_analytic_continuation_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => analytic_continuation_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_functional_equation_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_functional_equation_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_functional_equation_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => functional_equation_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "l_function_no_conjectural_L2_marker",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_no_conjectural_l2_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_no_conjectural_l2_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => no_conjectural_l2_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hasse_weil_l_function_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_hasse_weil_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_hasse_weil_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => hasse_weil_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "automorphic_l_function_surface",
+        universe_params: &[],
+        statement: l_function_params!(
+            "forall (data : ",
+            l_function_data_app!(),
+            "), ",
+            l_function_automorphic_law_type!()
+        ),
+        proof: l_function_abs!(
+            "fun data => data (",
+            l_function_automorphic_law_type!(),
+            ") (fun (coefficient_field_law : ",
+            l_function_coefficient_field_law_type!(),
+            ") => fun (local_factor_law : ",
+            l_function_local_factor_law_type!(),
+            ") => fun (euler_product_law : ",
+            l_function_euler_product_law_type!(),
+            ") => fun (normalization_law : ",
+            l_function_normalization_law_type!(),
+            ") => fun (analytic_continuation_law : ",
+            l_function_analytic_continuation_law_type!(),
+            ") => fun (functional_equation_law : ",
+            l_function_functional_equation_law_type!(),
+            ") => fun (no_conjectural_l2_law : ",
+            l_function_no_conjectural_l2_law_type!(),
+            ") => fun (hasse_weil_law : ",
+            l_function_hasse_weil_law_type!(),
+            ") => fun (automorphic_law : ",
+            l_function_automorphic_law_type!(),
+            ") => automorphic_law)"
+        ),
+    },
+];
+
+macro_rules! artin_l_params {
+    ($($body:expr),+ $(,)?) => {
+        l_function_params!(
+            "forall (GlobalField : Type), ",
+            "forall (ArtinRepresentation : Family -> Prop), ",
+            "forall (ClassFieldReciprocity : GlobalField -> Prop), ",
+            "forall (ArtinReciprocityCompatible : Family -> GlobalField -> Prop), ",
+            "forall (ArtinLocalFactorNormalized : Family -> Prime -> Prop), ",
+            "forall (ArtinLFunction : Family -> Complex -> Coeff), ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! artin_l_abs {
+    ($($body:expr),+ $(,)?) => {
+        l_function_abs!(
+            "fun GlobalField => fun ArtinRepresentation => ",
+            "fun ClassFieldReciprocity => fun ArtinReciprocityCompatible => ",
+            "fun ArtinLocalFactorNormalized => fun ArtinLFunction => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! artin_l_data_app {
+    () => {
+        "@ArtinLData Family Complex Coeff Prime LFunction CoefficientField InCoefficientField coefficient_field LocalFactor LocalFactorData EulerProduct EulerProductData AnalyticDomain Normalization AnalyticContinuation FunctionalEquation NoConjecturalL2 HasseWeilSource HasseWeilLFunction AutomorphicSource AutomorphicLFunction GlobalField ArtinRepresentation ClassFieldReciprocity ArtinReciprocityCompatible ArtinLocalFactorNormalized ArtinLFunction"
+    };
+}
+
+macro_rules! artin_l_local_factor_law_type {
+    () => {
+        "forall (rho : Family), forall (prime : Prime), ArtinRepresentation rho -> LocalFactorData rho prime"
+    };
+}
+
+macro_rules! artin_l_local_factor_normalization_law_type {
+    () => {
+        "forall (rho : Family), forall (prime : Prime), ArtinRepresentation rho -> ArtinLocalFactorNormalized rho prime"
+    };
+}
+
+macro_rules! artin_l_reciprocity_law_type {
+    () => {
+        "forall (rho : Family), forall (global_field : GlobalField), ArtinRepresentation rho -> ClassFieldReciprocity global_field -> ArtinReciprocityCompatible rho global_field"
+    };
+}
+
+macro_rules! artin_l_normalization_law_type {
+    () => {
+        "forall (rho : Family), ArtinRepresentation rho -> Normalization rho"
+    };
+}
+
+macro_rules! artin_l_matches_general_law_type {
+    () => {
+        "forall (rho : Family), forall (s : Complex), ArtinRepresentation rho -> @Eq.{1} Coeff (ArtinLFunction rho s) (LFunction rho s)"
+    };
+}
+
+macro_rules! artin_l_mk_type {
+    ($target:expr) => {
+        concat!(
+            "forall (general_l_function_data : ",
+            l_function_data_app!(),
+            "), forall (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            "), forall (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            "), forall (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            "), forall (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            "), forall (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            "), ",
+            $target
+        )
+    };
+}
+
+const NUMBER_THEORY_ARTIN_L_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "ArtinLData",
+    universe_params: &[],
+    ty: artin_l_params!("Prop"),
+    value: artin_l_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        artin_l_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_ARTIN_L_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "artin_l_data_intro",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (general_l_function_data : ",
+            l_function_data_app!(),
+            "), forall (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            "), forall (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            "), forall (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            "), forall (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            "), forall (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            "), ",
+            artin_l_data_app!()
+        ),
+        proof: artin_l_abs!(
+            "fun general_l_function_data => fun artin_local_factor_law => ",
+            "fun artin_local_factor_normalization_law => ",
+            "fun artin_reciprocity_law => fun artin_normalization_law => ",
+            "fun artin_l_matches_general_law => fun (Q : Prop) => fun (mk : ",
+            artin_l_mk_type!("Q"),
+            ") => mk general_l_function_data artin_local_factor_law ",
+            "artin_local_factor_normalization_law artin_reciprocity_law ",
+            "artin_normalization_law artin_l_matches_general_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "artin_l_general_l_function_data",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (data : ",
+            artin_l_data_app!(),
+            "), ",
+            l_function_data_app!()
+        ),
+        proof: artin_l_abs!(
+            "fun data => data (",
+            l_function_data_app!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            ") => fun (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            ") => fun (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            ") => fun (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            ") => fun (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            ") => general_l_function_data)"
+        ),
+    },
+    TheoremArtifact {
+        name: "artin_l_local_factor_surface",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (data : ",
+            artin_l_data_app!(),
+            "), ",
+            artin_l_local_factor_law_type!()
+        ),
+        proof: artin_l_abs!(
+            "fun data => data (",
+            artin_l_local_factor_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            ") => fun (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            ") => fun (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            ") => fun (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            ") => fun (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            ") => artin_local_factor_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "artin_l_local_factor_normalization_surface",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (data : ",
+            artin_l_data_app!(),
+            "), ",
+            artin_l_local_factor_normalization_law_type!()
+        ),
+        proof: artin_l_abs!(
+            "fun data => data (",
+            artin_l_local_factor_normalization_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            ") => fun (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            ") => fun (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            ") => fun (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            ") => fun (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            ") => artin_local_factor_normalization_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "artin_l_reciprocity_connection_to_class_field_theory",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (data : ",
+            artin_l_data_app!(),
+            "), ",
+            artin_l_reciprocity_law_type!()
+        ),
+        proof: artin_l_abs!(
+            "fun data => data (",
+            artin_l_reciprocity_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            ") => fun (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            ") => fun (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            ") => fun (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            ") => fun (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            ") => artin_reciprocity_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "artin_l_normalization_surface",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (data : ",
+            artin_l_data_app!(),
+            "), ",
+            artin_l_normalization_law_type!()
+        ),
+        proof: artin_l_abs!(
+            "fun data => data (",
+            artin_l_normalization_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            ") => fun (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            ") => fun (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            ") => fun (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            ") => fun (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            ") => artin_normalization_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "artin_l_matches_general_l_function_surface",
+        universe_params: &[],
+        statement: artin_l_params!(
+            "forall (data : ",
+            artin_l_data_app!(),
+            "), ",
+            artin_l_matches_general_law_type!()
+        ),
+        proof: artin_l_abs!(
+            "fun data => data (",
+            artin_l_matches_general_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (artin_local_factor_law : ",
+            artin_l_local_factor_law_type!(),
+            ") => fun (artin_local_factor_normalization_law : ",
+            artin_l_local_factor_normalization_law_type!(),
+            ") => fun (artin_reciprocity_law : ",
+            artin_l_reciprocity_law_type!(),
+            ") => fun (artin_normalization_law : ",
+            artin_l_normalization_law_type!(),
+            ") => fun (artin_l_matches_general_law : ",
+            artin_l_matches_general_law_type!(),
+            ") => artin_l_matches_general_law)"
+        ),
+    },
+];
+
+macro_rules! hecke_l_params {
+    ($($body:expr),+ $(,)?) => {
+        l_function_params!(
+            "forall (HeckeCharacter : Family -> Prop), ",
+            "forall (HeckeLocalFactorNormalized : Family -> Prime -> Prop), ",
+            "forall (HeckeEulerProductCompatible : Family -> Complex -> Prop), ",
+            "forall (HeckeAutomorphicNormalization : Family -> Prop), ",
+            "forall (HeckeLFunction : Family -> Complex -> Coeff), ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! hecke_l_abs {
+    ($($body:expr),+ $(,)?) => {
+        l_function_abs!(
+            "fun HeckeCharacter => fun HeckeLocalFactorNormalized => ",
+            "fun HeckeEulerProductCompatible => fun HeckeAutomorphicNormalization => ",
+            "fun HeckeLFunction => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! hecke_l_data_app {
+    () => {
+        "@HeckeLData Family Complex Coeff Prime LFunction CoefficientField InCoefficientField coefficient_field LocalFactor LocalFactorData EulerProduct EulerProductData AnalyticDomain Normalization AnalyticContinuation FunctionalEquation NoConjecturalL2 HasseWeilSource HasseWeilLFunction AutomorphicSource AutomorphicLFunction HeckeCharacter HeckeLocalFactorNormalized HeckeEulerProductCompatible HeckeAutomorphicNormalization HeckeLFunction"
+    };
+}
+
+macro_rules! hecke_l_character_normalization_law_type {
+    () => {
+        "forall (chi : Family), HeckeCharacter chi -> Normalization chi"
+    };
+}
+
+macro_rules! hecke_l_local_factor_law_type {
+    () => {
+        "forall (chi : Family), forall (prime : Prime), HeckeCharacter chi -> LocalFactorData chi prime"
+    };
+}
+
+macro_rules! hecke_l_local_factor_normalization_law_type {
+    () => {
+        "forall (chi : Family), forall (prime : Prime), HeckeCharacter chi -> HeckeLocalFactorNormalized chi prime"
+    };
+}
+
+macro_rules! hecke_l_euler_product_law_type {
+    () => {
+        "forall (chi : Family), forall (s : Complex), HeckeCharacter chi -> AnalyticDomain chi s -> EulerProductData chi s"
+    };
+}
+
+macro_rules! hecke_l_automorphic_law_type {
+    () => {
+        "forall (chi : Family), HeckeCharacter chi -> AutomorphicLFunction chi"
+    };
+}
+
+macro_rules! hecke_l_automorphic_normalization_law_type {
+    () => {
+        "forall (chi : Family), HeckeCharacter chi -> HeckeAutomorphicNormalization chi"
+    };
+}
+
+macro_rules! hecke_l_matches_general_law_type {
+    () => {
+        "forall (chi : Family), forall (s : Complex), HeckeCharacter chi -> @Eq.{1} Coeff (HeckeLFunction chi s) (LFunction chi s)"
+    };
+}
+
+macro_rules! hecke_l_mk_type {
+    ($target:expr) => {
+        concat!(
+            "forall (general_l_function_data : ",
+            l_function_data_app!(),
+            "), forall (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            "), forall (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            "), forall (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            "), forall (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            "), forall (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            "), forall (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            "), forall (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            "), ",
+            $target
+        )
+    };
+}
+
+const NUMBER_THEORY_HECKE_L_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "HeckeLData",
+    universe_params: &[],
+    ty: hecke_l_params!("Prop"),
+    value: hecke_l_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        hecke_l_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_HECKE_L_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "hecke_l_data_intro",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (general_l_function_data : ",
+            l_function_data_app!(),
+            "), forall (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            "), forall (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            "), forall (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            "), forall (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            "), forall (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            "), forall (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            "), forall (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            "), ",
+            hecke_l_data_app!()
+        ),
+        proof: hecke_l_abs!(
+            "fun general_l_function_data => fun hecke_character_normalization_law => ",
+            "fun hecke_local_factor_law => fun hecke_local_factor_normalization_law => ",
+            "fun hecke_euler_product_law => fun hecke_automorphic_law => ",
+            "fun hecke_automorphic_normalization_law => ",
+            "fun hecke_l_matches_general_law => fun (Q : Prop) => fun (mk : ",
+            hecke_l_mk_type!("Q"),
+            ") => mk general_l_function_data hecke_character_normalization_law ",
+            "hecke_local_factor_law hecke_local_factor_normalization_law ",
+            "hecke_euler_product_law hecke_automorphic_law ",
+            "hecke_automorphic_normalization_law hecke_l_matches_general_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_l_general_l_function_data",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (data : ",
+            hecke_l_data_app!(),
+            "), ",
+            l_function_data_app!()
+        ),
+        proof: hecke_l_abs!(
+            "fun data => data (",
+            l_function_data_app!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            ") => fun (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            ") => fun (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            ") => fun (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            ") => fun (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            ") => fun (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") => fun (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            ") => general_l_function_data)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_l_local_factor_surface",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (data : ",
+            hecke_l_data_app!(),
+            "), ",
+            hecke_l_local_factor_law_type!()
+        ),
+        proof: hecke_l_abs!(
+            "fun data => data (",
+            hecke_l_local_factor_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            ") => fun (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            ") => fun (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            ") => fun (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            ") => fun (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            ") => fun (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") => fun (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            ") => hecke_local_factor_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_l_euler_product_surface",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (data : ",
+            hecke_l_data_app!(),
+            "), ",
+            hecke_l_euler_product_law_type!()
+        ),
+        proof: hecke_l_abs!(
+            "fun data => data (",
+            hecke_l_euler_product_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            ") => fun (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            ") => fun (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            ") => fun (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            ") => fun (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            ") => fun (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") => fun (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            ") => hecke_euler_product_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_l_automorphic_l_function_surface",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (data : ",
+            hecke_l_data_app!(),
+            "), ",
+            hecke_l_automorphic_law_type!()
+        ),
+        proof: hecke_l_abs!(
+            "fun data => data (",
+            hecke_l_automorphic_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            ") => fun (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            ") => fun (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            ") => fun (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            ") => fun (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            ") => fun (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") => fun (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            ") => hecke_automorphic_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_l_automorphic_normalization_surface",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (data : ",
+            hecke_l_data_app!(),
+            "), ",
+            hecke_l_automorphic_normalization_law_type!()
+        ),
+        proof: hecke_l_abs!(
+            "fun data => data (",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            ") => fun (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            ") => fun (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            ") => fun (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            ") => fun (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            ") => fun (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") => fun (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            ") => hecke_automorphic_normalization_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_l_matches_general_l_function_surface",
+        universe_params: &[],
+        statement: hecke_l_params!(
+            "forall (data : ",
+            hecke_l_data_app!(),
+            "), ",
+            hecke_l_matches_general_law_type!()
+        ),
+        proof: hecke_l_abs!(
+            "fun data => data (",
+            hecke_l_matches_general_law_type!(),
+            ") (fun (general_l_function_data : ",
+            l_function_data_app!(),
+            ") => fun (hecke_character_normalization_law : ",
+            hecke_l_character_normalization_law_type!(),
+            ") => fun (hecke_local_factor_law : ",
+            hecke_l_local_factor_law_type!(),
+            ") => fun (hecke_local_factor_normalization_law : ",
+            hecke_l_local_factor_normalization_law_type!(),
+            ") => fun (hecke_euler_product_law : ",
+            hecke_l_euler_product_law_type!(),
+            ") => fun (hecke_automorphic_law : ",
+            hecke_l_automorphic_law_type!(),
+            ") => fun (hecke_automorphic_normalization_law : ",
+            hecke_l_automorphic_normalization_law_type!(),
+            ") => fun (hecke_l_matches_general_law : ",
+            hecke_l_matches_general_law_type!(),
+            ") => hecke_l_matches_general_law)"
         ),
     },
 ];
@@ -53254,6 +54409,9 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_DIRICHLET_CONVOLUTION_MODULE.module
         || config.module == NUMBER_THEORY_MOBIUS_MODULE.module
         || config.module == NUMBER_THEORY_EULER_PRODUCT_MODULE.module
+        || config.module == NUMBER_THEORY_L_FUNCTION_MODULE.module
+        || config.module == NUMBER_THEORY_ARTIN_L_MODULE.module
+        || config.module == NUMBER_THEORY_HECKE_L_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module

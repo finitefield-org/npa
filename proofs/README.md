@@ -238,6 +238,16 @@ Current bundles:
   downstream of Mobius and Dirichlet convolution, preserving finite Euler products,
   multiplicative Dirichlet series interfaces, zeta and Dirichlet `L` milestone inputs, and
   explicit convergence prerequisites deferred to later analytic tasks.
+- `Proofs/Ai/NumberTheory/LFunction/`: certificate-backed general `LFunction` interface
+  preserving coefficient-field, local factor, Euler product, analytic-domain, normalization,
+  analytic-continuation, functional-equation, Hasse-Weil, automorphic, and no-conjectural-`L2`
+  surfaces as separate named fields.
+- `Proofs/Ai/NumberTheory/ArtinL/`: certificate-backed `ArtinL` interface downstream of
+  general `LFunction` and class field theory, preserving Artin representation, local factor
+  normalization, and class-field-reciprocity compatibility surfaces.
+- `Proofs/Ai/NumberTheory/HeckeL/`: certificate-backed `HeckeL` interface downstream of
+  general `LFunction` and Hecke modular-form data, preserving Hecke character, local factor,
+  Euler product, automorphic `L`-function, and automorphic normalization surfaces.
 - `Proofs/Ai/NumberTheory/Sieve/`: certificate-backed sieve-theory interface preserving Brun
   sieve, Selberg sieve, large sieve, fundamental lemma, Brun theorem, twin-prime reciprocal
   convergence, Chen theorem, GPY, Zhang, Maynard-Tao, parity-problem limitations, explicit
