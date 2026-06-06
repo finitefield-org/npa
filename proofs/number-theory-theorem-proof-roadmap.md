@@ -1033,6 +1033,15 @@ semantics.
     and nu invariant, Iwasawa class-number formula, p-adic dependency,
     Galois-cohomology dependency, and non-confusion with the `NT-T39` analytic
     class-number formula surfaces.
+  - `NT-T60` added certificate-backed
+    `Proofs.Ai.NumberTheory.Iwasawa.MainConjecture` and
+    `Proofs.Ai.NumberTheory.Iwasawa.EulerSystem`, preserving
+    Kubota-Leopoldt p-adic `L`-function reuse of `NT-T42`, interpolation
+    formula, exact-assumption Iwasawa main conjecture conditional forms,
+    Mazur-Wiles, Ferrero-Washington, `mu = 0`, Euler-system norm relations,
+    Kato, Rubin, Coates-Wiles, Skinner-Urban, plus/minus Selmer groups shared
+    with elliptic-curve modules, Gross-Koblitz, and Euler-system links back to
+    Iwasawa main conjecture surfaces.
 - Depends on: `NT-14`, `NT-15`, `NT-16`, `NT-18`, module theory, and Galois
   cohomology.
 - Target modules:

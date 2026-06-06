@@ -335,6 +335,16 @@ Current bundles:
   torsion module structure, lambda, mu, and nu invariants, Iwasawa class-number
   formula, p-adic and Galois-cohomology dependencies, and a boundary separating
   the Iwasawa class-number formula from the analytic class-number formula.
+- `Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/`: certificate-backed
+  Iwasawa main conjecture interface preserving `NT-T59` dependency,
+  Kubota-Leopoldt p-adic `L`-function reuse of `NT-T42`, interpolation formula,
+  `NT-T53` L-function dependency, exact-assumption conditional main conjecture
+  forms, Mazur-Wiles, Ferrero-Washington, and `mu = 0` theorem surfaces.
+- `Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/`: certificate-backed Iwasawa
+  Euler-system interface preserving MainConjecture dependency, Euler-system
+  norm relations, Kato, Rubin, Coates-Wiles, Skinner-Urban, plus/minus Selmer
+  groups shared with elliptic-curve modules, Gross-Koblitz formula, Selmer
+  bounds, and Euler-system links back to Iwasawa main conjecture surfaces.
 - `Proofs/Ai/EllipticCurve/Basic/`: certificate-backed elliptic-curve interface
   preserving Weierstrass models, nonsingularity, explicit field and polynomial
   assumptions, discriminant/nonzero boundaries, and general API reuse outside

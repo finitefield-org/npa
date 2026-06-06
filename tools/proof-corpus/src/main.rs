@@ -235,6 +235,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_L_FUNCTION_MODULE,
     &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
     &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
+    &NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE,
+    &NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE,
     &MODULAR_FORMS_BASIC_MODULE,
     &MODULAR_FORMS_Q_EXPANSION_MODULE,
     &MODULAR_FORMS_HECKE_MODULE,
@@ -2896,6 +2898,46 @@ const ELLIPTIC_CURVE_MORDELL_WEIL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_MORDELL_WEIL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture",
+    source_path: "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.Iwasawa.Basic",
+        "Proofs.Ai.NumberTheory.PadicMeasure",
+        "Proofs.Ai.NumberTheory.LFunction",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_DEFINITIONS,
+    theorems: NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Iwasawa.EulerSystem",
+    source_path: "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.Iwasawa.Basic",
+        "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture",
+        "Proofs.Ai.NumberTheory.PadicMeasure",
+        "Proofs.Ai.NumberTheory.LFunction",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+        "Proofs.Ai.EllipticCurve.MordellWeil",
+        "Proofs.Ai.EllipticCurve.LFunction",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_IWASAWA_EULER_SYSTEM_DEFINITIONS,
+    theorems: NUMBER_THEORY_IWASAWA_EULER_SYSTEM_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -25813,6 +25855,866 @@ const NUMBER_THEORY_IWASAWA_BASIC_THEOREMS: &[TheoremArtifact] = &[
             iwasawa_class_number_not_analytic_law_type!(),
             "iwasawa_class_number_not_analytic_law"
         ),
+    },
+];
+
+macro_rules! iwasawa_main_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (Character : Type), ",
+            "forall (PadicLFunction : Type), ",
+            "forall (IwasawaModule : Type), ",
+            "forall (CharacteristicIdeal : Type), ",
+            "forall (KubotaLeopoldtPadicLFunction : forall (chi : Character), forall (l_function : PadicLFunction), Prop), ",
+            "forall (PadicLInterpolationFormula : forall (chi : Character), forall (l_function : PadicLFunction), Prop), ",
+            "forall (PadicLFunctionReusesNTT42 : forall (l_function : PadicLFunction), Prop), ",
+            "forall (MainConjectureExactAssumptions : forall (chi : Character), forall (module : IwasawaModule), forall (l_function : PadicLFunction), forall (characteristic_ideal : CharacteristicIdeal), Prop), ",
+            "forall (IwasawaMainConjecture : forall (chi : Character), forall (module : IwasawaModule), forall (l_function : PadicLFunction), forall (characteristic_ideal : CharacteristicIdeal), Prop), ",
+            "forall (MazurWilesTheorem : forall (chi : Character), forall (module : IwasawaModule), forall (l_function : PadicLFunction), forall (characteristic_ideal : CharacteristicIdeal), Prop), ",
+            "forall (FerreroWashingtonHypotheses : forall (module : IwasawaModule), Prop), ",
+            "forall (FerreroWashingtonTheorem : forall (module : IwasawaModule), Prop), ",
+            "forall (MuEqualsZeroTheorem : forall (module : IwasawaModule), Prop), ",
+            "forall (ConditionalMainConjectureForm : forall (chi : Character), forall (module : IwasawaModule), forall (l_function : PadicLFunction), forall (characteristic_ideal : CharacteristicIdeal), Prop), ",
+            "forall (IwasawaBasicDependency : Prop), ",
+            "forall (PadicMeasureNTT42Dependency : Prop), ",
+            "forall (LFunctionNTT53Dependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! iwasawa_main_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun Character => fun PadicLFunction => fun IwasawaModule => ",
+            "fun CharacteristicIdeal => fun KubotaLeopoldtPadicLFunction => ",
+            "fun PadicLInterpolationFormula => fun PadicLFunctionReusesNTT42 => ",
+            "fun MainConjectureExactAssumptions => fun IwasawaMainConjecture => ",
+            "fun MazurWilesTheorem => fun FerreroWashingtonHypotheses => ",
+            "fun FerreroWashingtonTheorem => fun MuEqualsZeroTheorem => ",
+            "fun ConditionalMainConjectureForm => fun IwasawaBasicDependency => ",
+            "fun PadicMeasureNTT42Dependency => fun LFunctionNTT53Dependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! iwasawa_main_data_app {
+    () => {
+        concat!(
+            "@IwasawaMainConjectureData Character PadicLFunction IwasawaModule ",
+            "CharacteristicIdeal KubotaLeopoldtPadicLFunction ",
+            "PadicLInterpolationFormula PadicLFunctionReusesNTT42 ",
+            "MainConjectureExactAssumptions IwasawaMainConjecture ",
+            "MazurWilesTheorem FerreroWashingtonHypotheses ",
+            "FerreroWashingtonTheorem MuEqualsZeroTheorem ",
+            "ConditionalMainConjectureForm IwasawaBasicDependency ",
+            "PadicMeasureNTT42Dependency LFunctionNTT53Dependency"
+        )
+    };
+}
+
+macro_rules! iwasawa_main_basic_dependency_law_type {
+    () => {
+        "IwasawaBasicDependency"
+    };
+}
+
+macro_rules! iwasawa_main_padic_measure_nt_t42_dependency_law_type {
+    () => {
+        "PadicMeasureNTT42Dependency"
+    };
+}
+
+macro_rules! iwasawa_main_l_function_nt_t53_dependency_law_type {
+    () => {
+        "LFunctionNTT53Dependency"
+    };
+}
+
+macro_rules! kubota_leopoldt_reuse_nt_t42_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (l_function : PadicLFunction), ",
+            "PadicLFunctionReusesNTT42 l_function -> ",
+            "KubotaLeopoldtPadicLFunction chi l_function"
+        )
+    };
+}
+
+macro_rules! kubota_leopoldt_interpolation_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (l_function : PadicLFunction), ",
+            "KubotaLeopoldtPadicLFunction chi l_function -> ",
+            "PadicLInterpolationFormula chi l_function"
+        )
+    };
+}
+
+macro_rules! main_conjecture_exact_assumptions_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (module : IwasawaModule), ",
+            "forall (l_function : PadicLFunction), ",
+            "forall (characteristic_ideal : CharacteristicIdeal), ",
+            "MainConjectureExactAssumptions chi module l_function characteristic_ideal -> ",
+            "PadicLInterpolationFormula chi l_function -> ",
+            "IwasawaMainConjecture chi module l_function characteristic_ideal"
+        )
+    };
+}
+
+macro_rules! main_conjecture_conditional_form_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (module : IwasawaModule), ",
+            "forall (l_function : PadicLFunction), ",
+            "forall (characteristic_ideal : CharacteristicIdeal), ",
+            "MainConjectureExactAssumptions chi module l_function characteristic_ideal -> ",
+            "ConditionalMainConjectureForm chi module l_function characteristic_ideal"
+        )
+    };
+}
+
+macro_rules! mazur_wiles_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (module : IwasawaModule), ",
+            "forall (l_function : PadicLFunction), ",
+            "forall (characteristic_ideal : CharacteristicIdeal), ",
+            "IwasawaMainConjecture chi module l_function characteristic_ideal -> ",
+            "MazurWilesTheorem chi module l_function characteristic_ideal"
+        )
+    };
+}
+
+macro_rules! ferrero_washington_law_type {
+    () => {
+        concat!(
+            "forall (module : IwasawaModule), ",
+            "FerreroWashingtonHypotheses module -> FerreroWashingtonTheorem module"
+        )
+    };
+}
+
+macro_rules! mu_equals_zero_law_type {
+    () => {
+        concat!(
+            "forall (module : IwasawaModule), ",
+            "FerreroWashingtonTheorem module -> MuEqualsZeroTheorem module"
+        )
+    };
+}
+
+macro_rules! iwasawa_main_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (iwasawa_basic_dependency_law : ",
+            iwasawa_main_basic_dependency_law_type!(),
+            "), forall (padic_measure_nt_t42_dependency_law : ",
+            iwasawa_main_padic_measure_nt_t42_dependency_law_type!(),
+            "), forall (l_function_nt_t53_dependency_law : ",
+            iwasawa_main_l_function_nt_t53_dependency_law_type!(),
+            "), forall (kubota_leopoldt_reuse_nt_t42_law : ",
+            kubota_leopoldt_reuse_nt_t42_law_type!(),
+            "), forall (kubota_leopoldt_interpolation_law : ",
+            kubota_leopoldt_interpolation_law_type!(),
+            "), forall (main_conjecture_exact_assumptions_law : ",
+            main_conjecture_exact_assumptions_law_type!(),
+            "), forall (main_conjecture_conditional_form_law : ",
+            main_conjecture_conditional_form_law_type!(),
+            "), forall (mazur_wiles_law : ",
+            mazur_wiles_law_type!(),
+            "), forall (ferrero_washington_law : ",
+            ferrero_washington_law_type!(),
+            "), forall (mu_equals_zero_law : ",
+            mu_equals_zero_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! iwasawa_main_projection_proof {
+    ($target:expr, $selected:expr) => {
+        iwasawa_main_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (iwasawa_basic_dependency_law : ",
+            iwasawa_main_basic_dependency_law_type!(),
+            ") => fun (padic_measure_nt_t42_dependency_law : ",
+            iwasawa_main_padic_measure_nt_t42_dependency_law_type!(),
+            ") => fun (l_function_nt_t53_dependency_law : ",
+            iwasawa_main_l_function_nt_t53_dependency_law_type!(),
+            ") => fun (kubota_leopoldt_reuse_nt_t42_law : ",
+            kubota_leopoldt_reuse_nt_t42_law_type!(),
+            ") => fun (kubota_leopoldt_interpolation_law : ",
+            kubota_leopoldt_interpolation_law_type!(),
+            ") => fun (main_conjecture_exact_assumptions_law : ",
+            main_conjecture_exact_assumptions_law_type!(),
+            ") => fun (main_conjecture_conditional_form_law : ",
+            main_conjecture_conditional_form_law_type!(),
+            ") => fun (mazur_wiles_law : ",
+            mazur_wiles_law_type!(),
+            ") => fun (ferrero_washington_law : ",
+            ferrero_washington_law_type!(),
+            ") => fun (mu_equals_zero_law : ",
+            mu_equals_zero_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "IwasawaMainConjectureData",
+        universe_params: &[],
+        ty: iwasawa_main_params!("Prop"),
+        value: iwasawa_main_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            iwasawa_main_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "iwasawa_main_conjecture_data_intro",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (iwasawa_basic_dependency_law : ",
+            iwasawa_main_basic_dependency_law_type!(),
+            "), forall (padic_measure_nt_t42_dependency_law : ",
+            iwasawa_main_padic_measure_nt_t42_dependency_law_type!(),
+            "), forall (l_function_nt_t53_dependency_law : ",
+            iwasawa_main_l_function_nt_t53_dependency_law_type!(),
+            "), forall (kubota_leopoldt_reuse_nt_t42_law : ",
+            kubota_leopoldt_reuse_nt_t42_law_type!(),
+            "), forall (kubota_leopoldt_interpolation_law : ",
+            kubota_leopoldt_interpolation_law_type!(),
+            "), forall (main_conjecture_exact_assumptions_law : ",
+            main_conjecture_exact_assumptions_law_type!(),
+            "), forall (main_conjecture_conditional_form_law : ",
+            main_conjecture_conditional_form_law_type!(),
+            "), forall (mazur_wiles_law : ",
+            mazur_wiles_law_type!(),
+            "), forall (ferrero_washington_law : ",
+            ferrero_washington_law_type!(),
+            "), forall (mu_equals_zero_law : ",
+            mu_equals_zero_law_type!(),
+            "), ",
+            iwasawa_main_data_app!()
+        ),
+        proof: iwasawa_main_abs!(
+            "fun iwasawa_basic_dependency_law => ",
+            "fun padic_measure_nt_t42_dependency_law => ",
+            "fun l_function_nt_t53_dependency_law => ",
+            "fun kubota_leopoldt_reuse_nt_t42_law => ",
+            "fun kubota_leopoldt_interpolation_law => ",
+            "fun main_conjecture_exact_assumptions_law => ",
+            "fun main_conjecture_conditional_form_law => fun mazur_wiles_law => ",
+            "fun ferrero_washington_law => fun mu_equals_zero_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            iwasawa_main_mk_type!("Q"),
+            ") => mk iwasawa_basic_dependency_law ",
+            "padic_measure_nt_t42_dependency_law l_function_nt_t53_dependency_law ",
+            "kubota_leopoldt_reuse_nt_t42_law kubota_leopoldt_interpolation_law ",
+            "main_conjecture_exact_assumptions_law ",
+            "main_conjecture_conditional_form_law mazur_wiles_law ",
+            "ferrero_washington_law mu_equals_zero_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_main_iwasawa_basic_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            iwasawa_main_basic_dependency_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            iwasawa_main_basic_dependency_law_type!(),
+            "iwasawa_basic_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_main_padic_measure_nt_t42_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            iwasawa_main_padic_measure_nt_t42_dependency_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            iwasawa_main_padic_measure_nt_t42_dependency_law_type!(),
+            "padic_measure_nt_t42_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_main_l_function_nt_t53_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            iwasawa_main_l_function_nt_t53_dependency_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            iwasawa_main_l_function_nt_t53_dependency_law_type!(),
+            "l_function_nt_t53_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "kubota_leopoldt_padic_l_function_reuses_nt_t42_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            kubota_leopoldt_reuse_nt_t42_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            kubota_leopoldt_reuse_nt_t42_law_type!(),
+            "kubota_leopoldt_reuse_nt_t42_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "kubota_leopoldt_interpolation_formula_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            kubota_leopoldt_interpolation_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            kubota_leopoldt_interpolation_law_type!(),
+            "kubota_leopoldt_interpolation_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_main_conjecture_exact_assumptions_conditional_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            main_conjecture_exact_assumptions_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            main_conjecture_exact_assumptions_law_type!(),
+            "main_conjecture_exact_assumptions_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "iwasawa_main_conjecture_conditional_form_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            main_conjecture_conditional_form_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            main_conjecture_conditional_form_law_type!(),
+            "main_conjecture_conditional_form_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "mazur_wiles_theorem_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            mazur_wiles_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(mazur_wiles_law_type!(), "mazur_wiles_law"),
+    },
+    TheoremArtifact {
+        name: "ferrero_washington_theorem_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            ferrero_washington_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(
+            ferrero_washington_law_type!(),
+            "ferrero_washington_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "mu_equals_zero_theorem_surface",
+        universe_params: &[],
+        statement: iwasawa_main_params!(
+            "forall (data : ",
+            iwasawa_main_data_app!(),
+            "), ",
+            mu_equals_zero_law_type!()
+        ),
+        proof: iwasawa_main_projection_proof!(mu_equals_zero_law_type!(), "mu_equals_zero_law"),
+    },
+];
+
+macro_rules! iwasawa_euler_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (EllipticCurve : Type), ",
+            "forall (GaloisRepresentation : Type), ",
+            "forall (SelmerGroup : Type), ",
+            "forall (EulerSystem : Type), ",
+            "forall (IwasawaModule : Type), ",
+            "forall (PadicLFunction : Type), ",
+            "forall (Character : Type), ",
+            "forall (EulerSystemNormRelations : forall (euler_system : EulerSystem), Prop), ",
+            "forall (KatoEulerSystem : forall (curve : EllipticCurve), forall (euler_system : EulerSystem), Prop), ",
+            "forall (RubinEulerSystem : forall (chi : Character), forall (euler_system : EulerSystem), Prop), ",
+            "forall (CoatesWilesTheorem : forall (curve : EllipticCurve), forall (l_function : PadicLFunction), Prop), ",
+            "forall (SkinnerUrbanTheorem : forall (curve : EllipticCurve), forall (module : IwasawaModule), forall (l_function : PadicLFunction), Prop), ",
+            "forall (PlusSelmerGroup : forall (curve : EllipticCurve), forall (selmer : SelmerGroup), Prop), ",
+            "forall (MinusSelmerGroup : forall (curve : EllipticCurve), forall (selmer : SelmerGroup), Prop), ",
+            "forall (SelmerSharedWithEllipticCurveModules : forall (curve : EllipticCurve), forall (representation : GaloisRepresentation), forall (plus_selmer : SelmerGroup), forall (minus_selmer : SelmerGroup), Prop), ",
+            "forall (GrossKoblitzFormula : forall (chi : Character), forall (l_function : PadicLFunction), Prop), ",
+            "forall (EulerSystemBoundsSelmer : forall (euler_system : EulerSystem), forall (selmer : SelmerGroup), Prop), ",
+            "forall (EulerSystemMainConjectureLink : forall (euler_system : EulerSystem), forall (module : IwasawaModule), forall (l_function : PadicLFunction), Prop), ",
+            "forall (IwasawaMainConjectureDependency : Prop), ",
+            "forall (EllipticCurveSelmerDependency : Prop), ",
+            "forall (PadicLFunctionDependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! iwasawa_euler_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun EllipticCurve => fun GaloisRepresentation => fun SelmerGroup => ",
+            "fun EulerSystem => fun IwasawaModule => fun PadicLFunction => ",
+            "fun Character => fun EulerSystemNormRelations => fun KatoEulerSystem => ",
+            "fun RubinEulerSystem => fun CoatesWilesTheorem => ",
+            "fun SkinnerUrbanTheorem => fun PlusSelmerGroup => fun MinusSelmerGroup => ",
+            "fun SelmerSharedWithEllipticCurveModules => fun GrossKoblitzFormula => ",
+            "fun EulerSystemBoundsSelmer => fun EulerSystemMainConjectureLink => ",
+            "fun IwasawaMainConjectureDependency => fun EllipticCurveSelmerDependency => ",
+            "fun PadicLFunctionDependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! iwasawa_euler_data_app {
+    () => {
+        concat!(
+            "@IwasawaEulerSystemData EllipticCurve GaloisRepresentation SelmerGroup ",
+            "EulerSystem IwasawaModule PadicLFunction Character ",
+            "EulerSystemNormRelations KatoEulerSystem RubinEulerSystem ",
+            "CoatesWilesTheorem SkinnerUrbanTheorem PlusSelmerGroup ",
+            "MinusSelmerGroup SelmerSharedWithEllipticCurveModules ",
+            "GrossKoblitzFormula EulerSystemBoundsSelmer ",
+            "EulerSystemMainConjectureLink IwasawaMainConjectureDependency ",
+            "EllipticCurveSelmerDependency PadicLFunctionDependency"
+        )
+    };
+}
+
+macro_rules! euler_iwasawa_main_dependency_law_type {
+    () => {
+        "IwasawaMainConjectureDependency"
+    };
+}
+
+macro_rules! euler_elliptic_selmer_dependency_law_type {
+    () => {
+        "EllipticCurveSelmerDependency"
+    };
+}
+
+macro_rules! euler_padic_l_function_dependency_law_type {
+    () => {
+        "PadicLFunctionDependency"
+    };
+}
+
+macro_rules! euler_system_norm_relations_law_type {
+    () => {
+        "forall (euler_system : EulerSystem), EulerSystemNormRelations euler_system"
+    };
+}
+
+macro_rules! kato_euler_system_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (euler_system : EulerSystem), ",
+            "EulerSystemNormRelations euler_system -> KatoEulerSystem curve euler_system"
+        )
+    };
+}
+
+macro_rules! rubin_euler_system_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (euler_system : EulerSystem), ",
+            "EulerSystemNormRelations euler_system -> RubinEulerSystem chi euler_system"
+        )
+    };
+}
+
+macro_rules! coates_wiles_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (l_function : PadicLFunction), ",
+            "PadicLFunctionDependency -> CoatesWilesTheorem curve l_function"
+        )
+    };
+}
+
+macro_rules! plus_minus_selmer_shared_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (representation : GaloisRepresentation), ",
+            "forall (plus_selmer : SelmerGroup), forall (minus_selmer : SelmerGroup), ",
+            "PlusSelmerGroup curve plus_selmer -> MinusSelmerGroup curve minus_selmer -> ",
+            "SelmerSharedWithEllipticCurveModules curve representation plus_selmer minus_selmer"
+        )
+    };
+}
+
+macro_rules! gross_koblitz_law_type {
+    () => {
+        concat!(
+            "forall (chi : Character), forall (l_function : PadicLFunction), ",
+            "PadicLFunctionDependency -> GrossKoblitzFormula chi l_function"
+        )
+    };
+}
+
+macro_rules! euler_system_bounds_selmer_law_type {
+    () => {
+        concat!(
+            "forall (euler_system : EulerSystem), forall (selmer : SelmerGroup), ",
+            "EulerSystemNormRelations euler_system -> EulerSystemBoundsSelmer euler_system selmer"
+        )
+    };
+}
+
+macro_rules! euler_system_main_conjecture_link_law_type {
+    () => {
+        concat!(
+            "forall (euler_system : EulerSystem), forall (module : IwasawaModule), ",
+            "forall (l_function : PadicLFunction), IwasawaMainConjectureDependency -> ",
+            "EulerSystemMainConjectureLink euler_system module l_function"
+        )
+    };
+}
+
+macro_rules! skinner_urban_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (module : IwasawaModule), ",
+            "forall (l_function : PadicLFunction), forall (euler_system : EulerSystem), ",
+            "EulerSystemMainConjectureLink euler_system module l_function -> ",
+            "SkinnerUrbanTheorem curve module l_function"
+        )
+    };
+}
+
+macro_rules! iwasawa_euler_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (iwasawa_main_conjecture_dependency_law : ",
+            euler_iwasawa_main_dependency_law_type!(),
+            "), forall (elliptic_curve_selmer_dependency_law : ",
+            euler_elliptic_selmer_dependency_law_type!(),
+            "), forall (padic_l_function_dependency_law : ",
+            euler_padic_l_function_dependency_law_type!(),
+            "), forall (euler_system_norm_relations_law : ",
+            euler_system_norm_relations_law_type!(),
+            "), forall (kato_euler_system_law : ",
+            kato_euler_system_law_type!(),
+            "), forall (rubin_euler_system_law : ",
+            rubin_euler_system_law_type!(),
+            "), forall (coates_wiles_law : ",
+            coates_wiles_law_type!(),
+            "), forall (plus_minus_selmer_shared_law : ",
+            plus_minus_selmer_shared_law_type!(),
+            "), forall (gross_koblitz_law : ",
+            gross_koblitz_law_type!(),
+            "), forall (euler_system_bounds_selmer_law : ",
+            euler_system_bounds_selmer_law_type!(),
+            "), forall (euler_system_main_conjecture_link_law : ",
+            euler_system_main_conjecture_link_law_type!(),
+            "), forall (skinner_urban_law : ",
+            skinner_urban_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! iwasawa_euler_projection_proof {
+    ($target:expr, $selected:expr) => {
+        iwasawa_euler_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (iwasawa_main_conjecture_dependency_law : ",
+            euler_iwasawa_main_dependency_law_type!(),
+            ") => fun (elliptic_curve_selmer_dependency_law : ",
+            euler_elliptic_selmer_dependency_law_type!(),
+            ") => fun (padic_l_function_dependency_law : ",
+            euler_padic_l_function_dependency_law_type!(),
+            ") => fun (euler_system_norm_relations_law : ",
+            euler_system_norm_relations_law_type!(),
+            ") => fun (kato_euler_system_law : ",
+            kato_euler_system_law_type!(),
+            ") => fun (rubin_euler_system_law : ",
+            rubin_euler_system_law_type!(),
+            ") => fun (coates_wiles_law : ",
+            coates_wiles_law_type!(),
+            ") => fun (plus_minus_selmer_shared_law : ",
+            plus_minus_selmer_shared_law_type!(),
+            ") => fun (gross_koblitz_law : ",
+            gross_koblitz_law_type!(),
+            ") => fun (euler_system_bounds_selmer_law : ",
+            euler_system_bounds_selmer_law_type!(),
+            ") => fun (euler_system_main_conjecture_link_law : ",
+            euler_system_main_conjecture_link_law_type!(),
+            ") => fun (skinner_urban_law : ",
+            skinner_urban_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const NUMBER_THEORY_IWASAWA_EULER_SYSTEM_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "IwasawaEulerSystemData",
+        universe_params: &[],
+        ty: iwasawa_euler_params!("Prop"),
+        value: iwasawa_euler_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            iwasawa_euler_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const NUMBER_THEORY_IWASAWA_EULER_SYSTEM_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "iwasawa_euler_system_data_intro",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (iwasawa_main_conjecture_dependency_law : ",
+            euler_iwasawa_main_dependency_law_type!(),
+            "), forall (elliptic_curve_selmer_dependency_law : ",
+            euler_elliptic_selmer_dependency_law_type!(),
+            "), forall (padic_l_function_dependency_law : ",
+            euler_padic_l_function_dependency_law_type!(),
+            "), forall (euler_system_norm_relations_law : ",
+            euler_system_norm_relations_law_type!(),
+            "), forall (kato_euler_system_law : ",
+            kato_euler_system_law_type!(),
+            "), forall (rubin_euler_system_law : ",
+            rubin_euler_system_law_type!(),
+            "), forall (coates_wiles_law : ",
+            coates_wiles_law_type!(),
+            "), forall (plus_minus_selmer_shared_law : ",
+            plus_minus_selmer_shared_law_type!(),
+            "), forall (gross_koblitz_law : ",
+            gross_koblitz_law_type!(),
+            "), forall (euler_system_bounds_selmer_law : ",
+            euler_system_bounds_selmer_law_type!(),
+            "), forall (euler_system_main_conjecture_link_law : ",
+            euler_system_main_conjecture_link_law_type!(),
+            "), forall (skinner_urban_law : ",
+            skinner_urban_law_type!(),
+            "), ",
+            iwasawa_euler_data_app!()
+        ),
+        proof: iwasawa_euler_abs!(
+            "fun iwasawa_main_conjecture_dependency_law => ",
+            "fun elliptic_curve_selmer_dependency_law => ",
+            "fun padic_l_function_dependency_law => ",
+            "fun euler_system_norm_relations_law => fun kato_euler_system_law => ",
+            "fun rubin_euler_system_law => fun coates_wiles_law => ",
+            "fun plus_minus_selmer_shared_law => fun gross_koblitz_law => ",
+            "fun euler_system_bounds_selmer_law => ",
+            "fun euler_system_main_conjecture_link_law => fun skinner_urban_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            iwasawa_euler_mk_type!("Q"),
+            ") => mk iwasawa_main_conjecture_dependency_law ",
+            "elliptic_curve_selmer_dependency_law padic_l_function_dependency_law ",
+            "euler_system_norm_relations_law kato_euler_system_law ",
+            "rubin_euler_system_law coates_wiles_law plus_minus_selmer_shared_law ",
+            "gross_koblitz_law euler_system_bounds_selmer_law ",
+            "euler_system_main_conjecture_link_law skinner_urban_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_system_iwasawa_main_conjecture_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            euler_iwasawa_main_dependency_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            euler_iwasawa_main_dependency_law_type!(),
+            "iwasawa_main_conjecture_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_system_elliptic_curve_selmer_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            euler_elliptic_selmer_dependency_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            euler_elliptic_selmer_dependency_law_type!(),
+            "elliptic_curve_selmer_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_system_padic_l_function_dependency_explicit",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            euler_padic_l_function_dependency_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            euler_padic_l_function_dependency_law_type!(),
+            "padic_l_function_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_system_norm_relations_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            euler_system_norm_relations_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            euler_system_norm_relations_law_type!(),
+            "euler_system_norm_relations_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "kato_euler_system_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            kato_euler_system_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            kato_euler_system_law_type!(),
+            "kato_euler_system_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "rubin_euler_system_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            rubin_euler_system_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            rubin_euler_system_law_type!(),
+            "rubin_euler_system_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "coates_wiles_theorem_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            coates_wiles_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(coates_wiles_law_type!(), "coates_wiles_law"),
+    },
+    TheoremArtifact {
+        name: "plus_minus_selmer_groups_shared_with_elliptic_curve_modules",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            plus_minus_selmer_shared_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            plus_minus_selmer_shared_law_type!(),
+            "plus_minus_selmer_shared_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "gross_koblitz_formula_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            gross_koblitz_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(gross_koblitz_law_type!(), "gross_koblitz_law"),
+    },
+    TheoremArtifact {
+        name: "euler_system_bounds_selmer_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            euler_system_bounds_selmer_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            euler_system_bounds_selmer_law_type!(),
+            "euler_system_bounds_selmer_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "euler_system_main_conjecture_link_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            euler_system_main_conjecture_link_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(
+            euler_system_main_conjecture_link_law_type!(),
+            "euler_system_main_conjecture_link_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "skinner_urban_theorem_surface",
+        universe_params: &[],
+        statement: iwasawa_euler_params!(
+            "forall (data : ",
+            iwasawa_euler_data_app!(),
+            "), ",
+            skinner_urban_law_type!()
+        ),
+        proof: iwasawa_euler_projection_proof!(skinner_urban_law_type!(), "skinner_urban_law"),
     },
 ];
 
@@ -58771,6 +59673,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_ARTIN_L_MODULE.module
         || config.module == NUMBER_THEORY_HECKE_L_MODULE.module
         || config.module == NUMBER_THEORY_IWASAWA_BASIC_MODULE.module
+        || config.module == NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE.module
+        || config.module == NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module

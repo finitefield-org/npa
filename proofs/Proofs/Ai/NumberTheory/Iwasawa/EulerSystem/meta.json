@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Iwasawa.EulerSystem",
+  "source": "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:46f6722834de0aab599c53d886de11878a07a0c20d74e16d3f64687acba86a68",
+  "certificate_file_sha256": "sha256:b44308ecd0cbcfae03cccbc0d66198e224a60a50460533b7abad7d51863c9166",
+  "export_hash": "sha256:324307c5edc904f7c25ef38a00dcca92ee6c636ef61feefc81dedc6f5dc32360",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:dffc3f60fd13236e7d0642e76cb55d2f552e9920aaec64e661c2587f1d94ed93",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Iwasawa.Basic", "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.EllipticCurve.GaloisRepresentation", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.EllipticCurve.LFunction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "IwasawaEulerSystemData", "kind": "def" },
+    { "name": "iwasawa_euler_system_data_intro", "kind": "theorem" },
+    { "name": "euler_system_iwasawa_main_conjecture_dependency_explicit", "kind": "theorem" },
+    { "name": "euler_system_elliptic_curve_selmer_dependency_explicit", "kind": "theorem" },
+    { "name": "euler_system_padic_l_function_dependency_explicit", "kind": "theorem" },
+    { "name": "euler_system_norm_relations_surface", "kind": "theorem" },
+    { "name": "kato_euler_system_surface", "kind": "theorem" },
+    { "name": "rubin_euler_system_surface", "kind": "theorem" },
+    { "name": "coates_wiles_theorem_surface", "kind": "theorem" },
+    { "name": "plus_minus_selmer_groups_shared_with_elliptic_curve_modules", "kind": "theorem" },
+    { "name": "gross_koblitz_formula_surface", "kind": "theorem" },
+    { "name": "euler_system_bounds_selmer_surface", "kind": "theorem" },
+    { "name": "euler_system_main_conjecture_link_surface", "kind": "theorem" },
+    { "name": "skinner_urban_theorem_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

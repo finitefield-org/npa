@@ -1586,7 +1586,7 @@ later in the file.
 
 ### NT-T60 Add Iwasawa Main Conjecture And Euler-System Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T59`, `NT-T47`, `NT-T53`
 - Areas: `Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/`, `Proofs/Ai/NumberTheory/Iwasawa/EulerSystem/`
 - Tasks:

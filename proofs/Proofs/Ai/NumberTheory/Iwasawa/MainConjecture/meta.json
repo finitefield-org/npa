@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture",
+  "source": "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/Iwasawa/MainConjecture/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a606cdb55c39cbd5516a65402527ba5c5f5cdb34ebf870f48e4a10d91a70b117",
+  "certificate_file_sha256": "sha256:58fce483a6a99f5b2c8a4ff0baff41cc5f929e62e8abdc11cc1c4c6f8c064477",
+  "export_hash": "sha256:842042231818250cdd9429661da5d18f58d61299286363bfc3d72fc0fa43a294",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:a18afdafb9e59e332cbf36108ea1dc23cf05209a8d65963e7ff6083e8bdcd44b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Iwasawa.Basic", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.NumberTheory.LFunction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "IwasawaMainConjectureData", "kind": "def" },
+    { "name": "iwasawa_main_conjecture_data_intro", "kind": "theorem" },
+    { "name": "iwasawa_main_iwasawa_basic_dependency_explicit", "kind": "theorem" },
+    { "name": "iwasawa_main_padic_measure_nt_t42_dependency_explicit", "kind": "theorem" },
+    { "name": "iwasawa_main_l_function_nt_t53_dependency_explicit", "kind": "theorem" },
+    { "name": "kubota_leopoldt_padic_l_function_reuses_nt_t42_surface", "kind": "theorem" },
+    { "name": "kubota_leopoldt_interpolation_formula_surface", "kind": "theorem" },
+    { "name": "iwasawa_main_conjecture_exact_assumptions_conditional_surface", "kind": "theorem" },
+    { "name": "iwasawa_main_conjecture_conditional_form_surface", "kind": "theorem" },
+    { "name": "mazur_wiles_theorem_surface", "kind": "theorem" },
+    { "name": "ferrero_washington_theorem_surface", "kind": "theorem" },
+    { "name": "mu_equals_zero_theorem_surface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
