@@ -1750,7 +1750,7 @@ later in the file.
 
 ### NT-T67 Import Or Alias Finite-Field Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: field-theory `FT-13`, `NT-T18`
 - Areas: `Proofs/Ai/Algebra/AbstractFiniteField/`, `Proofs/Ai/NumberTheory/FiniteFieldApplications/`
 - Tasks:
@@ -1771,6 +1771,14 @@ later in the file.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFiniteField`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteField`
   - `rg -n "AbstractFiniteField|FiniteFieldApplications|Frobenius|ownership" proofs develop`
+- Completion notes:
+  - Added `Proofs.Ai.NumberTheory.FiniteFieldApplications` as a number-theoretic application
+    namespace that imports `Proofs.Ai.Algebra.AbstractFiniteField` rather than redefining the
+    finite-field core.
+  - Recorded ownership theorem cards for field-theory-owned existence, uniqueness,
+    multiplicative-cyclicity, subfield-classification, Frobenius, primitive-root, and Gauss-sum
+    application routes.
+  - Updated `PrimitiveRoot` and `GaussSum` to import the finite-field application facts explicitly.
 
 ### NT-T68 Add Finite-Field Exponential Sum Interfaces
 

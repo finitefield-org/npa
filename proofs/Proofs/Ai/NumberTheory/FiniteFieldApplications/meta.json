@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumberTheory.FiniteFieldApplications",
+  "source": "Proofs/Ai/NumberTheory/FiniteFieldApplications/source.npa",
+  "certificate": "Proofs/Ai/NumberTheory/FiniteFieldApplications/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e7a0733abd8928c845bcfc036d03d0ad94804bd6f512805febf6f6560e16da6b",
+  "certificate_file_sha256": "sha256:a5b1c20fecdbc15e6039b222daf6a4f7f8611c1b446badccf6f3424cb135756c",
+  "export_hash": "sha256:a034ba9aefddb8af33672d8126be55f1c5a3c5d209cfbeb08e351a75c7ddd25b",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:3709e768b97d20b38378fc7dc162c6e7fb63fa74be1fe9a9b8dac02440bf5bc6",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractFiniteField"],
+  "axioms": [],
+  "declarations": [
+    { "name": "finite_field_core_frobenius_cardinality_root_application_chain", "kind": "theorem" },
+    { "name": "finite_field_ownership_field_theory_route_for_applications", "kind": "theorem" },
+    { "name": "finite_field_existence_uniqueness_cards_owned_by_field_theory", "kind": "theorem" },
+    { "name": "finite_field_multiplicative_cyclicity_card_for_primitive_roots", "kind": "theorem" },
+    { "name": "finite_field_subfield_classification_frobenius_card", "kind": "theorem" },
+    { "name": "finite_field_gauss_sum_application_imports_finite_field_facts", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

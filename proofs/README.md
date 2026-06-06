@@ -210,22 +210,29 @@ Current bundles:
   GaloisRepresentation APIs, preserving ECDH group/key-generation/randomness correctness, ECDSA
   key-generation and nonce-randomness verification correctness, Weil and Tate pairing reuse of
   elliptic-curve APIs, and hardness assumptions as non-derived boundaries.
+- `Proofs/Ai/NumberTheory/FiniteFieldApplications/`: certificate-backed finite-field
+  application namespace downstream of `Proofs.Ai.Algebra.AbstractFiniteField`, preserving
+  field-theory ownership of finite-field core laws while exposing number-theoretic application
+  cards for Frobenius, cardinality, root characterization, multiplicative cyclicity,
+  subfield classification, primitive roots, and Gauss sums.
 - `Proofs/Ai/NumberTheory/PrimitiveRoot/`: certificate-backed element-order and primitive-root
-  base interface downstream of abstract groups, modular unit groups, and `phi`, preserving
-  `element_order` power-congruence and minimality surfaces, primitive root definitions as
-  residue-unit group generator evidence, an abstract cyclic-group generator-count formula, odd
-  prime and prime_power existence surfaces, a ChineseRemainder-dependent classification route,
-  and boundaries separating definitions from primitive-root existence/classification assumptions
-  and preventing backward dependency from finite unit-group theorems.
+  base interface downstream of abstract groups, modular unit groups, `phi`, and explicit
+  finite-field application facts, preserving `element_order` power-congruence and minimality
+  surfaces, primitive root definitions as residue-unit group generator evidence, an abstract
+  cyclic-group generator-count formula, odd prime and prime_power existence surfaces, a
+  ChineseRemainder-dependent classification route, and boundaries separating definitions from
+  primitive-root existence/classification assumptions and preventing backward dependency from
+  finite unit-group theorems.
 - `Proofs/Ai/NumberTheory/Character/`: certificate-backed Dirichlet character interface
   downstream of modular unit groups, `phi`, and primitive roots, preserving
   `DirichletCharacter` definition surfaces, finite character-group packaging, orthogonality
   relations without analytic `L`-function dependencies, and `discrete_log` statement surfaces
   that keep algorithms and runtime solvers outside trusted certificates.
 - `Proofs/Ai/NumberTheory/GaussSum/`: certificate-backed Gauss sum interface downstream of
-  `Character`, preserving `GaussSum` definitions over an explicit coefficient ring,
-  multiplicative Dirichlet character data, additive character data, basic identities,
-  orthogonality bridges, and boundaries excluding analytic `L`-function assumptions.
+  `Character` and explicit finite-field application facts, preserving `GaussSum` definitions
+  over an explicit coefficient ring, multiplicative Dirichlet character data, additive character
+  data, basic identities, orthogonality bridges, and boundaries excluding analytic `L`-function
+  assumptions.
 - `Proofs/Ai/NumberTheory/QuadraticResidue/`: certificate-backed quadratic residue and
   nonresidue interface downstream of prime, congruence, modular unit-group, and primitive-root
   surfaces, preserving explicit odd prime hypotheses and nonzero residue count statements.

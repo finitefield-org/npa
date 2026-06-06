@@ -4,6 +4,7 @@ import Proofs.Ai.NumberTheory.Prime
 import Proofs.Ai.NumberTheory.ModularGroup
 import Proofs.Ai.NumberTheory.ChineseRemainder
 import Proofs.Ai.NumberTheory.Phi
+import Proofs.Ai.NumberTheory.FiniteFieldApplications
 
 theorem element_order_power_congruence_surface :
   forall (Int : Type), forall (Nat : Type), forall (ElementOrderModulo : forall (modulus : Int), forall (a : Int), Nat), forall (UnitModulo : forall (modulus : Int), forall (a : Int), Prop), forall (PowerCongruenceModulo : forall (modulus : Int), forall (a : Int), forall (exponent : Nat), Prop), forall (ElementOrderEvidence : forall (modulus : Int), forall (a : Int), forall (order_value : Nat), Prop), forall (power_law : forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), forall (order_evidence : ElementOrderEvidence modulus a (ElementOrderModulo modulus a)), PowerCongruenceModulo modulus a (ElementOrderModulo modulus a)), forall (modulus : Int), forall (a : Int), forall (unit_a : UnitModulo modulus a), forall (order_evidence : ElementOrderEvidence modulus a (ElementOrderModulo modulus a)), PowerCongruenceModulo modulus a (ElementOrderModulo modulus a) :=

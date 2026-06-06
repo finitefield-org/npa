@@ -1191,6 +1191,10 @@ semantics.
   - `Proofs.Ai.NumberTheory.FiniteFieldApplications`
   - `Proofs.Ai.NumberTheory.ExponentialSum`
   - `Proofs.Ai.NumberTheory.Combinatorial`
+- Progress:
+  - `NT-T67` adds `Proofs.Ai.NumberTheory.FiniteFieldApplications` as the number-theoretic
+    application namespace for field-theory-owned finite-field law, Frobenius, cardinality, root,
+    ownership, primitive-root, and Gauss-sum dependency cards.
 - Theorem order:
   1. import or alias the field-theory finite-field law package, Frobenius,
      cardinality, and root-characterization results;

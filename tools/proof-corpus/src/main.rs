@@ -186,6 +186,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &NUMBER_THEORY_PRIMALITY_TEST_MODULE,
     &NUMBER_THEORY_FACTORING_ALGORITHM_MODULE,
     &NUMBER_THEORY_RSA_MODULE,
+    &NUMBER_THEORY_FINITE_FIELD_APPLICATIONS_MODULE,
     &NUMBER_THEORY_PRIMITIVE_ROOT_MODULE,
     &NUMBER_THEORY_CHARACTER_MODULE,
     &CRYPTOGRAPHY_NUMBER_THEORY_MODULE,
@@ -2100,6 +2101,44 @@ const NUMBER_THEORY_RSA_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const NUMBER_THEORY_FINITE_FIELD_APPLICATIONS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.FiniteFieldApplications",
+    source_path: "Proofs/Ai/NumberTheory/FiniteFieldApplications/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/FiniteFieldApplications/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/FiniteFieldApplications/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/FiniteFieldApplications/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractRingFirstIso",
+        "Proofs.Ai.Algebra.AbstractRingChineseRemainder",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractFieldIdeal",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteField",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: NUMBER_THEORY_FINITE_FIELD_APPLICATIONS_THEOREMS,
+    expected_axioms: &[],
+};
+
 const NUMBER_THEORY_PRIMITIVE_ROOT_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.NumberTheory.PrimitiveRoot",
     source_path: "Proofs/Ai/NumberTheory/PrimitiveRoot/source.npa",
@@ -2113,6 +2152,7 @@ const NUMBER_THEORY_PRIMITIVE_ROOT_MODULE: ModuleArtifact = ModuleArtifact {
         "Proofs.Ai.NumberTheory.ModularGroup",
         "Proofs.Ai.NumberTheory.ChineseRemainder",
         "Proofs.Ai.NumberTheory.Phi",
+        "Proofs.Ai.NumberTheory.FiniteFieldApplications",
     ],
     inductives: &[],
     definitions: &[],
@@ -2172,6 +2212,7 @@ const NUMBER_THEORY_GAUSS_SUM_MODULE: ModuleArtifact = ModuleArtifact {
         "Proofs.Ai.Algebra.AbstractRing",
         "Proofs.Ai.NumberTheory.Character",
         "Proofs.Ai.NumberTheory.PrimitiveRoot",
+        "Proofs.Ai.NumberTheory.FiniteFieldApplications",
     ],
     inductives: &[],
     definitions: &[],
@@ -19132,6 +19173,206 @@ const NUMBER_THEORY_RSA_THEOREMS: &[TheoremArtifact] = &[
             "fun NoSecurityBoundary => fun boundary_law => fun correctness => ",
             "fun security => fun runtime_solver => fun randomness => ",
             "boundary_law correctness security runtime_solver randomness"
+        ),
+    },
+];
+
+const NUMBER_THEORY_FINITE_FIELD_APPLICATIONS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_field_core_frobenius_cardinality_root_application_chain",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AbstractFiniteFieldLawPackage : Type), ",
+            "forall (FrobeniusFact : AbstractFiniteFieldLawPackage -> Prop), ",
+            "forall (CardinalityFact : AbstractFiniteFieldLawPackage -> Prop), ",
+            "forall (RootCharacterizationFact : AbstractFiniteFieldLawPackage -> Prop), ",
+            "forall (FiniteFieldNumberTheoryApplication : AbstractFiniteFieldLawPackage -> Prop), ",
+            "forall (application_law : forall (finite_field_core : AbstractFiniteFieldLawPackage), ",
+            "forall (cardinality : CardinalityFact finite_field_core), ",
+            "forall (frobenius : FrobeniusFact finite_field_core), ",
+            "forall (root_characterization : RootCharacterizationFact finite_field_core), ",
+            "FiniteFieldNumberTheoryApplication finite_field_core), ",
+            "forall (finite_field_core : AbstractFiniteFieldLawPackage), ",
+            "forall (cardinality : CardinalityFact finite_field_core), ",
+            "forall (frobenius : FrobeniusFact finite_field_core), ",
+            "forall (root_characterization : RootCharacterizationFact finite_field_core), ",
+            "FiniteFieldNumberTheoryApplication finite_field_core"
+        ),
+        proof: concat!(
+            "fun AbstractFiniteFieldLawPackage => fun FrobeniusFact => ",
+            "fun CardinalityFact => fun RootCharacterizationFact => ",
+            "fun FiniteFieldNumberTheoryApplication => fun application_law => ",
+            "fun finite_field_core => fun cardinality => fun frobenius => ",
+            "fun root_characterization => ",
+            "application_law finite_field_core cardinality frobenius root_characterization"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_field_ownership_field_theory_route_for_applications",
+        universe_params: &[],
+        statement: concat!(
+            "forall (AbstractFiniteFieldOwner : Type), ",
+            "forall (NumberTheoryApplicationNamespace : Type), ",
+            "forall (FieldTheoryRoadmapOwnership : AbstractFiniteFieldOwner -> Prop), ",
+            "forall (NoNumberTheoryCoreRedefinition : NumberTheoryApplicationNamespace -> AbstractFiniteFieldOwner -> Prop), ",
+            "forall (OwnershipAgreement : NumberTheoryApplicationNamespace -> AbstractFiniteFieldOwner -> Prop), ",
+            "forall (ownership_law : forall (owner : AbstractFiniteFieldOwner), ",
+            "forall (application_namespace : NumberTheoryApplicationNamespace), ",
+            "forall (field_owner : FieldTheoryRoadmapOwnership owner), ",
+            "forall (no_redefinition : NoNumberTheoryCoreRedefinition application_namespace owner), ",
+            "OwnershipAgreement application_namespace owner), ",
+            "forall (owner : AbstractFiniteFieldOwner), ",
+            "forall (application_namespace : NumberTheoryApplicationNamespace), ",
+            "forall (field_owner : FieldTheoryRoadmapOwnership owner), ",
+            "forall (no_redefinition : NoNumberTheoryCoreRedefinition application_namespace owner), ",
+            "OwnershipAgreement application_namespace owner"
+        ),
+        proof: concat!(
+            "fun AbstractFiniteFieldOwner => fun NumberTheoryApplicationNamespace => ",
+            "fun FieldTheoryRoadmapOwnership => fun NoNumberTheoryCoreRedefinition => ",
+            "fun OwnershipAgreement => fun ownership_law => fun owner => ",
+            "fun application_namespace => fun field_owner => fun no_redefinition => ",
+            "ownership_law owner application_namespace field_owner no_redefinition"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_field_existence_uniqueness_cards_owned_by_field_theory",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FiniteFieldLawPackage : Type), ",
+            "forall (FieldTheoryOwnershipEvidence : Type), ",
+            "forall (FiniteFieldExistenceCard : FiniteFieldLawPackage -> FieldTheoryOwnershipEvidence -> Prop), ",
+            "forall (FiniteFieldUniquenessCard : FiniteFieldLawPackage -> FieldTheoryOwnershipEvidence -> Prop), ",
+            "forall (FiniteFieldExistenceUniquenessCard : FiniteFieldLawPackage -> FieldTheoryOwnershipEvidence -> Prop), ",
+            "forall (existence_law : forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "FiniteFieldExistenceCard finite_field_core ownership), ",
+            "forall (uniqueness_law : forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "FiniteFieldUniquenessCard finite_field_core ownership), ",
+            "forall (card_law : forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "forall (existence : FiniteFieldExistenceCard finite_field_core ownership), ",
+            "forall (uniqueness : FiniteFieldUniquenessCard finite_field_core ownership), ",
+            "FiniteFieldExistenceUniquenessCard finite_field_core ownership), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "FiniteFieldExistenceUniquenessCard finite_field_core ownership"
+        ),
+        proof: concat!(
+            "fun FiniteFieldLawPackage => fun FieldTheoryOwnershipEvidence => ",
+            "fun FiniteFieldExistenceCard => fun FiniteFieldUniquenessCard => ",
+            "fun FiniteFieldExistenceUniquenessCard => fun existence_law => ",
+            "fun uniqueness_law => fun card_law => fun finite_field_core => ",
+            "fun ownership => card_law finite_field_core ownership ",
+            "(existence_law finite_field_core ownership) ",
+            "(uniqueness_law finite_field_core ownership)"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_field_multiplicative_cyclicity_card_for_primitive_roots",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FiniteFieldLawPackage : Type), ",
+            "forall (FieldTheoryOwnershipEvidence : Type), ",
+            "forall (PrimitiveRootApplicationPackage : Type), ",
+            "forall (FiniteFieldMultiplicativeCyclicityCard : FiniteFieldLawPackage -> FieldTheoryOwnershipEvidence -> Prop), ",
+            "forall (PrimitiveRootFiniteFieldApplication : PrimitiveRootApplicationPackage -> FiniteFieldLawPackage -> Prop), ",
+            "forall (primitive_root_law : forall (primitive_root_package : PrimitiveRootApplicationPackage), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "forall (cyclicity : FiniteFieldMultiplicativeCyclicityCard finite_field_core ownership), ",
+            "PrimitiveRootFiniteFieldApplication primitive_root_package finite_field_core), ",
+            "forall (primitive_root_package : PrimitiveRootApplicationPackage), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "forall (cyclicity : FiniteFieldMultiplicativeCyclicityCard finite_field_core ownership), ",
+            "PrimitiveRootFiniteFieldApplication primitive_root_package finite_field_core"
+        ),
+        proof: concat!(
+            "fun FiniteFieldLawPackage => fun FieldTheoryOwnershipEvidence => ",
+            "fun PrimitiveRootApplicationPackage => ",
+            "fun FiniteFieldMultiplicativeCyclicityCard => ",
+            "fun PrimitiveRootFiniteFieldApplication => fun primitive_root_law => ",
+            "fun primitive_root_package => fun finite_field_core => fun ownership => ",
+            "fun cyclicity => primitive_root_law primitive_root_package ",
+            "finite_field_core ownership cyclicity"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_field_subfield_classification_frobenius_card",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FiniteFieldLawPackage : Type), ",
+            "forall (FrobeniusPackage : Type), ",
+            "forall (SubfieldClassificationPackage : Type), ",
+            "forall (FieldTheoryOwnershipEvidence : Type), ",
+            "forall (FrobeniusApplicationCard : FiniteFieldLawPackage -> FrobeniusPackage -> Prop), ",
+            "forall (SubfieldClassificationCard : FiniteFieldLawPackage -> SubfieldClassificationPackage -> Prop), ",
+            "forall (OwnedSubfieldFrobeniusApplication : FiniteFieldLawPackage -> FrobeniusPackage -> SubfieldClassificationPackage -> FieldTheoryOwnershipEvidence -> Prop), ",
+            "forall (application_law : forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (frobenius : FrobeniusPackage), ",
+            "forall (subfields : SubfieldClassificationPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "forall (frobenius_card : FrobeniusApplicationCard finite_field_core frobenius), ",
+            "forall (subfield_card : SubfieldClassificationCard finite_field_core subfields), ",
+            "OwnedSubfieldFrobeniusApplication finite_field_core frobenius subfields ownership), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (frobenius : FrobeniusPackage), ",
+            "forall (subfields : SubfieldClassificationPackage), ",
+            "forall (ownership : FieldTheoryOwnershipEvidence), ",
+            "forall (frobenius_card : FrobeniusApplicationCard finite_field_core frobenius), ",
+            "forall (subfield_card : SubfieldClassificationCard finite_field_core subfields), ",
+            "OwnedSubfieldFrobeniusApplication finite_field_core frobenius subfields ownership"
+        ),
+        proof: concat!(
+            "fun FiniteFieldLawPackage => fun FrobeniusPackage => ",
+            "fun SubfieldClassificationPackage => fun FieldTheoryOwnershipEvidence => ",
+            "fun FrobeniusApplicationCard => fun SubfieldClassificationCard => ",
+            "fun OwnedSubfieldFrobeniusApplication => fun application_law => ",
+            "fun finite_field_core => fun frobenius => fun subfields => ",
+            "fun ownership => fun frobenius_card => fun subfield_card => ",
+            "application_law finite_field_core frobenius subfields ownership ",
+            "frobenius_card subfield_card"
+        ),
+    },
+    TheoremArtifact {
+        name: "finite_field_gauss_sum_application_imports_finite_field_facts",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FiniteFieldLawPackage : Type), ",
+            "forall (FiniteFieldApplicationPackage : Type), ",
+            "forall (DirichletCharacterPackage : Type), ",
+            "forall (AdditiveCharacterPackage : Type), ",
+            "forall (GaussSumPackage : Type), ",
+            "forall (FiniteFieldApplicationImports : FiniteFieldApplicationPackage -> FiniteFieldLawPackage -> Prop), ",
+            "forall (GaussSumFiniteFieldApplication : GaussSumPackage -> FiniteFieldApplicationPackage -> Prop), ",
+            "forall (import_law : forall (application_package : FiniteFieldApplicationPackage), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "FiniteFieldApplicationImports application_package finite_field_core), ",
+            "forall (gauss_sum_law : forall (gauss_sum : GaussSumPackage), ",
+            "forall (application_package : FiniteFieldApplicationPackage), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (characters : DirichletCharacterPackage), ",
+            "forall (additive : AdditiveCharacterPackage), ",
+            "forall (imported : FiniteFieldApplicationImports application_package finite_field_core), ",
+            "GaussSumFiniteFieldApplication gauss_sum application_package), ",
+            "forall (gauss_sum : GaussSumPackage), ",
+            "forall (application_package : FiniteFieldApplicationPackage), ",
+            "forall (finite_field_core : FiniteFieldLawPackage), ",
+            "forall (characters : DirichletCharacterPackage), ",
+            "forall (additive : AdditiveCharacterPackage), ",
+            "GaussSumFiniteFieldApplication gauss_sum application_package"
+        ),
+        proof: concat!(
+            "fun FiniteFieldLawPackage => fun FiniteFieldApplicationPackage => ",
+            "fun DirichletCharacterPackage => fun AdditiveCharacterPackage => ",
+            "fun GaussSumPackage => fun FiniteFieldApplicationImports => ",
+            "fun GaussSumFiniteFieldApplication => fun import_law => ",
+            "fun gauss_sum_law => fun gauss_sum => fun application_package => ",
+            "fun finite_field_core => fun characters => fun additive => ",
+            "gauss_sum_law gauss_sum application_package finite_field_core ",
+            "characters additive (import_law application_package finite_field_core)"
         ),
     },
 ];
@@ -62962,6 +63203,7 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
         || module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_FINITE_FIELD_MODULE.module
+        || module == NUMBER_THEORY_FINITE_FIELD_APPLICATIONS_MODULE.module
         || module == ELLIPTIC_CURVE_FINITE_FIELD_MODULE.module
         || module == ELLIPTIC_CURVE_L_FUNCTION_MODULE.module
         || module == ABSTRACT_SPLITTING_FIELD_MODULE.module
@@ -63340,6 +63582,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_PRIMALITY_TEST_MODULE.module
         || config.module == NUMBER_THEORY_FACTORING_ALGORITHM_MODULE.module
         || config.module == NUMBER_THEORY_RSA_MODULE.module
+        || config.module == NUMBER_THEORY_FINITE_FIELD_APPLICATIONS_MODULE.module
         || config.module == NUMBER_THEORY_PRIMITIVE_ROOT_MODULE.module
         || config.module == COMBINATORICS_FINITE_MODULE.module
         || config.module == COMBINATORICS_CARDINALITY_MODULE.module
