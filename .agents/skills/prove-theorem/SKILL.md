@@ -106,11 +106,13 @@ batch pass:
 
 ## Guardrails
 
+- Do not create interface-like theorems that merely accept and return a law without performing any actual proof. Create only theorems with substantial, meaningful proofs. (law を受け取って返すだけで、実質何も証明していないinterface 定理は作成しないでください。実質的に意味のある証明のみ作成してください。)
 - Prefer adding a small lemma in the same narrow module over widening imports.
 - Rebuild downstream modules only if a changed foundational module changes export hashes.
 - Keep sidecars deterministic and untrusted; final acceptance is the `.npcert` verification result.
 - If the theorem target or intended statement is ambiguous, ask one concise clarification before editing.
 - Never commit or push a theorem proof before certificate verification succeeds.
+- Once the proof is complete and verified, ensure all related changes are staged, committed, and pushed. (証明が完了し検証が成功したら、関連する変更を必ずstage/commit/pushしてください。)
 
 ## Reference
 
