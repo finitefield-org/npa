@@ -1398,7 +1398,7 @@ later in the file.
 
 ### NT-T52 Add Modularity Lifting And Semistable Modularity Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T50`, `NT-T51`, `NT-T63`, `NT-T46`
 - Areas: `Proofs/Ai/Modularity/Lifting/`, `Proofs/Ai/Modularity/Semistable/`
 - Tasks:

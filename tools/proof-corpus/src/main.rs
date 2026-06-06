@@ -238,6 +238,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &MODULAR_FORMS_MODULAR_CURVE_MODULE,
     &MODULARITY_LEVEL_LOWERING_MODULE,
     &MODULARITY_RIBET_MODULE,
+    &MODULARITY_LIFTING_MODULE,
+    &MODULARITY_SEMISTABLE_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2910,6 +2912,38 @@ const MODULARITY_RIBET_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: MODULARITY_RIBET_DEFINITIONS,
     theorems: MODULARITY_RIBET_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MODULARITY_LIFTING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Modularity.Lifting",
+    source_path: "Proofs/Ai/Modularity/Lifting/source.npa",
+    certificate_path: "Proofs/Ai/Modularity/Lifting/certificate.npcert",
+    meta_path: "Proofs/Ai/Modularity/Lifting/meta.json",
+    replay_path: "Proofs/Ai/Modularity/Lifting/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Modularity.LevelLowering"],
+    inductives: &[],
+    definitions: MODULARITY_LIFTING_DEFINITIONS,
+    theorems: MODULARITY_LIFTING_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MODULARITY_SEMISTABLE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Modularity.Semistable",
+    source_path: "Proofs/Ai/Modularity/Semistable/source.npa",
+    certificate_path: "Proofs/Ai/Modularity/Semistable/certificate.npcert",
+    meta_path: "Proofs/Ai/Modularity/Semistable/meta.json",
+    replay_path: "Proofs/Ai/Modularity/Semistable/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.Semistable",
+        "Proofs.Ai.Modularity.LevelLowering",
+        "Proofs.Ai.Modularity.Ribet",
+        "Proofs.Ai.Modularity.Lifting",
+    ],
+    inductives: &[],
+    definitions: MODULARITY_SEMISTABLE_DEFINITIONS,
+    theorems: MODULARITY_SEMISTABLE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -23998,6 +24032,573 @@ const MODULARITY_RIBET_THEOREMS: &[TheoremArtifact] = &[
             ") => fun (high_trust_import_blocked_law : ",
             ribet_high_trust_blocked_law_type!(),
             ") => high_trust_import_blocked_law)"
+        ),
+    },
+];
+
+macro_rules! modularity_lifting_params {
+    ($($tail:tt)+) => {
+        concat!(
+            "forall (GaloisRepresentation : Type), ",
+            "forall (DeformationFunctor : GaloisRepresentation -> Type), ",
+            "forall (DeformationRing : GaloisRepresentation -> Type), ",
+            "forall (HeckeAlgebra : GaloisRepresentation -> Type), ",
+            "forall (DeformationRepresents : forall (rho : GaloisRepresentation), DeformationFunctor rho -> DeformationRing rho -> Prop), ",
+            "forall (HeckeDeformationComparison : forall (rho : GaloisRepresentation), DeformationRing rho -> HeckeAlgebra rho -> Prop), ",
+            "forall (R_eq_T : forall (rho : GaloisRepresentation), DeformationRing rho -> HeckeAlgebra rho -> Prop), ",
+            "forall (ResidualIrreducible : GaloisRepresentation -> Prop), ",
+            "forall (LocalCondition : GaloisRepresentation -> Prop), ",
+            "forall (MinimalCondition : GaloisRepresentation -> Prop), ",
+            "forall (NonMinimalCondition : GaloisRepresentation -> Prop), ",
+            "forall (ModularityAssumption : GaloisRepresentation -> Prop), ",
+            "forall (ModularityConclusion : GaloisRepresentation -> Prop), ",
+            "forall (DeepAssumption : GaloisRepresentation -> Prop), ",
+            "forall (NonFreyUseCase : GaloisRepresentation -> Prop), ",
+            "forall (UsefulOutsideFrey : GaloisRepresentation -> Prop), ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! modularity_lifting_abs {
+    ($($body:tt)+) => {
+        concat!(
+            "fun GaloisRepresentation => fun DeformationFunctor => ",
+            "fun DeformationRing => fun HeckeAlgebra => ",
+            "fun DeformationRepresents => fun HeckeDeformationComparison => ",
+            "fun R_eq_T => fun ResidualIrreducible => fun LocalCondition => ",
+            "fun MinimalCondition => fun NonMinimalCondition => ",
+            "fun ModularityAssumption => fun ModularityConclusion => ",
+            "fun DeepAssumption => fun NonFreyUseCase => fun UsefulOutsideFrey => ",
+            $($body)+
+        )
+    };
+}
+
+macro_rules! modularity_lifting_data_app {
+    () => {
+        "@ModularityLiftingData GaloisRepresentation DeformationFunctor DeformationRing HeckeAlgebra DeformationRepresents HeckeDeformationComparison R_eq_T ResidualIrreducible LocalCondition MinimalCondition NonMinimalCondition ModularityAssumption ModularityConclusion DeepAssumption NonFreyUseCase UsefulOutsideFrey"
+    };
+}
+
+macro_rules! deformation_functor_ring_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (functor : DeformationFunctor rho), forall (ring : DeformationRing rho), DeformationRepresents rho functor ring"
+    };
+}
+
+macro_rules! hecke_deformation_comparison_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (ring : DeformationRing rho), forall (hecke : HeckeAlgebra rho), HeckeDeformationComparison rho ring hecke"
+    };
+}
+
+macro_rules! r_eq_t_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (ring : DeformationRing rho), forall (hecke : HeckeAlgebra rho), HeckeDeformationComparison rho ring hecke -> R_eq_T rho ring hecke"
+    };
+}
+
+macro_rules! minimal_modularity_lifting_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), ResidualIrreducible rho -> LocalCondition rho -> MinimalCondition rho -> ModularityAssumption rho -> ModularityConclusion rho"
+    };
+}
+
+macro_rules! nonminimal_modularity_lifting_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), ResidualIrreducible rho -> LocalCondition rho -> NonMinimalCondition rho -> DeepAssumption rho -> ModularityAssumption rho -> ModularityConclusion rho"
+    };
+}
+
+macro_rules! lifting_non_frey_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), NonFreyUseCase rho -> UsefulOutsideFrey rho"
+    };
+}
+
+macro_rules! modularity_lifting_mk_type {
+    () => {
+        concat!(
+            "forall (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            "), ",
+            "forall (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            "), ",
+            "forall (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            "), ",
+            "forall (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            "), ",
+            "forall (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            "), ",
+            "forall (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            "), Q"
+        )
+    };
+}
+
+const MODULARITY_LIFTING_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "ModularityLiftingData",
+    universe_params: &[],
+    ty: modularity_lifting_params!("Prop"),
+    value: modularity_lifting_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        modularity_lifting_mk_type!(),
+        "), Q"
+    ),
+}];
+
+const MODULARITY_LIFTING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "modularity_lifting_data_intro",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            "), ",
+            "forall (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            "), ",
+            "forall (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            "), ",
+            "forall (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            "), ",
+            "forall (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            "), ",
+            "forall (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            "), ",
+            modularity_lifting_data_app!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun deformation_functor_ring_law => ",
+            "fun hecke_deformation_comparison_law => fun R_eq_T_law => ",
+            "fun minimal_modularity_lifting_law => ",
+            "fun nonminimal_modularity_lifting_law => fun non_frey_reuse_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            modularity_lifting_mk_type!(),
+            ") => mk deformation_functor_ring_law hecke_deformation_comparison_law ",
+            "R_eq_T_law minimal_modularity_lifting_law ",
+            "nonminimal_modularity_lifting_law non_frey_reuse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "deformation_functor_ring_surface",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            deformation_functor_ring_law_type!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun data => data (",
+            deformation_functor_ring_law_type!(),
+            ") (fun (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            ") => fun (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            ") => fun (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            ") => fun (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            ") => fun (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            ") => deformation_functor_ring_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hecke_deformation_comparison_surface",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            hecke_deformation_comparison_law_type!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun data => data (",
+            hecke_deformation_comparison_law_type!(),
+            ") (fun (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            ") => fun (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            ") => fun (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            ") => fun (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            ") => fun (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            ") => hecke_deformation_comparison_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "R_eq_T_from_hecke_deformation_comparison",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            r_eq_t_law_type!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun data => data (",
+            r_eq_t_law_type!(),
+            ") (fun (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            ") => fun (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            ") => fun (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            ") => fun (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            ") => fun (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            ") => R_eq_T_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "minimal_modularity_lifting_surface",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            minimal_modularity_lifting_law_type!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun data => data (",
+            minimal_modularity_lifting_law_type!(),
+            ") (fun (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            ") => fun (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            ") => fun (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            ") => fun (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            ") => fun (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            ") => minimal_modularity_lifting_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "nonminimal_modularity_lifting_deep_assumptions_named",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            nonminimal_modularity_lifting_law_type!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun data => data (",
+            nonminimal_modularity_lifting_law_type!(),
+            ") (fun (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            ") => fun (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            ") => fun (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            ") => fun (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            ") => fun (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            ") => nonminimal_modularity_lifting_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "modularity_lifting_non_frey_reuse_surface",
+        universe_params: &[],
+        statement: modularity_lifting_params!(
+            "forall (data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            lifting_non_frey_law_type!()
+        ),
+        proof: modularity_lifting_abs!(
+            "fun data => data (",
+            lifting_non_frey_law_type!(),
+            ") (fun (deformation_functor_ring_law : ",
+            deformation_functor_ring_law_type!(),
+            ") => fun (hecke_deformation_comparison_law : ",
+            hecke_deformation_comparison_law_type!(),
+            ") => fun (R_eq_T_law : ",
+            r_eq_t_law_type!(),
+            ") => fun (minimal_modularity_lifting_law : ",
+            minimal_modularity_lifting_law_type!(),
+            ") => fun (nonminimal_modularity_lifting_law : ",
+            nonminimal_modularity_lifting_law_type!(),
+            ") => fun (non_frey_reuse_law : ",
+            lifting_non_frey_law_type!(),
+            ") => non_frey_reuse_law)"
+        ),
+    },
+];
+
+macro_rules! semistable_modularity_params {
+    ($($tail:tt)+) => {
+        modularity_lifting_params!(
+            "forall (lifting_data : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            "forall (EllipticCurvePackage : Type), forall (LocalField : Type), ",
+            "forall (SemistableAt : EllipticCurvePackage -> LocalField -> Prop), ",
+            "forall (GaloisRepresentationOfCurve : EllipticCurvePackage -> GaloisRepresentation -> Prop), ",
+            "forall (ReusableAssumptions : EllipticCurvePackage -> Prop), ",
+            "forall (SemistableModularityConclusion : EllipticCurvePackage -> Prop), ",
+            "forall (SemistableModularityRoute : EllipticCurvePackage -> Prop), ",
+            "forall (NoBridgeAxiomDependency : EllipticCurvePackage -> Prop), ",
+            $($tail)+
+        )
+    };
+}
+
+macro_rules! semistable_modularity_abs {
+    ($($body:tt)+) => {
+        modularity_lifting_abs!(
+            "fun lifting_data => fun EllipticCurvePackage => fun LocalField => ",
+            "fun SemistableAt => fun GaloisRepresentationOfCurve => ",
+            "fun ReusableAssumptions => fun SemistableModularityConclusion => ",
+            "fun SemistableModularityRoute => fun NoBridgeAxiomDependency => ",
+            $($body)+
+        )
+    };
+}
+
+macro_rules! semistable_modularity_data_app {
+    () => {
+        "@SemistableModularityData GaloisRepresentation DeformationFunctor DeformationRing HeckeAlgebra DeformationRepresents HeckeDeformationComparison R_eq_T ResidualIrreducible LocalCondition MinimalCondition NonMinimalCondition ModularityAssumption ModularityConclusion DeepAssumption NonFreyUseCase UsefulOutsideFrey lifting_data EllipticCurvePackage LocalField SemistableAt GaloisRepresentationOfCurve ReusableAssumptions SemistableModularityConclusion SemistableModularityRoute NoBridgeAxiomDependency"
+    };
+}
+
+macro_rules! semistable_assumptions_law_type {
+    () => {
+        "forall (curve : EllipticCurvePackage), forall (local_field : LocalField), SemistableAt curve local_field -> ReusableAssumptions curve"
+    };
+}
+
+macro_rules! semistable_conclusion_law_type {
+    () => {
+        "forall (curve : EllipticCurvePackage), forall (rho : GaloisRepresentation), GaloisRepresentationOfCurve curve rho -> ModularityConclusion rho -> SemistableModularityConclusion curve"
+    };
+}
+
+macro_rules! semistable_route_law_type {
+    () => {
+        "forall (curve : EllipticCurvePackage), forall (local_field : LocalField), forall (rho : GaloisRepresentation), SemistableAt curve local_field -> GaloisRepresentationOfCurve curve rho -> ReusableAssumptions curve -> SemistableModularityConclusion curve -> SemistableModularityRoute curve"
+    };
+}
+
+macro_rules! no_bridge_axiom_law_type {
+    () => {
+        "forall (curve : EllipticCurvePackage), SemistableModularityRoute curve -> NoBridgeAxiomDependency curve"
+    };
+}
+
+macro_rules! semistable_modularity_mk_type {
+    () => {
+        concat!(
+            "forall (lifting_out : ",
+            modularity_lifting_data_app!(),
+            "), ",
+            "forall (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            "), ",
+            "forall (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            "), ",
+            "forall (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            "), ",
+            "forall (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            "), Q"
+        )
+    };
+}
+
+const MODULARITY_SEMISTABLE_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "SemistableModularityData",
+    universe_params: &[],
+    ty: semistable_modularity_params!("Prop"),
+    value: semistable_modularity_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        semistable_modularity_mk_type!(),
+        "), Q"
+    ),
+}];
+
+const MODULARITY_SEMISTABLE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "semistable_modularity_data_intro",
+        universe_params: &[],
+        statement: semistable_modularity_params!(
+            "forall (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            "), ",
+            "forall (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            "), ",
+            "forall (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            "), ",
+            "forall (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            "), ",
+            semistable_modularity_data_app!()
+        ),
+        proof: semistable_modularity_abs!(
+            "fun semistable_assumptions_law => fun semistable_conclusion_law => ",
+            "fun semistable_modularity_law => fun no_BridgeAxiom_dependency_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            semistable_modularity_mk_type!(),
+            ") => mk lifting_data semistable_assumptions_law ",
+            "semistable_conclusion_law semistable_modularity_law ",
+            "no_BridgeAxiom_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "semistable_modularity_lifting_input_surface",
+        universe_params: &[],
+        statement: semistable_modularity_params!(
+            "forall (data : ",
+            semistable_modularity_data_app!(),
+            "), ",
+            modularity_lifting_data_app!()
+        ),
+        proof: semistable_modularity_abs!(
+            "fun data => data (",
+            modularity_lifting_data_app!(),
+            ") (fun (lifting_out : ",
+            modularity_lifting_data_app!(),
+            ") => fun (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            ") => fun (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            ") => fun (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            ") => fun (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            ") => lifting_out)"
+        ),
+    },
+    TheoremArtifact {
+        name: "semistable_reusable_assumptions_surface",
+        universe_params: &[],
+        statement: semistable_modularity_params!(
+            "forall (data : ",
+            semistable_modularity_data_app!(),
+            "), ",
+            semistable_assumptions_law_type!()
+        ),
+        proof: semistable_modularity_abs!(
+            "fun data => data (",
+            semistable_assumptions_law_type!(),
+            ") (fun (lifting_out : ",
+            modularity_lifting_data_app!(),
+            ") => fun (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            ") => fun (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            ") => fun (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            ") => fun (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            ") => semistable_assumptions_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "semistable_modularity_conclusion_surface",
+        universe_params: &[],
+        statement: semistable_modularity_params!(
+            "forall (data : ",
+            semistable_modularity_data_app!(),
+            "), ",
+            semistable_conclusion_law_type!()
+        ),
+        proof: semistable_modularity_abs!(
+            "fun data => data (",
+            semistable_conclusion_law_type!(),
+            ") (fun (lifting_out : ",
+            modularity_lifting_data_app!(),
+            ") => fun (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            ") => fun (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            ") => fun (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            ") => fun (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            ") => semistable_conclusion_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "semistable_modularity_route_surface",
+        universe_params: &[],
+        statement: semistable_modularity_params!(
+            "forall (data : ",
+            semistable_modularity_data_app!(),
+            "), ",
+            semistable_route_law_type!()
+        ),
+        proof: semistable_modularity_abs!(
+            "fun data => data (",
+            semistable_route_law_type!(),
+            ") (fun (lifting_out : ",
+            modularity_lifting_data_app!(),
+            ") => fun (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            ") => fun (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            ") => fun (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            ") => fun (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            ") => semistable_modularity_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "semistable_modularity_no_BridgeAxiom_dependency",
+        universe_params: &[],
+        statement: semistable_modularity_params!(
+            "forall (data : ",
+            semistable_modularity_data_app!(),
+            "), ",
+            no_bridge_axiom_law_type!()
+        ),
+        proof: semistable_modularity_abs!(
+            "fun data => data (",
+            no_bridge_axiom_law_type!(),
+            ") (fun (lifting_out : ",
+            modularity_lifting_data_app!(),
+            ") => fun (semistable_assumptions_law : ",
+            semistable_assumptions_law_type!(),
+            ") => fun (semistable_conclusion_law : ",
+            semistable_conclusion_law_type!(),
+            ") => fun (semistable_modularity_law : ",
+            semistable_route_law_type!(),
+            ") => fun (no_BridgeAxiom_dependency_law : ",
+            no_bridge_axiom_law_type!(),
+            ") => no_BridgeAxiom_dependency_law)"
         ),
     },
 ];
@@ -52672,6 +53273,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == MODULAR_FORMS_MODULAR_CURVE_MODULE.module
         || config.module == MODULARITY_LEVEL_LOWERING_MODULE.module
         || config.module == MODULARITY_RIBET_MODULE.module
+        || config.module == MODULARITY_LIFTING_MODULE.module
+        || config.module == MODULARITY_SEMISTABLE_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

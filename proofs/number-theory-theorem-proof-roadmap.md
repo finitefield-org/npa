@@ -882,6 +882,11 @@ semantics.
     irreducibility, ramification, newform, excluded-case, dependency-map, Ribet
     level-lowering, bridge-namespace, not-completed-proof, and high-trust
     import-boundary surfaces.
+  - `NT-T52` added certificate-backed `Proofs.Ai.Modularity.Lifting` and
+    `Proofs.Ai.Modularity.Semistable` defining deformation functor,
+    deformation ring, Hecke/deformation comparison, `R_eq_T`, minimal and
+    non-minimal modularity lifting, named deep-assumption, semistable
+    modularity, reusable-assumption, and no-bridge-dependency surfaces.
 - Depends on: complex analysis, linear algebra, representation theory, algebraic
   geometry, and `NT-16`.
 - Target modules:

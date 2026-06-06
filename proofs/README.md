@@ -369,6 +369,15 @@ Current bundles:
   namespace evidence, not-completed-proof evidence, and high-trust import
   blocking evidence are named slots so downstream high-trust routes cannot
   silently consume bridge-backed variants.
+- `Proofs/Ai/Modularity/Lifting/`: certificate-backed modularity-lifting
+  interface preserving deformation functor, deformation ring, Hecke algebra,
+  Hecke/deformation comparison, `R_eq_T`, minimal lifting, non-minimal lifting,
+  named deep-assumption, and non-Frey reuse surfaces.
+- `Proofs/Ai/Modularity/Semistable/`: certificate-backed semistable
+  modularity route preserving reusable semistability assumptions,
+  representation-of-curve evidence, lifting inputs, semistable modularity
+  conclusions, and an explicit `NoBridgeAxiomDependency` surface for the final
+  route.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

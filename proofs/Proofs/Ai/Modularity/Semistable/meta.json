@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Modularity.Semistable",
+  "source": "Proofs/Ai/Modularity/Semistable/source.npa",
+  "certificate": "Proofs/Ai/Modularity/Semistable/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2e2af19434ae0df63bfc0cbaad8ae740191d60581a617622f9da4379a8a5adc1",
+  "certificate_file_sha256": "sha256:03ec31a0d5cc4a38e8bd49e50ad9960ce4f6d97c055e7792d66f19cb835425c2",
+  "export_hash": "sha256:f06f75b0f42b1057efb7ceb682ddde052846e6ac036a01715d49ac902d7d59fa",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:d8490c9c76a381b33256af1d29113dbcf484729a16d89f4061e712419f0743f2",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SemistableModularityData", "kind": "def" },
+    { "name": "semistable_modularity_data_intro", "kind": "theorem" },
+    { "name": "semistable_modularity_lifting_input_surface", "kind": "theorem" },
+    { "name": "semistable_reusable_assumptions_surface", "kind": "theorem" },
+    { "name": "semistable_modularity_conclusion_surface", "kind": "theorem" },
+    { "name": "semistable_modularity_route_surface", "kind": "theorem" },
+    { "name": "semistable_modularity_no_BridgeAxiom_dependency", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
