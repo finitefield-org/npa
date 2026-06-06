@@ -121,6 +121,10 @@ Current bundles:
   component partition packages. Reachability is built from explicit walk-witness evidence and a
   named no-hidden-transitive-closure boundary, and component partitions expose component-carrier
   and membership evidence slots.
+- `Proofs/Ai/Graph/Tree/`: certificate-backed tree, forest, acyclic, unique-path,
+  edge-count formula, and spanning-tree existence packages. The spanning-tree layer records
+  construction and vertex-coverage evidence explicitly, and the edge-count target reuses graph
+  incidence finite-fiber counting evidence rather than private tree-specific cardinal arithmetic.
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are

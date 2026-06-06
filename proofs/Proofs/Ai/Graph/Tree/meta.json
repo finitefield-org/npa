@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Tree",
+  "source": "Proofs/Ai/Graph/Tree/source.npa",
+  "certificate": "Proofs/Ai/Graph/Tree/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:12138cb801ce1f5aeda39dcbede4e5e13c689dd3563ba67c21d0d3f13013b5af",
+  "certificate_file_sha256": "sha256:c58a471e85049f4bebecf9d84972e6f3f79d066a929540ff55d5aec6ed37a7be",
+  "export_hash": "sha256:587654c2232680944d66374165a6993888eef2d42b24820f017e8485e19f990e",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:9540ad2e300e7337a5be145d27e69c117d44bec6d4b38be5f316294e8d105fc3",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected"],
+  "axioms": [],
+  "declarations": [
+    { "name": "TreeForestPackage", "kind": "def" },
+    { "name": "UniquePathPackage", "kind": "def" },
+    { "name": "SpanningTreeExistencePackage", "kind": "def" },
+    { "name": "tree_forest_package_intro", "kind": "theorem" },
+    { "name": "unique_path_package_intro", "kind": "theorem" },
+    { "name": "forest_from_acyclic_components_statement", "kind": "theorem" },
+    { "name": "tree_from_connected_acyclic_statement", "kind": "theorem" },
+    { "name": "connected_acyclic_tree_equivalence_statement", "kind": "theorem" },
+    { "name": "unique_path_from_tree_statement", "kind": "theorem" },
+    { "name": "tree_unique_path_equivalence_statement", "kind": "theorem" },
+    { "name": "tree_edge_count_formula_statement", "kind": "theorem" },
+    { "name": "spanning_tree_existence_package_intro", "kind": "theorem" },
+    { "name": "spanning_tree_existence_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

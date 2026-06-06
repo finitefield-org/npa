@@ -535,24 +535,31 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T15 Add Tree And Forest Characterizations
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T14`, `CG-T13`
 - Areas: `Proofs.Ai.Graph.Tree`
 - Tasks:
-  - Define tree, forest, acyclic graph, spanning tree, and unique-path
-    predicates.
-  - Prove selected equivalences between connected acyclic graphs, unique paths,
-    and edge-count formulas.
-  - Add spanning tree existence interface for connected finite graphs.
+  - Done: Added explicit tree, forest, acyclic graph, spanning tree, and
+    unique-path packages in `Proofs.Ai.Graph.Tree`.
+  - Done: Added connected-acyclic, unique-path, and edge-count formula
+    characterization targets.
+  - Done: Added a spanning-tree existence interface for connected finite
+    graphs with explicit construction and vertex-coverage evidence.
 - Deliverables:
-  - Tree/forest theorem layer.
+  - Delivered: tree/forest theorem layer in `Proofs.Ai.Graph.Tree`.
 - Acceptance criteria:
-  - Spanning tree existence records construction evidence or an explicit
-    interface level.
-  - Edge-count formulas use finite graph counting APIs.
+  - Satisfied: spanning-tree existence records `SpanningTreeConstructionEvidence`
+    and `SpanningVertexCoverageEvidence` in an explicit package interface.
+  - Satisfied: the edge-count formula target calls
+    `graph_degree_sum_formula_statement`, reusing incidence finite-fiber
+    counting evidence rather than private tree-specific cardinal arithmetic.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Tree`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Tree --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Tree`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
 
 ### CG-T16 Add Bipartite Graph And Matching APIs
 
