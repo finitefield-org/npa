@@ -823,22 +823,31 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T24 Add Extremal Graph Foundation And Turan Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T20`
 - Areas: `Proofs.Ai.Graph.Extremal`
 - Tasks:
-  - Define forbidden-subgraph predicate, extremal number, complete multipartite
+  - [x] Define forbidden-subgraph predicate, extremal number, complete multipartite
     graph, and Turan graph surfaces.
-  - Add Turan theorem interface and selected derived bounds.
-  - Connect clique and coloring theorem cards.
+  - [x] Add Turan theorem interface and selected derived bounds.
+  - [x] Connect clique and coloring theorem cards.
 - Deliverables:
-  - Extremal graph theorem foundation module.
+  - `Proofs.Ai.Graph.Extremal` records forbidden-subgraph predicate,
+    extremal number, edge-count, explicit extremal witness, complete
+    multipartite witness, Turan witness, and Turan graph evidence surfaces.
+  - Exact finite Turan bounds and asymptotic Turan density are separated by
+    `ExactFiniteTuranBoundEvidence`, `AsymptoticTuranDensityEvidence`, and
+    `ExactAsymptoticSeparationEvidence`.
+  - Clique and coloring dependencies are connected through
+    `CliqueColoringBridgeEvidence` over the existing clique and coloring
+    packages.
 - Acceptance criteria:
-  - Extremal constructions carry explicit witness graphs.
-  - Exact finite bounds are separated from asymptotic statements.
+  - [x] Extremal constructions carry explicit witness graphs.
+  - [x] Exact finite bounds are separated from asymptotic statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Extremal`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal --verified-cache authoring`
 
 ### CG-T25 Add Supersaturation And Regularity Interfaces
 
