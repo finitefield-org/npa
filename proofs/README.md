@@ -384,6 +384,15 @@ Current bundles:
   Grothendieck/Lefschetz trace formula surfaces, Weil conjectures, Deligne
   theorem surfaces, interface-level status, and the non-generic finite-field
   axiom boundary for Deligne.
+- `Proofs/Ai/ArithmeticGeometry/PadicHodge/`: certificate-backed p-adic Hodge
+  interface preserving Weil-conjectures dependencies, p-adic analysis reuse,
+  Galois-representation API reuse, explicit period-ring and representation
+  hypotheses, l-adic representation, Neron model, Neron-Ogg-Shafarevich,
+  Chabauty-Coleman, and p-adic Hodge comparison surfaces.
+- `Proofs/Ai/ArithmeticGeometry/SpecialPoints/`: certificate-backed
+  special-points statement map preserving PadicHodge dependencies, special
+  point map surfaces, status-label visibility, and Manin-Mumford,
+  Mordell-Lang, Bogomolov, and Andre-Oort status-labeled statement surfaces.
 - `Proofs/Ai/ModularForms/Basic/`: certificate-backed modular-form basic data
   interface preserving `ModularForm`, `CuspForm`, explicit complex-analytic
   domain assumptions, and reusable `weight`/`level` transformation and cusp

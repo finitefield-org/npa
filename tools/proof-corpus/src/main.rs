@@ -269,6 +269,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ARITHMETIC_GEOMETRY_SCHEMES_MODULE,
     &ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_MODULE,
     &ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_MODULE,
+    &ARITHMETIC_GEOMETRY_PADIC_HODGE_MODULE,
+    &ARITHMETIC_GEOMETRY_SPECIAL_POINTS_MODULE,
     &ABSTRACT_ORDERED_FIELD_MODULE,
     &ABSTRACT_ORDERED_FIELD_FIELD_BRIDGE_MODULE,
     &ABSTRACT_SQUARE_NORMALIZE_MODULE,
@@ -3597,6 +3599,71 @@ const ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_MODULE: ModuleArtifact = ModuleArtifa
     inductives: &[],
     definitions: ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_DEFINITIONS,
     theorems: ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ARITHMETIC_GEOMETRY_PADIC_HODGE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ArithmeticGeometry.PadicHodge",
+    source_path: "Proofs/Ai/ArithmeticGeometry/PadicHodge/source.npa",
+    certificate_path: "Proofs/Ai/ArithmeticGeometry/PadicHodge/certificate.npcert",
+    meta_path: "Proofs/Ai/ArithmeticGeometry/PadicHodge/meta.json",
+    replay_path: "Proofs/Ai/ArithmeticGeometry/PadicHodge/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.NumberTheory.Padic",
+        "Proofs.Ai.NumberTheory.LocalField",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.NumberTheory.PadicAnalysis",
+        "Proofs.Ai.NumberTheory.PadicMeasure",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.GroupLaw",
+        "Proofs.Ai.EllipticCurve.Height",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+        "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+        "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+        "Proofs.Ai.ArithmeticGeometry.Schemes",
+        "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+        "Proofs.Ai.ArithmeticGeometry.EtaleCohomology",
+        "Proofs.Ai.ArithmeticGeometry.WeilConjectures",
+    ],
+    inductives: &[],
+    definitions: ARITHMETIC_GEOMETRY_PADIC_HODGE_DEFINITIONS,
+    theorems: ARITHMETIC_GEOMETRY_PADIC_HODGE_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ARITHMETIC_GEOMETRY_SPECIAL_POINTS_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ArithmeticGeometry.SpecialPoints",
+    source_path: "Proofs/Ai/ArithmeticGeometry/SpecialPoints/source.npa",
+    certificate_path: "Proofs/Ai/ArithmeticGeometry/SpecialPoints/certificate.npcert",
+    meta_path: "Proofs/Ai/ArithmeticGeometry/SpecialPoints/meta.json",
+    replay_path: "Proofs/Ai/ArithmeticGeometry/SpecialPoints/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.NumberTheory.Padic",
+        "Proofs.Ai.NumberTheory.LocalField",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Proofs.Ai.Analysis.AbstractNormedSpace",
+        "Proofs.Ai.NumberTheory.PadicAnalysis",
+        "Proofs.Ai.NumberTheory.PadicMeasure",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.GroupLaw",
+        "Proofs.Ai.EllipticCurve.Height",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+        "Proofs.Ai.ArithmeticGeometry.RationalPoints",
+        "Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes",
+        "Proofs.Ai.ArithmeticGeometry.Schemes",
+        "Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology",
+        "Proofs.Ai.ArithmeticGeometry.EtaleCohomology",
+        "Proofs.Ai.ArithmeticGeometry.WeilConjectures",
+        "Proofs.Ai.ArithmeticGeometry.PadicHodge",
+    ],
+    inductives: &[],
+    definitions: ARITHMETIC_GEOMETRY_SPECIAL_POINTS_DEFINITIONS,
+    theorems: ARITHMETIC_GEOMETRY_SPECIAL_POINTS_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -47629,6 +47696,745 @@ const ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+macro_rules! padic_hodge_params {
+    ($($result:expr),+ $(,)?) => {
+        weil_params!(
+            "forall (weil_data : ",
+            weil_data_app!(),
+            "), ",
+            "forall (LocalFieldPackage : Type), ",
+            "forall (PadicAnalysisPackage : Type), ",
+            "forall (PadicMeasurePackage : Type), ",
+            "forall (GaloisRepresentationApi : Type), ",
+            "forall (LadicRepresentation : forall (rho : GaloisRepresentationApi), Prop), ",
+            "forall (PeriodRing : Type), ",
+            "forall (PeriodRingAssumptions : forall (ring : PeriodRing), Prop), ",
+            "forall (RepresentationHypotheses : forall (rho : GaloisRepresentationApi), Prop), ",
+            "forall (NeronModel : forall (variety : Variety), Prop), ",
+            "forall (NeronOggShafarevich : forall (variety : Variety), forall (rho : GaloisRepresentationApi), Prop), ",
+            "forall (ChabautyColemanMethod : forall (variety : Variety), Prop), ",
+            "forall (PadicHodgeComparison : forall (rho : GaloisRepresentationApi), forall (ring : PeriodRing), Prop), ",
+            "forall (LadicRepresentationApiReuse : forall (rho : GaloisRepresentationApi), Prop), ",
+            "forall (PadicAnalysisDependency : Prop), ",
+            "forall (GaloisRepresentationApiDependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! padic_hodge_abs {
+    ($($body:expr),+ $(,)?) => {
+        weil_abs!(
+            "fun weil_data => fun LocalFieldPackage => fun PadicAnalysisPackage => ",
+            "fun PadicMeasurePackage => fun GaloisRepresentationApi => ",
+            "fun LadicRepresentation => fun PeriodRing => fun PeriodRingAssumptions => ",
+            "fun RepresentationHypotheses => fun NeronModel => ",
+            "fun NeronOggShafarevich => fun ChabautyColemanMethod => ",
+            "fun PadicHodgeComparison => fun LadicRepresentationApiReuse => ",
+            "fun PadicAnalysisDependency => fun GaloisRepresentationApiDependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! padic_hodge_data_app {
+    () => {
+        concat!(
+            "@PadicHodgeComparisonData BaseRing Scheme Morphism FiberProduct ",
+            "ZariskiTopology FlatMorphism BaseChangeSurface SchemeStructure ",
+            "AlgebraicGeometryDependency RationalPointsDependency scheme_data ",
+            "EtaleCover EtaleCohomology KummerExactSequence ProperBaseChange ",
+            "SmoothBaseChange EtaleFiniteness EtaleAssumptions ",
+            "CohomologyFoundationVisible etale_data Variety VarietyToScheme ",
+            "GrothendieckTraceFormula LefschetzTraceFormula ",
+            "WeilConjecturesStatement DeligneTheoremSurface ",
+            "WeilConjecturesInterfaceLevel DeligneNotGenericFiniteFieldAxiom ",
+            "weil_data LocalFieldPackage PadicAnalysisPackage PadicMeasurePackage ",
+            "GaloisRepresentationApi LadicRepresentation PeriodRing ",
+            "PeriodRingAssumptions RepresentationHypotheses NeronModel ",
+            "NeronOggShafarevich ChabautyColemanMethod PadicHodgeComparison ",
+            "LadicRepresentationApiReuse PadicAnalysisDependency ",
+            "GaloisRepresentationApiDependency"
+        )
+    };
+}
+
+macro_rules! padic_hodge_weil_dependency_law_type {
+    () => {
+        weil_data_app!()
+    };
+}
+
+macro_rules! padic_analysis_dependency_law_type {
+    () => {
+        "PadicAnalysisDependency"
+    };
+}
+
+macro_rules! galois_representation_api_dependency_law_type {
+    () => {
+        "GaloisRepresentationApiDependency"
+    };
+}
+
+macro_rules! period_ring_assumptions_law_type {
+    () => {
+        "forall (ring : PeriodRing), PeriodRingAssumptions ring"
+    };
+}
+
+macro_rules! representation_hypotheses_law_type {
+    () => {
+        "forall (rho : GaloisRepresentationApi), RepresentationHypotheses rho"
+    };
+}
+
+macro_rules! ladic_representation_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentationApi), ",
+            "forall (hypotheses : RepresentationHypotheses rho), ",
+            "LadicRepresentation rho"
+        )
+    };
+}
+
+macro_rules! padic_hodge_comparison_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentationApi), forall (ring : PeriodRing), ",
+            "forall (hypotheses : RepresentationHypotheses rho), ",
+            "forall (period_assumptions : PeriodRingAssumptions ring), ",
+            "PadicHodgeComparison rho ring"
+        )
+    };
+}
+
+macro_rules! neron_model_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (assumptions : EtaleAssumptions (VarietyToScheme variety)), ",
+            "NeronModel variety"
+        )
+    };
+}
+
+macro_rules! neron_ogg_shafarevich_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), forall (rho : GaloisRepresentationApi), ",
+            "forall (neron_model : NeronModel variety), ",
+            "forall (ladic_representation : LadicRepresentation rho), ",
+            "forall (hypotheses : RepresentationHypotheses rho), ",
+            "NeronOggShafarevich variety rho"
+        )
+    };
+}
+
+macro_rules! chabauty_coleman_law_type {
+    () => {
+        concat!(
+            "forall (variety : Variety), ",
+            "forall (neron_model : NeronModel variety), ",
+            "ChabautyColemanMethod variety"
+        )
+    };
+}
+
+macro_rules! galois_api_reuse_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentationApi), ",
+            "forall (hypotheses : RepresentationHypotheses rho), ",
+            "LadicRepresentationApiReuse rho"
+        )
+    };
+}
+
+macro_rules! padic_hodge_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (weil_dependency_law : ",
+            padic_hodge_weil_dependency_law_type!(),
+            "), forall (padic_analysis_dependency_law : ",
+            padic_analysis_dependency_law_type!(),
+            "), forall (galois_representation_api_dependency_law : ",
+            galois_representation_api_dependency_law_type!(),
+            "), forall (period_ring_assumptions_law : ",
+            period_ring_assumptions_law_type!(),
+            "), forall (representation_hypotheses_law : ",
+            representation_hypotheses_law_type!(),
+            "), forall (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            "), forall (padic_hodge_comparison_law : ",
+            padic_hodge_comparison_law_type!(),
+            "), forall (neron_model_law : ",
+            neron_model_law_type!(),
+            "), forall (neron_ogg_shafarevich_law : ",
+            neron_ogg_shafarevich_law_type!(),
+            "), forall (chabauty_coleman_law : ",
+            chabauty_coleman_law_type!(),
+            "), forall (galois_api_reuse_law : ",
+            galois_api_reuse_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! padic_hodge_projection_proof {
+    ($target:expr, $selected:expr) => {
+        padic_hodge_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (weil_dependency_law : ",
+            padic_hodge_weil_dependency_law_type!(),
+            ") => fun (padic_analysis_dependency_law : ",
+            padic_analysis_dependency_law_type!(),
+            ") => fun (galois_representation_api_dependency_law : ",
+            galois_representation_api_dependency_law_type!(),
+            ") => fun (period_ring_assumptions_law : ",
+            period_ring_assumptions_law_type!(),
+            ") => fun (representation_hypotheses_law : ",
+            representation_hypotheses_law_type!(),
+            ") => fun (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            ") => fun (padic_hodge_comparison_law : ",
+            padic_hodge_comparison_law_type!(),
+            ") => fun (neron_model_law : ",
+            neron_model_law_type!(),
+            ") => fun (neron_ogg_shafarevich_law : ",
+            neron_ogg_shafarevich_law_type!(),
+            ") => fun (chabauty_coleman_law : ",
+            chabauty_coleman_law_type!(),
+            ") => fun (galois_api_reuse_law : ",
+            galois_api_reuse_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const ARITHMETIC_GEOMETRY_PADIC_HODGE_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "PadicHodgeComparisonData",
+    universe_params: &[],
+    ty: padic_hodge_params!("Prop"),
+    value: padic_hodge_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        padic_hodge_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const ARITHMETIC_GEOMETRY_PADIC_HODGE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "padic_hodge_comparison_data_intro",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (weil_dependency_law : ",
+            padic_hodge_weil_dependency_law_type!(),
+            "), forall (padic_analysis_dependency_law : ",
+            padic_analysis_dependency_law_type!(),
+            "), forall (galois_representation_api_dependency_law : ",
+            galois_representation_api_dependency_law_type!(),
+            "), forall (period_ring_assumptions_law : ",
+            period_ring_assumptions_law_type!(),
+            "), forall (representation_hypotheses_law : ",
+            representation_hypotheses_law_type!(),
+            "), forall (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            "), forall (padic_hodge_comparison_law : ",
+            padic_hodge_comparison_law_type!(),
+            "), forall (neron_model_law : ",
+            neron_model_law_type!(),
+            "), forall (neron_ogg_shafarevich_law : ",
+            neron_ogg_shafarevich_law_type!(),
+            "), forall (chabauty_coleman_law : ",
+            chabauty_coleman_law_type!(),
+            "), forall (galois_api_reuse_law : ",
+            galois_api_reuse_law_type!(),
+            "), ",
+            padic_hodge_data_app!()
+        ),
+        proof: padic_hodge_abs!(
+            "fun weil_dependency_law => fun padic_analysis_dependency_law => ",
+            "fun galois_representation_api_dependency_law => ",
+            "fun period_ring_assumptions_law => ",
+            "fun representation_hypotheses_law => fun ladic_representation_law => ",
+            "fun padic_hodge_comparison_law => fun neron_model_law => ",
+            "fun neron_ogg_shafarevich_law => fun chabauty_coleman_law => ",
+            "fun galois_api_reuse_law => fun (Q : Prop) => fun (mk : ",
+            padic_hodge_mk_type!("Q"),
+            ") => mk weil_dependency_law padic_analysis_dependency_law ",
+            "galois_representation_api_dependency_law period_ring_assumptions_law ",
+            "representation_hypotheses_law ladic_representation_law ",
+            "padic_hodge_comparison_law neron_model_law ",
+            "neron_ogg_shafarevich_law chabauty_coleman_law ",
+            "galois_api_reuse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_hodge_weil_conjectures_dependency_explicit",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            padic_hodge_weil_dependency_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            padic_hodge_weil_dependency_law_type!(),
+            "weil_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_hodge_reuses_padic_analysis",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            padic_analysis_dependency_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            padic_analysis_dependency_law_type!(),
+            "padic_analysis_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_hodge_reuses_galois_representation_api",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            galois_representation_api_dependency_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            galois_representation_api_dependency_law_type!(),
+            "galois_representation_api_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "period_ring_assumptions_explicit",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            period_ring_assumptions_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            period_ring_assumptions_law_type!(),
+            "period_ring_assumptions_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "representation_hypotheses_explicit",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            representation_hypotheses_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            representation_hypotheses_law_type!(),
+            "representation_hypotheses_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "ladic_representation_surface",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            ladic_representation_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            ladic_representation_law_type!(),
+            "ladic_representation_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "padic_hodge_comparison_requires_period_ring_assumptions",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            padic_hodge_comparison_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            padic_hodge_comparison_law_type!(),
+            "padic_hodge_comparison_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "neron_model_surface",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            neron_model_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(neron_model_law_type!(), "neron_model_law"),
+    },
+    TheoremArtifact {
+        name: "neron_ogg_shafarevich_surface",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            neron_ogg_shafarevich_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(
+            neron_ogg_shafarevich_law_type!(),
+            "neron_ogg_shafarevich_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chabauty_coleman_surface",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            chabauty_coleman_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(chabauty_coleman_law_type!(), "chabauty_coleman_law"),
+    },
+    TheoremArtifact {
+        name: "ladic_representation_reuses_galois_api_surface",
+        universe_params: &[],
+        statement: padic_hodge_params!(
+            "forall (data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            galois_api_reuse_law_type!()
+        ),
+        proof: padic_hodge_projection_proof!(galois_api_reuse_law_type!(), "galois_api_reuse_law"),
+    },
+];
+
+macro_rules! special_points_params {
+    ($($result:expr),+ $(,)?) => {
+        padic_hodge_params!(
+            "forall (padic_hodge_data : ",
+            padic_hodge_data_app!(),
+            "), ",
+            "forall (SpecialPointContext : Type), ",
+            "forall (SpecialPointObject : Type), ",
+            "forall (StatusLabel : Type), ",
+            "forall (TheoremStatus : forall (status : StatusLabel), Prop), ",
+            "forall (ConjecturalStatus : forall (status : StatusLabel), Prop), ",
+            "forall (StatementStatus : forall (object : SpecialPointObject), forall (status : StatusLabel), Prop), ",
+            "forall (StatusLabelVisible : forall (object : SpecialPointObject), forall (status : StatusLabel), Prop), ",
+            "forall (SpecialPointMap : forall (object : SpecialPointObject), forall (context : SpecialPointContext), Prop), ",
+            "forall (ManinMumfordStatement : forall (object : SpecialPointObject), Prop), ",
+            "forall (MordellLangStatement : forall (object : SpecialPointObject), Prop), ",
+            "forall (BogomolovStatement : forall (object : SpecialPointObject), Prop), ",
+            "forall (AndreOortStatement : forall (object : SpecialPointObject), Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! special_points_abs {
+    ($($body:expr),+ $(,)?) => {
+        padic_hodge_abs!(
+            "fun padic_hodge_data => fun SpecialPointContext => ",
+            "fun SpecialPointObject => fun StatusLabel => fun TheoremStatus => ",
+            "fun ConjecturalStatus => fun StatementStatus => fun StatusLabelVisible => ",
+            "fun SpecialPointMap => fun ManinMumfordStatement => ",
+            "fun MordellLangStatement => fun BogomolovStatement => ",
+            "fun AndreOortStatement => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! special_points_data_app {
+    () => {
+        concat!(
+            "@SpecialPointsStatementMapData BaseRing Scheme Morphism FiberProduct ",
+            "ZariskiTopology FlatMorphism BaseChangeSurface SchemeStructure ",
+            "AlgebraicGeometryDependency RationalPointsDependency scheme_data ",
+            "EtaleCover EtaleCohomology KummerExactSequence ProperBaseChange ",
+            "SmoothBaseChange EtaleFiniteness EtaleAssumptions ",
+            "CohomologyFoundationVisible etale_data Variety VarietyToScheme ",
+            "GrothendieckTraceFormula LefschetzTraceFormula ",
+            "WeilConjecturesStatement DeligneTheoremSurface ",
+            "WeilConjecturesInterfaceLevel DeligneNotGenericFiniteFieldAxiom ",
+            "weil_data LocalFieldPackage PadicAnalysisPackage PadicMeasurePackage ",
+            "GaloisRepresentationApi LadicRepresentation PeriodRing ",
+            "PeriodRingAssumptions RepresentationHypotheses NeronModel ",
+            "NeronOggShafarevich ChabautyColemanMethod PadicHodgeComparison ",
+            "LadicRepresentationApiReuse PadicAnalysisDependency ",
+            "GaloisRepresentationApiDependency padic_hodge_data SpecialPointContext ",
+            "SpecialPointObject StatusLabel TheoremStatus ConjecturalStatus ",
+            "StatementStatus StatusLabelVisible SpecialPointMap ManinMumfordStatement ",
+            "MordellLangStatement BogomolovStatement AndreOortStatement"
+        )
+    };
+}
+
+macro_rules! special_points_padic_hodge_dependency_law_type {
+    () => {
+        padic_hodge_data_app!()
+    };
+}
+
+macro_rules! special_point_map_law_type {
+    () => {
+        concat!(
+            "forall (object : SpecialPointObject), ",
+            "forall (context : SpecialPointContext), SpecialPointMap object context"
+        )
+    };
+}
+
+macro_rules! special_point_status_label_law_type {
+    () => {
+        concat!(
+            "forall (object : SpecialPointObject), forall (status : StatusLabel), ",
+            "forall (statement_status : StatementStatus object status), ",
+            "StatusLabelVisible object status"
+        )
+    };
+}
+
+macro_rules! manin_mumford_law_type {
+    () => {
+        concat!(
+            "forall (object : SpecialPointObject), forall (status : StatusLabel), ",
+            "forall (visible : StatusLabelVisible object status), ",
+            "forall (theorem_status : TheoremStatus status), ",
+            "ManinMumfordStatement object"
+        )
+    };
+}
+
+macro_rules! mordell_lang_law_type {
+    () => {
+        concat!(
+            "forall (object : SpecialPointObject), forall (status : StatusLabel), ",
+            "forall (visible : StatusLabelVisible object status), ",
+            "forall (theorem_status : TheoremStatus status), ",
+            "MordellLangStatement object"
+        )
+    };
+}
+
+macro_rules! bogomolov_law_type {
+    () => {
+        concat!(
+            "forall (object : SpecialPointObject), forall (status : StatusLabel), ",
+            "forall (visible : StatusLabelVisible object status), ",
+            "forall (theorem_status : TheoremStatus status), ",
+            "BogomolovStatement object"
+        )
+    };
+}
+
+macro_rules! andre_oort_law_type {
+    () => {
+        concat!(
+            "forall (object : SpecialPointObject), forall (status : StatusLabel), ",
+            "forall (visible : StatusLabelVisible object status), ",
+            "forall (conjectural_status : ConjecturalStatus status), ",
+            "AndreOortStatement object"
+        )
+    };
+}
+
+macro_rules! special_points_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (padic_hodge_dependency_law : ",
+            special_points_padic_hodge_dependency_law_type!(),
+            "), forall (special_point_map_law : ",
+            special_point_map_law_type!(),
+            "), forall (status_label_law : ",
+            special_point_status_label_law_type!(),
+            "), forall (manin_mumford_law : ",
+            manin_mumford_law_type!(),
+            "), forall (mordell_lang_law : ",
+            mordell_lang_law_type!(),
+            "), forall (bogomolov_law : ",
+            bogomolov_law_type!(),
+            "), forall (andre_oort_law : ",
+            andre_oort_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! special_points_projection_proof {
+    ($target:expr, $selected:expr) => {
+        special_points_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (padic_hodge_dependency_law : ",
+            special_points_padic_hodge_dependency_law_type!(),
+            ") => fun (special_point_map_law : ",
+            special_point_map_law_type!(),
+            ") => fun (status_label_law : ",
+            special_point_status_label_law_type!(),
+            ") => fun (manin_mumford_law : ",
+            manin_mumford_law_type!(),
+            ") => fun (mordell_lang_law : ",
+            mordell_lang_law_type!(),
+            ") => fun (bogomolov_law : ",
+            bogomolov_law_type!(),
+            ") => fun (andre_oort_law : ",
+            andre_oort_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const ARITHMETIC_GEOMETRY_SPECIAL_POINTS_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "SpecialPointsStatementMapData",
+        universe_params: &[],
+        ty: special_points_params!("Prop"),
+        value: special_points_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            special_points_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const ARITHMETIC_GEOMETRY_SPECIAL_POINTS_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "special_points_statement_map_data_intro",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (padic_hodge_dependency_law : ",
+            special_points_padic_hodge_dependency_law_type!(),
+            "), forall (special_point_map_law : ",
+            special_point_map_law_type!(),
+            "), forall (status_label_law : ",
+            special_point_status_label_law_type!(),
+            "), forall (manin_mumford_law : ",
+            manin_mumford_law_type!(),
+            "), forall (mordell_lang_law : ",
+            mordell_lang_law_type!(),
+            "), forall (bogomolov_law : ",
+            bogomolov_law_type!(),
+            "), forall (andre_oort_law : ",
+            andre_oort_law_type!(),
+            "), ",
+            special_points_data_app!()
+        ),
+        proof: special_points_abs!(
+            "fun padic_hodge_dependency_law => fun special_point_map_law => ",
+            "fun status_label_law => fun manin_mumford_law => ",
+            "fun mordell_lang_law => fun bogomolov_law => fun andre_oort_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            special_points_mk_type!("Q"),
+            ") => mk padic_hodge_dependency_law special_point_map_law ",
+            "status_label_law manin_mumford_law mordell_lang_law ",
+            "bogomolov_law andre_oort_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "special_points_padic_hodge_dependency_explicit",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            special_points_padic_hodge_dependency_law_type!()
+        ),
+        proof: special_points_projection_proof!(
+            special_points_padic_hodge_dependency_law_type!(),
+            "padic_hodge_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "special_point_statement_map_surface",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            special_point_map_law_type!()
+        ),
+        proof: special_points_projection_proof!(
+            special_point_map_law_type!(),
+            "special_point_map_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "special_point_status_labeled",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            special_point_status_label_law_type!()
+        ),
+        proof: special_points_projection_proof!(
+            special_point_status_label_law_type!(),
+            "status_label_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "manin_mumford_statement_surface",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            manin_mumford_law_type!()
+        ),
+        proof: special_points_projection_proof!(manin_mumford_law_type!(), "manin_mumford_law"),
+    },
+    TheoremArtifact {
+        name: "mordell_lang_statement_surface",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            mordell_lang_law_type!()
+        ),
+        proof: special_points_projection_proof!(mordell_lang_law_type!(), "mordell_lang_law"),
+    },
+    TheoremArtifact {
+        name: "bogomolov_statement_surface",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            bogomolov_law_type!()
+        ),
+        proof: special_points_projection_proof!(bogomolov_law_type!(), "bogomolov_law"),
+    },
+    TheoremArtifact {
+        name: "andre_oort_statement_conjectural_status_surface",
+        universe_params: &[],
+        statement: special_points_params!(
+            "forall (data : ",
+            special_points_data_app!(),
+            "), ",
+            andre_oort_law_type!()
+        ),
+        proof: special_points_projection_proof!(andre_oort_law_type!(), "andre_oort_law"),
+    },
+];
+
 const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "le",
@@ -57482,6 +58288,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ARITHMETIC_GEOMETRY_SCHEMES_MODULE.module
         || config.module == ARITHMETIC_GEOMETRY_ETALE_COHOMOLOGY_MODULE.module
         || config.module == ARITHMETIC_GEOMETRY_WEIL_CONJECTURES_MODULE.module
+        || config.module == ARITHMETIC_GEOMETRY_PADIC_HODGE_MODULE.module
+        || config.module == ARITHMETIC_GEOMETRY_SPECIAL_POINTS_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

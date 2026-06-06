@@ -983,6 +983,13 @@ semantics.
     sequence, etale-cohomology finiteness, Grothendieck/Lefschetz trace
     formula, Weil conjectures, and Deligne theorem surfaces while keeping
     cohomology assumptions and scheme/etale dependencies explicit.
+  - `NT-T58` added certificate-backed
+    `Proofs.Ai.ArithmeticGeometry.PadicHodge` and
+    `Proofs.Ai.ArithmeticGeometry.SpecialPoints`, preserving Neron model,
+    Neron-Ogg-Shafarevich, Chabauty-Coleman, l-adic representation, p-adic
+    Hodge comparison, period-ring assumption, Galois-representation API reuse,
+    Manin-Mumford, Mordell-Lang, Bogomolov, and Andre-Oort status-labeled
+    statement surfaces.
 - Depends on: existing `Proofs.Ai.AlgebraicGeometry.*` modules, `NT-13`,
   `NT-16`, `NT-18`, scheme and cohomology foundations.
 - Target modules:
@@ -990,6 +997,8 @@ semantics.
   - `Proofs.Ai.ArithmeticGeometry.Schemes`
   - `Proofs.Ai.ArithmeticGeometry.EtaleCohomology`
   - `Proofs.Ai.ArithmeticGeometry.WeilConjectures`
+  - `Proofs.Ai.ArithmeticGeometry.PadicHodge`
+  - `Proofs.Ai.ArithmeticGeometry.SpecialPoints`
 - Theorem order:
   1. genus, divisors, and Riemann-Roch interface for curves;
   2. Hasse-Weil bounds and zeta functions of varieties over finite fields;

@@ -1541,7 +1541,7 @@ later in the file.
 
 ### NT-T58 Add p-adic Hodge And Special-Point Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T57`, `NT-T42`, `NT-T63`
 - Areas: `Proofs/Ai/ArithmeticGeometry/PadicHodge/`, `Proofs/Ai/ArithmeticGeometry/SpecialPoints/`
 - Tasks:
