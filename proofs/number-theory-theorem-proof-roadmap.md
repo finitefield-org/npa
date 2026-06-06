@@ -1080,6 +1080,13 @@ semantics.
     Galois-representation local-condition dependencies, reusable decomposition
     and inertia terms for local conditions, shared ramification vocabulary, and
     a boundary excluding Chebotarev imports from the definition layer.
+  - `NT-T62` added certificate-backed
+    `Proofs.Ai.NumberTheory.Chebotarev`, preserving Frobenius conjugacy-class
+    dependency on `NT-T61`, explicit density measure and analytic assumptions,
+    Chebotarev density theorem, Frobenius density theorem, Dirichlet theorem
+    from Chebotarev as an alias/later-card route, a no-duplicate-Dirichlet-`L`
+    boundary, and independence boundaries for elementary prime infinitude and
+    the fundamental theorem of arithmetic.
 - Depends on: field extensions, Galois groups, local fields, `NT-13`, `NT-16`,
   and representation theory.
 - Target modules:

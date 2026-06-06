@@ -235,6 +235,7 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_L_FUNCTION_MODULE,
     &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
     &NUMBER_THEORY_FROBENIUS_MODULE,
+    &NUMBER_THEORY_CHEBOTAREV_MODULE,
     &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
     &NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE,
     &NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE,
@@ -2900,6 +2901,25 @@ const NUMBER_THEORY_FROBENIUS_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: NUMBER_THEORY_FROBENIUS_DEFINITIONS,
     theorems: NUMBER_THEORY_FROBENIUS_THEOREMS,
+    expected_axioms: &[],
+};
+
+const NUMBER_THEORY_CHEBOTAREV_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.NumberTheory.Chebotarev",
+    source_path: "Proofs/Ai/NumberTheory/Chebotarev/source.npa",
+    certificate_path: "Proofs/Ai/NumberTheory/Chebotarev/certificate.npcert",
+    meta_path: "Proofs/Ai/NumberTheory/Chebotarev/meta.json",
+    replay_path: "Proofs/Ai/NumberTheory/Chebotarev/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.NumberTheory.Frobenius",
+        "Proofs.Ai.NumberTheory.PrimeNumberTheorem",
+        "Proofs.Ai.NumberTheory.DirichletL",
+        "Proofs.Ai.NumberTheory.PrimeInfinitude",
+    ],
+    inductives: &[],
+    definitions: NUMBER_THEORY_CHEBOTAREV_DEFINITIONS,
+    theorems: NUMBER_THEORY_CHEBOTAREV_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -27506,6 +27526,530 @@ const NUMBER_THEORY_FROBENIUS_THEOREMS: &[TheoremArtifact] = &[
         proof: frobenius_projection_proof!(
             no_chebotarev_import_law_type!(),
             "no_chebotarev_import_law"
+        ),
+    },
+];
+
+macro_rules! chebotarev_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (GlobalField : Type), ",
+            "forall (ExtensionField : Type), ",
+            "forall (PrimeIdeal : Type), ",
+            "forall (GaloisElement : Type), ",
+            "forall (ConjugacyClass : Type), ",
+            "forall (DensityMeasure : Type), ",
+            "forall (AnalyticAssumption : Type), ",
+            "forall (DirichletRoute : Type), ",
+            "forall (ElementaryPrimeFact : Type), ",
+            "forall (FtaFact : Type), ",
+            "forall (FrobeniusConjugacyClassFromNTT61 : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), forall (conjugacy : ConjugacyClass), Prop), ",
+            "forall (ChebotarevConjugacyClass : forall (extension : ExtensionField), forall (conjugacy : ConjugacyClass), Prop), ",
+            "forall (DensityMeasureExplicit : forall (density : DensityMeasure), Prop), ",
+            "forall (AnalyticDensityAssumptionsExplicit : forall (analytic : AnalyticAssumption), Prop), ",
+            "forall (ChebotarevDensityAssumptions : forall (extension : ExtensionField), forall (conjugacy : ConjugacyClass), forall (density : DensityMeasure), forall (analytic : AnalyticAssumption), Prop), ",
+            "forall (ChebotarevDensityTheorem : forall (extension : ExtensionField), forall (conjugacy : ConjugacyClass), forall (density : DensityMeasure), Prop), ",
+            "forall (FrobeniusDensityTheorem : forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), forall (g : GaloisElement), forall (conjugacy : ConjugacyClass), forall (density : DensityMeasure), Prop), ",
+            "forall (DirichletTheoremFromChebotarevAlias : forall (route : DirichletRoute), forall (density : DensityMeasure), Prop), ",
+            "forall (DirichletTheoremLaterCard : forall (route : DirichletRoute), Prop), ",
+            "forall (NoDuplicateDirichletLProof : forall (route : DirichletRoute), Prop), ",
+            "forall (ChebotarevNotUsedByElementaryPrimeInfinitude : forall (fact : ElementaryPrimeFact), Prop), ",
+            "forall (ChebotarevNotUsedByFTA : forall (fact : FtaFact), Prop), ",
+            "forall (FrobeniusNTT61Dependency : Prop), ",
+            "forall (AnalyticDensityDependency : Prop), ",
+            "forall (PrimeInfinitudeIndependenceDependency : Prop), ",
+            "forall (FactorizationIndependenceDependency : Prop), ",
+            "forall (DirichletLNonDuplicationDependency : Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! chebotarev_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun GlobalField => fun ExtensionField => fun PrimeIdeal => ",
+            "fun GaloisElement => fun ConjugacyClass => fun DensityMeasure => ",
+            "fun AnalyticAssumption => fun DirichletRoute => ",
+            "fun ElementaryPrimeFact => fun FtaFact => ",
+            "fun FrobeniusConjugacyClassFromNTT61 => ",
+            "fun ChebotarevConjugacyClass => fun DensityMeasureExplicit => ",
+            "fun AnalyticDensityAssumptionsExplicit => ",
+            "fun ChebotarevDensityAssumptions => fun ChebotarevDensityTheorem => ",
+            "fun FrobeniusDensityTheorem => ",
+            "fun DirichletTheoremFromChebotarevAlias => ",
+            "fun DirichletTheoremLaterCard => fun NoDuplicateDirichletLProof => ",
+            "fun ChebotarevNotUsedByElementaryPrimeInfinitude => ",
+            "fun ChebotarevNotUsedByFTA => fun FrobeniusNTT61Dependency => ",
+            "fun AnalyticDensityDependency => ",
+            "fun PrimeInfinitudeIndependenceDependency => ",
+            "fun FactorizationIndependenceDependency => ",
+            "fun DirichletLNonDuplicationDependency => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! chebotarev_data_app {
+    () => {
+        concat!(
+            "@ChebotarevData GlobalField ExtensionField PrimeIdeal GaloisElement ",
+            "ConjugacyClass DensityMeasure AnalyticAssumption DirichletRoute ",
+            "ElementaryPrimeFact FtaFact FrobeniusConjugacyClassFromNTT61 ",
+            "ChebotarevConjugacyClass DensityMeasureExplicit ",
+            "AnalyticDensityAssumptionsExplicit ChebotarevDensityAssumptions ",
+            "ChebotarevDensityTheorem FrobeniusDensityTheorem ",
+            "DirichletTheoremFromChebotarevAlias DirichletTheoremLaterCard ",
+            "NoDuplicateDirichletLProof ",
+            "ChebotarevNotUsedByElementaryPrimeInfinitude ",
+            "ChebotarevNotUsedByFTA FrobeniusNTT61Dependency ",
+            "AnalyticDensityDependency PrimeInfinitudeIndependenceDependency ",
+            "FactorizationIndependenceDependency DirichletLNonDuplicationDependency"
+        )
+    };
+}
+
+macro_rules! chebotarev_frobenius_dependency_law_type {
+    () => {
+        "FrobeniusNTT61Dependency"
+    };
+}
+
+macro_rules! chebotarev_analytic_density_dependency_law_type {
+    () => {
+        "AnalyticDensityDependency"
+    };
+}
+
+macro_rules! chebotarev_prime_infinitude_independence_dependency_law_type {
+    () => {
+        "PrimeInfinitudeIndependenceDependency"
+    };
+}
+
+macro_rules! chebotarev_factorization_independence_dependency_law_type {
+    () => {
+        "FactorizationIndependenceDependency"
+    };
+}
+
+macro_rules! chebotarev_dirichlet_l_non_duplication_dependency_law_type {
+    () => {
+        "DirichletLNonDuplicationDependency"
+    };
+}
+
+macro_rules! density_measure_analytic_assumptions_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (conjugacy : ConjugacyClass), ",
+            "forall (density : DensityMeasure), forall (analytic : AnalyticAssumption), ",
+            "ChebotarevConjugacyClass extension conjugacy -> ",
+            "DensityMeasureExplicit density -> ",
+            "AnalyticDensityAssumptionsExplicit analytic -> ",
+            "ChebotarevDensityAssumptions extension conjugacy density analytic"
+        )
+    };
+}
+
+macro_rules! chebotarev_density_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (conjugacy : ConjugacyClass), ",
+            "forall (density : DensityMeasure), forall (analytic : AnalyticAssumption), ",
+            "ChebotarevConjugacyClass extension conjugacy -> ",
+            "ChebotarevDensityAssumptions extension conjugacy density analytic -> ",
+            "ChebotarevDensityTheorem extension conjugacy density"
+        )
+    };
+}
+
+macro_rules! frobenius_density_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (prime_above : PrimeIdeal), ",
+            "forall (g : GaloisElement), forall (conjugacy : ConjugacyClass), ",
+            "forall (density : DensityMeasure), ",
+            "FrobeniusConjugacyClassFromNTT61 extension prime_above g conjugacy -> ",
+            "ChebotarevDensityTheorem extension conjugacy density -> ",
+            "FrobeniusDensityTheorem extension prime_above g conjugacy density"
+        )
+    };
+}
+
+macro_rules! dirichlet_from_chebotarev_alias_law_type {
+    () => {
+        concat!(
+            "forall (extension : ExtensionField), forall (conjugacy : ConjugacyClass), ",
+            "forall (density : DensityMeasure), forall (route : DirichletRoute), ",
+            "ChebotarevDensityTheorem extension conjugacy density -> ",
+            "DirichletTheoremFromChebotarevAlias route density"
+        )
+    };
+}
+
+macro_rules! dirichlet_from_chebotarev_later_card_law_type {
+    () => {
+        concat!(
+            "forall (route : DirichletRoute), forall (density : DensityMeasure), ",
+            "DirichletTheoremFromChebotarevAlias route density -> ",
+            "DirichletTheoremLaterCard route"
+        )
+    };
+}
+
+macro_rules! no_duplicate_dirichlet_l_proof_law_type {
+    () => {
+        concat!(
+            "forall (route : DirichletRoute), forall (density : DensityMeasure), ",
+            "DirichletTheoremFromChebotarevAlias route density -> ",
+            "DirichletLNonDuplicationDependency -> NoDuplicateDirichletLProof route"
+        )
+    };
+}
+
+macro_rules! chebotarev_not_used_by_prime_infinitude_law_type {
+    () => {
+        concat!(
+            "forall (fact : ElementaryPrimeFact), ",
+            "PrimeInfinitudeIndependenceDependency -> ",
+            "ChebotarevNotUsedByElementaryPrimeInfinitude fact"
+        )
+    };
+}
+
+macro_rules! chebotarev_not_used_by_fta_law_type {
+    () => {
+        concat!(
+            "forall (fact : FtaFact), ",
+            "FactorizationIndependenceDependency -> ChebotarevNotUsedByFTA fact"
+        )
+    };
+}
+
+macro_rules! chebotarev_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (frobenius_nt_t61_dependency_law : ",
+            chebotarev_frobenius_dependency_law_type!(),
+            "), forall (analytic_density_dependency_law : ",
+            chebotarev_analytic_density_dependency_law_type!(),
+            "), forall (prime_infinitude_independence_dependency_law : ",
+            chebotarev_prime_infinitude_independence_dependency_law_type!(),
+            "), forall (factorization_independence_dependency_law : ",
+            chebotarev_factorization_independence_dependency_law_type!(),
+            "), forall (dirichlet_l_non_duplication_dependency_law : ",
+            chebotarev_dirichlet_l_non_duplication_dependency_law_type!(),
+            "), forall (density_measure_analytic_assumptions_law : ",
+            density_measure_analytic_assumptions_law_type!(),
+            "), forall (chebotarev_density_law : ",
+            chebotarev_density_law_type!(),
+            "), forall (frobenius_density_law : ",
+            frobenius_density_law_type!(),
+            "), forall (dirichlet_from_chebotarev_alias_law : ",
+            dirichlet_from_chebotarev_alias_law_type!(),
+            "), forall (dirichlet_from_chebotarev_later_card_law : ",
+            dirichlet_from_chebotarev_later_card_law_type!(),
+            "), forall (no_duplicate_dirichlet_l_proof_law : ",
+            no_duplicate_dirichlet_l_proof_law_type!(),
+            "), forall (chebotarev_not_used_by_prime_infinitude_law : ",
+            chebotarev_not_used_by_prime_infinitude_law_type!(),
+            "), forall (chebotarev_not_used_by_fta_law : ",
+            chebotarev_not_used_by_fta_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! chebotarev_projection_proof {
+    ($target:expr, $selected:expr) => {
+        chebotarev_abs!(
+            "fun data => data (",
+            $target,
+            ") (fun (frobenius_nt_t61_dependency_law : ",
+            chebotarev_frobenius_dependency_law_type!(),
+            ") => fun (analytic_density_dependency_law : ",
+            chebotarev_analytic_density_dependency_law_type!(),
+            ") => fun (prime_infinitude_independence_dependency_law : ",
+            chebotarev_prime_infinitude_independence_dependency_law_type!(),
+            ") => fun (factorization_independence_dependency_law : ",
+            chebotarev_factorization_independence_dependency_law_type!(),
+            ") => fun (dirichlet_l_non_duplication_dependency_law : ",
+            chebotarev_dirichlet_l_non_duplication_dependency_law_type!(),
+            ") => fun (density_measure_analytic_assumptions_law : ",
+            density_measure_analytic_assumptions_law_type!(),
+            ") => fun (chebotarev_density_law : ",
+            chebotarev_density_law_type!(),
+            ") => fun (frobenius_density_law : ",
+            frobenius_density_law_type!(),
+            ") => fun (dirichlet_from_chebotarev_alias_law : ",
+            dirichlet_from_chebotarev_alias_law_type!(),
+            ") => fun (dirichlet_from_chebotarev_later_card_law : ",
+            dirichlet_from_chebotarev_later_card_law_type!(),
+            ") => fun (no_duplicate_dirichlet_l_proof_law : ",
+            no_duplicate_dirichlet_l_proof_law_type!(),
+            ") => fun (chebotarev_not_used_by_prime_infinitude_law : ",
+            chebotarev_not_used_by_prime_infinitude_law_type!(),
+            ") => fun (chebotarev_not_used_by_fta_law : ",
+            chebotarev_not_used_by_fta_law_type!(),
+            ") => ",
+            $selected,
+            ")"
+        )
+    };
+}
+
+const NUMBER_THEORY_CHEBOTAREV_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "ChebotarevData",
+    universe_params: &[],
+    ty: chebotarev_params!("Prop"),
+    value: chebotarev_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        chebotarev_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const NUMBER_THEORY_CHEBOTAREV_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "chebotarev_data_intro",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (frobenius_nt_t61_dependency_law : ",
+            chebotarev_frobenius_dependency_law_type!(),
+            "), forall (analytic_density_dependency_law : ",
+            chebotarev_analytic_density_dependency_law_type!(),
+            "), forall (prime_infinitude_independence_dependency_law : ",
+            chebotarev_prime_infinitude_independence_dependency_law_type!(),
+            "), forall (factorization_independence_dependency_law : ",
+            chebotarev_factorization_independence_dependency_law_type!(),
+            "), forall (dirichlet_l_non_duplication_dependency_law : ",
+            chebotarev_dirichlet_l_non_duplication_dependency_law_type!(),
+            "), forall (density_measure_analytic_assumptions_law : ",
+            density_measure_analytic_assumptions_law_type!(),
+            "), forall (chebotarev_density_law : ",
+            chebotarev_density_law_type!(),
+            "), forall (frobenius_density_law : ",
+            frobenius_density_law_type!(),
+            "), forall (dirichlet_from_chebotarev_alias_law : ",
+            dirichlet_from_chebotarev_alias_law_type!(),
+            "), forall (dirichlet_from_chebotarev_later_card_law : ",
+            dirichlet_from_chebotarev_later_card_law_type!(),
+            "), forall (no_duplicate_dirichlet_l_proof_law : ",
+            no_duplicate_dirichlet_l_proof_law_type!(),
+            "), forall (chebotarev_not_used_by_prime_infinitude_law : ",
+            chebotarev_not_used_by_prime_infinitude_law_type!(),
+            "), forall (chebotarev_not_used_by_fta_law : ",
+            chebotarev_not_used_by_fta_law_type!(),
+            "), ",
+            chebotarev_data_app!()
+        ),
+        proof: chebotarev_abs!(
+            "fun frobenius_nt_t61_dependency_law => ",
+            "fun analytic_density_dependency_law => ",
+            "fun prime_infinitude_independence_dependency_law => ",
+            "fun factorization_independence_dependency_law => ",
+            "fun dirichlet_l_non_duplication_dependency_law => ",
+            "fun density_measure_analytic_assumptions_law => ",
+            "fun chebotarev_density_law => fun frobenius_density_law => ",
+            "fun dirichlet_from_chebotarev_alias_law => ",
+            "fun dirichlet_from_chebotarev_later_card_law => ",
+            "fun no_duplicate_dirichlet_l_proof_law => ",
+            "fun chebotarev_not_used_by_prime_infinitude_law => ",
+            "fun chebotarev_not_used_by_fta_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            chebotarev_mk_type!("Q"),
+            ") => mk frobenius_nt_t61_dependency_law ",
+            "analytic_density_dependency_law ",
+            "prime_infinitude_independence_dependency_law ",
+            "factorization_independence_dependency_law ",
+            "dirichlet_l_non_duplication_dependency_law ",
+            "density_measure_analytic_assumptions_law chebotarev_density_law ",
+            "frobenius_density_law dirichlet_from_chebotarev_alias_law ",
+            "dirichlet_from_chebotarev_later_card_law ",
+            "no_duplicate_dirichlet_l_proof_law ",
+            "chebotarev_not_used_by_prime_infinitude_law ",
+            "chebotarev_not_used_by_fta_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_frobenius_nt_t61_dependency_explicit",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_frobenius_dependency_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_frobenius_dependency_law_type!(),
+            "frobenius_nt_t61_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_analytic_density_dependency_explicit",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_analytic_density_dependency_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_analytic_density_dependency_law_type!(),
+            "analytic_density_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_prime_infinitude_independence_dependency_explicit",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_prime_infinitude_independence_dependency_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_prime_infinitude_independence_dependency_law_type!(),
+            "prime_infinitude_independence_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_factorization_independence_dependency_explicit",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_factorization_independence_dependency_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_factorization_independence_dependency_law_type!(),
+            "factorization_independence_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_dirichlet_l_non_duplication_dependency_explicit",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_dirichlet_l_non_duplication_dependency_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_dirichlet_l_non_duplication_dependency_law_type!(),
+            "dirichlet_l_non_duplication_dependency_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_density_measure_analytic_assumptions_explicit",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            density_measure_analytic_assumptions_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            density_measure_analytic_assumptions_law_type!(),
+            "density_measure_analytic_assumptions_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_density_theorem_surface",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_density_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_density_law_type!(),
+            "chebotarev_density_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_density_theorem_surface",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            frobenius_density_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(frobenius_density_law_type!(), "frobenius_density_law"),
+    },
+    TheoremArtifact {
+        name: "dirichlet_theorem_from_chebotarev_alias_surface",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            dirichlet_from_chebotarev_alias_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            dirichlet_from_chebotarev_alias_law_type!(),
+            "dirichlet_from_chebotarev_alias_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "dirichlet_theorem_from_chebotarev_later_card_surface",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            dirichlet_from_chebotarev_later_card_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            dirichlet_from_chebotarev_later_card_law_type!(),
+            "dirichlet_from_chebotarev_later_card_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_no_duplicate_dirichlet_l_proof_boundary",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            no_duplicate_dirichlet_l_proof_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            no_duplicate_dirichlet_l_proof_law_type!(),
+            "no_duplicate_dirichlet_l_proof_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_not_used_by_elementary_prime_infinitude",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_not_used_by_prime_infinitude_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_not_used_by_prime_infinitude_law_type!(),
+            "chebotarev_not_used_by_prime_infinitude_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "chebotarev_not_used_by_fundamental_theorem_arithmetic",
+        universe_params: &[],
+        statement: chebotarev_params!(
+            "forall (data : ",
+            chebotarev_data_app!(),
+            "), ",
+            chebotarev_not_used_by_fta_law_type!()
+        ),
+        proof: chebotarev_projection_proof!(
+            chebotarev_not_used_by_fta_law_type!(),
+            "chebotarev_not_used_by_fta_law"
         ),
     },
 ];
@@ -60180,6 +60724,7 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE.module
         || config.module == NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE.module
         || config.module == NUMBER_THEORY_FROBENIUS_MODULE.module
+        || config.module == NUMBER_THEORY_CHEBOTAREV_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module

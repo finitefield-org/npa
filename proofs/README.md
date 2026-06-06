@@ -335,6 +335,12 @@ Current bundles:
   Frobenius conjugacy-class theorem, reusable local-condition terms, shared
   ramification vocabulary, and a boundary excluding Chebotarev imports from
   this definition layer.
+- `Proofs/Ai/NumberTheory/Chebotarev/`: certificate-backed Chebotarev interface
+  preserving Frobenius conjugacy-class dependency from `NT-T61`, explicit
+  density measure and analytic assumptions, Chebotarev density theorem,
+  Frobenius density theorem, Dirichlet theorem from Chebotarev as an alias or
+  later theorem-card route, no duplicate Dirichlet `L` proof boundary, and
+  elementary prime infinitude and FTA independence boundaries.
 - `Proofs/Ai/NumberTheory/Iwasawa/Basic/`: certificate-backed Iwasawa basic
   interface preserving cyclotomic `Z_p` extension, Iwasawa algebra, explicit
   module-theoretic assumptions over the Iwasawa algebra, finitely generated
