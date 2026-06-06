@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.ModularForms.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ModularFormBasicData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => forall (Q : Prop), forall (mk : forall (domain_law : ComplexAnalyticDomain), forall (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form), forall (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form), Q), Q"
+    },
+    {
+      "declaration": "modular_form_basic_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun domain_law => fun modular_form_law => fun cusp_form_law => fun (Q : Prop) => fun (mk : forall (domain_arg : ComplexAnalyticDomain), forall (modular_form_arg : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form), forall (cusp_form_arg : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form), Q) => mk domain_law modular_form_law cusp_form_law"
+    },
+    {
+      "declaration": "modular_form_complex_analytic_domain",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun data => data ComplexAnalyticDomain (fun (domain_law : ComplexAnalyticDomain) => fun (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) => fun (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) => domain_law)"
+    },
+    {
+      "declaration": "modular_form_weight_level_transformation",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun data => data (forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) (fun (domain_law : ComplexAnalyticDomain) => fun (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) => fun (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) => modular_form_law)"
+    },
+    {
+      "declaration": "cusp_form_weight_level_condition",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun data => data (forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) (fun (domain_law : ComplexAnalyticDomain) => fun (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) => fun (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) => cusp_form_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/ModularForms/Basic/certificate.npcert"
+  }
+}

@@ -341,6 +341,15 @@ Current bundles:
   Selmer group, and Tate-Shafarevich group statement surfaces while keeping the
   Mordell-Weil theorem interface-level until height and descent prerequisites
   are derived.
+- `Proofs/Ai/ModularForms/Basic/`: certificate-backed modular-form basic data
+  interface preserving `ModularForm`, `CuspForm`, explicit complex-analytic
+  domain assumptions, and reusable `weight`/`level` transformation and cusp
+  conditions outside final-theorem glue.
+- `Proofs/Ai/ModularForms/QExpansion/`: certificate-backed q-expansion interface
+  downstream of `Proofs.Ai.ModularForms.Basic`, preserving `q_expansion`
+  principle data, coefficient identity surfaces, and Eisenstein series
+  q-expansion identity surfaces while keeping q-expansion evidence separate
+  from later operator packages.
 - `Proofs/Ai/NumberTheory/ContinuedFraction/`: certificate-backed finite continued-fraction
   interface for rational inputs, preserving convergent recurrence surfaces, EuclideanDivision
   dependence, normalized final-partial-quotient conventions, uniqueness surfaces, infinite

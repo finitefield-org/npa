@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.ModularForms.QExpansion",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "QExpansionPrinciple",
+      "source_kind": "explicit_def_value",
+      "term": "fun Weight => fun Level => fun ModularForm => fun FormalPowerSeries => fun q_expansion => forall (weight : Weight), forall (level : Level), forall (f : ModularForm weight level), forall (g : ModularForm weight level), @Eq.{1} FormalPowerSeries (q_expansion weight level f) (q_expansion weight level g) -> @Eq.{1} (ModularForm weight level) f g"
+    },
+    {
+      "declaration": "QExpansionData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => fun basic_data => forall (Q : Prop), forall (mk : forall (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), forall (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion), Q), Q"
+    },
+    {
+      "declaration": "q_expansion_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => fun basic_data => fun principle => fun (Q : Prop) => fun (mk : forall (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), forall (principle_arg : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion), Q) => mk basic_data principle"
+    },
+    {
+      "declaration": "q_expansion_basic_data",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => fun basic_data => fun data => data (@ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition) (fun (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition) => fun (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion) => basic_data_out)"
+    },
+    {
+      "declaration": "q_expansion_principle_from_data",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => fun basic_data => fun data => data (@QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion) (fun (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition) => fun (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion) => principle)"
+    },
+    {
+      "declaration": "q_expansion_principle_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => fun basic_data => fun data => fun weight => fun level => fun f => fun g => fun same_q_expansion => @q_expansion_principle_from_data Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition FormalPowerSeries Coeff q_expansion coefficient EisensteinSeries basic_data data weight level f g same_q_expansion"
+    },
+    {
+      "declaration": "eisenstein_series_self_q_expansion_identity",
+      "source_kind": "explicit_term",
+      "term": "fun Weight => fun Level => fun ModularForm => fun FormalPowerSeries => fun q_expansion => fun EisensteinSeries => fun weight => fun level => @Eq.refl.{1} FormalPowerSeries (q_expansion weight level (EisensteinSeries weight level))"
+    },
+    {
+      "declaration": "q_expansion_coefficient_self_identity",
+      "source_kind": "explicit_term",
+      "term": "fun FormalPowerSeries => fun Coeff => fun coefficient => fun series => @Eq.refl.{1} Coeff (coefficient series)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/ModularForms/QExpansion/certificate.npcert"
+  }
+}

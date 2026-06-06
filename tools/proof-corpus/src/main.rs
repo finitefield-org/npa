@@ -232,6 +232,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_L_FUNCTION_MODULE,
     &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
     &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
+    &MODULAR_FORMS_BASIC_MODULE,
+    &MODULAR_FORMS_Q_EXPANSION_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
     &ABSTRACT_HILBERT_BASIS_THEOREM_MODULE,
     &COMBINATORICS_BINOMIAL_ALGEBRA_MODULE,
@@ -2817,6 +2819,32 @@ const ELLIPTIC_CURVE_MORDELL_WEIL_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_MORDELL_WEIL_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MODULAR_FORMS_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ModularForms.Basic",
+    source_path: "Proofs/Ai/ModularForms/Basic/source.npa",
+    certificate_path: "Proofs/Ai/ModularForms/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/ModularForms/Basic/meta.json",
+    replay_path: "Proofs/Ai/ModularForms/Basic/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: MODULAR_FORMS_BASIC_DEFINITIONS,
+    theorems: MODULAR_FORMS_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const MODULAR_FORMS_Q_EXPANSION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.ModularForms.QExpansion",
+    source_path: "Proofs/Ai/ModularForms/QExpansion/source.npa",
+    certificate_path: "Proofs/Ai/ModularForms/QExpansion/certificate.npcert",
+    meta_path: "Proofs/Ai/ModularForms/QExpansion/meta.json",
+    replay_path: "Proofs/Ai/ModularForms/QExpansion/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.ModularForms.Basic"],
+    inductives: &[],
+    definitions: MODULAR_FORMS_Q_EXPANSION_DEFINITIONS,
+    theorems: MODULAR_FORMS_Q_EXPANSION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -22614,6 +22642,357 @@ const ELLIPTIC_CURVE_MORDELL_WEIL_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &[],
         statement: "forall (MordellWeilInterface : Type), forall (HeightPrerequisite : Type), forall (DescentPrerequisite : Type), forall (InterfaceLevelUntilDerived : MordellWeilInterface -> HeightPrerequisite -> DescentPrerequisite -> Prop), forall (boundary_law : forall (mw_interface : MordellWeilInterface), forall (height_prereq : HeightPrerequisite), forall (descent_prereq : DescentPrerequisite), InterfaceLevelUntilDerived mw_interface height_prereq descent_prereq), forall (mw_interface : MordellWeilInterface), forall (height_prereq : HeightPrerequisite), forall (descent_prereq : DescentPrerequisite), InterfaceLevelUntilDerived mw_interface height_prereq descent_prereq",
         proof: "fun MordellWeilInterface => fun HeightPrerequisite => fun DescentPrerequisite => fun InterfaceLevelUntilDerived => fun boundary_law => fun mw_interface => fun height_prereq => fun descent_prereq => boundary_law mw_interface height_prereq descent_prereq",
+    },
+];
+
+const MODULAR_FORMS_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "ModularFormBasicData",
+    universe_params: &[],
+    ty: concat!(
+        "forall (Complex : Type), ",
+        "forall (UpperHalfPlane : Type), ",
+        "forall (Weight : Type), ",
+        "forall (Level : Type), ",
+        "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+        "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+        "forall (ComplexAnalyticDomain : Prop), ",
+        "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+        "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), Prop"
+    ),
+    value: concat!(
+        "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+        "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+        "fun TransformationLaw => fun CuspCondition => ",
+        "forall (Q : Prop), ",
+        "forall (mk : forall (domain_law : ComplexAnalyticDomain), ",
+        "forall (modular_form_law : forall (weight : Weight), forall (level : Level), ",
+        "forall (form : ModularForm weight level), TransformationLaw weight level form), ",
+        "forall (cusp_form_law : forall (weight : Weight), forall (level : Level), ",
+        "forall (form : CuspForm weight level), CuspCondition weight level form), Q), Q"
+    ),
+}];
+
+const MODULAR_FORMS_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "modular_form_basic_data_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (domain_law : ComplexAnalyticDomain), ",
+            "forall (modular_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form), ",
+            "forall (cusp_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form), ",
+            "@ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun domain_law => ",
+            "fun modular_form_law => fun cusp_form_law => ",
+            "fun (Q : Prop) => fun (mk : forall (domain_arg : ComplexAnalyticDomain), ",
+            "forall (modular_form_arg : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form), ",
+            "forall (cusp_form_arg : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form), Q) => ",
+            "mk domain_law modular_form_law cusp_form_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "modular_form_complex_analytic_domain",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "ComplexAnalyticDomain"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun data => ",
+            "data ComplexAnalyticDomain ",
+            "(fun (domain_law : ComplexAnalyticDomain) => ",
+            "fun (modular_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form) => ",
+            "fun (cusp_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form) => domain_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "modular_form_weight_level_transformation",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun data => ",
+            "data (forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form) ",
+            "(fun (domain_law : ComplexAnalyticDomain) => ",
+            "fun (modular_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form) => ",
+            "fun (cusp_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form) => modular_form_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "cusp_form_weight_level_condition",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun data => ",
+            "data (forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form) ",
+            "(fun (domain_law : ComplexAnalyticDomain) => ",
+            "fun (modular_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : ModularForm weight level), TransformationLaw weight level form) => ",
+            "fun (cusp_form_law : forall (weight : Weight), forall (level : Level), ",
+            "forall (form : CuspForm weight level), CuspCondition weight level form) => cusp_form_law)"
+        ),
+    },
+];
+
+const MODULAR_FORMS_Q_EXPANSION_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "QExpansionPrinciple",
+        universe_params: &[],
+        ty: concat!(
+            "forall (Weight : Type), ",
+            "forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (FormalPowerSeries : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), Prop"
+        ),
+        value: concat!(
+            "fun Weight => fun Level => fun ModularForm => fun FormalPowerSeries => fun q_expansion => ",
+            "forall (weight : Weight), forall (level : Level), ",
+            "forall (f : ModularForm weight level), forall (g : ModularForm weight level), ",
+            "@Eq.{1} FormalPowerSeries (q_expansion weight level f) (q_expansion weight level g) -> ",
+            "@Eq.{1} (ModularForm weight level) f g"
+        ),
+    },
+    DefinitionArtifact {
+        name: "QExpansionData",
+        universe_params: &[],
+        ty: concat!(
+            "forall (Complex : Type), ",
+            "forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), ",
+            "forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (FormalPowerSeries : Type), ",
+            "forall (Coeff : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), ",
+            "forall (coefficient : FormalPowerSeries -> Coeff), ",
+            "forall (EisensteinSeries : forall (weight : Weight), forall (level : Level), ModularForm weight level), ",
+            "forall (basic_data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), Prop"
+        ),
+        value: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => ",
+            "fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => ",
+            "fun basic_data => forall (Q : Prop), ",
+            "forall (mk : forall (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion), Q), Q"
+        ),
+    },
+];
+
+const MODULAR_FORMS_Q_EXPANSION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "q_expansion_data_intro",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (FormalPowerSeries : Type), forall (Coeff : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), ",
+            "forall (coefficient : FormalPowerSeries -> Coeff), ",
+            "forall (EisensteinSeries : forall (weight : Weight), forall (level : Level), ModularForm weight level), ",
+            "forall (basic_data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion), ",
+            "@QExpansionData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition FormalPowerSeries Coeff q_expansion coefficient EisensteinSeries basic_data"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => ",
+            "fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => ",
+            "fun basic_data => fun principle => fun (Q : Prop) => ",
+            "fun (mk : forall (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (principle_arg : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion), Q) => ",
+            "mk basic_data principle"
+        ),
+    },
+    TheoremArtifact {
+        name: "q_expansion_basic_data",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (FormalPowerSeries : Type), forall (Coeff : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), ",
+            "forall (coefficient : FormalPowerSeries -> Coeff), ",
+            "forall (EisensteinSeries : forall (weight : Weight), forall (level : Level), ModularForm weight level), ",
+            "forall (basic_data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (data : @QExpansionData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition FormalPowerSeries Coeff q_expansion coefficient EisensteinSeries basic_data), ",
+            "@ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => ",
+            "fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => ",
+            "fun basic_data => fun data => ",
+            "data (@ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition) ",
+            "(fun (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition) => ",
+            "fun (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion) => basic_data_out)"
+        ),
+    },
+    TheoremArtifact {
+        name: "q_expansion_principle_from_data",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (FormalPowerSeries : Type), forall (Coeff : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), ",
+            "forall (coefficient : FormalPowerSeries -> Coeff), ",
+            "forall (EisensteinSeries : forall (weight : Weight), forall (level : Level), ModularForm weight level), ",
+            "forall (basic_data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (data : @QExpansionData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition FormalPowerSeries Coeff q_expansion coefficient EisensteinSeries basic_data), ",
+            "@QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => ",
+            "fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => ",
+            "fun basic_data => fun data => ",
+            "data (@QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion) ",
+            "(fun (basic_data_out : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition) => ",
+            "fun (principle : @QExpansionPrinciple Weight Level ModularForm FormalPowerSeries q_expansion) => principle)"
+        ),
+    },
+    TheoremArtifact {
+        name: "q_expansion_principle_apply",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Complex : Type), forall (UpperHalfPlane : Type), ",
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (ComplexAnalyticDomain : Prop), ",
+            "forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), ",
+            "forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), ",
+            "forall (FormalPowerSeries : Type), forall (Coeff : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), ",
+            "forall (coefficient : FormalPowerSeries -> Coeff), ",
+            "forall (EisensteinSeries : forall (weight : Weight), forall (level : Level), ModularForm weight level), ",
+            "forall (basic_data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ",
+            "forall (data : @QExpansionData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition FormalPowerSeries Coeff q_expansion coefficient EisensteinSeries basic_data), ",
+            "forall (weight : Weight), forall (level : Level), ",
+            "forall (f : ModularForm weight level), forall (g : ModularForm weight level), ",
+            "forall (same_q_expansion : @Eq.{1} FormalPowerSeries (q_expansion weight level f) (q_expansion weight level g)), ",
+            "@Eq.{1} (ModularForm weight level) f g"
+        ),
+        proof: concat!(
+            "fun Complex => fun UpperHalfPlane => fun Weight => fun Level => ",
+            "fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => ",
+            "fun TransformationLaw => fun CuspCondition => fun FormalPowerSeries => ",
+            "fun Coeff => fun q_expansion => fun coefficient => fun EisensteinSeries => ",
+            "fun basic_data => fun data => fun weight => fun level => fun f => fun g => ",
+            "fun same_q_expansion => ",
+            "@q_expansion_principle_from_data Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition FormalPowerSeries Coeff q_expansion coefficient EisensteinSeries basic_data data weight level f g same_q_expansion"
+        ),
+    },
+    TheoremArtifact {
+        name: "eisenstein_series_self_q_expansion_identity",
+        universe_params: &[],
+        statement: concat!(
+            "forall (Weight : Type), forall (Level : Type), ",
+            "forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), ",
+            "forall (FormalPowerSeries : Type), ",
+            "forall (q_expansion : forall (weight : Weight), forall (level : Level), ModularForm weight level -> FormalPowerSeries), ",
+            "forall (EisensteinSeries : forall (weight : Weight), forall (level : Level), ModularForm weight level), ",
+            "forall (weight : Weight), forall (level : Level), ",
+            "@Eq.{1} FormalPowerSeries (q_expansion weight level (EisensteinSeries weight level)) (q_expansion weight level (EisensteinSeries weight level))"
+        ),
+        proof: concat!(
+            "fun Weight => fun Level => fun ModularForm => fun FormalPowerSeries => ",
+            "fun q_expansion => fun EisensteinSeries => fun weight => fun level => ",
+            "@Eq.refl.{1} FormalPowerSeries (q_expansion weight level (EisensteinSeries weight level))"
+        ),
+    },
+    TheoremArtifact {
+        name: "q_expansion_coefficient_self_identity",
+        universe_params: &[],
+        statement: concat!(
+            "forall (FormalPowerSeries : Type), forall (Coeff : Type), ",
+            "forall (coefficient : FormalPowerSeries -> Coeff), ",
+            "forall (series : FormalPowerSeries), ",
+            "@Eq.{1} Coeff (coefficient series) (coefficient series)"
+        ),
+        proof: concat!(
+            "fun FormalPowerSeries => fun Coeff => fun coefficient => fun series => ",
+            "@Eq.refl.{1} Coeff (coefficient series)"
+        ),
     },
 ];
 
@@ -51281,6 +51660,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ELLIPTIC_CURVE_L_FUNCTION_MODULE.module
         || config.module == ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE.module
         || config.module == ELLIPTIC_CURVE_MORDELL_WEIL_MODULE.module
+        || config.module == MODULAR_FORMS_BASIC_MODULE.module
+        || config.module == MODULAR_FORMS_Q_EXPANSION_MODULE.module
     {
         source.truncate(source.trim_end_matches('\n').len() + 1);
     }

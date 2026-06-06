@@ -1,38 +1,21 @@
 import Std.Logic.Eq
 
-def ModularFormLawArgs.{u} :
-  forall (F : Sort u), forall (is_holomorphic : F -> Prop), forall (is_invariant : F -> Prop), forall (f : F), Prop :=
-  fun F => fun is_holomorphic => fun is_invariant => fun f =>
-  forall (P : Prop), forall (mk : forall (holo : is_holomorphic f), forall (inv : is_invariant f), P), P
+def ModularFormBasicData :
+  forall (Complex : Type), forall (UpperHalfPlane : Type), forall (Weight : Type), forall (Level : Type), forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), forall (ComplexAnalyticDomain : Prop), forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), Prop :=
+  fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => forall (Q : Prop), forall (mk : forall (domain_law : ComplexAnalyticDomain), forall (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form), forall (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form), Q), Q
 
-def CuspFormLawArgs.{u} :
-  forall (F : Sort u), forall (is_holomorphic : F -> Prop), forall (is_invariant : F -> Prop), forall (is_zero_at_cusps : F -> Prop), forall (f : F), Prop :=
-  fun F => fun is_holomorphic => fun is_invariant => fun is_zero_at_cusps => fun f =>
-  forall (P : Prop), forall (mk : forall (holo : is_holomorphic f), forall (inv : is_invariant f), forall (zero_cusps : is_zero_at_cusps f), P), P
+theorem modular_form_basic_data_intro :
+  forall (Complex : Type), forall (UpperHalfPlane : Type), forall (Weight : Type), forall (Level : Type), forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), forall (ComplexAnalyticDomain : Prop), forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), forall (domain_law : ComplexAnalyticDomain), forall (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form), forall (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form), @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition :=
+  fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun domain_law => fun modular_form_law => fun cusp_form_law => fun (Q : Prop) => fun (mk : forall (domain_arg : ComplexAnalyticDomain), forall (modular_form_arg : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form), forall (cusp_form_arg : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form), Q) => mk domain_law modular_form_law cusp_form_law
 
-theorem cusp_form_is_modular_form.{u} :
-  forall (F : Sort u), forall (is_holomorphic : F -> Prop), forall (is_invariant : F -> Prop), forall (is_zero_at_cusps : F -> Prop), forall (f : F),
-  forall (cusp_args : @CuspFormLawArgs.{u} F is_holomorphic is_invariant is_zero_at_cusps f),
-  @ModularFormLawArgs.{u} F is_holomorphic is_invariant f :=
-  fun F => fun is_holomorphic => fun is_invariant => fun is_zero_at_cusps => fun f => fun cusp_args =>
-  fun P => fun mk =>
-    cusp_args P (fun (holo : is_holomorphic f) => fun (inv : is_invariant f) => fun (zero_cusps : is_zero_at_cusps f) =>
-      mk holo inv
-    )
+theorem modular_form_complex_analytic_domain :
+  forall (Complex : Type), forall (UpperHalfPlane : Type), forall (Weight : Type), forall (Level : Type), forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), forall (ComplexAnalyticDomain : Prop), forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), forall (data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), ComplexAnalyticDomain :=
+  fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun data => data ComplexAnalyticDomain (fun (domain_law : ComplexAnalyticDomain) => fun (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) => fun (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) => domain_law)
 
-theorem modular_form_add.{u} :
-  forall (F : Sort u), forall (is_holomorphic : F -> Prop), forall (is_invariant : F -> Prop),
-  forall (add : F -> F -> F),
-  forall (holo_add : forall (f : F), forall (g : F), is_holomorphic f -> is_holomorphic g -> is_holomorphic (add f g)),
-  forall (inv_add : forall (f : F), forall (g : F), is_invariant f -> is_invariant g -> is_invariant (add f g)),
-  forall (f : F), forall (g : F),
-  forall (f_mod : @ModularFormLawArgs.{u} F is_holomorphic is_invariant f),
-  forall (g_mod : @ModularFormLawArgs.{u} F is_holomorphic is_invariant g),
-  @ModularFormLawArgs.{u} F is_holomorphic is_invariant (add f g) :=
-  fun F => fun is_holomorphic => fun is_invariant => fun add => fun holo_add => fun inv_add => fun f => fun g => fun f_mod => fun g_mod =>
-  fun P => fun mk =>
-    f_mod P (fun (f_holo : is_holomorphic f) => fun (f_inv : is_invariant f) =>
-      g_mod P (fun (g_holo : is_holomorphic g) => fun (g_inv : is_invariant g) =>
-        mk (holo_add f g f_holo g_holo) (inv_add f g f_inv g_inv)
-      )
-    )
+theorem modular_form_weight_level_transformation :
+  forall (Complex : Type), forall (UpperHalfPlane : Type), forall (Weight : Type), forall (Level : Type), forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), forall (ComplexAnalyticDomain : Prop), forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), forall (data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form :=
+  fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun data => data (forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) (fun (domain_law : ComplexAnalyticDomain) => fun (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) => fun (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) => modular_form_law)
+
+theorem cusp_form_weight_level_condition :
+  forall (Complex : Type), forall (UpperHalfPlane : Type), forall (Weight : Type), forall (Level : Type), forall (ModularForm : forall (weight : Weight), forall (level : Level), Type), forall (CuspForm : forall (weight : Weight), forall (level : Level), Type), forall (ComplexAnalyticDomain : Prop), forall (TransformationLaw : forall (weight : Weight), forall (level : Level), ModularForm weight level -> Prop), forall (CuspCondition : forall (weight : Weight), forall (level : Level), CuspForm weight level -> Prop), forall (data : @ModularFormBasicData Complex UpperHalfPlane Weight Level ModularForm CuspForm ComplexAnalyticDomain TransformationLaw CuspCondition), forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form :=
+  fun Complex => fun UpperHalfPlane => fun Weight => fun Level => fun ModularForm => fun CuspForm => fun ComplexAnalyticDomain => fun TransformationLaw => fun CuspCondition => fun data => data (forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) (fun (domain_law : ComplexAnalyticDomain) => fun (modular_form_law : forall (weight : Weight), forall (level : Level), forall (form : ModularForm weight level), TransformationLaw weight level form) => fun (cusp_form_law : forall (weight : Weight), forall (level : Level), forall (form : CuspForm weight level), CuspCondition weight level form) => cusp_form_law)

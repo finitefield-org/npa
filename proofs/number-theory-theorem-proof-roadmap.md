@@ -864,6 +864,12 @@ semantics.
 ## NT-17 Modular Forms And Modularity
 
 - Status: planned.
+- Progress:
+  - `NT-T49` added certificate-backed `Proofs.Ai.ModularForms.Basic` and
+    `Proofs.Ai.ModularForms.QExpansion` defining reusable modular-form,
+    cusp-form, explicit complex-analytic domain, `weight`/`level`,
+    `q_expansion`, Eisenstein series, coefficient, and q-expansion principle
+    surfaces outside final-theorem glue.
 - Depends on: complex analysis, linear algebra, representation theory, algebraic
   geometry, and `NT-16`.
 - Target modules:
