@@ -1782,7 +1782,7 @@ later in the file.
 
 ### NT-T68 Add Finite-Field Exponential Sum Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T67`, `NT-T20`
 - Areas: `Proofs/Ai/NumberTheory/ExponentialSum/`
 - Tasks:
@@ -1802,6 +1802,13 @@ later in the file.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ExponentialSum`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ExponentialSum`
   - `rg -n "ExponentialSum|Hasse|Davenport|Chevalley|AxKatz|LangWeil" proofs/Proofs/Ai/NumberTheory proofs/README.md`
+- Completion notes:
+  - Added `Proofs.Ai.NumberTheory.ExponentialSum` downstream of
+    `FiniteFieldApplications`, `Character`, and `GaussSum`.
+  - Recorded finite-field Gauss and Jacobi sum, Hasse-Davenport, Stickelberger,
+    Chevalley-Warning, Ax-Katz, Weil `L1`, and Lang-Weil `L1` theorem cards.
+  - Kept field-size, degree, character, and nonvanishing hypotheses explicit and did not
+    duplicate finite-field core laws.
 
 ### NT-T69 Add Polynomial Method And Combinatorial Interfaces
 

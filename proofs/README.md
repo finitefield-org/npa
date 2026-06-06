@@ -233,6 +233,11 @@ Current bundles:
   over an explicit coefficient ring, multiplicative Dirichlet character data, additive character
   data, basic identities, orthogonality bridges, and boundaries excluding analytic `L`-function
   assumptions.
+- `Proofs/Ai/NumberTheory/ExponentialSum/`: certificate-backed finite-field exponential-sum
+  interface downstream of `FiniteFieldApplications`, `Character`, and `GaussSum`, preserving
+  finite-field Gauss and Jacobi sum, Hasse-Davenport, Stickelberger, Chevalley-Warning, Ax-Katz,
+  Weil `L1` estimate, and Lang-Weil `L1` prerequisite surfaces with explicit field-size, degree,
+  character, and nonvanishing hypotheses.
 - `Proofs/Ai/NumberTheory/QuadraticResidue/`: certificate-backed quadratic residue and
   nonresidue interface downstream of prime, congruence, modular unit-group, and primitive-root
   surfaces, preserving explicit odd prime hypotheses and nonzero residue count statements.
