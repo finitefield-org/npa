@@ -341,6 +341,19 @@ Current bundles:
   Frobenius density theorem, Dirichlet theorem from Chebotarev as an alias or
   later theorem-card route, no duplicate Dirichlet `L` proof boundary, and
   elementary prime infinitude and FTA independence boundaries.
+- `Proofs/Ai/GaloisRepresentation/Basic/`: certificate-backed
+  GaloisRepresentation basic interface preserving reusable Galois
+  representation, l-adic representation, cyclotomic character, Tate module
+  representation, and shared elliptic-curve/modular-form representation APIs.
+- `Proofs/Ai/GaloisRepresentation/Ramification/`: certificate-backed
+  GaloisRepresentation ramification interface preserving local restriction,
+  inertia-driven ramification, unramified Frobenius compatibility, and
+  ramification vocabulary reusable by LocalCondition modules.
+- `Proofs/Ai/GaloisRepresentation/LocalCondition/`: certificate-backed
+  LocalCondition interface preserving Hodge-Tate, de Rham, crystalline,
+  semistable, Fontaine-Laffaille, and comparison theorem chains, reusable local
+  conditions, elliptic-curve and modular-form shared local-condition APIs, and
+  Taylor-Wiles and potential-modularity interface-only boundaries.
 - `Proofs/Ai/NumberTheory/Iwasawa/Basic/`: certificate-backed Iwasawa basic
   interface preserving cyclotomic `Z_p` extension, Iwasawa algebra, explicit
   module-theoretic assumptions over the Iwasawa algebra, finitely generated

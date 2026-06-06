@@ -236,6 +236,9 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
     &NUMBER_THEORY_FROBENIUS_MODULE,
     &NUMBER_THEORY_CHEBOTAREV_MODULE,
+    &GALOIS_REPRESENTATION_BASIC_MODULE,
+    &GALOIS_REPRESENTATION_RAMIFICATION_MODULE,
+    &GALOIS_REPRESENTATION_LOCAL_CONDITION_MODULE,
     &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
     &NUMBER_THEORY_IWASAWA_MAIN_CONJECTURE_MODULE,
     &NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE,
@@ -2920,6 +2923,57 @@ const NUMBER_THEORY_CHEBOTAREV_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: NUMBER_THEORY_CHEBOTAREV_DEFINITIONS,
     theorems: NUMBER_THEORY_CHEBOTAREV_THEOREMS,
+    expected_axioms: &[],
+};
+
+const GALOIS_REPRESENTATION_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.GaloisRepresentation.Basic",
+    source_path: "Proofs/Ai/GaloisRepresentation/Basic/source.npa",
+    certificate_path: "Proofs/Ai/GaloisRepresentation/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/GaloisRepresentation/Basic/meta.json",
+    replay_path: "Proofs/Ai/GaloisRepresentation/Basic/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+    ],
+    inductives: &[],
+    definitions: GALOIS_REPRESENTATION_BASIC_DEFINITIONS,
+    theorems: GALOIS_REPRESENTATION_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
+const GALOIS_REPRESENTATION_RAMIFICATION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.GaloisRepresentation.Ramification",
+    source_path: "Proofs/Ai/GaloisRepresentation/Ramification/source.npa",
+    certificate_path: "Proofs/Ai/GaloisRepresentation/Ramification/certificate.npcert",
+    meta_path: "Proofs/Ai/GaloisRepresentation/Ramification/meta.json",
+    replay_path: "Proofs/Ai/GaloisRepresentation/Ramification/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.GaloisRepresentation.Basic",
+        "Proofs.Ai.NumberTheory.Frobenius",
+    ],
+    inductives: &[],
+    definitions: GALOIS_REPRESENTATION_RAMIFICATION_DEFINITIONS,
+    theorems: GALOIS_REPRESENTATION_RAMIFICATION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const GALOIS_REPRESENTATION_LOCAL_CONDITION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.GaloisRepresentation.LocalCondition",
+    source_path: "Proofs/Ai/GaloisRepresentation/LocalCondition/source.npa",
+    certificate_path: "Proofs/Ai/GaloisRepresentation/LocalCondition/certificate.npcert",
+    meta_path: "Proofs/Ai/GaloisRepresentation/LocalCondition/meta.json",
+    replay_path: "Proofs/Ai/GaloisRepresentation/LocalCondition/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.GaloisRepresentation.Basic",
+        "Proofs.Ai.GaloisRepresentation.Ramification",
+        "Proofs.Ai.EllipticCurve.GaloisRepresentation",
+    ],
+    inductives: &[],
+    definitions: GALOIS_REPRESENTATION_LOCAL_CONDITION_DEFINITIONS,
+    theorems: GALOIS_REPRESENTATION_LOCAL_CONDITION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -28050,6 +28104,1095 @@ const NUMBER_THEORY_CHEBOTAREV_THEOREMS: &[TheoremArtifact] = &[
         proof: chebotarev_projection_proof!(
             chebotarev_not_used_by_fta_law_type!(),
             "chebotarev_not_used_by_fta_law"
+        ),
+    },
+];
+
+macro_rules! galois_rep_basic_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (BaseField : Type), ",
+            "forall (CoefficientRing : Type), ",
+            "forall (Prime : Type), ",
+            "forall (GaloisGroup : Type), ",
+            "forall (LinearModule : Type), ",
+            "forall (EllipticCurve : Type), ",
+            "forall (GaloisRepresentation : Type), ",
+            "forall (IsGaloisRepresentation : GaloisRepresentation -> Prop), ",
+            "forall (LAdicRepresentation : GaloisRepresentation -> Prime -> Prop), ",
+            "forall (CyclotomicCharacter : GaloisRepresentation -> Prime -> Prop), ",
+            "forall (TateModule : EllipticCurve -> Prime -> Type), ",
+            "forall (TateModuleRepresentation : EllipticCurve -> GaloisRepresentation -> Prime -> Prop), ",
+            "forall (RepresentationCarrier : GaloisRepresentation -> LinearModule -> Prop), ",
+            "forall (ContinuousAction : GaloisGroup -> GaloisRepresentation -> LinearModule -> Prop), ",
+            "forall (LAdicCoefficient : CoefficientRing -> Prime -> Prop), ",
+            "forall (EllipticCurveGaloisRepresentationAPI : EllipticCurve -> GaloisRepresentation -> Prop), ",
+            "forall (ModularFormRepresentationAPI : GaloisRepresentation -> Prop), ",
+            "forall (SharedRepresentationAPI : EllipticCurve -> GaloisRepresentation -> Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! galois_rep_basic_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun BaseField => fun CoefficientRing => fun Prime => ",
+            "fun GaloisGroup => fun LinearModule => fun EllipticCurve => ",
+            "fun GaloisRepresentation => fun IsGaloisRepresentation => ",
+            "fun LAdicRepresentation => fun CyclotomicCharacter => ",
+            "fun TateModule => fun TateModuleRepresentation => ",
+            "fun RepresentationCarrier => fun ContinuousAction => ",
+            "fun LAdicCoefficient => fun EllipticCurveGaloisRepresentationAPI => ",
+            "fun ModularFormRepresentationAPI => fun SharedRepresentationAPI => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! galois_rep_basic_data_app {
+    () => {
+        concat!(
+            "@GaloisRepresentationBasicData BaseField CoefficientRing Prime ",
+            "GaloisGroup LinearModule EllipticCurve GaloisRepresentation ",
+            "IsGaloisRepresentation LAdicRepresentation CyclotomicCharacter ",
+            "TateModule TateModuleRepresentation RepresentationCarrier ",
+            "ContinuousAction LAdicCoefficient EllipticCurveGaloisRepresentationAPI ",
+            "ModularFormRepresentationAPI SharedRepresentationAPI"
+        )
+    };
+}
+
+macro_rules! galois_representation_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentation), forall (carrier_module : LinearModule), ",
+            "forall (g : GaloisGroup), RepresentationCarrier rho carrier_module -> ",
+            "ContinuousAction g rho carrier_module -> IsGaloisRepresentation rho"
+        )
+    };
+}
+
+macro_rules! ladic_representation_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "forall (coefficient : CoefficientRing), IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> LAdicRepresentation rho l"
+        )
+    };
+}
+
+macro_rules! cyclotomic_character_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "forall (coefficient : CoefficientRing), LAdicCoefficient coefficient l -> ",
+            "CyclotomicCharacter rho l"
+        )
+    };
+}
+
+macro_rules! tate_module_representation_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "forall (l : Prime), TateModule curve l -> IsGaloisRepresentation rho -> ",
+            "LAdicRepresentation rho l -> TateModuleRepresentation curve rho l"
+        )
+    };
+}
+
+macro_rules! elliptic_curve_galois_share_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "forall (l : Prime), TateModuleRepresentation curve rho l -> ",
+            "EllipticCurveGaloisRepresentationAPI curve rho"
+        )
+    };
+}
+
+macro_rules! modular_form_galois_share_law_type {
+    () => {
+        concat!(
+            "forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "LAdicRepresentation rho l -> ModularFormRepresentationAPI rho"
+        )
+    };
+}
+
+macro_rules! shared_representation_api_law_type {
+    () => {
+        concat!(
+            "forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "EllipticCurveGaloisRepresentationAPI curve rho -> ",
+            "ModularFormRepresentationAPI rho -> SharedRepresentationAPI curve rho"
+        )
+    };
+}
+
+macro_rules! galois_rep_basic_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (galois_representation_law : ",
+            galois_representation_law_type!(),
+            "), forall (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            "), forall (cyclotomic_character_law : ",
+            cyclotomic_character_law_type!(),
+            "), forall (tate_module_representation_law : ",
+            tate_module_representation_law_type!(),
+            "), forall (elliptic_curve_galois_share_law : ",
+            elliptic_curve_galois_share_law_type!(),
+            "), forall (modular_form_galois_share_law : ",
+            modular_form_galois_share_law_type!(),
+            "), forall (shared_representation_api_law : ",
+            shared_representation_api_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+const GALOIS_REPRESENTATION_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "GaloisRepresentationBasicData",
+    universe_params: &[],
+    ty: galois_rep_basic_params!("Prop"),
+    value: galois_rep_basic_abs!(
+        "forall (Q : Prop), forall (mk : ",
+        galois_rep_basic_mk_type!("Q"),
+        "), Q"
+    ),
+}];
+
+const GALOIS_REPRESENTATION_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "galois_representation_basic_data_intro",
+        universe_params: &[],
+        statement: galois_rep_basic_params!(
+            "forall (galois_representation_law : ",
+            galois_representation_law_type!(),
+            "), forall (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            "), forall (cyclotomic_character_law : ",
+            cyclotomic_character_law_type!(),
+            "), forall (tate_module_representation_law : ",
+            tate_module_representation_law_type!(),
+            "), forall (elliptic_curve_galois_share_law : ",
+            elliptic_curve_galois_share_law_type!(),
+            "), forall (modular_form_galois_share_law : ",
+            modular_form_galois_share_law_type!(),
+            "), forall (shared_representation_api_law : ",
+            shared_representation_api_law_type!(),
+            "), ",
+            galois_rep_basic_data_app!()
+        ),
+        proof: galois_rep_basic_abs!(
+            "fun galois_representation_law => fun ladic_representation_law => ",
+            "fun cyclotomic_character_law => fun tate_module_representation_law => ",
+            "fun elliptic_curve_galois_share_law => fun modular_form_galois_share_law => ",
+            "fun shared_representation_api_law => fun (Q : Prop) => fun (mk : ",
+            galois_rep_basic_mk_type!("Q"),
+            ") => mk galois_representation_law ladic_representation_law ",
+            "cyclotomic_character_law tate_module_representation_law ",
+            "elliptic_curve_galois_share_law modular_form_galois_share_law ",
+            "shared_representation_api_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "ladic_representation_from_galois_representation_data",
+        universe_params: &[],
+        statement: galois_rep_basic_params!(
+            "forall (data : ",
+            galois_rep_basic_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "forall (coefficient : CoefficientRing), IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> LAdicRepresentation rho l"
+        ),
+        proof: galois_rep_basic_abs!(
+            "fun data => data (forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "forall (coefficient : CoefficientRing), IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> LAdicRepresentation rho l) ",
+            "(fun (galois_representation_law : ",
+            galois_representation_law_type!(),
+            ") => fun (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            ") => fun (cyclotomic_character_law : ",
+            cyclotomic_character_law_type!(),
+            ") => fun (tate_module_representation_law : ",
+            tate_module_representation_law_type!(),
+            ") => fun (elliptic_curve_galois_share_law : ",
+            elliptic_curve_galois_share_law_type!(),
+            ") => fun (modular_form_galois_share_law : ",
+            modular_form_galois_share_law_type!(),
+            ") => fun (shared_representation_api_law : ",
+            shared_representation_api_law_type!(),
+            ") => ladic_representation_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "cyclotomic_character_from_ladic_coefficient",
+        universe_params: &[],
+        statement: galois_rep_basic_params!(
+            "forall (data : ",
+            galois_rep_basic_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "forall (coefficient : CoefficientRing), LAdicCoefficient coefficient l -> ",
+            "CyclotomicCharacter rho l"
+        ),
+        proof: galois_rep_basic_abs!(
+            "fun data => data (forall (rho : GaloisRepresentation), forall (l : Prime), ",
+            "forall (coefficient : CoefficientRing), LAdicCoefficient coefficient l -> ",
+            "CyclotomicCharacter rho l) ",
+            "(fun (galois_representation_law : ",
+            galois_representation_law_type!(),
+            ") => fun (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            ") => fun (cyclotomic_character_law : ",
+            cyclotomic_character_law_type!(),
+            ") => fun (tate_module_representation_law : ",
+            tate_module_representation_law_type!(),
+            ") => fun (elliptic_curve_galois_share_law : ",
+            elliptic_curve_galois_share_law_type!(),
+            ") => fun (modular_form_galois_share_law : ",
+            modular_form_galois_share_law_type!(),
+            ") => fun (shared_representation_api_law : ",
+            shared_representation_api_law_type!(),
+            ") => cyclotomic_character_law)"
+        ),
+    },
+    TheoremArtifact {
+        name: "tate_module_representation_from_basic_data",
+        universe_params: &[],
+        statement: galois_rep_basic_params!(
+            "forall (data : ",
+            galois_rep_basic_data_app!(),
+            "), forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "forall (l : Prime), forall (coefficient : CoefficientRing), ",
+            "TateModule curve l -> IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> TateModuleRepresentation curve rho l"
+        ),
+        proof: galois_rep_basic_abs!(
+            "fun data => data (forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "forall (l : Prime), forall (coefficient : CoefficientRing), ",
+            "TateModule curve l -> IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> TateModuleRepresentation curve rho l) ",
+            "(fun (galois_representation_law : ",
+            galois_representation_law_type!(),
+            ") => fun (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            ") => fun (cyclotomic_character_law : ",
+            cyclotomic_character_law_type!(),
+            ") => fun (tate_module_representation_law : ",
+            tate_module_representation_law_type!(),
+            ") => fun (elliptic_curve_galois_share_law : ",
+            elliptic_curve_galois_share_law_type!(),
+            ") => fun (modular_form_galois_share_law : ",
+            modular_form_galois_share_law_type!(),
+            ") => fun (shared_representation_api_law : ",
+            shared_representation_api_law_type!(),
+            ") => fun (curve : EllipticCurve) => fun (rho : GaloisRepresentation) => ",
+            "fun (l : Prime) => fun (coefficient : CoefficientRing) => ",
+            "fun (tate_module : TateModule curve l) => ",
+            "fun (is_galois : IsGaloisRepresentation rho) => ",
+            "fun (ladic_coefficient : LAdicCoefficient coefficient l) => ",
+            "tate_module_representation_law curve rho l tate_module is_galois ",
+            "(ladic_representation_law rho l coefficient is_galois ladic_coefficient))"
+        ),
+    },
+    TheoremArtifact {
+        name: "elliptic_curve_and_modular_form_share_galois_representation_api",
+        universe_params: &[],
+        statement: galois_rep_basic_params!(
+            "forall (data : ",
+            galois_rep_basic_data_app!(),
+            "), forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "forall (l : Prime), forall (coefficient : CoefficientRing), ",
+            "TateModule curve l -> IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> SharedRepresentationAPI curve rho"
+        ),
+        proof: galois_rep_basic_abs!(
+            "fun data => data (forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), ",
+            "forall (l : Prime), forall (coefficient : CoefficientRing), ",
+            "TateModule curve l -> IsGaloisRepresentation rho -> ",
+            "LAdicCoefficient coefficient l -> SharedRepresentationAPI curve rho) ",
+            "(fun (galois_representation_law : ",
+            galois_representation_law_type!(),
+            ") => fun (ladic_representation_law : ",
+            ladic_representation_law_type!(),
+            ") => fun (cyclotomic_character_law : ",
+            cyclotomic_character_law_type!(),
+            ") => fun (tate_module_representation_law : ",
+            tate_module_representation_law_type!(),
+            ") => fun (elliptic_curve_galois_share_law : ",
+            elliptic_curve_galois_share_law_type!(),
+            ") => fun (modular_form_galois_share_law : ",
+            modular_form_galois_share_law_type!(),
+            ") => fun (shared_representation_api_law : ",
+            shared_representation_api_law_type!(),
+            ") => fun (curve : EllipticCurve) => fun (rho : GaloisRepresentation) => ",
+            "fun (l : Prime) => fun (coefficient : CoefficientRing) => ",
+            "fun (tate_module : TateModule curve l) => ",
+            "fun (is_galois : IsGaloisRepresentation rho) => ",
+            "fun (ladic_coefficient : LAdicCoefficient coefficient l) => ",
+            "shared_representation_api_law curve rho ",
+            "(elliptic_curve_galois_share_law curve rho l ",
+            "(tate_module_representation_law curve rho l tate_module is_galois ",
+            "(ladic_representation_law rho l coefficient is_galois ladic_coefficient))) ",
+            "(modular_form_galois_share_law rho l ",
+            "(ladic_representation_law rho l coefficient is_galois ladic_coefficient)))"
+        ),
+    },
+];
+
+macro_rules! galois_rep_ramification_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (BaseField : Type), ",
+            "forall (LocalField : Type), ",
+            "forall (Prime : Type), ",
+            "forall (GaloisGroup : Type), ",
+            "forall (GaloisRepresentation : Type), ",
+            "forall (InertiaGroup : Type), ",
+            "forall (DecompositionGroup : Type), ",
+            "forall (FrobeniusElement : Type), ",
+            "forall (RamificationTerm : Type), ",
+            "forall (IsGaloisRepresentation : GaloisRepresentation -> Prop), ",
+            "forall (LocalRestriction : GaloisRepresentation -> LocalField -> Prop), ",
+            "forall (InertiaAction : GaloisRepresentation -> InertiaGroup -> Prop), ",
+            "forall (DecompositionAction : GaloisRepresentation -> DecompositionGroup -> Prop), ",
+            "forall (UnramifiedAt : GaloisRepresentation -> LocalField -> Prop), ",
+            "forall (RamifiedAt : GaloisRepresentation -> LocalField -> Prop), ",
+            "forall (FrobeniusCompatible : GaloisRepresentation -> LocalField -> FrobeniusElement -> Prop), ",
+            "forall (RamificationVocabularyReusable : RamificationTerm -> Prop), ",
+            "forall (LocalConditionRamificationVocabulary : RamificationTerm -> GaloisRepresentation -> LocalField -> Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! galois_rep_ramification_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun BaseField => fun LocalField => fun Prime => fun GaloisGroup => ",
+            "fun GaloisRepresentation => fun InertiaGroup => fun DecompositionGroup => ",
+            "fun FrobeniusElement => fun RamificationTerm => fun IsGaloisRepresentation => ",
+            "fun LocalRestriction => fun InertiaAction => fun DecompositionAction => ",
+            "fun UnramifiedAt => fun RamifiedAt => fun FrobeniusCompatible => ",
+            "fun RamificationVocabularyReusable => fun LocalConditionRamificationVocabulary => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! galois_rep_ramification_data_app {
+    () => {
+        concat!(
+            "@GaloisRepresentationRamificationData BaseField LocalField Prime ",
+            "GaloisGroup GaloisRepresentation InertiaGroup DecompositionGroup ",
+            "FrobeniusElement RamificationTerm IsGaloisRepresentation ",
+            "LocalRestriction InertiaAction DecompositionAction UnramifiedAt ",
+            "RamifiedAt FrobeniusCompatible RamificationVocabularyReusable ",
+            "LocalConditionRamificationVocabulary"
+        )
+    };
+}
+
+macro_rules! local_restriction_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : LocalField), IsGaloisRepresentation rho -> LocalRestriction rho place"
+    };
+}
+
+macro_rules! inertia_ramification_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : LocalField), forall (inertia : InertiaGroup), LocalRestriction rho place -> InertiaAction rho inertia -> RamifiedAt rho place"
+    };
+}
+
+macro_rules! frobenius_compatibility_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : LocalField), forall (decomposition : DecompositionGroup), forall (frobenius : FrobeniusElement), LocalRestriction rho place -> DecompositionAction rho decomposition -> UnramifiedAt rho place -> FrobeniusCompatible rho place frobenius"
+    };
+}
+
+macro_rules! ramification_vocabulary_reuse_law_type {
+    () => {
+        "forall (term : RamificationTerm), forall (rho : GaloisRepresentation), forall (place : LocalField), RamificationVocabularyReusable term -> LocalConditionRamificationVocabulary term rho place"
+    };
+}
+
+macro_rules! galois_rep_ramification_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (local_restriction_law : ",
+            local_restriction_law_type!(),
+            "), forall (inertia_ramification_law : ",
+            inertia_ramification_law_type!(),
+            "), forall (frobenius_compatibility_law : ",
+            frobenius_compatibility_law_type!(),
+            "), forall (ramification_vocabulary_reuse_law : ",
+            ramification_vocabulary_reuse_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+const GALOIS_REPRESENTATION_RAMIFICATION_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "GaloisRepresentationRamificationData",
+        universe_params: &[],
+        ty: galois_rep_ramification_params!("Prop"),
+        value: galois_rep_ramification_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            galois_rep_ramification_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const GALOIS_REPRESENTATION_RAMIFICATION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "galois_representation_ramification_data_intro",
+        universe_params: &[],
+        statement: galois_rep_ramification_params!(
+            "forall (local_restriction_law : ",
+            local_restriction_law_type!(),
+            "), forall (inertia_ramification_law : ",
+            inertia_ramification_law_type!(),
+            "), forall (frobenius_compatibility_law : ",
+            frobenius_compatibility_law_type!(),
+            "), forall (ramification_vocabulary_reuse_law : ",
+            ramification_vocabulary_reuse_law_type!(),
+            "), ",
+            galois_rep_ramification_data_app!()
+        ),
+        proof: galois_rep_ramification_abs!(
+            "fun local_restriction_law => fun inertia_ramification_law => ",
+            "fun frobenius_compatibility_law => fun ramification_vocabulary_reuse_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            galois_rep_ramification_mk_type!("Q"),
+            ") => mk local_restriction_law inertia_ramification_law ",
+            "frobenius_compatibility_law ramification_vocabulary_reuse_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "ramified_at_from_inertia_action",
+        universe_params: &[],
+        statement: galois_rep_ramification_params!(
+            "forall (data : ",
+            galois_rep_ramification_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (place : LocalField), ",
+            "forall (inertia : InertiaGroup), IsGaloisRepresentation rho -> ",
+            "InertiaAction rho inertia -> RamifiedAt rho place"
+        ),
+        proof: galois_rep_ramification_abs!(
+            "fun data => data (forall (rho : GaloisRepresentation), forall (place : LocalField), ",
+            "forall (inertia : InertiaGroup), IsGaloisRepresentation rho -> ",
+            "InertiaAction rho inertia -> RamifiedAt rho place) ",
+            "(fun (local_restriction_law : ",
+            local_restriction_law_type!(),
+            ") => fun (inertia_ramification_law : ",
+            inertia_ramification_law_type!(),
+            ") => fun (frobenius_compatibility_law : ",
+            frobenius_compatibility_law_type!(),
+            ") => fun (ramification_vocabulary_reuse_law : ",
+            ramification_vocabulary_reuse_law_type!(),
+            ") => fun (rho : GaloisRepresentation) => fun (place : LocalField) => ",
+            "fun (inertia : InertiaGroup) => ",
+            "fun (is_galois : IsGaloisRepresentation rho) => ",
+            "fun (inertia_action : InertiaAction rho inertia) => ",
+            "inertia_ramification_law rho place inertia ",
+            "(local_restriction_law rho place is_galois) inertia_action)"
+        ),
+    },
+    TheoremArtifact {
+        name: "frobenius_compatible_at_unramified_place",
+        universe_params: &[],
+        statement: galois_rep_ramification_params!(
+            "forall (data : ",
+            galois_rep_ramification_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (place : LocalField), ",
+            "forall (decomposition : DecompositionGroup), forall (frobenius : FrobeniusElement), ",
+            "IsGaloisRepresentation rho -> DecompositionAction rho decomposition -> ",
+            "UnramifiedAt rho place -> FrobeniusCompatible rho place frobenius"
+        ),
+        proof: galois_rep_ramification_abs!(
+            "fun data => data (forall (rho : GaloisRepresentation), forall (place : LocalField), ",
+            "forall (decomposition : DecompositionGroup), forall (frobenius : FrobeniusElement), ",
+            "IsGaloisRepresentation rho -> DecompositionAction rho decomposition -> ",
+            "UnramifiedAt rho place -> FrobeniusCompatible rho place frobenius) ",
+            "(fun (local_restriction_law : ",
+            local_restriction_law_type!(),
+            ") => fun (inertia_ramification_law : ",
+            inertia_ramification_law_type!(),
+            ") => fun (frobenius_compatibility_law : ",
+            frobenius_compatibility_law_type!(),
+            ") => fun (ramification_vocabulary_reuse_law : ",
+            ramification_vocabulary_reuse_law_type!(),
+            ") => fun (rho : GaloisRepresentation) => fun (place : LocalField) => ",
+            "fun (decomposition : DecompositionGroup) => fun (frobenius : FrobeniusElement) => ",
+            "fun (is_galois : IsGaloisRepresentation rho) => ",
+            "fun (decomposition_action : DecompositionAction rho decomposition) => ",
+            "fun (unramified : UnramifiedAt rho place) => ",
+            "frobenius_compatibility_law rho place decomposition frobenius ",
+            "(local_restriction_law rho place is_galois) decomposition_action unramified)"
+        ),
+    },
+    TheoremArtifact {
+        name: "ramification_vocabulary_reusable_by_local_conditions",
+        universe_params: &[],
+        statement: galois_rep_ramification_params!(
+            "forall (data : ",
+            galois_rep_ramification_data_app!(),
+            "), forall (term : RamificationTerm), forall (rho : GaloisRepresentation), ",
+            "forall (place : LocalField), RamificationVocabularyReusable term -> ",
+            "LocalConditionRamificationVocabulary term rho place"
+        ),
+        proof: galois_rep_ramification_abs!(
+            "fun data => data (forall (term : RamificationTerm), forall (rho : GaloisRepresentation), ",
+            "forall (place : LocalField), RamificationVocabularyReusable term -> ",
+            "LocalConditionRamificationVocabulary term rho place) ",
+            "(fun (local_restriction_law : ",
+            local_restriction_law_type!(),
+            ") => fun (inertia_ramification_law : ",
+            inertia_ramification_law_type!(),
+            ") => fun (frobenius_compatibility_law : ",
+            frobenius_compatibility_law_type!(),
+            ") => fun (ramification_vocabulary_reuse_law : ",
+            ramification_vocabulary_reuse_law_type!(),
+            ") => ramification_vocabulary_reuse_law)"
+        ),
+    },
+];
+
+macro_rules! galois_rep_local_condition_params {
+    ($($result:expr),+ $(,)?) => {
+        concat!(
+            "forall (GaloisRepresentation : Type), ",
+            "forall (Place : Type), ",
+            "forall (EllipticCurve : Type), ",
+            "forall (ModularForm : Type), ",
+            "forall (TaylorWilesRoute : Type), ",
+            "forall (PotentialModularityRoute : Type), ",
+            "forall (HodgeTate : GaloisRepresentation -> Place -> Prop), ",
+            "forall (DeRham : GaloisRepresentation -> Place -> Prop), ",
+            "forall (Crystalline : GaloisRepresentation -> Place -> Prop), ",
+            "forall (Semistable : GaloisRepresentation -> Place -> Prop), ",
+            "forall (FontaineLaffaille : GaloisRepresentation -> Place -> Prop), ",
+            "forall (ComparisonTheorem : GaloisRepresentation -> Place -> Prop), ",
+            "forall (RamificationCondition : GaloisRepresentation -> Place -> Prop), ",
+            "forall (LocalCondition : GaloisRepresentation -> Place -> Prop), ",
+            "forall (ReusableLocalCondition : GaloisRepresentation -> Place -> Prop), ",
+            "forall (EllipticCurveRepresentationUsesLocalCondition : EllipticCurve -> GaloisRepresentation -> Place -> Prop), ",
+            "forall (ModularFormRepresentationUsesLocalCondition : ModularForm -> GaloisRepresentation -> Place -> Prop), ",
+            "forall (SharedLocalConditionAPI : EllipticCurve -> ModularForm -> GaloisRepresentation -> Place -> Prop), ",
+            "forall (TaylorWilesPrerequisitesPending : TaylorWilesRoute -> Prop), ",
+            "forall (PotentialModularityPrerequisitesPending : PotentialModularityRoute -> Prop), ",
+            "forall (TaylorWilesInterfaceOnly : TaylorWilesRoute -> GaloisRepresentation -> Prop), ",
+            "forall (PotentialModularityInterfaceOnly : PotentialModularityRoute -> GaloisRepresentation -> Prop), ",
+            $($result),+
+        )
+    };
+}
+
+macro_rules! galois_rep_local_condition_abs {
+    ($($body:expr),+ $(,)?) => {
+        concat!(
+            "fun GaloisRepresentation => fun Place => fun EllipticCurve => ",
+            "fun ModularForm => fun TaylorWilesRoute => fun PotentialModularityRoute => ",
+            "fun HodgeTate => fun DeRham => fun Crystalline => fun Semistable => ",
+            "fun FontaineLaffaille => fun ComparisonTheorem => ",
+            "fun RamificationCondition => fun LocalCondition => fun ReusableLocalCondition => ",
+            "fun EllipticCurveRepresentationUsesLocalCondition => ",
+            "fun ModularFormRepresentationUsesLocalCondition => fun SharedLocalConditionAPI => ",
+            "fun TaylorWilesPrerequisitesPending => ",
+            "fun PotentialModularityPrerequisitesPending => ",
+            "fun TaylorWilesInterfaceOnly => fun PotentialModularityInterfaceOnly => ",
+            $($body),+
+        )
+    };
+}
+
+macro_rules! galois_rep_local_condition_data_app {
+    () => {
+        concat!(
+            "@GaloisRepresentationLocalConditionData GaloisRepresentation Place ",
+            "EllipticCurve ModularForm TaylorWilesRoute PotentialModularityRoute ",
+            "HodgeTate DeRham Crystalline Semistable FontaineLaffaille ",
+            "ComparisonTheorem RamificationCondition LocalCondition ",
+            "ReusableLocalCondition EllipticCurveRepresentationUsesLocalCondition ",
+            "ModularFormRepresentationUsesLocalCondition SharedLocalConditionAPI ",
+            "TaylorWilesPrerequisitesPending PotentialModularityPrerequisitesPending ",
+            "TaylorWilesInterfaceOnly PotentialModularityInterfaceOnly"
+        )
+    };
+}
+
+macro_rules! fontaine_laffaille_to_crystalline_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), FontaineLaffaille rho place -> Crystalline rho place"
+    };
+}
+
+macro_rules! crystalline_to_semistable_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), Crystalline rho place -> Semistable rho place"
+    };
+}
+
+macro_rules! semistable_to_de_rham_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), Semistable rho place -> DeRham rho place"
+    };
+}
+
+macro_rules! de_rham_to_hodge_tate_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), DeRham rho place -> HodgeTate rho place"
+    };
+}
+
+macro_rules! comparison_theorem_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), Crystalline rho place -> Semistable rho place -> DeRham rho place -> HodgeTate rho place -> ComparisonTheorem rho place"
+    };
+}
+
+macro_rules! local_condition_from_hodge_de_rham_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), HodgeTate rho place -> DeRham rho place -> RamificationCondition rho place -> LocalCondition rho place"
+    };
+}
+
+macro_rules! reusable_local_condition_law_type {
+    () => {
+        "forall (rho : GaloisRepresentation), forall (place : Place), LocalCondition rho place -> ReusableLocalCondition rho place"
+    };
+}
+
+macro_rules! elliptic_curve_local_condition_share_law_type {
+    () => {
+        "forall (curve : EllipticCurve), forall (rho : GaloisRepresentation), forall (place : Place), LocalCondition rho place -> EllipticCurveRepresentationUsesLocalCondition curve rho place"
+    };
+}
+
+macro_rules! modular_form_local_condition_share_law_type {
+    () => {
+        "forall (form : ModularForm), forall (rho : GaloisRepresentation), forall (place : Place), LocalCondition rho place -> ModularFormRepresentationUsesLocalCondition form rho place"
+    };
+}
+
+macro_rules! shared_local_condition_api_law_type {
+    () => {
+        "forall (curve : EllipticCurve), forall (form : ModularForm), forall (rho : GaloisRepresentation), forall (place : Place), EllipticCurveRepresentationUsesLocalCondition curve rho place -> ModularFormRepresentationUsesLocalCondition form rho place -> SharedLocalConditionAPI curve form rho place"
+    };
+}
+
+macro_rules! taylor_wiles_interface_boundary_law_type {
+    () => {
+        "forall (route : TaylorWilesRoute), forall (rho : GaloisRepresentation), forall (place : Place), TaylorWilesPrerequisitesPending route -> LocalCondition rho place -> TaylorWilesInterfaceOnly route rho"
+    };
+}
+
+macro_rules! potential_modularity_interface_boundary_law_type {
+    () => {
+        "forall (route : PotentialModularityRoute), forall (rho : GaloisRepresentation), forall (place : Place), PotentialModularityPrerequisitesPending route -> LocalCondition rho place -> PotentialModularityInterfaceOnly route rho"
+    };
+}
+
+macro_rules! local_condition_crystalline_term {
+    ($rho:expr, $place:expr, $fontaine:expr) => {
+        concat!(
+            "(fontaine_laffaille_to_crystalline_law ",
+            $rho,
+            " ",
+            $place,
+            " ",
+            $fontaine,
+            ")"
+        )
+    };
+}
+
+macro_rules! local_condition_semistable_term {
+    ($rho:expr, $place:expr, $fontaine:expr) => {
+        concat!(
+            "(crystalline_to_semistable_law ",
+            $rho,
+            " ",
+            $place,
+            " ",
+            local_condition_crystalline_term!($rho, $place, $fontaine),
+            ")"
+        )
+    };
+}
+
+macro_rules! local_condition_de_rham_term {
+    ($rho:expr, $place:expr, $fontaine:expr) => {
+        concat!(
+            "(semistable_to_de_rham_law ",
+            $rho,
+            " ",
+            $place,
+            " ",
+            local_condition_semistable_term!($rho, $place, $fontaine),
+            ")"
+        )
+    };
+}
+
+macro_rules! local_condition_hodge_tate_term {
+    ($rho:expr, $place:expr, $fontaine:expr) => {
+        concat!(
+            "(de_rham_to_hodge_tate_law ",
+            $rho,
+            " ",
+            $place,
+            " ",
+            local_condition_de_rham_term!($rho, $place, $fontaine),
+            ")"
+        )
+    };
+}
+
+macro_rules! local_condition_from_fontaine_term {
+    ($rho:expr, $place:expr, $fontaine:expr, $ramification:expr) => {
+        concat!(
+            "(local_condition_from_hodge_de_rham_law ",
+            $rho,
+            " ",
+            $place,
+            " ",
+            local_condition_hodge_tate_term!($rho, $place, $fontaine),
+            " ",
+            local_condition_de_rham_term!($rho, $place, $fontaine),
+            " ",
+            $ramification,
+            ")"
+        )
+    };
+}
+
+macro_rules! comparison_from_fontaine_term {
+    ($rho:expr, $place:expr, $fontaine:expr) => {
+        concat!(
+            "(comparison_theorem_law ",
+            $rho,
+            " ",
+            $place,
+            " ",
+            local_condition_crystalline_term!($rho, $place, $fontaine),
+            " ",
+            local_condition_semistable_term!($rho, $place, $fontaine),
+            " ",
+            local_condition_de_rham_term!($rho, $place, $fontaine),
+            " ",
+            local_condition_hodge_tate_term!($rho, $place, $fontaine),
+            ")"
+        )
+    };
+}
+
+macro_rules! galois_rep_local_condition_mk_type {
+    ($q:expr) => {
+        concat!(
+            "forall (fontaine_laffaille_to_crystalline_law : ",
+            fontaine_laffaille_to_crystalline_law_type!(),
+            "), forall (crystalline_to_semistable_law : ",
+            crystalline_to_semistable_law_type!(),
+            "), forall (semistable_to_de_rham_law : ",
+            semistable_to_de_rham_law_type!(),
+            "), forall (de_rham_to_hodge_tate_law : ",
+            de_rham_to_hodge_tate_law_type!(),
+            "), forall (comparison_theorem_law : ",
+            comparison_theorem_law_type!(),
+            "), forall (local_condition_from_hodge_de_rham_law : ",
+            local_condition_from_hodge_de_rham_law_type!(),
+            "), forall (reusable_local_condition_law : ",
+            reusable_local_condition_law_type!(),
+            "), forall (elliptic_curve_local_condition_share_law : ",
+            elliptic_curve_local_condition_share_law_type!(),
+            "), forall (modular_form_local_condition_share_law : ",
+            modular_form_local_condition_share_law_type!(),
+            "), forall (shared_local_condition_api_law : ",
+            shared_local_condition_api_law_type!(),
+            "), forall (taylor_wiles_interface_boundary_law : ",
+            taylor_wiles_interface_boundary_law_type!(),
+            "), forall (potential_modularity_interface_boundary_law : ",
+            potential_modularity_interface_boundary_law_type!(),
+            "), ",
+            $q
+        )
+    };
+}
+
+macro_rules! galois_rep_local_condition_with_laws {
+    ($result:expr, $body:expr) => {
+        galois_rep_local_condition_abs!(
+            "fun data => data (",
+            $result,
+            ") (fun (fontaine_laffaille_to_crystalline_law : ",
+            fontaine_laffaille_to_crystalline_law_type!(),
+            ") => fun (crystalline_to_semistable_law : ",
+            crystalline_to_semistable_law_type!(),
+            ") => fun (semistable_to_de_rham_law : ",
+            semistable_to_de_rham_law_type!(),
+            ") => fun (de_rham_to_hodge_tate_law : ",
+            de_rham_to_hodge_tate_law_type!(),
+            ") => fun (comparison_theorem_law : ",
+            comparison_theorem_law_type!(),
+            ") => fun (local_condition_from_hodge_de_rham_law : ",
+            local_condition_from_hodge_de_rham_law_type!(),
+            ") => fun (reusable_local_condition_law : ",
+            reusable_local_condition_law_type!(),
+            ") => fun (elliptic_curve_local_condition_share_law : ",
+            elliptic_curve_local_condition_share_law_type!(),
+            ") => fun (modular_form_local_condition_share_law : ",
+            modular_form_local_condition_share_law_type!(),
+            ") => fun (shared_local_condition_api_law : ",
+            shared_local_condition_api_law_type!(),
+            ") => fun (taylor_wiles_interface_boundary_law : ",
+            taylor_wiles_interface_boundary_law_type!(),
+            ") => fun (potential_modularity_interface_boundary_law : ",
+            potential_modularity_interface_boundary_law_type!(),
+            ") => ",
+            $body,
+            ")"
+        )
+    };
+}
+
+const GALOIS_REPRESENTATION_LOCAL_CONDITION_DEFINITIONS: &[DefinitionArtifact] =
+    &[DefinitionArtifact {
+        name: "GaloisRepresentationLocalConditionData",
+        universe_params: &[],
+        ty: galois_rep_local_condition_params!("Prop"),
+        value: galois_rep_local_condition_abs!(
+            "forall (Q : Prop), forall (mk : ",
+            galois_rep_local_condition_mk_type!("Q"),
+            "), Q"
+        ),
+    }];
+
+const GALOIS_REPRESENTATION_LOCAL_CONDITION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "galois_representation_local_condition_data_intro",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (fontaine_laffaille_to_crystalline_law : ",
+            fontaine_laffaille_to_crystalline_law_type!(),
+            "), forall (crystalline_to_semistable_law : ",
+            crystalline_to_semistable_law_type!(),
+            "), forall (semistable_to_de_rham_law : ",
+            semistable_to_de_rham_law_type!(),
+            "), forall (de_rham_to_hodge_tate_law : ",
+            de_rham_to_hodge_tate_law_type!(),
+            "), forall (comparison_theorem_law : ",
+            comparison_theorem_law_type!(),
+            "), forall (local_condition_from_hodge_de_rham_law : ",
+            local_condition_from_hodge_de_rham_law_type!(),
+            "), forall (reusable_local_condition_law : ",
+            reusable_local_condition_law_type!(),
+            "), forall (elliptic_curve_local_condition_share_law : ",
+            elliptic_curve_local_condition_share_law_type!(),
+            "), forall (modular_form_local_condition_share_law : ",
+            modular_form_local_condition_share_law_type!(),
+            "), forall (shared_local_condition_api_law : ",
+            shared_local_condition_api_law_type!(),
+            "), forall (taylor_wiles_interface_boundary_law : ",
+            taylor_wiles_interface_boundary_law_type!(),
+            "), forall (potential_modularity_interface_boundary_law : ",
+            potential_modularity_interface_boundary_law_type!(),
+            "), ",
+            galois_rep_local_condition_data_app!()
+        ),
+        proof: galois_rep_local_condition_abs!(
+            "fun fontaine_laffaille_to_crystalline_law => ",
+            "fun crystalline_to_semistable_law => fun semistable_to_de_rham_law => ",
+            "fun de_rham_to_hodge_tate_law => fun comparison_theorem_law => ",
+            "fun local_condition_from_hodge_de_rham_law => ",
+            "fun reusable_local_condition_law => ",
+            "fun elliptic_curve_local_condition_share_law => ",
+            "fun modular_form_local_condition_share_law => ",
+            "fun shared_local_condition_api_law => ",
+            "fun taylor_wiles_interface_boundary_law => ",
+            "fun potential_modularity_interface_boundary_law => ",
+            "fun (Q : Prop) => fun (mk : ",
+            galois_rep_local_condition_mk_type!("Q"),
+            ") => mk fontaine_laffaille_to_crystalline_law crystalline_to_semistable_law ",
+            "semistable_to_de_rham_law de_rham_to_hodge_tate_law ",
+            "comparison_theorem_law local_condition_from_hodge_de_rham_law ",
+            "reusable_local_condition_law elliptic_curve_local_condition_share_law ",
+            "modular_form_local_condition_share_law shared_local_condition_api_law ",
+            "taylor_wiles_interface_boundary_law potential_modularity_interface_boundary_law"
+        ),
+    },
+    TheoremArtifact {
+        name: "fontaine_laffaille_comparison_theorem_chain",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (data : ",
+            galois_rep_local_condition_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (place : Place), ",
+            "FontaineLaffaille rho place -> ComparisonTheorem rho place"
+        ),
+        proof: galois_rep_local_condition_with_laws!(
+            "forall (rho : GaloisRepresentation), forall (place : Place), FontaineLaffaille rho place -> ComparisonTheorem rho place",
+            concat!(
+                "fun (rho : GaloisRepresentation) => fun (place : Place) => ",
+                "fun (fontaine_laffaille : FontaineLaffaille rho place) => ",
+                comparison_from_fontaine_term!("rho", "place", "fontaine_laffaille")
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "local_condition_from_fontaine_laffaille_ramification",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (data : ",
+            galois_rep_local_condition_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (place : Place), ",
+            "FontaineLaffaille rho place -> RamificationCondition rho place -> ",
+            "LocalCondition rho place"
+        ),
+        proof: galois_rep_local_condition_with_laws!(
+            "forall (rho : GaloisRepresentation), forall (place : Place), FontaineLaffaille rho place -> RamificationCondition rho place -> LocalCondition rho place",
+            concat!(
+                "fun (rho : GaloisRepresentation) => fun (place : Place) => ",
+                "fun (fontaine_laffaille : FontaineLaffaille rho place) => ",
+                "fun (ramification_condition : RamificationCondition rho place) => ",
+                local_condition_from_fontaine_term!(
+                    "rho",
+                    "place",
+                    "fontaine_laffaille",
+                    "ramification_condition"
+                )
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "reusable_local_condition_from_fontaine_laffaille",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (data : ",
+            galois_rep_local_condition_data_app!(),
+            "), forall (rho : GaloisRepresentation), forall (place : Place), ",
+            "FontaineLaffaille rho place -> RamificationCondition rho place -> ",
+            "ReusableLocalCondition rho place"
+        ),
+        proof: galois_rep_local_condition_with_laws!(
+            "forall (rho : GaloisRepresentation), forall (place : Place), FontaineLaffaille rho place -> RamificationCondition rho place -> ReusableLocalCondition rho place",
+            concat!(
+                "fun (rho : GaloisRepresentation) => fun (place : Place) => ",
+                "fun (fontaine_laffaille : FontaineLaffaille rho place) => ",
+                "fun (ramification_condition : RamificationCondition rho place) => ",
+                "reusable_local_condition_law rho place ",
+                local_condition_from_fontaine_term!(
+                    "rho",
+                    "place",
+                    "fontaine_laffaille",
+                    "ramification_condition"
+                )
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "elliptic_curve_and_modular_form_share_local_condition_api",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (data : ",
+            galois_rep_local_condition_data_app!(),
+            "), forall (curve : EllipticCurve), forall (form : ModularForm), ",
+            "forall (rho : GaloisRepresentation), forall (place : Place), ",
+            "FontaineLaffaille rho place -> RamificationCondition rho place -> ",
+            "SharedLocalConditionAPI curve form rho place"
+        ),
+        proof: galois_rep_local_condition_with_laws!(
+            "forall (curve : EllipticCurve), forall (form : ModularForm), forall (rho : GaloisRepresentation), forall (place : Place), FontaineLaffaille rho place -> RamificationCondition rho place -> SharedLocalConditionAPI curve form rho place",
+            concat!(
+                "fun (curve : EllipticCurve) => fun (form : ModularForm) => ",
+                "fun (rho : GaloisRepresentation) => fun (place : Place) => ",
+                "fun (fontaine_laffaille : FontaineLaffaille rho place) => ",
+                "fun (ramification_condition : RamificationCondition rho place) => ",
+                "shared_local_condition_api_law curve form rho place ",
+                "(elliptic_curve_local_condition_share_law curve rho place ",
+                local_condition_from_fontaine_term!(
+                    "rho",
+                    "place",
+                    "fontaine_laffaille",
+                    "ramification_condition"
+                ),
+                ") ",
+                "(modular_form_local_condition_share_law form rho place ",
+                local_condition_from_fontaine_term!(
+                    "rho",
+                    "place",
+                    "fontaine_laffaille",
+                    "ramification_condition"
+                ),
+                ")"
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "taylor_wiles_remains_interface_until_modularity_prerequisites",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (data : ",
+            galois_rep_local_condition_data_app!(),
+            "), forall (route : TaylorWilesRoute), forall (rho : GaloisRepresentation), ",
+            "forall (place : Place), TaylorWilesPrerequisitesPending route -> ",
+            "FontaineLaffaille rho place -> RamificationCondition rho place -> ",
+            "TaylorWilesInterfaceOnly route rho"
+        ),
+        proof: galois_rep_local_condition_with_laws!(
+            "forall (route : TaylorWilesRoute), forall (rho : GaloisRepresentation), forall (place : Place), TaylorWilesPrerequisitesPending route -> FontaineLaffaille rho place -> RamificationCondition rho place -> TaylorWilesInterfaceOnly route rho",
+            concat!(
+                "fun (route : TaylorWilesRoute) => fun (rho : GaloisRepresentation) => ",
+                "fun (place : Place) => fun (pending : TaylorWilesPrerequisitesPending route) => ",
+                "fun (fontaine_laffaille : FontaineLaffaille rho place) => ",
+                "fun (ramification_condition : RamificationCondition rho place) => ",
+                "taylor_wiles_interface_boundary_law route rho place pending ",
+                local_condition_from_fontaine_term!(
+                    "rho",
+                    "place",
+                    "fontaine_laffaille",
+                    "ramification_condition"
+                )
+            )
+        ),
+    },
+    TheoremArtifact {
+        name: "potential_modularity_remains_interface_until_prerequisites",
+        universe_params: &[],
+        statement: galois_rep_local_condition_params!(
+            "forall (data : ",
+            galois_rep_local_condition_data_app!(),
+            "), forall (route : PotentialModularityRoute), ",
+            "forall (rho : GaloisRepresentation), forall (place : Place), ",
+            "PotentialModularityPrerequisitesPending route -> ",
+            "FontaineLaffaille rho place -> RamificationCondition rho place -> ",
+            "PotentialModularityInterfaceOnly route rho"
+        ),
+        proof: galois_rep_local_condition_with_laws!(
+            "forall (route : PotentialModularityRoute), forall (rho : GaloisRepresentation), forall (place : Place), PotentialModularityPrerequisitesPending route -> FontaineLaffaille rho place -> RamificationCondition rho place -> PotentialModularityInterfaceOnly route rho",
+            concat!(
+                "fun (route : PotentialModularityRoute) => fun (rho : GaloisRepresentation) => ",
+                "fun (place : Place) => ",
+                "fun (pending : PotentialModularityPrerequisitesPending route) => ",
+                "fun (fontaine_laffaille : FontaineLaffaille rho place) => ",
+                "fun (ramification_condition : RamificationCondition rho place) => ",
+                "potential_modularity_interface_boundary_law route rho place pending ",
+                local_condition_from_fontaine_term!(
+                    "rho",
+                    "place",
+                    "fontaine_laffaille",
+                    "ramification_condition"
+                )
+            )
         ),
     },
 ];
@@ -60725,6 +61868,9 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == NUMBER_THEORY_IWASAWA_EULER_SYSTEM_MODULE.module
         || config.module == NUMBER_THEORY_FROBENIUS_MODULE.module
         || config.module == NUMBER_THEORY_CHEBOTAREV_MODULE.module
+        || config.module == GALOIS_REPRESENTATION_BASIC_MODULE.module
+        || config.module == GALOIS_REPRESENTATION_RAMIFICATION_MODULE.module
+        || config.module == GALOIS_REPRESENTATION_LOCAL_CONDITION_MODULE.module
         || config.module == NUMBER_THEORY_CONTINUED_FRACTION_MODULE.module
         || config.module == NUMBER_THEORY_PELL_MODULE.module
         || config.module == NUMBER_THEORY_DIOPHANTINE_APPROXIMATION_MODULE.module

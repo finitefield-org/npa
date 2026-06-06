@@ -1087,6 +1087,15 @@ semantics.
     from Chebotarev as an alias/later-card route, a no-duplicate-Dirichlet-`L`
     boundary, and independence boundaries for elementary prime infinitude and
     the fundamental theorem of arithmetic.
+  - `NT-T63` added certificate-backed
+    `Proofs.Ai.GaloisRepresentation.Basic`,
+    `Proofs.Ai.GaloisRepresentation.Ramification`, and
+    `Proofs.Ai.GaloisRepresentation.LocalCondition`, preserving reusable
+    Galois representation, l-adic representation, cyclotomic character, Tate
+    module representation, ramification, Frobenius compatibility,
+    Fontaine-Laffaille to crystalline/semistable/de Rham/Hodge-Tate comparison,
+    elliptic-curve and modular-form shared local-condition APIs, and
+    Taylor-Wiles and potential-modularity interface-only boundaries.
 - Depends on: field extensions, Galois groups, local fields, `NT-13`, `NT-16`,
   and representation theory.
 - Target modules:

@@ -1655,7 +1655,7 @@ later in the file.
 
 ### NT-T63 Add Galois Representation Local Conditions
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T61`, `NT-T47`
 - Areas: `Proofs/Ai/GaloisRepresentation/Basic/`, `Proofs/Ai/GaloisRepresentation/Ramification/`, `Proofs/Ai/GaloisRepresentation/LocalCondition/`
 - Tasks:
