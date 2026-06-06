@@ -1310,7 +1310,7 @@ later in the file.
 
 ### NT-T48 Add Finite-Field Elliptic Curves And L-Function Statement Surfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `NT-T45`, `NT-T67`
 - Areas: `Proofs/Ai/EllipticCurve/FiniteField/`, `Proofs/Ai/EllipticCurve/LFunction/`
 - Tasks:

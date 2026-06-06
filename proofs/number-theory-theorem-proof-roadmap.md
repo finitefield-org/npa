@@ -820,6 +820,14 @@ semantics.
     with explicit Weil pairing nondegeneracy boundaries that do not require
     cryptographic assumptions and an interface-level Mordell-Weil boundary
     until height/descent prerequisites are derived.
+  - `NT-T48` added certificate-backed
+    `Proofs.Ai.EllipticCurve.FiniteField` and
+    `Proofs.Ai.EllipticCurve.LFunction` defining L1 interfaces for finite-field
+    point-count, Hasse theorem, Weil bound, Frobenius trace, elliptic and
+    Hasse-Weil L-functions, modularity links routed to `NT-T52`, Gross-Zagier,
+    Kolyvagin, Sato-Tate, and BSD statement surfaces, with finite-field core
+    laws imported from `Proofs.Ai.Algebra.AbstractFiniteField` and BSD labeled
+    conjectural or conditional rather than derived.
 
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
   and finite fields.
@@ -830,6 +838,7 @@ semantics.
   - `Proofs.Ai.EllipticCurve.Semistable`
   - `Proofs.Ai.EllipticCurve.Height`
   - `Proofs.Ai.EllipticCurve.FiniteField`
+  - `Proofs.Ai.EllipticCurve.LFunction`
   - `Proofs.Ai.EllipticCurve.GaloisRepresentation`
   - `Proofs.Ai.EllipticCurve.MordellWeil`
 - Theorem order:

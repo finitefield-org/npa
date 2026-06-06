@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.EllipticCurve.LFunction",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "elliptic_curve_l_function_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun EllipticCurve => fun LFunction => fun l_function_law => fun curve => fun s => l_function_law curve s"
+    },
+    {
+      "declaration": "hasse_weil_l_function_interface",
+      "source_kind": "explicit_term",
+      "term": "fun Complex => fun EllipticCurve => fun LocalEulerFactor => fun HasseWeilLFunction => fun hasse_weil_law => fun curve => fun s => hasse_weil_law curve s"
+    },
+    {
+      "declaration": "modularity_link_points_to_nt_t52_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurveLFunctionPackage => fun NTT52ModularityTask => fun ModularityLink => fun link_law => fun l_function => fun nt_t52_task => link_law l_function nt_t52_task"
+    },
+    {
+      "declaration": "gross_zagier_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurve => fun LDerivative => fun HeegnerPoint => fun GrossZagierRelation => fun gross_zagier_law => fun curve => fun derivative => fun heegner_point => gross_zagier_law curve derivative heegner_point"
+    },
+    {
+      "declaration": "kolyvagin_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurve => fun EulerSystem => fun RankBound => fun kolyvagin_law => fun curve => kolyvagin_law curve"
+    },
+    {
+      "declaration": "sato_tate_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurve => fun FrobeniusAngleDistribution => fun SatoTateEquidistribution => fun sato_tate_law => fun curve => fun distribution => sato_tate_law curve distribution"
+    },
+    {
+      "declaration": "bsd_conjectural_or_conditional_statement_surface",
+      "source_kind": "explicit_term",
+      "term": "fun BSDStatement => fun ConjecturalOrConditional => fun NotDerivedTheorem => fun bsd_law => fun statement => bsd_law statement"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/EllipticCurve/LFunction/certificate.npcert"
+  }
+}

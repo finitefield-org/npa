@@ -228,6 +228,8 @@ const MODULES: &[&ModuleArtifact] = &[
     &ELLIPTIC_CURVE_REDUCTION_MODULE,
     &ELLIPTIC_CURVE_SEMISTABLE_MODULE,
     &ELLIPTIC_CURVE_HEIGHT_MODULE,
+    &ELLIPTIC_CURVE_FINITE_FIELD_MODULE,
+    &ELLIPTIC_CURVE_L_FUNCTION_MODULE,
     &ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE,
     &ELLIPTIC_CURVE_MORDELL_WEIL_MODULE,
     &ABSTRACT_FIELD_INTEGRAL_DOMAIN_MODULE,
@@ -2726,6 +2728,58 @@ const ELLIPTIC_CURVE_HEIGHT_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: &[],
     theorems: ELLIPTIC_CURVE_HEIGHT_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_FINITE_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.FiniteField",
+    source_path: "Proofs/Ai/EllipticCurve/FiniteField/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/FiniteField/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/FiniteField/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/FiniteField/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EqReasoning",
+        "Proofs.Ai.Algebra.AbstractGroup",
+        "Proofs.Ai.Algebra.AbstractGroupImage",
+        "Proofs.Ai.Algebra.AbstractGroupQuotient",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientMul",
+        "Proofs.Ai.Algebra.AbstractGroupQuotientGroup",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractField",
+        "Proofs.Ai.Algebra.AbstractRingFirstIsoBase",
+        "Proofs.Ai.Algebra.AbstractFieldHom",
+        "Proofs.Ai.Algebra.AbstractFieldHomKernelImage",
+        "Proofs.Ai.Algebra.AbstractFieldExtension",
+        "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem",
+        "Proofs.Ai.Algebra.AbstractKrullTheorem",
+        "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient",
+        "Proofs.Ai.Algebra.AbstractAlgebraicExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteFieldExtension",
+        "Proofs.Ai.Algebra.AbstractFiniteField",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.GroupLaw",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_FINITE_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
+const ELLIPTIC_CURVE_L_FUNCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EllipticCurve.LFunction",
+    source_path: "Proofs/Ai/EllipticCurve/LFunction/source.npa",
+    certificate_path: "Proofs/Ai/EllipticCurve/LFunction/certificate.npcert",
+    meta_path: "Proofs/Ai/EllipticCurve/LFunction/meta.json",
+    replay_path: "Proofs/Ai/EllipticCurve/LFunction/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.EllipticCurve.Basic",
+        "Proofs.Ai.EllipticCurve.FiniteField",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ELLIPTIC_CURVE_L_FUNCTION_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -22404,6 +22458,84 @@ const ELLIPTIC_CURVE_HEIGHT_THEOREMS: &[TheoremArtifact] = &[
         universe_params: &[],
         statement: "forall (FieldCarrier : Type), forall (Point : Type), forall (NeronTateHeight : Point -> FieldCarrier), forall (Pairing : Point -> Point -> FieldCarrier), forall (Nonnegative : FieldCarrier -> Prop), forall (FieldHypotheses : Prop), forall (PositivityHypotheses : Prop), forall (neron_law : forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)), forall (field_hypotheses : FieldHypotheses), forall (positivity_hypotheses : PositivityHypotheses), forall (point : Point), Nonnegative (NeronTateHeight point)",
         proof: "fun FieldCarrier => fun Point => fun NeronTateHeight => fun Pairing => fun Nonnegative => fun FieldHypotheses => fun PositivityHypotheses => fun neron_law => fun field_hypotheses => fun positivity_hypotheses => fun point => neron_law field_hypotheses positivity_hypotheses point",
+    },
+];
+
+const ELLIPTIC_CURVE_FINITE_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "finite_field_core_laws_imported_from_abstract_finite_field_boundary",
+        universe_params: &[],
+        statement: "forall (AbstractFiniteFieldCoreLaws : Type), forall (EllipticCurveFiniteFieldSurface : Type), forall (UsesAbstractFiniteFieldCoreLaws : EllipticCurveFiniteFieldSurface -> AbstractFiniteFieldCoreLaws -> Prop), forall (import_law : forall (surface : EllipticCurveFiniteFieldSurface), forall (core_laws : AbstractFiniteFieldCoreLaws), UsesAbstractFiniteFieldCoreLaws surface core_laws), forall (surface : EllipticCurveFiniteFieldSurface), forall (core_laws : AbstractFiniteFieldCoreLaws), UsesAbstractFiniteFieldCoreLaws surface core_laws",
+        proof: "fun AbstractFiniteFieldCoreLaws => fun EllipticCurveFiniteFieldSurface => fun UsesAbstractFiniteFieldCoreLaws => fun import_law => fun surface => fun core_laws => import_law surface core_laws",
+    },
+    TheoremArtifact {
+        name: "finite_field_point_count_interface",
+        universe_params: &[],
+        statement: "forall (FiniteFieldCarrier : Type), forall (EllipticCurve : Type), forall (PointCount : EllipticCurve -> FiniteFieldCarrier -> Type), forall (point_count_law : forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), PointCount curve finite_field), forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), PointCount curve finite_field",
+        proof: "fun FiniteFieldCarrier => fun EllipticCurve => fun PointCount => fun point_count_law => fun curve => fun finite_field => point_count_law curve finite_field",
+    },
+    TheoremArtifact {
+        name: "hasse_theorem_interface",
+        universe_params: &[],
+        statement: "forall (FiniteFieldCarrier : Type), forall (EllipticCurve : Type), forall (PointCount : Type), forall (HasseBound : EllipticCurve -> FiniteFieldCarrier -> PointCount -> Prop), forall (hasse_law : forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), forall (count : PointCount), HasseBound curve finite_field count), forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), forall (count : PointCount), HasseBound curve finite_field count",
+        proof: "fun FiniteFieldCarrier => fun EllipticCurve => fun PointCount => fun HasseBound => fun hasse_law => fun curve => fun finite_field => fun count => hasse_law curve finite_field count",
+    },
+    TheoremArtifact {
+        name: "weil_bound_interface",
+        universe_params: &[],
+        statement: "forall (FiniteFieldCarrier : Type), forall (FrobeniusTrace : Type), forall (WeilBound : FiniteFieldCarrier -> FrobeniusTrace -> Prop), forall (weil_bound_law : forall (finite_field : FiniteFieldCarrier), forall (trace : FrobeniusTrace), WeilBound finite_field trace), forall (finite_field : FiniteFieldCarrier), forall (trace : FrobeniusTrace), WeilBound finite_field trace",
+        proof: "fun FiniteFieldCarrier => fun FrobeniusTrace => fun WeilBound => fun weil_bound_law => fun finite_field => fun trace => weil_bound_law finite_field trace",
+    },
+    TheoremArtifact {
+        name: "finite_field_frobenius_trace_surface",
+        universe_params: &[],
+        statement: "forall (FiniteFieldCarrier : Type), forall (EllipticCurve : Type), forall (FrobeniusTrace : EllipticCurve -> FiniteFieldCarrier -> Type), forall (trace_law : forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), FrobeniusTrace curve finite_field), forall (curve : EllipticCurve), forall (finite_field : FiniteFieldCarrier), FrobeniusTrace curve finite_field",
+        proof: "fun FiniteFieldCarrier => fun EllipticCurve => fun FrobeniusTrace => fun trace_law => fun curve => fun finite_field => trace_law curve finite_field",
+    },
+];
+
+const ELLIPTIC_CURVE_L_FUNCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "elliptic_curve_l_function_interface",
+        universe_params: &[],
+        statement: "forall (Complex : Type), forall (EllipticCurve : Type), forall (LFunction : EllipticCurve -> Complex -> Type), forall (l_function_law : forall (curve : EllipticCurve), forall (s : Complex), LFunction curve s), forall (curve : EllipticCurve), forall (s : Complex), LFunction curve s",
+        proof: "fun Complex => fun EllipticCurve => fun LFunction => fun l_function_law => fun curve => fun s => l_function_law curve s",
+    },
+    TheoremArtifact {
+        name: "hasse_weil_l_function_interface",
+        universe_params: &[],
+        statement: "forall (Complex : Type), forall (EllipticCurve : Type), forall (LocalEulerFactor : Type), forall (HasseWeilLFunction : EllipticCurve -> Complex -> Type), forall (hasse_weil_law : forall (curve : EllipticCurve), forall (s : Complex), HasseWeilLFunction curve s), forall (curve : EllipticCurve), forall (s : Complex), HasseWeilLFunction curve s",
+        proof: "fun Complex => fun EllipticCurve => fun LocalEulerFactor => fun HasseWeilLFunction => fun hasse_weil_law => fun curve => fun s => hasse_weil_law curve s",
+    },
+    TheoremArtifact {
+        name: "modularity_link_points_to_nt_t52_boundary",
+        universe_params: &[],
+        statement: "forall (EllipticCurveLFunctionPackage : Type), forall (NTT52ModularityTask : Type), forall (ModularityLink : EllipticCurveLFunctionPackage -> NTT52ModularityTask -> Prop), forall (link_law : forall (l_function : EllipticCurveLFunctionPackage), forall (nt_t52_task : NTT52ModularityTask), ModularityLink l_function nt_t52_task), forall (l_function : EllipticCurveLFunctionPackage), forall (nt_t52_task : NTT52ModularityTask), ModularityLink l_function nt_t52_task",
+        proof: "fun EllipticCurveLFunctionPackage => fun NTT52ModularityTask => fun ModularityLink => fun link_law => fun l_function => fun nt_t52_task => link_law l_function nt_t52_task",
+    },
+    TheoremArtifact {
+        name: "gross_zagier_statement_surface",
+        universe_params: &[],
+        statement: "forall (EllipticCurve : Type), forall (LDerivative : EllipticCurve -> Type), forall (HeegnerPoint : EllipticCurve -> Type), forall (GrossZagierRelation : forall (curve : EllipticCurve), LDerivative curve -> HeegnerPoint curve -> Prop), forall (gross_zagier_law : forall (curve : EllipticCurve), forall (derivative : LDerivative curve), forall (heegner_point : HeegnerPoint curve), GrossZagierRelation curve derivative heegner_point), forall (curve : EllipticCurve), forall (derivative : LDerivative curve), forall (heegner_point : HeegnerPoint curve), GrossZagierRelation curve derivative heegner_point",
+        proof: "fun EllipticCurve => fun LDerivative => fun HeegnerPoint => fun GrossZagierRelation => fun gross_zagier_law => fun curve => fun derivative => fun heegner_point => gross_zagier_law curve derivative heegner_point",
+    },
+    TheoremArtifact {
+        name: "kolyvagin_statement_surface",
+        universe_params: &[],
+        statement: "forall (EllipticCurve : Type), forall (EulerSystem : EllipticCurve -> Type), forall (RankBound : EllipticCurve -> Prop), forall (kolyvagin_law : forall (curve : EllipticCurve), EulerSystem curve -> RankBound curve), forall (curve : EllipticCurve), EulerSystem curve -> RankBound curve",
+        proof: "fun EllipticCurve => fun EulerSystem => fun RankBound => fun kolyvagin_law => fun curve => kolyvagin_law curve",
+    },
+    TheoremArtifact {
+        name: "sato_tate_statement_surface",
+        universe_params: &[],
+        statement: "forall (EllipticCurve : Type), forall (FrobeniusAngleDistribution : EllipticCurve -> Type), forall (SatoTateEquidistribution : forall (curve : EllipticCurve), FrobeniusAngleDistribution curve -> Prop), forall (sato_tate_law : forall (curve : EllipticCurve), forall (distribution : FrobeniusAngleDistribution curve), SatoTateEquidistribution curve distribution), forall (curve : EllipticCurve), forall (distribution : FrobeniusAngleDistribution curve), SatoTateEquidistribution curve distribution",
+        proof: "fun EllipticCurve => fun FrobeniusAngleDistribution => fun SatoTateEquidistribution => fun sato_tate_law => fun curve => fun distribution => sato_tate_law curve distribution",
+    },
+    TheoremArtifact {
+        name: "bsd_conjectural_or_conditional_statement_surface",
+        universe_params: &[],
+        statement: "forall (BSDStatement : Type), forall (ConjecturalOrConditional : BSDStatement -> Prop), forall (NotDerivedTheorem : BSDStatement -> Prop), forall (bsd_law : forall (statement : BSDStatement), ConjecturalOrConditional statement -> NotDerivedTheorem statement), forall (statement : BSDStatement), ConjecturalOrConditional statement -> NotDerivedTheorem statement",
+        proof: "fun BSDStatement => fun ConjecturalOrConditional => fun NotDerivedTheorem => fun bsd_law => fun statement => bsd_law statement",
     },
 ];
 
@@ -50742,6 +50874,8 @@ fn supported_core_features_for_module(module: &str) -> Vec<npa_cert::CoreFeature
         || module == ABSTRACT_ALGEBRAIC_EXTENSION_MODULE.module
         || module == ABSTRACT_FINITE_FIELD_EXTENSION_MODULE.module
         || module == ABSTRACT_FINITE_FIELD_MODULE.module
+        || module == ELLIPTIC_CURVE_FINITE_FIELD_MODULE.module
+        || module == ELLIPTIC_CURVE_L_FUNCTION_MODULE.module
         || module == ABSTRACT_SPLITTING_FIELD_MODULE.module
         || module == ABSTRACT_ALGEBRAIC_CLOSURE_MODULE.module
         || module == ABSTRACT_GALOIS_STARTER_MODULE.module
@@ -51143,6 +51277,8 @@ fn module_source(config: &ModuleArtifact) -> String {
         || config.module == ELLIPTIC_CURVE_REDUCTION_MODULE.module
         || config.module == ELLIPTIC_CURVE_SEMISTABLE_MODULE.module
         || config.module == ELLIPTIC_CURVE_HEIGHT_MODULE.module
+        || config.module == ELLIPTIC_CURVE_FINITE_FIELD_MODULE.module
+        || config.module == ELLIPTIC_CURVE_L_FUNCTION_MODULE.module
         || config.module == ELLIPTIC_CURVE_GALOIS_REPRESENTATION_MODULE.module
         || config.module == ELLIPTIC_CURVE_MORDELL_WEIL_MODULE.module
     {

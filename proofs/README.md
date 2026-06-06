@@ -322,6 +322,15 @@ Current bundles:
 - `Proofs/Ai/EllipticCurve/Height/`: certificate-backed height interface
   preserving height and Neron-Tate height surfaces with named field hypotheses,
   positivity hypotheses, nonnegativity predicates, and pairing context.
+- `Proofs/Ai/EllipticCurve/FiniteField/`: certificate-backed finite-field
+  elliptic-curve interface preserving point-count, Hasse theorem, Weil bound,
+  and Frobenius trace surfaces while importing finite-field core laws from
+  `Proofs.Ai.Algebra.AbstractFiniteField`.
+- `Proofs/Ai/EllipticCurve/LFunction/`: certificate-backed elliptic-curve
+  L-function interface preserving elliptic and Hasse-Weil L-function surfaces,
+  modularity links pointing to `NT-T52`, Gross-Zagier, Kolyvagin, Sato-Tate,
+  and BSD statement surfaces, with BSD explicitly conjectural or conditional
+  rather than a derived theorem.
 - `Proofs/Ai/EllipticCurve/GaloisRepresentation/`: certificate-backed
   GaloisRepresentation interface preserving Tate module actions, Weil pairing
   surfaces, Weil pairing nondegeneracy without cryptographic assumptions, shared
