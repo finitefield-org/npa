@@ -66,10 +66,12 @@ promotion into a high-trust closure.
 - `Proofs.Ai.Measure.Inventory`, `Proofs.Ai.Measure.SigmaAlgebra`,
   `Proofs.Ai.Measure.MonotoneClass`,
   `Proofs.Ai.Measure.MeasurableSpace`, and
-  `Proofs.Ai.Measure.Product.SigmaAlgebra` are the first concrete
-  `Proofs.Ai.Measure.*` module trees in the proof corpus; basic measure, outer
-  measure, extension, product measure, and integral measure modules are not
-  yet present.
+  `Proofs.Ai.Measure.Product.SigmaAlgebra` provide the sigma-algebra and
+  measurable-space foundation. `Proofs.Ai.Measure.Basic`,
+  `Proofs.Ai.Measure.Completion`, and `Proofs.Ai.Measure.Restriction` now add
+  basic measure structures, derived additivity/order interfaces, L1 completion
+  hooks, and restriction hooks; outer measure, extension, product measure, and
+  integral measure modules are not yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
@@ -85,6 +87,15 @@ promotion into a high-trust closure.
   rectangle-generated product sigma algebras, and coordinate-map
   measurability hooks without importing product-measure, Fubini, or Tonelli
   APIs.
+- `Proofs.Ai.Measure.Basic` defines measure spaces over measurable spaces with
+  explicit value-support assumptions, null empty set, finite additivity,
+  countable additivity over disjoint families, monotonicity, finite and
+  countable subadditivity routes, difference and finite inclusion-exclusion
+  formulas with explicit finiteness premises, continuity hooks, finite /
+  probability / sigma-finite measure interfaces, and measure-operation route
+  statements. `Proofs.Ai.Measure.Completion` keeps null-subset measurability
+  as an explicit `L1` hook, and `Proofs.Ai.Measure.Restriction` states the
+  source-free restriction agreement interface.
 - Existing concrete sequence and integral module trees include
   `Proofs.Ai.Analysis.Sequence.Basic`,
   `Proofs.Ai.Analysis.Sequence.Compactness`, and
@@ -388,7 +399,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T06 Create Measure-Space Core And Additivity Laws
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`, `MEA-T05`
 - Areas: `Proofs/Ai/Measure/Basic/`
 - Tasks:
@@ -406,10 +417,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic`
+- Completed with `Proofs.Ai.Measure.Basic`, including generated source,
+  certificate, metadata, replay, and AI theorem-index sidecar artifacts. The
+  module keeps numeric/extended-nonnegative support explicit and represents
+  countable additivity as ordinary proof-corpus structure, not a checker
+  primitive.
 
 ### MEA-T07 Prove Monotonicity, Subadditivity, And Difference Laws
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T06`
 - Areas: `Proofs/Ai/Measure/Basic/`
 - Tasks:
@@ -426,10 +442,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic`
+- Completed in `Proofs.Ai.Measure.Basic` with certificate-backed
+  monotonicity, binary and countable subadditivity, difference, and finite
+  inclusion-exclusion statements. Subadditivity is derived from additivity plus
+  explicit disjointization/order support, not assumed as a primitive measure
+  field.
 
 ### MEA-T08 Add Measure Continuity, Completion, Restriction, And Measure Operations
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T07`
 - Areas: `Proofs/Ai/Measure/Basic/`, `Proofs/Ai/Measure/Completion/`, `Proofs/Ai/Measure/Restriction/`
 - Tasks:
@@ -450,6 +471,13 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Completion`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed with `Proofs.Ai.Measure.Basic`, `Proofs.Ai.Measure.Completion`,
+  and `Proofs.Ai.Measure.Restriction`. Basic adds continuity from below,
+  upper continuity with an explicit finite first-set premise, finite /
+  probability / sigma-finite measure interfaces, and measure-operation route
+  statements; Completion keeps null-subset measurability behind an explicit
+  `L1` hook; Restriction records restricted-measure agreement as source-free
+  evidence.
 
 ### MEA-T09 Define Outer Measure And Caratheodory Measurability
 
