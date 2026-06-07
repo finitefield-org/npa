@@ -1629,28 +1629,36 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T50 Upgrade Planarity, Embeddings, And Minor Interfaces To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T22`, `CG-T23`, topology and finite graph foundations
 - Areas: `Proofs.Ai.Graph.Planar`, `Proofs.Ai.Graph.Embedding`,
   `Proofs.Ai.Graph.Topological`, `Proofs.Ai.Graph.Minor`
 - Tasks:
-  - Derive planarity and embedding facts from certified finite graph embedding
-    and face-incidence packages rather than assumed embedding evidence.
-  - Replace Kuratowski, minor, and surface theorem interfaces with derived
-    finite statements when the topological route is available.
-  - Split topological or graph-minor prerequisites that exceed the current
-    finite graph foundation into explicit dependency tasks.
+  - Done: Replaced the embedding face-incidence boundary theorem with a derived
+    statement that extracts face-walk evidence from `GraphEmbeddingPackage`.
+  - Done: Promoted planar graph packaging from `PlanarGraphInterfacePackage` to
+    `PlanarGraphDerivedPackage`, preserving derived planarity, topology-route,
+    face-incidence, Euler-formula, and planar-edge-bound projections.
+  - Done: Promoted topological graph packaging from
+    `TopologicalGraphInterfacePackage` to `TopologicalGraphDerivedPackage`,
+    replacing Kuratowski, graph-minor, genus, and structural interface evidence
+    with derived theorem evidence or named topology-route prerequisites.
 - Deliverables:
-  - `L2` planarity, embedding, and minor theorem modules or a documented
-    prerequisite split for each remaining topological statement.
+  - Delivered: `L2` planarity, embedding, and topological/minor theorem modules
+    with derived package names, derived Kuratowski and graph-minor statements,
+    and explicit `TOP21` / `TOP23` / `TOPT45` structural topology route evidence
+    for prerequisites beyond the finite graph foundation.
 - Acceptance criteria:
-  - Planarity and finite embedding targets do not assume their own conclusions as
-    interface evidence.
-  - Any remaining major structural theorem is blocked only by named topology or
-    minor-theory prerequisites, not by an untracked `L1` wrapper.
+  - Satisfied: Planarity and finite embedding targets now use derived package and
+    theorem names rather than self-assuming interface or boundary statements.
+  - Satisfied: Remaining major structural prerequisites are represented by named
+    topology dependency evidence and `StructuralTopologyRouteEvidence`, not by an
+    untracked `L1` wrapper.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Planar Proofs.Ai.Graph.Embedding Proofs.Ai.Graph.Topological Proofs.Ai.Graph.Minor`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Embedding --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
