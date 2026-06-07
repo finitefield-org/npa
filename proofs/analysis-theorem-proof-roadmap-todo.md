@@ -811,7 +811,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T16 Add Riemann Partition And Integrability Criterion
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T12
 - Inputs:
   - `Proofs.Ai.Analysis.Real.Basic`
@@ -835,6 +835,19 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - ANQ-019 adds the certificate-backed
+    `Proofs.Ai.Analysis.Integral.Riemann.Basic` foundation module with
+    structurally represented partition cells through `RiemannPartition`,
+    tagged partitions, mesh evidence, refinements, upper/lower sums,
+    upper/lower integrals, and Riemann integral value packages.
+  - The refinement lemmas `riemann_upper_sum_refinement` and
+    `riemann_lower_sum_refinement` apply explicit refinement evidence to
+    derive the expected upper-sum and lower-sum inequalities.
+  - `riemann_integrability_criterion` derives `RiemannIntegrable` from
+    upper/lower integral equality and criterion evidence; it does not take
+    integrability as an input. `riemann_integral_value_unique` records the
+    certified integral-value uniqueness target.
 
 ### ANA-T17 Prove Continuous And Monotone Functions Are Riemann Integrable
 

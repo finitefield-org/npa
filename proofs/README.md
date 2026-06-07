@@ -42,6 +42,9 @@ Current bundles:
 - `Proofs/Ai/Analysis/Calculus/OneVariable/`: scalar-domain derivative bridge from Frechet
   derivatives, derivative-value/zero vocabulary, interval differentiability, extrema, interior,
   critical-point packages, and certificate-backed Fermat/Rolle/MVT theorem targets.
+- `Proofs/Ai/Analysis/Integral/Riemann/Basic/`: structurally represented Riemann partition cells,
+  tagged partitions, mesh/refinement evidence, upper/lower sums and integrals, integral-value
+  uniqueness, and the upper/lower-integral equality criterion for Riemann integrability.
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
