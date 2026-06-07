@@ -90,6 +90,7 @@
 #![deny(missing_docs)]
 
 pub mod artifacts;
+pub mod audit_cache;
 pub mod axiom_report;
 pub mod error;
 pub mod graph;
@@ -110,6 +111,15 @@ pub use artifacts::{
     PackageArtifactFileReference, PackageArtifactOrigin, PackageArtifactPolicy,
     PackageAxiomReference, PackageCheckerMode, PackageCheckerSummary, PackageGlobalRef,
     PackageGlobalRefView,
+};
+pub use audit_cache::{
+    package_audit_cache_key, package_audit_cache_key_material,
+    package_audit_direct_imports_for_entry, package_audit_graph_inventory,
+    package_audit_result_entry_json, parse_package_audit_result_entry_json,
+    validate_package_audit_result_entry, PackageAuditCacheKeyInput, PackageAuditCachedStatus,
+    PackageAuditCheckerIdentity, PackageAuditGraphInventory, PackageAuditImportIdentity,
+    PackageAuditResultEntry, PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA,
+    PACKAGE_AUDIT_RESULT_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
 };
 pub use axiom_report::{
     compute_package_axiom_report_hash, package_axiom_report_summary,

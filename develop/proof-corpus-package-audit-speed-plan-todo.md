@@ -139,7 +139,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-01 Package Audit Identity Model
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-00
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.1, 4.2, 4.3, and 5 PAS-01
@@ -198,6 +198,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 - Notes:
   - This is the foundational identity layer. Avoid reaching into CLI or verifier
     behavior until PAS-02.
+  - Completed in `crates/npa-package/src/audit_cache.rs`.
 
 ### PAS-02 Read-Through Result Store
 
