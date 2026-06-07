@@ -547,23 +547,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T11 Add Alexander, Tychonoff, And Compactification Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T03`, `TOP-T10`, `TOP-T20`
 - Areas: `Proofs.Ai.Topology.Compact.Product`, `Proofs.Ai.Topology.Compactification`
 - Tasks:
-  - Add Alexander subbase theorem with explicit subbasis and choice evidence.
-  - Add Tychonoff theorem route and product compactness alias.
-  - Add one-point compactification and record `TOP-T26` and `TOP-T27` as
+  - Completed: Add Alexander subbase theorem with explicit subbasis and choice evidence.
+  - Completed: Add Tychonoff theorem route and product compactness alias.
+  - Completed: Add one-point compactification and record `TOP-T26` and `TOP-T27` as
     blockers for compactness via nets, filters, and ultrafilters.
 - Deliverables:
-  - Product compactness and compactification interfaces or derived modules.
+  - `Proofs.Ai.Topology.Compact.Product` adds `ProductCompactnessAlias`,
+    `FiniteProductCompactnessRoute`, `TychonoffProductTheoremRoute`, and
+    `AlexanderSubbaseTheoremRoute`, with 16 certificate-backed theorem projections/applications.
+  - `Proofs.Ai.Topology.Compactification` adds compactification data, generic route, one-point
+    route, Stone-Cech route, and universal-property packages, with 15 certificate-backed theorem
+    projections/applications.
 - Acceptance criteria:
-  - Choice, ultrafilter, or Zorn-style assumptions are explicit.
-  - Metric compactness stays primary in `TOP-T12`.
+  - Completed: Choice, product-topology, subbase-cover, ultrafilter, and function-algebra
+    assumptions are explicit evidence slots.
+  - Completed: Metric compactness stays primary in `TOP-T12`; these modules only add general
+    compactness and compactification routes.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compact.Product`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compactification`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Compact.Product --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Compactification --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: both modules declare no axioms; Stone-Cech remains dependency-tagged until
+    the `TOP-T26`/`TOP-T27` net/filter/ultrafilter layers exist.
 
 ### TOP-T12 Add Metric Compactness Bridge
 

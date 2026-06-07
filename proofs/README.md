@@ -79,6 +79,14 @@ Current bundles:
   closed-subset and continuous-image compactness routes, compactness invariant transfer,
   compact-to-Hausdorff continuous-bijection routes, and a tube-lemma dependency tag for later
   finite-product topology work.
+- `Proofs/Ai/Topology/Compact/Product/`: product compactness route layer over compactness basics.
+  It records binary product compactness aliases, finite-product compactness dependencies,
+  arbitrary Tychonoff-product compactness, and Alexander subbase compactness with product-topology,
+  subbasis, cover, and choice evidence kept explicit.
+- `Proofs/Ai/Topology/Compactification/`: compactification route layer. It packages continuous
+  dense embeddings into compact carriers, generic and one-point compactification routes,
+  Stone-Cech compactification dependencies over Tychonoff, ultrafilter, and function-algebra
+  evidence, and a compactification universal-property interface.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

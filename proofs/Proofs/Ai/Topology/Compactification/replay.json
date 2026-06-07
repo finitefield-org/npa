@@ -1,0 +1,112 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Compactification",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CompactificationData",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => forall (P : Prop), forall (mk : forall (embed_continuous : @ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen), forall (compact_law : @CompactSpace.{i,v} Compactum compactOpen), forall (embedding_law : @EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen), forall (dense_image_law : DenseImageEvidence), P), P"
+    },
+    {
+      "declaration": "CompactificationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun ExistenceEvidence => forall (P : Prop), forall (mk : forall (existence_dependency : ExistenceEvidence), forall (compactification_law : ExistenceEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), P), P"
+    },
+    {
+      "declaration": "OnePointCompactificationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Compactum => fun pointAtInfinity => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun LocalCompactHausdorffEvidence => fun PointAtInfinityEvidence => forall (P : Prop), forall (mk : forall (local_compact_hausdorff_dependency : LocalCompactHausdorffEvidence), forall (point_at_infinity_dependency : PointAtInfinityEvidence), forall (one_point_law : LocalCompactHausdorffEvidence -> PointAtInfinityEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), P), P"
+    },
+    {
+      "declaration": "StoneCechCompactificationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => forall (P : Prop), forall (mk : forall (tychonoff_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence), forall (ultrafilter_dependency : UltrafilterDependencyEvidence), forall (function_algebra_dependency : FunctionAlgebraEvidence), forall (stone_cech_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence -> UltrafilterDependencyEvidence -> FunctionAlgebraEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), P), P"
+    },
+    {
+      "declaration": "CompactificationUniversalProperty",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Compactum => fun Target => fun embed => fun map => fun extension => fun sourceOpen => fun compactOpen => fun targetOpen => fun DenseImageEvidence => forall (P : Prop), forall (mk : forall (compactification_data : @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), forall (target_compact : @CompactSpace.{i,w} Target targetOpen), forall (target_hausdorff : @HausdorffSpace.{w} Target targetOpen), forall (map_continuous : @ContinuousMap.{u,w} X Target map sourceOpen targetOpen), forall (extension_continuous : @ContinuousMap.{v,w} Compactum Target extension compactOpen targetOpen), forall (extends : forall (x : X), @Eq.{w} Target (extension (embed x)) (map x)), P), P"
+    },
+    {
+      "declaration": "compactification_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun embed_continuous => fun compact_law => fun embedding_law => fun dense_image_law => fun (P : Prop) => fun (mk : forall (embed_continuous : @ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen), forall (compact_law : @CompactSpace.{i,v} Compactum compactOpen), forall (embedding_law : @EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen), forall (dense_image_law : DenseImageEvidence), P) => mk embed_continuous compact_law embedding_law dense_image_law"
+    },
+    {
+      "declaration": "compactification_embed_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun data => data (@ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen) (fun (embed_continuous : @ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (compact_law : @CompactSpace.{i,v} Compactum compactOpen) => fun (embedding_law : @EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (dense_image_law : DenseImageEvidence) => embed_continuous)"
+    },
+    {
+      "declaration": "compactification_compact_space",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun data => data (@CompactSpace.{i,v} Compactum compactOpen) (fun (embed_continuous : @ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (compact_law : @CompactSpace.{i,v} Compactum compactOpen) => fun (embedding_law : @EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (dense_image_law : DenseImageEvidence) => compact_law)"
+    },
+    {
+      "declaration": "compactification_embedding",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun data => data (@EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen) (fun (embed_continuous : @ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (compact_law : @CompactSpace.{i,v} Compactum compactOpen) => fun (embedding_law : @EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (dense_image_law : DenseImageEvidence) => embedding_law)"
+    },
+    {
+      "declaration": "compactification_dense_image",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun data => data DenseImageEvidence (fun (embed_continuous : @ContinuousMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (compact_law : @CompactSpace.{i,v} Compactum compactOpen) => fun (embedding_law : @EmbeddingMap.{u,v} X Compactum embed sourceOpen compactOpen) => fun (dense_image_law : DenseImageEvidence) => dense_image_law)"
+    },
+    {
+      "declaration": "compactification_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun ExistenceEvidence => fun existence_dependency => fun compactification_law => fun (P : Prop) => fun (mk : forall (existence_dependency : ExistenceEvidence), forall (compactification_law : ExistenceEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), P) => mk existence_dependency compactification_law"
+    },
+    {
+      "declaration": "compactification_route_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun ExistenceEvidence => fun route => route (@CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) (fun (existence_dependency : ExistenceEvidence) => fun (compactification_law : ExistenceEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) => compactification_law existence_dependency)"
+    },
+    {
+      "declaration": "one_point_compactification_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun pointAtInfinity => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun LocalCompactHausdorffEvidence => fun PointAtInfinityEvidence => fun local_compact_hausdorff_dependency => fun point_at_infinity_dependency => fun one_point_law => fun (P : Prop) => fun (mk : forall (local_compact_hausdorff_dependency : LocalCompactHausdorffEvidence), forall (point_at_infinity_dependency : PointAtInfinityEvidence), forall (one_point_law : LocalCompactHausdorffEvidence -> PointAtInfinityEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), P) => mk local_compact_hausdorff_dependency point_at_infinity_dependency one_point_law"
+    },
+    {
+      "declaration": "one_point_compactification_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun pointAtInfinity => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun LocalCompactHausdorffEvidence => fun PointAtInfinityEvidence => fun route => route (@CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) (fun (local_compact_hausdorff_dependency : LocalCompactHausdorffEvidence) => fun (point_at_infinity_dependency : PointAtInfinityEvidence) => fun (one_point_law : LocalCompactHausdorffEvidence -> PointAtInfinityEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) => one_point_law local_compact_hausdorff_dependency point_at_infinity_dependency)"
+    },
+    {
+      "declaration": "stone_cech_compactification_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun tychonoff_law => fun ultrafilter_dependency => fun function_algebra_dependency => fun stone_cech_law => fun (P : Prop) => fun (mk : forall (tychonoff_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence), forall (ultrafilter_dependency : UltrafilterDependencyEvidence), forall (function_algebra_dependency : FunctionAlgebraEvidence), forall (stone_cech_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence -> UltrafilterDependencyEvidence -> FunctionAlgebraEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), P) => mk tychonoff_law ultrafilter_dependency function_algebra_dependency stone_cech_law"
+    },
+    {
+      "declaration": "stone_cech_requires_ultrafilter_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun route => route UltrafilterDependencyEvidence (fun (tychonoff_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence) => fun (ultrafilter_dependency : UltrafilterDependencyEvidence) => fun (function_algebra_dependency : FunctionAlgebraEvidence) => fun (stone_cech_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence -> UltrafilterDependencyEvidence -> FunctionAlgebraEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) => ultrafilter_dependency)"
+    },
+    {
+      "declaration": "stone_cech_compactification_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun route => route (@CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) (fun (tychonoff_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence) => fun (ultrafilter_dependency : UltrafilterDependencyEvidence) => fun (function_algebra_dependency : FunctionAlgebraEvidence) => fun (stone_cech_law : @TychonoffSpace.{u} X sourceOpen FunctionalSeparationEvidence -> UltrafilterDependencyEvidence -> FunctionAlgebraEvidence -> @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) => stone_cech_law tychonoff_law ultrafilter_dependency function_algebra_dependency)"
+    },
+    {
+      "declaration": "compactification_universal_property_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun Target => fun embed => fun map => fun extension => fun sourceOpen => fun compactOpen => fun targetOpen => fun DenseImageEvidence => fun compactification_data => fun target_compact => fun target_hausdorff => fun map_continuous => fun extension_continuous => fun extends => fun (P : Prop) => fun (mk : forall (compactification_data : @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence), forall (target_compact : @CompactSpace.{i,w} Target targetOpen), forall (target_hausdorff : @HausdorffSpace.{w} Target targetOpen), forall (map_continuous : @ContinuousMap.{u,w} X Target map sourceOpen targetOpen), forall (extension_continuous : @ContinuousMap.{v,w} Compactum Target extension compactOpen targetOpen), forall (extends : forall (x : X), @Eq.{w} Target (extension (embed x)) (map x)), P) => mk compactification_data target_compact target_hausdorff map_continuous extension_continuous extends"
+    },
+    {
+      "declaration": "compactification_universal_extension_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun Target => fun embed => fun map => fun extension => fun sourceOpen => fun compactOpen => fun targetOpen => fun DenseImageEvidence => fun property => property (@ContinuousMap.{v,w} Compactum Target extension compactOpen targetOpen) (fun (compactification_data : @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) => fun (target_compact : @CompactSpace.{i,w} Target targetOpen) => fun (target_hausdorff : @HausdorffSpace.{w} Target targetOpen) => fun (map_continuous : @ContinuousMap.{u,w} X Target map sourceOpen targetOpen) => fun (extension_continuous : @ContinuousMap.{v,w} Compactum Target extension compactOpen targetOpen) => fun (extends : forall (x : X), @Eq.{w} Target (extension (embed x)) (map x)) => extension_continuous)"
+    },
+    {
+      "declaration": "compactification_universal_extends",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun Target => fun embed => fun map => fun extension => fun sourceOpen => fun compactOpen => fun targetOpen => fun DenseImageEvidence => fun property => fun x => property (@Eq.{w} Target (extension (embed x)) (map x)) (fun (compactification_data : @CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) => fun (target_compact : @CompactSpace.{i,w} Target targetOpen) => fun (target_hausdorff : @HausdorffSpace.{w} Target targetOpen) => fun (map_continuous : @ContinuousMap.{u,w} X Target map sourceOpen targetOpen) => fun (extension_continuous : @ContinuousMap.{v,w} Compactum Target extension compactOpen targetOpen) => fun (extends : forall (x : X), @Eq.{w} Target (extension (embed x)) (map x)) => extends x)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Compactification/certificate.npcert"
+  }
+}
