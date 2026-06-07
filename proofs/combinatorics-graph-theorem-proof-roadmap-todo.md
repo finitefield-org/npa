@@ -1116,22 +1116,31 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T34 Add Matroid Foundation
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`
 - Areas: `Proofs.Ai.Combinatorics.Matroid.Basic`
 - Tasks:
-  - Define matroid independent-set, basis, rank, circuit, closure, and flat law
-    packages.
-  - Add basis exchange and rank submodularity theorem targets.
-  - Record dependencies for representable and graphic matroids.
+  - Done: Defined matroid independent-set, basis, rank, circuit,
+    closure, and flat law packages.
+  - Done: Added basis exchange and rank submodularity theorem targets.
+  - Done: Recorded dependencies for representable and graphic matroids as
+    explicit boundary evidence.
 - Deliverables:
-  - Matroid foundation module.
+  - Delivered: matroid foundation module in
+    `Proofs.Ai.Combinatorics.Matroid.Basic`.
 - Acceptance criteria:
-  - Matroid axioms are explicit law packages.
-  - Basis existence is not hidden behind finite choice.
+  - Satisfied: matroid axioms are explicit law packages, headed by
+    `MatroidIndependentSetLawPackage`.
+  - Satisfied: basis existence is explicit through
+    `ExplicitBasisExistenceEvidence`, not hidden behind finite choice.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Matroid.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `git diff --check`
 
 ### CG-T35 Add Matroid Dual, Graphic Matroid, And Greedy Interfaces
 
