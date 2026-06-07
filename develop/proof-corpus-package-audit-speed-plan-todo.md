@@ -96,7 +96,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-00 Baseline Package Audit Profile
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 3 and 5 PAS-00
@@ -135,6 +135,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
   - If PAS-01 has already landed during a rerun, `package_audit_graph_inventory`
     may be used for graph counts. The initial PAS-00 implementation should not
     add that helper.
+  - Completed in `develop/proof-corpus-package-audit-baseline-pas-00.md`.
 
 ### PAS-01 Package Audit Identity Model
 
