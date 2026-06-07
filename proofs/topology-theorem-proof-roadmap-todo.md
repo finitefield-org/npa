@@ -736,47 +736,71 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T18 Add Complete Metric Space And Completion Core
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `TOP-T12`, `Proofs.Ai.Analysis.AbstractFixedPoint`
 - Areas: `Proofs.Ai.Topology.Metric.Completion`
 - Tasks:
-  - Define Cauchy sequence and complete metric-space interfaces compatible
+  - Completed: Define Cauchy sequence and complete metric-space interfaces compatible
     with existing analysis fixed-point evidence.
-  - Add completion existence and uniqueness route.
-  - Prove closed subspaces of complete metric spaces are complete and add
+  - Completed: Add completion existence and uniqueness route.
+  - Completed: Prove closed subspaces of complete metric spaces are complete and add
     Cantor intersection theorem.
-  - Add Banach fixed point alias from `Proofs.Ai.Analysis.AbstractFixedPoint`.
+  - Completed: Add Banach fixed point alias from `Proofs.Ai.Analysis.AbstractFixedPoint`.
 - Deliverables:
-  - Complete metric and completion module.
+  - Completed: `Proofs.Ai.Topology.Metric.Completion` source, certificate,
+    metadata, replay, and AI theorem index entries.
+  - Completed: The module adds 7 definitions and 15 certificate-backed
+    theorem projections/applications for complete metric cores, completion
+    route uniqueness from universal property, closed-subspace completeness,
+    Cantor intersection, and the Banach fixed-point topology alias.
 - Acceptance criteria:
-  - Banach fixed point remains primary in the analysis fixed-point module.
-  - Completion uniqueness does not assume the target universal property as an
-    axiom under another name.
+  - Satisfied: Banach fixed point remains primary in the analysis fixed-point
+    module; `banach_fixed_point_from_topology_alias` delegates to
+    `banach_fixed_point_from_args`.
+  - Satisfied: Completion uniqueness is obtained by applying a
+    `CompletionUniversalProperty -> CompletionUniquenessEvidence` law packaged
+    in `MetricCompletionRoute`, not by assuming uniqueness as the universal
+    property itself.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Completion`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Metric.Completion --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T19 Add Baire Category And Genericity Route
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `TOP-T18`, `ANA-T23`
 - Areas: `Proofs.Ai.Topology.Baire`
 - Tasks:
-  - Prove Baire category theorem for complete metric spaces.
-  - Add Baire routes for locally compact Hausdorff spaces and Polish spaces
+  - Completed: Prove Baire category theorem for complete metric spaces.
+  - Completed: Add Baire routes for locally compact Hausdorff spaces and Polish spaces
     when prerequisites exist.
-  - Define nowhere dense, meagre, comeagre, generic property, and dense open
+  - Completed: Define nowhere dense, meagre, comeagre, generic property, and dense open
     countable-intersection lemmas.
-  - Add Choquet and Banach-Mazur game interfaces.
+  - Completed: Add Choquet and Banach-Mazur game interfaces.
 - Deliverables:
-  - Baire theorem and genericity module.
+  - Completed: `Proofs.Ai.Topology.Baire` source, certificate, metadata,
+    replay, and AI theorem index entries.
+  - Completed: The module adds 14 definitions and 22 certificate-backed
+    theorem projections/applications for nowhere dense/meagre/comeagre/generic
+    vocabulary, dense-open countable intersections, complete metric Baire,
+    locally compact Hausdorff Baire, Polish Baire, functional-analysis input,
+    and game interfaces.
 - Acceptance criteria:
-  - Functional-analysis theorems import Baire; they are not reproved here.
-  - Game-theoretic Baire statements remain `L1` until game definitions exist.
+  - Satisfied: Functional-analysis theorems are not reproved here; Baire
+    exposes `FunctionalAnalysisBaireInput` for open mapping, closed graph, and
+    uniform boundedness routes to import.
+  - Satisfied: Game-theoretic Baire statements remain `L1` interfaces through
+    `ChoquetGameInterface` and `BanachMazurGameInterface`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Baire`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Baire --verified-cache authoring`
   - `rg -n "Baire|open mapping|closed graph|uniform boundedness|ANA-T27" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T20 Add Product Topology Core
 

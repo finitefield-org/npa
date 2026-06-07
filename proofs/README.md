@@ -112,6 +112,15 @@ Current bundles:
   second-countability consequence routes, separable metric second-countability routes,
   Lindelof closed-subspace and continuous-image routes, and first-countable closure-by-sequences
   routes with first-countability assumptions explicit.
+- `Proofs/Ai/Topology/Metric/Completion/`: complete metric and completion route layer over
+  `AbstractFixedPoint`, metric compactness, and countability. It packages complete metric cores
+  compatible with `CompleteMetricArgs`, completion existence/uniqueness through an explicit
+  universal-property-to-uniqueness law, closed-subspace completeness, Cantor intersection, and
+  a Banach fixed-point topology alias that delegates to the analysis fixed-point theorem.
+- `Proofs/Ai/Topology/Baire/`: Baire category and genericity route layer. It defines nowhere
+  dense, meagre, comeagre, generic, dense-open countable-intersection, Baire-space, complete
+  metric Baire, locally compact Hausdorff Baire, Polish Baire, functional-analysis input, and
+  Choquet/Banach-Mazur game interface packages.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
