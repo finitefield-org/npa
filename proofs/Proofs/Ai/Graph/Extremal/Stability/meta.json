@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Extremal.Stability",
+  "source": "Proofs/Ai/Graph/Extremal/Stability/source.npa",
+  "certificate": "Proofs/Ai/Graph/Extremal/Stability/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7736378f8b2ebd34d7ca07b91c74023f69083a1ce7428c2ca45bde1342da566c",
+  "certificate_file_sha256": "sha256:74daf4887e31f7539e3971bfe3d606dc653c4f03bed372006447c603b13f34c7",
+  "export_hash": "sha256:3408c30dc00d87c03c0a09891487ee9deeade495d9e06041843b8369664daa18",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:9b0bf99e80e761f622b86b9fdb147e14677efc088f4e9f2533eca657601425e9",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Coloring", "Proofs.Ai.Graph.Clique", "Proofs.Ai.Graph.Extremal", "Proofs.Ai.Graph.Extremal.Advanced", "Proofs.Ai.Graph.Regularity", "Proofs.Ai.Graph.Extremal.Supersaturation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ExtremalStabilityWitnessPackage", "kind": "def" },
+    { "name": "ExtremalStabilityRoutePackage", "kind": "def" },
+    { "name": "ExtremalStabilityTheoremPackage", "kind": "def" },
+    { "name": "stability_witness_package_intro", "kind": "theorem" },
+    { "name": "stability_route_package_intro", "kind": "theorem" },
+    { "name": "stability_theorem_package_intro", "kind": "theorem" },
+    { "name": "near_extremal_partition_witness_statement", "kind": "theorem" },
+    { "name": "turan_stability_certificate_statement", "kind": "theorem" },
+    { "name": "complete_multipartite_stability_statement", "kind": "theorem" },
+    { "name": "forbidden_subgraph_stability_statement", "kind": "theorem" },
+    { "name": "finite_stability_corollary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

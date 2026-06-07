@@ -1920,7 +1920,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T57 Add Extremal Stability And Supersaturation Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T24`, `CG-T25`, `CG-T49`, `CG-T56`, verified Turan and
   density foundations
 - Areas: `Proofs.Ai.Graph.Extremal.Stability`,
@@ -1935,6 +1935,15 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - `L2` extremal stability and supersaturation modules that reuse regularity
     and counting lemmas instead of duplicating them.
+- Completed artifacts:
+  - Added `Proofs.Ai.Graph.Extremal.Supersaturation` with finite graph/pattern
+    prerequisites, density thresholds, clique/biclique/forbidden-subgraph
+    witness packages, regularity-counting routes, Erdos-Stone-Simonovits
+    asymptotic routes, and finite supersaturation corollaries.
+  - Added `Proofs.Ai.Graph.Extremal.Stability` with near-extremal density,
+    Turan-type witnesses, structured extremal object witnesses,
+    edit-distance certificates, supersaturation/Erdos-Stone route packages,
+    and finite stability corollaries.
 - Acceptance criteria:
   - Stability statements include concrete witness data for the structured
     extremal object.
@@ -1945,7 +1954,9 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Supersaturation --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|Stability|Supersaturation|ErdosStone" proofs/Proofs/Ai/Graph/Extremal`
+  - `cargo fmt --all -- --check`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2" proofs/Proofs/Ai/Graph/Extremal/Supersaturation proofs/Proofs/Ai/Graph/Extremal/Stability`
+  - `rg -n '"module": "Proofs.Ai.Graph.Extremal.(Supersaturation|Stability)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T58 Add Hypergraph Regularity, Removal, And Container Applications
