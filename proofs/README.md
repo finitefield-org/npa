@@ -73,6 +73,12 @@ Current bundles:
   It defines closed-set disjointness, open-set separation, point/closed-set separation, regular,
   completely regular, normal, Tychonoff, metric-normality, and compact-Hausdorff-normal routes,
   keeping advanced compactness and metric-normality assumptions as explicit evidence slots.
+- `Proofs/Ai/Topology/Compact/Basic/`: general compactness core over open covers rather than
+  metric specialization. It defines selected subfamily membership, open covers of subsets, finite
+  subcovers, open-cover compactness, finite-intersection-property compactness, compact spaces,
+  closed-subset and continuous-image compactness routes, compactness invariant transfer,
+  compact-to-Hausdorff continuous-bijection routes, and a tube-lemma dependency tag for later
+  finite-product topology work.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

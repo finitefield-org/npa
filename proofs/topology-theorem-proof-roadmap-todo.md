@@ -510,7 +510,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T10 Add Open-Cover Compactness Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Compact.Basic`
 - Tasks:
@@ -522,13 +522,28 @@ guessing. The split must preserve the dependency order in this document.
   - Add the tube lemma if finite products are available; otherwise leave it
     dependency-tagged for `TOP-T20`.
 - Deliverables:
-  - General compactness base module.
+  - Added and registered `Proofs.Ai.Topology.Compact.Basic` with 18
+    definitions and 34 theorems for selected subfamily membership, open covers
+    of subsets, finite subcovers, open-cover compactness,
+    finite-intersection-property compactness, compact spaces, closed-subset
+    compactness routes, continuous-image compactness routes, compactness
+    invariant transfer, compact-to-Hausdorff continuous-bijection routes, and a
+    tube-lemma dependency tag.
 - Acceptance criteria:
   - Compactness is not specialized to metric spaces in this module.
   - Hausdorff-dependent compactness theorems import separation results.
+  - Closed-subset, continuous-image, homeomorphism-invariance, and
+    compact-to-Hausdorff continuous-bijection results state their exact route
+    evidence instead of adding hidden compactness, choice, quotient, or
+    equality-transport axioms.
+  - The tube lemma is recorded as dependency-tagged for `TOP-T20` because the
+    finite-product topology layer is not yet part of this milestone.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compact.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Compact.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Compact.Basic` declares no axioms.
 
 ### TOP-T11 Add Alexander, Tychonoff, And Compactification Routes
 
