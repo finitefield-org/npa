@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Graph/Konig/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:51c1be2238366d18a67d0a811280e14ca0fcdd3992c281e8e4eb0c9eecdce00f",
-  "certificate_file_sha256": "sha256:c84fc45f86f692c2abdb1ff43f7872ce0a58c2327b0708945975a3a2c591f820",
-  "export_hash": "sha256:23b4df233690c79b4f53290d3613653fd43fee3418b842b7c100831ba6f6e0e1",
+  "source_sha256": "sha256:b0ceadf0b7fea029e23922c5a6f0594c16dc62caf4627451744c9b7c56038927",
+  "certificate_file_sha256": "sha256:7f92677bd259a6393139334916efdabfad1af236f63c2d82112a2f82b2bced64",
+  "export_hash": "sha256:9228c0f0c4b0ffdedcfa6b562d0ae57149431240c23dd70ba0072127b53955af",
   "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
-  "certificate_hash": "sha256:3c78f1519329396658e6edea402341d13322363c72abb0366676968e0ac7d167",
+  "certificate_hash": "sha256:d5b121398727ba2299e2fbd8dd5197bd55115447352ce68f6dd40c4b69d9a29f",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Bipartite", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Matching", "Proofs.Ai.Graph.Matching.Hall", "Proofs.Ai.Graph.Cut", "Proofs.Ai.Graph.Flow", "Proofs.Ai.Graph.Flow.MaxFlowMinCut"],
   "axioms": [],
   "declarations": [
@@ -21,7 +21,7 @@
     { "name": "konig_theorem_bridge_package_intro", "kind": "theorem" },
     { "name": "vertex_cover_bridge_statement", "kind": "theorem" },
     { "name": "konig_theorem_statement", "kind": "theorem" },
-    { "name": "konig_hall_ownership_boundary_statement", "kind": "theorem" }
+    { "name": "konig_hall_route_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

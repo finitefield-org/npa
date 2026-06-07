@@ -5,23 +5,23 @@
   "certificate": "Proofs/Ai/Graph/Flow/MaxFlowMinCut/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:f1400b300ec04b7cd58f3742c6f86f09c4d1017f56df17bdf6a03e8f7bb241f4",
-  "certificate_file_sha256": "sha256:241e7dbf822f805131d16664e284fd012297981b86deff723b2b0b919a6ab7de",
-  "export_hash": "sha256:ff4b2a3d656b820e75279f14459202938ccdc2261a1dd20c6f2f7d41324a8d66",
+  "source_sha256": "sha256:81c47aea695ad42631cfb25ded864be38653b72db51921b7c483b81d84e9e362",
+  "certificate_file_sha256": "sha256:72ca73a8dfddad2ec1b46c945052e04058ea8383a9c0b2b5685edb7fce33ce3a",
+  "export_hash": "sha256:cd85b03f6d2e1e3fe641fb41b2d41395eb8593f143e82207c04c9e2914280279",
   "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
-  "certificate_hash": "sha256:d3b734bc6498c6980b177d1341b62d9930b69dc3f56e967fd2ef3e7f4effb44e",
+  "certificate_hash": "sha256:fb19c1e1faef545fd1b7a12abf09df38e2fcbf41e004332a1d6b98c109167414",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Cut", "Proofs.Ai.Graph.Flow"],
   "axioms": [],
   "declarations": [
     { "name": "AugmentingPathTracePackage", "kind": "def" },
-    { "name": "MaxFlowMinCutInterfacePackage", "kind": "def" },
+    { "name": "MaxFlowMinCutDerivedPackage", "kind": "def" },
     { "name": "augmenting_path_trace_package_intro", "kind": "theorem" },
     { "name": "augmenting_trace_sound_statement", "kind": "theorem" },
-    { "name": "max_flow_min_cut_interface_package_intro", "kind": "theorem" },
+    { "name": "max_flow_min_cut_derived_package_intro", "kind": "theorem" },
     { "name": "max_flow_statement", "kind": "theorem" },
     { "name": "min_cut_statement", "kind": "theorem" },
     { "name": "max_flow_min_cut_equality_statement", "kind": "theorem" },
-    { "name": "algorithmic_augmenting_trace_boundary_statement", "kind": "theorem" }
+    { "name": "augmenting_trace_to_explicit_construction_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

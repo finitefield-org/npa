@@ -117,6 +117,7 @@ high-trust closure.
 | `CG-21` graph algorithms and correctness | `CG-T42` through `CG-T43` |
 | `CG-22` combinatorial optimization | `CG-T44` through `CG-T45` |
 | `CG-23` packaging and promotion | `CG-T46` |
+| `CG-24` remaining `L1`-to-`L2` upgrades | `CG-T47` through `CG-T55` |
 
 ## Recommended Queue Coverage
 
@@ -133,6 +134,7 @@ high-trust closure.
 | `CGQ-009` | `CG-T20` |
 | `CGQ-010` | `CG-T26` |
 | `CGQ-011` | `CG-T40` after linear-algebra prerequisites stabilize |
+| `CGQ-012` | `CG-T47` through `CG-T55` after the relevant prerequisite foundations stabilize |
 
 ## Target Level Defaults
 
@@ -143,6 +145,7 @@ high-trust closure.
 | `CG-T02` through `CG-T06`, `CG-T08`, `CG-T09`, `CG-T13` through `CG-T15`, `CG-T17`, `CG-T20`, `CG-T21` | target `L2` derived certificates where prerequisites exist |
 | `CG-T11`, `CG-T19`, `CG-T23`, `CG-T25`, `CG-T27`, `CG-T29`, `CG-T31`, `CG-T33`, `CG-T35`, `CG-T37`, `CG-T39`, `CG-T41`, `CG-T43`, `CG-T45` | split before source edits if prerequisites are absent; otherwise target `L2` for derived parts and keep advanced statements at `L1` |
 | `CG-T46` | `L3` public closure and package verification |
+| `CG-T47` through `CG-T55` | upgrade remaining `L1` interface, no-derived, and boundary statements to `L2` derived certificates, or split out an explicit prerequisite blocker before source edits |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -1508,6 +1511,317 @@ guessing. The split must preserve the dependency order in this document.
   - `./scripts/check-corpus-authoring.sh`
   - `./scripts/check-corpus-package.sh`
   - `./scripts/check-corpus-full.sh`
+
+### CG-T47 Upgrade Matching, Flow, And Cut Interfaces To L2
+
+- Status: Completed
+- Depends on: `CG-T17`, `CG-T18`, `CG-T19`, `CG-T43`
+- Areas: `Proofs.Ai.Graph.Matching.Hall`, `Proofs.Ai.Graph.Flow`,
+  `Proofs.Ai.Graph.Flow.MaxFlowMinCut`, `Proofs.Ai.Graph.Cut`,
+  `Proofs.Ai.Graph.Konig`
+- Tasks:
+  - Done: Replaced the Hall no-`L2` boundary with a derived certificate route from
+    finite matching, neighborhood, cardinality, and set-system lemmas.
+  - Done: Upgraded max-flow/min-cut and Konig-style interfaces from assumed law
+    packages to derived statements over certified flow, cut, and matching
+    evidence.
+  - Done: Kept algorithm traces explicit, but proved the mathematical correctness
+    statements from trace certificates rather than treating execution as a
+    trusted boundary.
+- Deliverables:
+  - Delivered: `L2` derived matching, flow, cut, and Konig theorem modules with updated
+    source, replay, metadata, certificates, and AI theorem index entries.
+- Acceptance criteria:
+  - Satisfied: Hall, max-flow/min-cut, and Konig targets no longer expose `NoL2`,
+    `not_l2`, or ownership-boundary theorem declarations for the upgraded
+    statements.
+  - Satisfied: No target in this batch remained blocked by missing prerequisites;
+    all upgraded targets verify as source-free certificates.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Matching.Hall Proofs.Ai.Graph.Flow Proofs.Ai.Graph.Flow.MaxFlowMinCut Proofs.Ai.Graph.Cut Proofs.Ai.Graph.Konig`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Hall --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow.MaxFlowMinCut --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "NoL2|not_l2|boundary_statement|interface_statement" proofs/Proofs/Ai/Graph/Matching/Hall proofs/Proofs/Ai/Graph/Flow proofs/Proofs/Ai/Graph/Cut proofs/Proofs/Ai/Graph/Konig`
+  - `git diff --check`
+
+### CG-T48 Upgrade Probabilistic Method And Random Graph Interfaces To L2
+
+- Status: Pending
+- Depends on: `CG-T28`, `CG-T29`, verified finite probability/statistics
+  foundations
+- Areas: `Proofs.Ai.Combinatorics.ProbabilisticMethod`,
+  `Proofs.Ai.Graph.Random`, `Proofs.Ai.Graph.Pseudorandom`,
+  `Proofs.Ai.Graph.Limit`, `Proofs.Ai.Graph.Expander`
+- Tasks:
+  - Import or define the verified finite probability foundations needed for the
+    expectation method, first moment method, union bound, alterations, and
+    Lovasz local lemma statements.
+  - Replace `probabilistic_method_no_l2_boundary_statement` and random-graph
+    interface statements with derived finite-probability certificates where the
+    statement is finite.
+  - Split asymptotic, graph-limit, and pseudorandomness targets into explicit
+    finite `L2` lemmas plus separate prerequisite blockers when analytic or
+    measure-theoretic foundations are still missing.
+- Deliverables:
+  - `L2` finite probabilistic-method and random-graph lemmas, with any remaining
+    graph-limit or asymptotic prerequisites recorded as separate blockers.
+- Acceptance criteria:
+  - Finite probability statements no longer assume the target conclusion through
+    an interface law package.
+  - Remaining non-finite targets have an explicit dependency route to their
+    primary probability, statistics, analysis, or graph-limit foundations.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.ProbabilisticMethod Proofs.Ai.Graph.Random Proofs.Ai.Graph.Pseudorandom Proofs.Ai.Graph.Limit Proofs.Ai.Graph.Expander`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.ProbabilisticMethod --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "NoL2|no_l2|no_derived|interface_statement|boundary_statement" proofs/Proofs/Ai/Combinatorics/ProbabilisticMethod proofs/Proofs/Ai/Graph/Random proofs/Proofs/Ai/Graph/Pseudorandom proofs/Proofs/Ai/Graph/Limit proofs/Proofs/Ai/Graph/Expander`
+  - `git diff --check`
+
+### CG-T49 Upgrade Ramsey, Extremal, And Advanced Coloring Interfaces To L2
+
+- Status: Pending
+- Depends on: `CG-T20`, `CG-T21`, `CG-T24`, `CG-T25`, `CG-T26`, `CG-T27`,
+  `CG-T38`, `CG-T39`
+- Areas: `Proofs.Ai.Combinatorics.Ramsey`,
+  `Proofs.Ai.Combinatorics.Ramsey.Hypergraph`,
+  `Proofs.Ai.Graph.Ramsey`, `Proofs.Ai.Graph.Extremal`,
+  `Proofs.Ai.Graph.Extremal.Advanced`,
+  `Proofs.Ai.Graph.Coloring.Advanced`
+- Tasks:
+  - Upgrade finite Ramsey and graph Ramsey theorem-card interfaces to derived
+    finite-coloring certificates.
+  - Replace Turan, supersaturation, stability, regularity, and Erdos-Stone
+    interface surfaces with derived graph-extremal lemmas where their finite
+    prerequisites are present.
+  - Replace the perfect-graph `L1` target with derived coloring and clique
+    certificates, or split the missing structural graph theorem prerequisites
+    into explicit blockers.
+- Deliverables:
+  - `L2` derived Ramsey, extremal, and advanced coloring theorem modules.
+- Acceptance criteria:
+  - Advanced theorem names with `interface_statement` or `l1_boundary_statement`
+    are either replaced by derived `L2` statements or moved to a separately
+    tracked prerequisite blocker.
+  - No finite Ramsey or finite extremal target remains `L1` solely because it was
+    introduced as a theorem-card surface.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Ramsey Proofs.Ai.Combinatorics.Ramsey.Hypergraph Proofs.Ai.Graph.Ramsey Proofs.Ai.Graph.Extremal Proofs.Ai.Graph.Extremal.Advanced Proofs.Ai.Graph.Coloring.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "L1|l1|interface_statement|boundary_statement" proofs/Proofs/Ai/Combinatorics/Ramsey proofs/Proofs/Ai/Graph/Ramsey proofs/Proofs/Ai/Graph/Extremal proofs/Proofs/Ai/Graph/Coloring/Advanced`
+  - `git diff --check`
+
+### CG-T50 Upgrade Planarity, Embeddings, And Minor Interfaces To L2
+
+- Status: Pending
+- Depends on: `CG-T22`, `CG-T23`, topology and finite graph foundations
+- Areas: `Proofs.Ai.Graph.Planar`, `Proofs.Ai.Graph.Embedding`,
+  `Proofs.Ai.Graph.Topological`, `Proofs.Ai.Graph.Minor`
+- Tasks:
+  - Derive planarity and embedding facts from certified finite graph embedding
+    and face-incidence packages rather than assumed embedding evidence.
+  - Replace Kuratowski, minor, and surface theorem interfaces with derived
+    finite statements when the topological route is available.
+  - Split topological or graph-minor prerequisites that exceed the current
+    finite graph foundation into explicit dependency tasks.
+- Deliverables:
+  - `L2` planarity, embedding, and minor theorem modules or a documented
+    prerequisite split for each remaining topological statement.
+- Acceptance criteria:
+  - Planarity and finite embedding targets do not assume their own conclusions as
+    interface evidence.
+  - Any remaining major structural theorem is blocked only by named topology or
+    minor-theory prerequisites, not by an untracked `L1` wrapper.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Planar Proofs.Ai.Graph.Embedding Proofs.Ai.Graph.Topological Proofs.Ai.Graph.Minor`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "interface_statement|boundary_statement|L1|l1" proofs/Proofs/Ai/Graph/Planar proofs/Proofs/Ai/Graph/Embedding proofs/Proofs/Ai/Graph/Topological proofs/Proofs/Ai/Graph/Minor`
+  - `git diff --check`
+
+### CG-T51 Upgrade Spectral Graph Interfaces To L2
+
+- Status: Pending
+- Depends on: `CG-T40`, `CG-T41`, verified matrix and spectral linear algebra
+  foundations
+- Areas: `Proofs.Ai.Graph.Laplacian`, `Proofs.Ai.Graph.Spectral`,
+  `Proofs.Ai.Graph.Spectral.Bounds`, `Proofs.Ai.Graph.Incidence`
+- Tasks:
+  - Derive adjacency, incidence, degree, and Laplacian matrix properties from
+    certified finite graph and matrix foundations.
+  - Replace spectral foundation, symmetry, positive-semidefinite, and spectral
+    bound interfaces with derived linear-algebra certificates.
+  - Keep spectral graph aliases routed to linear algebra without duplicating
+    primary spectral theorem proofs.
+- Deliverables:
+  - `L2` spectral graph foundation and bound modules with explicit linear
+    algebra imports.
+- Acceptance criteria:
+  - Matrix construction and spectral-bound statements no longer require interface
+    evidence for the target conclusion.
+  - Any spectral theorem dependency that belongs outside CG is imported from its
+    primary route or recorded as a prerequisite blocker.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Laplacian Proofs.Ai.Graph.Spectral Proofs.Ai.Graph.Spectral.Bounds Proofs.Ai.Graph.Incidence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Laplacian --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Spectral --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "interface_statement|boundary_statement|Spectral|Laplacian|Adjacency|Incidence" proofs/Proofs/Ai/Graph/Laplacian proofs/Proofs/Ai/Graph/Spectral proofs/Proofs/Ai/Graph/Incidence`
+  - `git diff --check`
+
+### CG-T52 Upgrade Matroid And Optimization Interfaces To L2
+
+- Status: Pending
+- Depends on: `CG-T34`, `CG-T35`, `CG-T44`, `CG-T45`, linear algebra and
+  optimization foundations
+- Areas: `Proofs.Ai.Combinatorics.Matroid.Basic`,
+  `Proofs.Ai.Combinatorics.Matroid.Dual`,
+  `Proofs.Ai.Combinatorics.Matroid.Graphic`,
+  `Proofs.Ai.Combinatorics.Matroid.Greedy`,
+  `Proofs.Ai.Combinatorics.Optimization`,
+  `Proofs.Ai.Combinatorics.Optimization.Matroid`,
+  `Proofs.Ai.Graph.Polytope`
+- Tasks:
+  - Upgrade matroid dual, graphic matroid, representability, and greedy
+    optimization surfaces to derived matroid certificates.
+  - Derive submodularity, polymatroid, matching/flow/cut polytope, matroid
+    intersection, matroid union, and submodular optimization statements from
+    certified matroid, graph, and optimization prerequisites.
+  - Preserve LP and convex-duality ownership by importing primary optimization
+    lemmas rather than duplicating their proofs in CG.
+- Deliverables:
+  - `L2` matroid and combinatorial optimization modules with no remaining
+    theorem-card-only interface targets for finite matroid/graph statements.
+- Acceptance criteria:
+  - Upgraded matroid and optimization targets are derived from prior modules, not
+    from assumed interface laws carrying the same conclusion.
+  - LP/convex-duality dependencies remain explicit primary-route imports or
+    named blockers.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Matroid.Basic Proofs.Ai.Combinatorics.Matroid.Dual Proofs.Ai.Combinatorics.Matroid.Graphic Proofs.Ai.Combinatorics.Matroid.Greedy Proofs.Ai.Combinatorics.Optimization Proofs.Ai.Combinatorics.Optimization.Matroid Proofs.Ai.Graph.Polytope`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "interface_statement|boundary_statement|NoDuplicateConvex|Matroid|Polymatroid|Polytope" proofs/Proofs/Ai/Combinatorics/Matroid proofs/Proofs/Ai/Combinatorics/Optimization proofs/Proofs/Ai/Graph/Polytope`
+  - `git diff --check`
+
+### CG-T53 Upgrade Algebraic And Enumerative Interface Families To L2
+
+- Status: Pending
+- Depends on: `CG-T30`, `CG-T31`, `CG-T32`, `CG-T33`, algebra and
+  representation-theory foundations
+- Areas: `Proofs.Ai.Combinatorics.Polya`,
+  `Proofs.Ai.Combinatorics.Orbit`,
+  `Proofs.Ai.Combinatorics.Species`,
+  `Proofs.Ai.Combinatorics.Algebraic`,
+  `Proofs.Ai.Combinatorics.SymmetricFunction`,
+  `Proofs.Ai.Combinatorics.AssociationScheme`
+- Tasks:
+  - Derive Polya, orbit-counting, species, and algebraic-combinatorics
+    interfaces from certified group-action and enumeration foundations.
+  - Replace symmetric-function and association-scheme `L1` representation
+    boundaries with derived statements once representation-theory prerequisites
+    are available.
+  - Split any representation-theory prerequisite that is outside the CG primary
+    route into a named dependency task instead of retaining an implicit `L1`
+    theorem.
+- Deliverables:
+  - `L2` algebraic and enumerative combinatorics theorem modules, plus explicit
+    dependency blockers for any non-CG representation theory prerequisites.
+- Acceptance criteria:
+  - `*_l1_boundary_statement` declarations are removed or replaced for upgraded
+    algebraic/enumerative targets.
+  - Remaining representation-theoretic claims have explicit primary-route
+    dependencies.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Polya Proofs.Ai.Combinatorics.Orbit Proofs.Ai.Combinatorics.Species Proofs.Ai.Combinatorics.Algebraic Proofs.Ai.Combinatorics.SymmetricFunction Proofs.Ai.Combinatorics.AssociationScheme`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.SymmetricFunction --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "L1|l1|interface_statement|boundary_statement|Representation" proofs/Proofs/Ai/Combinatorics/Polya proofs/Proofs/Ai/Combinatorics/Orbit proofs/Proofs/Ai/Combinatorics/Species proofs/Proofs/Ai/Combinatorics/Algebraic proofs/Proofs/Ai/Combinatorics/SymmetricFunction proofs/Proofs/Ai/Combinatorics/AssociationScheme`
+  - `git diff --check`
+
+### CG-T54 Upgrade Design, Finite Geometry, Hypergraph, And Set-System Boundaries To L2
+
+- Status: Pending
+- Depends on: `CG-T09`, `CG-T36`, `CG-T37`, `CG-T38`, `CG-T39`, finite field
+  and coding-theory prerequisites as needed
+- Areas: `Proofs.Ai.Combinatorics.Design`,
+  `Proofs.Ai.Combinatorics.FiniteGeometry`,
+  `Proofs.Ai.Combinatorics.Hypergraph`,
+  `Proofs.Ai.Combinatorics.Container`,
+  `Proofs.Ai.Combinatorics.SetSystem`
+- Tasks:
+  - Derive design and incidence-structure facts from certified finite set-system
+    and counting foundations.
+  - Replace finite-geometry coding alias, hypergraph handshake, shadow-degree,
+    and container interfaces with derived finite certificates where their
+    prerequisites are present.
+  - Route finite-field, coding-theory, entropy, and probability prerequisites to
+    their primary roadmaps instead of leaving untracked `L1` boundaries.
+- Deliverables:
+  - `L2` design, finite geometry, hypergraph, container, and set-system modules
+    for the finite statements in scope.
+- Acceptance criteria:
+  - Bonferroni/probability aliases, coding aliases, hypergraph degree facts, and
+    container statements are either derived at `L2` or split behind explicit
+    primary-route prerequisite blockers.
+  - No upgraded finite set-system statement assumes its own conclusion as law
+    evidence.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Design Proofs.Ai.Combinatorics.FiniteGeometry Proofs.Ai.Combinatorics.Hypergraph Proofs.Ai.Combinatorics.Container Proofs.Ai.Combinatorics.SetSystem`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Container --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "interface_statement|boundary_statement|FiniteGeometry|Hypergraph|Container|Bonferroni|Coding" proofs/Proofs/Ai/Combinatorics/Design proofs/Proofs/Ai/Combinatorics/FiniteGeometry proofs/Proofs/Ai/Combinatorics/Hypergraph proofs/Proofs/Ai/Combinatorics/Container proofs/Proofs/Ai/Combinatorics/SetSystem`
+  - `git diff --check`
+
+### CG-T55 Upgrade Graph Algorithm Correctness Boundaries To L2
+
+- Status: Pending
+- Depends on: `CG-T42`, `CG-T43`, verified finite graph and order/weight
+  foundations
+- Areas: `Proofs.Ai.Graph.Algorithm.Search`,
+  `Proofs.Ai.Graph.Algorithm.ShortestPath`,
+  `Proofs.Ai.Graph.Algorithm.SpanningTree`,
+  `Proofs.Ai.Graph.Algorithm.Flow`
+- Tasks:
+  - Derive search, shortest-path, spanning-tree, matching, and flow algorithm
+    correctness statements from explicit trace certificates and graph
+    invariants.
+  - Replace runtime/execution boundary statements with `L2` correctness lemmas
+    whose assumptions are finite traces, verified invariants, and explicit
+    weight/capacity conditions.
+  - Keep implementation execution outside the trusted base; only the certificate
+    of the trace and correctness proof may justify the theorem.
+- Deliverables:
+  - `L2` graph algorithm correctness modules for search, shortest paths,
+    spanning trees, matchings, and flows.
+- Acceptance criteria:
+  - Runtime or execution-boundary declarations are not used as the proof of
+    mathematical correctness for upgraded algorithm targets.
+  - Dijkstra, Bellman-Ford, spanning-tree, and flow correctness interfaces are
+    replaced by derived lemmas or split into prerequisite tasks.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Algorithm.Search Proofs.Ai.Graph.Algorithm.ShortestPath Proofs.Ai.Graph.Algorithm.SpanningTree Proofs.Ai.Graph.Algorithm.Flow`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.Search --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.ShortestPath --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "runtime_boundary|execution_boundary|interface_statement|Dijkstra|Bellman|SpanningTree|Flow" proofs/Proofs/Ai/Graph/Algorithm`
+  - `git diff --check`
 
 ## Completion Definition
 
