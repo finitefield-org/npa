@@ -1144,23 +1144,40 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T35 Add Matroid Dual, Graphic Matroid, And Greedy Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T34`, `CG-T15`, linear algebra prerequisites for
   representable matroids
 - Areas: `Proofs.Ai.Combinatorics.Matroid.Dual`,
   `Proofs.Ai.Combinatorics.Matroid.Graphic`,
   `Proofs.Ai.Combinatorics.Matroid.Greedy`
 - Tasks:
-  - Add dual matroid statement surface.
-  - Add graphic and cographic matroid bridge interfaces.
-  - Add greedy algorithm correctness theorem targets.
+  - Done: Added the dual matroid statement surface with basis-complement,
+    rank-surface, circuit/cocircuit, involution, and interface evidence.
+  - Done: Added graphic and cographic matroid bridge interfaces that import
+    graph tree/cycle foundations explicitly.
+  - Done: Added greedy algorithm correctness and optimization-boundary theorem
+    targets that consume trace and certificate evidence.
 - Deliverables:
-  - Matroid bridge and optimization interfaces.
+  - Delivered: matroid bridge and optimization interfaces in
+    `Proofs.Ai.Combinatorics.Matroid.Dual`,
+    `Proofs.Ai.Combinatorics.Matroid.Graphic`, and
+    `Proofs.Ai.Combinatorics.Matroid.Greedy`.
 - Acceptance criteria:
-  - Graphic matroid imports graph tree/cycle foundations.
-  - Greedy correctness uses trace/certificate evidence.
+  - Satisfied: Graphic matroid imports `Proofs.Ai.Graph.Walk` and
+    `Proofs.Ai.Graph.Tree`, along with their direct graph/finite dependencies.
+  - Satisfied: Greedy correctness uses `GreedyTraceEvidence` and
+    `GreedyCertificateEvidence` explicitly.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Matroid.Dual`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Matroid.Graphic`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Matroid.Greedy`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Dual --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Graphic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Greedy --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `rg -n "Matroid|graphic matroid|greedy" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ### CG-T36 Add Design And Incidence Structure Foundation
