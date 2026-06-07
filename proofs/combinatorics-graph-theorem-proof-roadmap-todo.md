@@ -1182,22 +1182,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T36 Add Design And Incidence Structure Foundation
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T09`
 - Areas: `Proofs.Ai.Combinatorics.Design`
 - Tasks:
-  - Define incidence structure, block design, balanced incomplete block design,
-    and parameter law packages.
-  - Add basic design parameter counting identities.
-  - Record finite geometry bridge points.
+  - Done: Defined incidence structure, block design, balanced incomplete block
+    design, and finite-geometry bridge law packages.
+  - Done: Added design total-incidence, block-design parameter counting,
+    BIBD pair-counting, and basic parameter identity theorem targets.
+  - Done: Recorded finite geometry bridge points as explicit boundary
+    evidence for the next milestone.
 - Deliverables:
-  - Design theory foundation module.
+  - Delivered: design theory foundation module in
+    `Proofs.Ai.Combinatorics.Design`.
 - Acceptance criteria:
-  - Design parameter equations are derived counting statements where possible.
-  - Incidence structures reuse finite set-system foundations.
+  - Satisfied: design parameter equations consume finite fiber-counting and
+    block-design evidence.
+  - Satisfied: incidence structures reuse finite set-system foundations through
+    `FiniteSetSystemPredicate`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Design`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Design`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Design --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "design|BIBD|incidence structure|finite geometry" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `cargo fmt --all -- --check`
+  - `git diff --check`
 
 ### CG-T37 Add Finite Geometry Interfaces
 

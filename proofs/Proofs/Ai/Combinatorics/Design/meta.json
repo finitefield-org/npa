@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Design",
+  "source": "Proofs/Ai/Combinatorics/Design/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Design/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:284cc47ffce74bc9a9f217f28ea9f4148fbf27c054c87d9c85d9a4fc16cb58b7",
+  "certificate_file_sha256": "sha256:41b726938ddb9b6e090572b08af65791d8ac40e65ce3d74d3a5dd25e23e1a2bb",
+  "export_hash": "sha256:525baf914df1c260e7433f443f9e6157bb0a8908ae65ec335e5914e725f8cf5e",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:8da4f883fb553724d8a9d69190113ca056e7ca94024b746b15237b39c669a4f2",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "IncidenceStructureLawPackage", "kind": "def" },
+    { "name": "BlockDesignLawPackage", "kind": "def" },
+    { "name": "BalancedIncompleteBlockDesignParameterPackage", "kind": "def" },
+    { "name": "FiniteGeometryDesignBridgePackage", "kind": "def" },
+    { "name": "incidence_structure_law_package_intro", "kind": "theorem" },
+    { "name": "block_design_law_package_intro", "kind": "theorem" },
+    { "name": "balanced_incomplete_block_design_parameter_package_intro", "kind": "theorem" },
+    { "name": "finite_geometry_design_bridge_package_intro", "kind": "theorem" },
+    { "name": "incidence_structure_set_system_reuse_statement", "kind": "theorem" },
+    { "name": "design_total_incidence_counting_statement", "kind": "theorem" },
+    { "name": "block_design_parameter_counting_statement", "kind": "theorem" },
+    { "name": "bibd_pair_counting_identity_statement", "kind": "theorem" },
+    { "name": "bibd_basic_parameter_identity_statement", "kind": "theorem" },
+    { "name": "finite_geometry_design_bridge_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
