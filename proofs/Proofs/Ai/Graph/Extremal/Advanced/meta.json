@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Extremal.Advanced",
+  "source": "Proofs/Ai/Graph/Extremal/Advanced/source.npa",
+  "certificate": "Proofs/Ai/Graph/Extremal/Advanced/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ca2411739b77f3a59c86a909347b705f1c241db665d64a309dfdc33f3a5fb704",
+  "certificate_file_sha256": "sha256:2a9128e3b8cf43bdb42033b4e1b8ccad0d7db03f2e55944fbb0463a8be5fe760",
+  "export_hash": "sha256:c3369420d91220a72af39da3ee9102ea72527579e3181c18b32fda97d3319c38",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:dc58146c895375f6797495fa6e82e873cb72a62c6bdb57245493da7dabccf8e7",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Coloring", "Proofs.Ai.Graph.Clique", "Proofs.Ai.Graph.Extremal"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AdvancedExtremalGraphInterfacePackage", "kind": "def" },
+    { "name": "advanced_extremal_graph_interface_package_intro", "kind": "theorem" },
+    { "name": "supersaturation_theorem_interface_statement", "kind": "theorem" },
+    { "name": "stability_theorem_interface_statement", "kind": "theorem" },
+    { "name": "szemeredi_regularity_lemma_interface_statement", "kind": "theorem" },
+    { "name": "erdos_stone_theorem_interface_statement", "kind": "theorem" },
+    { "name": "advanced_prerequisite_dependency_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

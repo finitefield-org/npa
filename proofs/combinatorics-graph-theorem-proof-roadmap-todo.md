@@ -851,19 +851,29 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T25 Add Supersaturation And Regularity Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T24`, probabilistic/analytic prerequisites as needed
 - Areas: `Proofs.Ai.Graph.Extremal.Advanced`
 - Tasks:
-  - Add supersaturation and stability theorem interfaces.
-  - Add Szemeredi regularity lemma interface.
-  - Add Erdos-Stone theorem interface with dependency tags.
+  - [x] Add supersaturation and stability theorem interfaces.
+  - [x] Add Szemeredi regularity lemma interface.
+  - [x] Add Erdos-Stone theorem interface with dependency tags.
 - Deliverables:
-  - Advanced extremal graph interface module.
+  - `Proofs.Ai.Graph.Extremal.Advanced` records the advanced extremal graph
+    package over the verified `Proofs.Ai.Graph.Extremal` foundation.
+  - Supersaturation, stability, Szemeredi regularity, reduced graph, and
+    Erdos-Stone interfaces are separated as explicit evidence surfaces with
+    probabilistic, analytic, counting-lemma, and embedding-lemma dependency
+    tags.
+  - `advanced_prerequisite_dependency_boundary_statement` keeps the advanced
+    theorem family at interface level until prerequisite closure is available.
 - Acceptance criteria:
-  - Regularity and asymptotic assumptions are explicit.
-  - No advanced theorem interface is promoted before prerequisite closure.
+  - [x] Regularity and asymptotic assumptions are explicit.
+  - [x] No advanced theorem interface is promoted before prerequisite closure.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Extremal.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced --verified-cache authoring`
   - `rg -n "supersaturation|regularity|Erdos-Stone|stability" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 
