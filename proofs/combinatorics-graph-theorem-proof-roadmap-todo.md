@@ -1374,22 +1374,42 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T43 Add Spanning Tree, Matching, And Flow Algorithm Correctness
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T15`, `CG-T17`, `CG-T19`
 - Areas: `Proofs.Ai.Graph.Algorithm.SpanningTree`,
   `Proofs.Ai.Graph.Algorithm.Flow`
 - Tasks:
-  - Add Kruskal/Prim trace correctness interfaces.
-  - Add augmenting path matching trace correctness interface.
-  - Add Ford-Fulkerson style trace correctness interface.
+  - Done: Added Kruskal/Prim trace correctness interfaces with explicit
+    weight assumptions, edge-weight evidence, termination certificates, and
+    optimality certificates.
+  - Done: Added augmenting path matching trace correctness with capacity,
+    Hall/matching import, source-free trace, termination, and optimality
+    evidence.
+  - Done: Added Ford-Fulkerson style trace correctness with capacity
+    assumptions, residual-capacity evidence, feasible-flow evidence,
+    no-augmenting-path certificates, termination, and max-flow optimality
+    certificates.
 - Deliverables:
-  - Graph optimization algorithm correctness interfaces.
+  - Delivered: Graph optimization algorithm correctness interfaces in
+    `Proofs.Ai.Graph.Algorithm.SpanningTree` and
+    `Proofs.Ai.Graph.Algorithm.Flow`.
 - Acceptance criteria:
-  - Weight and capacity assumptions are explicit.
-  - Trace termination and optimality certificates are ordinary proof evidence,
-    not trusted execution.
+  - Satisfied: Weight assumptions are explicit through
+    `WeightAssumptionEvidence`, `WeightOrderEvidence`, and
+    `EdgeWeightEvidence`; capacity assumptions are explicit through
+    `CapacityAssumptionEvidence` and `CapacityNonnegativeEvidence`.
+  - Satisfied: Trace termination and optimality certificates are ordinary proof
+    evidence (`TraceTerminationEvidence`, `FlowTraceTerminationEvidence`,
+    `MatchingTraceTerminationEvidence`, `SpanningTreeOptimalityEvidence`,
+    `MatchingAugmentationOptimalityEvidence`, `MaxFlowOptimalityEvidence`) and
+    execution is excluded by `TrustedExecutionExcludedEvidence`.
 - Verification:
-  - `rg -n "Kruskal|Prim|Ford-Fulkerson|augmenting path" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Algorithm.SpanningTree Proofs.Ai.Graph.Algorithm.Flow`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.SpanningTree --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.Flow --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "Kruskal|Prim|Ford-Fulkerson|FordFulkerson|augmenting path|AugmentingPath" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Graph/Algorithm`
   - `git diff --check`
 
 ### CG-T44 Add Submodularity And Polytope Interfaces
