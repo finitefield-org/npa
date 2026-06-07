@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.PropertyTesting",
+  "source": "Proofs/Ai/Graph/PropertyTesting/source.npa",
+  "certificate": "Proofs/Ai/Graph/PropertyTesting/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:894c19c729c6d080553119e2c96ab8b60d566946a9d42874a6092a9c8e0f5110",
+  "certificate_file_sha256": "sha256:e003713ee344fb7ffd064f368a5325138588b725557fe5d1c3092d51300447ae",
+  "export_hash": "sha256:422d8a2c62f0d14f0f6467257548e38fa740a3f71a2acacd8fdc7c42d765aef9",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:db062f1dc8b2ff1a0aa3c584b61af77ec9aea95dfca03c52f9f233eec2f5ea46",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Removal"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphPropertyTestingCertificatePackage", "kind": "def" },
+    { "name": "GraphPropertyTestingCorrectnessPackage", "kind": "def" },
+    { "name": "property_testing_certificate_package_intro", "kind": "theorem" },
+    { "name": "property_testing_correctness_package_intro", "kind": "theorem" },
+    { "name": "property_testing_distance_certificate_statement", "kind": "theorem" },
+    { "name": "sample_trace_source_free_certificate_statement", "kind": "theorem" },
+    { "name": "removal_based_property_tester_correctness_statement", "kind": "theorem" },
+    { "name": "property_testing_soundness_completeness_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

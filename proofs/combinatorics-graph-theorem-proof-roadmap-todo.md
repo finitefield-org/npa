@@ -1875,7 +1875,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T56 Add Regularity, Counting, And Removal Lemmas
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T25`, `CG-T48`, `CG-T49`, verified finite graph density and
   asymptotic parameter foundations
 - Areas: `Proofs.Ai.Graph.Regularity`, `Proofs.Ai.Graph.Removal`,
@@ -1891,6 +1891,17 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - `L2` regularity/counting/removal theorem modules with finite certificate
     parameters and explicit asymptotic blockers.
+- Completed artifacts:
+  - Added `Proofs.Ai.Graph.Regularity` with finite graph, epsilon parameter,
+    equitable partition, regular pair, regular partition, reduced graph,
+    density-increment, counting, finite/asymptotic parameter route, and
+    regularity/counting certificate packages.
+  - Added `Proofs.Ai.Graph.Removal` with prerequisite, removal-certificate,
+    triangle removal, graph removal, induced-removal, and property-testing
+    bridge theorem packages.
+  - Added `Proofs.Ai.Graph.PropertyTesting` with certificate predicates that
+    require removal/probability imports, distance evidence, source-free sample
+    verification, finite probability routes, and randomized execution exclusion.
 - Acceptance criteria:
   - No removal or regularity theorem is represented as a bare interface law.
   - Randomized tester correctness depends on certificate predicates and
@@ -1899,9 +1910,12 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Regularity Proofs.Ai.Graph.Removal Proofs.Ai.Graph.PropertyTesting`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Regularity --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Removal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.PropertyTesting --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|Regularity|Removal|PropertyTesting" proofs/Proofs/Ai/Graph/Regularity proofs/Proofs/Ai/Graph/Removal proofs/Proofs/Ai/Graph/PropertyTesting`
+  - `cargo fmt --all -- --check`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2" proofs/Proofs/Ai/Graph/Regularity proofs/Proofs/Ai/Graph/Removal proofs/Proofs/Ai/Graph/PropertyTesting`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Regularity|Removal|PropertyTesting)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T57 Add Extremal Stability And Supersaturation Theorems
