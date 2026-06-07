@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Algorithm.Search",
+  "source": "Proofs/Ai/Graph/Algorithm/Search/source.npa",
+  "certificate": "Proofs/Ai/Graph/Algorithm/Search/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5e29ad21ae2a5109c40e27de034266cb5fe73b0f56097fc1a0aa4a2fb224ad92",
+  "certificate_file_sha256": "sha256:2d9e70e690b53f78a368f9890e684fe57ea3144f015de8cbe56ad3f15b39cde1",
+  "export_hash": "sha256:72f7a0ea8255d7d651b25e7851cd1b873eb321da084900afae8e46a2dd5b004a",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:a2cf7abebde611259ee70885b7238f6ce256382b79e44e0e11d1e53b5aef89dc",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SearchDependencyBoundaryPackage", "kind": "def" },
+    { "name": "SearchTraceEvidencePackage", "kind": "def" },
+    { "name": "GraphSearchCorrectnessPackage", "kind": "def" },
+    { "name": "search_dependency_boundary_package_intro", "kind": "theorem" },
+    { "name": "search_trace_evidence_package_intro", "kind": "theorem" },
+    { "name": "graph_search_correctness_package_intro", "kind": "theorem" },
+    { "name": "bfs_trace_correctness_statement", "kind": "theorem" },
+    { "name": "dfs_trace_correctness_statement", "kind": "theorem" },
+    { "name": "search_trace_source_free_verification_statement", "kind": "theorem" },
+    { "name": "search_runtime_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

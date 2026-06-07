@@ -1347,23 +1347,30 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T42 Add Graph Search And Shortest-Path Correctness Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T14`
 - Areas: `Proofs.Ai.Graph.Algorithm.Search`,
   `Proofs.Ai.Graph.Algorithm.ShortestPath`
 - Tasks:
-  - Add BFS and DFS trace correctness statement surfaces.
-  - Add shortest path, relaxation trace, and Dijkstra/Bellman-Ford interfaces
-    with explicit weight assumptions.
-  - Separate mathematical correctness from runtime complexity.
+  - Done: Added BFS and DFS trace correctness statement surfaces.
+  - Done: Added shortest path, relaxation trace, and Dijkstra/Bellman-Ford
+    interfaces with explicit weight assumptions.
+  - Done: Separated mathematical correctness from runtime complexity.
 - Deliverables:
-  - Graph search and shortest-path correctness interfaces.
+  - Delivered: graph search and shortest-path correctness interfaces in
+    `Proofs.Ai.Graph.Algorithm.Search` and
+    `Proofs.Ai.Graph.Algorithm.ShortestPath`.
 - Acceptance criteria:
-  - Executable algorithms are not checker inputs.
-  - Trace objects contain the evidence needed for source-free verification.
+  - Satisfied: executable algorithms are excluded by
+    `ExecutableAlgorithmExcludedEvidence`; correctness consumes proof traces
+    instead.
+  - Satisfied: trace objects carry source-free verification evidence for
+    search and relaxation traces.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Algorithm.Search`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.Search`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Algorithm.Search Proofs.Ai.Graph.Algorithm.ShortestPath`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.Search --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.ShortestPath --verified-cache authoring`
 
 ### CG-T43 Add Spanning Tree, Matching, And Flow Algorithm Correctness
 

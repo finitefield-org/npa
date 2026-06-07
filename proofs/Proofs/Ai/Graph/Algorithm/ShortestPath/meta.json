@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Algorithm.ShortestPath",
+  "source": "Proofs/Ai/Graph/Algorithm/ShortestPath/source.npa",
+  "certificate": "Proofs/Ai/Graph/Algorithm/ShortestPath/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ebcd7b44180c4ff1f2bc9bb38a71260994f40d0912f153aa5ac8beaa90393e72",
+  "certificate_file_sha256": "sha256:df53542fd0fb5c5476544c6f11e655b6737c12f0da4024f19d2a33f9d5fe24c2",
+  "export_hash": "sha256:0a22a7d899e1441a9b5a6a97f5256c98d7b3ad0c67cf4e7095df9ef2540ceea0",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:db8b057264f83894dbc4d39a096489585f621f90f86215e44d2740d3f114a31d",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Algorithm.Search"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ShortestPathDependencyBoundaryPackage", "kind": "def" },
+    { "name": "ShortestPathTracePackage", "kind": "def" },
+    { "name": "ShortestPathAlgorithmPackage", "kind": "def" },
+    { "name": "shortest_path_dependency_boundary_package_intro", "kind": "theorem" },
+    { "name": "shortest_path_trace_package_intro", "kind": "theorem" },
+    { "name": "shortest_path_algorithm_package_intro", "kind": "theorem" },
+    { "name": "relaxation_trace_correctness_statement", "kind": "theorem" },
+    { "name": "dijkstra_correctness_interface_statement", "kind": "theorem" },
+    { "name": "bellman_ford_correctness_interface_statement", "kind": "theorem" },
+    { "name": "shortest_path_runtime_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
