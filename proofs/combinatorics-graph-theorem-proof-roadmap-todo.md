@@ -2053,7 +2053,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T60 Add Advanced Expander And Pseudorandom Graph Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T40`, `CG-T41`, `CG-T48`, `CG-T51`, verified spectral linear
   algebra prerequisites
 - Areas: `Proofs.Ai.Graph.Expander.Advanced`,
@@ -2068,6 +2068,15 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - `L2` expander and pseudorandomness theorem modules with explicit spectral
     certificates.
+  - Completed `Proofs.Ai.Graph.Expander.Advanced` with advanced spectral
+    certificate packages, expander mixing lemma, Cheeger refinement,
+    Alon-Boppana lower-bound route, Ramanujan prerequisite surface, and an
+    advanced expander certificate statement.
+  - Completed `Proofs.Ai.Graph.Pseudorandom.Advanced` with finite
+    pseudorandom certificates, source-free probability side conditions,
+    jumbled graph and spectral discrepancy certificates, subgraph counting,
+    four named quasirandom implication routes, and a quasirandom equivalence
+    certificate statement.
 - Acceptance criteria:
   - Spectral claims do not introduce new linear-algebra axioms in graph
     modules.
@@ -2075,11 +2084,17 @@ guessing. The split must preserve the dependency order in this document.
     derived route.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Expander.Advanced Proofs.Ai.Graph.Pseudorandom.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Limit --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Expander --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Expander.Advanced --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom.Advanced --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|AlonBoppana|Ramanujan|Quasirandom" proofs/Proofs/Ai/Graph/Expander proofs/Proofs/Ai/Graph/Pseudorandom`
+  - `rg -n '"axioms": \\[\\]' proofs/Proofs/Ai/Graph/Expander/Advanced/meta.json proofs/Proofs/Ai/Graph/Pseudorandom/Advanced/meta.json`
+  - `rg -n "NoNewLinearAlgebraAxiomEvidence|Quasirandom.*RouteEvidence" proofs/Proofs/Ai/Graph/Expander/Advanced/source.npa proofs/Proofs/Ai/Graph/Pseudorandom/Advanced/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2" proofs/Proofs/Ai/Graph/Expander/Advanced proofs/Proofs/Ai/Graph/Pseudorandom/Advanced`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Expander|Pseudorandom).Advanced".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T61 Add Graph Minor Structure And Treewidth Theorems

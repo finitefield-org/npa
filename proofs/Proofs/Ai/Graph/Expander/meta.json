@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:e88d0567a9243cfe35e915375f2f5b92db4e0b936c11fcf0cba8641edabb4dcd",
-  "certificate_file_sha256": "sha256:2cee4404b64c15c91227b3f9b5adfb37619288c9594eeccd688d47200ad21383",
+  "certificate_file_sha256": "sha256:b635fac92664e238e8e5683b03f1ea48e62aa207dc82889669758a2d32e22320",
   "export_hash": "sha256:468db97fdff6106564e8ebe68361a8067d3d28092f7d6ecb63c467c5d9f01b07",
   "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:acd9ad9ae34a35ccab519ca98be5e0ae0cee5b297555fa2d86a08904847442f5",
+  "certificate_hash": "sha256:4ba875c4b2be688b38b0c7b9aa8d93deba4db8bbfa460e594a4b527d49b01949",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Laplacian", "Proofs.Ai.Graph.Spectral", "Proofs.Ai.Graph.Spectral.Bounds", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
   "axioms": [],
   "declarations": [
