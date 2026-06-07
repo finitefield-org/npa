@@ -1272,20 +1272,26 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T39 Add Hypergraph Extremal And Container Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T38`, `CG-T28`
 - Areas: `Proofs.Ai.Combinatorics.Container`
 - Tasks:
-  - Add Erdos-Ko-Rado, matching/covering extremal, and hypergraph Ramsey
-    interfaces.
-  - Add container method statement surface.
-  - Record entropy and probabilistic dependencies.
+  - Done: Added Erdos-Ko-Rado, matching/covering extremal, and hypergraph
+    Ramsey container interfaces.
+  - Done: Added container method statement surface.
+  - Done: Recorded entropy and probabilistic dependencies as explicit
+    statement evidence.
 - Deliverables:
-  - Hypergraph extremal interface module.
+  - Delivered: hypergraph extremal interface module in
+    `Proofs.Ai.Combinatorics.Container`.
 - Acceptance criteria:
-  - Container assumptions are named and localized.
-  - Probabilistic and entropy dependencies are not private law fields.
+  - Satisfied: container assumptions are named with localized
+    `Container*AssumptionEvidence` surfaces.
+  - Satisfied: probabilistic and entropy dependencies are public dependency
+    evidence arguments, not private law fields.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Container`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Container --verified-cache authoring`
   - `rg -n "Erdos-Ko-Rado|container|hypergraph extremal|entropy" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
 

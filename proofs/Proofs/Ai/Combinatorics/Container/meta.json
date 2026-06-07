@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Container",
+  "source": "Proofs/Ai/Combinatorics/Container/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Container/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f26b878eae11cfb9958b94fe4fa9f48e2f0d12b334ed51e0834fa4410574b154",
+  "certificate_file_sha256": "sha256:5604751d3736cdab6417a3ab6116d2d4b38eb2e33cbf674ed0ab2155c1cb1c93",
+  "export_hash": "sha256:14ea05aa032241723e7e2b4d84a9c15020b879fb757845397fde3aceed78b064",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:4c61c849d6625953040e27bc094a2b1876dfa245f43e8f22ed9ad4bbdce74f3e",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Hypergraph", "Proofs.Ai.Combinatorics.Ramsey", "Proofs.Ai.Combinatorics.Ramsey.Hypergraph", "Proofs.Ai.Combinatorics.ProbabilisticMethod"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ContainerAssumptionBoundaryPackage", "kind": "def" },
+    { "name": "HypergraphExtremalContainerPackage", "kind": "def" },
+    { "name": "ContainerMethodSurfacePackage", "kind": "def" },
+    { "name": "container_assumption_boundary_package_intro", "kind": "theorem" },
+    { "name": "hypergraph_extremal_container_package_intro", "kind": "theorem" },
+    { "name": "container_method_surface_package_intro", "kind": "theorem" },
+    { "name": "erdos_ko_rado_container_interface_statement", "kind": "theorem" },
+    { "name": "matching_covering_extremal_container_statement", "kind": "theorem" },
+    { "name": "hypergraph_ramsey_container_bridge_statement", "kind": "theorem" },
+    { "name": "container_method_statement_surface", "kind": "theorem" },
+    { "name": "container_entropy_probability_boundary_statement", "kind": "theorem" },
+    { "name": "hypergraph_extremal_container_interface_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
