@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Convergence",
+  "source": "Proofs/Ai/Measure/Convergence/source.npa",
+  "certificate": "Proofs/Ai/Measure/Convergence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b5b9a8fc90b061df241b9adcbc8e27f8337cd48f97085944410aa338f148c686",
+  "certificate_file_sha256": "sha256:8c16b329dac35c59841cfc424832b84ea6cf201d4f1d4d7b0338b06405e7f929",
+  "export_hash": "sha256:07ea1f76564e8aeb0817fe8572a865560d695d698530b820b42d35fed441c113",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:651e46762b3700bc331675d53628cc2b060be10fb09c60d7f161b6b7f553767e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.SimpleFunction", "Proofs.Ai.Measure.Integral.Simple", "Proofs.Ai.Measure.Integral.Nonnegative", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Integral.Convergence"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlmostEverywhereConvergence", "kind": "def" },
+    { "name": "ConvergenceInMeasure", "kind": "def" },
+    { "name": "L1Convergence", "kind": "def" },
+    { "name": "LpConvergence", "kind": "def" },
+    { "name": "MeasureConvergenceSubsequencePackage", "kind": "def" },
+    { "name": "lp_convergence_implies_convergence_in_measure_via_l1", "kind": "theorem" },
+    { "name": "ae_convergence_implies_convergence_in_measure_on_finite_measure", "kind": "theorem" },
+    { "name": "riesz_subsequence_from_convergence_in_measure", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

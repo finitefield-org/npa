@@ -90,8 +90,16 @@ promotion into a high-trust closure.
   nonnegative-integral supremum/minorant monotonicity, general integrals from
   positive and negative parts, finite-part integrability, and law packages for
   positivity, monotonicity, linearity, triangle inequality, a.e. invariance,
-  restriction, and truncation. Product-measure, convergence, Fubini, and
-  Tonelli modules are not yet present.
+  restriction, and truncation. `Proofs.Ai.Measure.Integral.Convergence` adds
+  monotone convergence data, a certificate-backed route through nonnegative
+  integral monotonicity, Beppo Levi, Fatou, dominated convergence with an
+  explicit integrable dominator, and bounded convergence from finite-measure
+  bounds. `Proofs.Ai.Measure.Convergence` adds a.e. convergence, convergence
+  in measure, `L^1`/`L^p` convergence modes, finite-measure a.e.-to-measure
+  routes, and Riesz subsequence interfaces. `Proofs.Ai.Measure.UniformIntegrability`
+  adds uniform integrability, de la Vallee-Poussin, Vitali, Scheffe, Egorov,
+  and Lusin interfaces. Product-measure, Fubini, and Tonelli modules are not
+  yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
@@ -816,7 +824,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T22 Prove Monotone Convergence And Beppo Levi
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T20`, `MEA-T21`
 - Areas: `Proofs/Ai/Measure/Integral/Convergence/`
 - Tasks:
@@ -830,11 +838,16 @@ guessing. The split must preserve the dependency order in this document.
   - Nonnegativity, measurability, and monotonicity hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Convergence`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Convergence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Convergence --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.Integral.Convergence`, including
+  `MonotoneConvergenceData`, monotone convergence via
+  `nonnegative_integral_monotone_from_simple_minorants`, and Beppo Levi as a
+  derived named route. The theorem card explicitly uses measure/integral
+  data, not sequence-only convergence.
 
 ### MEA-T23 Prove Fatou And Dominated Convergence
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T22`
 - Areas: `Proofs/Ai/Measure/Integral/Convergence/`
 - Tasks:
@@ -852,12 +865,16 @@ guessing. The split must preserve the dependency order in this document.
   - Bounded convergence states its finite-measure or boundedness assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Convergence`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
+- Completed in `Proofs.Ai.Measure.Integral.Convergence` with Fatou from the
+  monotone-convergence route over increasing infima, dominated convergence
+  from a Fatou pair with an explicit integrable dominating function, and
+  bounded convergence from finite-measure/uniform-bound domination.
 
 ### MEA-T24 Add Measure Convergence Modes And Subsequence Principles
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T21`, `MEA-T23`
 - Areas: `Proofs/Ai/Measure/Convergence/`
 - Tasks:
@@ -875,11 +892,18 @@ guessing. The split must preserve the dependency order in this document.
   - Finite-measure hypotheses are explicit in a.e.-to-measure statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Convergence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Convergence --verified-cache authoring`
   - `rg -n "convergence in measure|almost everywhere|subsequence" proofs`
+- Completed with `Proofs.Ai.Measure.Convergence`, including
+  `AlmostEverywhereConvergence`, `ConvergenceInMeasure`, `L1Convergence`,
+  `LpConvergence`, `MeasureConvergenceSubsequencePackage`, `L^p` to
+  convergence-in-measure via `L^1`, finite-measure a.e.-to-measure convergence,
+  and a Riesz subsequence route that names the measure space and subsequence
+  data.
 
 ### MEA-T25 Add Uniform Integrability, Vitali, Egorov, And Lusin Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T23`, `MEA-T24`
 - Areas: `Proofs/Ai/Measure/UniformIntegrability/`
 - Tasks:
@@ -896,7 +920,13 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.UniformIntegrability`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.UniformIntegrability --verified-cache authoring`
   - `rg -n "Vitali|Egorov|Lusin|uniform integrability" proofs`
+- Completed with `Proofs.Ai.Measure.UniformIntegrability`, including uniform
+  integrability and de la Vallee-Poussin criterion packages, Vitali from
+  uniform integrability plus convergence in measure, Scheffe from dominated
+  convergence, and Egorov/Lusin prerequisites with finite-measure and topology
+  assumptions explicit.
 
 ### MEA-T26 Construct Product Measures
 
