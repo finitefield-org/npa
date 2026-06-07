@@ -76,8 +76,12 @@ promotion into a high-trust closure.
   outer measure to the Caratheodory measurable sets. `Proofs.Ai.Measure.Extension`
   adds premeasure domain interfaces, premeasure-induced outer-measure extension
   interfaces, Caratheodory and Hahn-Kolmogorov extension packages, and
-  sigma-finite uniqueness through pi-lambda routes; product measure and integral
-  measure modules are not yet present.
+  sigma-finite uniqueness through pi-lambda routes. `Proofs.Ai.Measure.MeasurableFunction`
+  adds measurable-function aliases over measurable-map preimage laws, real-valued
+  Borel criteria, indicator-function statements, closure/limit/a.e.-limit
+  interfaces, composition, product-coordinate bridges without product measures,
+  and topology-marked componentwise vector-valued measurability; product measure
+  and integral measure modules are not yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
@@ -662,7 +666,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T16 Define Measurable Functions And Basic Criteria
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T05`, ordered-real foundations
 - Areas: `Proofs/Ai/Measure/MeasurableFunction/`
 - Tasks:
@@ -681,7 +685,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T17 Prove Closure Of Measurable Functions Under Operations And Limits
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T16`
 - Areas: `Proofs/Ai/Measure/MeasurableFunction/`
 - Tasks:
@@ -701,7 +705,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T18 Add Composition, Product-Space, And Vector-Valued Measurability
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T05`, `MEA-T17`
 - Areas: `Proofs/Ai/Measure/MeasurableFunction/`
 - Tasks:
