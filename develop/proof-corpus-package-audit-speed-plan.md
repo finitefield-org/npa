@@ -239,7 +239,8 @@ Closure audit workflows should use the same package audit substrate:
 - Use `read-through` or `local-hit` only for local iteration.
 - Finish with cache-off `package check`, `check-hashes`, `build-certs --check`,
   `verify-certs --checker reference`, `axiom-report --check`, `index --check`,
-  and downstream smoke before declaring a promotion ready.
+  `publish-plan --check` when the package checks in a publish plan, and
+  downstream smoke before declaring a promotion ready.
 
 ## 5. Implementation Plan
 
@@ -973,7 +974,7 @@ Verification:
 
 ```sh
 cargo test -p npa-package package_audit_selection
-cargo test -p npa-cli package_audit_selection
+cargo test -p npa-cli package_audit_selection # only if the PAS-05 CLI is added
 git diff --check
 ```
 
@@ -1133,6 +1134,7 @@ cargo run -p npa-cli -- package build-certs --root ../npa-mathlib --check --json
 cargo run -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --audit-cache off --json
 cargo run -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json
 cargo run -p npa-cli -- package index --root ../npa-mathlib --check --json
+cargo run -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json
 ```
 
 Closure audit document required fields:
@@ -1151,7 +1153,8 @@ Implementation tasks:
 - Update the closure-audit skill to distinguish local acceleration commands from
   final evidence commands.
 - Update promote-plan output to include package audit selection commands if the
-  PAS-05 CLI exists; otherwise include a TODO block naming the internal API.
+  PAS-05 CLI exists; otherwise include a pending-integration note naming the
+  internal API.
 - Add one fixture test for generated plan text if `tools/proof-corpus` output is
   changed.
 
@@ -1166,6 +1169,8 @@ Acceptance criteria:
 - Closure audit guidance cannot end with only `local-hit` or read-through
   evidence.
 - The final checklist always includes cache-off reference verification.
+- Publish-plan and downstream smoke requirements remain visible where the
+  closure audit target crosses a public `npa-mathlib` handoff boundary.
 - Existing promotion materialize behavior remains unchanged unless explicitly
   updated in this milestone.
 

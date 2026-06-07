@@ -38,9 +38,10 @@ invalidation に相当する考え方を、NPA の package certificate audit に
   full gate は `./scripts/check-corpus-full.sh`。
 - `check-corpus-package.sh` / `check-corpus-full.sh` / release or high-trust scripts は
   cache-off が既定であり、`local-hit` を入れてはいけない。
-- `npa package check`、`check-hashes`、`build-certs --check`、`verify-certs --checker reference`、
-  `axiom-report --check`、`index --check`、`publish-plan --check` は promotion / release
-  境界の evidence command として扱う。
+- `npa package check`、`check-hashes`、`build-certs --check`、
+  `verify-certs --checker reference`、`axiom-report --check`、`index --check`、
+  checked-in publish plan がある場合の `publish-plan --check` は promotion /
+  release 境界の evidence command として扱う。
 
 ## Trusted Boundary
 
@@ -434,7 +435,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
   - Selection output does not imply unselected modules were verified.
 - Verification:
   - `cargo test -p npa-package package_audit_selection`
-  - `cargo test -p npa-cli package_audit_selection`
+  - `cargo test -p npa-cli package_audit_selection`, only if the PAS-05 CLI is added.
   - `git diff --check`
 - Notes:
   - Actual partial verification of selected modules belongs to PAS-06.
