@@ -1244,22 +1244,31 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T38 Add Hypergraph Foundation
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T09`
 - Areas: `Proofs.Ai.Combinatorics.Hypergraph`
 - Tasks:
-  - Define hypergraph, uniform hypergraph, hyperedge, degree, matching,
-    covering, transversal, and shadow predicates.
-  - Add hypergraph incidence and degree-counting theorem targets.
-  - Align set-system and hypergraph names.
+  - Done: Defined hypergraph, uniform hypergraph, hyperedge, degree,
+    matching, covering, transversal, and shadow predicate packages.
+  - Done: Added hypergraph incidence and degree-counting theorem targets
+    using finite fiber-counting evidence.
+  - Done: Aligned set-system and hypergraph names through explicit reuse and
+    name-alignment evidence.
 - Deliverables:
-  - Hypergraph foundation module.
+  - Delivered: hypergraph foundation module in
+    `Proofs.Ai.Combinatorics.Hypergraph`.
 - Acceptance criteria:
-  - Hypergraph APIs share finite-family foundations.
-  - Matching and covering names do not conflict with graph-specific modules.
+  - Satisfied: hypergraph APIs share `FiniteSetFamilyPredicate` and
+    `FiniteSetSystemPredicate` foundations.
+  - Satisfied: matching and covering surfaces use `Hypergraph*` evidence names
+    and carry `NoGraphMatchingNameConflictEvidence`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Hypergraph`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `git diff --check`
 
 ### CG-T39 Add Hypergraph Extremal And Container Interfaces
 
