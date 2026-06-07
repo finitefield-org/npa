@@ -832,10 +832,11 @@ semantics.
     structured short-Weierstrass definitions, discriminant/nonzero evidence,
     model-data introduction and projection certificates, and reusable
     route-independence certificates.
-  - `NT-T72` upgrades `Proofs.Ai.EllipticCurve.GroupLaw` to a derived point
-    group-law closure covering point addition, inverse, identity, closure,
-    associativity, exceptional cases, and non-dependence on modularity/Ribet
-    bridge packages.
+  - `NT-T72` completed the `Proofs.Ai.EllipticCurve.GroupLaw` L2 upgrade with
+    structured point-at-infinity, doubling, exceptional-pair,
+    short-Weierstrass point, and point-group data definitions plus derived
+    closure, identity, inverse, associativity, nonsingularity, and reusable
+    route certificates.
   - `NT-T73` upgrades `Proofs.Ai.EllipticCurve.Reduction` and
     `Proofs.Ai.EllipticCurve.Semistable` to derived conductor, reduction,
     minimal-model, valuation, compatibility, and semistability certificates.

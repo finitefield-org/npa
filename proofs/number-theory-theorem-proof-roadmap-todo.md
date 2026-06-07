@@ -1931,22 +1931,40 @@ later in the file.
 
 ### NT-T72 L2 Elliptic Curve Point Group Law
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T71`, stable rational-expression and equality-reasoning APIs
 - Areas: `Proofs/Ai/EllipticCurve/GroupLaw/`, `Proofs/Ai/EllipticCurve/Basic/`
 - Tasks:
-  - Define point-at-infinity, point addition, inverse, doubling, and exceptional
-    cases using structured data rather than abstract `Prop` placeholders.
-  - Prove closure, identity, inverse, and associativity from the Basic model
-    and algebraic helper lemmas.
-  - Replace modularity/Ribet independence surfaces with either derived
-    dependency-boundary certificates or non-theorem metadata that is not
-    counted as L2.
+  - Replaced statement-only point-group interfaces with structured
+    short-Weierstrass point, point-at-infinity, doubling, exceptional-pair, and
+    point-group data definitions.
+  - Derived closure, identity, inverse, associativity, nonsingularity, and
+    reusable-route projections from Basic model data and `GroupLawArgs`.
+  - Removed modularity/Ribet/bridge boundary surfaces from theorem targets.
 - Theorem coverage:
-  - `group_law_theorem_interface`
-  - `elliptic_point_group_operation_laws_surface`
-  - `group_law_independent_of_modularity_ribet_bridge_boundary`
-  - `group_law_general_api_reuse_surface`
+  - `PointAtInfinity`
+  - `point_double`
+  - `PointAdditionExceptionalCase`
+  - `PointOnShortWeierstrass`
+  - `EllipticPointGroupData`
+  - `point_at_infinity_zero_refl`
+  - `point_double_defeq`
+  - `point_addition_exceptional_case_inverse_refl`
+  - `point_on_short_weierstrass_from_coordinates`
+  - `elliptic_point_group_data_intro`
+  - `elliptic_point_group_model_data`
+  - `elliptic_point_group_structure`
+  - `elliptic_point_group_zero_on_curve`
+  - `elliptic_point_group_add_closed`
+  - `elliptic_point_group_neg_closed`
+  - `elliptic_point_group_double_on_curve`
+  - `elliptic_point_group_add_assoc`
+  - `elliptic_point_group_left_identity`
+  - `elliptic_point_group_right_identity`
+  - `elliptic_point_group_left_inverse`
+  - `elliptic_point_group_right_inverse`
+  - `elliptic_point_group_nonsingular_model`
+  - `elliptic_point_group_reusable_outside_specialized_routes`
 - Deliverables:
   - `Proofs.Ai.EllipticCurve.GroupLaw` with an L2-derived point group-law
     certificate.
@@ -1959,9 +1977,10 @@ later in the file.
   - No modularity, Ribet, Frey, or bridge-axiom module is imported by the L2
     group-law closure.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.GroupLaw`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.GroupLaw Proofs.Ai.EllipticCurve.FiniteField Proofs.Ai.EllipticCurve.LFunction Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.Cryptography.EllipticCurve Proofs.Ai.NumberTheory.Frobenius Proofs.Ai.NumberTheory.Chebotarev Proofs.Ai.GaloisRepresentation.Basic Proofs.Ai.GaloisRepresentation.Ramification Proofs.Ai.GaloisRepresentation.LocalCondition Proofs.Ai.EllipticCurve.MordellWeil Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.GroupLaw --verified-cache authoring`
   - `rg -n "group_law|Closure|Associativity|Identity|Inverse|BridgeAxiom|Ribet|Modularity" proofs/Proofs/Ai/EllipticCurve/GroupLaw proofs/Proofs/Ai/EllipticCurve/Basic`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T73 L2 Elliptic Curve Reduction And Semistability

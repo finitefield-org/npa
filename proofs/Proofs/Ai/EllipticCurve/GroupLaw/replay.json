@@ -5,24 +5,119 @@
   "profile": "explicit_term_source_certificate_handoff",
   "steps": [
     {
-      "declaration": "group_law_theorem_interface",
-      "source_kind": "explicit_term",
-      "term": "fun F => fun Point => fun IsGroup => fun group_law => group_law"
+      "declaration": "PointAtInfinity",
+      "source_kind": "explicit_def_value",
+      "term": "fun Point => fun zero_point => fun point => @Eq.{p} Point point zero_point"
     },
     {
-      "declaration": "elliptic_point_group_operation_laws_surface",
-      "source_kind": "explicit_term",
-      "term": "fun F => fun Point => fun AddPoint => fun ZeroPoint => fun NegPoint => fun OnCurve => fun Closure => fun Associativity => fun Identity => fun Inverse => fun GroupLawEvidence => fun group_law => fun closure => fun associativity => fun identity => fun inverse => group_law closure associativity identity inverse"
+      "declaration": "point_double",
+      "source_kind": "explicit_def_value",
+      "term": "fun Point => fun add_point => fun point => add_point point point"
     },
     {
-      "declaration": "group_law_independent_of_modularity_ribet_bridge_boundary",
-      "source_kind": "explicit_term",
-      "term": "fun EllipticGroupLawPackage => fun ModularityPackage => fun RibetPackage => fun BridgeAxiomPackage => fun NoDependency => fun boundary_law => fun group_law => fun modularity => fun ribet => fun bridge_axiom => boundary_law group_law modularity ribet bridge_axiom"
+      "declaration": "PointAdditionExceptionalCase",
+      "source_kind": "explicit_def_value",
+      "term": "fun Point => fun neg_point => fun left => fun right => @Eq.{p} Point right (neg_point left)"
     },
     {
-      "declaration": "group_law_general_api_reuse_surface",
+      "declaration": "PointOnShortWeierstrass",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun add => fun mul => fun Point => fun point_x => fun point_y_square => fun a => fun b => fun point => @ShortWeierstrassEquation.{u} Scalar add mul (point_x point) (point_y_square point) a b"
+    },
+    {
+      "declaration": "EllipticPointGroupData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => forall (Q : Prop), forall (mk : forall (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw), forall (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point), forall (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point), forall (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)), forall (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)), Q), Q"
+    },
+    {
+      "declaration": "point_at_infinity_zero_refl",
       "source_kind": "explicit_term",
-      "term": "fun EllipticCurveApi => fun SpecializedFreyModule => fun GeneralArithmeticGeometryContext => fun ReusableGroupLaw => fun reuse_law => fun api => fun context => reuse_law api context"
+      "term": "fun Point => fun zero_point => @Eq.refl.{p} Point zero_point"
+    },
+    {
+      "declaration": "point_double_defeq",
+      "source_kind": "explicit_term",
+      "term": "fun Point => fun add_point => fun point => @Eq.refl.{p} Point (@point_double.{p} Point add_point point)"
+    },
+    {
+      "declaration": "point_addition_exceptional_case_inverse_refl",
+      "source_kind": "explicit_term",
+      "term": "fun Point => fun neg_point => fun point => @Eq.refl.{p} Point (neg_point point)"
+    },
+    {
+      "declaration": "point_on_short_weierstrass_from_coordinates",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun add => fun mul => fun Point => fun point_x => fun point_y_square => fun a => fun b => fun point => fun coordinate_law => coordinate_law"
+    },
+    {
+      "declaration": "elliptic_point_group_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun model_data => fun abstract_group_structure => fun zero_on_curve => fun add_closed => fun neg_closed => fun (Q : Prop) => fun (mk : forall (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw), forall (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point), forall (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point), forall (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)), forall (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)), Q) => mk model_data abstract_group_structure zero_on_curve add_closed neg_closed"
+    },
+    {
+      "declaration": "elliptic_point_group_model_data",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => data (@WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw) (fun (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw) => fun (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point) => fun (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point) => fun (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)) => fun (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)) => model_data)"
+    },
+    {
+      "declaration": "elliptic_point_group_structure",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => data (@GroupLawArgs.{p} Point zero_point add_point neg_point) (fun (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw) => fun (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point) => fun (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point) => fun (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)) => fun (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)) => abstract_group_structure)"
+    },
+    {
+      "declaration": "elliptic_point_group_zero_on_curve",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => data (@PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point) (fun (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw) => fun (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point) => fun (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point) => fun (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)) => fun (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)) => zero_on_curve)"
+    },
+    {
+      "declaration": "elliptic_point_group_add_closed",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => data (forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)) (fun (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw) => fun (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point) => fun (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point) => fun (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)) => fun (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)) => add_closed)"
+    },
+    {
+      "declaration": "elliptic_point_group_neg_closed",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => data (forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)) (fun (model_data : @WeierstrassModelData.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw) => fun (abstract_group_structure : @GroupLawArgs.{p} Point zero_point add_point neg_point) => fun (zero_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b zero_point) => fun (add_closed : forall (left : Point), forall (right : Point), forall (left_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b left), forall (right_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b right), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (add_point left right)) => fun (neg_closed : forall (point : Point), forall (point_on_curve : @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b point), @PointOnShortWeierstrass.{p,u} Scalar add mul Point point_x point_y_square a b (neg_point point)) => neg_closed)"
+    },
+    {
+      "declaration": "elliptic_point_group_double_on_curve",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun point => fun point_on_curve => @elliptic_point_group_add_closed.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data point point point_on_curve point_on_curve"
+    },
+    {
+      "declaration": "elliptic_point_group_add_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun left => fun middle => fun right => @group_mul_assoc.{p} Point zero_point add_point neg_point (@elliptic_point_group_structure.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data) left middle right"
+    },
+    {
+      "declaration": "elliptic_point_group_left_identity",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun point => @group_one_mul.{p} Point zero_point add_point neg_point (@elliptic_point_group_structure.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data) point"
+    },
+    {
+      "declaration": "elliptic_point_group_right_identity",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun point => @group_mul_one.{p} Point zero_point add_point neg_point (@elliptic_point_group_structure.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data) point"
+    },
+    {
+      "declaration": "elliptic_point_group_left_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun point => @group_inv_mul.{p} Point zero_point add_point neg_point (@elliptic_point_group_structure.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data) point"
+    },
+    {
+      "declaration": "elliptic_point_group_right_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun point => @group_mul_inv.{p} Point zero_point add_point neg_point (@elliptic_point_group_structure.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data) point"
+    },
+    {
+      "declaration": "elliptic_point_group_nonsingular_model",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => @weierstrass_model_nonsingular_from_discriminant.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw (@elliptic_point_group_model_data.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data)"
+    },
+    {
+      "declaration": "elliptic_point_group_reusable_outside_specialized_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun Point => fun point_x => fun point_y_square => fun add_point => fun zero_point => fun neg_point => fun EllipticCurveApi => fun SpecializedRoute => fun GeneralContext => fun ReusablePointGroupLaw => fun data => fun api => fun route => fun context => @weierstrass_model_reusable_outside_specialized_routes.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw (@elliptic_point_group_model_data.{p,u} Scalar zero one add neg sub mul inv four twenty_seven a b Point point_x point_y_square add_point zero_point neg_point EllipticCurveApi SpecializedRoute GeneralContext ReusablePointGroupLaw data) api route context"
     }
   ],
   "acceptance": {

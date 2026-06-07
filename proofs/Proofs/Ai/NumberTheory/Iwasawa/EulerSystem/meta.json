@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:46f6722834de0aab599c53d886de11878a07a0c20d74e16d3f64687acba86a68",
-  "certificate_file_sha256": "sha256:457a68ff22ce35b447cc3f38b1ee05af05f5e36274c98aed75c3e96a8048bc0a",
+  "certificate_file_sha256": "sha256:e57cee43bccce688e393eb688b84af4f71904b83b8ba4c1f2467a73ef0ba9067",
   "export_hash": "sha256:324307c5edc904f7c25ef38a00dcca92ee6c636ef61feefc81dedc6f5dc32360",
   "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
-  "certificate_hash": "sha256:aac0be8ffc8cd6bd125579b383e6dceb7ee91569e8eea7e02ec6032da1a4b780",
+  "certificate_hash": "sha256:69fb8c50e401700d65d474dd6c9b95d7d7aa6a2d1b5b80ed7ca45005e249147b",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Iwasawa.Basic", "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.EllipticCurve.GaloisRepresentation", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.EllipticCurve.LFunction"],
   "axioms": [],
   "declarations": [

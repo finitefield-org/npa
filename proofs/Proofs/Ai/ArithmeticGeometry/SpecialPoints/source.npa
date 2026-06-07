@@ -6,6 +6,7 @@ import Proofs.Ai.Vector.AbstractSpace
 import Proofs.Ai.Analysis.AbstractNormedSpace
 import Proofs.Ai.NumberTheory.PadicAnalysis
 import Proofs.Ai.NumberTheory.PadicMeasure
+import Proofs.Ai.Algebra.AbstractGroup
 import Proofs.Ai.Algebra.AbstractRing
 import Proofs.Ai.Algebra.AbstractField
 import Proofs.Ai.EllipticCurve.Basic

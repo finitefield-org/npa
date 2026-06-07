@@ -1,4 +1,5 @@
 import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractGroup
 import Proofs.Ai.Algebra.AbstractRing
 import Proofs.Ai.Algebra.AbstractField
 import Proofs.Ai.EllipticCurve.Basic
