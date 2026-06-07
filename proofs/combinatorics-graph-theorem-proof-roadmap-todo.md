@@ -1961,7 +1961,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T58 Add Hypergraph Regularity, Removal, And Container Applications
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T38`, `CG-T39`, `CG-T54`, `CG-T56`, verified finite
   hypergraph and set-system foundations
 - Areas: `Proofs.Ai.Combinatorics.Hypergraph.Regularity`,
@@ -1977,6 +1977,18 @@ guessing. The split must preserve the dependency order in this document.
     primary modules.
 - Deliverables:
   - `L2` hypergraph regularity/removal/container application theorem modules.
+- Completed artifacts:
+  - Added `Proofs.Ai.Combinatorics.Hypergraph.Regularity` with explicit
+    complex, polyad, cell-partition, density-predicate, parameter hierarchy,
+    regularization certificate, counting predicate, counting lemma, and
+    finite-parameter route packages.
+  - Added `Proofs.Ai.Combinatorics.Hypergraph.Removal` with prerequisite,
+    removal-certificate, finite counting, parameter hierarchy, removal lemma,
+    and container-route theorem packages.
+  - Added `Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications` importing
+    `Proofs.Ai.Combinatorics.Container` and routing independent-set,
+    sparse-extremal, Ramsey, Turan, entropy, and probability certificates
+    through container application packages.
 - Acceptance criteria:
   - Parameter hierarchy assumptions are explicit and cannot be inferred by
     tactic or notation layers.
@@ -1988,7 +2000,9 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|HypergraphRegularity|ContainerApplication" proofs/Proofs/Ai/Combinatorics/Hypergraph`
+  - `cargo fmt --all -- --check`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2" proofs/Proofs/Ai/Combinatorics/Hypergraph/Regularity proofs/Proofs/Ai/Combinatorics/Hypergraph/Removal proofs/Proofs/Ai/Combinatorics/Hypergraph/ContainerApplications`
+  - `rg -n '"module": "Proofs.Ai.Combinatorics.Hypergraph.(Regularity|Removal|ContainerApplications)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T59 Add Sharp Threshold And Random Graph Phase Transition Theorems
