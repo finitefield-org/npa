@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Algebraic",
+  "source": "Proofs/Ai/Combinatorics/Algebraic/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Algebraic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:dcf6fbaaeb497552fcdfbf8cd093782ed413442db3ac21164c104ced19e11d58",
+  "certificate_file_sha256": "sha256:c2e6ffa6ce24b2259ee7ddf71ada7c8bce86b6f91255b4ebfd862524d4fe9edb",
+  "export_hash": "sha256:6931bcc97fa4ff2fc91e70dd14958d09c45970108ce5765b0c43e5c11ee8c292",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:d8ec3cf9d151101a04a34c461a4ca8f3807da69253706a8935b9214aa776fe09",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Species", "Proofs.Ai.Combinatorics.Polya", "Proofs.Ai.Combinatorics.Orbit"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlgebraicCombinatoricsBridgePackage", "kind": "def" },
+    { "name": "algebraic_combinatorics_bridge_package_intro", "kind": "theorem" },
+    { "name": "algebraic_orbit_counting_bridge_statement", "kind": "theorem" },
+    { "name": "algebraic_burnside_to_polya_statement", "kind": "theorem" },
+    { "name": "symmetric_enumeration_dependency_statement", "kind": "theorem" },
+    { "name": "algebraic_combinatorics_bridge_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

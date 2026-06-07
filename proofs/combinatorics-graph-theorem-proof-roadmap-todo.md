@@ -1053,21 +1053,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T32 Add Group Action And Orbit-Counting Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T02`, algebra group prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Algebraic`, `Proofs.Ai.Combinatorics.Orbit`
 - Tasks:
-  - Add group action on finite sets and orbit/stabilizer statement surfaces.
-  - Add Burnside lemma interface and selected projection theorems.
-  - Connect to Polya and symmetric enumeration tasks.
+  - Done: Added group action on finite sets and orbit/stabilizer statement
+    surfaces.
+  - Done: Added Burnside lemma interface and selected projection theorems.
+  - Done: Connected orbit counting to Polya and symmetric enumeration
+    dependency surfaces.
 - Deliverables:
-  - Algebraic combinatorics bridge module.
+  - Delivered: algebraic combinatorics bridge module set in
+    `Proofs.Ai.Combinatorics.Orbit` and
+    `Proofs.Ai.Combinatorics.Algebraic`.
 - Acceptance criteria:
-  - Group laws are imported from existing algebra modules.
-  - Orbit quotient evidence is explicit.
+  - Satisfied: group laws are imported from
+    `Proofs.Ai.Algebra.AbstractGroup` and projected through `GroupLawArgs`.
+  - Satisfied: orbit quotient evidence is explicit through
+    `OrbitQuotientEvidence` and orbit bijection evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Algebraic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `git diff --check`
 
 ### CG-T33 Add Symmetric Function And Association Scheme Interfaces
 
