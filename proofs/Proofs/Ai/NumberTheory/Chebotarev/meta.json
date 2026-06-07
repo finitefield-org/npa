@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:f6fdb49c8100ff58b437133aed8511a48d0779aa1de2b1e30b1123eced5410b4",
-  "certificate_file_sha256": "sha256:e53563341217e570e99334c0ee3a73ccfab21366d5345625ddd8dd56a0db91dd",
+  "certificate_file_sha256": "sha256:2775ee0aa6b9169df617b5dbff678da111c056d1195768088ef4c15ac6e348e2",
   "export_hash": "sha256:74a26cd4fd55b38251c15aec7bf3312a7d55455016ac2e43c8ca2907855b8713",
   "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
-  "certificate_hash": "sha256:4a73633a57a207cd54b9a2fd42ef7d357acce358dc6cf9da000d1ec80ccc2b7c",
+  "certificate_hash": "sha256:07b0b1aaf1683f7c9eca0ece7dc8223f4b038933e96a718c66fb80cd6e95925b",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Frobenius", "Proofs.Ai.NumberTheory.PrimeNumberTheorem", "Proofs.Ai.NumberTheory.DirichletL", "Proofs.Ai.NumberTheory.PrimeInfinitude"],
   "axioms": [],
   "declarations": [

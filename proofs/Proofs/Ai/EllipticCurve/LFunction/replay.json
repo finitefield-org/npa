@@ -33,11 +33,6 @@
       "declaration": "sato_tate_statement_surface",
       "source_kind": "explicit_term",
       "term": "fun EllipticCurve => fun FrobeniusAngleDistribution => fun SatoTateEquidistribution => fun sato_tate_law => fun curve => fun distribution => sato_tate_law curve distribution"
-    },
-    {
-      "declaration": "bsd_conjectural_or_conditional_statement_surface",
-      "source_kind": "explicit_term",
-      "term": "fun BSDStatement => fun ConjecturalOrConditional => fun NotDerivedTheorem => fun bsd_law => fun statement => bsd_law statement"
     }
   ],
   "acceptance": {

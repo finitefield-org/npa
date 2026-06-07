@@ -1,4 +1,6 @@
 import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractField
 import Proofs.Ai.EllipticCurve.Basic
 import Proofs.Ai.EllipticCurve.FiniteField
 
@@ -25,7 +27,3 @@ theorem kolyvagin_statement_surface :
 theorem sato_tate_statement_surface :
   forall (EllipticCurve : Type), forall (FrobeniusAngleDistribution : EllipticCurve -> Type), forall (SatoTateEquidistribution : forall (curve : EllipticCurve), FrobeniusAngleDistribution curve -> Prop), forall (sato_tate_law : forall (curve : EllipticCurve), forall (distribution : FrobeniusAngleDistribution curve), SatoTateEquidistribution curve distribution), forall (curve : EllipticCurve), forall (distribution : FrobeniusAngleDistribution curve), SatoTateEquidistribution curve distribution :=
   fun EllipticCurve => fun FrobeniusAngleDistribution => fun SatoTateEquidistribution => fun sato_tate_law => fun curve => fun distribution => sato_tate_law curve distribution
-
-theorem bsd_conjectural_or_conditional_statement_surface :
-  forall (BSDStatement : Type), forall (ConjecturalOrConditional : BSDStatement -> Prop), forall (NotDerivedTheorem : BSDStatement -> Prop), forall (bsd_law : forall (statement : BSDStatement), ConjecturalOrConditional statement -> NotDerivedTheorem statement), forall (statement : BSDStatement), ConjecturalOrConditional statement -> NotDerivedTheorem statement :=
-  fun BSDStatement => fun ConjecturalOrConditional => fun NotDerivedTheorem => fun bsd_law => fun statement => bsd_law statement

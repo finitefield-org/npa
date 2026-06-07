@@ -1,4 +1,6 @@
 import Std.Logic.Eq
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractField
 import Proofs.Ai.EllipticCurve.Basic
 
 theorem elliptic_height_interface :

@@ -5,12 +5,12 @@
   "certificate": "Proofs/Ai/EllipticCurve/LFunction/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:80c7af70dfc367eb1a15e4cb6539b9c1dae160312626bf563663a5f7415dac95",
-  "certificate_file_sha256": "sha256:ddbaff603e97628a174ca0741f9cd73209da7c6fee7b57a90ac47fd1c5eb68f1",
-  "export_hash": "sha256:b5dd36beca4176f5c68086975e71dd5c9bed9becb550f8aa7a6d783a96cec68d",
-  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
-  "certificate_hash": "sha256:fdd56f60eac908184ca736e4e7f0972cfa4793dc34bda87dfadbbf7648418fc5",
-  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.FiniteField"],
+  "source_sha256": "sha256:e502bf39ed5f4447266029c7dee4c8806d98ea3188a85b5e4a7c38585d47011a",
+  "certificate_file_sha256": "sha256:697d44cba89d493c87af20e777d2cd6cb04fa1f4d253b34f2df85d80d88b4d68",
+  "export_hash": "sha256:ea7d61c8b2da60a638de8afe4953652772779a1059ed54a77ff26a0c09d8e1ea",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:e1c9de0017785fc93cda5a0a5c65ed04515a720c5ff24b781f7a00075df19b0b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.FiniteField"],
   "axioms": [],
   "declarations": [
     { "name": "elliptic_curve_l_function_interface", "kind": "theorem" },
@@ -18,8 +18,7 @@
     { "name": "modularity_link_points_to_nt_t52_boundary", "kind": "theorem" },
     { "name": "gross_zagier_statement_surface", "kind": "theorem" },
     { "name": "kolyvagin_statement_surface", "kind": "theorem" },
-    { "name": "sato_tate_statement_surface", "kind": "theorem" },
-    { "name": "bsd_conjectural_or_conditional_statement_surface", "kind": "theorem" }
+    { "name": "sato_tate_statement_surface", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
