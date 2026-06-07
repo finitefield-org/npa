@@ -1322,20 +1322,26 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T41 Add Spectral Bounds And Expander Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T40`, linear algebra spectral prerequisites
 - Areas: `Proofs.Ai.Graph.Spectral.Bounds`, `Proofs.Ai.Graph.Expander`
 - Tasks:
-  - Add Laplacian kernel and connected component interfaces.
-  - Add eigenvalue bounds for degree, coloring, and expansion.
-  - Add Cheeger-style and expander theorem interfaces.
+  - Done: Added Laplacian kernel and connected component interfaces.
+  - Done: Added eigenvalue bounds for degree, coloring, and expansion.
+  - Done: Added Cheeger-style and expander theorem interfaces.
 - Deliverables:
-  - Spectral graph theorem interface module.
+  - Delivered: spectral graph theorem interface module in
+    `Proofs.Ai.Graph.Spectral.Bounds`, with expander theorem interfaces in
+    `Proofs.Ai.Graph.Expander`.
 - Acceptance criteria:
-  - Cheeger-style statements import analytic or linear-algebra dependencies
-    explicitly.
-  - Expander definitions do not depend on unverified random graph assumptions.
+  - Satisfied: Cheeger-style statements import linear-algebra spectral
+    dependencies through explicit `LinearAlgebraSpectralImportEvidence`.
+  - Satisfied: expander definitions do not import random graph modules and
+    carry `NoRandomGraphAssumptionEvidence` plus
+    `NoUnverifiedRandomGraphDependencyEvidence`.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Expander`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Expander --verified-cache authoring`
   - `rg -n "Laplacian|Cheeger|expander|spectral graph" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/linear-algebra-theorem-proof-roadmap*.md`
   - `git diff --check`
 

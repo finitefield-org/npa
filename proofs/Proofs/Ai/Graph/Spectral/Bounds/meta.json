@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Spectral.Bounds",
+  "source": "Proofs/Ai/Graph/Spectral/Bounds/source.npa",
+  "certificate": "Proofs/Ai/Graph/Spectral/Bounds/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4f6bdade00c8c50606e875d9e7b79043b352c1f372c49518ec495f223ffa1033",
+  "certificate_file_sha256": "sha256:3a51ef6cd8b26631b8de8f7738321ab0098b8576016ad8c74bdf82b966bb15c2",
+  "export_hash": "sha256:4204a035d273dc2a98ace5e2ea180794c9a9da61853ce8326d49a959d5a58690",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:a899d6c91def18bd594af946c1fd04bf93688beee950fbf8f59cf5a47b4e458a",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Laplacian", "Proofs.Ai.Graph.Spectral", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SpectralBoundsDependencyPackage", "kind": "def" },
+    { "name": "LaplacianKernelComponentPackage", "kind": "def" },
+    { "name": "SpectralEigenvalueBoundsPackage", "kind": "def" },
+    { "name": "spectral_bounds_dependency_package_intro", "kind": "theorem" },
+    { "name": "laplacian_kernel_component_package_intro", "kind": "theorem" },
+    { "name": "spectral_eigenvalue_bounds_package_intro", "kind": "theorem" },
+    { "name": "laplacian_kernel_connected_component_statement", "kind": "theorem" },
+    { "name": "degree_eigenvalue_bound_statement", "kind": "theorem" },
+    { "name": "coloring_eigenvalue_bound_statement", "kind": "theorem" },
+    { "name": "expansion_eigenvalue_bound_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
