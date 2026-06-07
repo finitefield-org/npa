@@ -1797,7 +1797,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T54 Upgrade Design, Finite Geometry, Hypergraph, And Set-System Boundaries To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T09`, `CG-T36`, `CG-T37`, `CG-T38`, `CG-T39`, finite field
   and coding-theory prerequisites as needed
 - Areas: `Proofs.Ai.Combinatorics.Design`,
@@ -1824,11 +1824,15 @@ guessing. The split must preserve the dependency order in this document.
     evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Design Proofs.Ai.Combinatorics.FiniteGeometry Proofs.Ai.Combinatorics.Hypergraph Proofs.Ai.Combinatorics.Container Proofs.Ai.Combinatorics.SetSystem`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.SetSystem --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Design --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.FiniteGeometry --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Container --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|FiniteGeometry|Hypergraph|Container|Bonferroni|Coding" proofs/Proofs/Ai/Combinatorics/Design proofs/Proofs/Ai/Combinatorics/FiniteGeometry proofs/Proofs/Ai/Combinatorics/Hypergraph proofs/Proofs/Ai/Combinatorics/Container proofs/Proofs/Ai/Combinatorics/SetSystem`
+  - `cargo fmt --all -- --check`
+  - `rg -n "(^|[^A-Za-z0-9_])(ProbabilityImportEvidence|ProbabilityBonferroniAliasEvidence|PrimaryCombinatorialProofEvidence|probability_bonferroni_alias_boundary_statement|HypergraphHandshakeBoundaryEvidence|ShadowDegreeBoundaryEvidence|hypergraph_handshake_boundary_statement|hypergraph_shadow_degree_boundary_statement|FisherInequalityBoundaryEvidence|ProjectivePlaneParameterBoundaryEvidence|AffinePlaneParameterBoundaryEvidence|FiniteFieldConstructionImportBoundaryEvidence|FiniteGeometryPlaneInterfacePackage|finite_geometry_plane_interface_package_intro|FiniteGeometryCodingAliasBoundaryEvidence|finite_geometry_coding_alias_boundary_statement|ContainerAssumptionBoundaryPackage|container_assumption_boundary_package_intro|ErdosKoRadoInterfaceEvidence|erdos_ko_rado_container_interface_statement|ContainerEntropyProbabilityBoundaryEvidence|container_entropy_probability_boundary_statement|HypergraphExtremalInterfaceEvidence|hypergraph_extremal_container_interface_statement)([^A-Za-z0-9_]|$)" tools/proof-corpus/src/main.rs proofs/Proofs/Ai/Combinatorics/Design proofs/Proofs/Ai/Combinatorics/FiniteGeometry proofs/Proofs/Ai/Combinatorics/Hypergraph proofs/Proofs/Ai/Combinatorics/Container proofs/Proofs/Ai/Combinatorics/SetSystem proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T55 Upgrade Graph Algorithm Correctness Boundaries To L2
