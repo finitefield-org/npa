@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Ramsey",
+  "source": "Proofs/Ai/Graph/Ramsey/source.npa",
+  "certificate": "Proofs/Ai/Graph/Ramsey/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:17ad1b514c57228cf7fb33067d638324150b6c40a390e0eaac477b872f1a5b12",
+  "certificate_file_sha256": "sha256:d26ce701476e0c703b9c67351e0fdb1014915a76fd8da5bf8df4fbdad3d0c92d",
+  "export_hash": "sha256:81d8360f502083f1f6587d4ea64f10f7990f756ff92cfb3c786b0b20f0e7352a",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:ff403a5ec7ee7ef721dd6c2526ed788a83f8c5230f8b6256e5772c9355fc3f26",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Ramsey", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Coloring", "Proofs.Ai.Graph.Clique"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteGraphRamseyInterfacePackage", "kind": "def" },
+    { "name": "finite_graph_ramsey_interface_package_intro", "kind": "theorem" },
+    { "name": "graph_edge_coloring_statement", "kind": "theorem" },
+    { "name": "monochromatic_clique_statement", "kind": "theorem" },
+    { "name": "finite_graph_ramsey_number_statement", "kind": "theorem" },
+    { "name": "finite_graph_ramsey_theorem_interface_statement", "kind": "theorem" },
+    { "name": "small_ramsey_bound_examples_statement", "kind": "theorem" },
+    { "name": "finite_graph_ramsey_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

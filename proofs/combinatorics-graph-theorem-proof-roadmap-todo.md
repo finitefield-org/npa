@@ -879,21 +879,29 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T26 Add Finite Ramsey Foundations
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T20`, finite coloring foundations
 - Areas: `Proofs.Ai.Combinatorics.Ramsey`, `Proofs.Ai.Graph.Ramsey`
 - Tasks:
-  - Define finite coloring of finite subsets and graph edge colorings.
-  - Add finite Ramsey number statement surface.
-  - Add finite Ramsey theorem interface and small-bound examples.
+  - [x] Define finite coloring of finite subsets and graph edge colorings.
+  - [x] Add finite Ramsey number statement surface.
+  - [x] Add finite Ramsey theorem interface and small-bound examples.
 - Deliverables:
-  - Finite Ramsey theorem interface module.
+  - `Proofs.Ai.Combinatorics.Ramsey` records finite subset coloring,
+    homogeneous subset, finite Ramsey number, theorem interface, and
+    set-theory boundary evidence over explicit finite enumeration and
+    finite-subset cardinality hypotheses.
+  - `Proofs.Ai.Graph.Ramsey` records graph edge coloring, complete graph
+    Ramsey, monochromatic clique, graph Ramsey number, finite graph Ramsey
+    theorem, small-bound examples, and finite-only boundary evidence over the
+    verified graph coloring and clique foundations.
 - Acceptance criteria:
-  - Infinite Ramsey and partition calculus remain primary in set theory.
-  - Color-count and finite-set hypotheses are explicit.
+  - [x] Infinite Ramsey and partition calculus remain primary in set theory.
+  - [x] Color-count and finite-set hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Ramsey`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Ramsey`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Ramsey --verified-cache authoring`
 
 ### CG-T27 Add Hypergraph Ramsey Interfaces
 
