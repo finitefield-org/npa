@@ -1020,21 +1020,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T31 Add Polya Counting And Species Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T30`, `CG-T32`
 - Areas: `Proofs.Ai.Combinatorics.Species`, `Proofs.Ai.Combinatorics.Polya`
 - Tasks:
-  - Add combinatorial species operation interfaces.
-  - Add cycle index and Polya enumeration theorem interfaces.
-  - Connect unlabeled counting to quotient and group-action evidence.
+  - Done: Added combinatorial species operation interfaces with finite
+    enumeration, bijective transport, and generating-function bridge evidence.
+  - Done: Added cycle-index, Burnside, and Polya enumeration theorem
+    interfaces.
+  - Done: Connected unlabeled counting to explicit quotient and group-action
+    evidence.
 - Deliverables:
-  - Species and Polya interface modules.
+  - Delivered: species and Polya interface modules in
+    `Proofs.Ai.Combinatorics.Species` and
+    `Proofs.Ai.Combinatorics.Polya`.
 - Acceptance criteria:
-  - Unlabeled counting exposes quotient/group-action assumptions.
-  - Group-action prerequisites import algebra modules rather than duplicating
-    group laws.
+  - Satisfied: unlabeled counting exposes quotient/group-action assumptions
+    through `OrbitQuotientEvidence`, `GroupActionLawEvidence`, and explicit
+    orbit bijection evidence.
+  - Satisfied: group-action prerequisites import
+    `Proofs.Ai.Algebra.AbstractGroup`, with group laws projected from imported
+    `GroupLawArgs` rather than duplicated locally.
 - Verification:
   - `rg -n "Polya|species|cycle index|unlabeled" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Polya`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ### CG-T32 Add Group Action And Orbit-Counting Bridge

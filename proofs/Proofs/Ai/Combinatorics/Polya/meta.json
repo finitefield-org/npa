@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Polya",
+  "source": "Proofs/Ai/Combinatorics/Polya/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Polya/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:655c8d54d20d9d687e60e4c69d8f8b99d1155e86e232b23283bcc8994028158a",
+  "certificate_file_sha256": "sha256:6597264be3c4eeb35c2c8beb7f009041783090c8b9c2b4776f56fac3802f3625",
+  "export_hash": "sha256:4b1f321a7a9e063b2b6f910c660b48e0d42d119c89f1fa38043bf9e84417cc48",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:37911ff7a7b17f04fdd0d708cadafc7b19e94258a8a30dd91fca1b8fb65953bf",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Enumerative", "Proofs.Ai.Combinatorics.Species"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PolyaCycleIndexInterfacePackage", "kind": "def" },
+    { "name": "polya_cycle_index_interface_package_intro", "kind": "theorem" },
+    { "name": "polya_group_action_import_boundary_statement", "kind": "theorem" },
+    { "name": "polya_cycle_index_statement", "kind": "theorem" },
+    { "name": "polya_burnside_orbit_counting_statement", "kind": "theorem" },
+    { "name": "polya_enumeration_theorem_statement", "kind": "theorem" },
+    { "name": "polya_unlabeled_counting_statement", "kind": "theorem" },
+    { "name": "polya_quotient_group_action_assumptions_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
