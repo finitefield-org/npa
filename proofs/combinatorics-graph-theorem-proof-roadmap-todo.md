@@ -988,23 +988,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T30 Add Enumerative Combinatorics Foundations
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T06`, `CG-T11`
 - Areas: `Proofs.Ai.Combinatorics.Enumerative`,
   `Proofs.Ai.Combinatorics.Partition`, `Proofs.Ai.Combinatorics.Catalan`
 - Tasks:
-  - Add partitions, compositions, Catalan objects, Stirling numbers, Bell
-    numbers, and recurrence surfaces.
-  - Add derived theorem targets where finite counting prerequisites are ready.
-  - Record number-theory partition identity ownership.
+  - Done: Added partitions, compositions, Catalan objects, Stirling numbers,
+    Bell numbers, and recurrence surfaces.
+  - Done: Added derived theorem targets using explicit finite enumeration,
+    recurrence, and formal generating-function prerequisites.
+  - Done: Recorded number-theory partition identity ownership and cross-link
+    evidence.
 - Deliverables:
-  - Enumerative combinatorics foundation module set.
+  - Delivered: enumerative combinatorics foundation module set in
+    `Proofs.Ai.Combinatorics.Partition`,
+    `Proofs.Ai.Combinatorics.Catalan`, and
+    `Proofs.Ai.Combinatorics.Enumerative`.
 - Acceptance criteria:
-  - Partition identities that are primarily number-theoretic are cross-linked.
-  - Catalan family equivalences carry explicit bijection evidence.
+  - Satisfied: partition identities that are primarily number-theoretic carry
+    explicit owner and cross-link evidence.
+  - Satisfied: Catalan family equivalences depend on an explicit
+    `BijectionPredicate` between Catalan tree and path carriers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Enumerative`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Enumerative`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Enumerative --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `git diff --check`
 
 ### CG-T31 Add Polya Counting And Species Interfaces
 

@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Partition",
+  "source": "Proofs/Ai/Combinatorics/Partition/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Partition/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fbdb235f74228a6ccf618718cfa5ad81b37721f78bb228918fde007df5c6f34e",
+  "certificate_file_sha256": "sha256:138ffbb7604569b92418729e324288c0b3227de98f0c4cfc06ac8a5237d8ac6a",
+  "export_hash": "sha256:49d789b3428ba4cba00dfc0485e30d42af2d83a7606c3bbb4c07e156301c186d",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:a124173c9308afbc3948f692ae99ce35b853613d5e9b684160a13a60c009770c",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Binomial", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PartitionCompositionFoundationPackage", "kind": "def" },
+    { "name": "partition_composition_foundation_package_intro", "kind": "theorem" },
+    { "name": "integer_partition_statement", "kind": "theorem" },
+    { "name": "composition_statement", "kind": "theorem" },
+    { "name": "partition_recurrence_surface_statement", "kind": "theorem" },
+    { "name": "partition_generating_function_surface_statement", "kind": "theorem" },
+    { "name": "partition_number_theory_identity_cross_link_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

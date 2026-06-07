@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Catalan",
+  "source": "Proofs/Ai/Combinatorics/Catalan/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Catalan/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f122b8b6f0a9193d9d4a024db515da05ea82b916ab5f333864e6213025daaf90",
+  "certificate_file_sha256": "sha256:b6d4ebf621e2870043bd27b7eb40c05735a19d3cad92d81530296f9f97959951",
+  "export_hash": "sha256:dd8c36e3483e3ebb02e6759498d4ac7f925f4df38adeadb0f033b2a771bbca9d",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:3762f3298eeb33ee095f5da4e7129a10984d2fad5fb5243c355611c243fee5d4",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Binomial", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Partition"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CatalanFamilyInterfacePackage", "kind": "def" },
+    { "name": "catalan_family_interface_package_intro", "kind": "theorem" },
+    { "name": "catalan_bijection_evidence_statement", "kind": "theorem" },
+    { "name": "catalan_family_equivalence_statement", "kind": "theorem" },
+    { "name": "catalan_recurrence_surface_statement", "kind": "theorem" },
+    { "name": "catalan_closed_form_statement", "kind": "theorem" },
+    { "name": "catalan_generating_function_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
