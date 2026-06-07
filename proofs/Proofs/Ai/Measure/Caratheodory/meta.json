@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Caratheodory",
+  "source": "Proofs/Ai/Measure/Caratheodory/source.npa",
+  "certificate": "Proofs/Ai/Measure/Caratheodory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6a2e5f46ead00ee093088404fbbb3829630d8b2f965b2761a2a94134e8d24b64",
+  "certificate_file_sha256": "sha256:c568b1e62a2839a73db3d5510df73914ece624db4bb8b29be2165ebd140c496d",
+  "export_hash": "sha256:2c3d4cf9b18c145793736db3d53486e6e7153c1c90d2ed496b8d7cae6b1129c5",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:0002ba4a9dad92fb1e3813131c3af302d7a4ef25b6723b7b03152d11c11c1141",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.Outer"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CaratheodorySplitCriterion", "kind": "def" },
+    { "name": "CaratheodoryMeasurable", "kind": "def" },
+    { "name": "CaratheodorySigmaAlgebraEvidence", "kind": "def" },
+    { "name": "caratheodory_measurable_intro", "kind": "theorem" },
+    { "name": "caratheodory_measurable_split", "kind": "theorem" },
+    { "name": "caratheodory_sigma_algebra_evidence_intro", "kind": "theorem" },
+    { "name": "caratheodory_split_criterion", "kind": "theorem" },
+    { "name": "caratheodory_complement_closed_from_split", "kind": "theorem" },
+    { "name": "caratheodory_countable_union_closed_from_subadditivity", "kind": "theorem" },
+    { "name": "caratheodory_sigma_algebra_core", "kind": "theorem" },
+    { "name": "caratheodory_measurable_space", "kind": "theorem" },
+    { "name": "caratheodory_restricted_outer_measure_space", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -70,8 +70,11 @@ promotion into a high-trust closure.
   measurable-space foundation. `Proofs.Ai.Measure.Basic`,
   `Proofs.Ai.Measure.Completion`, and `Proofs.Ai.Measure.Restriction` now add
   basic measure structures, derived additivity/order interfaces, L1 completion
-  hooks, and restriction hooks; outer measure, extension, product measure, and
-  integral measure modules are not yet present.
+  hooks, and restriction hooks. `Proofs.Ai.Measure.Outer` and
+  `Proofs.Ai.Measure.Caratheodory` add outer-measure laws, split-criterion
+  measurability, Caratheodory sigma-algebra evidence, and restriction of an
+  outer measure to the Caratheodory measurable sets; extension, product measure,
+  and integral measure modules are not yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
@@ -481,7 +484,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T09 Define Outer Measure And Caratheodory Measurability
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`, `MEA-T07`
 - Areas: `Proofs/Ai/Measure/Outer/`, `Proofs/Ai/Measure/Caratheodory/`
 - Tasks:
@@ -499,10 +502,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Outer`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
+- Completed with `Proofs.Ai.Measure.Outer` and
+  `Proofs.Ai.Measure.Caratheodory`. Outer records empty-set, monotonicity, and
+  countable-subadditivity laws. Caratheodory records the split equality over an
+  arbitrary test set using structured `SetIntersection` and `SetDifference`
+  arguments, with no premeasure-extension premise. The theorem-card sidecar now
+  separates outer-measure laws, Caratheodory measurability/sigma-algebra
+  evidence, and extension interfaces.
 
 ### MEA-T10 Prove Caratheodory Measurable Sets Form A Sigma Algebra
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T09`
 - Areas: `Proofs/Ai/Measure/Caratheodory/`
 - Tasks:
@@ -519,6 +529,14 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Caratheodory`
+- Completed with `caratheodory_complement_closed_from_split`,
+  `caratheodory_countable_union_closed_from_subadditivity`,
+  `caratheodory_sigma_algebra_core`, `caratheodory_measurable_space`, and
+  `caratheodory_restricted_outer_measure_space`. The sigma-algebra certificate
+  is built from explicit split/subadditivity closure evidence, not from an
+  assumed `SigmaAlgebraCore`; the restricted measure certificate reuses
+  `MeasureSpace`, `MeasureValueSupport`, `MeasureFiniteAdditivityLaw`, and
+  `MeasureCountableAdditivityLaw` from `Proofs.Ai.Measure.Basic`.
 
 ### MEA-T11 Add Premeasure-Induced Outer Measure And Extension Interfaces
 
