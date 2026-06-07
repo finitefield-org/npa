@@ -57,6 +57,11 @@ Current bundles:
   `ProductInitialHook`, proves projection continuity, records product basic opens and basis
   routes, finite-product projection routes, and compactness/connectedness/countability/local
   property hooks for later product-property modules.
+- `Proofs/Ai/Topology/Quotient/Basic/`: quotient topology core over final-topology and
+  continuity layers. It packages quotient spaces as topological-space laws plus
+  `QuotientFinalHook`, proves quotient projection continuity, records open/closed
+  characterization routes, descent-continuity criteria, and explicit open/closed quotient-map
+  route evidence.
 - `Proofs/Ai/Topology/MapClass/`: map-class layer over continuity. It defines open-map and
   closed-map image witnesses, injective maps, embeddings, quotient maps, homeomorphism hooks,
   open/closed pasting-cover routes with compatibility laws, and a compact-open topology hook for

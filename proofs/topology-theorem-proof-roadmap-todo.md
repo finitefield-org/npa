@@ -68,7 +68,8 @@ promotion into a high-trust closure.
   basic topological vocabulary, closure, generated/subspace/initial/final
   topologies, continuity/map classes, homeomorphism/invariants, separation,
   compactness, metric compactness, connectedness core routes, countability /
-  separability / Lindelof route vocabulary, and product topology core routes.
+  separability / Lindelof route vocabulary, product topology core routes, and
+  quotient topology core routes.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -831,22 +832,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T22 Add Quotient Topology Core
 
-- Status: Pending
+- Status: Completed (2026-06-07)
 - Depends on: `TOP-T04`, `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Quotient.Basic`
 - Tasks:
-  - Define quotient topology and quotient maps.
-  - Prove quotient universal property, quotient-map continuity criteria, and
-    open/closed set characterizations.
-  - Add open and closed quotient map theorems where hypotheses are explicit.
+  - Completed: Define quotient topology core evidence and quotient topology
+    map evidence over `QuotientFinalHook`.
+  - Completed: Prove quotient projection continuity, open/closed set
+    characterization routes, descent continuity from exact composition
+    preimage-open evidence, and the reverse composition-continuity direction.
+  - Completed: Add open and closed quotient map route theorems with explicit
+    image-open and image-closed hypotheses.
 - Deliverables:
-  - Quotient topology base module.
+  - Completed: `Proofs.Ai.Topology.Quotient.Basic` source, certificate,
+    metadata, replay, and AI theorem index entries.
 - Acceptance criteria:
-  - Quotient topology uses final topology infrastructure from `TOP-T04`.
-  - Quotient continuity criteria do not duplicate `TOP-T05` definitions.
+  - Satisfied: Quotient topology uses final topology infrastructure from
+    `TOP-T04` through `QuotientFinalHook` and `FinalTopologyRoute`.
+  - Satisfied: Quotient continuity criteria import `TOP-T05`, produce and
+    consume `ContinuousMap`, and do not duplicate the continuity definition.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Quotient.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Quotient.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Quotient.Basic --verified-cache off`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T23 Add Gluing And Standard Quotient Model Interfaces
 
