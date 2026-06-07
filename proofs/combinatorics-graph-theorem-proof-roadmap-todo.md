@@ -1414,23 +1414,41 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T44 Add Submodularity And Polytope Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T17`, `CG-T19`, linear algebra/optimization prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Optimization`,
   `Proofs.Ai.Graph.Polytope`
 - Tasks:
-  - Add submodular function, rank function, cut function, and polymatroid
-    statement surfaces.
-  - Add matching polytope, flow polytope, and cut polytope interfaces.
-  - Record LP/duality prerequisites.
+  - Done: Added submodular function, rank function, cut function, and
+    polymatroid statement surfaces in
+    `Proofs.Ai.Combinatorics.Optimization`.
+  - Done: Added matching polytope, flow polytope, and cut polytope interfaces
+    in `Proofs.Ai.Graph.Polytope`.
+  - Done: Recorded LP and convex-duality prerequisites through explicit
+    `LinearProgrammingPrimaryRouteEvidence`,
+    `ConvexDualityPrimaryRouteEvidence`, and
+    `LPDualityPrerequisiteEvidence`, with
+    `NoDuplicateConvexOptimizationProofEvidence` marking the no-duplication
+    boundary.
 - Deliverables:
-  - Combinatorial optimization interface module.
+  - Delivered: Combinatorial optimization interface module and graph polytope
+    interface module.
 - Acceptance criteria:
-  - General LP and convex duality are imported from their primary route.
-  - Graph-specific polytope statements keep finite graph evidence explicit.
+  - Satisfied: General LP and convex duality are kept on their primary route by
+    explicit route evidence and a no-duplication boundary.
+  - Satisfied: Graph-specific polytope statements require explicit
+    `FiniteGraphEvidence`, `FiniteVertexEvidence`, `FiniteEdgeEvidence`, and
+    `GraphSpecificFiniteBoundaryEvidence`.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Optimization`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Optimization Proofs.Ai.Graph.Polytope`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Polytope --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Polytope`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "Submodular|Polymatroid|LinearProgrammingPrimaryRouteEvidence|ConvexDualityPrimaryRouteEvidence|MatchingPolytope|FlowPolytope|CutPolytope|FiniteGraphEvidence|GraphSpecificFiniteBoundaryEvidence" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/Optimization/source.npa proofs/Proofs/Ai/Graph/Polytope/source.npa`
+  - `git diff --check`
 
 ### CG-T45 Add Matroid And Submodular Optimization Interfaces
 
