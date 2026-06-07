@@ -1,0 +1,157 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Topology.Closure
+
+def DistinctPoints.{u} :
+  forall (X : Sort u), forall (left : X), forall (right : X), Prop :=
+  fun X => fun left => fun right => forall (same : @Eq.{u} X left right), @EmptySet.{u} X left
+
+def PointOpenExclusion.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (excluded : X), Prop :=
+  fun X => fun isOpen => fun center => fun excluded => forall (P : Prop), forall (mk : forall (open_set : forall (x : X), Prop), forall (open_law : isOpen open_set), forall (center_mem : open_set center), forall (excluded_not_mem : @SetComplement.{u} X open_set excluded), P), P
+
+def DisjointOpenNeighborhoods.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), Prop :=
+  fun X => fun isOpen => fun left => fun right => forall (P : Prop), forall (mk : forall (left_open_set : forall (x : X), Prop), forall (right_open_set : forall (x : X), Prop), forall (left_open_law : isOpen left_open_set), forall (right_open_law : isOpen right_open_set), forall (left_mem : left_open_set left), forall (right_mem : right_open_set right), forall (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z), P), P
+
+def T0Space.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), forall (P : Prop), forall (mk_left : @PointOpenExclusion.{u} X isOpen left right -> P), forall (mk_right : @PointOpenExclusion.{u} X isOpen right left -> P), P
+
+def KolmogorovSpace.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => @T0Space.{u} X isOpen
+
+def T1Space.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (P : Prop), forall (mk : forall (point_exclusion_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right), forall (singleton_closed_law : forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)), forall (finite_closed_law : forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset), P), P
+
+def HausdorffSpace.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (P : Prop), forall (mk : forall (disjoint_neighborhood_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @DisjointOpenNeighborhoods.{u} X isOpen left right), P), P
+
+def HausdorffDiagonalCriterion.{p,u} :
+  forall (X : Sort u), forall (Product : Sort p), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (diagonal : forall (point : Product), Prop), Prop :=
+  fun X => fun Product => fun isOpen => fun productOpen => fun diagonal => forall (P : Prop), forall (mk : forall (forward : @HausdorffSpace.{u} X isOpen -> @ClosedSet.{p} Product productOpen diagonal), forall (backward : @ClosedSet.{p} Product productOpen diagonal -> @HausdorffSpace.{u} X isOpen), P), P
+
+def CompactHausdorffClosedRoute.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (subset : forall (x : X), Prop), forall (CompactSubset : Prop), forall (compact_law : CompactSubset), forall (hausdorff_law : @HausdorffSpace.{u} X isOpen), @ClosedSet.{u} X isOpen subset
+
+theorem distinct_points_intro.{u} :
+  forall (X : Sort u), forall (left : X), forall (right : X), forall (neq : forall (same : @Eq.{u} X left right), @EmptySet.{u} X left), @DistinctPoints.{u} X left right :=
+  fun X => fun left => fun right => fun neq => neq
+
+theorem distinct_points_absurd.{u} :
+  forall (X : Sort u), forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), forall (same : @Eq.{u} X left right), forall (P : Prop), P :=
+  fun X => fun left => fun right => fun distinct => fun same => fun P => distinct same P
+
+theorem point_open_exclusion_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (excluded : X), forall (open_set : forall (x : X), Prop), forall (open_law : isOpen open_set), forall (center_mem : open_set center), forall (excluded_not_mem : @SetComplement.{u} X open_set excluded), @PointOpenExclusion.{u} X isOpen center excluded :=
+  fun X => fun isOpen => fun center => fun excluded => fun open_set => fun open_law => fun center_mem => fun excluded_not_mem => fun (P : Prop) => fun (mk : forall (open_set : forall (x : X), Prop), forall (open_law : isOpen open_set), forall (center_mem : open_set center), forall (excluded_not_mem : @SetComplement.{u} X open_set excluded), P) => mk open_set open_law center_mem excluded_not_mem
+
+theorem point_open_exclusion_open.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (excluded : X), forall (witness : @PointOpenExclusion.{u} X isOpen center excluded), forall (P : Prop), forall (use : forall (open_set : forall (x : X), Prop), forall (open_law : isOpen open_set), P), P :=
+  fun X => fun isOpen => fun center => fun excluded => fun witness => fun P => fun use => witness P (fun (open_set : forall (x : X), Prop) => fun (open_law : isOpen open_set) => fun (center_mem : open_set center) => fun (excluded_not_mem : @SetComplement.{u} X open_set excluded) => use open_set open_law)
+
+theorem point_open_exclusion_center.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (excluded : X), forall (witness : @PointOpenExclusion.{u} X isOpen center excluded), forall (P : Prop), forall (use : forall (open_set : forall (x : X), Prop), forall (center_mem : open_set center), P), P :=
+  fun X => fun isOpen => fun center => fun excluded => fun witness => fun P => fun use => witness P (fun (open_set : forall (x : X), Prop) => fun (open_law : isOpen open_set) => fun (center_mem : open_set center) => fun (excluded_not_mem : @SetComplement.{u} X open_set excluded) => use open_set center_mem)
+
+theorem point_open_exclusion_excludes.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (excluded : X), forall (witness : @PointOpenExclusion.{u} X isOpen center excluded), forall (P : Prop), forall (use : forall (open_set : forall (x : X), Prop), forall (excluded_not_mem : @SetComplement.{u} X open_set excluded), P), P :=
+  fun X => fun isOpen => fun center => fun excluded => fun witness => fun P => fun use => witness P (fun (open_set : forall (x : X), Prop) => fun (open_law : isOpen open_set) => fun (center_mem : open_set center) => fun (excluded_not_mem : @SetComplement.{u} X open_set excluded) => use open_set excluded_not_mem)
+
+theorem disjoint_open_neighborhoods_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), forall (left_open_set : forall (x : X), Prop), forall (right_open_set : forall (x : X), Prop), forall (left_open_law : isOpen left_open_set), forall (right_open_law : isOpen right_open_set), forall (left_mem : left_open_set left), forall (right_mem : right_open_set right), forall (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z), @DisjointOpenNeighborhoods.{u} X isOpen left right :=
+  fun X => fun isOpen => fun left => fun right => fun left_open_set => fun right_open_set => fun left_open_law => fun right_open_law => fun left_mem => fun right_mem => fun disjoint_law => fun (P : Prop) => fun (mk : forall (left_open_set : forall (x : X), Prop), forall (right_open_set : forall (x : X), Prop), forall (left_open_law : isOpen left_open_set), forall (right_open_law : isOpen right_open_set), forall (left_mem : left_open_set left), forall (right_mem : right_open_set right), forall (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z), P) => mk left_open_set right_open_set left_open_law right_open_law left_mem right_mem disjoint_law
+
+theorem disjoint_open_left_open.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), forall (witness : @DisjointOpenNeighborhoods.{u} X isOpen left right), forall (P : Prop), forall (use : forall (left_open_set : forall (x : X), Prop), forall (left_open_law : isOpen left_open_set), P), P :=
+  fun X => fun isOpen => fun left => fun right => fun witness => fun P => fun use => witness P (fun (left_open_set : forall (x : X), Prop) => fun (right_open_set : forall (x : X), Prop) => fun (left_open_law : isOpen left_open_set) => fun (right_open_law : isOpen right_open_set) => fun (left_mem : left_open_set left) => fun (right_mem : right_open_set right) => fun (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z) => use left_open_set left_open_law)
+
+theorem disjoint_open_right_open.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), forall (witness : @DisjointOpenNeighborhoods.{u} X isOpen left right), forall (P : Prop), forall (use : forall (right_open_set : forall (x : X), Prop), forall (right_open_law : isOpen right_open_set), P), P :=
+  fun X => fun isOpen => fun left => fun right => fun witness => fun P => fun use => witness P (fun (left_open_set : forall (x : X), Prop) => fun (right_open_set : forall (x : X), Prop) => fun (left_open_law : isOpen left_open_set) => fun (right_open_law : isOpen right_open_set) => fun (left_mem : left_open_set left) => fun (right_mem : right_open_set right) => fun (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z) => use right_open_set right_open_law)
+
+theorem disjoint_open_left_member.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), forall (witness : @DisjointOpenNeighborhoods.{u} X isOpen left right), forall (P : Prop), forall (use : forall (left_open_set : forall (x : X), Prop), forall (left_mem : left_open_set left), P), P :=
+  fun X => fun isOpen => fun left => fun right => fun witness => fun P => fun use => witness P (fun (left_open_set : forall (x : X), Prop) => fun (right_open_set : forall (x : X), Prop) => fun (left_open_law : isOpen left_open_set) => fun (right_open_law : isOpen right_open_set) => fun (left_mem : left_open_set left) => fun (right_mem : right_open_set right) => fun (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z) => use left_open_set left_mem)
+
+theorem disjoint_open_right_member.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), forall (witness : @DisjointOpenNeighborhoods.{u} X isOpen left right), forall (P : Prop), forall (use : forall (right_open_set : forall (x : X), Prop), forall (right_mem : right_open_set right), P), P :=
+  fun X => fun isOpen => fun left => fun right => fun witness => fun P => fun use => witness P (fun (left_open_set : forall (x : X), Prop) => fun (right_open_set : forall (x : X), Prop) => fun (left_open_law : isOpen left_open_set) => fun (right_open_law : isOpen right_open_set) => fun (left_mem : left_open_set left) => fun (right_mem : right_open_set right) => fun (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z) => use right_open_set right_mem)
+
+theorem disjoint_open_elim.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (left : X), forall (right : X), forall (witness : @DisjointOpenNeighborhoods.{u} X isOpen left right), forall (P : Prop), forall (use : forall (left_open_set : forall (x : X), Prop), forall (right_open_set : forall (x : X), Prop), forall (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z), P), P :=
+  fun X => fun isOpen => fun left => fun right => fun witness => fun P => fun use => witness P (fun (left_open_set : forall (x : X), Prop) => fun (right_open_set : forall (x : X), Prop) => fun (left_open_law : isOpen left_open_set) => fun (right_open_law : isOpen right_open_set) => fun (left_mem : left_open_set left) => fun (right_mem : right_open_set right) => fun (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z) => use left_open_set right_open_set disjoint_law)
+
+theorem t0_space_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (separation_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), forall (P : Prop), forall (mk_left : @PointOpenExclusion.{u} X isOpen left right -> P), forall (mk_right : @PointOpenExclusion.{u} X isOpen right left -> P), P), @T0Space.{u} X isOpen :=
+  fun X => fun isOpen => fun separation_law => separation_law
+
+theorem t0_space_elim.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (t0 : @T0Space.{u} X isOpen), forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), forall (P : Prop), forall (mk_left : @PointOpenExclusion.{u} X isOpen left right -> P), forall (mk_right : @PointOpenExclusion.{u} X isOpen right left -> P), P :=
+  fun X => fun isOpen => fun t0 => fun left => fun right => fun distinct => fun P => fun mk_left => fun mk_right => t0 left right distinct P mk_left mk_right
+
+theorem kolmogorov_to_t0.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (kolmogorov : @KolmogorovSpace.{u} X isOpen), @T0Space.{u} X isOpen :=
+  fun X => fun isOpen => fun kolmogorov => kolmogorov
+
+theorem t0_to_kolmogorov.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (t0 : @T0Space.{u} X isOpen), @KolmogorovSpace.{u} X isOpen :=
+  fun X => fun isOpen => fun t0 => t0
+
+theorem t1_space_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (point_exclusion_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right), forall (singleton_closed_law : forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)), forall (finite_closed_law : forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset), @T1Space.{u} X isOpen :=
+  fun X => fun isOpen => fun point_exclusion_law => fun singleton_closed_law => fun finite_closed_law => fun (P : Prop) => fun (mk : forall (point_exclusion_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right), forall (singleton_closed_law : forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)), forall (finite_closed_law : forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset), P) => mk point_exclusion_law singleton_closed_law finite_closed_law
+
+theorem t1_point_exclusion.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (t1 : @T1Space.{u} X isOpen), forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right :=
+  fun X => fun isOpen => fun t1 => fun left => fun right => fun distinct => t1 (@PointOpenExclusion.{u} X isOpen left right) (fun (point_exclusion_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right) => fun (singleton_closed_law : forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)) => fun (finite_closed_law : forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset) => point_exclusion_law left right distinct)
+
+theorem t1_singleton_closed.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (t1 : @T1Space.{u} X isOpen), forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point) :=
+  fun X => fun isOpen => fun t1 => fun point => t1 (@ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)) (fun (point_exclusion_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right) => fun (singleton_closed_law : forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)) => fun (finite_closed_law : forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset) => singleton_closed_law point)
+
+theorem t1_finite_set_closed.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (t1 : @T1Space.{u} X isOpen), forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset :=
+  fun X => fun isOpen => fun t1 => fun finite_subset => fun FiniteEvidence => fun finite_law => t1 (@ClosedSet.{u} X isOpen finite_subset) (fun (point_exclusion_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right) => fun (singleton_closed_law : forall (point : X), @ClosedSet.{u} X isOpen (fun (z : X) => @Eq.{u} X z point)) => fun (finite_closed_law : forall (finite_subset : forall (z : X), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), @ClosedSet.{u} X isOpen finite_subset) => finite_closed_law finite_subset FiniteEvidence finite_law)
+
+theorem t1_implies_t0.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (t1 : @T1Space.{u} X isOpen), @T0Space.{u} X isOpen :=
+  fun X => fun isOpen => fun t1 => fun (left : X) => fun (right : X) => fun (distinct : @DistinctPoints.{u} X left right) => fun (P : Prop) => fun (mk_left : @PointOpenExclusion.{u} X isOpen left right -> P) => fun (mk_right : @PointOpenExclusion.{u} X isOpen right left -> P) => mk_left (@t1_point_exclusion.{u} X isOpen t1 left right distinct)
+
+theorem hausdorff_space_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (disjoint_neighborhood_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @DisjointOpenNeighborhoods.{u} X isOpen left right), @HausdorffSpace.{u} X isOpen :=
+  fun X => fun isOpen => fun disjoint_neighborhood_law => fun (P : Prop) => fun (mk : forall (disjoint_neighborhood_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @DisjointOpenNeighborhoods.{u} X isOpen left right), P) => mk disjoint_neighborhood_law
+
+theorem hausdorff_disjoint_neighborhoods.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (hausdorff : @HausdorffSpace.{u} X isOpen), forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @DisjointOpenNeighborhoods.{u} X isOpen left right :=
+  fun X => fun isOpen => fun hausdorff => fun left => fun right => fun distinct => hausdorff (@DisjointOpenNeighborhoods.{u} X isOpen left right) (fun (disjoint_neighborhood_law : forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @DisjointOpenNeighborhoods.{u} X isOpen left right) => disjoint_neighborhood_law left right distinct)
+
+theorem hausdorff_point_exclusion.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (hausdorff : @HausdorffSpace.{u} X isOpen), forall (left : X), forall (right : X), forall (distinct : @DistinctPoints.{u} X left right), @PointOpenExclusion.{u} X isOpen left right :=
+  fun X => fun isOpen => fun hausdorff => fun left => fun right => fun distinct => (@hausdorff_disjoint_neighborhoods.{u} X isOpen hausdorff left right distinct) (@PointOpenExclusion.{u} X isOpen left right) (fun (left_open_set : forall (x : X), Prop) => fun (right_open_set : forall (x : X), Prop) => fun (left_open_law : isOpen left_open_set) => fun (right_open_law : isOpen right_open_set) => fun (left_mem : left_open_set left) => fun (right_mem : right_open_set right) => fun (disjoint_law : forall (z : X), forall (left_z : left_open_set z), forall (right_z : right_open_set z), @EmptySet.{u} X z) => @point_open_exclusion_intro.{u} X isOpen left right left_open_set left_open_law left_mem (fun (right_in_left : left_open_set right) => disjoint_law right right_in_left right_mem))
+
+theorem hausdorff_implies_t0.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (hausdorff : @HausdorffSpace.{u} X isOpen), @T0Space.{u} X isOpen :=
+  fun X => fun isOpen => fun hausdorff => fun (left : X) => fun (right : X) => fun (distinct : @DistinctPoints.{u} X left right) => fun (P : Prop) => fun (mk_left : @PointOpenExclusion.{u} X isOpen left right -> P) => fun (mk_right : @PointOpenExclusion.{u} X isOpen right left -> P) => mk_left (@hausdorff_point_exclusion.{u} X isOpen hausdorff left right distinct)
+
+theorem hausdorff_diagonal_criterion_intro.{p,u} :
+  forall (X : Sort u), forall (Product : Sort p), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (diagonal : forall (point : Product), Prop), forall (forward : @HausdorffSpace.{u} X isOpen -> @ClosedSet.{p} Product productOpen diagonal), forall (backward : @ClosedSet.{p} Product productOpen diagonal -> @HausdorffSpace.{u} X isOpen), @HausdorffDiagonalCriterion.{p,u} X Product isOpen productOpen diagonal :=
+  fun X => fun Product => fun isOpen => fun productOpen => fun diagonal => fun forward => fun backward => fun (P : Prop) => fun (mk : forall (forward : @HausdorffSpace.{u} X isOpen -> @ClosedSet.{p} Product productOpen diagonal), forall (backward : @ClosedSet.{p} Product productOpen diagonal -> @HausdorffSpace.{u} X isOpen), P) => mk forward backward
+
+theorem hausdorff_diagonal_forward.{p,u} :
+  forall (X : Sort u), forall (Product : Sort p), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (diagonal : forall (point : Product), Prop), forall (criterion : @HausdorffDiagonalCriterion.{p,u} X Product isOpen productOpen diagonal), forall (hausdorff : @HausdorffSpace.{u} X isOpen), @ClosedSet.{p} Product productOpen diagonal :=
+  fun X => fun Product => fun isOpen => fun productOpen => fun diagonal => fun criterion => fun hausdorff => criterion (@ClosedSet.{p} Product productOpen diagonal) (fun (forward : @HausdorffSpace.{u} X isOpen -> @ClosedSet.{p} Product productOpen diagonal) => fun (backward : @ClosedSet.{p} Product productOpen diagonal -> @HausdorffSpace.{u} X isOpen) => forward hausdorff)
+
+theorem hausdorff_diagonal_backward.{p,u} :
+  forall (X : Sort u), forall (Product : Sort p), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (diagonal : forall (point : Product), Prop), forall (criterion : @HausdorffDiagonalCriterion.{p,u} X Product isOpen productOpen diagonal), forall (diagonal_closed : @ClosedSet.{p} Product productOpen diagonal), @HausdorffSpace.{u} X isOpen :=
+  fun X => fun Product => fun isOpen => fun productOpen => fun diagonal => fun criterion => fun diagonal_closed => criterion (@HausdorffSpace.{u} X isOpen) (fun (forward : @HausdorffSpace.{u} X isOpen -> @ClosedSet.{p} Product productOpen diagonal) => fun (backward : @ClosedSet.{p} Product productOpen diagonal -> @HausdorffSpace.{u} X isOpen) => backward diagonal_closed)
+
+theorem compact_subset_closed_in_hausdorff.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (route : @CompactHausdorffClosedRoute.{u} X isOpen), forall (subset : forall (x : X), Prop), forall (CompactSubset : Prop), forall (compact_law : CompactSubset), forall (hausdorff_law : @HausdorffSpace.{u} X isOpen), @ClosedSet.{u} X isOpen subset :=
+  fun X => fun isOpen => fun route => fun subset => fun CompactSubset => fun compact_law => fun hausdorff_law => route subset CompactSubset compact_law hausdorff_law

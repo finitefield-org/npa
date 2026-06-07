@@ -449,7 +449,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T08 Add T0, T1, Hausdorff, Regular, And Normal Basics
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Separation.Basic`, `Proofs.Ai.Topology.Separation.Normal`
 - Tasks:
@@ -460,15 +460,31 @@ guessing. The split must preserve the dependency order in this document.
     closed, and metric spaces are normal.
   - Split net-limit uniqueness until `TOP-T26` if the proof needs nets.
 - Deliverables:
-  - Separation and normality base modules.
+  - Added and registered `Proofs.Ai.Topology.Separation.Basic` with 9
+    definitions and 29 theorems for distinct points, point-open exclusion,
+    disjoint open neighborhoods, T0/Kolmogorov, T1, Hausdorff, Hausdorff
+    diagonal criteria, and compact-Hausdorff closed-subset routes.
+  - Added and registered `Proofs.Ai.Topology.Separation.Normal` with 9
+    definitions and 25 theorems for closed-set disjointness, open-set
+    separation, point/closed-set separation, regularity, complete regularity,
+    normality, Tychonoff spaces, metric normality, and compact Hausdorff
+    normality routes.
 - Acceptance criteria:
   - Every separation theorem states the exact axiom level it requires.
-  - Compact Hausdorff normality imports compactness from `TOP-T10` or
-    `TOP-T11` when used.
+  - T1 singleton/finite closedness, Hausdorff diagonal characterization,
+    compact-Hausdorff closed subsets, metric normality, and compact Hausdorff
+    normality are exposed as explicit evidence/route packages until the
+    compactness infrastructure in `TOP-T10`/`TOP-T11` is available.
+  - Net-limit uniqueness is left to `TOP-T26`; no net vocabulary was added in
+    this layer.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Normal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Separation.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Separation.Normal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: both separation modules declare no axioms.
 
 ### TOP-T09 Add Urysohn, Tietze, And Compactification Interfaces
 

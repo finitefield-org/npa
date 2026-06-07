@@ -65,6 +65,14 @@ Current bundles:
   bidirectional invariant transfers, a named hook for compactness, connectedness, separation,
   countability, homotopy, homology, Euler characteristic, and dimension, and non-homeomorphism
   cards that point to the invariant obstruction.
+- `Proofs/Ai/Topology/Separation/Basic/`: separation-axiom layer over topology basics. It defines
+  distinct-point evidence, point-open exclusion, disjoint open neighborhoods, T0/Kolmogorov, T1,
+  Hausdorff, Hausdorff diagonal criteria, and compact-Hausdorff closed-subset routes, with
+  certificate-backed T1-to-T0 and Hausdorff-to-T0 constructions.
+- `Proofs/Ai/Topology/Separation/Normal/`: regularity and normality layer over separation basics.
+  It defines closed-set disjointness, open-set separation, point/closed-set separation, regular,
+  completely regular, normal, Tychonoff, metric-normality, and compact-Hausdorff-normal routes,
+  keeping advanced compactness and metric-normality assumptions as explicit evidence slots.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
