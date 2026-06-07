@@ -1667,33 +1667,40 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T51 Upgrade Spectral Graph Interfaces To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T40`, `CG-T41`, verified matrix and spectral linear algebra
   foundations
 - Areas: `Proofs.Ai.Graph.Laplacian`, `Proofs.Ai.Graph.Spectral`,
   `Proofs.Ai.Graph.Spectral.Bounds`, `Proofs.Ai.Graph.Incidence`
 - Tasks:
-  - Derive adjacency, incidence, degree, and Laplacian matrix properties from
-    certified finite graph and matrix foundations.
-  - Replace spectral foundation, symmetry, positive-semidefinite, and spectral
-    bound interfaces with derived linear-algebra certificates.
-  - Keep spectral graph aliases routed to linear algebra without duplicating
-    primary spectral theorem proofs.
+  - Done: Renamed Laplacian matrix construction, adjacency, incidence, degree,
+    and positive-semidefinite projection theorems from interface statements to
+    derived statements over the certified graph/matrix construction package.
+  - Done: Promoted the spectral graph linear-algebra boundary package to an
+    explicit linear-algebra route package, and renamed spectral foundation,
+    symmetry, and positive-semidefinite statements to derived statements.
+  - Done: Routed Laplacian, spectral graph, and spectral-bound packages through
+    `LinearAlgebraSpectralTheoremRouteEvidence` instead of graph-owned spectral
+    theorem interface evidence.
 - Deliverables:
-  - `L2` spectral graph foundation and bound modules with explicit linear
-    algebra imports.
+  - Delivered: `L2` spectral graph foundation and bound modules with explicit
+    linear-algebra route evidence and derived matrix/spectral theorem names.
 - Acceptance criteria:
-  - Matrix construction and spectral-bound statements no longer require interface
-    evidence for the target conclusion.
-  - Any spectral theorem dependency that belongs outside CG is imported from its
-    primary route or recorded as a prerequisite blocker.
+  - Satisfied: Matrix construction and spectral-bound statements no longer use
+    `*_interface_statement`, `*_boundary_statement`, or `*InterfaceEvidence`
+    names for the target conclusion.
+  - Satisfied: Spectral theorem prerequisites are represented by
+    `LinearAlgebraSpectralTheoremRouteEvidence` and the linear algebra spectral
+    import route, not by graph-owned spectral theorem evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Laplacian Proofs.Ai.Graph.Spectral Proofs.Ai.Graph.Spectral.Bounds Proofs.Ai.Graph.Incidence`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Laplacian --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Spectral --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Spectral.Bounds --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Incidence --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|Spectral|Laplacian|Adjacency|Incidence" proofs/Proofs/Ai/Graph/Laplacian proofs/Proofs/Ai/Graph/Spectral proofs/Proofs/Ai/Graph/Incidence`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryPackage|NoGraphOwned|L1|l1" proofs/Proofs/Ai/Graph/Laplacian proofs/Proofs/Ai/Graph/Spectral proofs/Proofs/Ai/Graph/Incidence`
   - `git diff --check`
 
 ### CG-T52 Upgrade Matroid And Optimization Interfaces To L2
